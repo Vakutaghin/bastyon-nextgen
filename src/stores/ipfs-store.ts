@@ -3,6 +3,7 @@ import type { IpfsTarget } from '@/helpers/ipfs/ipfs-link'
 import { IPFS_GATEWAY } from '@/helpers/ipfs/ipfs-viewer'
 import { pickGatewaySource, type IpfsConsent } from '@/helpers/ipfs/ipfs-tier'
 import { useTorStore } from '@/stores/tor-store'
+import { t } from '@/i18n'
 
 // Оркестрация докачиваемого модуля Kubo (Tier 1) + fallback на публичный шлюз
 // (Tier 0). Клон паттерна tor-store: грубый `status` + тонкий `install`-прогресс,
@@ -168,6 +169,11 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
       }
     )
   })
+}
+
+/** Подписи окна просмотра: кнопка «Скачать» поверх файла и ошибка сохранения. */
+function viewerText(): { save: string; saveFailed: string } {
+  return { save: t('header.ipfsViewerSave'), saveFailed: t('header.ipfsViewerSaveFailed') }
 }
 
 export const useIpfsStore = defineStore('ipfs', {
@@ -566,7 +572,7 @@ export const useIpfsStore = defineStore('ipfs', {
      * уже показывало ожидание: если его закрыли, новое не открывается.
      */
     async openViewer(label: string, url: string, title: string, waited = false): Promise<void> {
-      await tauriInvoke('ipfs_open_viewer', { label, url, title, waited })
+      await tauriInvoke('ipfs_open_viewer', { label, url, title, waited, text: viewerText() })
     },
 
     /**
@@ -581,7 +587,13 @@ export const useIpfsStore = defineStore('ipfs', {
       start: boolean
     ): Promise<boolean> {
       try {
-        return await tauriInvoke<boolean>('ipfs_viewer_status', { label, title, status, start })
+        return await tauriInvoke<boolean>('ipfs_viewer_status', {
+          label,
+          title,
+          status,
+          start,
+          text: viewerText(),
+        })
       } catch (e) {
         console.warn('[ipfs] viewer status failed', e)
         return false

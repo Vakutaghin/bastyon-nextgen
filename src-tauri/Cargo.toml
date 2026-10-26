@@ -76,6 +76,8 @@ hex = "0.4"
 aes-gcm = "0.10"
 base64 = "0.22"
 url = "2"
+# Имя файла из адреса шлюза в окне просмотра IPFS. Та же версия, что у url.
+percent-encoding = "2"
 dashmap = "6"
 once_cell = "1"
 thiserror = "1"

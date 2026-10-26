@@ -271,6 +271,7 @@ pub async fn ipfs_open_viewer(
     url: String,
     title: String,
     waited: Option<bool>,
+    text: Option<ViewerText>,
 ) -> Result<(), String> {
     if !is_valid_viewer_label(&label) {
         return Err("invalid viewer window label".into());
@@ -300,6 +301,7 @@ pub async fn ipfs_open_viewer(
         &label,
         tauri::WebviewUrl::External(parsed),
         &title,
+        text.unwrap_or_default().checked(),
     )?;
     Ok(())
 }
@@ -374,6 +376,7 @@ pub async fn ipfs_viewer_status(
     title: String,
     status: ViewerStatus,
     start: bool,
+    text: Option<ViewerText>,
 ) -> Result<bool, String> {
     if !is_valid_viewer_label(&label) {
         return Err("invalid viewer window label".into());
@@ -395,7 +398,14 @@ pub async fn ipfs_viewer_status(
         return Ok(false);
     }
     lock(&mgr.viewer_waiting).insert(label.clone());
-    let built = build_viewer(&app, &mgr, &label, status.page(), &title);
+    let built = build_viewer(
+        &app,
+        &mgr,
+        &label,
+        status.page(),
+        &title,
+        text.unwrap_or_default().checked(),
+    );
     if let Err(e) = built {
         lock(&mgr.viewer_waiting).remove(&label);
         return Err(e);
@@ -439,14 +449,39 @@ fn build_viewer(
     label: &str,
     url: tauri::WebviewUrl,
     title: &str,
+    text: ViewerText,
 ) -> Result<(), String> {
     let state = mgr.state.clone();
     let waiting = mgr.viewer_waiting.clone();
     let own_label = label.to_string();
+    let downloads = app.clone();
+    let saving = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let win = tauri::WebviewWindowBuilder::new(app, label, url)
         .title(title)
         .inner_size(1100.0, 780.0)
         .incognito(true)
+        .initialization_script(viewer_save_script(&text.save))
+        // Скачивание в окне: без обработчика WKWebView и WebKitGTK молча его
+        // отменяют. Своё — диалог «Сохранить», как у приватного файла; по
+        // одному за раз, чтобы страница не завалила диалогами.
+        .on_download(move |_webview, event| {
+            if let tauri::webview::DownloadEvent::Requested { url, destination } = event {
+                let fallback = destination
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                if !saving.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                    let app = downloads.clone();
+                    let saving = saving.clone();
+                    let text = text.clone();
+                    tauri::async_runtime::spawn(async move {
+                        viewer_save(&app, url, fallback, &text).await;
+                        saving.store(false, std::sync::atomic::Ordering::SeqCst);
+                    });
+                }
+            }
+            false
+        })
         .on_navigation(move |u| {
             if is_status_page(u) {
                 return lock(&waiting).contains(&own_label);
@@ -464,6 +499,120 @@ fn build_viewer(
         }
     });
     Ok(())
+}
+
+/// Подписи окна просмотра: язык интерфейса знает фронт, а не Rust.
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ViewerText {
+    save: String,
+    save_failed: String,
+}
+
+impl Default for ViewerText {
+    fn default() -> Self {
+        Self {
+            save: "Download".into(),
+            save_failed: "Could not save the file".into(),
+        }
+    }
+}
+
+impl ViewerText {
+    fn checked(self) -> Self {
+        Self {
+            save: self.save.chars().take(40).collect(),
+            save_failed: self.save_failed.chars().take(200).collect(),
+        }
+    }
+}
+
+/// Кнопка «Скачать» поверх файла, который окно показывает само: картинки,
+/// видео, звука, PDF, текста. Своей кнопки у такой страницы нет, а
+/// «Загрузить изображение» из меню WKWebView приложению не передаёт. Кнопка —
+/// ссылка `download` на сам файл, её ловит `on_download`. Сайтам (HTML, SVG)
+/// кнопку не добавляем: у них свой интерфейс.
+const VIEWER_SAVE_SCRIPT: &str = r#"(function () {
+  if (window.top !== window) return;
+  var type = (document.contentType || '').toLowerCase();
+  if (!/^(image\/(?!svg)|video\/|audio\/|text\/plain|application\/(pdf|json))/.test(type)) return;
+  function add() {
+    if (document.getElementById('bastyon-viewer-save')) return;
+    var host = document.createElement('div');
+    host.id = 'bastyon-viewer-save';
+    var root = host.attachShadow({ mode: 'closed' });
+    var style = document.createElement('style');
+    style.textContent =
+      'a{position:fixed;top:12px;right:12px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;' +
+      'padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.72);color:#fff;text-decoration:none;' +
+      'font:500 14px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;' +
+      'box-shadow:0 2px 8px rgba(0,0,0,.3)}a:hover{background:rgba(0,0,0,.88)}svg{width:16px;height:16px}';
+    var a = document.createElement('a');
+    a.href = location.href;
+    a.download = '';
+    a.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+      '<path d="m7 10 5 5 5-5"/></svg>';
+    a.appendChild(document.createTextNode(__LABEL__));
+    root.appendChild(style);
+    root.appendChild(a);
+    (document.body || document.documentElement).appendChild(host);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add);
+  else add();
+})();"#;
+
+fn viewer_save_script(label: &str) -> String {
+    let label = serde_json::to_string(label).unwrap_or_else(|_| "\"\"".into());
+    VIEWER_SAVE_SCRIPT.replace("__LABEL__", &label)
+}
+
+/// Имя файла из адреса шлюза: `?filename=`, иначе последний сегмент пути
+/// (`/ipfs/<cid>/фото.jpg`), если он не сам CID.
+fn viewer_file_name(url: &tauri::Url) -> Option<String> {
+    if let Some((_, name)) = url.query_pairs().find(|(k, _)| k == "filename") {
+        return Some(name.into_owned());
+    }
+    let segments: Vec<&str> = url.path_segments()?.filter(|s| !s.is_empty()).collect();
+    if segments.len() < 3 {
+        return None;
+    }
+    let last = segments.last()?;
+    Some(percent_encoding::percent_decode_str(last).decode_utf8_lossy().into_owned())
+}
+
+/// Файл из окна просмотра — на диск через системный диалог, как приватный.
+/// Только с локального шлюза: скачать страница может попросить что угодно.
+async fn viewer_save(app: &AppHandle, url: tauri::Url, fallback: String, text: &ViewerText) {
+    let mgr = app.state::<IpfsManager>();
+    let gw_port = mgr.state.read().await.gateway_port;
+    if !viewer_url_allowed(&url, gw_port) {
+        log::warn!("[ipfs] viewer download refused: {}", url.scheme());
+        return;
+    }
+    let root = url
+        .path_segments()
+        .and_then(|mut s| s.nth(1).map(str::to_string))
+        .unwrap_or_default();
+    let name = viewer_file_name(&url).unwrap_or(fallback);
+    let Some(dest) = save_file(app, &safe_basename(&name, &root)).await else {
+        return;
+    };
+    let part = part_path(&dest);
+    let saved = match save_stream(&url, &part, None).await {
+        Ok(()) => std::fs::rename(&part, &dest).map_err(err_string),
+        Err(e) => Err(e),
+    };
+    if let Err(e) = saved {
+        log::warn!("[ipfs] viewer download failed: {e}");
+        let _ = std::fs::remove_file(&part);
+        use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+        app.dialog()
+            .message(&text.save_failed)
+            .kind(MessageDialogKind::Error)
+            .show(|_| {});
+    }
 }
 
 /// Имя и размер выбранного файла. Имя попадает в ссылку, поэтому только UTF-8:
@@ -1712,6 +1861,32 @@ pub fn module_version(mgr: &IpfsManager) -> Option<crate::storage::ModuleVersion
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn viewer_file_name_from_the_gateway_address() {
+        let name = |s: &str| viewer_file_name(&tauri::Url::parse(s).unwrap());
+        let cid = "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi";
+        assert_eq!(
+            name(&format!("http://127.0.0.1:8080/ipfs/{cid}/%D1%84%D0%BE%D1%82%D0%BE.jpg")),
+            Some("фото.jpg".into())
+        );
+        assert_eq!(
+            name(&format!("http://127.0.0.1:8080/ipfs/{cid}?filename=cat.png&download=true")),
+            Some("cat.png".into())
+        );
+        // Сам CID — не имя: возьмётся предложенное движком.
+        assert_eq!(name(&format!("http://127.0.0.1:8080/ipfs/{cid}")), None);
+        assert_eq!(name(&format!("http://127.0.0.1:8080/ipfs/{cid}/")), None);
+    }
+
+    #[test]
+    fn viewer_save_button_label_is_a_js_string() {
+        let script = viewer_save_script("Скачать'); alert(1); ('");
+        assert!(!script.contains("__LABEL__"));
+        assert!(script.contains(r#"createTextNode("Скачать'); alert(1); ('")"#));
+        let script = viewer_save_script("a\"</script>");
+        assert!(script.contains(r#"createTextNode("a\"</script>")"#));
+    }
 
     #[test]
     fn viewer_url_whitelist() {

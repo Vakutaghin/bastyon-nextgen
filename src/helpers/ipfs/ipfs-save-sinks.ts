@@ -8,7 +8,7 @@
 //  - остальные браузеры: файл собирается в Blob и уходит обычной загрузкой,
 //    поэтому у этого способа потолок размера.
 import { isMobile, isTauri } from '@mobile/utils/platform'
-import { triggerAnchorDownload } from '@/helpers/common/download-media'
+import { triggerAnchorDownload } from '@/helpers/common/anchor-download'
 import { isAbortError } from './ipfs-errors'
 
 export type SinkKind = 'share' | 'disk' | 'blob'

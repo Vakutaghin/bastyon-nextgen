@@ -20,7 +20,7 @@ const h = vi.hoisted(() => ({
 
 vi.mock('@mobile/utils/platform', () => ({ isMobile: () => h.mobile, isTauri: () => h.tauri }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke: h.invoke }))
-vi.mock('@/helpers/common/download-media', () => ({ triggerAnchorDownload: h.anchor }))
+vi.mock('@/helpers/common/anchor-download', () => ({ triggerAnchorDownload: h.anchor }))
 vi.mock('@capacitor/filesystem', () => ({ Filesystem: h.fs, Directory: { Cache: 'CACHE' } }))
 vi.mock('@capacitor/share', () => ({ Share: h.share }))
 

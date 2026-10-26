@@ -45,6 +45,8 @@ The first time, the desktop app asks how to open such links:
 
 With the module, the viewer window also appears right away and shows **“Looking for it on IPFS…”** or **“Not found on IPFS”** in the same way. Pictures, videos, audio, text and web pages are shown in the window, and so are PDFs except on Linux. For anything else the app offers to save the file: while it downloads, you see **“Looking for the file on the network…”** and how much has arrived, and **“Cancel”** stops the download.
 
+Over a picture, video, audio, PDF or text the window has a **“Download”** button at the top right: the app asks where to save the file. Download links on websites in the window work the same way, one file at a time.
+
 ## IPNS names and DNSLink
 
 An `ipns://…` link points not to the files themselves but to a name. The owner of the name can point it to a new version of the content, and the link stays the same. There are two kinds of names:

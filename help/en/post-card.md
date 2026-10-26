@@ -21,7 +21,7 @@ What a post in the feed consists of and what you can do with it: read it in full
 
 ## Images
 
-Click an image to open the gallery full screen. Page through with the arrows — on screen or on the keyboard; the mouse wheel zooms the image. The **“Download image”** button saves it to your device. Close the gallery with the Esc key or the cross.
+Click an image to open the gallery full screen. Page through with the arrows — on screen or on the keyboard; the mouse wheel zooms the image. The **“Download image”** button at the top left saves it to your device: on a computer the app asks where to save the file, on a phone the system “Share” sheet opens, and from there you can save the picture to the gallery or to files. Close the gallery with the Esc key or the cross.
 
 ## What you can do
 

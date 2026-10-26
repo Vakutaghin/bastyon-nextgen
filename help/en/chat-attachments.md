@@ -17,7 +17,7 @@ Press **“Attach”** — the paper clip to the left of the input field:
 
 You can also drag files anywhere onto an open chat or paste them from the clipboard into the message field.
 
-While a file uploads, it shows how many percent have been sent. The recipient sees pictures and videos right in the conversation, and a file gets a **“Download”** button.
+While a file uploads, it shows how many percent have been sent. The recipient sees pictures and videos right in the conversation, and a file gets a **“Download”** button. A picture opens full screen, and the **“Download image”** button at the top left saves it. On a computer the app asks where to save the file, on a phone the system “Share” sheet opens.
 
 ## Size limit
 

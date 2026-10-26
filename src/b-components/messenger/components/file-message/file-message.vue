@@ -31,6 +31,7 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
+import { downloadMedia } from '@/helpers/common/download-media'
 import { iconForMime, formatFileSize } from './helpers'
 import {
   SC_FileMessage,
@@ -75,32 +76,23 @@ const canDownload = computed(() => !isLocal.value || !!props.message.url)
 const isDownloading = ref(false)
 const downloadError = ref(false)
 
-const triggerBrowserDownload = (objectUrl: string, name: string) => {
-  const a = document.createElement('a')
-  a.href = objectUrl
-  a.download = name
-  a.style.display = 'none'
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-}
-
+// На компьютере — системный диалог «Сохранить», на телефоне — «Поделиться»:
+// `<a download>` WKWebView и WebKitGTK без обработчика загрузок отменяют.
 const onDownload = async () => {
-  if (!canDownload.value) return
-  // Байты уже здесь (вложение mesh-чата, отправляемый файл) — скачать как есть.
-  if (typeof props.message.url === 'string' && props.message.url.startsWith('blob:')) {
-    triggerBrowserDownload(props.message.url, fileName.value)
-    return
-  }
+  if (!canDownload.value || isDownloading.value) return
   isDownloading.value = true
   downloadError.value = false
   try {
-    const url = await store.fetchAndDecryptMedia(props.message, mimetype.value)
+    // Байты уже здесь (вложение mesh-чата, отправляемый файл) — скачать как есть.
+    const local = typeof props.message.url === 'string' && props.message.url.startsWith('blob:')
+    const url = local
+      ? props.message.url
+      : await store.fetchAndDecryptMedia(props.message, mimetype.value)
     if (!url) {
       downloadError.value = true
       return
     }
-    triggerBrowserDownload(url, fileName.value)
+    if ((await downloadMedia(url, fileName.value)) === 'failed') downloadError.value = true
   } catch (_e) {
     downloadError.value = true
   } finally {

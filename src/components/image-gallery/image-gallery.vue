@@ -7,26 +7,15 @@
       @hide="handleHide"
       @index-change="onIndexChange"
     />
-    <SC_DownloadBtn
-      v-if="visible && currentImageUrl"
-      type="button"
-      :disabled="downloading"
-      :title="t('postCard.downloadImage')"
-      :aria-label="t('postCard.downloadImage')"
-      @click="onDownload"
-    >
-      <DownloadOutlined />
-    </SC_DownloadBtn>
+    <MediaDownloadButton v-if="visible && currentImageUrl" :src="currentImageUrl" />
   </SC_LightboxRoot>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { DownloadOutlined } from '@/components/icons'
 import VueEasyLightbox from 'vue-easy-lightbox'
-import { downloadMedia } from '@/helpers/common/download-media'
-import { SC_LightboxRoot, SC_DownloadBtn } from './image-gallery.styled'
+import MediaDownloadButton from '@/components/media-download-button/media-download-button.vue'
+import { SC_LightboxRoot } from './image-gallery.styled'
 
 const props = withDefaults(
   defineProps<{
@@ -42,10 +31,8 @@ const emit = defineEmits<{
   hide: []
 }>()
 
-const { t } = useI18n()
 const index = ref(0)
 const currentIndex = ref(0)
-const downloading = ref(false)
 
 function onIndexChange(_oldIndex: number, newIndex: number): void {
   currentIndex.value = newIndex
@@ -61,17 +48,6 @@ const currentImageUrl = computed<string>(() => {
   }
   return ''
 })
-
-async function onDownload(): Promise<void> {
-  const url = currentImageUrl.value
-  if (!url || downloading.value) return
-  downloading.value = true
-  try {
-    await downloadMedia(url)
-  } finally {
-    downloading.value = false
-  }
-}
 
 let touchStartHandler: ((e: TouchEvent) => void) | null = null
 let wheelHandler: ((e: WheelEvent) => void) | null = null
