@@ -148,8 +148,13 @@ const closeLightbox = () => {
   lightboxOpen.value = false
 }
 
+// На window в фазе захвата и без всплытия: иначе Escape доходит до
+// мессенджера (messenger-wrapper) и закрывает заодно и чат.
 const onEsc = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && lightboxOpen.value) closeLightbox()
+  if (e.key !== 'Escape' || !lightboxOpen.value) return
+  e.preventDefault()
+  e.stopPropagation()
+  closeLightbox()
 }
 
 watch(
@@ -163,11 +168,11 @@ watch(
 )
 
 watch(lightboxOpen, (open) => {
-  if (open) document.addEventListener('keydown', onEsc)
-  else document.removeEventListener('keydown', onEsc)
+  if (open) window.addEventListener('keydown', onEsc, true)
+  else window.removeEventListener('keydown', onEsc, true)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', onEsc)
+  window.removeEventListener('keydown', onEsc, true)
 })
 </script>

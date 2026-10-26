@@ -348,6 +348,7 @@ import { useVideoPlaybackRate } from './composables/use-video-playback-rate'
 import { useVideoChapters } from './composables/use-video-chapters'
 import { useVideoFullscreen } from './composables/use-video-fullscreen'
 import { useVideoPip } from './composables/use-video-pip'
+import { isKeptInPip } from './pip-keeper'
 import { useVideoHls } from './composables/use-video-hls'
 import { useVideoResume } from './composables/use-video-resume'
 import { useBackgroundPlayback } from './composables/use-background-playback'
@@ -1021,7 +1022,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (unregisterPlayer) unregisterPlayer()
-  stopVideo()
+  // Ролик в окне «картинка в картинке» доигрывает и после ухода со страницы.
+  if (!isKeptInPip(getVideoElement())) stopVideo()
 })
 
 watch(

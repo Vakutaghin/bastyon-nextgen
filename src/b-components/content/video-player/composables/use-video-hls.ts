@@ -5,6 +5,7 @@ import { getVideoSourcesFromUrl } from '@/helpers/api/peertube-url'
 import { VIDEO_LOAD_WATCHDOG_MS } from '../consts'
 import { resolveVideoElement, resolvePlayerErrorMessage, type ElementRefValue } from './utils'
 import { applyNetworkQualityCap } from '../services/network-quality'
+import { keepPlayingInPip } from '../pip-keeper'
 import {
   initBlobVideo,
   initHlsJsVideo,
@@ -357,6 +358,22 @@ export function useVideoHls(
 
   onBeforeUnmount(() => {
     clearWatchdog()
+    // Ролик в «картинке в картинке» доигрывает в окне (pip-keeper): поток
+    // закроется, когда закроют окно.
+    const video = resolveVideoElement(videoElement)
+    const instance = hls.value
+    const stopNative = stopNativeHls
+    const kept =
+      !!video &&
+      keepPlayingInPip(video, () => {
+        instance?.destroy()
+        stopNative?.()
+      })
+    if (kept) {
+      hls.value = null
+      stopNativeHls = null
+      return
+    }
     if (hls.value) {
       hls.value.destroy()
       hls.value = null

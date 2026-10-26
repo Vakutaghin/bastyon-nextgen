@@ -244,6 +244,8 @@ watch(
 
 function handleKeydown(e: KeyboardEvent): void {
   if (e.key !== 'Escape') return
+  // Просмотрщик картинок (пост в канале) закрывается сам — чат под ним остаётся.
+  if (modalStore.imageGallery.isOpen) return
   // Открытый поверх пост (из канала или ссылки в чате) закрывается первым:
   // фокус остаётся в ленте, и раньше Escape закрывал чат под постом.
   if (modalStore.postModal.isOpen) {
