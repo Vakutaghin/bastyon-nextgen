@@ -313,4 +313,36 @@ describe('useDialogMapping — mapRoomToDialog', () => {
     expect(d.lastMessage).toBeUndefined()
     expect(d.createdAt).toBeUndefined()
   })
+
+  describe('приглашение: чат создал собеседник, мы ещё не вступили', () => {
+    const me = { userId: '@0a0b0c:host', events: { member: mxEvent('m.room.member', 5000) } }
+    const invitedRoom = (over: Record<string, unknown> = {}) =>
+      fakeRoom({
+        getMyMembership: () => 'invite',
+        getLiveTimeline: () => ({ getEvents: () => [] }),
+        getMember: (id: string) => (id === me.userId ? me : null),
+        getUnreadNotificationCount: () => 0,
+        ...over,
+      })
+
+    it('время — когда пригласили, а не 0 (чат не уходит в низ списка); отмечен новым', async () => {
+      const { ctx: c } = ctx()
+      const d = await useDialogMapping(c).mapRoomToDialog(invitedRoom())
+      expect(d.lastMessage).toBeUndefined()
+      expect(d.createdAt).toBe(5000)
+      expect(d.hasUnread).toBe(true)
+    })
+
+    it('чат открыт — без отметки нового', async () => {
+      const { ctx: c } = ctx({ activeChatId: '!room:host' })
+      const d = await useDialogMapping(c).mapRoomToDialog(invitedRoom())
+      expect(d.hasUnread).toBeUndefined()
+    })
+
+    it('события приглашения нет — createdAt не задан', async () => {
+      const { ctx: c } = ctx()
+      const d = await useDialogMapping(c).mapRoomToDialog(invitedRoom({ getMember: () => null }))
+      expect(d.createdAt).toBeUndefined()
+    })
+  })
 })

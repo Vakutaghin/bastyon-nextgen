@@ -230,9 +230,13 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
       }
     }
 
+    // Чат создал собеседник, а нас только пригласили: до вступления (оно — при
+    // открытии чата) Matrix ленту не отдаёт, и чат с новыми сообщениями стоял в
+    // самом низу списка. Его время — время приглашения, как в прежнем клиенте.
+    const invited = room.getMyMembership?.() === 'invite'
     const createdAt = timelineEvents.length
       ? Math.min(...timelineEvents.map(getEventTs))
-      : undefined
+      : getEventTs(myUserId ? room.getMember?.(myUserId)?.events?.member : null) || undefined
 
     const unreadCount =
       uiStore.activeChatId === room.roomId
@@ -243,14 +247,16 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
 
     const muted = matrixService.isRoomMuted(room.roomId)
     // Без звука сервер непрочитанные не считает: новое видно по отметке прочтения.
+    // В приглашении сообщения есть, но сосчитать их до вступления нельзя.
     const hasUnread =
-      muted &&
       uiStore.activeChatId !== room.roomId &&
-      !!lastMessage &&
-      !!myUserId &&
-      lastMessage.senderId !== myUserId &&
-      typeof room.hasUserReadEvent === 'function' &&
-      !room.hasUserReadEvent(myUserId, lastMessage.id)
+      (invited ||
+        (muted &&
+          !!lastMessage &&
+          !!myUserId &&
+          lastMessage.senderId !== myUserId &&
+          typeof room.hasUserReadEvent === 'function' &&
+          !room.hasUserReadEvent(myUserId, lastMessage.id)))
 
     return {
       id: room.roomId,

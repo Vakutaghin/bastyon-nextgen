@@ -96,7 +96,10 @@ export interface Dialog {
   partner: User
   unreadCount: number
   lastMessage?: Message
-  /** Время создания комнаты (Unix, сек) — для сортировки диалогов без сообщений в общем ряду */
+  /**
+   * Самое раннее событие ленты, у приглашения — время приглашения (Unix, мс):
+   * по нему диалог без сообщений встаёт в общий ряд.
+   */
   createdAt?: number
   /** Не задано — Matrix. */
   transport?: ChatTransport
