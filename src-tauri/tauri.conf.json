@@ -56,6 +56,9 @@
       "entitlements": "./entitlements.plist"
     },
     "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      },
       "deb": {
         "recommends": ["libayatana-appindicator3-1"]
       }

@@ -11,5 +11,16 @@ fn main() {
     std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
   }
 
+  // AppImage везёт свои плагины GStreamer, и его хук (linuxdeploy-plugin-
+  // gstreamer) запрещает переиспользовать процесс, который их перебирает: на
+  // каждый плагин — свой процесс. Путь к плагинам у каждого запуска новый
+  // (/tmp/.mount_*), так что перебор идёт при каждом запуске, на первом видео
+  // или звуке: 5 с против 0,5 с с одним процессом, а на слабом ноутбуке —
+  // в разы дольше.
+  #[cfg(target_os = "linux")]
+  if std::env::var_os("APPDIR").is_some() {
+    std::env::set_var("GST_REGISTRY_REUSE_PLUGIN_SCANNER", "yes");
+  }
+
   app_lib::run();
 }

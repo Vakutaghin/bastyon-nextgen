@@ -55,6 +55,8 @@ chmod +x Linux-Bastyon-NextGen-__VERSION__-x86_64.AppImage
 sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 ```
 
+На Debian, Ubuntu и Linux Mint лучше .deb: WebKit и кодеки в нём системные, и видео может декодировать видеокарта, а не процессор.
+
 </details>
 
 <details>
@@ -131,6 +133,8 @@ The .deb package installs like this:
 ```
 sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 ```
+
+On Debian, Ubuntu and Linux Mint the .deb is better: it uses the system WebKit and codecs, and the graphics card can decode video instead of the processor.
 
 </details>
 

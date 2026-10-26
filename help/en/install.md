@@ -64,6 +64,8 @@ The .deb package for Debian, Ubuntu and Linux Mint installs like this:
 sudo apt install ./Linux-Bastyon-NextGen-*-x86_64.deb
 ```
 
+On Debian, Ubuntu and Linux Mint the .deb is the better choice: it uses the system WebKit and codecs, which are newer, and where the system supports it, the graphics card decodes video instead of the processor. On a low-end laptop this makes a difference. The app does not update the .deb package itself: install a new version the same way.
+
 The system tray icon needs the `libayatana-appindicator3-1` library: the .deb package suggests it by itself, and for the AppImage install it from your distribution's repository. Without it the app works, just without the icon.
 
 ## Android

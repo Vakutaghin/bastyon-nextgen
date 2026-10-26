@@ -144,6 +144,31 @@ jobs:
           # libasound2-dev — микрофон голосового ввода (cpal/ALSA), libclang-dev —
           # bindgen при сборке whisper.cpp (src/asr).
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev libasound2-dev libclang-dev
+          # Плагины GStreamer для AppImage, см. шаг GStreamer plugins for the AppImage.
+          sudo apt-get install -y gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-gl gstreamer1.0-alsa
+
+      # Видео и звук в WebKitGTK играет GStreamer. Без bundleMediaFramework
+      # AppImage вёз ядро GStreamer 1.20 из Ubuntu 22.04, а плагины брал
+      # системные, и на Ubuntu 24.04 / Mint 22 (GStreamer 1.24) ни один не
+      # грузился (undefined symbol), даже playbin: видео не играло совсем
+      # (0.13.5). Системный GStreamer вместо своего не подставить — ему нужна
+      # glib новее той, что в AppImage. Плагины берём не все: base, good,
+      # libav (H.264 и AAC с PeerTube), GL, ALSA и из bad только разборщики;
+      # весь bad добавлял бы ещё ~20 МБ. Каталог передаём в
+      # linuxdeploy-plugin-gstreamer через GSTREAMER_PLUGINS_DIR.
+      - name: GStreamer plugins for the AppImage
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          set -euo pipefail
+          src=/usr/lib/x86_64-linux-gnu/gstreamer-1.0
+          dir="$RUNNER_TEMP/gst-plugins"
+          mkdir -p "$dir"
+          for pkg in libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-libav gstreamer1.0-gl gstreamer1.0-alsa; do
+            dpkg -L "$pkg" | grep -E "^$src/libgst[^/]*\.so$" | xargs -r cp -t "$dir"
+          done
+          cp "$src/libgstvideoparsersbad.so" "$src/libgstopusparse.so" "$dir"
+          echo "Плагинов GStreamer в AppImage: $(ls "$dir" | wc -l)"
+          echo "GSTREAMER_PLUGINS_DIR=$dir" >> "$GITHUB_ENV"
 
       # AppImage не должен везти libwayland-* Ubuntu 22.04: системный Mesa
       # (Fedora 42 — 25.x) грузит их вместо своих, процесс страницы падает с
@@ -162,6 +187,12 @@ jobs:
           curl -fsSL -o "$f" https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-x86_64.AppImage
           echo "c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d  $f" | sha256sum -c
           chmod +x "$f"
+          # Плагин GStreamer (bundleMediaFramework) Tauri тоже качает с master,
+          # если его нет в кэше, — кладём сверенный.
+          g=~/.cache/tauri/linuxdeploy-plugin-gstreamer.sh
+          curl -fsSL -o "$g" https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gstreamer/2a2e67491c32995a3f279ad0ecbe77abd512b42a/linuxdeploy-plugin-gstreamer.sh
+          echo "c107b49d84edbffc6ab226ed1007e0626a4f7aa2c3a36b7782bef62351d49e94  $g" | sha256sum -c
+          chmod +x "$g"
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -322,7 +353,7 @@ jobs:
           tauriScript: pnpm tauri
           args: ${{ matrix.args }} --config src-tauri/tauri.updater.conf.json
 
-      - name: Check the AppImage has no libwayland
+      - name: Check the AppImage libraries
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           set -euo pipefail
@@ -330,10 +361,22 @@ jobs:
           [ -n "$img" ] || { echo "::error::Не найден собранный AppImage" >&2; exit 1; }
           dir="$(mktemp -d)"
           (cd "$dir" && "$OLDPWD/$img" --appimage-extract >/dev/null)
-          found="$(find "$dir/squashfs-root" -name 'libwayland-*.so*' -printf '%f ')"
+          root="$dir/squashfs-root"
+          found="$(find "$root" -name 'libwayland-*.so*' -printf '%f ')"
+          missing=""
+          for p in playback app typefindfunctions isomp4 matroska videoparsersbad libav opus pulseaudio opengl; do
+            [ -f "$root/usr/lib/gstreamer-1.0/libgst$p.so" ] || missing="$missing $p"
+          done
+          [ -f "$root/apprun-hooks/linuxdeploy-plugin-gstreamer.sh" ] || missing="$missing apprun-hook"
+          [ -f "$root/usr/lib/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner" ] || missing="$missing gst-plugin-scanner"
+          echo "Плагинов GStreamer: $(ls "$root/usr/lib/gstreamer-1.0" 2>/dev/null | wc -l)"
           rm -rf "$dir"
           if [ -n "$found" ]; then
             echo "::error::В AppImage попали $found— на Fedora окно будет пустым" >&2
+            exit 1
+          fi
+          if [ -n "$missing" ]; then
+            echo "::error::В AppImage нет GStreamer:$missing — видео и звук не заиграют" >&2
             exit 1
           fi
 
