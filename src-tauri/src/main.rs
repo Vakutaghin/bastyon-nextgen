@@ -22,5 +22,21 @@ fn main() {
     std::env::set_var("GST_REGISTRY_REUSE_PLUGIN_SCANNER", "yes");
   }
 
+  // WKWebView исправляет слова на лету по общей настройке macOS («Исправлять
+  // ошибки автоматически»), и ник, адрес или слово на другом языке в
+  // сообщении меняются на что-то другое. Выключаем только у себя: это
+  // значение по умолчанию, а выбор из меню поля («Правописание и грамматика»
+  // → «Автоматически исправлять правописание») WebKit сохраняет поверх него.
+  // WebKit читает его при создании первого окна, поэтому — до него.
+  #[cfg(target_os = "macos")]
+  {
+    use objc2_foundation::{NSDictionary, NSNumber, NSString, NSUserDefaults};
+    let key = NSString::from_str("WebAutomaticSpellingCorrectionEnabled");
+    let off = NSNumber::new_bool(false);
+    let defaults = NSDictionary::from_slices(&[&*key], &[&**off as &objc2::runtime::AnyObject]);
+    // SAFETY: ключ и значение — строка и число, как ждут настройки.
+    unsafe { NSUserDefaults::standardUserDefaults().registerDefaults(&defaults) };
+  }
+
   app_lib::run();
 }

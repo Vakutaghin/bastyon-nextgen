@@ -102,10 +102,11 @@ reqwest-updater = { package = "reqwest", version = "0.13", default-features = fa
 # считает Metal. Логи whisper.cpp идут в log.
 [target.'cfg(target_os = "macos")'.dependencies]
 whisper-rs = { version = "0.16", features = ["metal", "log_backend"] }
-# Диктовка не усыпляется App Nap (src/asr/keep_awake.rs). Версии — те же,
+# Диктовка не усыпляется App Nap (src/asr/keep_awake.rs), автоисправление
+# в полях ввода выключено (src/main.rs). Версии — те же,
 # что уже тянет Tauri.
 objc2 = "0.6"
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSProcessInfo", "NSString", "NSSet", "NSDate"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSProcessInfo", "NSString", "NSSet", "NSDate", "NSDictionary", "NSValue", "NSUserDefaults"] }
 # Очистка кэша WKWebView (src/storage.rs) — те же версии, что тянет wry.
 objc2-web-kit = { version = "0.3", default-features = false, features = ["std", "objc2-app-kit", "block2", "WKWebView", "WKWebViewConfiguration", "WKWebsiteDataStore", "WKWebsiteDataRecord"] }
 block2 = "0.6"
