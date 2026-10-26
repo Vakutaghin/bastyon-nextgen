@@ -1,5 +1,5 @@
 ---
-keywords: [settings, preferences, content, diagnostics, what’s new, settings tabs]
+keywords: [settings, preferences, content, modules, cache, diagnostics, what’s new, settings tabs]
 ---
 
 # Settings
@@ -17,9 +17,6 @@ Settings open from the account menu — **“Settings”** — or, on a phone, f
   - **“Link previews”** — a card with the title and image under a link;
   - **“Comments order”** — the order a discussion opens in, see [Comments](comments.md);
   - **“Messenger”** — turns the chat off entirely, see [Messenger](messenger.md).
-- **“IPFS module”** — in the desktop app, when the module is installed, see [The IPFS module](ipfs-module.md).
-- **“Mesh networks module”** — in the desktop app: download, update or remove it, see [Chatting over radio](mesh.md).
-- Voice input — in the desktop app, see [Voice input](voice-input.md).
 
 ## Notifications
 
@@ -29,7 +26,17 @@ Which events to show, sound and system notifications — see [Notifications](not
 
 - **“Animations”** — smooth transitions; turn them off if the app feels sluggish.
 - **“Interface scale”** and **“Launch at login”** — in the desktop app, see [Language and appearance](appearance.md) and [The desktop app](desktop-app.md).
-- **“Clear cache”** — see [What is stored on your device](local-data.md).
+- **“Local data”**: **“Web cache”** and **“IPFS cache”** with a limit and a **“Clear”** button (in the desktop app), **“Keep decrypted messages”** and **“Clear saved data”** — see [What is stored on your device](local-data.md).
+
+## Modules
+
+Only in the desktop app. The programs the app downloads when you ask, and how much disk space each one takes:
+
+- **“IPFS module”** — **“Download and turn on”** or **“Remove module”**, see [The IPFS module](ipfs-module.md);
+- **“Tor”** — downloads by itself the first time you turn it on; you can remove it here while it is off, see [Tor](tor.md);
+- **“Voice input”** — the recognition models, see [Voice input](voice-input.md);
+- **“Video compression module”** — see [Video compression](video-compression.md);
+- **“Mesh networks module”** — download, update or remove it, see [Chatting over radio](mesh.md).
 
 ## Private key
 

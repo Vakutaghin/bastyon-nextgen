@@ -84,18 +84,8 @@
       <Switch :checked="prefs.messengerEnabled" @change="setFlag('messengerEnabled', $event)" />
     </SC_SystemRow>
   </SC_SystemSection>
-
-  <!-- Управление десктоп-модулем IPFS (Kubo): сам блок скрыт, если не установлен. -->
-  <IpfsSection />
-
-  <!-- Голосовой ввод (десктоп): модели распознавания и команды пунктуации. -->
-  <VoiceInputSection />
-
-  <!-- Модуль сжатия видео (десктоп): FFmpeg для сжатия перед загрузкой. -->
-  <CompressionModuleSection />
-
-  <!-- Модуль mesh-сетей (десктоп): радио и узел Reticulum. -->
-  <MeshModuleSection />
+  <!-- Скачиваемые модули (IPFS, Tor, голосовой ввод, сжатие видео, mesh) — на
+       вкладке «Модули». -->
 </template>
 
 <script setup lang="ts">
@@ -116,10 +106,6 @@ import {
   SC_SystemTitle,
 } from './system-tab.styled'
 import { useTheme, type ThemeMode } from '@/composables/use-theme'
-import IpfsSection from './ipfs-section.vue'
-import VoiceInputSection from './voice-input-section.vue'
-import CompressionModuleSection from './compression-module-section.vue'
-import MeshModuleSection from './mesh-module-section.vue'
 import {
   SC_SettingsSectionTitle,
   SC_GeneralBlock,

@@ -90,6 +90,11 @@ fn dev_binary() -> Option<PathBuf> {
 }
 
 impl MeshManager {
+    /// Модуль и узлы Reticulum — для места на диске (crate::storage).
+    pub fn disk_dirs(&self) -> [PathBuf; 2] {
+        [self.paths.dir().to_path_buf(), self.rns_dir.clone()]
+    }
+
     fn current(&self) -> Option<Arc<Proc>> {
         self.proc
             .lock()

@@ -17,6 +17,8 @@ const COMMANDS: &[&str] = &[
   "ffmpeg_module_cancel_install",
   "ffmpeg_module_remove",
   "tor_status",
+  "tor_installed",
+  "tor_uninstall",
   "tor_start",
   "tor_stop",
   "tor_fetch",
@@ -91,6 +93,9 @@ const COMMANDS: &[&str] = &[
   "rns_download",
   "rns_paper",
   "rns_ingest",
+  "storage_usage",
+  "storage_set_limits",
+  "storage_clear",
 ];
 
 fn main() {

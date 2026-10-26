@@ -22,3 +22,18 @@ export const SC_ModuleError = styled.div`
   font-size: 13px;
   color: var(--ui-error);
 `
+
+/** «На диске: …» — сколько модуль занимает сейчас (настройки → «Модули»). */
+export const SC_ModuleDisk = styled.div`
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+`
+
+/** Вкладка «Модули»: что это и сколько всё занимает. */
+export const SC_ModulesIntro = styled.p`
+  margin: 0;
+  font-size: 14px;
+  line-height: calc(1.5 * var(--leading-scale));
+  color: var(--color-text-secondary);
+`

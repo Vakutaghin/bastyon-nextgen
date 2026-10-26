@@ -472,6 +472,7 @@ export default {
       appPermissions: 'Permisos de apps',
       diagnostics: 'Diagnóstico',
       whatsNew: 'Novedades',
+      modules: 'Módulos',
     },
     content: {
       title: 'Contenido',
@@ -498,16 +499,30 @@ export default {
       autostartHint: 'La aplicación se abrirá automáticamente al encender el ordenador.',
       autostartFailed: 'El sistema no permitió cambiar el inicio automático',
       storageTitle: 'Datos locales',
-      clearCache: 'Borrar caché',
+      clearCache: 'Borrar datos guardados',
       clearCacheHint:
         'Elimina las posiciones de reproducción, los mensajes descifrados y las notificaciones guardadas. Se conservan las cuentas, las claves, los ajustes y los favoritos.',
       clearButton: 'Borrar',
       clearing: 'Borrando…',
       cancel: 'Cancelar',
-      clearConfirmTitle: '¿Borrar la caché?',
+      clearConfirmTitle: '¿Borrar los datos guardados?',
       clearConfirmText:
         'Los datos se volverán a obtener cuando se necesiten. Las cuentas y las claves no se tocan.',
-      cleared: 'Caché borrada, entradas eliminadas: {count}',
+      cleared: 'Datos borrados, entradas eliminadas: {count}',
+      webCache: 'Caché web',
+      webCacheHint:
+        'Imágenes, vídeos y páginas que la aplicación ya ha descargado. Por encima del límite se vacía sola.',
+      ipfsCache: 'Caché de IPFS',
+      ipfsCacheHint:
+        'Lo que abriste a través del módulo IPFS. «Mis archivos» se conservan al vaciarla.',
+      cacheUsage: '{used} de {limit} en uso',
+      cacheLimit: 'Límite',
+      cacheCleared: 'Caché vaciada',
+      cacheClearFailed: 'No se pudo vaciar la caché',
+      storeDecrypted: 'Guardar los mensajes descifrados',
+      storeDecryptedHint:
+        'Los chats se abren más rápido, pero los textos de los mensajes quedan sin cifrar en este dispositivo. Si lo desactivas, los textos guardados se borran.',
+      storeDecryptedErased: 'Textos de mensajes guardados borrados',
     },
     general: {
       theme: 'Tema',
@@ -518,10 +533,33 @@ export default {
     ipfs: {
       title: 'Módulo IPFS',
       description:
-        'El módulo Kubo descargado para ver y compartir contenido de IPFS. Aquí puedes eliminarlo del disco.',
+        'El módulo Kubo: abre y comparte archivos IPFS directamente desde tu ordenador, sin pasarelas públicas.',
       statusRunning: 'Instalado · en marcha',
       statusStopped: 'Instalado · detenido',
       uninstall: 'Eliminar el módulo',
+      install: 'Descargar y activar',
+      notInstalled: 'No descargado',
+      statusInstalling: 'Descargando…',
+    },
+    modules: {
+      intro: 'Programas adicionales que la aplicación descarga solo cuando lo pides.',
+      total: 'Ahora ocupan {size}.',
+      onDisk: 'En el disco: {size}',
+      tor: {
+        title: 'Tor',
+        description:
+          'Conexión a través de la red Tor: los nodos de Bastyon y los servidores de vídeo no ven tu dirección. Se activa con el botón Tor del encabezado.',
+        notInstalled: 'No descargado',
+        installed: 'Descargado',
+        connected: 'Descargado · conectado',
+        downloadsOnEnable: 'Se descarga solo la primera vez que actives Tor.',
+        remove: 'Eliminar',
+        turnOffFirst: 'Primero desactiva Tor.',
+        removeConfirmTitle: '¿Eliminar Tor?',
+        removeConfirmText:
+          'El programa y la caché de la red Tor se eliminan del disco. Los puentes se quedan en los ajustes y Tor se descargará de nuevo cuando lo actives.',
+        removeFailed: 'No se pudo eliminar Tor. Desactívalo e inténtalo de nuevo.',
+      },
     },
     blacklist: {
       title: 'Usuarios bloqueados',

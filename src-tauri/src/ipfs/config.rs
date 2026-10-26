@@ -6,11 +6,14 @@
 //! `/tcp/0` и читаем реальные порты из файлов `$IPFS_PATH/api` и `.../gateway`,
 //! которые Kubo пишет, когда слушатели уже подняты.
 
-/// Максимальный размер локального datastore (кэш скачанного). Соблюдается
+/// `Datastore.StorageMax` — максимальный размер локального datastore (кэш
+/// скачанного) из предела в настройках (crate::storage). Соблюдается
 /// периодическим GC демона, который включает `--enable-gc` (process::DAEMON_ARGS):
 /// при заполнении на 90% (`StorageGCWatermark`) раз в час (`GCPeriod`) Kubo
-/// удаляет незапиненные блоки.
-pub const STORAGE_MAX: &str = "2GB";
+/// удаляет незапиненные блоки. Kubo считает мегабайты десятичными.
+pub fn storage_max(bytes: u64) -> String {
+    format!("{}MB", (bytes / 1_000_000).max(1))
+}
 
 /// Сколько секунд ждём готовности демона после запуска.
 pub const DAEMON_READY_TIMEOUT_SECS: u64 = 60;
@@ -63,7 +66,7 @@ pub const INIT_PROFILE: &str = "lowpower";
 ///
 /// ВНИМАНИЕ (Kubo v0.43.0): ключи `Reprovider.*` и `Provider.*` УДАЛЕНЫ — демон
 /// на них падает. Отключение рекламы контента — только через `Provide.Enabled`.
-pub fn config_commands() -> Vec<Vec<String>> {
+pub fn config_commands(storage_max_bytes: u64) -> Vec<Vec<String>> {
     vec![
         // OS сама выберет свободный порт; читаем его потом из файлов api/gateway.
         vec![
@@ -79,7 +82,7 @@ pub fn config_commands() -> Vec<Vec<String>> {
         vec![
             "config".into(),
             "Datastore.StorageMax".into(),
-            STORAGE_MAX.into(),
+            storage_max(storage_max_bytes),
         ],
         // Резолвим/качаем любой CID как клиент, но ничего не анонсируем.
         vec!["config".into(), "Routing.Type".into(), "autoclient".into()],
@@ -142,8 +145,10 @@ mod tests {
 
     #[test]
     fn config_sets_local_ports_and_provides_only_pinned() {
-        let cmds = config_commands();
+        let cmds = config_commands(2_000_000_000);
         let flat: Vec<String> = cmds.iter().flatten().cloned().collect();
+        let max = flat.iter().position(|s| s == "Datastore.StorageMax").unwrap();
+        assert_eq!(flat[max + 1], "2000MB");
         assert!(flat.contains(&"Addresses.Gateway".to_string()));
         assert!(flat.contains(&"Addresses.API".to_string()));
         assert!(flat.contains(&"autoclient".to_string()));

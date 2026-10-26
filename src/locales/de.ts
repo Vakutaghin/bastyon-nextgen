@@ -473,6 +473,7 @@ export default {
       appPermissions: 'App-Berechtigungen',
       diagnostics: 'Diagnose',
       whatsNew: 'Neuigkeiten',
+      modules: 'Module',
     },
     content: {
       title: 'Inhalte',
@@ -499,16 +500,30 @@ export default {
       autostartHint: 'Die App öffnet sich automatisch nach dem Start des Computers.',
       autostartFailed: 'Das System hat die Änderung des Autostarts abgelehnt',
       storageTitle: 'Lokale Daten',
-      clearCache: 'Cache leeren',
+      clearCache: 'Gespeicherte Daten löschen',
       clearCacheHint:
         'Entfernt Wiedergabepositionen, entschlüsselte Nachrichten und gespeicherte Benachrichtigungen. Konten, Schlüssel, Einstellungen und Favoriten bleiben erhalten.',
       clearButton: 'Leeren',
       clearing: 'Wird geleert…',
       cancel: 'Abbrechen',
-      clearConfirmTitle: 'Cache leeren?',
+      clearConfirmTitle: 'Gespeicherte Daten löschen?',
       clearConfirmText:
         'Die Daten werden erneut geladen, wenn sie das nächste Mal gebraucht werden. Konten und Schlüssel bleiben unberührt.',
-      cleared: 'Cache geleert, entfernte Einträge: {count}',
+      cleared: 'Daten gelöscht, entfernte Einträge: {count}',
+      webCache: 'Web-Cache',
+      webCacheHint:
+        'Bilder, Videos und Seiten, die die App bereits geladen hat. Über dem Limit wird er automatisch geleert.',
+      ipfsCache: 'IPFS-Cache',
+      ipfsCacheHint:
+        'Was Sie über das IPFS-Modul geöffnet haben. „Meine Dateien“ bleiben beim Leeren erhalten.',
+      cacheUsage: '{used} von {limit} belegt',
+      cacheLimit: 'Limit',
+      cacheCleared: 'Cache geleert',
+      cacheClearFailed: 'Cache konnte nicht geleert werden',
+      storeDecrypted: 'Entschlüsselte Nachrichten speichern',
+      storeDecryptedHint:
+        'Chats öffnen sich schneller, aber die Nachrichtentexte liegen unverschlüsselt auf diesem Gerät. Beim Ausschalten werden die gespeicherten Texte gelöscht.',
+      storeDecryptedErased: 'Gespeicherte Nachrichtentexte gelöscht',
     },
     general: {
       theme: 'Design',
@@ -519,10 +534,34 @@ export default {
     ipfs: {
       title: 'IPFS-Modul',
       description:
-        'Das heruntergeladene Kubo-Modul zum Anzeigen und Verteilen von IPFS-Inhalten. Hier kannst du es von der Festplatte entfernen.',
+        'Das Kubo-Modul: öffnet und verteilt IPFS-Dateien direkt von Ihrem Computer, ohne öffentliche Gateways.',
       statusRunning: 'Installiert · läuft',
       statusStopped: 'Installiert · gestoppt',
       uninstall: 'Modul entfernen',
+      install: 'Herunterladen und einschalten',
+      notInstalled: 'Nicht heruntergeladen',
+      statusInstalling: 'Wird heruntergeladen…',
+    },
+    modules: {
+      intro: 'Zusätzliche Programme, die die App nur auf Ihren Wunsch herunterlädt.',
+      total: 'Derzeit belegen sie {size}.',
+      onDisk: 'Auf der Festplatte: {size}',
+      tor: {
+        title: 'Tor',
+        description:
+          'Verbindung über das Tor-Netzwerk: Bastyon-Knoten und Videoserver sehen Ihre Adresse nicht. Wird mit der Tor-Schaltfläche in der Kopfzeile eingeschaltet.',
+        notInstalled: 'Nicht heruntergeladen',
+        installed: 'Heruntergeladen',
+        connected: 'Heruntergeladen · verbunden',
+        downloadsOnEnable: 'Wird beim ersten Einschalten von Tor automatisch heruntergeladen.',
+        remove: 'Entfernen',
+        turnOffFirst: 'Schalten Sie Tor zuerst aus.',
+        removeConfirmTitle: 'Tor entfernen?',
+        removeConfirmText:
+          'Das Programm und der Cache des Tor-Netzwerks werden von der Festplatte entfernt. Die Brücken bleiben in den Einstellungen, und Tor wird beim nächsten Einschalten erneut heruntergeladen.',
+        removeFailed:
+          'Tor konnte nicht entfernt werden. Schalten Sie es aus und versuchen Sie es erneut.',
+      },
     },
     blacklist: {
       title: 'Blockierte Benutzer',

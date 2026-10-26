@@ -13,7 +13,13 @@
  *
  * Кэшируем ТОЛЬКО успехи: при сбое (например, не приехал state-event общего ключа)
  * следующий проход попробует ещё раз.
+ *
+ * Зеркало в IndexedDB — незашифрованный текст переписок на диске. Его можно
+ * выключить: «Хранить расшифрованные сообщения» в настройках → «Система».
+ * Тогда кэш живёт только в памяти, а записанное раньше стирает сама настройка.
  */
+
+import { getActivePinia } from 'pinia'
 
 import {
   loadAllDecryptedForUser,
@@ -33,6 +39,18 @@ export interface DecryptionCache {
   persist(userId: string | null | undefined, eventId: string, text: string): void
 }
 
+/**
+ * Настройка «Хранить расшифрованные сообщения» (стор `appPreferences`). Читаем
+ * состояние pinia, а не сам стор: сервис не тянет за собой базу настроек.
+ * Стор ещё не создан — значение по умолчанию, хранить.
+ */
+function persistEnabled(): boolean {
+  const state = getActivePinia()?.state.value.appPreferences as
+    | { storeDecryptedMessages?: boolean }
+    | undefined
+  return state?.storeDecryptedMessages !== false
+}
+
 export function createDecryptionCache(): DecryptionCache {
   const cache = new Map<string, string>()
   let hydrated = false
@@ -49,6 +67,10 @@ export function createDecryptionCache(): DecryptionCache {
       if (hydrated) return Promise.resolve()
       if (hydrating) return hydrating
       if (!userId) return Promise.resolve()
+      if (!persistEnabled()) {
+        hydrated = true
+        return Promise.resolve()
+      }
       hydrating = (async () => {
         try {
           const rows = await loadAllDecryptedForUser(userId)
@@ -81,7 +103,7 @@ export function createDecryptionCache(): DecryptionCache {
     },
 
     persist: (userId, eventId, text) => {
-      if (!userId) return
+      if (!userId || !persistEnabled()) return
       void saveDecrypted(userId, eventId, text).catch((e) => {
         console.warn('[decryption-cache] persist failed', e)
       })

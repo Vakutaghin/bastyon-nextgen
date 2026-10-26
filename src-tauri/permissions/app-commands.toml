@@ -18,6 +18,8 @@ permissions = [
   "allow-ffmpeg-module-cancel-install",
   "allow-ffmpeg-module-remove",
   "allow-tor-status",
+  "allow-tor-installed",
+  "allow-tor-uninstall",
   "allow-tor-start",
   "allow-tor-stop",
   "allow-tor-fetch",
@@ -92,4 +94,7 @@ permissions = [
   "allow-rns-download",
   "allow-rns-paper",
   "allow-rns-ingest",
+  "allow-storage-usage",
+  "allow-storage-set-limits",
+  "allow-storage-clear",
 ]

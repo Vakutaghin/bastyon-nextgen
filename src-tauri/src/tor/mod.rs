@@ -175,6 +175,31 @@ pub async fn tor_status(mgr: State<'_, TorManager>) -> Result<TorStateSnapshot, 
     Ok(mgr.state.read().await.snapshot())
 }
 
+/// Скачан ли Tor — для настроек → «Модули» (`tor_status` о файлах молчит).
+#[tauri::command]
+pub fn tor_installed(mgr: State<'_, TorManager>) -> bool {
+    installer::has_bundle(&mgr.paths)
+}
+
+/// «Удалить» в настройках → «Модули»: бандл и кэш каталога узлов. Только у
+/// выключенного Tor — файлы работающего не удалить (на Windows — вообще).
+/// Мосты остаются в состоянии и в настройках; Tor скачается снова, когда его
+/// включат.
+#[tauri::command]
+pub async fn tor_uninstall(mgr: State<'_, TorManager>) -> Result<(), String> {
+    let _install = mgr.install_lock.lock().await;
+    let status = mgr.state.read().await.status;
+    let alive = mgr.child.lock().expect("tor child mutex poisoned").is_some();
+    if alive || !matches!(status, TorStatus::Off | TorStatus::Failed) {
+        return Err("tor_running".into());
+    }
+    let root = &mgr.paths.root;
+    if root.exists() {
+        std::fs::remove_dir_all(root).map_err(|e| format!("remove_failed: {e}"))?;
+    }
+    std::fs::create_dir_all(root).map_err(|e| format!("remove_failed: {e}"))
+}
+
 /// Сохраняет выбор мостов; применяется при следующем `tor_start`.
 #[tauri::command]
 pub async fn tor_set_bridges(

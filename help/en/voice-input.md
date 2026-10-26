@@ -37,7 +37,7 @@ In a post the app recognizes speech in the post's language — it is chosen in t
 
 ## Settings
 
-**“Settings”** → the **“General”** tab → **“Voice input”**: which model is downloaded; you can download another one or remove an unneeded one to free up space.
+**“Settings”** → the **“Modules”** tab → **“Voice input”**: which model is downloaded; you can download another one or remove an unneeded one to free up space.
 
 ## Where it works
 

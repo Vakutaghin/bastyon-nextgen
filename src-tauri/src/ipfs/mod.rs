@@ -945,7 +945,7 @@ async fn prepare_node(
     // Конфигурация ноды (порты /tcp/0, autoclient, Provide=pinned, CORS) +
     // bearer-авторизация RPC: без неё любой локальный процесс читал бы конфиг
     // (в т.ч. токен pin-сервиса) и менял бы адреса API.
-    for args in config::config_commands() {
+    for args in config::config_commands(crate::storage::ipfs_limit()) {
         let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
         run_ipfs(&mgr.paths, &refs).await.map_err(PrepareError::Failed)?;
     }
@@ -1305,6 +1305,23 @@ fn provide_once_background(paths: IpfsPaths, cid: String) {
             log::warn!("[ipfs] provide once {cid} failed: {e}");
         }
     });
+}
+
+/// Очистка кэша модуля (crate::storage): сборка мусора удаляет незапиненное,
+/// «Мои файлы» остаются. С демоном GC идёт через RPC; без него команда держит
+/// repo.lock — тогда под start_lock, чтобы запуск ноды подождал, а не упал на
+/// занятом repo. Модуль не установлен — чистить нечего.
+pub async fn collect_garbage(mgr: &IpfsManager) -> Result<(), String> {
+    if !mgr.paths.binary.is_file() || !mgr.paths.repo.join("config").exists() {
+        return Ok(());
+    }
+    let running = mgr.state.read().await.status == IpfsStatus::Running;
+    let _start = if running {
+        None
+    } else {
+        Some(mgr.start_lock.lock().await)
+    };
+    run_ipfs(&mgr.paths, &["repo", "gc", "--quiet"]).await.map(|_| ())
 }
 
 /// Короткоживущий вызов `ipfs <args>` с нашим IPFS_PATH. Если есть секрет RPC —

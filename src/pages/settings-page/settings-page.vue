@@ -24,6 +24,7 @@
           <BlacklistTab v-else-if="activeTab === 'blacklist'" />
           <AppPermissionsTab v-else-if="activeTab === 'appPermissions'" />
           <SystemTab v-else-if="activeTab === 'system'" />
+          <ModulesTab v-else-if="activeTab === 'modules'" />
           <DiagnosticsTab v-else-if="activeTab === 'diagnostics'" />
         </SC_SettingsMain>
       </SC_SettingsContentWrapper>
@@ -37,6 +38,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useNotificationSettingsStore } from '@/stores'
 import { useUIStore } from '@/stores/ui-store'
+import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import GeneralTab from './tabs/general-tab.vue'
 import NotificationsTab from './tabs/notifications-tab.vue'
 import PrivateKeyTab from './tabs/private-key-tab.vue'
@@ -44,6 +46,7 @@ import BlockExplorerTab from './tabs/block-explorer-tab.vue'
 import BlacklistTab from './tabs/blacklist-tab.vue'
 import AppPermissionsTab from './tabs/app-permissions-tab.vue'
 import SystemTab from './tabs/system-tab.vue'
+import ModulesTab from './tabs/modules-tab.vue'
 import DiagnosticsTab from './tabs/diagnostics-tab.vue'
 import WhatsNewTab from './tabs/whats-new-tab.vue'
 import {
@@ -61,6 +64,7 @@ export type T_SettingsTabKey =
   | 'general'
   | 'notifications'
   | 'system'
+  | 'modules'
   | 'privateKey'
   | 'blockExplorer'
   | 'blacklist'
@@ -69,10 +73,12 @@ export type T_SettingsTabKey =
   | 'whatsNew'
 
 // labelKey — ключ i18n; рендерим через t(), чтобы метки реактивно следовали за локалью.
+// Модули скачивает только приложение для компьютера.
 const SETTINGS_TABS: { key: T_SettingsTabKey; labelKey: string }[] = [
   { key: 'general', labelKey: 'settings.tabs.general' },
   { key: 'notifications', labelKey: 'settings.tabs.notifications' },
   { key: 'system', labelKey: 'settings.tabs.system' },
+  ...(isTauri() ? [{ key: 'modules' as const, labelKey: 'settings.tabs.modules' }] : []),
   { key: 'privateKey', labelKey: 'settings.tabs.privateKey' },
   { key: 'blockExplorer', labelKey: 'settings.tabs.blockExplorer' },
   { key: 'blacklist', labelKey: 'settings.tabs.blacklist' },

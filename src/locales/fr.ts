@@ -475,6 +475,7 @@ export default {
       appPermissions: 'Autorisations des apps',
       diagnostics: 'Diagnostic',
       whatsNew: 'Nouveautés',
+      modules: 'Modules',
     },
     content: {
       title: 'Contenu',
@@ -501,16 +502,30 @@ export default {
       autostartHint: 'L’application s’ouvrira automatiquement au démarrage de l’ordinateur.',
       autostartFailed: 'Le système a refusé de modifier le lancement automatique',
       storageTitle: 'Données locales',
-      clearCache: 'Vider le cache',
+      clearCache: 'Effacer les données enregistrées',
       clearCacheHint:
         'Supprime les positions de lecture, les messages déchiffrés et les notifications enregistrées. Les comptes, clés, paramètres et favoris sont conservés.',
       clearButton: 'Vider',
       clearing: 'Nettoyage…',
       cancel: 'Annuler',
-      clearConfirmTitle: 'Vider le cache ?',
+      clearConfirmTitle: 'Effacer les données enregistrées ?',
       clearConfirmText:
         'Les données seront récupérées à nouveau lorsqu’elles seront nécessaires. Les comptes et les clés ne sont pas touchés.',
-      cleared: 'Cache vidé, entrées supprimées : {count}',
+      cleared: 'Données effacées, entrées supprimées : {count}',
+      webCache: 'Cache web',
+      webCacheHint:
+        'Images, vidéos et pages que l’application a déjà téléchargées. Au-delà de la limite, il se vide tout seul.',
+      ipfsCache: 'Cache IPFS',
+      ipfsCacheHint:
+        'Ce que vous avez ouvert via le module IPFS. « Mes fichiers » sont conservés lors du vidage.',
+      cacheUsage: '{used} utilisés sur {limit}',
+      cacheLimit: 'Limite',
+      cacheCleared: 'Cache vidé',
+      cacheClearFailed: 'Impossible de vider le cache',
+      storeDecrypted: 'Conserver les messages déchiffrés',
+      storeDecryptedHint:
+        'Les discussions s’ouvrent plus vite, mais les textes des messages sont stockés sur cet appareil sans chiffrement. Si vous désactivez l’option, les textes enregistrés sont effacés.',
+      storeDecryptedErased: 'Textes des messages enregistrés effacés',
     },
     general: {
       theme: 'Thème',
@@ -521,10 +536,34 @@ export default {
     ipfs: {
       title: 'Module IPFS',
       description:
-        'Le module Kubo téléchargé pour afficher et partager du contenu IPFS. Vous pouvez le supprimer du disque ici.',
+        'Le module Kubo : ouvre et partage les fichiers IPFS directement depuis votre ordinateur, sans passerelles publiques.',
       statusRunning: 'Installé · en marche',
       statusStopped: 'Installé · arrêté',
       uninstall: 'Supprimer le module',
+      install: 'Télécharger et activer',
+      notInstalled: 'Non téléchargé',
+      statusInstalling: 'Téléchargement…',
+    },
+    modules: {
+      intro:
+        'Des programmes supplémentaires que l’application ne télécharge que si vous le demandez.',
+      total: 'Ils occupent actuellement {size}.',
+      onDisk: 'Sur le disque : {size}',
+      tor: {
+        title: 'Tor',
+        description:
+          'Connexion via le réseau Tor : les nœuds Bastyon et les serveurs vidéo ne voient pas votre adresse. S’active avec le bouton Tor de l’en-tête.',
+        notInstalled: 'Non téléchargé',
+        installed: 'Téléchargé',
+        connected: 'Téléchargé · connecté',
+        downloadsOnEnable: 'Se télécharge tout seul la première fois que vous activez Tor.',
+        remove: 'Supprimer',
+        turnOffFirst: 'Désactivez d’abord Tor.',
+        removeConfirmTitle: 'Supprimer Tor ?',
+        removeConfirmText:
+          'Le programme et le cache du réseau Tor sont supprimés du disque. Les ponts restent dans les paramètres, et Tor se téléchargera à nouveau lorsque vous l’activerez.',
+        removeFailed: 'Impossible de supprimer Tor. Désactivez-le et réessayez.',
+      },
     },
     blacklist: {
       title: 'Utilisateurs bloqués',

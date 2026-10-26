@@ -8,6 +8,7 @@
       <SC_ModuleStatus>{{ statusLabel }}</SC_ModuleStatus>
     </SC_ModuleHead>
     <SC_ModuleDesc>{{ t('mesh.module.description') }}</SC_ModuleDesc>
+    <ModuleDiskUsage module="mesh" />
 
     <SC_ModuleActions v-if="store.installing">
       <span role="status">{{ t('mesh.module.downloading', { percent: store.percent }) }}</span>
@@ -37,6 +38,7 @@ import { Button, Modal } from 'ant-design-vue'
 
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { useMeshModuleStore } from '@/stores/mesh-module-store'
+import ModuleDiskUsage from './module-disk-usage.vue'
 import {
   SC_ModuleActions,
   SC_ModuleCard,

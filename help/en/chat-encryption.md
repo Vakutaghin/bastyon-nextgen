@@ -53,7 +53,7 @@ The Matrix server cannot read message text or file contents. But it does see:
 
 ## On the device
 
-The app keeps decrypted messages on the device so that it does not decrypt the conversation again every time you open it. They are stored unencrypted, separately for each account, and are erased when you sign out of the account or press **“Clear cache”**. How to keep them away from others is covered in [Protection on this device](device-protection.md).
+The app keeps decrypted messages on the device so that it does not decrypt the conversation again every time you open it. They are stored unencrypted, separately for each account, and are erased when you sign out of the account or press **“Clear saved data”**. Storing them can be turned off entirely — **“Keep decrypted messages”** in **“Settings”** → **“System”**, see [What is stored on your device](local-data.md). How to keep them away from others is covered in [Protection on this device](device-protection.md).
 
 ## See also
 

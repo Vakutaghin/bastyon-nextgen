@@ -33,7 +33,7 @@ These are different networks: Meshtastic and MeshCore radios cannot hear each ot
 
 In the desktop app, radios and Reticulum work through the mesh networks module — a separate program, like [Tor](tor.md) and [the IPFS module](ipfs-module.md). Not everyone needs mesh, so the module is downloaded only when you ask for it: the first time you open the **“Mesh networks”** page, it shows the **“Mesh networks module”** card with a download button — a couple of megabytes. With [Tor](tor.md) on, the module is downloaded through Tor. If **“Start the node when signing in”** is checked for the Reticulum node, the module downloads by itself when you sign in.
 
-The module is updated together with the app: the app downloads the new version by itself and puts it in place the next time the module starts. To remove the module, go to **“Settings”** → **“General”** → **“Mesh networks module”** → **“Remove”**. Radios disconnect and the Reticulum node stops, while your chats and settings stay.
+The module is updated together with the app: the app downloads the new version by itself and puts it in place the next time the module starts. To remove the module, go to **“Settings”** → **“Modules”** → **“Mesh networks module”** → **“Remove”**. Radios disconnect and the Reticulum node stops, while your chats and settings stay.
 
 ## Connect a radio
 

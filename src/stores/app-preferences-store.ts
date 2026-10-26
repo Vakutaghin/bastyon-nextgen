@@ -12,6 +12,7 @@
 import { defineStore } from 'pinia'
 
 import { settingsAPI } from '@/db/apis/settings-api'
+import { clearAllDecrypted } from '@/db/apis/decrypted-messages-api'
 
 export const APP_PREFERENCES_KEY = 'appPreferences'
 
@@ -38,6 +39,11 @@ export interface AppPreferencesState {
   uiScale: number
   /** Запускать приложение при входе в систему (десктоп). */
   autostart: boolean
+  /**
+   * Хранить расшифрованные сообщения на устройстве: переписки открываются
+   * быстрее, но тексты лежат в IndexedDB незашифрованными.
+   */
+  storeDecryptedMessages: boolean
 }
 
 export const DEFAULT_APP_PREFERENCES: AppPreferencesState = {
@@ -49,6 +55,7 @@ export const DEFAULT_APP_PREFERENCES: AppPreferencesState = {
   messengerEnabled: true,
   uiScale: 100,
   autostart: false,
+  storeDecryptedMessages: true,
 }
 
 /** Значения, которым нельзя верить из хранилища, чинятся до дефолтных. */
@@ -63,6 +70,7 @@ function sanitize(raw: Partial<AppPreferencesState> | null): AppPreferencesState
     'linkPreviews',
     'messengerEnabled',
     'autostart',
+    'storeDecryptedMessages',
   ] as const) {
     if (typeof raw[key] === 'boolean') next[key] = raw[key]
   }
@@ -93,6 +101,9 @@ export const useAppPreferencesStore = defineStore('appPreferences', {
       )) as Partial<AppPreferencesState> | null
       Object.assign(this, sanitize(raw))
       this.loaded = true
+      // Выключили, а расшифровки остались (записались до загрузки настроек
+      // или стирание не прошло) — стираем.
+      if (!this.storeDecryptedMessages) await clearAllDecrypted()
     },
 
     /** Изменить одну настройку и сразу сохранить. */
@@ -116,6 +127,7 @@ export const useAppPreferencesStore = defineStore('appPreferences', {
         messengerEnabled,
         uiScale,
         autostart,
+        storeDecryptedMessages,
       } = this
       await settingsAPI.set(APP_PREFERENCES_KEY, {
         animations,
@@ -126,6 +138,7 @@ export const useAppPreferencesStore = defineStore('appPreferences', {
         messengerEnabled,
         uiScale,
         autostart,
+        storeDecryptedMessages,
       })
     },
   },

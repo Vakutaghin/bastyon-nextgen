@@ -204,6 +204,13 @@ pub struct FfmpegManager {
     install_cancel: Mutex<Option<watch::Sender<bool>>>,
 }
 
+impl FfmpegManager {
+    /// Каталог модуля — для места на диске (crate::storage).
+    pub fn dir(&self) -> &Path {
+        &self.paths.dir
+    }
+}
+
 pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let dir = app
         .path()

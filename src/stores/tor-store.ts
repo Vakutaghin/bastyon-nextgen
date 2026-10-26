@@ -159,6 +159,8 @@ export const useTorStore = defineStore('tor', {
     errorCode: null as TorErrorCode | null,
     /** Строки «Своих мостов», которые бэкенд не признал мостом. */
     rejectedBridges: [] as string[],
+    /** Tor скачан (настройки → «Модули»); null — ещё не спрашивали. */
+    installed: null as boolean | null,
     _subscribed: false,
     _stateUnlisten: null as (() => void) | null,
     _installUnlisten: null as (() => void) | null,
@@ -278,6 +280,27 @@ export const useTorStore = defineStore('tor', {
       }
       if (!opts.keepPolicy && isTorMediaPolicyApplied()) {
         reloadDocument()
+      }
+    },
+
+    async refreshInstalled(): Promise<void> {
+      if (!this.available) return
+      this.installed = await tauriInvoke<boolean>('tor_installed').catch(() => null)
+    },
+
+    /**
+     * «Удалить» в настройках → «Модули». Только выключенный: файлы работающего
+     * tor не удалить. Скачается снова, когда Tor включат. false — не вышло.
+     */
+    async uninstall(): Promise<boolean> {
+      if (!this.available || this.enabled) return false
+      try {
+        await tauriInvoke('tor_uninstall')
+        return true
+      } catch {
+        return false
+      } finally {
+        await this.refreshInstalled()
       }
     },
 

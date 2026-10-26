@@ -6,6 +6,7 @@
       <SC_VoiceStatus>{{ statusLabel }}</SC_VoiceStatus>
     </SC_VoiceHead>
     <SC_VoiceDesc>{{ t('voiceInput.settings.description') }}</SC_VoiceDesc>
+    <ModuleDiskUsage module="voice" />
 
     <SC_VoiceDesc v-if="store.status && !store.status.supported">
       {{ t('voiceInput.errors.unsupportedCpu') }}
@@ -73,6 +74,7 @@ import { Button, Modal } from 'ant-design-vue'
 import { formatFileSize } from '@/b-components/video-uploader/utils/video-formatter'
 import { spokenCommandHints } from '@/helpers/voice-input/spoken-commands'
 import { useVoiceInputStore, type VoiceModelId } from '@/stores/voice-input-store'
+import ModuleDiskUsage from './module-disk-usage.vue'
 import {
   SC_CommandList,
   SC_Commands,

@@ -96,3 +96,34 @@ export const SC_DangerButton = styled.button`
     opacity: 0.75;
   }
 `
+
+/** Строка кэша: подпись, а под ней на узком окне — предел и кнопка. */
+export const SC_CacheRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ui-border);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+`
+
+export const SC_CacheControls = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+`
+
+/** Сколько занято сейчас — под описанием. */
+export const SC_CacheUsage = styled.span`
+  font-size: 14px;
+  color: var(--ui-text-highlighted);
+  font-variant-numeric: tabular-nums;
+`

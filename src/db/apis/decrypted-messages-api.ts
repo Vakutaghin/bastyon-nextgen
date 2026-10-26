@@ -64,3 +64,15 @@ export const clearDecryptedForUserPrefix = async (userIdPrefix: string): Promise
     console.warn('[DecryptedMessagesApi] clearDecryptedForUserPrefix failed:', e)
   }
 }
+
+/**
+ * Стереть расшифровки всех аккаунтов на устройстве — когда в настройках
+ * выключили «Хранить расшифрованные сообщения».
+ */
+export const clearAllDecrypted = async (): Promise<void> => {
+  try {
+    await db.decryptedMessages.clear()
+  } catch (e) {
+    console.warn('[DecryptedMessagesApi] clearAllDecrypted failed:', e)
+  }
+}

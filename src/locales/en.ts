@@ -468,6 +468,7 @@ export default {
       appPermissions: 'App permissions',
       diagnostics: 'Diagnostics',
       whatsNew: "What's new",
+      modules: 'Modules',
     },
     content: {
       title: 'Content',
@@ -492,16 +493,29 @@ export default {
       autostartHint: 'The app will open automatically after the computer starts.',
       autostartFailed: 'The system refused to change the autostart setting',
       storageTitle: 'Local data',
-      clearCache: 'Clear cache',
+      clearCache: 'Clear saved data',
       clearCacheHint:
         'Removes playback positions, decrypted messages and stored notifications. Accounts, keys, settings and favorites are kept.',
       clearButton: 'Clear',
       clearing: 'Clearing…',
       cancel: 'Cancel',
-      clearConfirmTitle: 'Clear the cache?',
+      clearConfirmTitle: 'Clear saved data?',
       clearConfirmText:
         'The data is fetched again when it is next needed. Accounts and keys are untouched.',
-      cleared: 'Cache cleared, entries removed: {count}',
+      cleared: 'Data cleared, entries removed: {count}',
+      webCache: 'Web cache',
+      webCacheHint:
+        'Pictures, videos and pages the app has already downloaded. Above the limit it is cleared by itself.',
+      ipfsCache: 'IPFS cache',
+      ipfsCacheHint: 'What you opened through the IPFS module. “My files” stay when it is cleared.',
+      cacheUsage: '{used} of {limit} used',
+      cacheLimit: 'Limit',
+      cacheCleared: 'Cache cleared',
+      cacheClearFailed: 'Could not clear the cache',
+      storeDecrypted: 'Keep decrypted messages',
+      storeDecryptedHint:
+        'Chats open faster, but message texts are stored on this device unencrypted. Turning this off erases the saved texts.',
+      storeDecryptedErased: 'Saved message texts erased',
     },
     general: {
       theme: 'Theme',
@@ -512,10 +526,33 @@ export default {
     ipfs: {
       title: 'IPFS module',
       description:
-        'The downloaded Kubo module for viewing and seeding IPFS content. You can remove it from disk here.',
+        'The Kubo module: opens and seeds IPFS files right from your computer, without public gateways.',
       statusRunning: 'Installed · running',
       statusStopped: 'Installed · stopped',
       uninstall: 'Remove module',
+      install: 'Download and turn on',
+      notInstalled: 'Not downloaded',
+      statusInstalling: 'Downloading…',
+    },
+    modules: {
+      intro: 'Extra programs the app downloads only when you ask for them.',
+      total: 'Right now they take up {size}.',
+      onDisk: 'On disk: {size}',
+      tor: {
+        title: 'Tor',
+        description:
+          'Connecting through the Tor network: Bastyon nodes and video servers do not see your address. Turned on with the Tor button in the header.',
+        notInstalled: 'Not downloaded',
+        installed: 'Downloaded',
+        connected: 'Downloaded · connected',
+        downloadsOnEnable: 'Downloads by itself the first time you turn Tor on.',
+        remove: 'Remove',
+        turnOffFirst: 'Turn Tor off first.',
+        removeConfirmTitle: 'Remove Tor?',
+        removeConfirmText:
+          'The program and the Tor network cache are removed from disk. Bridges stay in the settings, and Tor downloads again when you turn it on.',
+        removeFailed: 'Could not remove Tor. Turn it off and try again.',
+      },
     },
     blacklist: {
       title: 'Blocked users',

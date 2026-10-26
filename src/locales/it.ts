@@ -468,6 +468,7 @@ export default {
       appPermissions: 'Permessi delle app',
       diagnostics: 'Diagnostica',
       whatsNew: 'Novità',
+      modules: 'Moduli',
     },
     content: {
       title: 'Contenuti',
@@ -494,16 +495,30 @@ export default {
       autostartHint: 'L’app si aprirà automaticamente all’avvio del computer.',
       autostartFailed: 'Il sistema ha rifiutato di modificare l’avvio automatico',
       storageTitle: 'Dati locali',
-      clearCache: 'Svuota la cache',
+      clearCache: 'Cancella i dati salvati',
       clearCacheHint:
         'Rimuove le posizioni di riproduzione, i messaggi decifrati e le notifiche salvate. Account, chiavi, impostazioni e preferiti vengono mantenuti.',
       clearButton: 'Svuota',
       clearing: 'Pulizia…',
       cancel: 'Annulla',
-      clearConfirmTitle: 'Svuotare la cache?',
+      clearConfirmTitle: 'Cancellare i dati salvati?',
       clearConfirmText:
         'I dati verranno scaricati di nuovo quando serviranno. Account e chiavi non vengono toccati.',
-      cleared: 'Cache svuotata, voci rimosse: {count}',
+      cleared: 'Dati cancellati, voci rimosse: {count}',
+      webCache: 'Cache web',
+      webCacheHint:
+        'Immagini, video e pagine che l’app ha già scaricato. Oltre il limite si svuota da sola.',
+      ipfsCache: 'Cache IPFS',
+      ipfsCacheHint:
+        'Ciò che hai aperto tramite il modulo IPFS. «I miei file» restano quando la svuoti.',
+      cacheUsage: '{used} su {limit} occupati',
+      cacheLimit: 'Limite',
+      cacheCleared: 'Cache svuotata',
+      cacheClearFailed: 'Impossibile svuotare la cache',
+      storeDecrypted: 'Conserva i messaggi decifrati',
+      storeDecryptedHint:
+        'Le chat si aprono più in fretta, ma i testi dei messaggi restano su questo dispositivo senza cifratura. Se la disattivi, i testi salvati vengono cancellati.',
+      storeDecryptedErased: 'Testi dei messaggi salvati cancellati',
     },
     general: {
       theme: 'Tema',
@@ -514,10 +529,33 @@ export default {
     ipfs: {
       title: 'Modulo IPFS',
       description:
-        'Il modulo Kubo scaricato per visualizzare e condividere contenuti IPFS. Qui puoi rimuoverlo dal disco.',
+        'Il modulo Kubo: apre e condivide i file IPFS direttamente dal tuo computer, senza gateway pubblici.',
       statusRunning: 'Installato · in esecuzione',
       statusStopped: 'Installato · fermo',
       uninstall: 'Rimuovi il modulo',
+      install: 'Scarica e attiva',
+      notInstalled: 'Non scaricato',
+      statusInstalling: 'Download in corso…',
+    },
+    modules: {
+      intro: 'Programmi aggiuntivi che l’app scarica solo quando lo chiedi.',
+      total: 'Ora occupano {size}.',
+      onDisk: 'Sul disco: {size}',
+      tor: {
+        title: 'Tor',
+        description:
+          'Connessione tramite la rete Tor: i nodi Bastyon e i server video non vedono il tuo indirizzo. Si attiva con il pulsante Tor nell’intestazione.',
+        notInstalled: 'Non scaricato',
+        installed: 'Scaricato',
+        connected: 'Scaricato · connesso',
+        downloadsOnEnable: 'Si scarica da solo la prima volta che attivi Tor.',
+        remove: 'Rimuovi',
+        turnOffFirst: 'Prima disattiva Tor.',
+        removeConfirmTitle: 'Rimuovere Tor?',
+        removeConfirmText:
+          'Il programma e la cache della rete Tor vengono rimossi dal disco. I bridge restano nelle impostazioni e Tor verrà scaricato di nuovo quando lo attiverai.',
+        removeFailed: 'Impossibile rimuovere Tor. Disattivalo e riprova.',
+      },
     },
     blacklist: {
       title: 'Utenti bloccati',

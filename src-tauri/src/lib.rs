@@ -4,6 +4,7 @@ mod ffmpeg;
 mod ipfs;
 mod main_window;
 mod mesh;
+mod storage;
 mod system_info;
 mod tor;
 mod tray;
@@ -951,6 +952,8 @@ pub fn run() {
       ffmpeg::ffmpeg_module_cancel_install,
       ffmpeg::ffmpeg_module_remove,
       tor::tor_status,
+      tor::tor_installed,
+      tor::tor_uninstall,
       tor::tor_start,
       tor::tor_stop,
       tor::tor_fetch,
@@ -1025,6 +1028,9 @@ pub fn run() {
       mesh::commands::rns_download,
       mesh::commands::rns_paper,
       mesh::commands::rns_ingest,
+      storage::storage_usage,
+      storage::storage_set_limits,
+      storage::storage_clear,
     ])
     .setup(|app| {
       #[cfg(debug_assertions)]
@@ -1103,6 +1109,9 @@ pub fn run() {
       // Tor manager — initialise app state holder.
       tor::init(app.handle()).map_err(|e| e.to_string())?;
 
+      // Пределы кэшей — до IPFS: предел Kubo попадает в его конфиг при запуске ноды.
+      storage::init(app.handle()).map_err(|e| e.to_string())?;
+
       // IPFS manager — initialise app state holder (Kubo module lifecycle).
       ipfs::init(app.handle()).map_err(|e| e.to_string())?;
 
@@ -1121,10 +1130,13 @@ pub fn run() {
         log::warn!("tray: {e}");
       }
 
-      // Подбираем осиротевшие temp-файлы транскодера старше 24 часов в фоне,
-      // чтобы упавшие транскоды не накапливали гигабайты между запусками.
+      // Подбираем осиротевшие temp-файлы транскодера в фоне, чтобы упавшие
+      // транскоды не накапливали гигабайты между запусками. Второго экземпляра
+      // нет (single-instance), так что чужих файлов здесь нет — берём все,
+      // кроме созданных в последнюю минуту. Раньше брали только старше суток,
+      // и несколько сбоев за день оставляли в temp по копии ролика.
       std::thread::spawn(|| {
-        cleanup_orphaned_temp_files(24 * 60 * 60);
+        cleanup_orphaned_temp_files(60);
       });
 
       Ok(())

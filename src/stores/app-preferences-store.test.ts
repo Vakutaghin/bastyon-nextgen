@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 const store = vi.hoisted(() => new Map<string, unknown>())
+const clearAllDecrypted = vi.hoisted(() => vi.fn(async () => {}))
 
 vi.mock('@/db/apis/settings-api', () => ({
   settingsAPI: {
@@ -13,6 +14,8 @@ vi.mock('@/db/apis/settings-api', () => ({
   },
 }))
 
+vi.mock('@/db/apis/decrypted-messages-api', () => ({ clearAllDecrypted }))
+
 import {
   APP_PREFERENCES_KEY,
   DEFAULT_APP_PREFERENCES,
@@ -23,6 +26,7 @@ describe('app-preferences-store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     store.clear()
+    clearAllDecrypted.mockClear()
   })
 
   it('без сохранённых значений отдаёт дефолты', async () => {
@@ -78,5 +82,19 @@ describe('app-preferences-store', () => {
     await prefs.load()
     expect(prefs.loaded).toBe(true)
     expect(prefs.commentsOrder).toBe('newest')
+  })
+
+  it('расшифровки хранятся по умолчанию; выключили — при загрузке остатки стираются', async () => {
+    const prefs = useAppPreferencesStore()
+    await prefs.load()
+    expect(prefs.storeDecryptedMessages).toBe(true)
+    expect(clearAllDecrypted).not.toHaveBeenCalled()
+
+    await prefs.set('storeDecryptedMessages', false)
+    setActivePinia(createPinia())
+    const again = useAppPreferencesStore()
+    await again.load()
+    expect(again.storeDecryptedMessages).toBe(false)
+    expect(clearAllDecrypted).toHaveBeenCalledTimes(1)
   })
 })

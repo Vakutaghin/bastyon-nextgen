@@ -155,6 +155,11 @@ pub struct AsrManager {
 }
 
 impl AsrManager {
+    /// Каталог моделей — для места на диске (crate::storage).
+    pub fn dir(&self) -> &std::path::Path {
+        &self.paths.dir
+    }
+
     fn new(paths: AsrPaths) -> Self {
         Self {
             paths,

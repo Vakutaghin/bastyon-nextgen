@@ -468,6 +468,7 @@ export default {
       appPermissions: '앱 권한',
       diagnostics: '진단',
       whatsNew: '새로운 기능',
+      modules: '모듈',
     },
     content: {
       title: '콘텐츠',
@@ -491,15 +492,28 @@ export default {
       autostartHint: '컴퓨터를 켜면 앱이 자동으로 열립니다.',
       autostartFailed: '시스템에서 자동 실행 설정 변경을 거부했습니다',
       storageTitle: '로컬 데이터',
-      clearCache: '캐시 지우기',
+      clearCache: '저장된 데이터 지우기',
       clearCacheHint:
         '재생 위치, 복호화된 메시지, 저장된 알림을 삭제합니다. 계정, 키, 설정, 즐겨찾기는 유지됩니다.',
       clearButton: '지우기',
       clearing: '지우는 중…',
       cancel: '취소',
-      clearConfirmTitle: '캐시를 지울까요?',
+      clearConfirmTitle: '저장된 데이터를 지울까요?',
       clearConfirmText: '데이터는 다음에 필요할 때 다시 가져옵니다. 계정과 키는 그대로 유지됩니다.',
-      cleared: '캐시를 지웠습니다. 삭제된 항목: {count}',
+      cleared: '데이터를 지웠습니다. 삭제된 항목: {count}',
+      webCache: '웹 캐시',
+      webCacheHint:
+        '앱이 이미 내려받은 이미지, 동영상, 페이지입니다. 한도를 넘으면 자동으로 지워집니다.',
+      ipfsCache: 'IPFS 캐시',
+      ipfsCacheHint: 'IPFS 모듈로 연 콘텐츠입니다. 지워도 "내 파일"은 남습니다.',
+      cacheUsage: '{limit} 중 {used} 사용',
+      cacheLimit: '한도',
+      cacheCleared: '캐시를 지웠습니다',
+      cacheClearFailed: '캐시를 지우지 못했습니다',
+      storeDecrypted: '복호화된 메시지 저장',
+      storeDecryptedHint:
+        '채팅이 더 빨리 열리지만 메시지 텍스트가 이 기기에 암호화되지 않은 채 저장됩니다. 끄면 저장된 텍스트가 삭제됩니다.',
+      storeDecryptedErased: '저장된 메시지 텍스트를 삭제했습니다',
     },
     general: {
       theme: '테마',
@@ -509,11 +523,33 @@ export default {
     },
     ipfs: {
       title: 'IPFS 모듈',
-      description:
-        'IPFS 콘텐츠를 보고 공유하기 위해 다운로드한 Kubo 모듈입니다. 여기서 디스크에서 제거할 수 있습니다.',
+      description: 'Kubo 모듈: 공개 게이트웨이 없이 컴퓨터에서 바로 IPFS 파일을 열고 공유합니다.',
       statusRunning: '설치됨 · 실행 중',
       statusStopped: '설치됨 · 중지됨',
       uninstall: '모듈 제거',
+      install: '내려받고 켜기',
+      notInstalled: '내려받지 않음',
+      statusInstalling: '내려받는 중…',
+    },
+    modules: {
+      intro: '요청할 때만 앱이 내려받는 추가 프로그램입니다.',
+      total: '현재 {size}를 차지합니다.',
+      onDisk: '디스크 사용량: {size}',
+      tor: {
+        title: 'Tor',
+        description:
+          'Tor 네트워크를 통한 연결: Bastyon 노드와 동영상 서버가 사용자의 주소를 볼 수 없습니다. 상단의 Tor 버튼으로 켭니다.',
+        notInstalled: '내려받지 않음',
+        installed: '내려받음',
+        connected: '내려받음 · 연결됨',
+        downloadsOnEnable: 'Tor를 처음 켤 때 자동으로 내려받습니다.',
+        remove: '제거',
+        turnOffFirst: '먼저 Tor를 끄세요.',
+        removeConfirmTitle: 'Tor를 제거할까요?',
+        removeConfirmText:
+          'Tor 프로그램과 네트워크 캐시가 디스크에서 삭제됩니다. 브리지 설정은 남아 있으며, Tor를 다시 켜면 다시 내려받습니다.',
+        removeFailed: 'Tor를 제거하지 못했습니다. Tor를 끄고 다시 시도하세요.',
+      },
     },
     blacklist: {
       title: '차단한 사용자',

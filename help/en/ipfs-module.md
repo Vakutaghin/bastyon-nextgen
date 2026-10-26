@@ -30,13 +30,13 @@ Only your files: those you shared and those you chose to **“Keep sharing”** 
 
 ## Disk space
 
-Everything you open through the module ends up in its cache. The cache does not grow beyond 2 GB: when it is 90% full, the module deletes old data by itself — it checks once an hour.
+Everything you open through the module ends up in its cache. The cache does not grow beyond its limit — 2 GB by default: when it is 90% full, the module deletes old data by itself, and the app checks it every half an hour. The limit and the **“Clear”** button are in **“Settings”** → **“System”** → **“IPFS cache”**, see [What is stored on your device](local-data.md). **“My files”** stay when it is cleared.
 
 The module keeps a copy of the files you share for as long as you share them, and they take as much space as they weigh. To free the space, press **“Stop sharing”** in [My files](my-files.md).
 
 ## Removing it
 
-**“Settings”** → **“General”** tab → **“IPFS module”** → **“Remove module”**. The section is visible only while the module is installed.
+**“Settings”** → **“Modules”** tab → **“IPFS module”** → **“Remove module”**. You can also download the module there — **“Download and turn on”** — and see how much disk space it takes.
 
 The program and the whole cache are deleted from disk, your files are no longer served, and the lists in My files and the connected [storage service](ipfs-remote-pin.md) have to be set up again. IPFS links can still be opened without the module, by the IPFS node in the app window.
 

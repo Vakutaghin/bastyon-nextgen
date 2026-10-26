@@ -6,6 +6,7 @@
       <SC_ModuleStatus>{{ statusLabel }}</SC_ModuleStatus>
     </SC_ModuleHead>
     <SC_ModuleDesc>{{ t('videoStudio.module.description') }}</SC_ModuleDesc>
+    <ModuleDiskUsage module="compression" />
 
     <SC_ModuleActions v-if="store.installing">
       <span role="status">{{
@@ -33,6 +34,7 @@ import { Button, Modal } from 'ant-design-vue'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import { useCompressionModuleStore } from '@/stores/compression-module-store'
+import ModuleDiskUsage from './module-disk-usage.vue'
 import {
   SC_ModuleActions,
   SC_ModuleCard,
