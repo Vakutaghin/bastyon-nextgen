@@ -88,6 +88,27 @@ describe('pending-transactions-store', () => {
     expect(restarted.items.map((i) => i.txid)).toEqual([TX(1)])
   })
 
+  it('оценка комментария помнит, какого и с каким знаком, — и после перезапуска', () => {
+    const store = usePendingTransactionsStore()
+    store.init('PAlice')
+    notifyTransactionBroadcast({
+      txid: TX(9),
+      operationType: 'cScore',
+      meta: { address: 'PAuthor', commentId: 'c1', score: 1 },
+    })
+    expect(store.commentScoreOf('c1')).toBe(1)
+    expect(store.commentScoreOf('c2')).toBeNull()
+
+    // Перезапуск: прежний стор отписываем, иначе он ловит отправки других тестов.
+    store.$dispose()
+    setActivePinia(createPinia())
+    const restarted = usePendingTransactionsStore()
+    restarted.init('PAlice')
+    expect(restarted.commentScoreOf('c1')).toBe(1)
+    h.ws.get('transaction')?.({ txid: TX(9) })
+    expect(restarted.commentScoreOf('c1')).toBeNull()
+  })
+
   it('WS сообщил о транзакции в блоке — ожидание снято', () => {
     const store = usePendingTransactionsStore()
     store.init('PAlice')

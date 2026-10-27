@@ -2,8 +2,12 @@
  * Голосование за комментарии: лайк/дизлайк lastComment и обычных комментариев.
  * Включает гард `ensureCanScore` (лимит/репутация, scam-warning при дизлайке).
  *
- * Локальный optimistic state (`commentVotes`, `lastCommentVote`) откатывается
- * при ошибке RPC. `commentScoreSubmitting` — id текущего pending-голоса для блокировки UI.
+ * Своя оценка видна сразу: отметка и +1 к счётчику. Нода отдаёт её (myScore,
+ * scoreUp/scoreDown) только после блока, а до того её держат общие сторы —
+ * comments-store на сессию и pending-transactions после перезапуска. Поэтому
+ * отметка одна и та же в карточке поста, в списке и в окне поста и не
+ * пропадает, когда карточку перерисовали. Ошибка отправки отметку снимает.
+ * `commentScoreSubmitting` — id текущего pending-голоса для блокировки UI.
  */
 
 import { ref, computed, h, type Ref, type ComputedRef } from 'vue'
@@ -14,6 +18,8 @@ import { t } from '@/i18n'
 import { haptic } from '@/helpers/common/haptics'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { UserState } from '@/types/rpc-responses/user-state'
+import { useCommentsStore } from '@/stores/comments-store'
+import { usePendingTransactionsStore } from '@/stores/pending-transactions-store'
 import { sendCommentScore } from '../comment-scoring'
 import {
   getCommentScoringDisableReason,
@@ -27,12 +33,54 @@ export interface UseCommentsScoringOptions {
   post: PostForComments | Ref<PostForComments>
   isUserAuthenticated: ComputedRef<boolean>
   currentUserStateData: ComputedRef<UserState | null>
+  currentUserAddress: ComputedRef<string>
+}
+
+/**
+ * Счётчики с учётом своей оценки, которую нода ещё не посчитала: пока myScore
+ * пуст, её нет и в scoreUp/scoreDown.
+ */
+export function scoresWithMyVote(
+  comment: { myScore?: number; scoreUp?: number; scoreDown?: number } | null | undefined,
+  vote: 1 | -1 | null
+): { up: number; down: number } {
+  const up = Number(comment?.scoreUp) || 0
+  const down = Number(comment?.scoreDown) || 0
+  if (!vote || (comment?.myScore ?? 0) !== 0) return { up, down }
+  return vote > 0 ? { up: up + 1, down } : { up, down: down + 1 }
 }
 
 export function useCommentsScoring(opts: UseCommentsScoringOptions) {
-  const lastCommentVote = ref<'up' | 'down' | null>(null)
-  const commentVotes = ref<Record<string, 'up' | 'down'>>({})
+  const commentsStore = useCommentsStore()
+  const pendingTransactions = usePendingTransactionsStore()
   const commentScoreSubmitting = ref<string | null>(null)
+
+  /** Своя оценка, которую нода ещё могла не отдать: эта сессия, затем ожидание блока. */
+  const myVote = (commentId: string | undefined): 1 | -1 | null => {
+    if (!commentId) return null
+    const address = opts.currentUserAddress.value
+    return (
+      (address ? commentsStore.myVoteOf(address, commentId) : null) ??
+      pendingTransactions.commentScoreOf(commentId)
+    )
+  }
+
+  /** Оценка видна сразу; ошибка отправки её снимает. */
+  const submitScore = async (
+    target: { id: string; address: string },
+    value: 1 | -1,
+    errorKey: string
+  ): Promise<void> => {
+    const address = opts.currentUserAddress.value
+    if (address) commentsStore.setMyVote(address, target.id, value)
+    try {
+      const txid = await sendCommentScore(target.id, value, target.address)
+      if (address) commentsStore.setMyVote(address, target.id, value, txid)
+    } catch (e) {
+      if (address) commentsStore.clearMyVote(address, target.id)
+      appToast.error({ message: e instanceof Error ? e.message : t(errorKey) })
+    }
+  }
 
   const getPost = (): PostForComments => {
     const p = opts.post
@@ -79,11 +127,16 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
   // --- Computed flags для lastComment ---
   const lastCommentUserLiked = computed(() => {
     const lc = getPost().lastComment
-    return (lc?.myScore ?? 0) > 0 || lastCommentVote.value === 'up'
+    return (lc?.myScore ?? 0) > 0 || myVote(lc?.id) === 1
   })
   const lastCommentUserDisliked = computed(() => {
     const lc = getPost().lastComment
-    return (lc?.myScore ?? 0) < 0 || lastCommentVote.value === 'down'
+    return (lc?.myScore ?? 0) < 0 || myVote(lc?.id) === -1
+  })
+  /** Счётчики последнего комментария со своей оценкой. */
+  const lastCommentScores = computed(() => {
+    const lc = getPost().lastComment
+    return scoresWithMyVote(lc, myVote(lc?.id))
   })
   const lastCommentCanClickLike = computed(
     () =>
@@ -100,9 +153,12 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
 
   // --- Per-comment проверки ---
   const isCommentLiked = (comment: GetComment): boolean =>
-    (comment.myScore ?? 0) > 0 || commentVotes.value[comment.id] === 'up'
+    (comment.myScore ?? 0) > 0 || myVote(comment.id) === 1
   const isCommentDisliked = (comment: GetComment): boolean =>
-    (comment.myScore ?? 0) < 0 || commentVotes.value[comment.id] === 'down'
+    (comment.myScore ?? 0) < 0 || myVote(comment.id) === -1
+  /** Счётчики комментария со своей оценкой. */
+  const commentScores = (comment: GetComment): { up: number; down: number } =>
+    scoresWithMyVote(comment, myVote(comment.id))
   const commentCanClickLike = (comment: GetComment): boolean =>
     !isCommentDisliked(comment) &&
     !isCommentLiked(comment) &&
@@ -120,15 +176,8 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
     if (!(await ensureCanScore(1))) return
     haptic('small')
     commentScoreSubmitting.value = 'last'
-    const prev = lastCommentVote.value
-    lastCommentVote.value = 'up'
     try {
-      await sendCommentScore(lc.id, 1, lc.address)
-    } catch (e) {
-      lastCommentVote.value = prev
-      appToast.error({
-        message: e instanceof Error ? e.message : t('commentsMsg.likeError'),
-      })
+      await submitScore({ id: lc.id, address: lc.address }, 1, 'commentsMsg.likeError')
     } finally {
       commentScoreSubmitting.value = null
     }
@@ -141,15 +190,8 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
     if (!(await ensureCanScore(-1))) return
     haptic('small')
     commentScoreSubmitting.value = 'last'
-    const prev = lastCommentVote.value
-    lastCommentVote.value = 'down'
     try {
-      await sendCommentScore(lc.id, -1, lc.address)
-    } catch (e) {
-      lastCommentVote.value = prev
-      appToast.error({
-        message: e instanceof Error ? e.message : t('commentsMsg.dislikeError'),
-      })
+      await submitScore({ id: lc.id, address: lc.address }, -1, 'commentsMsg.dislikeError')
     } finally {
       commentScoreSubmitting.value = null
     }
@@ -161,18 +203,8 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
     if (!(await ensureCanScore(1))) return
     haptic('small')
     commentScoreSubmitting.value = comment.id
-    const prev = commentVotes.value[comment.id]
-    commentVotes.value = { ...commentVotes.value, [comment.id]: 'up' }
     try {
-      await sendCommentScore(comment.id, 1, comment.address)
-    } catch (e) {
-      const next = prev ? { [comment.id]: prev } : {}
-      const rest = { ...commentVotes.value }
-      delete rest[comment.id]
-      commentVotes.value = { ...rest, ...next }
-      appToast.error({
-        message: e instanceof Error ? e.message : t('commentsMsg.likeError'),
-      })
+      await submitScore(comment, 1, 'commentsMsg.likeError')
     } finally {
       commentScoreSubmitting.value = null
     }
@@ -183,26 +215,14 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
     if (!(await ensureCanScore(-1))) return
     haptic('small')
     commentScoreSubmitting.value = comment.id
-    const prev = commentVotes.value[comment.id]
-    commentVotes.value = { ...commentVotes.value, [comment.id]: 'down' }
     try {
-      await sendCommentScore(comment.id, -1, comment.address)
-    } catch (e) {
-      const next = prev ? { [comment.id]: prev } : {}
-      const rest = { ...commentVotes.value }
-      delete rest[comment.id]
-      commentVotes.value = { ...rest, ...next }
-      appToast.error({
-        message: e instanceof Error ? e.message : t('commentsMsg.dislikeError'),
-      })
+      await submitScore(comment, -1, 'commentsMsg.dislikeError')
     } finally {
       commentScoreSubmitting.value = null
     }
   }
 
   return {
-    lastCommentVote,
-    commentVotes,
     commentScoreSubmitting,
     scoringDisableReason,
     ensureCanScore,
@@ -210,8 +230,10 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
     lastCommentUserDisliked,
     lastCommentCanClickLike,
     lastCommentCanClickDislike,
+    lastCommentScores,
     isCommentLiked,
     isCommentDisliked,
+    commentScores,
     commentCanClickLike,
     commentCanClickDislike,
     onLastCommentScoreUp,

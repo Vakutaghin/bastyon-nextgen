@@ -8,6 +8,10 @@
  *
  * После каждой загрузки вызывает commentsStore.reconcileWithServer — снимает
  * локальные pending/edited/deleted-метки, если сервер уже знает о них.
+ *
+ * Перезагрузка уже открытого списка (WS, «Обновить», свой новый комментарий)
+ * — `reloadComments`: сколько показано, столько и остаётся. Раньше она шла как
+ * первая загрузка и сворачивала раскрытое «Загрузить ещё» обратно до 16.
  */
 
 import { ref, type Ref } from 'vue'
@@ -35,7 +39,7 @@ export function useCommentsLoader(opts: UseCommentsLoaderOptions) {
   // посте переключатель по-прежнему меняет его для этого поста.
   const commentsSortOrder = ref<CommentsSortOrder>(useAppPreferencesStore().commentsOrder)
 
-  const loadAllCommentsInternal = async (showAll = false): Promise<void> => {
+  const loadAllCommentsInternal = async (showAll = false, keepView = false): Promise<void> => {
     if (!opts.postId.value) return
     allCommentsError.value = null
     try {
@@ -50,6 +54,7 @@ export function useCommentsLoader(opts: UseCommentsLoaderOptions) {
         ),
         timeoutPromise,
       ])
+      const shownBefore = opts.getSortedLength()
       allComments.value = list
       // Согласовываем локальные оверрайды с серверными данными:
       // если сервер уже знает о наших правках/удалениях/созданиях — снимаем локальные метки.
@@ -58,7 +63,18 @@ export function useCommentsLoader(opts: UseCommentsLoaderOptions) {
       // (len = 0, visibleCount = 0) не показался бы вовсе.
       const total = opts.getSortedLength()
       const initialVisible = COMMENTS_ALREADY_SHOWN + COMMENTS_PAGE_SIZE
-      visibleCommentsCount.value = showAll ? total : Math.min(initialVisible, total)
+      const firstPage = showAll ? total : Math.min(initialVisible, total)
+      if (keepView) {
+        // Новые встают по сортировке и внутрь показанного: окно растёт на
+        // столько же, чтобы показанные не уехали под «Загрузить ещё».
+        const added = Math.max(0, total - shownBefore)
+        visibleCommentsCount.value = Math.min(
+          total,
+          Math.max(visibleCommentsCount.value + added, firstPage)
+        )
+        return
+      }
+      visibleCommentsCount.value = firstPage
       commentsCollapsed.value = false
     } catch (e) {
       allCommentsError.value = e instanceof Error ? e : new Error(String(e))
@@ -70,6 +86,18 @@ export function useCommentsLoader(opts: UseCommentsLoaderOptions) {
     allCommentsLoading.value = true
     try {
       await loadAllCommentsInternal(showAll)
+    } finally {
+      allCommentsLoading.value = false
+    }
+  }
+
+  /** Обновить открытый список, не сворачивая показанное. */
+  const reloadComments = async (): Promise<void> => {
+    if (!opts.postId.value || allCommentsLoading.value) return
+    if (allComments.value === null) return loadAllComments(false)
+    allCommentsLoading.value = true
+    try {
+      await loadAllCommentsInternal(false, true)
     } finally {
       allCommentsLoading.value = false
     }
@@ -107,6 +135,7 @@ export function useCommentsLoader(opts: UseCommentsLoaderOptions) {
     commentsCollapsed,
     commentsSortOrder,
     loadAllComments,
+    reloadComments,
     collapseComments,
     expandComments,
     setCommentsSortOrder,

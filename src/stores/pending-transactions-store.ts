@@ -41,6 +41,9 @@ export interface PendingTransaction {
   address?: string
   title?: string
   amount?: number
+  /** Оценка комментария: какого и с каким знаком. */
+  commentId?: string
+  score?: 1 | -1
 }
 
 const STORAGE_PREFIX = 'BST_PENDING_TX_'
@@ -158,6 +161,7 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
         ...(meta.address ? { address: meta.address } : {}),
         ...(meta.title ? { title: meta.title } : {}),
         ...(meta.amount ? { amount: meta.amount } : {}),
+        ...(meta.commentId && meta.score ? { commentId: meta.commentId, score: meta.score } : {}),
       },
     ]
     persist()
@@ -277,5 +281,27 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
     if (timer) clearInterval(timer)
   })
 
-  return { items, listed, owner, count, init, add, confirm, cleanupExpired, checkWithNode }
+  /** Своя оценка комментария, которая ещё ждёт блока; null — такой нет. */
+  function commentScoreOf(commentId: string): 1 | -1 | null {
+    if (!commentId) return null
+    for (const item of items.value) {
+      if (item.kind === 'commentScore' && item.commentId === commentId && item.score) {
+        return item.score
+      }
+    }
+    return null
+  }
+
+  return {
+    items,
+    listed,
+    owner,
+    count,
+    init,
+    add,
+    confirm,
+    cleanupExpired,
+    checkWithNode,
+    commentScoreOf,
+  }
 })

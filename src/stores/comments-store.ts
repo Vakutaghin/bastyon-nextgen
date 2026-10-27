@@ -8,6 +8,7 @@
  *   - editedMessages    — overrides текста после успешного commentEdit TX
  *   - deletedCommentIds — set свежеудалённых комментариев (commentDelete TX)
  *   - pendingCreates    — свежеотправленные комменты (comment TX), ждущие подтверждения
+ *   - myVotes           — свои лайки и дизлайки (cScore TX), пока список их не отдал
  *
  * Очистка локального оверрайда происходит, когда мы получаем подтверждение из
  * сети — либо через WS-событие `transaction` (см. `applyConfirmedTx`), либо
@@ -90,6 +91,13 @@ export const useCommentsStore = defineStore('comments', {
      * на скрытом-по-репутации комментарии. Действует до перезагрузки страницы.
      */
     revealedHiddenIds: {} as Record<string, true>,
+    /**
+     * «адрес|commentId» → своя оценка. Нода отдаёт её в myScore и учитывает в
+     * scoreUp/scoreDown только после блока, а до того отметку и +1 держит этот
+     * слой — одинаково во всех местах, где виден комментарий, и после
+     * перерисовки карточки. Сбрасывается, если транзакция в блок не попала.
+     */
+    myVotes: {} as Record<string, { value: 1 | -1; txid?: string }>,
   }),
 
   getters: {
@@ -121,6 +129,11 @@ export const useCommentsStore = defineStore('comments', {
         for (const c of list) if (isWaiting(c)) out.push(c)
       }
       return out
+    },
+    /** Своя оценка комментария из этой сессии; null — не ставили. */
+    myVoteOf(state) {
+      return (address: string, commentId: string): 1 | -1 | null =>
+        state.myVotes[voteKey(address, commentId)]?.value ?? null
     },
     /** Раскрыт ли скрытый комментарий пользователем */
     isRevealed(state) {
@@ -225,7 +238,10 @@ export const useCommentsStore = defineStore('comments', {
       stopSettled = onTransactionSettled((txid, confirmed) => {
         const store = useCommentsStore()
         if (confirmed) store.markCreateConfirmed(txid)
-        else store.markCreateFailed(txid)
+        else {
+          store.markCreateFailed(txid)
+          store.dropVoteByTx(txid)
+        }
       })
     },
 
@@ -353,6 +369,26 @@ export const useCommentsStore = defineStore('comments', {
       }
     },
 
+    // --- Score ---
+    setMyVote(address: string, commentId: string, value: 1 | -1, txid?: string): void {
+      this.myVotes = { ...this.myVotes, [voteKey(address, commentId)]: { value, txid } }
+    },
+    clearMyVote(address: string, commentId: string): void {
+      const key = voteKey(address, commentId)
+      if (!this.myVotes[key]) return
+      const next = { ...this.myVotes }
+      delete next[key]
+      this.myVotes = next
+    },
+    /** Оценка так и не попала в блок — отметку снимаем. */
+    dropVoteByTx(txid: string): void {
+      const keys = Object.keys(this.myVotes).filter((k) => this.myVotes[k]?.txid === txid)
+      if (!keys.length) return
+      const next = { ...this.myVotes }
+      for (const k of keys) delete next[k]
+      this.myVotes = next
+    },
+
     // --- Reveal hidden ---
     revealHidden(commentId: string): void {
       if (this.revealedHiddenIds[commentId]) return
@@ -367,9 +403,14 @@ export const useCommentsStore = defineStore('comments', {
       this.confirmedTick = {}
       this.revealedHiddenIds = {}
       this.txToCommentId = {}
+      this.myVotes = {}
     },
   },
 })
+
+function voteKey(address: string, commentId: string): string {
+  return `${address}|${commentId}`
+}
 
 /** Извлекает текст из поля msg (JSON-строка либо plain). Дублирует logic из helpers.ts. */
 function parseServerMessageText(msg: string): string {

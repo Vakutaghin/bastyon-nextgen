@@ -44,7 +44,7 @@
             ]"
             @click.stop.prevent="onLastCommentScoreUp()"
           >
-            👍 {{ formatScore(post.lastComment?.scoreUp) }}
+            👍 {{ formatScore(lastCommentScores.up) }}
           </button>
 
           <button
@@ -58,7 +58,7 @@
             ]"
             @click.stop.prevent="onLastCommentScoreDown()"
           >
-            👎 {{ formatScore(post.lastComment?.scoreDown) }}
+            👎 {{ formatScore(lastCommentScores.down) }}
           </button>
           <SC_CommentRepliesLink
             v-if="lastCommentChildren > 0"
@@ -175,6 +175,7 @@ const {
   lastCommentUserDisliked,
   lastCommentCanClickLike,
   lastCommentCanClickDislike,
+  lastCommentScores,
   onLastCommentScoreUp,
   onLastCommentScoreDown,
 } = ctx.scoring

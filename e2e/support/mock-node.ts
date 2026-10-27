@@ -59,6 +59,8 @@ export interface MockComment {
   pollVote?: { index: number; option: string }
   /** Автор поста заблокировал комментатора: нода ставит `blck_cnt_cmt: 1`. */
   blockedByPostAuthor?: boolean
+  /** Лайков у комментария; по умолчанию 0. */
+  scoreUp?: number
 }
 
 export interface MockNodeData {
@@ -171,7 +173,7 @@ function commentJson(c: MockComment, index: number, data: MockNodeData) {
     msg: JSON.stringify(body),
     parentid: '',
     answerid: '',
-    scoreUp: 0,
+    scoreUp: c.scoreUp ?? 0,
     scoreDown: 0,
     children: 0,
     flags: {},

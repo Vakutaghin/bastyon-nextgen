@@ -110,7 +110,7 @@
           ]"
           @click.stop.prevent="onCommentScoreUp(comment)"
         >
-          👍 {{ formatScore(comment.scoreUp) }}
+          👍 {{ formatScore(commentScores(comment).up) }}
         </button>
 
         <button
@@ -124,7 +124,7 @@
           ]"
           @click.stop.prevent="onCommentScoreDown(comment)"
         >
-          👎 {{ formatScore(comment.scoreDown) }}
+          👎 {{ formatScore(commentScores(comment).down) }}
         </button>
         <SC_CommentRepliesLink
           v-if="level === 1 && (comment.children ?? 0) > 0"
@@ -208,6 +208,7 @@ const {
 const {
   isCommentLiked,
   isCommentDisliked,
+  commentScores,
   commentCanClickLike,
   commentCanClickDislike,
   onCommentScoreUp,

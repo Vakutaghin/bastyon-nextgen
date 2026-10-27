@@ -18,7 +18,7 @@
             <SC_ShowCommentsBtn
               v-if="moreThanPreview"
               type="button"
-              @click.stop.prevent="loadAllComments(false)"
+              @click.stop.prevent="expandFromPreview(false)"
             >
               {{ t('comments.loadMore') }}
             </SC_ShowCommentsBtn>
@@ -26,7 +26,7 @@
             <SC_ShowCommentsBtnSecondary
               v-if="moreThanFirstPage"
               type="button"
-              @click.stop.prevent="loadAllComments(true)"
+              @click.stop.prevent="expandFromPreview(true)"
             >
               {{ t('comments.showAll') }}
             </SC_ShowCommentsBtnSecondary>
@@ -54,7 +54,7 @@
             size="middle"
             :value="commentsSortOrder"
             :options="commentSortOptions"
-            @change="setCommentsSortOrder"
+            @change="changeSortOrder"
           />
         </SC_CommentsSortSelect>
         <SC_RefreshBtn
@@ -263,6 +263,7 @@ import {
   buildSortedComments,
   buildMentionUsers,
   filterMentionUsers,
+  stabilizeOrder,
 } from './helpers/comments-computed'
 import { pendingToGetComment } from './helpers/pending-comments'
 import { useCommentsLoader } from './composables/use-comments-loader'
@@ -365,6 +366,7 @@ const scoring = useCommentsScoring({
   post: computed(() => props.post),
   isUserAuthenticated,
   currentUserStateData,
+  currentUserAddress,
 })
 
 const editDelete = useCommentEditDelete({
@@ -394,7 +396,7 @@ const pendingRootComments = computed<GetComment[]>(() => {
   return list.filter((p) => !p.parentId).map((p) => pendingToGetComment(p))
 })
 
-const sortedComments = computed<GetComment[]>(() =>
+const freshlySortedComments = computed<GetComment[]>(() =>
   buildSortedComments(
     loader.allComments.value,
     pendingRootComments.value,
@@ -403,6 +405,28 @@ const sortedComments = computed<GetComment[]>(() =>
     postAuthorAddress.value || undefined
   )
 )
+
+/** Комментарий из превью, который после раскрытия должен остаться первым. */
+const pinnedFirstId = ref<string | null>(null)
+/** Человек сам сменил сортировку — только тогда список собирается заново. */
+const sortEpoch = ref(0)
+let sortEpochSeen = 0
+
+// Показанные комментарии не переставляются сами: новые и обновлённые данные
+// (WS, оценки, свой комментарий) встают в уже видимый порядок.
+const sortedComments = computed<GetComment[]>((previous) => {
+  const fresh = freshlySortedComments.value
+  const restart = sortEpoch.value !== sortEpochSeen
+  sortEpochSeen = sortEpoch.value
+  const shown = restart || !previous ? null : previous.map((c) => c.id)
+  const order = stabilizeOrder(
+    shown,
+    fresh.map((c) => c.id),
+    pinnedFirstId.value
+  )
+  const byId = new Map(fresh.map((c) => [c.id, c]))
+  return order.map((id) => byId.get(id)!)
+})
 // Прокидываем актуальный массив в forward-ref для loader.getSortedLength.
 sortedCommentsRef = {
   get value() {
@@ -495,7 +519,7 @@ const form = useCommentForm({
   visibleCommentsCount: loader.visibleCommentsCount,
   commentsCollapsed: loader.commentsCollapsed,
   repliesExpanded: replies.repliesExpanded,
-  refreshAllComments: () => loader.loadAllComments(false),
+  refreshAllComments: () => loader.reloadComments(),
   emitComment: () => emit('comment'),
   rootMentionListRef,
   mentionListRef,
@@ -520,8 +544,20 @@ const ws = useCommentsWs({
     () => loader.allComments.value !== null
   ) as unknown as import('vue').Ref<boolean>,
   isCollapsed: loader.commentsCollapsed,
-  reload: () => loader.loadAllComments(false),
+  reload: () => loader.reloadComments(),
 })
+
+/** Раскрыть из превью: комментарий, который там был виден, остаётся первым. */
+function expandFromPreview(showAll: boolean): void {
+  pinnedFirstId.value = hasUserComments.value ? (props.post.lastComment?.id ?? null) : null
+  void loader.loadAllComments(showAll)
+}
+
+function changeSortOrder(value: unknown): void {
+  pinnedFirstId.value = null
+  sortEpoch.value++
+  loader.setCommentsSortOrder(value)
+}
 
 function collapseComments(): void {
   loader.collapseComments()
@@ -639,9 +675,7 @@ const {
   allCommentsLoading,
   commentsCollapsed,
   commentsSortOrder,
-  loadAllComments,
   expandComments,
-  setCommentsSortOrder,
   showMoreComments,
   showAllComments,
 } = loader

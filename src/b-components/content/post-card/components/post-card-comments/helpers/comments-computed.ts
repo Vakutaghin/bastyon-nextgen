@@ -49,6 +49,30 @@ export function buildSortedComments(
 }
 
 /**
+ * Порядок, который не скачет. Уже показанные комментарии (`previous`) держат
+ * своё взаимное расположение, новые встают туда, куда их ставит сортировка
+ * (`sorted`), исчезнувшие уходят. Без `previous` — порядок сортировки, а
+ * `pinFirst` (комментарий, который был виден в превью до раскрытия) — первым.
+ * Пересортировка «Интересных» после каждой оценки или нового комментария
+ * переставляла список под рукой, пока его листают «Загрузить ещё».
+ */
+export function stabilizeOrder(
+  previous: readonly string[] | null,
+  sorted: readonly string[],
+  pinFirst?: string | null
+): string[] {
+  if (!previous?.length) {
+    if (!pinFirst || !sorted.includes(pinFirst)) return [...sorted]
+    return [pinFirst, ...sorted.filter((id) => id !== pinFirst)]
+  }
+  const present = new Set(sorted)
+  const known = new Set(previous)
+  const kept = previous.filter((id) => present.has(id))
+  let next = 0
+  return sorted.map((id) => (known.has(id) ? kept[next++]! : id))
+}
+
+/**
  * Собирает уникальных пользователей для @mention-меню: из lastComment, всех
  * загруженных корневых комментов и развёрнутых ответов.
  */

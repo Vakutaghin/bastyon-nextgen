@@ -19,6 +19,9 @@ export interface PendingMeta {
   amount?: number
   /** Отложенный пост: в блок попадёт не раньше этого времени, мс. */
   notBefore?: number
+  /** Оценка комментария: какого и с каким знаком — чтобы отметка пережила перезапуск. */
+  commentId?: string
+  score?: 1 | -1
 }
 
 export type PendingKind =

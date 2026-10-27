@@ -73,7 +73,8 @@ export async function sendCommentScore(
     hex: builtTx.hex,
     messageData: rpcData,
     operationType: 'cScore',
-    // В «песочных часах» — чей комментарий оценили.
-    pending: { address: commentAuthorAddress },
+    // В «песочных часах» — чей комментарий оценили; id и знак — чтобы
+    // отметка и +1 у комментария пережили перезапуск, пока оценка ждёт блока.
+    pending: { address: commentAuthorAddress, commentId, score: value },
   })
 }

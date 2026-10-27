@@ -232,7 +232,7 @@ describe('транзакции комментариев', () => {
         hex: 'deadbeef',
         messageData: { commentid: 'c1', value: '-1' },
         operationType: 'cScore',
-        pending: { address: 'PAuthor' },
+        pending: { address: 'PAuthor', commentId: 'c1', score: -1 },
       })
     })
 

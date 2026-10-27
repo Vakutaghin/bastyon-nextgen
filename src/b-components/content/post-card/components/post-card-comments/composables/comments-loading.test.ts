@@ -80,6 +80,45 @@ describe('обсуждение под постом', () => {
       expect(loader.visibleCommentsCount.value).toBe(40)
     })
 
+    it('обновление открытого списка не сворачивает показанное «Загрузить ещё»', async () => {
+      const list = many(40)
+      mocks.fetchComments.mockResolvedValue(list)
+      const loader = useCommentsLoader({ postId: ref('post1'), getSortedLength: () => list.length })
+      await loader.loadAllComments()
+      loader.showMoreComments()
+      loader.collapseComments()
+      const shown = loader.visibleCommentsCount.value
+
+      await loader.reloadComments()
+      expect(mocks.fetchComments).toHaveBeenCalledTimes(2)
+      expect(loader.visibleCommentsCount.value).toBe(shown)
+      // Свёрнутый блок обновление не разворачивает.
+      expect(loader.commentsCollapsed.value).toBe(true)
+    })
+
+    it('пришли новые — окно шире на столько же: показанные не уезжают под «ещё»', async () => {
+      let list = many(40)
+      mocks.fetchComments.mockImplementation(async () => list)
+      // Как в компоненте: длина — по загруженному списку, а не по ответу ноды.
+      const loader = useCommentsLoader({
+        postId: ref('post1'),
+        getSortedLength: () => loader.allComments.value?.length ?? 0,
+      })
+      await loader.loadAllComments()
+      const shown = loader.visibleCommentsCount.value
+      list = [...many(40), make('new1'), make('new2')]
+      await loader.reloadComments()
+      expect(loader.visibleCommentsCount.value).toBe(shown + 2)
+    })
+
+    it('обновление до первой загрузки — это первая загрузка', async () => {
+      mocks.fetchComments.mockResolvedValue(many(5))
+      const loader = useCommentsLoader({ postId: ref('post1'), getSortedLength: () => 5 })
+      await loader.reloadComments()
+      expect(loader.allComments.value).toHaveLength(5)
+      expect(loader.visibleCommentsCount.value).toBe(5)
+    })
+
     it('свежеотправленный комментарий виден и при пустом ответе ноды', async () => {
       mocks.fetchComments.mockResolvedValue([])
       const loader = useCommentsLoader({ postId: ref('post1'), getSortedLength: () => 1 })
