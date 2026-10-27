@@ -2797,6 +2797,11 @@ export default {
     videoLoadUnknownError: '加载视频时发生未知错误',
     networkError: '加载视频时网络出错',
     playbackError: '视频播放出错',
+    codecMissingLinux:
+      '缺少 H.264 视频解码器。请安装 gstreamer1.0-libav 软件包并重新启动 Bastyon：',
+    codecMissing: '无法播放视频：此处不支持 H.264 编解码器。请在其他浏览器或 Bastyon 应用中打开。',
+    copyCommand: '复制命令',
+    commandCopied: '命令已复制',
     loadError: '视频加载出错',
     videoNotFound: '在此节点上未找到视频',
     corsOrUnreachable: '节点服务器无法访问或未配置 CORS。无法直接加载视频。',

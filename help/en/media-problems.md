@@ -1,5 +1,5 @@
 ---
-keywords: [images not loading, video not playing, error 153, YouTube, embedded video, no images]
+keywords: [images not loading, video not playing, error 153, YouTube, embedded video, no images, Linux, codec, H.264, gstreamer]
 ---
 
 # Images or videos do not show
@@ -31,6 +31,16 @@ The player says what happened, with a **“Retry”** button under the message:
 - the video was uploaded just now — the server is still preparing it; wait a few minutes.
 
 More in [Watching videos](video-player.md).
+
+## A video does not play in the Linux app
+
+On Linux the app plays video through the system GStreamer library. Videos are stored as H.264, and a standard Ubuntu installation has no decoder for it. In that case the player says the H.264 video codec is missing and shows the command that installs it, with a **“Copy command”** button. Run it in a terminal:
+
+```
+sudo apt install gstreamer1.0-libav
+```
+
+Then restart the app. The .deb package installs the decoder itself, and the AppImage carries its own. If your system has no apt, use the AppImage — see [Installing the app](install.md#linux).
 
 ## Images do not show without Tor
 

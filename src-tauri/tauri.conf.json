@@ -60,6 +60,7 @@
         "bundleMediaFramework": true
       },
       "deb": {
+        "depends": ["gstreamer1.0-libav"],
         "recommends": ["libayatana-appindicator3-1"]
       }
     }

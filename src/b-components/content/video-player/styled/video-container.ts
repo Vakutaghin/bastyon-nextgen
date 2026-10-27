@@ -174,6 +174,17 @@ export const SC_VideoTorBody = styled.p`
   opacity: 0.85;
 `
 
+/** Команда в терминал (не хватает кодека на Linux) — выделяется и копируется. */
+export const SC_VideoCommand = styled.code`
+  padding: 6px 10px;
+  border-radius: var(--ui-radius-md);
+  background-color: rgb(var(--color-white-rgb) / 12%);
+  font-family: var(--font-family-mono);
+  font-size: 13px;
+  user-select: all;
+  -webkit-user-select: all;
+`
+
 export const SC_VideoTorActions = styled.div`
   display: flex;
   gap: 10px;

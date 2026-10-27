@@ -2917,6 +2917,12 @@ export default {
     videoLoadUnknownError: 'Неизвестная ошибка при загрузке видео',
     networkError: 'Ошибка сети при загрузке видео',
     playbackError: 'Ошибка воспроизведения видео',
+    codecMissingLinux:
+      'Не хватает видеокодека H.264. Установите пакет gstreamer1.0-libav и перезапустите Bastyon:',
+    codecMissing:
+      'Видео не воспроизводится: здесь нет кодека H.264. Откройте ролик в другом браузере или в приложении Bastyon.',
+    copyCommand: 'Скопировать команду',
+    commandCopied: 'Команда скопирована',
     loadError: 'Ошибка загрузки видео',
     videoNotFound: 'Видео не найдено на этой ноде',
     corsOrUnreachable:

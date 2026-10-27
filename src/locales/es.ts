@@ -2956,6 +2956,12 @@ export default {
     videoLoadUnknownError: 'Error desconocido al cargar el vídeo',
     networkError: 'Error de red al cargar el vídeo',
     playbackError: 'Error de reproducción del vídeo',
+    codecMissingLinux:
+      'Falta el códec de vídeo H.264. Instala el paquete gstreamer1.0-libav y reinicia Bastyon:',
+    codecMissing:
+      'No se puede reproducir el vídeo: aquí no está disponible el códec H.264. Ábrelo en otro navegador o en la aplicación Bastyon.',
+    copyCommand: 'Copiar comando',
+    commandCopied: 'Comando copiado',
     loadError: 'Error al cargar el vídeo',
     videoNotFound: 'No se encontró el vídeo en este nodo',
     corsOrUnreachable:

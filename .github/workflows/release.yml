@@ -353,7 +353,7 @@ jobs:
           tauriScript: pnpm tauri
           args: ${{ matrix.args }} --config src-tauri/tauri.updater.conf.json
 
-      - name: Check the AppImage libraries
+      - name: Check the Linux packages
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           set -euo pipefail
@@ -377,6 +377,14 @@ jobs:
           fi
           if [ -n "$missing" ]; then
             echo "::error::В AppImage нет GStreamer:$missing — видео и звук не заиграют" >&2
+            exit 1
+          fi
+          # .deb берёт GStreamer из системы, а декодера H.264 в обычной Ubuntu
+          # нет: WebKitGTK требует только base и good. Пакет тянет его сам.
+          deb="$(find src-tauri/target/release/bundle/deb -maxdepth 1 -name '*.deb' | head -n 1)"
+          [ -n "$deb" ] || { echo "::error::Не найден собранный .deb" >&2; exit 1; }
+          if ! dpkg-deb -f "$deb" Depends | grep -q 'gstreamer1.0-libav'; then
+            echo "::error::.deb не требует gstreamer1.0-libav — на обычной Ubuntu видео не заиграет" >&2
             exit 1
           fi
 

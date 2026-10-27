@@ -2973,6 +2973,12 @@ export default {
     videoLoadUnknownError: 'Erreur inconnue lors du chargement de la vidéo',
     networkError: 'Erreur réseau lors du chargement de la vidéo',
     playbackError: 'Erreur de lecture de la vidéo',
+    codecMissingLinux:
+      'Le codec vidéo H.264 est manquant. Installez le paquet gstreamer1.0-libav et redémarrez Bastyon :',
+    codecMissing:
+      'Impossible de lire la vidéo : le codec H.264 n’est pas disponible ici. Ouvrez-la dans un autre navigateur ou dans l’application Bastyon.',
+    copyCommand: 'Copier la commande',
+    commandCopied: 'Commande copiée',
     loadError: 'Erreur de chargement de la vidéo',
     videoNotFound: 'Vidéo introuvable sur ce nœud',
     corsOrUnreachable:

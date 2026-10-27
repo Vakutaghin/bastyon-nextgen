@@ -81,7 +81,17 @@
     <!-- Сообщение об ошибке + кнопка повтора -->
     <SC_VideoError v-if="error" data-player-control @click.stop>
       <p>{{ error }}</p>
-      <SC_VideoRetryButton type="button" @click.stop="retry">
+      <!-- Не хватает кодека: повтор не поможет — поставить пакет и перезапустить. -->
+      <template v-if="codecMissing === 'linux'">
+        <SC_VideoCommand data-testid="video-codec-command">{{
+          LINUX_CODEC_COMMAND
+        }}</SC_VideoCommand>
+        <SC_VideoRetryButton type="button" @click.stop="copyCodecCommand">
+          <CopyOutlined />
+          <span>{{ t('videoMsg.copyCommand') }}</span>
+        </SC_VideoRetryButton>
+      </template>
+      <SC_VideoRetryButton v-else-if="!codecMissing" type="button" @click.stop="retry">
         <ReloadOutlined />
         <span>{{ t('videoMsg.retry') }}</span>
       </SC_VideoRetryButton>
@@ -333,7 +343,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, toRef, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ReloadOutlined } from '@/components/icons'
+import { CopyOutlined, ReloadOutlined } from '@/components/icons'
+import { appToast } from '@/b-components/app-toast'
+import { copyText } from '@/helpers/common/clipboard'
+import { LINUX_CODEC_COMMAND } from './services/codec-support'
 import { videoPlayerManager } from './video-player-manager'
 import type { Chapter } from '@/helpers/content/timecode-parser'
 import { useVideoHotkeys } from './composables/use-video-hotkeys'
@@ -386,6 +399,7 @@ import {
   SC_VideoTorBody,
   SC_VideoTorActions,
   SC_VideoRetryButton,
+  SC_VideoCommand,
   SC_Spinner,
   SC_BigPlayButton,
   SC_Bezel,
@@ -518,6 +532,7 @@ const {
   isInitialized,
   isLoading,
   error,
+  codecMissing,
   isQualityMenuOpen,
   availableQualityLevels,
   currentQualityLevel,
@@ -703,6 +718,12 @@ function acceptTorBypass(): void {
   torBypassAccepted.value = true
   torNoticeVisible.value = false
   void hlsInitPlayer(torPendingForcePlay)
+}
+
+async function copyCodecCommand(): Promise<void> {
+  if (await copyText(LINUX_CODEC_COMMAND)) {
+    appToast.success({ message: t('videoMsg.commandCopied') })
+  }
 }
 
 function togglePlay(showNotification = false): void {

@@ -2922,6 +2922,12 @@ export default {
     videoLoadUnknownError: 'Непозната грешка при учитавању видеа',
     networkError: 'Мрежна грешка при учитавању видеа',
     playbackError: 'Грешка при репродукцији видеа',
+    codecMissingLinux:
+      'Недостаје видео-кодек H.264. Инсталирајте пакет gstreamer1.0-libav и поново покрените Bastyon:',
+    codecMissing:
+      'Видео не може да се пусти: кодек H.264 овде није доступан. Отворите га у другом прегледачу или у апликацији Bastyon.',
+    copyCommand: 'Копирај команду',
+    commandCopied: 'Команда је копирана',
     loadError: 'Грешка при учитавању видеа',
     videoNotFound: 'Видео није пронађен на овом чвору',
     corsOrUnreachable:

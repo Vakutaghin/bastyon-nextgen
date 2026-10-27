@@ -2899,6 +2899,12 @@ export default {
     videoLoadUnknownError: '동영상을 불러오는 중 알 수 없는 오류가 발생했습니다',
     networkError: '동영상을 불러오는 중 네트워크 오류가 발생했습니다',
     playbackError: '동영상 재생 오류',
+    codecMissingLinux:
+      'H.264 동영상 코덱이 없습니다. gstreamer1.0-libav 패키지를 설치하고 Bastyon을 다시 시작하세요:',
+    codecMissing:
+      '동영상을 재생할 수 없습니다. 여기서는 H.264 코덱을 사용할 수 없습니다. 다른 브라우저나 Bastyon 앱에서 여세요.',
+    copyCommand: '명령 복사',
+    commandCopied: '명령을 복사했습니다',
     loadError: '동영상 로딩 오류',
     videoNotFound: '이 노드에서 동영상을 찾을 수 없습니다',
     corsOrUnreachable:

@@ -6,6 +6,7 @@ import { VIDEO_LOAD_WATCHDOG_MS } from '../consts'
 import { resolveVideoElement, resolvePlayerErrorMessage, type ElementRefValue } from './utils'
 import { applyNetworkQualityCap } from '../services/network-quality'
 import { keepPlayingInPip } from '../pip-keeper'
+import { canDecodeH264, isLinuxDesktopApp } from '../services/codec-support'
 import {
   initBlobVideo,
   initHlsJsVideo,
@@ -29,6 +30,8 @@ export function useVideoHls(
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  /** Окно не декодирует H.264: вместо «Повторить» — что поставить (Linux). */
+  const codecMissing = ref<'linux' | 'other' | null>(null)
 
   // Номер текущей инициализации: всё, что стартовало раньше, после await
   // молча выходит (S26 — повторный клик по спиннеру плодил вторые Hls).
@@ -204,6 +207,7 @@ export function useVideoHls(
     try {
       isLoading.value = true
       error.value = null
+      codecMissing.value = null
 
       const video = resolveVideoElement(videoElement)
       if (!video) {
@@ -251,6 +255,18 @@ export function useVideoHls(
 
       if (isBlobUrl) {
         initBlobVideo(video, p.videoUrl, ctx)
+        return
+      }
+
+      // Ролики PeerTube — H.264. Окно его не декодирует — не пробуем, а
+      // говорим, чего не хватает (см. codec-support).
+      if (!canDecodeH264()) {
+        clearWatchdog()
+        codecMissing.value = isLinuxDesktopApp() ? 'linux' : 'other'
+        error.value = t(
+          codecMissing.value === 'linux' ? 'videoMsg.codecMissingLinux' : 'videoMsg.codecMissing'
+        )
+        isLoading.value = false
         return
       }
 
@@ -386,6 +402,7 @@ export function useVideoHls(
     isInitialized,
     isLoading,
     error,
+    codecMissing,
     isQualityMenuOpen,
     availableQualityLevels,
     currentQualityLevel,
