@@ -25,7 +25,6 @@ const mocks = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
   closeMentions: vi.fn(),
   /** Подменный Editor.js: настройки при создании и переключения «только чтение». */
-  editor: { config: null as Record<string, unknown> | null, readOnly: [] as boolean[] },
 }))
 
 const idb = vi.hoisted(() => new Map<string, unknown>())
@@ -86,29 +85,6 @@ vi.mock('./use-composer-mentions', async () => {
     }),
   }
 })
-// Editor.js в happy-dom не работает — подменный запоминает, что ему велели.
-vi.mock('@editorjs/editorjs', () => ({
-  default: class {
-    isReady = Promise.resolve()
-    readOnly = {
-      toggle: async (state = false) => {
-        mocks.editor.readOnly.push(state)
-        return state
-      },
-    }
-    constructor(config: Record<string, unknown>) {
-      mocks.editor.config = config
-    }
-    save = async () => ({ blocks: [] })
-    destroy = () => {}
-  },
-}))
-vi.mock('@editorjs/header', () => ({ default: class {} }))
-vi.mock('@editorjs/list', () => ({ default: class {} }))
-vi.mock('@editorjs/quote', () => ({ default: class {} }))
-vi.mock('@editorjs/code', () => ({ default: class {} }))
-vi.mock('@editorjs/image', () => ({ default: class {} }))
-vi.mock('@editorjs/delimiter', () => ({ default: class {} }))
 
 import LinkPreviewCard from '@/b-components/content/link-preview-card/link-preview-card.vue'
 import VoiceInputButton from '@/b-components/voice-input/voice-input-button.vue'
@@ -148,7 +124,7 @@ function holdSending() {
   return { fail: (e: Error) => fail(e) }
 }
 
-// Черновик читается после монтирования, календарь и Editor.js — отдельными чанками.
+// Черновик читается после монтирования, календарь и редактор статьи — отдельными чанками.
 async function settle(): Promise<void> {
   for (let i = 0; i < 4; i++) {
     await flushPromises()
@@ -168,6 +144,14 @@ async function render(): Promise<VueWrapper> {
   })
   await settle()
   return w
+}
+
+/** Настройки публикации свёрнуты в сводку «Все · Русский · Сразу» — раскрыть. */
+async function openSettings(w: VueWrapper): Promise<void> {
+  const chip = w.find('button[aria-label^="Настройки публикации"]')
+  expect(chip.text()).toContain('Все · Русский · Сразу')
+  await chip.trigger('click')
+  await settle()
 }
 
 /** Всё, чем меняют пост; у antd-списков и календаря это их внутренние поля. */
@@ -221,8 +205,6 @@ beforeEach(() => {
   mocks.toastError.mockReset()
   mocks.toastSuccess.mockReset()
   mocks.closeMentions.mockReset()
-  mocks.editor.config = null
-  mocks.editor.readOnly = []
 })
 
 describe('окно поста во время публикации', () => {
@@ -234,7 +216,10 @@ describe('окно поста во время публикации', () => {
     // Черновик поднялся целиком: картинка, тег, опрос, ссылка.
     expect(w.findAll('img[src^="data:image/png"]')).toHaveLength(1)
     expect(w.text()).toContain('#море')
-    expect(w.findAll('input[type="file"]')).toHaveLength(1)
+    // Картинки — кнопкой панели и «+» в сетке; видео при картинках не предлагается.
+    expect(w.findAll('input[type="file"]')).toHaveLength(2)
+    expect(w.find('button[aria-label="Загрузить видео или аудио"]').exists()).toBe(false)
+    await openSettings(w)
     expectUnlocked(w)
 
     await publish(w)
@@ -264,6 +249,7 @@ describe('окно поста во время публикации', () => {
     })
     const sending = holdSending()
     const w = await render()
+    await openSettings(w)
 
     // Черновик читается после открытия окна; панель раньше так и оставалась
     // с выбором файла, хотя видео уже было в посте.
@@ -285,7 +271,7 @@ describe('окно поста во время публикации', () => {
     w.unmount()
   })
 
-  it('статья: Editor.js на время публикации только для чтения', async () => {
+  it('статья: редактор на время публикации только для чтения', async () => {
     await seedDraft({
       caption: 'Как мы ездили на море',
       poll: { active: false, title: '', options: ['', ''] },
@@ -294,17 +280,20 @@ describe('окно поста во время публикации', () => {
     })
     const sending = holdSending()
     const w = await render()
-    expect(mocks.editor.config?.readOnly).toBe(false)
+    await openSettings(w)
+    const editable = () => w.find('.ProseMirror').attributes('contenteditable')
+    expect(w.find('.ProseMirror').text()).toContain('Вода была тёплой.')
+    expect(editable()).toBe('true')
 
     await publish(w)
     expectLocked(w)
-    expect(mocks.editor.readOnly).toEqual([true])
+    expect(editable()).toBe('false')
     expect(w.findComponent(ComposerArticleEditor).classes()).toContain('disabled')
 
     sending.fail(new Error(FAILURE))
     await settle()
     expectUnlocked(w)
-    expect(mocks.editor.readOnly).toEqual([true, false])
+    expect(editable()).toBe('true')
     w.unmount()
   })
 })

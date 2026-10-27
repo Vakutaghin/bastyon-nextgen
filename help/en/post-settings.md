@@ -6,7 +6,7 @@ keywords: [visibility, subscribers only, registered users only, paid subscribers
 
 Whom to show a post to, which language it is in and how to schedule it for later.
 
-The settings are at the bottom of the new post window.
+The settings are folded into a line at the bottom of the new post window, on the right of the toolbar, for example “Everyone · English · Right away”: it shows what is chosen now. Click it to open the fields themselves.
 
 ## Visibility
 

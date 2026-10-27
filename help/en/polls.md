@@ -8,7 +8,7 @@ How to add a poll to a post, vote and see the results.
 
 ## Creating a poll
 
-1. In the new post window, click **“Poll”**.
+1. In the new post window, click **“Poll”** on the toolbar under the text. Changed your mind — the **“Remove poll”** cross in the poll's header.
 2. Write the **“Poll question”** and the answer options — from two to five. **“Add option”** adds a line, the cross next to a line is **“Remove option”**.
 3. Add a tag and publish the post as usual. Post text is optional for a poll.
 

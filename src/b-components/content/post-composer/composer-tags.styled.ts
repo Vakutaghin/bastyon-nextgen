@@ -7,15 +7,21 @@ export const SC_TagsField = styled.div`
   position: relative;
 `
 
+/** Теги — строкой без рамки, как подпись под текстом; рамка — только в фокусе. */
 export const SC_TagsRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: ${SPACING.XS};
   padding: ${SPACING.XS} ${SPACING.SM};
-  border: 1px solid var(--color-border);
+  border: 1px solid transparent;
   border-radius: var(--ui-radius-lg);
-  background: var(--color-bg-input);
+  background: var(--ui-bg-muted);
+  transition: border-color var(--transition-fast);
+
+  &:focus-within {
+    border-color: var(--ui-border);
+  }
 
   /* Как у полей ввода (nuxtField): идёт публикация — поле притушено. */
   &.disabled {
@@ -108,4 +114,12 @@ export const SC_Suggestion = styled('li', itemProps)`
   &:hover {
     background: var(--color-bg-hover);
   }
+`
+
+/** Сколько тегов из скольких — справа в строке, когда теги уже есть. */
+export const SC_TagCount = styled.span`
+  margin-left: auto;
+  font-size: ${FONT_SIZE.SM};
+  color: var(--ui-text-muted);
+  white-space: nowrap;
 `

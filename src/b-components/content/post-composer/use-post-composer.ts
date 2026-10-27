@@ -294,8 +294,17 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   })
 
   const validationError = computed(() => validatePost(post.value))
+  /** В статью грузится картинка: в пост попала бы статья без неё. */
+  const articleUploading = ref(false)
+  const setArticleUploading = (active: boolean): void => {
+    articleUploading.value = active
+  }
   const canPublish = computed(
-    () => !submitting.value && !videoUploading.value && validationError.value === null
+    () =>
+      !submitting.value &&
+      !videoUploading.value &&
+      !articleUploading.value &&
+      validationError.value === null
   )
   /** Лейбл кнопки публикации по режиму. */
   const publishLabel = computed(() => {
@@ -485,7 +494,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       return
     }
 
-    if (videoUploading.value) return
+    if (videoUploading.value || articleUploading.value) return
 
     // Закоммитить недобитый ввод тега (пользователь не нажал Enter).
     commitTagInput()
@@ -577,6 +586,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     setUploadedVideoUrl,
     clearUploadedVideoUrl,
     videoUploading,
+    articleUploading,
+    setArticleUploading,
     setVideoUploading,
     hasUploadedVideo,
     onVideoUploaded,

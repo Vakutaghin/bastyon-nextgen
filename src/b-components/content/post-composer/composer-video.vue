@@ -1,6 +1,6 @@
 <template>
-  <SC_VideoPick v-if="state === 'idle'" :class="{ disabled }">
-    <input type="file" :accept="ACCEPT" :disabled="disabled" @change="onPick" />
+  <SC_VideoPick v-if="state === 'idle' && !hidePick" :class="{ disabled }">
+    <input type="file" :accept="VIDEO_ACCEPT" :disabled="disabled" @change="onPick" />
     <VideoCameraAddOutlined />
     {{ t('postComposer.videoUpload') }}
   </SC_VideoPick>
@@ -53,7 +53,7 @@
     </SC_CoverRow>
   </SC_VideoPanel>
 
-  <SC_VideoErrorPanel v-else role="alert">
+  <SC_VideoErrorPanel v-else-if="state === 'error'" role="alert">
     <SC_VideoRow>
       <SC_VideoName>{{ errorText }}</SC_VideoName>
       <SC_VideoAction type="button" :disabled="disabled" @click="retry">{{
@@ -97,6 +97,7 @@ import { PlayCircleOutlined, VideoCameraAddOutlined } from '@/components/icons'
 import { useComposerVideo, type UploadedComposerVideo } from './use-composer-video'
 import type { KeyPair } from '@/blockchain/types/keys'
 import { Z_INDEX } from '@/styles/design-tokens'
+import { VIDEO_ACCEPT } from './consts'
 import { formatDuration } from '@/b-components/video-uploader/utils/video-formatter'
 import VideoCoverPicker from '@/b-components/video-studio/video-cover-picker.vue'
 import {
@@ -114,9 +115,6 @@ import {
   SC_VideoRow,
 } from './composer-video.styled'
 
-/** Видео и аудио: MIME плюс расширения на случай пустого MIME (mkv и т. п.). */
-const ACCEPT = 'video/*,audio/*,.mkv,.mov,.avi,.webm,.m4a,.flac,.ogg'
-
 const props = defineProps<{
   /** Указатель в посте: пусто — композер сбросился, панель возвращается к выбору файла. */
   pointer: string
@@ -124,6 +122,8 @@ const props = defineProps<{
   getTitle: () => string
   /** Идёт публикация поста: видео не выбрать, не убрать и не перезалить. */
   disabled?: boolean
+  /** Файл выбирают кнопкой панели окна поста (`start`), своя кнопка не нужна. */
+  hidePick?: boolean
 }>()
 const emit = defineEmits<{
   (e: 'uploaded', video: UploadedComposerVideo): void
@@ -193,6 +193,9 @@ watch(
   }
 )
 onBeforeUnmount(reset)
+
+/** Файл выбрали кнопкой панели окна поста. */
+defineExpose({ start: (picked: File) => start(picked) })
 
 function onPick(event: Event): void {
   const input = event.target as HTMLInputElement

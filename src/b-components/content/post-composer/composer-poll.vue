@@ -1,11 +1,20 @@
 <template>
-  <SC_Poll>
-    <SC_PollToggle :class="{ disabled }">
-      <input type="checkbox" :checked="active" :disabled="disabled" @change="onToggle" />
-      {{ t('postComposer.pollToggle') }}
-    </SC_PollToggle>
-
-    <SC_PollBody v-if="active">
+  <SC_Poll v-if="active">
+    <!-- Опрос включает кнопка панели окна поста, убирает — крестик в его шапке. -->
+    <SC_PollBody>
+      <SC_PollHead>
+        <PollIcon />
+        <span>{{ t('postComposer.pollToggle') }}</span>
+        <SC_PollOptionRemove
+          type="button"
+          :aria-label="t('postComposer.pollRemove')"
+          :title="t('postComposer.pollRemove')"
+          :disabled="disabled"
+          @click="emit('toggle', false)"
+        >
+          ×
+        </SC_PollOptionRemove>
+      </SC_PollHead>
       <SC_PollInput
         :value="title"
         :placeholder="t('postComposer.pollQuestion')"
@@ -47,15 +56,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { PollIcon } from '@/components/icons'
 import { MAX_POLL_OPTIONS } from './consts'
 import {
   SC_Poll,
   SC_PollAddBtn,
   SC_PollBody,
+  SC_PollHead,
   SC_PollInput,
   SC_PollOptionRemove,
   SC_PollOptionRow,
-  SC_PollToggle,
 } from './composer-poll.styled'
 
 defineProps<{
@@ -74,8 +84,4 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-
-const onToggle = (e: Event): void => {
-  emit('toggle', (e.target as HTMLInputElement).checked)
-}
 </script>

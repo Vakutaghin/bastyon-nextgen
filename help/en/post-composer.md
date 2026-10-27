@@ -8,7 +8,11 @@ Text, emoji, mentions, links and tags: everything in the new post window.
 
 ## Text
 
-Write in the **“What's on your mind?”** field. The smiley button is **“Emoji”**; next to it in the desktop app is the [voice input](voice-input.md) button.
+Write right in the **“What's on your mind?”** field — it has no frame and grows as you type. You can paste an image into the text from the clipboard or drag it into the window.
+
+Under the text there is a tags line, and below it a toolbar: **“Add images”**, **“Upload video or audio”**, **“Poll”**, **“Emoji”**, and in the desktop app the [voice input](voice-input.md) button. Images and your own video do not share a post: while one is attached, the button for the other is hidden. On the right of the toolbar there is a line like “Everyone · English · Right away”: that is the visibility, language and publishing time — click it to change them, see [Visibility, language and publishing time](post-settings.md).
+
+At the top of the window there is a **“Post”** / **“Article”** switch: a long text with headings and images between paragraphs is easier to write as an [article](articles.md).
 
 A post's length is limited: together with its service fields it has to fit into about 60,000 characters, an article into 120,000. That is a lot for an ordinary post; if the app says **“The post exceeds the allowed size”**, split the text into several posts or make it an [article](articles.md).
 
@@ -26,7 +30,7 @@ Pick with the arrow keys and Enter or with the mouse, and `@name` goes into the 
 
 ## Tags
 
-A post cannot be published without tags: you need at least one, and you can add up to five. Start typing a tag under the text — popular tags appear; pick with the arrow keys or the mouse. The list stays open after a pick, so you can choose the next one right away. Enter, a comma or a space adds the tag; you do not need to type the hash sign. Only letters and digits stay in a tag, and capitals become lowercase. Backspace in the empty field removes the last tag, the cross removes any.
+A post cannot be published without tags: you need at least one, and you can add up to five. Start typing a tag under the text — popular tags appear; pick with the arrow keys or the mouse. The list stays open after a pick, so you can choose the next one right away. Enter, a comma or a space adds the tag; you do not need to type the hash sign. Only letters and digits stay in a tag, and capitals become lowercase. Backspace in the empty field removes the last tag, the cross removes any. The right end of the line shows how many of the five tags are set.
 
 Tags help people find the post: categories and feed filters work by them — see [Categories, tags and sorting](feed-filters.md).
 

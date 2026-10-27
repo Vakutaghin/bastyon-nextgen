@@ -20,3 +20,6 @@ export const ARTICLE_SIZE_LIMIT = 120_000
 
 /** Минимум осмысленного текста при наличии ссылки (анти-спам, kit.js:1563). */
 export const URL_MIN_TEXT_LENGTH = 30
+
+/** Своё видео и аудио: MIME плюс расширения на случай пустого MIME (mkv и т. п.). */
+export const VIDEO_ACCEPT = 'video/*,audio/*,.mkv,.mov,.avi,.webm,.m4a,.flac,.ogg'

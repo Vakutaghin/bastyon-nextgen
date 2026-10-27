@@ -1,20 +1,40 @@
 <template>
-  <SC_Composer>
+  <SC_Composer @dragover="onDragOver" @drop="onDrop">
+    <!-- Окно поста, как у современных лент: текст без рамки, вложения под ним,
+         внизу панель — фото, видео, опрос, эмодзи, голос — и сводка настроек
+         «Все · Русский · Сразу», которая раскрывает сами настройки. Статья —
+         отдельный вид: крупный заголовок и редактор, как у Medium. -->
     <ComposerRepost v-if="isRepost && repostSource" :source="repostSource" />
 
-    <SC_ArticleToggle v-if="!isRepost && !isEdit" :class="{ disabled: submitting }">
-      <input
-        type="checkbox"
-        :checked="articleMode"
+    <SC_ModeSwitch
+      v-if="!isRepost && !isEdit"
+      role="group"
+      :aria-label="t('postComposer.modeLabel')"
+    >
+      <SC_ModeButton
+        type="button"
+        :class="{ active: !articleMode }"
+        :aria-pressed="!articleMode"
         :disabled="submitting"
-        @change="onToggleArticle"
-      />
-      {{ t('postComposer.articleToggle') }}
-    </SC_ArticleToggle>
+        @click="articleMode = false"
+      >
+        {{ t('postComposer.modePost') }}
+      </SC_ModeButton>
+      <SC_ModeButton
+        type="button"
+        :class="{ active: articleMode }"
+        :aria-pressed="articleMode"
+        :disabled="submitting"
+        @click="articleMode = true"
+      >
+        {{ t('postComposer.modeArticle') }}
+      </SC_ModeButton>
+    </SC_ModeSwitch>
 
     <!-- Заголовок статьи / видео (peertube-видео требует caption) -->
     <SC_TitleInput
       v-if="articleMode || needsCaption"
+      :class="{ article: articleMode }"
       :value="caption"
       :placeholder="titlePlaceholder"
       :aria-label="titlePlaceholder"
@@ -22,12 +42,13 @@
       @input="onCaptionInput(($event.target as HTMLInputElement).value)"
     />
 
-    <!-- Тело статьи (Editor.js) -->
+    <!-- Тело статьи -->
     <ComposerArticleEditor
       v-if="articleMode"
       :model-value="articleContent"
       :disabled="submitting"
       @update:model-value="onArticleChange"
+      @uploading="setArticleUploading"
     />
 
     <!-- Тело обычного поста -->
@@ -41,6 +62,7 @@
         :aria-label="t('postComposer.placeholder')"
         :disabled="submitting"
         @input="onComposerInput"
+        @paste="onPaste"
         @keydown="onMentionKeydown"
         @keyup="updateMentions"
         @click="updateMentions"
@@ -66,24 +88,6 @@
       </SC_MentionDropdown>
     </SC_MentionAnchor>
 
-    <SC_EmojiRow v-if="!articleMode">
-      <APopover v-model:open="emojiOpen" trigger="click" placement="topLeft">
-        <template #content>
-          <CommentEmojiPicker @select="insertEmoji" />
-        </template>
-        <SC_EmojiBtn
-          type="button"
-          :title="t('postComposer.emoji')"
-          :disabled="submitting"
-          @click.stop
-        >
-          <SmileOutlined />
-        </SC_EmojiBtn>
-      </APopover>
-      <!-- Голосовой ввод: речь на языке поста, текст — в позицию курсора. -->
-      <VoiceInputButton :get-element="getTextareaEl" :language="language" :disabled="submitting" />
-    </SC_EmojiRow>
-
     <!-- Превью видео по ссылке (youtube/vimeo/peertube), найденной в тексте -->
     <ComposerUrlPreview
       v-if="!articleMode && parsedVideo.kind && !hasUploadedVideo"
@@ -98,14 +102,12 @@
       @remove="dismissLinkPreview"
     />
 
-    <!-- Своё видео или аудио: файл → PeerTube → peertube://… в `u` поста. -->
+    <!-- Своё видео или аудио: файл → PeerTube → peertube://… в `u` поста.
+         Файл выбирают кнопкой панели; здесь — загрузка, обложка, «Убрать». -->
     <ComposerVideo
-      v-if="
-        !isRepost &&
-        !isEdit &&
-        !articleMode &&
-        (videoUploading || hasUploadedVideo || !images.length)
-      "
+      v-if="canAttachVideo"
+      ref="videoRef"
+      hide-pick
       :pointer="uploadedVideoUrl"
       :get-auth="videoAuth"
       :get-title="() => caption"
@@ -118,7 +120,7 @@
 
     <!-- Картинки и своё видео в одном посте не живут: в ленте картинки заслонили бы плеер. -->
     <ComposerImages
-      v-if="!isRepost && !articleMode && !videoUploading && !hasUploadedVideo"
+      v-if="canAttachImages && images.length"
       :images="images"
       :full="imagesFull"
       :disabled="submitting"
@@ -128,21 +130,9 @@
       @edit="onEditImage"
     />
 
-    <ComposerTags
-      v-if="!isRepost"
-      :tags="tags"
-      :full="tagsFull"
-      :input-value="tagInput"
-      :disabled="submitting"
-      @update:input-value="tagInput = $event"
-      @add="addTag"
-      @remove="removeTag"
-      @backspace="onTagBackspace"
-    />
-
     <!-- Опрос опубликованного поста не меняется: голоса привязаны к вариантам. -->
     <ComposerPoll
-      v-if="!isRepost && !isEdit && !articleMode"
+      v-if="canPoll"
       :active="pollActive"
       :title="pollTitle"
       :options="pollOptions"
@@ -154,25 +144,134 @@
       @remove-option="removePollOption"
     />
 
-    <ComposerSettings
-      :visibility="visibility"
-      :language="language"
-      :is-trial="isTrial"
-      :paid-available="paidVisibilityAvailable"
-      :scheduled-time="scheduledTime"
+    <ComposerTags
+      v-if="!isRepost"
+      :tags="tags"
+      :full="tagsFull"
+      :max="MAX_TAGS"
+      :input-value="tagInput"
       :disabled="submitting"
-      @update:visibility="visibility = $event"
-      @update:language="language = $event"
-      @update:scheduled-time="setScheduledTime"
+      @update:input-value="tagInput = $event"
+      @add="addTag"
+      @remove="removeTag"
+      @backspace="onTagBackspace"
     />
 
+    <SC_Divider />
+
+    <SC_Toolbar>
+      <SC_ToolGroup v-if="!articleMode">
+        <!-- Картинки и своё видео вместе не живут: недоступная кнопка не видна. -->
+        <template v-if="canAddImages">
+          <SC_ToolButton
+            type="button"
+            :aria-label="t('postComposer.addImages')"
+            :title="t('postComposer.addImages')"
+            :disabled="submitting"
+            @click="imagesInputRef?.click()"
+          >
+            <PictureOutlined />
+          </SC_ToolButton>
+          <input
+            ref="imagesInputRef"
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            :aria-label="t('postComposer.addImages')"
+            :disabled="submitting"
+            @change="onImagesPicked"
+          />
+        </template>
+        <template v-if="canAddVideo">
+          <SC_ToolButton
+            type="button"
+            :aria-label="t('postComposer.videoUpload')"
+            :title="t('postComposer.videoUpload')"
+            :disabled="submitting"
+            @click="videoInputRef?.click()"
+          >
+            <VideoCameraAddOutlined />
+          </SC_ToolButton>
+          <input
+            ref="videoInputRef"
+            type="file"
+            :accept="VIDEO_ACCEPT"
+            hidden
+            :aria-label="t('postComposer.videoUpload')"
+            :disabled="submitting"
+            @change="onVideoPicked"
+          />
+        </template>
+        <SC_ToolButton
+          v-if="canPoll"
+          type="button"
+          :class="{ active: pollActive }"
+          :aria-label="t('postComposer.pollToggle')"
+          :aria-pressed="pollActive"
+          :title="t('postComposer.pollToggle')"
+          :disabled="submitting"
+          @click="togglePoll(!pollActive)"
+        >
+          <PollIcon />
+        </SC_ToolButton>
+        <APopover v-model:open="emojiOpen" trigger="click" placement="topLeft">
+          <template #content>
+            <CommentEmojiPicker @select="insertEmoji" />
+          </template>
+          <SC_ToolButton
+            type="button"
+            :aria-label="t('postComposer.emoji')"
+            :title="t('postComposer.emoji')"
+            :disabled="submitting"
+            @click.stop
+          >
+            <SmileOutlined />
+          </SC_ToolButton>
+        </APopover>
+        <!-- Голосовой ввод: речь на языке поста, текст — в позицию курсора. -->
+        <VoiceInputButton
+          :get-element="getTextareaEl"
+          :language="language"
+          :disabled="submitting"
+        />
+      </SC_ToolGroup>
+
+      <SC_SettingsChip
+        type="button"
+        :class="{ open: settingsOpen }"
+        :aria-expanded="settingsOpen"
+        :aria-label="t('postComposer.settingsLabel', { summary: settingsSummary })"
+        :disabled="submitting"
+        @click="settingsOpen = !settingsOpen"
+      >
+        <SettingOutlined />
+        <SC_SettingsSummary>{{ settingsSummary }}</SC_SettingsSummary>
+        <CaretDownOutlined />
+      </SC_SettingsChip>
+    </SC_Toolbar>
+
+    <SC_SettingsPanel v-if="settingsOpen">
+      <ComposerSettings
+        :visibility="visibility"
+        :language="language"
+        :is-trial="isTrial"
+        :paid-available="paidVisibilityAvailable"
+        :scheduled-time="scheduledTime"
+        :disabled="submitting"
+        @update:visibility="visibility = $event"
+        @update:language="language = $event"
+        @update:scheduled-time="setScheduledTime"
+      />
+    </SC_SettingsPanel>
+
     <SC_Footer>
-      <SC_Hint :danger="showError">
+      <SC_Hint v-if="hintText" :danger="showError">
         {{ hintText }}
       </SC_Hint>
       <SC_FooterActions>
         <!-- Черновик хранится целиком; «Очистить» стирает его вместе с формой. -->
-        <Button v-if="canReset" type="text" @click="confirmReset">
+        <Button v-if="canReset" type="text" :disabled="submitting" @click="confirmReset">
           {{ t('postComposer.reset') }}
         </Button>
         <Button type="primary" :loading="submitting" :disabled="!canPublish" @click="publish">
@@ -184,16 +283,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Modal, Popover } from 'ant-design-vue'
-import { SmileOutlined } from '@/components/icons'
+import {
+  CaretDownOutlined,
+  PictureOutlined,
+  PollIcon,
+  SettingOutlined,
+  SmileOutlined,
+  VideoCameraAddOutlined,
+} from '@/components/icons'
+import { bcp47, LOCALE_NAMES, type Locale } from '@/i18n'
 
 import Button from '@/components/button'
 // Переиспользуем компактный пикер из формы комментария (общий список COMMON_EMOJIS).
 import CommentEmojiPicker from '@/b-components/content/post-card/components/post-card-comments/comment-emoji-picker.vue'
 
-import ComposerArticleEditor from './composer-article-editor.vue'
+// Редактор статьи (TipTap) — отдельным чанком: нужен, только когда пишут статью.
+const ComposerArticleEditor = defineAsyncComponent(() => import('./composer-article-editor.vue'))
 import ComposerImages from './composer-images.vue'
 import ComposerPoll from './composer-poll.vue'
 import ComposerRepost from './composer-repost.vue'
@@ -206,10 +314,8 @@ import VoiceInputButton from '@/b-components/voice-input/voice-input-button.vue'
 import type { ComposerMode, ComposerSource, ComposerVideoPrefill } from './composer-source'
 import { useComposerMentions } from './use-composer-mentions'
 import {
-  SC_ArticleToggle,
   SC_Composer,
-  SC_EmojiBtn,
-  SC_EmojiRow,
+  SC_Divider,
   SC_Footer,
   SC_FooterActions,
   SC_Hint,
@@ -219,10 +325,18 @@ import {
   SC_MentionName,
   SC_MentionRow,
   SC_MentionStatus,
+  SC_ModeButton,
+  SC_ModeSwitch,
+  SC_SettingsChip,
+  SC_SettingsPanel,
+  SC_SettingsSummary,
   SC_Textarea,
   SC_TitleInput,
+  SC_ToolButton,
+  SC_ToolGroup,
+  SC_Toolbar,
 } from './post-composer.styled'
-import { MAX_TAGS } from './consts'
+import { MAX_TAGS, VIDEO_ACCEPT } from './consts'
 import { usePostComposer } from './use-post-composer'
 
 const props = defineProps<{
@@ -237,7 +351,7 @@ const emit = defineEmits<{
   (e: 'busyChange', busy: boolean): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const {
   isEdit,
@@ -265,6 +379,7 @@ const {
   clearUploadedVideoUrl,
   videoUploading,
   setVideoUploading,
+  setArticleUploading,
   hasUploadedVideo,
   onVideoUploaded,
   videoAuth,
@@ -317,9 +432,92 @@ function confirmReset(): void {
   })
 }
 
-const onToggleArticle = (e: Event): void => {
-  articleMode.value = (e.target as HTMLInputElement).checked
+// ── Панель вложений ─────────────────────────────────────────────────
+// Картинки, своё видео и опрос: статье и репосту — нет, видео и опрос при
+// правке опубликованного поста — тоже нет. Картинки и видео вместе не живут.
+const canAttachImages = computed(() => !isRepost && !articleMode.value)
+const canAttachVideo = computed(() => !isRepost && !isEdit && !articleMode.value)
+const canPoll = computed(() => !isRepost && !isEdit && !articleMode.value)
+const canAddImages = computed(
+  () =>
+    canAttachImages.value && !imagesFull.value && !videoUploading.value && !hasUploadedVideo.value
+)
+const canAddVideo = computed(
+  () =>
+    canAttachVideo.value && !images.value.length && !videoUploading.value && !hasUploadedVideo.value
+)
+
+const imagesInputRef = ref<HTMLInputElement | null>(null)
+const videoInputRef = ref<HTMLInputElement | null>(null)
+const videoRef = ref<{ start: (file: File) => Promise<void> } | null>(null)
+
+function onImagesPicked(event: Event): void {
+  const input = event.target as HTMLInputElement
+  if (input.files?.length) addImageFiles(Array.from(input.files))
+  input.value = '' // тот же файл можно выбрать снова
 }
+
+/** Картинки из буфера или перетащенные: в пост, если их сюда можно. */
+function imageFiles(data: DataTransfer | null | undefined): File[] {
+  return Array.from(data?.files ?? []).filter((file) => file.type.startsWith('image/'))
+}
+
+function onPaste(event: Event): void {
+  const files = imageFiles((event as Event & { clipboardData?: DataTransfer | null }).clipboardData)
+  if (!files.length || !canAddImages.value || submitting.value) return
+  event.preventDefault()
+  addImageFiles(files)
+}
+
+// Статья ловит перетаскивание сама (картинка встаёт в текст), пост — здесь.
+function onDragOver(event: DragEvent): void {
+  if (!articleMode.value && canAddImages.value && event.dataTransfer?.types.includes('Files')) {
+    event.preventDefault()
+  }
+}
+
+function onDrop(event: DragEvent): void {
+  if (articleMode.value) return
+  const files = imageFiles(event.dataTransfer)
+  if (!files.length) return
+  event.preventDefault()
+  if (canAddImages.value && !submitting.value) addImageFiles(files)
+}
+
+function onVideoPicked(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const picked = input.files?.[0]
+  input.value = ''
+  if (picked) void videoRef.value?.start(picked)
+}
+
+// ── Настройки публикации: сводка и сами поля ───────────────────────────
+const settingsOpen = ref(false)
+
+const VISIBILITY_LABELS: Record<string, string> = {
+  '0': 'postComposer.visibilityAll',
+  '1': 'postComposer.visibilitySubscribers',
+  '2': 'postComposer.visibilityRegistered',
+  '3': 'postComposer.visibilityPaid',
+}
+
+/** «Все · Русский · Сразу» — что сейчас выбрано, одной строкой. */
+const settingsSummary = computed<string>(() => {
+  const when =
+    scheduledTime.value > 1
+      ? new Intl.DateTimeFormat(bcp47(locale.value), {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        }).format(scheduledTime.value * 1000)
+      : t('postComposer.schedulePlaceholder')
+  return [
+    t(VISIBILITY_LABELS[visibility.value] ?? VISIBILITY_LABELS['0']!),
+    LOCALE_NAMES[language.value as Locale] ?? language.value,
+    when,
+  ].join(' · ')
+})
 
 const onEditImage = (payload: { id: string; base64: string }): void => {
   replaceImage(payload.id, payload.base64)
@@ -401,14 +599,25 @@ const titlePlaceholder = computed(() =>
     : t('postComposer.videoTitlePlaceholder')
 )
 
-// Подсказка: при ошибке валидации (когда уже что-то введено) — показать её; иначе счётчик тегов.
+// Подсказка — ошибка валидации, когда уже что-то введено (счётчик тегов — в их строке).
 const hasContent = computed(
   () => message.value.trim().length > 0 || (articleMode.value && !!articleContent.value)
 )
 const showError = computed(() => validationError.value !== null && hasContent.value)
-const hintText = computed(() => {
-  if (showError.value) return t(`postMsg.validation.${validationError.value}`)
-  if (isRepost) return ''
-  return t('postComposer.tagsCount', { count: tags.value.length, max: MAX_TAGS })
+const hintText = computed(() =>
+  showError.value ? t(`postMsg.validation.${validationError.value}`) : ''
+)
+
+// Поле текста растёт по мере набора, как в ленте: без своей прокрутки.
+function autosize(): void {
+  const el = getTextareaEl()
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = `${el.scrollHeight}px`
+}
+watch(message, () => void nextTick(autosize))
+watch(articleMode, (article) => {
+  if (!article) void nextTick(autosize)
 })
+onMounted(autosize)
 </script>

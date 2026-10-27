@@ -22,6 +22,7 @@ import {
   BellOff,
   Blocks,
   Bluetooth,
+  Bold,
   BookA,
   BookOpen,
   Bookmark,
@@ -49,21 +50,27 @@ import {
   Ellipsis,
   EllipsisVertical,
   Expand,
+  Eye,
   File,
   FileText,
   Flag,
   Folder,
   Gift,
   Globe,
+  Heading2,
+  Heading3,
   Hourglass,
   House,
   Image,
   Inbox,
   Info,
+  Italic,
   Key,
   LayoutGrid,
   Lightbulb,
   Link,
+  List,
+  ListOrdered,
   LoaderCircle,
   Lock,
   LogOut,
@@ -75,6 +82,7 @@ import {
   MessagesSquare,
   Mic,
   Minimize,
+  Minus,
   Monitor,
   Moon,
   OctagonAlert,
@@ -101,6 +109,7 @@ import {
   Star,
   Sun,
   TableOfContents,
+  TextQuote,
   Trash2,
   TrendingUp,
   TriangleAlert,
@@ -296,3 +305,16 @@ export const ThemeDarkIcon = lucideIcon('ThemeDarkIcon', Moon)
 
 /** Шапка: «Назад» (ArrowLeftIcon) и «Вперёд» по страницам, как в браузере. */
 export const ArrowRightIcon = lucideIcon('ArrowRightIcon', ArrowRight)
+
+/** Редактор статьи: панель над выделением и меню блоков. */
+export const BoldIcon = lucideIcon('BoldIcon', Bold)
+export const ItalicIcon = lucideIcon('ItalicIcon', Italic)
+export const Heading2Icon = lucideIcon('Heading2Icon', Heading2)
+export const Heading3Icon = lucideIcon('Heading3Icon', Heading3)
+export const QuoteIcon = lucideIcon('QuoteIcon', TextQuote)
+export const ListIcon = lucideIcon('ListIcon', List)
+export const ListOrderedIcon = lucideIcon('ListOrderedIcon', ListOrdered)
+export const DividerIcon = lucideIcon('DividerIcon', Minus)
+
+/** Окно поста: кто увидит пост. */
+export const EyeOutlined = lucideIcon('EyeOutlined', Eye)

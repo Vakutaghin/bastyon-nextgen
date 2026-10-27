@@ -8,7 +8,7 @@ How to add up to 10 images, crop and rotate them, apply a filter — and where t
 
 ## Adding
 
-Click **“Add images”** in the post editor or drag files onto that area with the mouse. One post takes up to 10 images, each up to 30 MB. Common photo formats and GIFs work.
+Click **“Add images”** on the toolbar under the post text, paste an image from the clipboard or drag files into the post window. Once there are images, the plus next to them adds more too. One post takes up to 10 images, each up to 30 MB. Common photo formats and GIFs work.
 
 Images and a video uploaded from your device do not go together in one post: while a video is attached, you cannot add images, and the other way round.
 

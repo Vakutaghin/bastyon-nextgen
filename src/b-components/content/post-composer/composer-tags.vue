@@ -24,6 +24,7 @@
         @click="open = true"
         @blur="onBlur"
       />
+      <SC_TagCount v-if="tags.length">{{ tags.length }}/{{ max }}</SC_TagCount>
     </SC_TagsRow>
 
     <SC_Dropdown v-if="open && !full && suggestions.length">
@@ -50,6 +51,7 @@ import {
   SC_Dropdown,
   SC_Suggestion,
   SC_TagChip,
+  SC_TagCount,
   SC_TagInput,
   SC_TagRemove,
   SC_TagsField,
@@ -60,6 +62,8 @@ import { filterTagSuggestions, NO_ACTIVE_SUGGESTION, resolveTagOnEnter } from '.
 const props = defineProps<{
   tags: string[]
   full: boolean
+  /** Сколько тегов можно: счётчик «2/5» в строке. */
+  max: number
   inputValue: string
   /** Идёт публикация поста: теги уже в нём. */
   disabled?: boolean

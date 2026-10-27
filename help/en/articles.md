@@ -10,7 +10,7 @@ An article is a separate kind of publication for long texts: with headings, list
 
 ## Turning on the article editor
 
-In the new post window, click **“Article (rich editor)”**. An **“Article title”** field and an editor appear instead of the usual text field. You can switch back as long as the article is not published. A repost and an edit of an already published post do not have this switch.
+At the top of the new post window there is a **“Post”** / **“Article”** switch — click **“Article”**. A large **“Article title”** field and an editor appear instead of the usual text field. You can switch back as long as the article is not published. A repost and an edit of an already published post do not have this switch.
 
 ## What the editor can do
 
@@ -21,10 +21,20 @@ An article is made of blocks:
 - bulleted and numbered lists;
 - quotes;
 - code blocks;
-- images;
+- images with captions;
 - dividers.
 
-The "+" button to the left of an empty line adds a new block. Select some text — a toolbar appears where you can make it bold, italic or a link. Tags, visibility and the other settings of an article are the same as for an ordinary post.
+The editor has no frames or extra toolbars; everything appears where you need it:
+
+- **New block.** On an empty line an **“Add block”** button with a “+” appears; typing “/” at the start of a line opens the same menu. Pick with the mouse or with the arrow keys and Enter; Escape closes the menu.
+- **Formatting.** Select some text and a toolbar appears above it: **“Bold”**, **“Italic”**, **“Link”**, **“Heading”**, **“Subheading”**, **“Quote”**, **“Inline code”**. For a link, paste the address and press Enter; an empty address removes the link.
+- **Markdown as you type.** `## ` at the start of a line makes a heading, `### ` a subheading, `- ` a list, `1. ` a numbered list, `> ` a quote, three backticks a code block, `---` a divider. Text in backticks becomes code, in double asterisks bold, in single asterisks italic.
+- **Image.** Choose **“Image”** in the block menu, paste one from the clipboard or drag it right into the text. While it uploads, “Uploading the image…” shows at the bottom and publishing waits. Under the image there is an **“Image caption”** field; the **“Remove image”** cross deletes it.
+- **Undo.** Ctrl+Z undoes, Ctrl+Shift+Z redoes (⌘ on a Mac).
+
+If an article was written earlier and contains a table or a link card, the editor shows it as a grey box, for example “Table from an earlier version — kept as is”. You cannot edit such a block here, but it is not lost when you save the article. You can remove it: select the box and press Backspace.
+
+Tags, visibility and the other settings of an article are the same as for an ordinary post.
 
 An article can be about twice as long as a post — up to 120,000 characters including service fields. A new account can publish one article a day, a full account three. A published article can be edited up to 10 times within 30 days.
 

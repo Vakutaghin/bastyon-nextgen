@@ -30,7 +30,7 @@ There are several video servers, and they answer at different speeds. Clips from
 
 ## Right in a post
 
-1. In the new post window, click **“Upload video or audio”** and choose a file.
+1. In the new post window, click **“Upload video or audio”** on the toolbar under the text and choose a file.
 2. While the file uploads, you see what percentage is already on the server. Do not close the post window until the upload finishes — or upload it in the “Media studio”, where you can minimize the upload.
 3. When **“PeerTube video attached”** or **“PeerTube audio attached”** appears, fill in **“Video title”** — without it the post will not be published: **“Add a title for the video”**. Add text and tags and publish the post as usual.
 

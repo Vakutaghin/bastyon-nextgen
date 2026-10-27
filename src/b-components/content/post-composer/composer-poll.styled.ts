@@ -9,30 +9,17 @@ export const SC_Poll = styled.div`
   gap: ${SPACING.SM};
 `
 
-export const SC_PollToggle = styled.label`
-  display: inline-flex;
+/** Шапка опроса: значок, «Опрос» и крестик «Убрать опрос». */
+export const SC_PollHead = styled.div`
+  display: flex;
   align-items: center;
-  gap: ${SPACING.SM};
-  align-self: flex-start;
-  font-size: ${FONT_SIZE.MD};
+  gap: ${SPACING.XS};
+  font-size: ${FONT_SIZE.SM};
+  font-weight: 500;
   color: var(--color-text-secondary);
-  cursor: pointer;
-  user-select: none;
 
-  & input {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    accent-color: var(--color-primary);
-  }
-
-  &.disabled,
-  &.disabled input {
-    cursor: not-allowed;
-  }
-
-  &.disabled {
-    opacity: 0.6;
+  & > span {
+    flex: 1;
   }
 `
 
