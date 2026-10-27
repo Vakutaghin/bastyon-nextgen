@@ -479,6 +479,7 @@ export default {
     title: 'Paramètres',
     tabs: {
       general: 'Général',
+      layout: 'En-tête et menu',
       notifications: 'Notifications',
       system: 'Système',
       privateKey: 'Clé privée',
@@ -538,6 +539,31 @@ export default {
       storeDecryptedHint:
         'Les discussions s’ouvrent plus vite, mais les textes des messages sont stockés sur cet appareil sans chiffrement. Si vous désactivez l’option, les textes enregistrés sont effacés.',
       storeDecryptedErased: 'Textes des messages enregistrés effacés',
+    },
+    layout: {
+      headerTitle: 'Icônes de l’en-tête',
+      headerHint:
+        'À droite de la recherche, dans cet ordre. Le sablier apparaît de lui-même quand une action attend le réseau ; l’avatar est toujours au bord. Sur un téléphone, seuls les notifications et le thème tiennent dans l’en-tête.',
+      menuTitle: 'Menu du compte',
+      menuHint:
+        'S’ouvre en touchant l’avatar ; sur un téléphone, c’est la section « Compte » du menu latéral. « Changer de compte » et « Se déconnecter » sont toujours en bas.',
+      dragHint:
+        'Pour réordonner, faites glisser une ligne par la poignée à gauche, ou placez le focus sur la poignée et utilisez les flèches haut et bas.',
+      reset: 'Rétablir par défaut',
+      handle: 'Déplacer : {name}',
+      show: 'Afficher : {name}',
+      moved: '{name} — {pos} sur {total}',
+      locked: 'Toujours dans le menu : c’est par les réglages qu’on retrouve ce qui est masqué.',
+      desktopOnly: 'Uniquement dans l’application de bureau.',
+      radioOnly: 'Dans l’application de bureau et sur Android.',
+      needsMessenger: 'Fonctionne quand la messagerie est activée : « Général » → « Messagerie ».',
+      noteNotifications:
+        'Retire seulement l’icône : les notifications contextuelles restent, on les désactive dans l’onglet « Notifications ».',
+      noteNodeControls:
+        'Il ne s’active et ne se désactive que depuis cette icône. Masquez l’icône et tout reste comme avant, mais plus rien ne permet de le piloter.',
+      noteMessenger:
+        'Les discussions s’ouvrent aussi sans l’icône : avec le bouton rond en bas à droite, et sur un téléphone depuis la barre du bas.',
+      itemTheme: 'Thème clair et sombre',
     },
     general: {
       theme: 'Thème',

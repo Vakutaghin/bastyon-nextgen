@@ -472,6 +472,7 @@ export default {
     title: 'Settings',
     tabs: {
       general: 'General',
+      layout: 'Header and menu',
       notifications: 'Notifications',
       system: 'System',
       privateKey: 'Private key',
@@ -528,6 +529,31 @@ export default {
       storeDecryptedHint:
         'Chats open faster, but message texts are stored on this device unencrypted. Turning this off erases the saved texts.',
       storeDecryptedErased: 'Saved message texts erased',
+    },
+    layout: {
+      headerTitle: 'Header icons',
+      headerHint:
+        'To the right of the search, in this order. The hourglass appears on its own when an action is waiting for the network; the avatar is always at the edge. On a phone only notifications and the theme fit in the header.',
+      menuTitle: 'Account menu',
+      menuHint:
+        'Opens when you click the avatar; on a phone it is the “Account” section of the side menu. “Switch account” and “Sign out” are always at the bottom.',
+      dragHint:
+        'To reorder, drag a row by the handle on the left, or focus the handle and use the up and down arrow keys.',
+      reset: 'Restore defaults',
+      handle: 'Move: {name}',
+      show: 'Show: {name}',
+      moved: '{name} — {pos} of {total}',
+      locked: 'Always in the menu: hidden items are brought back through the settings.',
+      desktopOnly: 'Only in the desktop app.',
+      radioOnly: 'In the desktop app and on Android.',
+      needsMessenger: 'Works when the messenger is on: “General” → “Messenger”.',
+      noteNotifications:
+        'Removes only the icon: pop-up notifications stay; turn them off on the “Notifications” tab.',
+      noteNodeControls:
+        'It is turned on and off only from this icon. Hide the icon and everything stays as it was, but there is nowhere to control it from.',
+      noteMessenger:
+        'Chats open without the icon too: with the round button in the bottom right corner, on a phone — from the bottom bar.',
+      itemTheme: 'Light and dark theme',
     },
     general: {
       theme: 'Theme',

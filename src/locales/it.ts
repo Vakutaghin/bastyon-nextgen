@@ -472,6 +472,7 @@ export default {
     title: 'Impostazioni',
     tabs: {
       general: 'Generali',
+      layout: 'Barra superiore e menu',
       notifications: 'Notifiche',
       system: 'Sistema',
       privateKey: 'Chiave privata',
@@ -531,6 +532,31 @@ export default {
       storeDecryptedHint:
         'Le chat si aprono più in fretta, ma i testi dei messaggi restano su questo dispositivo senza cifratura. Se la disattivi, i testi salvati vengono cancellati.',
       storeDecryptedErased: 'Testi dei messaggi salvati cancellati',
+    },
+    layout: {
+      headerTitle: 'Icone della barra superiore',
+      headerHint:
+        'A destra della ricerca, in quest’ordine. La clessidra compare da sola quando un’azione attende la rete; l’avatar è sempre al bordo. Sul telefono nella barra entrano solo le notifiche e il tema.',
+      menuTitle: 'Menu dell’account',
+      menuHint:
+        'Si apre toccando l’avatar; sul telefono è la sezione «Account» del menu laterale. «Cambia account» ed «Esci» sono sempre in fondo.',
+      dragHint:
+        'Per riordinare, trascina una riga dalla maniglia a sinistra oppure metti il focus sulla maniglia e usa le frecce su e giù.',
+      reset: 'Ripristina predefiniti',
+      handle: 'Sposta: {name}',
+      show: 'Mostra: {name}',
+      moved: '{name} — {pos} di {total}',
+      locked: 'Sempre nel menu: dalle impostazioni si recupera ciò che è nascosto.',
+      desktopOnly: 'Solo nell’app per computer.',
+      radioOnly: 'Nell’app per computer e su Android.',
+      needsMessenger: 'Funziona con la messaggistica attiva: «Generali» → «Messaggistica».',
+      noteNotifications:
+        'Toglie solo l’icona: le notifiche a comparsa restano, si disattivano nella scheda «Notifiche».',
+      noteNodeControls:
+        'Si attiva e disattiva solo da questa icona. Se la nascondi tutto resta com’era, ma non ci sarà più da dove controllarlo.',
+      noteMessenger:
+        'Le chat si aprono anche senza l’icona: con il pulsante rotondo in basso a destra e, sul telefono, dalla barra in basso.',
+      itemTheme: 'Tema chiaro e scuro',
     },
     general: {
       theme: 'Tema',

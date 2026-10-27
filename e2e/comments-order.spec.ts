@@ -71,7 +71,9 @@ test('«Загрузить ещё» и «Обновить» не переста�
   await page.getByRole('button', { name: 'Общие', exact: true }).click()
   await page.getByRole('button', { name: 'Сначала интересные' }).click()
 
-  await page.goto('/')
+  // На главную — внутри приложения, как человек: перезагрузка страницы под
+  // нагрузкой опережала запись настройки на устройство, и порядок терялся.
+  await page.getByRole('button', { name: 'Bastyon NextGen' }).click()
   await expect(page.getByText('Пост с обсуждением').first()).toBeVisible({ timeout: 20_000 })
   await expect.poll(() => visible(page)).toEqual([39])
 

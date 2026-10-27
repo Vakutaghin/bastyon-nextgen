@@ -17,22 +17,35 @@
       <HeaderHistoryNav v-if="!mobile" />
       <HeaderSearch v-if="!mobile" />
 
+      <!-- Значки — в порядке из Настройки → «Шапка и меню». Песочные часы
+           не настраиваются: появляются, только когда есть чего ждать, — у
+           колокольчика, оба про события, а без него — с краю. -->
       <SC_Right v-hide-zero-width>
-        <HeaderServices v-if="!mobile" />
-        <HeaderTor v-if="!mobile" />
-        <HeaderIpfs v-if="!mobile" />
-        <!-- Ожидание блокчейна видно и на телефоне: часы появляются, только когда есть чего ждать. -->
-        <HeaderEvents />
-        <HeaderNotifications />
-        <HeaderReportBug v-if="!mobile" />
-        <SC_MessengerWrapper v-if="showMessengerIcon" @click="toggleMessenger">
-          <MessageOutlined :style="ICON_SIZE_XL" />
-          <SC_UnreadBadge v-if="!isFullScreen && unreadBadge">
-            {{ unreadBadge }}
-          </SC_UnreadBadge>
-        </SC_MessengerWrapper>
-
-        <HeaderThemeToggle />
+        <HeaderEvents v-if="!rightItems.includes('notifications')" />
+        <template v-for="id in rightItems" :key="id">
+          <HeaderServices v-if="id === 'services'" />
+          <HeaderTor v-else-if="id === 'tor'" />
+          <HeaderIpfs v-else-if="id === 'ipfs'" />
+          <template v-else-if="id === 'notifications'">
+            <HeaderEvents />
+            <HeaderNotifications />
+          </template>
+          <HeaderReportBug v-else-if="id === 'reportBug'" />
+          <SC_MessengerWrapper
+            v-else-if="id === 'messenger' && showMessengerIcon"
+            role="button"
+            tabindex="0"
+            :aria-label="t('bottomNav.messenger')"
+            @click="toggleMessenger"
+            @keydown.enter="toggleMessenger"
+          >
+            <MessageOutlined :style="ICON_SIZE_XL" />
+            <SC_UnreadBadge v-if="!isFullScreen && unreadBadge">
+              {{ unreadBadge }}
+            </SC_UnreadBadge>
+          </SC_MessengerWrapper>
+          <HeaderThemeToggle v-else-if="id === 'theme'" />
+        </template>
 
         <HeaderUser />
       </SC_Right>
@@ -68,6 +81,11 @@ import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
 import { useHeaderAutohide } from '@/composables/use-header-autohide'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
+import type { HeaderItemId } from '@/stores/header-layout'
+import {
+  PHONE_HEADER_ITEMS,
+  useHeaderLayout,
+} from '@/b-components/header/header-layout/layout-items'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import { vHideZeroWidth } from './hide-zero-width'
 import {
@@ -111,6 +129,14 @@ function openDrawer(): void {
 function closeDrawer(): void {
   drawerOpen.value = false
 }
+
+// Телефону — только то, что помещается в тесную шапку, в том же порядке.
+const { headerItems } = useHeaderLayout()
+const rightItems = computed<HeaderItemId[]>(() =>
+  mobile.value
+    ? headerItems.value.filter((id) => PHONE_HEADER_ITEMS.includes(id))
+    : headerItems.value
+)
 
 /** Иконка чата в хедере — на компьютере, рядом с плавающей кнопкой. На телефоне
  *  и планшете чаты открывает пункт нижней панели, а в тесной шапке второй такой

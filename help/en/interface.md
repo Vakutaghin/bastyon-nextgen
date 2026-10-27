@@ -1,5 +1,5 @@
 ---
-keywords: [interface, header, menu, sidebar, navigation, bottom bar, messenger, back, forward, landscape]
+keywords: [interface, header, menu, sidebar, navigation, bottom bar, messenger, back, forward, landscape, header icons, account menu]
 ---
 
 # Finding your way around
@@ -13,14 +13,18 @@ From left to right:
 - **The logo** takes you to the home page; the interface language is chosen next to it.
 - The **“Back”** and **“Forward”** arrows step through the pages you opened, like browser buttons. While there is nowhere to go, the arrow is pale. From the keyboard — Alt+← and Alt+→, on a Mac — Cmd+[ and Cmd+], see [Keyboard shortcuts](keyboard-shortcuts.md).
 - **Search** — people, posts and tags, see [Search](search.md).
+
+To the right of the search are the icons. This is how they stand until you rearrange them yourself:
+
 - **“Services”** — mini apps inside Bastyon: music, video, games, PKOIN exchange, see [Services](mini-apps.md). In a narrow window only the icon is left of the button.
-- **Tor** and **IPFS** — status icons of [Tor](tor.md) and [the IPFS module](ipfs-module.md). They work in the desktop app; in other versions the icon only tells you so.
-- **The hourglass** appears when you have actions the network has not confirmed yet — see [Confirming actions](transactions.md).
+- **The hourglass** appears when you have actions the network has not confirmed yet — see [Confirming actions](transactions.md). It always sits next to the bell.
 - **The bell** — **“Notifications”**, see [Notifications](notifications.md).
-- **The bug** — **“Report a bug”**, see [Reporting a bug](report-bug.md).
 - **The speech bubble** opens the messenger; the number on it is unread messages.
+- **Tor** and **IPFS** — status icons of [Tor](tor.md) and [the IPFS module](ipfs-module.md). Only in the desktop app.
 - **The sun or moon** switches between the light and dark theme.
 - **Your avatar** opens the account menu. Until you sign in, the **“Sign in”** and **“Sign up”** buttons are there instead; on a phone only **“Sign in”** — signing up is in the menu there.
+
+The bug icon — **“Report a bug”** — can be added to the header; by default it is an item of the account menu. Which icons to show and in what order is chosen in the settings, see [Header and menu](settings.md#header-and-menu).
 
 ## Above the feed
 
@@ -47,17 +51,19 @@ Under the sections are the **“Best first”** switch, **“Categories”** and
 
 ## The account menu
 
-Click your avatar in the header:
+Click your avatar in the header. By default the menu has:
 
 - **“Profile”** — your page, see [Your profile](edit-profile.md);
 - **“Wallets”** — see [Wallet and PKOIN](wallet.md);
-- **“Limits”** — see [Account status and limits](limits.md);
+- **“Paid subscriptions”** — see [Paid subscriptions](paid-subscriptions.md);
 - **“Media studio”** — uploading video and audio, your clips, their covers and statistics, see [Media studio](media-studio.md);
 - **“My files”** — only in the desktop app, see [My files](my-files.md);
-- **“Help”** and **“Settings”**;
+- **“Limits”** — see [Account status and limits](limits.md);
+- **“Mesh networks”** — in the desktop app and on Android, see [Mesh networks](mesh.md);
+- **“Help”**, **“Report a bug”** — see [Reporting a bug](report-bug.md) — and **“Settings”**;
 - **“Switch account”** and **“Sign out”** — see [Several accounts and signing out](accounts.md).
 
-If the registration was interrupted, the menu gets a **“Finish registration”** item.
+Items can be hidden and reordered; only **“Settings”** cannot be hidden — see [Header and menu](settings.md#header-and-menu). **“Switch account”** and **“Sign out”** are always at the bottom. If the registration was interrupted, the menu gets a **“Finish registration”** item.
 
 ## The messenger
 
@@ -69,7 +75,9 @@ When the screen is narrow — on a phone or in a shrunk window on a computer —
 
 The header slides away as you scroll down and comes back as soon as you scroll up a little. While the on-screen keyboard is open, the bottom bar is hidden to leave room for the text.
 
-The menu behind the three-line button in the header, right of the logo, is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“Media studio”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
+The menu behind the three-line button in the header, right of the logo, is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: the same items as in the account menu on a computer, in the same order, except **“Help”**, which is already above. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
+
+Of the icons, only the bell and the theme switch fit in the phone header; if you hide them in the settings, they are gone here too.
 
 To the right of the menu button, the **“Back”** arrow appears when there is somewhere to go back to; a narrow screen has no **“Forward”** arrow. On Android, the system Back button or gesture also goes back.
 

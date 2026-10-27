@@ -477,6 +477,7 @@ export default {
     title: 'Einstellungen',
     tabs: {
       general: 'Allgemein',
+      layout: 'Kopfzeile und Menü',
       notifications: 'Benachrichtigungen',
       system: 'System',
       privateKey: 'Privater Schlüssel',
@@ -536,6 +537,31 @@ export default {
       storeDecryptedHint:
         'Chats öffnen sich schneller, aber die Nachrichtentexte liegen unverschlüsselt auf diesem Gerät. Beim Ausschalten werden die gespeicherten Texte gelöscht.',
       storeDecryptedErased: 'Gespeicherte Nachrichtentexte gelöscht',
+    },
+    layout: {
+      headerTitle: 'Symbole in der Kopfzeile',
+      headerHint:
+        'Rechts neben der Suche, in dieser Reihenfolge. Die Sanduhr erscheint von selbst, wenn eine Aktion auf das Netzwerk wartet; der Avatar steht immer am Rand. Auf dem Handy passen nur Benachrichtigungen und das Design in die Kopfzeile.',
+      menuTitle: 'Kontomenü',
+      menuHint:
+        'Öffnet sich beim Tippen auf den Avatar, auf dem Handy ist es der Bereich „Konto“ im Seitenmenü. „Konto wechseln“ und „Abmelden“ stehen immer unten.',
+      dragHint:
+        'Reihenfolge: Zeile am Griff links ziehen oder den Griff fokussieren und mit den Pfeiltasten nach oben und unten verschieben.',
+      reset: 'Standard wiederherstellen',
+      handle: 'Verschieben: {name}',
+      show: 'Anzeigen: {name}',
+      moved: '{name} — {pos} von {total}',
+      locked: 'Immer im Menü: Darüber holt man Ausgeblendetes zurück.',
+      desktopOnly: 'Nur in der Desktop-App.',
+      radioOnly: 'In der Desktop-App und unter Android.',
+      needsMessenger: 'Funktioniert bei eingeschaltetem Messenger: „Allgemein“ → „Messenger“.',
+      noteNotifications:
+        'Entfernt nur das Symbol: Pop-up-Benachrichtigungen bleiben, sie werden im Tab „Benachrichtigungen“ ausgeschaltet.',
+      noteNodeControls:
+        'Ein- und ausgeschaltet wird es nur über dieses Symbol. Blendet man das Symbol aus, bleibt alles wie es war, aber man kann es nirgends mehr steuern.',
+      noteMessenger:
+        'Chats öffnen sich auch ohne das Symbol: über die runde Schaltfläche unten rechts, auf dem Handy über die untere Leiste.',
+      itemTheme: 'Helles und dunkles Design',
     },
     general: {
       theme: 'Design',

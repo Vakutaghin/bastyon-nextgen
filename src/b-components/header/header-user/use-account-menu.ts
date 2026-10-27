@@ -10,8 +10,12 @@ import type { Router } from 'vue-router'
 import type { useAuthStore } from '@/blockchain'
 import type { useModalStore } from '@/stores/modal-store'
 import { t } from '@/i18n'
-import { isTauriEnv } from '@/helpers/api/request-tor'
-import { isRadioSupported } from '@/mesh/radio/platform'
+import type { MenuItemId } from '@/stores/header-layout'
+import {
+  MENU_ITEMS,
+  MENU_ITEM_PATHS,
+  defaultMenuItems,
+} from '@/b-components/header/header-layout/layout-items'
 
 type AuthStore = ReturnType<typeof useAuthStore>
 type ModalStore = ReturnType<typeof useModalStore>
@@ -41,6 +45,11 @@ export interface AccountMenuOptions {
   registerModalOpenRef: Ref<boolean>
   /** Незавершённая регистрация текущего аккаунта — пункт «Завершить регистрацию». */
   registrationUnfinished?: Ref<boolean>
+  /**
+   * Пункты по порядку — из Настройки → «Шапка и меню» (только те, что есть
+   * на этой платформе). Без них — меню по умолчанию.
+   */
+  items?: Ref<MenuItemId[]>
 }
 
 export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
@@ -61,6 +70,16 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
     return '/'
   })
 
+  const items = opts.items ?? computed(() => defaultMenuItems())
+
+  /** Ключ пункта: путь раздела, у профиля — его ссылка, у действия — его id. */
+  function keyOf(id: MenuItemId): string {
+    if (id === 'profile') return profileLink.value
+    return MENU_ITEM_PATHS[id] ?? id
+  }
+
+  // Середина — из раскладки; «Завершить регистрацию» сверху и «Сменить
+  // аккаунт» / «Выйти» снизу не настраиваются.
   const menuItems = computed(() => [
     ...(registrationUnfinished.value
       ? [
@@ -68,17 +87,7 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
           { type: 'divider' },
         ]
       : []),
-    { key: profileLink.value, label: t('accountMsg.menuProfile') },
-    { key: '/wallets', label: t('accountMsg.menuWallets') },
-    { key: '/paid-subscriptions', label: t('accountMsg.menuPaidSubscriptions') },
-    { key: '/limits', label: t('accountMsg.menuLimits') },
-    { key: '/my-videos', label: t('accountMsg.menuMyVideos') },
-    // Раздавать файлы через IPFS умеет только десктоп (своя нода Kubo).
-    ...(isTauriEnv() ? [{ key: '/my-files', label: t('accountMsg.menuMyFiles') }] : []),
-    // Радио для mesh-сетей подключается только в десктопе (модуль mesh-сетей) и Android.
-    ...(isRadioSupported() ? [{ key: '/mesh', label: t('accountMsg.menuMesh') }] : []),
-    { key: '/help', label: t('accountMsg.menuHelp') },
-    { key: 'settings', label: t('accountMsg.menuSettings') },
+    ...items.value.map((id) => ({ key: keyOf(id), label: t(MENU_ITEMS[id].labelKey!) })),
     { type: 'divider' },
     { key: 'switchAccount', label: t('accountMsg.menuSwitchAccount') },
     { key: 'signout', label: t('accountMsg.menuSignOut'), danger: true },
@@ -112,8 +121,10 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
       confirmSignOutOpen.value = true
     } else if (key === 'finishRegistration') {
       openRegister()
-    } else if (key === 'settings') {
-      router.push('/settings')
+    } else if (key === 'reportBug') {
+      // Чат поддержки — модуль мессенджера: грузится по нажатию.
+      const { openSupportChat } = await import('../header-report-bug/open-support-chat')
+      await openSupportChat()
     } else if (key === 'switchAccount') {
       accountSwitcherOpen.value = true
     } else if (key.startsWith('/')) {

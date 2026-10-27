@@ -131,6 +131,7 @@ import {
   ChartColumn,
   Music,
   Rows3,
+  GripVertical,
 } from '@lucide/vue'
 
 /**
@@ -324,5 +325,7 @@ export const EyeOutlined = lucideIcon('EyeOutlined', Eye)
 
 /** «Медиастудия»: вид списком, статистика ролика, пометка «аудио». */
 export const ListViewIcon = lucideIcon('ListViewIcon', Rows3)
+/** Ручка, за которую перетаскивают строку списка. */
+export const DragHandleIcon = lucideIcon('DragHandleIcon', GripVertical)
 export const StatsIcon = lucideIcon('StatsIcon', ChartColumn)
 export const MusicIcon = lucideIcon('MusicIcon', Music)

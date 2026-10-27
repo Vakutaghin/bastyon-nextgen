@@ -472,6 +472,7 @@ export default {
     title: '설정',
     tabs: {
       general: '일반',
+      layout: '상단 바와 메뉴',
       notifications: '알림',
       system: '시스템',
       privateKey: '개인 키',
@@ -526,6 +527,31 @@ export default {
       storeDecryptedHint:
         '채팅이 더 빨리 열리지만 메시지 텍스트가 이 기기에 암호화되지 않은 채 저장됩니다. 끄면 저장된 텍스트가 삭제됩니다.',
       storeDecryptedErased: '저장된 메시지 텍스트를 삭제했습니다',
+    },
+    layout: {
+      headerTitle: '상단 바 아이콘',
+      headerHint:
+        '검색창 오른쪽에 이 순서로 표시됩니다. 모래시계는 작업이 네트워크를 기다릴 때 저절로 나타나고, 아바타는 항상 맨 끝에 있습니다. 휴대폰 상단 바에는 알림과 테마만 들어갑니다.',
+      menuTitle: '계정 메뉴',
+      menuHint:
+        '아바타를 누르면 열립니다. 휴대폰에서는 사이드 메뉴의 「계정」 섹션입니다. 「계정 전환」과 「로그아웃」은 항상 맨 아래에 있습니다.',
+      dragHint:
+        '순서를 바꾸려면 왼쪽 손잡이로 행을 끌거나, 손잡이에 초점을 두고 위아래 화살표 키를 누르세요.',
+      reset: '기본값으로 되돌리기',
+      handle: '이동: {name}',
+      show: '표시: {name}',
+      moved: '{name} — {total}개 중 {pos}번째',
+      locked: '항상 메뉴에 있습니다: 숨긴 항목은 설정에서 되돌립니다.',
+      desktopOnly: '데스크톱 앱에서만 사용할 수 있습니다.',
+      radioOnly: '데스크톱 앱과 Android에서 사용할 수 있습니다.',
+      needsMessenger: '메신저가 켜져 있을 때 작동합니다: 「일반」 → 「메신저」.',
+      noteNotifications:
+        '아이콘만 숨깁니다. 팝업 알림은 계속 표시되며 「알림」 탭에서 끌 수 있습니다.',
+      noteNodeControls:
+        '이 아이콘에서만 켜고 끌 수 있습니다. 아이콘을 숨겨도 그대로 작동하지만 제어할 곳이 없어집니다.',
+      noteMessenger:
+        '아이콘이 없어도 채팅을 열 수 있습니다. 오른쪽 아래의 둥근 버튼으로, 휴대폰에서는 하단 바에서 엽니다.',
+      itemTheme: '밝은 테마와 어두운 테마',
     },
     general: {
       theme: '테마',

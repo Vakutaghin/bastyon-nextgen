@@ -118,6 +118,7 @@ import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import { useRegistrationFlow } from './use-registration-flow'
 import { useAccountMenu } from './use-account-menu'
+import { useHeaderLayout } from '@/b-components/header/header-layout/layout-items'
 import {
   SC_UserDetails,
   SC_UserName,
@@ -184,6 +185,7 @@ const {
   openRegister: openRegisterModal,
   registerModalOpenRef: registerModalOpen,
   registrationUnfinished,
+  items: useHeaderLayout().menuItems,
 })
 
 // === Отображение пользователя в шапке ===

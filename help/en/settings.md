@@ -1,5 +1,5 @@
 ---
-keywords: [settings, preferences, content, modules, cache, diagnostics, what’s new, settings tabs]
+keywords: [settings, preferences, content, modules, cache, diagnostics, what’s new, settings tabs, header and menu, header icons, account menu, menu order]
 ---
 
 # Settings
@@ -17,6 +17,25 @@ Settings open from the account menu — **“Settings”** — or, on a phone, f
   - **“Link previews”** — a card with the title and image under a link;
   - **“Comments order”** — the order a discussion opens in, see [Comments](comments.md);
   - **“Messenger”** — turns the chat off entirely, see [Messenger](messenger.md).
+
+## Header and menu
+
+What stands in the header to the right of the search and what is in the avatar menu — and in what order.
+
+- **“Header icons”** — **“Services”**, **“Notifications”**, **“Chats”**, Tor, IPFS, the theme switch and **“Report a bug”**. The hourglass is not configurable: it appears on its own, next to the bell, when an action is waiting for the network. The avatar is always at the edge.
+- **“Account menu”** — the items of the avatar menu, and on a phone of the **“Account”** section of the side menu. **“Settings”** cannot be hidden: that is how hidden items are brought back. **“Switch account”** and **“Sign out”** are always at the bottom.
+
+The switch on the right shows or hides an item. To change the order, drag a row by the handle on the left — with the mouse or a finger. From the keyboard: Tab to the handle, then the up and down arrow keys. Everything changes at once, there is nothing to save. **“Restore defaults”** under the list brings back the original set and order.
+
+Items that this version of the app does not have are shown with an explanation, and their switch does not turn on. Tor, IPFS and **“My files”** are only in the desktop app, **“Mesh networks”** — also on Android. Chats and **“Report a bug”** work when **“Messenger”** is on, on the **“General”** tab.
+
+What hiding an icon means:
+
+- without the bell, notifications still pop up; turn them off on the **“Notifications”** tab;
+- without the speech bubble, chats open with the round button in the bottom right corner, and on a phone with **“Chats”** in the bottom bar;
+- Tor and IPFS are turned on and off only from their icons: a hidden icon does not turn them off, but there is nowhere to control them from until you bring the icon back.
+
+On a phone only the bell and the theme fit in the header, in the order set here. The layout is per device and shared by all accounts on it. Until you change anything, the app keeps the default layout and updates it by itself in new versions.
 
 ## Notifications
 

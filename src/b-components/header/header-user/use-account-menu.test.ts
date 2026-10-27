@@ -5,13 +5,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
 
-const mocks = vi.hoisted(() => ({ tauri: false }))
+const mocks = vi.hoisted(() => ({ tauri: false, openSupportChat: vi.fn(async () => {}) }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 vi.mock('@/helpers/api/request-tor', () => ({ isTauriEnv: () => mocks.tauri }))
+vi.mock('../header-report-bug/open-support-chat', () => ({
+  openSupportChat: mocks.openSupportChat,
+}))
 
 import { useAccountMenu, type AccountMenuOptions } from './use-account-menu'
+import type { MenuItemId } from '@/stores/header-layout'
 
-function setup(overrides: { registrationUnfinished?: boolean } = {}) {
+function setup(overrides: { registrationUnfinished?: boolean; items?: MenuItemId[] } = {}) {
   const authStore = reactive({
     getUserAddress: 'PAddr1' as string | null,
     getUserProfile: null as { name?: string; address?: string } | null,
@@ -37,6 +41,7 @@ function setup(overrides: { registrationUnfinished?: boolean } = {}) {
     openRegister,
     registerModalOpenRef,
     registrationUnfinished,
+    ...(overrides.items ? { items: ref(overrides.items) } : {}),
   } as unknown as AccountMenuOptions)
   return {
     authStore,
@@ -56,16 +61,17 @@ describe('useAccountMenu', () => {
     mocks.tauri = false
   })
 
-  it('пункты меню в вебе: профиль по адресу, без «Моих файлов»', () => {
+  it('пункты меню в вебе по умолчанию: профиль по адресу, без «Моих файлов»', () => {
     const { menu } = setup()
     expect(keys(menu.menuItems.value)).toEqual([
       '/PAddr1',
       '/wallets',
       '/paid-subscriptions',
-      '/limits',
       '/my-videos',
+      '/limits',
       '/help',
-      'settings',
+      'reportBug',
+      '/settings',
       'divider',
       'switchAccount',
       'signout',
@@ -83,6 +89,17 @@ describe('useAccountMenu', () => {
     expect(keys(menu.menuItems.value).slice(0, 2)).toEqual(['finishRegistration', 'divider'])
   })
 
+  it('свой порядок и набор из «Шапки и меню»; выход и смена аккаунта — всегда внизу', () => {
+    const { menu } = setup({ items: ['settings', 'wallets'] })
+    expect(keys(menu.menuItems.value)).toEqual([
+      '/settings',
+      '/wallets',
+      'divider',
+      'switchAccount',
+      'signout',
+    ])
+  })
+
   it('ссылка на профиль — по имени в нижнем регистре, иначе по адресу, иначе на главную', () => {
     const { menu, authStore } = setup()
     authStore.getUserProfile = { name: 'AliceBob' }
@@ -95,8 +112,13 @@ describe('useAccountMenu', () => {
   it('клики по пунктам: переходы, регистрация, свитчер', async () => {
     const { menu, router, openRegister } = setup({ registrationUnfinished: true })
     await menu.handleMenuClick({ key: '/wallets' })
-    await menu.handleMenuClick({ key: 'settings' })
+    await menu.handleMenuClick({ key: '/settings' })
     expect(router.push.mock.calls).toEqual([['/wallets'], ['/settings']])
+
+    // «Сообщить об ошибке» — чат поддержки, а не переход.
+    await menu.handleMenuClick({ key: 'reportBug' })
+    expect(mocks.openSupportChat).toHaveBeenCalledTimes(1)
+    expect(router.push).toHaveBeenCalledTimes(2)
 
     await menu.handleMenuClick({ key: 'finishRegistration' })
     expect(openRegister).toHaveBeenCalledTimes(1)

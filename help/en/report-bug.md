@@ -6,11 +6,13 @@ keywords: [bug, error, support, feedback, write to the developers, app details, 
 
 How to tell the developers about a problem and what to include so it can be found quickly.
 
-## The button in the header
+## Where the button is
 
-The bug icon in the header — **“Report a bug”** — opens a [chat](messenger.md) with the Bastyon NextGen support account. Describe the problem there, like a regular message; you can attach a screenshot. The conversation is encrypted, like any private chat.
+**“Report a bug”** is an item of the account menu: click your avatar in the header, and on a phone open the **“Account”** section of the side menu. It opens a [chat](messenger.md) with the Bastyon NextGen support account. Describe the problem there, like a regular message; you can attach a screenshot. The conversation is encrypted, like any private chat.
 
-The button is visible when you are signed in and the messenger is on.
+If you report often, put the bug icon in the header: Settings → [“Header and menu”](settings.md#header-and-menu).
+
+The button works when you are signed in and the messenger is on.
 
 ## App details
 

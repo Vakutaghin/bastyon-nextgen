@@ -476,6 +476,7 @@ export default {
     title: 'Ajustes',
     tabs: {
       general: 'General',
+      layout: 'Barra superior y menú',
       notifications: 'Notificaciones',
       system: 'Sistema',
       privateKey: 'Clave privada',
@@ -535,6 +536,31 @@ export default {
       storeDecryptedHint:
         'Los chats se abren más rápido, pero los textos de los mensajes quedan sin cifrar en este dispositivo. Si lo desactivas, los textos guardados se borran.',
       storeDecryptedErased: 'Textos de mensajes guardados borrados',
+    },
+    layout: {
+      headerTitle: 'Iconos de la barra superior',
+      headerHint:
+        'A la derecha de la búsqueda, en este orden. El reloj de arena aparece solo cuando una acción espera a la red; el avatar siempre está en el borde. En el teléfono solo caben las notificaciones y el tema.',
+      menuTitle: 'Menú de la cuenta',
+      menuHint:
+        'Se abre al pulsar el avatar; en el teléfono es la sección «Cuenta» del menú lateral. «Cambiar de cuenta» y «Cerrar sesión» siempre están abajo.',
+      dragHint:
+        'Para cambiar el orden, arrastra una fila por el asa de la izquierda o enfoca el asa y usa las flechas arriba y abajo.',
+      reset: 'Restablecer',
+      handle: 'Mover: {name}',
+      show: 'Mostrar: {name}',
+      moved: '{name}: {pos} de {total}',
+      locked: 'Siempre en el menú: desde los ajustes se recupera lo oculto.',
+      desktopOnly: 'Solo en la aplicación de escritorio.',
+      radioOnly: 'En la aplicación de escritorio y en Android.',
+      needsMessenger: 'Funciona con la mensajería activada: «General» → «Mensajería».',
+      noteNotifications:
+        'Solo quita el icono: las notificaciones emergentes siguen; se desactivan en la pestaña «Notificaciones».',
+      noteNodeControls:
+        'Se activa y desactiva solo desde este icono. Si lo ocultas, todo queda como estaba, pero no habrá desde dónde controlarlo.',
+      noteMessenger:
+        'Los chats se abren también sin el icono: con el botón redondo de la esquina inferior derecha y, en el teléfono, desde la barra inferior.',
+      itemTheme: 'Tema claro y oscuro',
     },
     general: {
       theme: 'Tema',

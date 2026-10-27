@@ -444,6 +444,7 @@ export default {
     title: '设置',
     tabs: {
       general: '通用',
+      layout: '顶栏与菜单',
       notifications: '通知',
       system: '系统',
       privateKey: '私钥',
@@ -496,6 +497,27 @@ export default {
       storeDecryptedHint:
         '聊天打开更快，但消息文本会以未加密的形式保存在此设备上。关闭后，已保存的文本将被删除。',
       storeDecryptedErased: '已删除保存的消息文本',
+    },
+    layout: {
+      headerTitle: '顶栏图标',
+      headerHint:
+        '位于搜索框右侧，按此顺序排列。操作等待网络确认时会自动出现沙漏，头像始终在最边上。在手机上，顶栏只放得下通知和主题。',
+      menuTitle: '账户菜单',
+      menuHint:
+        '点击头像打开；在手机上是侧边菜单中的“账户”部分。“切换账户”和“退出登录”始终在最下方。',
+      dragHint: '调整顺序：按住左侧把手拖动行，或聚焦把手后用上下方向键移动。',
+      reset: '恢复默认',
+      handle: '移动：{name}',
+      show: '显示：{name}',
+      moved: '{name}：第 {pos} 项，共 {total} 项',
+      locked: '始终在菜单中：隐藏的项目要通过设置找回。',
+      desktopOnly: '仅在桌面应用中提供。',
+      radioOnly: '在桌面应用和 Android 上提供。',
+      needsMessenger: '开启聊天后可用：“通用” → “聊天”。',
+      noteNotifications: '只隐藏图标：弹出通知仍会出现，可在“通知”标签页中关闭。',
+      noteNodeControls: '只能通过这个图标开启或关闭。隐藏图标后它照常运行，但将无处控制。',
+      noteMessenger: '没有图标也能打开聊天：点右下角的圆形按钮，在手机上则从底部栏打开。',
+      itemTheme: '浅色和深色主题',
     },
     general: {
       theme: '主题',

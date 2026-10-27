@@ -38,11 +38,11 @@
           <SC_Tabs>
             <SC_TabsItem
               v-for="item in accountItems"
-              :key="item.path"
-              :active="isActive(item.path)"
+              :key="item.id"
+              :active="!!item.path && isActive(item.path)"
               :disabled="false"
               type="button"
-              @click="go(item.path)"
+              @click="openItem(item)"
             >
               <component :is="item.icon" />
               <SC_TabsLabel>{{ item.label }}</SC_TabsLabel>
@@ -69,24 +69,18 @@ import { closePageOverlay, openPageOverlay } from '@/composables/use-page-overla
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { useFiltersStore } from '@/stores/filters-store'
-import { isTauriEnv } from '@/helpers/api/request-tor'
-import { isRadioSupported } from '@/mesh/radio/platform'
+import type { MenuItemId } from '@/stores/header-layout'
+import {
+  MENU_ITEMS,
+  MENU_ITEM_PATHS,
+  useHeaderLayout,
+} from '@/b-components/header/header-layout/layout-items'
 import SidebarTabs from '@/b-components/sidebar/sidebar-tabs/sidebar-tabs.vue'
 import SidebarCategories from '@/b-components/sidebar/sidebar-categories/sidebar-categories.vue'
 import SidebarTags from '@/b-components/sidebar/sidebar-tags/sidebar-tags.vue'
 import AppVersionBadge from '@/b-components/app-update/app-version-badge.vue'
 import { SC_Tabs, SC_TabsItem, SC_TabsLabel } from '@/b-components/sidebar/sidebar-tabs/styled'
-import {
-  CloseOutlined,
-  FileOutlined,
-  HourglassOutlined,
-  PlayCircleOutlined,
-  RadioTowerIcon,
-  SettingOutlined,
-  UserOutlined,
-  WalletOutlined,
-  CrownOutlined,
-} from '@/components/icons'
+import { CloseOutlined } from '@/components/icons'
 import {
   SC_Backdrop,
   SC_Drawer,
@@ -118,26 +112,19 @@ const profileLink = computed<string>(() => {
   return address ? '/' + address : '/'
 })
 
-const accountItems = computed(() => [
-  { path: profileLink.value, label: t('accountMsg.menuProfile'), icon: UserOutlined },
-  { path: '/wallets', label: t('accountMsg.menuWallets'), icon: WalletOutlined },
-  {
-    path: '/paid-subscriptions',
-    label: t('accountMsg.menuPaidSubscriptions'),
-    icon: CrownOutlined,
-  },
-  { path: '/limits', label: t('accountMsg.menuLimits'), icon: HourglassOutlined },
-  { path: '/my-videos', label: t('accountMsg.menuMyVideos'), icon: PlayCircleOutlined },
-  // Раздавать файлы через IPFS умеет только десктоп (своя нода Kubo); радио для
-  // mesh-сетей подключается на десктопе и в Android.
-  ...(isTauriEnv()
-    ? [{ path: '/my-files', label: t('accountMsg.menuMyFiles'), icon: FileOutlined }]
-    : []),
-  ...(isRadioSupported()
-    ? [{ path: '/mesh', label: t('accountMsg.menuMesh'), icon: RadioTowerIcon }]
-    : []),
-  { path: '/settings', label: t('accountMsg.menuSettings'), icon: SettingOutlined },
-])
+// Те же пункты и порядок, что в меню аккаунта на компьютере (Настройки →
+// «Шапка и меню»), без «Справки»: она уже есть в разделах выше.
+const { menuItems } = useHeaderLayout()
+const accountItems = computed(() =>
+  menuItems.value
+    .filter((id) => id !== 'help')
+    .map((id) => ({
+      id,
+      path: id === 'profile' ? profileLink.value : MENU_ITEM_PATHS[id],
+      label: t(MENU_ITEMS[id].labelKey!),
+      icon: MENU_ITEMS[id].icon,
+    }))
+)
 
 const everOpened = ref(false)
 
@@ -148,6 +135,18 @@ function isActive(path: string): boolean {
 
 function close() {
   emit('close')
+}
+
+function openItem(item: { id: MenuItemId; path?: string }): void {
+  if (item.path) {
+    go(item.path)
+    return
+  }
+  // «Сообщить об ошибке» — чат поддержки во весь экран.
+  close()
+  void import('@/b-components/header/header-report-bug/open-support-chat').then((m) =>
+    m.openSupportChat()
+  )
 }
 
 function go(path: string) {

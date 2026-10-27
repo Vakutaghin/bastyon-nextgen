@@ -17,6 +17,7 @@
 
         <SC_SettingsMain>
           <GeneralTab v-if="activeTab === 'general'" />
+          <LayoutTab v-else-if="activeTab === 'layout'" />
           <WhatsNewTab v-else-if="activeTab === 'whatsNew'" />
           <NotificationsTab v-else-if="activeTab === 'notifications'" />
           <PrivateKeyTab v-else-if="activeTab === 'privateKey'" />
@@ -40,6 +41,7 @@ import { useNotificationSettingsStore } from '@/stores'
 import { useUIStore } from '@/stores/ui-store'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import GeneralTab from './tabs/general-tab.vue'
+import LayoutTab from './tabs/layout-tab.vue'
 import NotificationsTab from './tabs/notifications-tab.vue'
 import PrivateKeyTab from './tabs/private-key-tab.vue'
 import BlockExplorerTab from './tabs/block-explorer-tab.vue'
@@ -62,6 +64,7 @@ defineOptions({ name: 'SettingsPage' })
 
 export type T_SettingsTabKey =
   | 'general'
+  | 'layout'
   | 'notifications'
   | 'system'
   | 'modules'
@@ -76,6 +79,7 @@ export type T_SettingsTabKey =
 // Модули скачивает только приложение для компьютера.
 const SETTINGS_TABS: { key: T_SettingsTabKey; labelKey: string }[] = [
   { key: 'general', labelKey: 'settings.tabs.general' },
+  { key: 'layout', labelKey: 'settings.tabs.layout' },
   { key: 'notifications', labelKey: 'settings.tabs.notifications' },
   { key: 'system', labelKey: 'settings.tabs.system' },
   ...(isTauri() ? [{ key: 'modules' as const, labelKey: 'settings.tabs.modules' }] : []),
