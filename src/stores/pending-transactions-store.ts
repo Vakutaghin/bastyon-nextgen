@@ -1,16 +1,20 @@
 /**
- * Транзакции, которые ушли в сеть и ждут блока, — для «песочных часов» в шапке.
- * Новые посты, новые комментарии и оценки постов показывают свои сторы
- * (pending-posts, comments, pending-ratings). Здесь всё остальное:
+ * Транзакции, которые ушли в сеть и ждут блока, — для «песочных часов» в шапке:
  * - продвижение, переводы, донаты и оплаты;
  * - правки и удаления, оценки комментариев;
  * - профиль и регистрация, подписки, блокировки, жалобы.
+ * Новые посты и комментарии здесь тоже отслеживаются, но в часах их показывают
+ * свои сторы (pending-posts, comments) — с текстом; они узнают о блоке по
+ * onTransactionSettled. Оценки постов проверяет pending-ratings.
  *
  * Отправку сообщает transaction-sender (broadcast-events), так что новая
  * операция попадёт сюда сама. Ожидание снимается, когда транзакция в блоке:
- * событие WS по txid или проверка ноды (getrawtransaction). Не подтвердилась
- * за час — убираем, чтобы часы не висели вечно. Список хранится по аккаунтам:
- * ожидание переживает перезапуск.
+ * событие WS по txid или проверка ноды (getrawtransaction) — по таймеру, на
+ * каждом новом блоке, после переподключения WS и при возврате в приложение:
+ * событие WS по адресу теряется, если сокет в это время был закрыт. Не
+ * подтвердилась за час (отложенный пост — за час после своего времени) —
+ * убираем, чтобы часы не висели вечно. Список хранится по аккаунтам: ожидание
+ * переживает перезапуск.
  */
 
 import { defineStore } from 'pinia'
@@ -31,6 +35,8 @@ export interface PendingTransaction {
   txid: string
   kind: PendingKind
   createdAt: number
+  /** Отложенный пост: раньше этого времени (мс) в блок не попадёт. */
+  notBefore?: number
   postId?: string
   address?: string
   title?: string
@@ -43,6 +49,14 @@ export const PENDING_TX_TTL_MS = 60 * 60 * 1000
 export const PENDING_TX_CHECK_MS = 20_000
 /** Сколько транзакций проверять за раз. */
 const CHECK_BATCH = 10
+
+/** Их показывают свои сторы с текстом поста и комментария; здесь — только ожидание блока. */
+const SHOWN_ELSEWHERE: ReadonlySet<PendingKind> = new Set<PendingKind>(['post', 'comment'])
+
+/** До какого времени ждать блока: час, у отложенного поста — час после его времени. */
+export function pendingDeadline(item: Pick<PendingTransaction, 'createdAt' | 'notBefore'>): number {
+  return Math.max(item.createdAt, item.notBefore ?? 0) + PENDING_TX_TTL_MS
+}
 
 /** Вид ожидания по типу транзакции; подпись отправителя важнее. */
 export function pendingKindOf(operationType: string, meta: PendingMeta): PendingKind {
@@ -114,10 +128,17 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
 
   let stopBroadcast: (() => void) | null = null
   let stopWs: (() => void) | null = null
+  let stopBlock: (() => void) | null = null
+  let stopOpen: (() => void) | null = null
+  let stopVisibility: (() => void) | null = null
   let timer: ReturnType<typeof setInterval> | null = null
   let checking = false
+  /** Проверку попросили, пока шла прежняя: повторить сразу после неё. */
+  let checkAgain = false
 
-  const count = computed(() => items.value.length)
+  /** Что показывать в часах: посты и комментарии показывают свои сторы. */
+  const listed = computed(() => items.value.filter((i) => !SHOWN_ELSEWHERE.has(i.kind)))
+  const count = computed(() => listed.value.length)
 
   const persist = () => {
     if (owner.value) writeStored(owner.value, items.value)
@@ -132,6 +153,7 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
         txid: tx.txid,
         kind: pendingKindOf(tx.operationType, meta),
         createdAt: Date.now(),
+        ...(meta.notBefore ? { notBefore: meta.notBefore } : {}),
         ...(meta.postId ? { postId: meta.postId } : {}),
         ...(meta.address ? { address: meta.address } : {}),
         ...(meta.title ? { title: meta.title } : {}),
@@ -152,7 +174,7 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
   }
 
   function cleanupExpired(now: number = Date.now()): void {
-    const fresh = items.value.filter((i) => now - i.createdAt < PENDING_TX_TTL_MS)
+    const fresh = items.value.filter((i) => now < pendingDeadline(i))
     if (fresh.length === items.value.length) return
     const expired = items.value.filter((i) => !fresh.includes(i))
     items.value = fresh
@@ -162,11 +184,19 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
 
   /** Спросить ноду про самые старые ожидания: WS мог подтверждение пропустить. */
   async function checkWithNode(): Promise<void> {
-    if (checking) return
+    if (checking) {
+      checkAgain = true
+      return
+    }
     checking = true
     try {
       cleanupExpired()
-      const batch = [...items.value].sort((a, b) => a.createdAt - b.createdAt).slice(0, CHECK_BATCH)
+      const now = Date.now()
+      // Отложенный пост до своего времени в блок не попадёт — ноду не дёргаем.
+      const batch = items.value
+        .filter((i) => !i.notBefore || i.notBefore <= now)
+        .sort((a, b) => a.createdAt - b.createdAt)
+        .slice(0, CHECK_BATCH)
       for (const item of batch) {
         try {
           const res = await getByPRC({
@@ -184,7 +214,16 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
       }
     } finally {
       checking = false
+      if (checkAgain) {
+        checkAgain = false
+        void checkWithNode()
+      }
     }
+  }
+
+  /** Есть чего ждать — спросить ноду сейчас, не дожидаясь таймера. */
+  function checkSoon(): void {
+    if (items.value.length) void checkWithNode()
   }
 
   function ensureTimer(): void {
@@ -209,6 +248,18 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
         if (txid) confirm(txid)
       })
     }
+    // Новый блок — наши транзакции могли в него попасть; сокет переподключился —
+    // события по адресу, пришедшие без нас, потеряны.
+    if (!stopBlock) stopBlock = wsService.on('block', checkSoon)
+    if (!stopOpen) stopOpen = wsService.on('open', checkSoon)
+    // Вернулись в приложение: таймер в фоне (телефон, свёрнутое окно) стоял.
+    if (!stopVisibility && typeof document !== 'undefined') {
+      const onVisible = () => {
+        if (document.visibilityState === 'visible') checkSoon()
+      }
+      document.addEventListener('visibilitychange', onVisible)
+      stopVisibility = () => document.removeEventListener('visibilitychange', onVisible)
+    }
     if (address === owner.value) return
     owner.value = address
     items.value = address ? readStored(address) : []
@@ -220,8 +271,11 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
   onScopeDispose(() => {
     stopBroadcast?.()
     stopWs?.()
+    stopBlock?.()
+    stopOpen?.()
+    stopVisibility?.()
     if (timer) clearInterval(timer)
   })
 
-  return { items, owner, count, init, add, confirm, cleanupExpired, checkWithNode }
+  return { items, listed, owner, count, init, add, confirm, cleanupExpired, checkWithNode }
 })

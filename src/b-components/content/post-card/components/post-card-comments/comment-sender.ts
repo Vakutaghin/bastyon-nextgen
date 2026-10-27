@@ -74,8 +74,11 @@ export async function sendComment(
 ): Promise<string> {
   if (!postId || !messageText.trim()) throw new Error(t('commentsMsg.errPostAndTextRequired'))
   const body = editId ? editedBody(originalMsg, messageText) : textBody(messageText)
-  // Новый комментарий ждёт в comments-store, правка — в общих «песочных часах».
-  const pending = editId ? { postId, title: pendingSnippet(messageText) } : false
+  // Правка — в общих «песочных часах». Новый комментарий часы показывают из
+  // comments-store, но блок за ним следит тот же трекер.
+  const pending: PendingMeta = editId
+    ? { postId, title: pendingSnippet(messageText) }
+    : { kind: 'comment', postId }
   return sendCommentBody(postId, parentId, answerId, body, pending, editId)
 }
 

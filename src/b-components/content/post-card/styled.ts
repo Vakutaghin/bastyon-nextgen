@@ -57,6 +57,37 @@ export const SC_PendingBadge = styled.div`
     width: 12px;
     height: 12px;
   }
+
+  &.failed {
+    margin-bottom: 0;
+    color: var(--color-danger);
+    background: var(--color-danger-bg-soft);
+  }
+`
+
+/** Свой пост не попал в блок: пометка, что делать, и «Убрать». */
+export const SC_TxFailedNote = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: calc(1.4 * var(--leading-scale));
+  color: var(--ui-text-muted);
+`
+
+export const SC_TxFailedDismiss = styled.button`
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ui-primary);
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `
 
 /** Пометка «Для подписчиков» и т. п. — у поста с ограниченной видимостью. */

@@ -74,13 +74,18 @@ export async function sendPost(post: SharePostData): Promise<string> {
     hex: builtTx.hex,
     messageData: payload,
     operationType: operationType,
-    // Новый пост ждёт в своём сторе (pending-posts), правка — в общих «песочных часах».
+    // Правка — в общих «песочных часах». Новый пост часы показывают из своего
+    // стора (pending-posts), но блок за ним следит тот же трекер.
     pending: post.txidEdit
       ? {
           kind: 'postEdit',
           postId: post.txidEdit,
           title: pendingSnippet(post.caption) ?? pendingSnippet(post.message),
         }
-      : false,
+      : {
+          kind: 'post',
+          title: pendingSnippet(post.caption) ?? pendingSnippet(post.message),
+          ...(delayedNtime ? { notBefore: delayedNtime * 1000 } : {}),
+        },
   })
 }

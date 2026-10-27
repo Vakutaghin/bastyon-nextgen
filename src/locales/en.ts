@@ -2690,9 +2690,16 @@ export default {
     errSelectUnspents: 'Failed to prepare funds for the transaction',
     errSendFailed: 'Failed to publish the post',
     errImageUpload: 'Could not upload the image. Try publishing again.',
-    publishSuccess: 'Post published',
+    publishSuccess: 'Post sent to the network',
     txPending: 'Not yet published to the blockchain',
     txPendingShort: 'Pending',
+    txScheduled: 'Will be published {date}',
+    txFailed: 'Did not make it into the blockchain',
+    txFailedHint:
+      'The network never included this post in a block. The text is kept here: copy it and publish again.',
+    txFailedDismiss: 'Remove',
+    txConfirmedToast: 'Post published on the blockchain',
+    txFailedToast: 'The post did not make it into the blockchain. It is kept in your profile',
     validation: {
       empty: 'A post cannot be empty',
       language: 'Post language is not set',

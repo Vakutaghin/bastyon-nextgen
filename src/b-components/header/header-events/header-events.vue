@@ -172,7 +172,7 @@ import {
   usePostsStore,
   usePendingPostsStore,
 } from '@/stores'
-import { usePendingPostsRealtime } from '@/composables/use-pending-posts-realtime'
+import { appToast } from '@/b-components/app-toast'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
 import { buildCurrentUserAuthor } from '@/helpers/common/current-user-author'
 import type { PendingPost } from '@/stores/pending-posts-store'
@@ -242,6 +242,9 @@ export type PendingHeaderItem =
 
 /** Значок вида транзакции. */
 const TX_ICONS: Record<PendingKind, unknown> = {
+  // Новые посты и комментарии в часах показывают свои сторы — значки на всякий случай.
+  post: FileTextOutlined,
+  comment: MessageOutlined,
   boost: ThunderboltOutlined,
   transfer: SendOutlined,
   donate: GiftOutlined,
@@ -275,16 +278,43 @@ const pendingTxStore = usePendingTransactionsStore()
 const router = useRouter()
 
 pendingStore.init()
-// Остальные транзакции аккаунта: продвижение, переводы, правки, подписки…
+// Остальные транзакции аккаунта (продвижение, переводы, правки, подписки…) и
+// блок для новых постов и комментариев — общий трекер; посты переживают
+// перезапуск. Шапка живёт всегда, так что часы гаснут сами, где бы человек ни был.
+commentsStore.init()
 watch(
   () => authStore.getUserAddress,
-  (address) => pendingTxStore.init(address),
+  (address) => {
+    pendingTxStore.init(address)
+    pendingPostsStore.init(address)
+  },
   { immediate: true }
 )
 
-// Снимаем pending-посты по WS-подтверждению даже когда пользователь не в своём
-// профиле (шапка живёт всегда) — счётчик «песочных часов» гаснет сам.
-usePendingPostsRealtime()
+// Исход своего поста — тостом: пометку в ленте профиля видно, только если она открыта.
+const postStates = computed(() => {
+  const states = new Map<string, 'waiting' | 'confirmed' | 'failed'>()
+  for (const list of Object.values(pendingPostsStore.pendingByAddress)) {
+    for (const p of list) {
+      states.set(p.id, p.confirmedAt ? 'confirmed' : p.failed ? 'failed' : 'waiting')
+    }
+  }
+  return states
+})
+watch(postStates, (now, before) => {
+  for (const [id, state] of now) {
+    if (before.get(id) !== 'waiting' || state === 'waiting') continue
+    const toProfile = () => {
+      const address = authStore.getUserAddress
+      if (address) go(`/${address}`)
+    }
+    if (state === 'confirmed') {
+      appToast.success({ message: t('postMsg.txConfirmedToast'), onClick: toProfile })
+    } else {
+      appToast.error({ message: t('postMsg.txFailedToast'), onClick: toProfile })
+    }
+  }
+})
 
 // TTL-страховка. Раньше просроченные pending чистились только в ленте своего
 // профиля, поэтому «песочные часы» в шапке висели до перезагрузки, даже если
@@ -324,9 +354,11 @@ watch(
   () => pendingPostsStore.allPending.map((p) => p.id).join(','),
   () => {
     const id = previewPost.value?.id
-    if (previewOpen.value && id && !pendingPostsStore.allPending.some((p) => p.id === id)) {
-      previewConfirmed.value = true
-    }
+    if (!previewOpen.value || !id || pendingPostsStore.allPending.some((p) => p.id === id)) return
+    // Ушёл из ожидания: в блоке (или лента его уже отдала) — «опубликован»;
+    // не попал в блок — превью закрываем, пометка на карточке в профиле.
+    if (pendingPostsStore.findTx(id)?.failed) previewOpen.value = false
+    else previewConfirmed.value = true
   }
 )
 
@@ -385,7 +417,7 @@ const pendingItems = computed<PendingHeaderItem[]>(() => {
     })
   }
 
-  for (const tx of pendingTxStore.items) {
+  for (const tx of pendingTxStore.listed) {
     items.push({
       kind: 'tx',
       key: `tx:${tx.txid}`,

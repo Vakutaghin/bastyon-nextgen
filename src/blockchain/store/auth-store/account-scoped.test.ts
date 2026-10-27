@@ -1,4 +1,5 @@
-// X9: одна точка сброса пер-аккаунтных сторов — каждый из них действительно сбрасывается.
+// X9: одна точка сброса пер-аккаунтных сторов — каждый из них действительно сбрасывается,
+// а посты нового аккаунта, ждущие блока, поднимаются из хранилища.
 
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -71,5 +72,26 @@ describe('resetAccountScopedStores', () => {
 
     await resetAccountScopedStores('PB')
     expect(init).toHaveBeenCalledTimes(1)
+  })
+
+  it('посты нового аккаунта, ждущие блока, — с прошлого запуска, чужие — нет', async () => {
+    localStorage.clear()
+    const saved = (id: string, address: string) => ({
+      id,
+      address,
+      caption: '',
+      message: id,
+      images: [],
+      tags: [],
+      type: 'share',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 3_600_000,
+    })
+    localStorage.setItem('BST_PENDING_POSTS_PB', JSON.stringify([saved('tx-b', 'PB')]))
+    localStorage.setItem('BST_PENDING_POSTS_PA', JSON.stringify([saved('tx-a', 'PA')]))
+
+    await resetAccountScopedStores('PB')
+    const pendingPosts = usePendingPostsStore()
+    expect(pendingPosts.allPending.map((p) => p.id)).toEqual(['tx-b'])
   })
 })

@@ -2724,9 +2724,17 @@ export default {
     errSelectUnspents: 'Impossible de préparer les fonds pour la transaction',
     errSendFailed: 'Impossible de publier',
     errImageUpload: 'Impossible de téléverser l’image. Réessayez de publier.',
-    publishSuccess: 'Publication publiée',
+    publishSuccess: 'Publication envoyée au réseau',
     txPending: 'Pas encore publiée dans la blockchain',
     txPendingShort: 'En attente',
+    txScheduled: 'Publication prévue {date}',
+    txFailed: 'Non inscrite dans la blockchain',
+    txFailedHint:
+      'Le réseau n’a jamais inclus cette publication dans un bloc. Le texte reste ici : copiez-le et publiez-le à nouveau.',
+    txFailedDismiss: 'Retirer',
+    txConfirmedToast: 'Publication inscrite dans la blockchain',
+    txFailedToast:
+      'La publication n’a pas été inscrite dans la blockchain. Elle reste dans votre profil',
     validation: {
       empty: 'Une publication ne peut pas être vide',
       language: 'La langue de la publication n’est pas définie',

@@ -70,7 +70,8 @@ vi.mock('@/services/image-upload-service', () => ({ uploadImages: mocks.uploadIm
 vi.mock('@/stores', () => ({
   useModalStore: () => ({ openAuthModal: mocks.openAuthModal }),
   usePendingPostsStore: () => ({ addPending: mocks.addPending }),
-  PENDING_POST_TTL_MS: 60_000,
+  pendingPostDeadline: (createdAt: number, scheduledAt?: number) =>
+    Math.max(createdAt, scheduledAt ?? 0) + 60_000,
 }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 vi.mock('./post-sender', () => ({ sendPost: mocks.sendPost }))
@@ -299,8 +300,10 @@ describe('usePostComposer', () => {
           type: 'share',
         })
       )
+      // Отложенный пост ждёт блока от своего времени, а не от отправки.
       const pending = mocks.addPending.mock.calls[0]![0]
-      expect(pending.expiresAt - pending.createdAt).toBe(60_000)
+      expect(pending.scheduledAt).toBe(1_900_000_000_000)
+      expect(pending.expiresAt).toBe(1_900_000_000_000 + 60_000)
 
       expect(mocks.toastSuccess).toHaveBeenCalledWith({ message: 'postMsg.publishSuccess' })
       expect(mocks.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['feed'] })

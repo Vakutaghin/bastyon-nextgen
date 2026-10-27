@@ -17,6 +17,7 @@ import { t } from '@/i18n'
 import { haptic } from '@/helpers/common/haptics'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
 import { useCommentsStore, usePostsStore } from '@/stores'
+import { PENDING_COMMENT_TTL_MS } from '@/stores/comments-store'
 import { sendComment } from '../comment-sender'
 import { isCommentLengthValid, getCommentLengthHint } from '../helpers'
 import { COMMENTS_PAGE_SIZE, COMMENTS_ALREADY_SHOWN } from '../consts'
@@ -335,7 +336,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
       answerId: answerId || '',
       address: me,
       createdAt: Date.now(),
-      expiresAt: Date.now() + 10 * 60 * 1000,
+      expiresAt: Date.now() + PENDING_COMMENT_TTL_MS,
       postTitle: postTitle || undefined,
     })
 

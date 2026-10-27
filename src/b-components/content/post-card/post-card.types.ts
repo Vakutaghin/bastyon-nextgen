@@ -20,6 +20,10 @@ export interface Post {
   txid?: string
   /** Оптимистичный пост: отправлен, ещё не в блокчейне (бейдж, без действий/комментов). */
   pending?: boolean
+  /** Свой пост не попал в блок за час: пометка и «Убрать» (pending-posts-store). */
+  txFailed?: boolean
+  /** Отложенный свой пост ждёт своего времени (мс): пометка — с датой. */
+  scheduledAt?: number
   author: PostAuthor
   title?: string
   content?: string

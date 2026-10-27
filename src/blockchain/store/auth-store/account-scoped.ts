@@ -36,6 +36,8 @@ export async function resetAccountScopedStores(address?: string | null): Promise
   useNotificationsStore().reset()
   useUserRelationsStore().reset()
   usePendingPostsStore().reset()
+  // Посты нового аккаунта, ждущие блока, — с прошлого запуска (localStorage).
+  usePendingPostsStore().init(address ?? null)
   useCommentsStore().reset()
   // Адаптированные посты несут per-user поля (`myVal`, liked/shared) — после
   // смены аккаунта их значения принадлежат прежнему пользователю.

@@ -10,9 +10,20 @@
       <RiseOutlined />
       {{ t('postCard.boosted') }}
     </SC_BoostedBadge>
-    <SC_PendingBadge v-if="post.pending" :title="t('postMsg.txPending')">
+    <!-- Свой пост, не попавший в блок за час: текст здесь, чтобы его не потерять. -->
+    <SC_TxFailedNote v-if="post.txFailed" data-testid="post-tx-failed">
+      <SC_PendingBadge class="failed">
+        <ExclamationCircleOutlined />
+        {{ t('postMsg.txFailed') }}
+      </SC_PendingBadge>
+      <span>{{ t('postMsg.txFailedHint') }}</span>
+      <SC_TxFailedDismiss type="button" @click="dismissFailed">
+        {{ t('postMsg.txFailedDismiss') }}
+      </SC_TxFailedDismiss>
+    </SC_TxFailedNote>
+    <SC_PendingBadge v-else-if="post.pending" :title="pendingLabel" data-testid="post-tx-pending">
       <ClockCircleOutlined />
-      {{ t('postMsg.txPending') }}
+      {{ pendingLabel }}
     </SC_PendingBadge>
     <SC_VisibilityBadge v-if="visibilityLabel && !restriction">
       <LockOutlined />
@@ -253,6 +264,7 @@ import {
   RiseOutlined,
   ThunderboltOutlined,
   ClockCircleOutlined,
+  ExclamationCircleOutlined,
   LockOutlined,
   PlayCircleOutlined,
 } from '@/components/icons'
@@ -261,6 +273,7 @@ import PostShareMenu from '@/b-components/content/post-share-menu/post-share-men
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
+import { usePendingPostsStore } from '@/stores/pending-posts-store'
 import { useReportStore } from '@/stores/report-store'
 import { useUserRelationsStore } from '@/stores/user-relations-store'
 import { useRelationActions } from '@/composables/use-relation-actions'
@@ -302,6 +315,8 @@ import {
   SC_RepostDeleted,
   SC_BoostedBadge,
   SC_PendingBadge,
+  SC_TxFailedNote,
+  SC_TxFailedDismiss,
   SC_VisibilityBadge,
   SC_RestrictedNotice,
 } from './styled'
@@ -418,6 +433,20 @@ const restricted = computed(() => {
 const restriction = computed(() => restricted.value?.reason ?? null)
 const restrictedAuthor = computed(() => restricted.value?.author ?? '')
 /** Подпись «Для подписчиков» и т. п. — тем, кому пост открыт. */
+/** Отложенный пост ждёт своего времени — пометка с датой, иначе «не опубликовано». */
+const pendingLabel = computed<string>(() =>
+  props.post.scheduledAt && props.post.scheduledAt > Date.now()
+    ? t('postMsg.txScheduled', {
+        date: formatDateTimeFull(Math.floor(props.post.scheduledAt / 1000)),
+      })
+    : t('postMsg.txPending')
+)
+
+/** Убрать свой пост, не попавший в блок. */
+function dismissFailed(): void {
+  usePendingPostsStore().dismiss(String(props.post.txid || props.post.id))
+}
+
 const visibilityLabel = computed<string | null>(() => {
   const visibility = postVisibilityOf(props.post.settings?.f)
   return visibility === 'all' ? null : t(`postCard.visibility.${visibility}`)

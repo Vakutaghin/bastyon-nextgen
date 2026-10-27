@@ -2703,9 +2703,16 @@ export default {
     errSelectUnspents: 'Impossibile preparare i fondi per la transazione',
     errSendFailed: 'Impossibile pubblicare il post',
     errImageUpload: 'Impossibile caricare l’immagine. Riprova a pubblicare.',
-    publishSuccess: 'Post pubblicato',
+    publishSuccess: 'Post inviato alla rete',
     txPending: 'Non ancora pubblicato sulla blockchain',
     txPendingShort: 'In attesa',
+    txScheduled: 'Sarà pubblicato {date}',
+    txFailed: 'Non è entrato nella blockchain',
+    txFailedHint:
+      'La rete non ha mai incluso questo post in un blocco. Il testo resta qui: copialo e pubblicalo di nuovo.',
+    txFailedDismiss: 'Rimuovi',
+    txConfirmedToast: 'Post pubblicato nella blockchain',
+    txFailedToast: 'Il post non è entrato nella blockchain. Resta nel tuo profilo',
     validation: {
       empty: 'Un post non può essere vuoto',
       language: 'La lingua del post non è impostata',

@@ -107,8 +107,8 @@ describe('sendPost', () => {
       hex: 'deadbeef',
       messageData: exportPost(validPost),
       operationType: 'share',
-      // Новый пост ждёт в своём сторе — в общие «песочные часы» не идёт.
-      pending: false,
+      // Блок ждёт общий трекер; в часах пост показывает свой стор.
+      pending: { kind: 'post', title: 'Hello world' },
     })
   })
 
@@ -116,6 +116,12 @@ describe('sendPost', () => {
     await sendPost({ ...validPost, settings: { t: 1_900_000_000 } })
     expect(mocks.buildTransaction).toHaveBeenCalledWith(
       expect.objectContaining({ delayedNtime: 1_900_000_000 })
+    )
+    // Трекер не ждёт блока раньше запланированного времени.
+    expect(mocks.broadcastTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pending: expect.objectContaining({ kind: 'post', notBefore: 1_900_000_000_000 }),
+      })
     )
   })
 

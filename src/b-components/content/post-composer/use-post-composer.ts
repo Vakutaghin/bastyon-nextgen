@@ -24,7 +24,7 @@ import { encodeArticleContent } from '@/helpers/content/article-codec'
 import { parsePoll } from '@/helpers/content/poll'
 import { haptic } from '@/helpers/common/haptics'
 import { uploadImages } from '@/services/image-upload-service'
-import { useModalStore, usePendingPostsStore, PENDING_POST_TTL_MS } from '@/stores'
+import { useModalStore, usePendingPostsStore, pendingPostDeadline } from '@/stores'
 import { t } from '@/i18n'
 
 import {
@@ -515,6 +515,10 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       const myAddress = authStore.getUserAddress
       if (!isEdit && myAddress) {
         const now = Date.now()
+        const scheduledAt =
+          finalPost.settings?.t && finalPost.settings.t > 1
+            ? finalPost.settings.t * 1000
+            : undefined
         pendingPostsStore.addPending({
           id: txid,
           address: myAddress,
@@ -525,7 +529,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
           url: finalPost.url,
           type: resolvePostOperationType(finalPost),
           createdAt: now,
-          expiresAt: now + PENDING_POST_TTL_MS,
+          ...(scheduledAt ? { scheduledAt } : {}),
+          expiresAt: pendingPostDeadline(now, scheduledAt),
         })
       }
 

@@ -1,12 +1,13 @@
 /**
  * WebSocket подписка на realtime обновления комментариев:
  * - comment/commentEdit/commentDelete — снимаем pending по txid и рефрешим список
+ * - свой комментарий в блоке по общему трекеру (confirmedTick) — рефрешим список
  * - cScore — лайки/дизлайки чужих коммов, рефрешим, чтобы обновить scoreUp/Down
  *
  * Рефреш дебаунсится (600ms), чтобы пачки WS-событий не штормили getcomments.
  */
 
-import { onMounted, onBeforeUnmount, type Ref } from 'vue'
+import { onMounted, onBeforeUnmount, watch, type Ref } from 'vue'
 import { wsService } from '@/blockchain/ws/ws-service'
 import { useCommentsStore } from '@/stores'
 
@@ -85,6 +86,14 @@ export function useCommentsWs(opts: UseCommentsWsOptions) {
     if (opts.isLoading.value) return
     void opts.reload()
   }
+
+  // Свой комментарий попал в блок (трекер мог узнать и без WS) — список свежий.
+  watch(
+    () => useCommentsStore().confirmedTick[opts.postId.value] ?? 0,
+    (tick, before) => {
+      if (tick > before) scheduleRefresh()
+    }
+  )
 
   onMounted(subscribe)
   onBeforeUnmount(() => {

@@ -20,6 +20,8 @@
 
 import { defineStore } from 'pinia'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
+import { onTransactionSettled } from '@/blockchain/core/transactions/broadcast-events'
+import { PENDING_TX_TTL_MS } from '@/stores/pending-transactions-store'
 
 /** Локальный pending-комментарий (свежеотправленный, ещё не в getcomments) */
 export interface PendingComment {
@@ -37,13 +39,29 @@ export interface PendingComment {
   address: string
   /** Время локальной отправки (мс) */
   createdAt: number
-  /** Срок жизни pending в локальном кеше (по умолчанию 10 мин) */
+  /** Когда ждать перестаём и считаем, что в блок комментарий не попал (мс). */
   expiresAt: number
   /** Заголовок поста (snapshot на момент отправки) — для дропдауна шапки */
   postTitle?: string
+  /** В блоке — когда это стало известно (мс); виден без часов, пока список его не отдаст. */
+  confirmedAt?: number
+  /** В блок так и не попал: пометка «Ошибка» до перезагрузки. */
+  failed?: boolean
 }
 
-const PENDING_TTL_MS = 10 * 60 * 1000
+/**
+ * Сколько ждать блока. Решает pending-transactions-store (час): здесь на 10
+ * минут дольше — страховка. Раньше через 10 минут комментарий молча пропадал,
+ * даже если потом попадал в блок.
+ */
+export const PENDING_COMMENT_TTL_MS = PENDING_TX_TTL_MS + 10 * 60 * 1000
+/** Комментарий в блоке, а список его ещё не отдал: держим не дольше. */
+const CONFIRMED_KEEP_MS = 10 * 60 * 1000
+
+/** Ещё ждёт блока: не подтверждён и не сорвался. */
+const isWaiting = (c: PendingComment): boolean => !c.confirmedAt && !c.failed
+
+let stopSettled: (() => void) | null = null
 
 export const useCommentsStore = defineStore('comments', {
   state: () => ({
@@ -58,10 +76,15 @@ export const useCommentsStore = defineStore('comments', {
     /** commentId → true (после commentDelete TX, до подтверждения сетью) */
     deletedCommentIds: {} as Record<string, true>,
     /**
-     * postId → массив pending-комментариев.
-     * При получении подтверждения из RPC/WS — конкретный pending удаляется.
+     * postId → массив pending-комментариев. Снимается, когда getcomments отдал
+     * комментарий; в блоке — `confirmedAt`, не попал — `failed`.
      */
     pendingCreates: {} as Record<string, PendingComment[]>,
+    /**
+     * postId → счётчик: свой комментарий к посту попал в блок. Открытый список
+     * (use-comments-ws) по нему перезагружается.
+     */
+    confirmedTick: {} as Record<string, number>,
     /**
      * Множество comment-id, для которых пользователь нажал «Показать всё равно»
      * на скрытом-по-репутации комментарии. Действует до перезагрузки страницы.
@@ -85,17 +108,17 @@ export const useCommentsStore = defineStore('comments', {
     getPendingForPost(state) {
       return (postId: string): PendingComment[] => state.pendingCreates[postId] ?? []
     },
-    /** Общее число pending-комментов по всем постам — для индикатора в шапке */
+    /** Сколько комментариев ждут блока — для индикатора в шапке */
     pendingCount(state): number {
       let n = 0
-      for (const list of Object.values(state.pendingCreates)) n += list.length
+      for (const list of Object.values(state.pendingCreates)) n += list.filter(isWaiting).length
       return n
     },
-    /** Плоский список pending-комментов по всем постам — для дропдауна шапки */
+    /** Комментарии, ждущие блока, по всем постам — для дропдауна шапки */
     allPending(state): PendingComment[] {
       const out: PendingComment[] = []
       for (const list of Object.values(state.pendingCreates)) {
-        for (const c of list) out.push(c)
+        for (const c of list) if (isWaiting(c)) out.push(c)
       }
       return out
     },
@@ -171,16 +194,81 @@ export const useCommentsStore = defineStore('comments', {
       next[idx] = { ...next[idx], id: newId }
       this.pendingCreates = { ...this.pendingCreates, [postId]: next }
     },
-    /** Удаляет просроченные pending по всем постам (TTL) */
+    /**
+     * Подчистка по времени: ждущий дольше срока считается не попавшим в блок,
+     * подтверждённый, которого список так и не отдал, уходит через 10 минут.
+     */
     cleanupExpired(now: number = Date.now()): void {
       let dirty = false
       const next: Record<string, PendingComment[]> = {}
       for (const [postId, list] of Object.entries(this.pendingCreates)) {
-        const live = list.filter((c) => c.expiresAt > now)
-        if (live.length !== list.length) dirty = true
+        const live: PendingComment[] = []
+        for (const c of list) {
+          if (c.confirmedAt && now - c.confirmedAt > CONFIRMED_KEEP_MS) {
+            dirty = true
+          } else if (isWaiting(c) && c.expiresAt <= now) {
+            dirty = true
+            live.push({ ...c, failed: true })
+          } else {
+            live.push(c)
+          }
+        }
         if (live.length > 0) next[postId] = live
       }
       if (dirty) this.pendingCreates = next
+    },
+
+    /** Подписка на исход транзакций (pending-transactions-store); зовёт header-events. */
+    init(): void {
+      if (stopSettled) return
+      // Стор — на момент события, а не подписки: подписка одна на модуль.
+      stopSettled = onTransactionSettled((txid, confirmed) => {
+        const store = useCommentsStore()
+        if (confirmed) store.markCreateConfirmed(txid)
+        else store.markCreateFailed(txid)
+      })
+    },
+
+    /** Пост, к которому относится свой новый комментарий с этим txid. */
+    postOfCreate(txid: string): string | null {
+      if (!txid) return null
+      for (const [postId, list] of Object.entries(this.pendingCreates)) {
+        if (list.some((c) => c.id === txid)) return postId
+      }
+      return null
+    },
+
+    patchCreate(postId: string, txid: string, patch: Partial<PendingComment>): void {
+      const list = this.pendingCreates[postId]
+      const index = list?.findIndex((c) => c.id === txid) ?? -1
+      if (!list || index === -1) return
+      const next = list.slice()
+      next[index] = { ...next[index]!, ...patch }
+      this.pendingCreates = { ...this.pendingCreates, [postId]: next }
+    },
+
+    /**
+     * Свой новый комментарий в блоке: часы снимаются сразу, а сам он остаётся,
+     * пока список комментариев его не отдаст — открытый список перезагрузится.
+     */
+    markCreateConfirmed(txid: string): void {
+      const postId = this.postOfCreate(txid)
+      if (!postId) return
+      const comment = this.pendingCreates[postId]!.find((c) => c.id === txid)!
+      if (comment.confirmedAt) return
+      this.patchCreate(postId, txid, { confirmedAt: Date.now(), failed: false })
+      this.confirmedTick = {
+        ...this.confirmedTick,
+        [postId]: (this.confirmedTick[postId] ?? 0) + 1,
+      }
+    },
+
+    /** Свой новый комментарий так и не попал в блок. */
+    markCreateFailed(txid: string): void {
+      const postId = this.postOfCreate(txid)
+      if (!postId) return
+      const comment = this.pendingCreates[postId]!.find((c) => c.id === txid)!
+      if (isWaiting(comment)) this.patchCreate(postId, txid, { failed: true })
     },
 
     // --- Sync с RPC-данными ---
@@ -234,7 +322,7 @@ export const useCommentsStore = defineStore('comments', {
     hasPendingTx(postId: string, txid: string): boolean {
       if (!txid) return false
       if (this.txToCommentId[txid]) return true
-      return (this.pendingCreates[postId] ?? []).some((p) => p.id === txid)
+      return (this.pendingCreates[postId] ?? []).some((p) => p.id === txid && isWaiting(p))
     },
 
     /** Запоминает, какой комментарий правила/удаляла транзакция `txid` (S19). */
@@ -245,8 +333,8 @@ export const useCommentsStore = defineStore('comments', {
 
     applyConfirmedTx(postId: string, txid: string, optype?: string): void {
       if (!txid) return
-      // Pending create — снимаем
-      this.removePending(postId, txid)
+      // Новый комментарий — в блоке; уберёт его сверка со списком.
+      this.markCreateConfirmed(txid)
       // Оверрайды лежат по id комментария; txid правки/удаления переводим
       // через карту, а сам txid оставляем как запасной ключ (S19).
       const commentId = this.txToCommentId[txid]
@@ -276,6 +364,7 @@ export const useCommentsStore = defineStore('comments', {
       this.editedMessages = {}
       this.deletedCommentIds = {}
       this.pendingCreates = {}
+      this.confirmedTick = {}
       this.revealedHiddenIds = {}
       this.txToCommentId = {}
     },

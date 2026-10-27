@@ -1,6 +1,6 @@
 // Лента профиля: первая страница и догрузка по txid последнего поста, конец
 // ленты по короткой странице, профиль автора из ответа, оригиналы репостов,
-// «Обновить» с головы (S17) и страница прошлого поколения, опоздавшая из-за
+// «Обновить» с головы (S17), свой пост в блоке — с головы до его прихода и страница прошлого поколения, опоздавшая из-за
 // догрузки репостов, не доклеивается (S16). В своём профиле — свои
 // неподтверждённые посты сверху без дублей и сверка pending-слоя. Страница
 // отдаётся, когда у авторов последних комментариев уже есть имена.
@@ -18,10 +18,9 @@ const mocks = vi.hoisted(() => ({
   rpcCallWithAuth: vi.fn(),
   mergeRepostContent: vi.fn(),
   auth: null as unknown as { getUserAddress: string | null; getUserProfile: unknown },
-  pending: [] as Array<{ id: string; txid?: string }>,
+  pending: [] as Array<{ id: string; txid?: string; confirmedAt?: number }>,
   reconcile: vi.fn(),
   cleanupExpired: vi.fn(),
-  onConfirmed: null as null | (() => void),
   preloadAuthors: vi.fn<(contents: unknown) => Promise<void>>(),
 }))
 
@@ -64,11 +63,6 @@ vi.mock('@/composables/pending-post-adapter', () => ({
 }))
 vi.mock('@/helpers/common/current-user-author', () => ({
   buildCurrentUserAuthor: () => ({ name: 'me' }),
-}))
-vi.mock('@/composables/use-pending-posts-realtime', () => ({
-  usePendingPostsRealtime: (opts: { onConfirmed: () => void }) => {
-    mocks.onConfirmed = opts.onConfirmed
-  },
 }))
 
 import { useProfileFeed, type UseProfileFeedOptions } from './use-profile-feed'
@@ -113,7 +107,6 @@ describe('useProfileFeed', () => {
     mocks.pending = []
     mocks.reconcile.mockReset()
     mocks.cleanupExpired.mockReset()
-    mocks.onConfirmed = null
     mocks.preloadAuthors.mockReset().mockResolvedValue(undefined)
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
@@ -259,12 +252,45 @@ describe('useProfileFeed', () => {
       expect(mocks.cleanupExpired).toHaveBeenCalled()
     })
 
-    it('подтверждение по WebSocket перезагружает свою ленту с головы', async () => {
-      mocks.auth.getUserAddress = 'PAuthor'
-      setup()
-      mocks.onConfirmed!()
-      await nextTick()
-      expect(mocks.refetch).toHaveBeenCalledTimes(1)
+    it('свой пост попал в блок — лента с головы, повторно, пока нода его не отдаст', async () => {
+      vi.useFakeTimers()
+      try {
+        mocks.auth.getUserAddress = 'PAuthor'
+        mocks.pending = reactive([{ id: 'tx-new', txid: 'tx-new' }])
+        setup()
+        mocks.pending[0]!.confirmedAt = Date.now()
+        await nextTick()
+        expect(mocks.refetch).toHaveBeenCalledTimes(1)
+        // Индекс ноды позади блока: через 15 секунд ещё раз.
+        await vi.advanceTimersByTimeAsync(15_000)
+        expect(mocks.refetch).toHaveBeenCalledTimes(2)
+        // Лента отдала пост — сверка сняла запись, повторов больше нет.
+        mocks.pending.splice(0)
+        await nextTick()
+        await vi.advanceTimersByTimeAsync(60_000)
+        expect(mocks.refetch).toHaveBeenCalledTimes(2)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('повторы — не дольше двух минут после блока', async () => {
+      vi.useFakeTimers()
+      try {
+        mocks.auth.getUserAddress = 'PAuthor'
+        mocks.pending = reactive([{ id: 'tx-new', txid: 'tx-new' }])
+        setup()
+        mocks.pending[0]!.confirmedAt = Date.now()
+        await nextTick()
+        await vi.advanceTimersByTimeAsync(10 * 60_000)
+        // Сразу и раз в 15 секунд, пока не прошло две минуты.
+        expect(mocks.refetch.mock.calls.length).toBeLessThanOrEqual(1 + 8)
+        const calls = mocks.refetch.mock.calls.length
+        await vi.advanceTimersByTimeAsync(60_000)
+        expect(mocks.refetch).toHaveBeenCalledTimes(calls)
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('в чужом профиле чужие pending не показываются и не сверяются', async () => {
@@ -273,7 +299,8 @@ describe('useProfileFeed', () => {
       await answer(posts('p1'))
       expect(ids(feed)).toEqual(['p1'])
       expect(mocks.reconcile).not.toHaveBeenCalled()
-      mocks.onConfirmed!()
+      mocks.pending = reactive([{ id: 'tx-new', txid: 'tx-new', confirmedAt: Date.now() }])
+      await nextTick()
       expect(mocks.refetch).not.toHaveBeenCalled()
     })
   })

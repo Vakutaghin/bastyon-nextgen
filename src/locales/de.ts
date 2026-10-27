@@ -2721,9 +2721,17 @@ export default {
     errSendFailed: 'Der Beitrag konnte nicht veröffentlicht werden',
     errImageUpload:
       'Das Bild konnte nicht hochgeladen werden. Versuche es erneut zu veröffentlichen.',
-    publishSuccess: 'Beitrag veröffentlicht',
+    publishSuccess: 'Beitrag an das Netzwerk gesendet',
     txPending: 'Noch nicht in der Blockchain veröffentlicht',
     txPendingShort: 'Ausstehend',
+    txScheduled: 'Wird veröffentlicht: {date}',
+    txFailed: 'Nicht in die Blockchain aufgenommen',
+    txFailedHint:
+      'Das Netzwerk hat den Beitrag nie in einen Block aufgenommen. Der Text bleibt hier: Kopieren Sie ihn und veröffentlichen Sie ihn erneut.',
+    txFailedDismiss: 'Entfernen',
+    txConfirmedToast: 'Beitrag in der Blockchain veröffentlicht',
+    txFailedToast:
+      'Der Beitrag wurde nicht in die Blockchain aufgenommen. Er bleibt in Ihrem Profil',
     validation: {
       empty: 'Ein Beitrag darf nicht leer sein',
       language: 'Die Sprache des Beitrags ist nicht festgelegt',

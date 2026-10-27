@@ -2712,9 +2712,16 @@ export default {
     errSelectUnspents: 'No se pudieron preparar los fondos para la transacción',
     errSendFailed: 'No se pudo publicar',
     errImageUpload: 'No se pudo subir la imagen. Inténtalo de nuevo.',
-    publishSuccess: 'Publicación publicada',
+    publishSuccess: 'Publicación enviada a la red',
     txPending: 'Aún no está publicada en la blockchain',
     txPendingShort: 'Pendiente',
+    txScheduled: 'Se publicará {date}',
+    txFailed: 'No entró en la blockchain',
+    txFailedHint:
+      'La red nunca incluyó esta publicación en un bloque. El texto se queda aquí: cópialo y publícalo de nuevo.',
+    txFailedDismiss: 'Quitar',
+    txConfirmedToast: 'Publicación registrada en la blockchain',
+    txFailedToast: 'La publicación no entró en la blockchain. Se queda en tu perfil',
     validation: {
       empty: 'Una publicación no puede estar vacía',
       language: 'No se ha indicado el idioma de la publicación',

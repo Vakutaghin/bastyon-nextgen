@@ -29,7 +29,9 @@ An action with a post has **“Open post”**, with a person — **“Profile”
 - **A comment** appears under the post marked **“Pending”**.
 - **A rating** shows up as stars under the post straight away.
 
-When the network confirms an action, it leaves the list by itself; opening the hourglass asks the node about each one again. The app waits 10 minutes for posts, comments and ratings and an hour for other actions, then removes them from the list. If the post never showed up in your profile, the network did not accept it: publish it again. If a transfer left the hourglass, check it in the [wallet history](wallet-history.md).
+When the network confirms an action, it leaves the list by itself, whatever page you are on. The app asks the node about every waiting action every 20 seconds, on every new block, after the connection comes back and when you return to the app; opening the hourglass asks once more. The post in your profile loses its mark and you get **“Post published on the blockchain”**. Waiting survives an app restart.
+
+The app waits 10 minutes for ratings and an hour for everything else, and for a scheduled post an hour after its time; until then it is marked “Will be published” with the date. A post that never made it into a block stays in your profile marked **“Did not make it into the blockchain”**, and you get **“The post did not make it into the blockchain. It is kept in your profile”**. The text is still there: copy it and publish again, then remove the card with **“Remove”**. A comment gets the **“Error”** mark in that case. If a transfer left the hourglass, check it in the [wallet history](wallet-history.md).
 
 ## If the network refused
 

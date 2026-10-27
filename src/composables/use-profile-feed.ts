@@ -12,7 +12,6 @@ import { useAuthStore } from '@/blockchain'
 import { usePendingPostsStore } from '@/stores'
 import { pendingPostToAdapted } from '@/composables/pending-post-adapter'
 import { buildCurrentUserAuthor } from '@/helpers/common/current-user-author'
-import { usePendingPostsRealtime } from '@/composables/use-pending-posts-realtime'
 
 /** Сырой пост из API с минимальным набором полей, нужных для merge репостов. */
 interface RawRepostPost {
@@ -35,6 +34,10 @@ export interface UseProfileFeedOptions {
   threshold?: number
   lang?: string
 }
+
+/** Свой пост в блоке, а лента его ещё не отдала: как часто и как долго перезагружать. */
+const CONFIRMED_RETRY_MS = 15_000
+const CONFIRMED_RETRY_WINDOW_MS = 2 * 60_000
 
 /**
  * Infinite scroll для ленты профиля
@@ -311,13 +314,39 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     nextTick(setupIntersectionObserver)
   })
 
-  // WS-подтверждение: снимаем pending мгновенно и рефетчим свою ленту, чтобы
-  // оптимистичный пост заменился реальным (уже подтверждённым сетью).
-  usePendingPostsRealtime({
-    onConfirmed: () => {
-      if (isOwnFeed.value) void refreshFeed()
-    },
-  })
+  // Свой пост попал в блок (pending-posts-store узнаёт от общего трекера) —
+  // перезагрузить ленту с головы, чтобы он пришёл настоящим. Индекс ноды бывает
+  // на шаг позади блока: пока пост не пришёл, пробуем ещё раз через 15 секунд,
+  // две минуты. Всё это время он виден без пометки «не опубликовано».
+  // Функция, не computed: окно в две минуты считается от текущего времени.
+  const confirmedNotInFeed = (): string[] =>
+    isOwnFeed.value
+      ? pendingPostsStore
+          .getPendingForAddress(address)
+          .filter((p) => p.confirmedAt && Date.now() - p.confirmedAt < CONFIRMED_RETRY_WINDOW_MS)
+          .map((p) => p.id)
+      : []
+  let confirmedRetry: ReturnType<typeof setTimeout> | null = null
+  const stopConfirmedRetry = () => {
+    if (confirmedRetry) clearTimeout(confirmedRetry)
+    confirmedRetry = null
+  }
+  watch(
+    () => confirmedNotInFeed().join(','),
+    (now, before) => {
+      stopConfirmedRetry()
+      if (!now) return
+      const known = new Set(before ? before.split(',') : [])
+      if (now.split(',').some((id) => !known.has(id))) void refreshFeed()
+      confirmedRetry = setTimeout(function retry() {
+        confirmedRetry = null
+        if (!confirmedNotInFeed().length) return
+        void refreshFeed()
+        confirmedRetry = setTimeout(retry, CONFIRMED_RETRY_MS)
+      }, CONFIRMED_RETRY_MS)
+    }
+  )
+  onBeforeUnmount(stopConfirmedRetry)
 
   // Оптимистичные посты автора — поверх ленты, только в своём профиле.
   const pendingAdapted = computed<AdaptedPost[]>(() => {

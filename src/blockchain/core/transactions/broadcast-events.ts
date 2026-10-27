@@ -17,9 +17,13 @@ export interface PendingMeta {
   title?: string
   /** Сумма в PKOIN. */
   amount?: number
+  /** Отложенный пост: в блок попадёт не раньше этого времени, мс. */
+  notBefore?: number
 }
 
 export type PendingKind =
+  | 'post'
+  | 'comment'
   | 'boost'
   | 'transfer'
   | 'donate'

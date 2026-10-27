@@ -2664,9 +2664,16 @@ export default {
     errSelectUnspents: '거래 자금을 준비하지 못했습니다',
     errSendFailed: '게시물을 올리지 못했습니다',
     errImageUpload: '이미지를 올리지 못했습니다. 다시 게시해 보세요.',
-    publishSuccess: '게시물을 올렸습니다',
+    publishSuccess: '게시물을 네트워크로 보냈습니다',
     txPending: '아직 블록체인에 게시되지 않았습니다',
     txPendingShort: '대기 중',
+    txScheduled: '{date}에 게시 예정',
+    txFailed: '블록체인에 기록되지 않음',
+    txFailedHint:
+      '네트워크가 이 게시물을 블록에 포함하지 않았습니다. 텍스트는 여기에 남아 있으니 복사해서 다시 게시하세요.',
+    txFailedDismiss: '삭제',
+    txConfirmedToast: '게시물이 블록체인에 게시되었습니다',
+    txFailedToast: '게시물이 블록체인에 기록되지 않았습니다. 프로필에 남아 있습니다',
     validation: {
       empty: '게시물은 비워 둘 수 없습니다',
       language: '게시물 언어가 설정되지 않았습니다',

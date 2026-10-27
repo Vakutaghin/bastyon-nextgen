@@ -1,7 +1,7 @@
 /**
  * Конвертация PendingComment (локальный optimistic-комментарий) в синтетический
  * GetComment-объект для рендера в общем списке. Помечается `temp: true` —
- * UI отрисует статус-бейдж "Ожидание".
+ * UI отрисует статус-бейдж "Ожидание" (`rejected` — «Ошибка»).
  */
 
 import type { PendingComment } from '@/stores'
@@ -28,7 +28,9 @@ export function pendingToGetComment(p: PendingComment): GetComment {
     flags: {},
     parentid: p.parentId || '',
     answerid: p.answerId || '',
-    temp: true,
+    // В блоке — обычный комментарий, пока список его не отдаст; не попал — «Ошибка».
+    temp: !p.confirmedAt && !p.failed,
+    ...(p.failed ? { rejected: true } : {}),
     userprofile: {
       hash: '',
       address: p.address,

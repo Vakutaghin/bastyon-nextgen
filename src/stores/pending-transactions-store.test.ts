@@ -1,6 +1,7 @@
 // «Песочные часы»: всё, что ушло в сеть, ждёт блока и видно в шапке, пока
 // транзакция не попадёт в блок (WS или нода) или не истечёт час. Список —
-// у каждого аккаунта свой и переживает перезапуск.
+// у каждого аккаунта свой и переживает перезапуск. Ноду спрашивают и по
+// таймеру, и на каждом новом блоке, и после переподключения WS.
 
 import { createPinia, getActivePinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -26,6 +27,7 @@ import {
 } from '@/blockchain/core/transactions/broadcast-events'
 import {
   PENDING_TX_TTL_MS,
+  pendingDeadline,
   pendingKindOf,
   usePendingTransactionsStore,
 } from './pending-transactions-store'
@@ -151,5 +153,74 @@ describe('pending-transactions-store', () => {
     notifyTransactionBroadcast({ txid: TX(6), operationType: 'subscribe', meta: {} })
     notifyTransactionBroadcast({ txid: TX(6), operationType: 'subscribe', meta: {} })
     expect(store.count).toBe(1)
+  })
+
+  it('новый пост и комментарий: блок ждём здесь, а в часах их показывают свои сторы', () => {
+    const store = usePendingTransactionsStore()
+    store.init('PAlice')
+    notifyTransactionBroadcast({ txid: TX(1), operationType: 'share', meta: { kind: 'post' } })
+    notifyTransactionBroadcast({
+      txid: TX(2),
+      operationType: 'comment',
+      meta: { kind: 'comment', postId: 'P' },
+    })
+    notifyTransactionBroadcast({ txid: TX(3), operationType: 'subscribe', meta: {} })
+    expect(store.items.map((i) => i.txid)).toEqual([TX(1), TX(2), TX(3)])
+    expect(store.listed.map((i) => i.txid)).toEqual([TX(3)])
+    expect(store.count).toBe(1)
+  })
+
+  it('новый блок, переподключение WS и возврат в приложение — спросить ноду сразу', async () => {
+    const store = usePendingTransactionsStore()
+    store.init('PAlice')
+    // Нечего ждать — нода не нужна.
+    h.ws.get('block')?.({})
+    expect(h.getByPRC).not.toHaveBeenCalled()
+
+    notifyTransactionBroadcast({ txid: TX(1), operationType: 'share', meta: { kind: 'post' } })
+    h.getByPRC.mockResolvedValue({ data: { txid: TX(1) } })
+    h.ws.get('block')?.({})
+    await vi.waitFor(() => expect(h.getByPRC).toHaveBeenCalledTimes(1))
+    h.ws.get('open')?.({})
+    await vi.waitFor(() => expect(h.getByPRC).toHaveBeenCalledTimes(2))
+
+    h.getByPRC.mockResolvedValue({ data: { txid: TX(1), blockhash: 'b' } })
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await vi.waitFor(() => expect(store.items).toHaveLength(0))
+  })
+
+  it('блок пришёл, пока шла проверка, — проверить ещё раз сразу после неё', async () => {
+    const store = usePendingTransactionsStore()
+    store.init('PAlice')
+    notifyTransactionBroadcast({ txid: TX(1), operationType: 'share', meta: { kind: 'post' } })
+    let release!: (v: unknown) => void
+    h.getByPRC.mockImplementationOnce(() => new Promise((resolve) => (release = resolve)))
+    h.getByPRC.mockResolvedValue({ data: { txid: TX(1), blockhash: 'b' } })
+    const first = store.checkWithNode()
+    h.ws.get('block')?.({})
+    release({ data: { txid: TX(1) } })
+    await first
+    await vi.waitFor(() => expect(store.items).toHaveLength(0))
+    expect(h.getByPRC).toHaveBeenCalledTimes(2)
+  })
+
+  it('отложенный пост: до своего времени ноду не спрашиваем, ждём час после него', async () => {
+    vi.useFakeTimers()
+    const store = usePendingTransactionsStore()
+    store.init('PAlice')
+    const at = Date.now() + 3 * PENDING_TX_TTL_MS
+    notifyTransactionBroadcast({
+      txid: TX(9),
+      operationType: 'share',
+      meta: { kind: 'post', notBefore: at },
+    })
+    await store.checkWithNode()
+    expect(h.getByPRC).not.toHaveBeenCalled()
+    store.cleanupExpired(at + PENDING_TX_TTL_MS - 1)
+    expect(store.items).toHaveLength(1)
+    expect(pendingDeadline(store.items[0]!)).toBe(at + PENDING_TX_TTL_MS)
+    store.cleanupExpired(at + PENDING_TX_TTL_MS)
+    expect(store.items).toHaveLength(0)
   })
 })

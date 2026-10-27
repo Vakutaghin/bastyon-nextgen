@@ -46,7 +46,8 @@ vi.mock('@/blockchain', () => ({ useAuthStore: () => mocks.auth }))
 vi.mock('@/stores', () => ({
   useModalStore: () => ({ openAuthModal: vi.fn() }),
   usePendingPostsStore: () => ({ addPending: vi.fn() }),
-  PENDING_POST_TTL_MS: 60_000,
+  pendingPostDeadline: (createdAt: number, scheduledAt?: number) =>
+    Math.max(createdAt, scheduledAt ?? 0) + 60_000,
 }))
 vi.mock('@tanstack/vue-query', () => ({
   useQueryClient: () => ({ invalidateQueries: vi.fn().mockResolvedValue(undefined) }),

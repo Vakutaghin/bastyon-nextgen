@@ -109,7 +109,8 @@ describe('транзакции комментариев', () => {
         hex: 'deadbeef',
         messageData: { postid: 'post1', answerid: 'answer1', parentid: 'parent1', msg },
         operationType: 'comment',
-        pending: false,
+        // Блок ждёт общий трекер; в часах комментарий показывает comments-store.
+        pending: { kind: 'comment', postId: 'post1' },
       })
       expect(mocks.lockUTXOs).toHaveBeenCalledWith(UTXO)
       expect(mocks.getUnspents).toHaveBeenCalledWith('PMe', 1, 9999999)
