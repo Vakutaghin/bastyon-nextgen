@@ -251,3 +251,33 @@ describe('mapEventToMessage — медиа и транзакции (K3)', () => 
     expect(msg).toMatchObject({ type: 'image', url: 'https://hs/media/hs/s', text: 'secret.png' })
   })
 })
+
+describe('mapEventToMessage — удалённое сообщение', () => {
+  it('отметка, кто и когда удалил, вместо пропажи из ленты; расшифровка не нужна', async () => {
+    const tryDecrypt = vi.fn()
+    const event = {
+      ...(mxEvent('m.room.message', {}) as object),
+      isRedacted: () => true,
+      getUnsigned: () => ({
+        redacted_because: { sender: '@me:pocketnet', origin_server_ts: 99 },
+      }),
+    }
+    const m = await mapping(tryDecrypt).mapEventToMessage(event as never)
+    expect(m).toMatchObject({
+      id: '$e1',
+      senderId: '@pabc:pocketnet',
+      text: '',
+      deleted: { by: '@me:pocketnet', at: 99 },
+    })
+    expect(tryDecrypt).not.toHaveBeenCalled()
+  })
+
+  it('удалённая реакция — не сообщение, в ленте её нет', async () => {
+    const event = {
+      ...(mxEvent('m.reaction', {}) as object),
+      isRedacted: () => true,
+      getUnsigned: () => ({ redacted_because: { sender: '@me:pocketnet' } }),
+    }
+    expect(await mapping(vi.fn()).mapEventToMessage(event as never)).toBeNull()
+  })
+})

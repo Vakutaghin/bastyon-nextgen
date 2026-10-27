@@ -357,7 +357,8 @@ test.describe('на телефоне', () => {
     ).toBe(true)
 
     // «Написать автору» в шапке ничем не закрыт (крестик мессенджера — справа)
-    // и вместо ленты открывает переписку с автором: её ещё нет — «Начать чат».
+    // и вместо ленты открывает переписку с автором: её ещё нет — поле для
+    // первого сообщения (комната появится с ним).
     const uncovered = (el: Element): boolean => {
       const r = el.getBoundingClientRect()
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
@@ -367,9 +368,11 @@ test.describe('на телефоне', () => {
     expect(await write.evaluate(uncovered)).toBe(true)
     await write.click()
     await expect(page.getByTestId('channel-feed')).toHaveCount(0)
-    const start = page.getByRole('button', { name: 'Начать чат', exact: true }).last()
-    await expect(start).toBeVisible()
-    expect(await start.evaluate(uncovered)).toBe(true)
+    const hint = page.getByText(/Напишите первое сообщение/)
+    await expect(hint).toBeVisible()
+    expect(await hint.evaluate(uncovered)).toBe(true)
+    const input = page.getByPlaceholder('Введите сообщение...').filter({ visible: true })
+    expect(await input.evaluate(uncovered)).toBe(true)
   })
 
   test('канал виден сразу, а пока переписки грузятся — над ним «Загрузка диалогов»', async ({

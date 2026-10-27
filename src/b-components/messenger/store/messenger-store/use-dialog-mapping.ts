@@ -234,9 +234,12 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
     // открытии чата) Matrix ленту не отдаёт, и чат с новыми сообщениями стоял в
     // самом низу списка. Его время — время приглашения, как в прежнем клиенте.
     const invited = room.getMyMembership?.() === 'invite'
+    const myMemberEvent = myUserId ? room.getMember?.(myUserId)?.events?.member : null
     const createdAt = timelineEvents.length
       ? Math.min(...timelineEvents.map(getEventTs))
-      : getEventTs(myUserId ? room.getMember?.(myUserId)?.events?.member : null) || undefined
+      : getEventTs(myMemberEvent) || undefined
+    // Кто пригласил — в списке «Приглашение в чат» вместо пустой строки.
+    const invitedBy = invited ? myMemberEvent?.getSender?.() || partner.id : ''
 
     const unreadCount =
       uiStore.activeChatId === room.roomId
@@ -267,6 +270,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
       ...(group ? { group } : {}),
       ...(muted ? { muted } : {}),
       ...(hasUnread ? { hasUnread } : {}),
+      ...(invited ? { invite: { by: invitedBy } } : {}),
     }
   }
 

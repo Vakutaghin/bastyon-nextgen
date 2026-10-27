@@ -131,11 +131,23 @@ describe('registerMatrixListeners — Room.timeline', () => {
     expect(other.chatStore.enrichMessagesWithReactions).not.toHaveBeenCalled()
   })
 
-  it('m.room.redaction удаляет целевое сообщение из ленты', async () => {
+  it('m.room.redaction: на месте сообщения — отметка, кто и когда удалил', async () => {
     const { chatStore, scheduleLoadDialogs } = setup(ROOM)
-    chatStore.messages[ROOM] = [{ id: '$keep' }, { id: '$gone' }]
-    await handlers['Room.timeline']!(mxEvent('m.room.redaction', { redacts: '$gone' }), room, false)
-    expect(chatStore.messages[ROOM]).toEqual([{ id: '$keep' }])
+    chatStore.messages[ROOM] = [
+      { id: '$keep', text: 'остаётся' },
+      { id: '$gone', text: 'секрет', senderId: '@peer:host' },
+    ] as never
+    await handlers['Room.timeline']!(
+      mxEvent('m.room.redaction', { redacts: '$gone', sender: '@peer:host', ts: 1_000 }),
+      room,
+      false
+    )
+    expect(chatStore.messages[ROOM]![0]).toEqual({ id: '$keep', text: 'остаётся' })
+    expect(chatStore.messages[ROOM]![1]).toMatchObject({
+      id: '$gone',
+      text: '',
+      deleted: { by: '@peer:host', at: 1_000 },
+    })
     expect(scheduleLoadDialogs).not.toHaveBeenCalled()
   })
 

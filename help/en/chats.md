@@ -18,11 +18,23 @@ How to start a conversation, find a chat or a message, see a group’s members, 
 
 ## Starting a chat
 
-You start a conversation with someone from their profile — the **“Start chat”** button — or with the chat button next to their name in a post header. A card with the person opens: name, reputation, followers and following. Press **“Start chat”** under it and write the first message.
+You start a conversation with someone from their profile — the **“Start chat”** button — or with the chat button next to their name in a post header. A card with the person opens: name, reputation, followers and following, and a field for the first message. The other person gets the chat only once you send it: a single press of the button used to leave them an empty chat. If they have not published their encryption keys yet, the app says so and the text stays in the field.
 
 The messenger has no people search of its own: find the person by name with [search](search.md).
 
-If someone new writes to you, the chat with them appears in the list by itself.
+If someone new writes to you, the chat with them appears in the list by itself, labelled **“Invitation to chat”** (for a group, with the name of who invited you) and with the time of the invitation. Its messages show when you open it: the app accepts the invitation itself.
+
+## Why a chat has no messages
+
+In an empty chat and at the start of a conversation the app says what it knows:
+
+- who created the chat and when;
+- **“There are no messages in this chat.”** — for example, the other person opened a chat with you in an earlier version of the app and never wrote anything;
+- “Messages before such-and-such date were deleted from the server” — the chat server does not keep conversations forever and erased the old ones. The app learns this from read receipts: they are still there, while the messages they point to are gone from the server;
+- how long messages are kept, if the chat has such a setting;
+- **“Could not load the chat history.”** with details and a **“Retry”** button — a connection or server failure, not a deletion.
+
+Messages people deleted stay in the conversation as a mark: **“You deleted a message”** or “… deleted a message” with the time of deletion. A message that could not be decrypted reads **“Could not decrypt the message”**.
 
 ## The chat list
 

@@ -38,11 +38,11 @@
         </SC_PartnerStats>
       </SC_PartnerInfoCard>
 
-      <SC_StartChatContainer>
-        <SC_StartChatButton @click="startChatNow">{{
-          t('messenger.startChat')
-        }}</SC_StartChatButton>
-      </SC_StartChatContainer>
+      <!-- Комната создаётся первым сообщением: пустой чат-приглашение у
+           собеседника появлялся, даже если ему так ничего и не написали. -->
+      <SC_FirstMessageHint>
+        {{ t('messenger.firstMessageHint', { name: partnerName }) }}
+      </SC_FirstMessageHint>
     </template>
 
     <template v-else-if="isLoading">
@@ -96,9 +96,13 @@
         </SC_KeyChangedAccept>
       </SC_KeyChangedBanner>
 
-      <SC_ChatRoomEmptyHint v-if="!messages || messages.length === 0">
-        {{ t('messenger.noMessagesHint') }}
-      </SC_ChatRoomEmptyHint>
+      <!-- Пустой чат: почему — кто и когда его создал, стёр ли сервер переписку. -->
+      <ChatHistoryNote
+        v-if="!messages || messages.length === 0"
+        :history="store.activeHistory"
+        empty
+        @retry="retryHistory"
+      />
 
       <SC_ChatRoomEmptyHint v-else-if="searchQuery.trim() && displayedMessages.length === 0">
         {{ t('messenger.searchNoResults') }}
@@ -107,8 +111,10 @@
       <MessageList
         :messages="displayedMessages"
         :seen-ids="seenIds"
+        :history="searchQuery.trim() ? null : store.activeHistory"
         @load-more="emit('load-more')"
         @reply="onReplyTo"
+        @retry="retryHistory"
       />
     </template>
 
@@ -156,10 +162,11 @@
       </template>
 
       <!-- NORMAL STATE -->
-      <template v-else-if="!inviteMode || isInitiated || (messages && messages.length > 0)">
+      <template v-else>
         <EmojiPicker v-if="showEmojiPicker" @select="onEmojiSelect" />
 
-        <SC_InputSlot>
+        <!-- До первого сообщения комнаты нет: файлы, PKOIN и голосовые — после него. -->
+        <SC_InputSlot v-if="!inviteMode">
           <AttachmentPanel
             :can-send-pkoin="canSendPkoin"
             :can-send-ipfs="canSendIpfs"
@@ -200,11 +207,7 @@
 
       <!-- VOICE BUTTON (видна при записи или когда input пуст). -->
       <SC_VoiceButton
-        v-if="
-          (!inviteMode || isInitiated || (messages && messages.length > 0)) &&
-          !inputValue.trim() &&
-          !isLocked
-        "
+        v-if="!inviteMode && !inputValue.trim() && !isLocked"
         :class="{ recording: isRecording }"
         @mousedown.prevent="startRecording"
         @mouseup.prevent="stopRecording"
@@ -221,7 +224,7 @@
       <!-- TEXT SEND BUTTON (виден когда есть текст и не идёт запись). -->
       <SC_SendButton
         v-if="inputValue.trim() && !isRecording && !isLocked"
-        :disabled="!inputValue.trim()"
+        :disabled="!inputValue.trim() || creatingChat"
         :aria-label="t('messenger.sendMessage')"
         :title="t('messenger.sendHint')"
         @click="handleSend"
@@ -262,6 +265,7 @@ import { useTypingIndicator } from './use-typing-indicator'
 import { useReadReceipts } from './use-read-receipts'
 import { useBlockUser } from './use-block-user'
 import MessageList from '../message-list/message-list.vue'
+import ChatHistoryNote from '../chat-history-note/chat-history-note.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import VoiceInputButton from '@/b-components/voice-input/voice-input-button.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
@@ -292,8 +296,7 @@ import {
   SC_RecordingTimer,
   SC_SwipeHint,
   SC_CancelButton,
-  SC_StartChatContainer,
-  SC_StartChatButton,
+  SC_FirstMessageHint,
   SC_PartnerHeader,
   SC_PartnerAvatar,
   SC_PartnerName,
@@ -358,7 +361,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   send: [text: string]
   'load-more': []
-  'open-chat': [roomId: string]
 }>()
 
 const store = useMessengerStore()
@@ -453,6 +455,10 @@ const {
 } = useChatInput({
   onSend: (text) => {
     stopTyping()
+    if (props.inviteMode) {
+      void sendFirstMessage(text)
+      return
+    }
     // Активен ответ — шлём как reply (m.in_reply_to) напрямую через стор и
     // сбрасываем баннер; обычная отправка идёт через @send родителю.
     if (replyingTo.value && store.activeChatId) {
@@ -516,19 +522,25 @@ const {
   },
 })
 
-const isInitiated = ref<boolean>(props.messages && props.messages.length > 0)
+/** Первое сообщение новому собеседнику: создаётся комната, потом уходит текст. */
+const creatingChat = ref(false)
 
-async function startChatNow(): Promise<void> {
-  const address = store.lastTargetAddress
-  if (!address) return
+async function sendFirstMessage(text: string): Promise<void> {
+  if (creatingChat.value) return
+  creatingChat.value = true
   try {
-    const roomId = await store.startChatWithAddress(address)
-    if (roomId) emit('open-chat', roomId)
+    // Не вышло (нет ключей у собеседника, нет связи) — текст возвращается в поле.
+    if (!(await store.sendToNewChat(text))) inputValue.value = text
   } catch (e) {
     console.error('[ChatRoom] Failed to start chat room:', e)
+    inputValue.value = text
+  } finally {
+    creatingChat.value = false
   }
-  isInitiated.value = true
-  focusInput()
+}
+
+function retryHistory(): void {
+  if (activeRoomId.value) void store.loadMessages(activeRoomId.value)
 }
 
 // === Файлы: drag/drop, paste, кнопка-«скрепка». ===

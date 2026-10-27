@@ -15,6 +15,7 @@ const { matrix } = vi.hoisted(() => ({
 vi.mock('../../services/matrix-service', () => ({ matrixService: matrix }))
 vi.mock('../../helpers', () => ({
   getRoomTimelineEvents: (room: { events: unknown[] }) => room.events,
+  isMessageEvent: () => true,
 }))
 
 import { useMessageLoading } from './use-message-loading'

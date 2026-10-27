@@ -64,9 +64,6 @@
         :messages="[]"
         :invite-mode="true"
         :is-loading="false"
-        @send="() => {}"
-        @load-more="() => {}"
-        @open-chat="onChatStarted"
       />
 
       <ChatList v-else :dialogs="dialogs" @select="openChat" />
@@ -186,10 +183,6 @@ function onWidgetBack(): void {
   } else if (lastTargetAddress.value) {
     store.clearInviteTarget()
   }
-}
-
-function onChatStarted(roomId: string): void {
-  store.switchToChatAndLoad(roomId)
 }
 
 function closeFullScreen(): void {

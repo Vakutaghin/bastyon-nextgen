@@ -91,6 +91,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     Object.keys(messages).forEach((key) => delete messages[key])
     Object.keys(drafts).forEach((key) => delete drafts[key])
     Object.keys(receiptsVersion).forEach((key) => delete receiptsVersion[key])
+    Object.keys(loading.history).forEach((key) => delete loading.history[key])
     currentUser.value = {
       id: 'me',
       name: t('appMsg.messenger.me'),
@@ -101,6 +102,8 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
 
   return {
     messages,
+    /** Что известно об истории чатов (lib/chat-history): начало, чистка сервером, ошибка. */
+    history: loading.history,
     drafts,
     receiptsVersion,
     noteReceipt,

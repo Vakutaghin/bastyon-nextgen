@@ -22,6 +22,7 @@ import {
 } from '../../helpers'
 import { notificationPreviewFor, senderDisplayName } from './notification-preview'
 import { syncErrorReason, type SyncErrorKind } from '../../lib/sync-error'
+import { markDeleted } from '../../lib/chat-history'
 import { SOUND_MAX_AGE } from '../consts'
 import type { MessengerStoreContext } from './types'
 
@@ -91,7 +92,7 @@ export function registerMatrixListeners(
         return
       }
 
-      // Redaction (удаление сообщения) — убираем целевое сообщение из ленты.
+      // Redaction (удаление сообщения) — в ленте остаётся отметка, кто удалил.
       if (evType === 'm.room.redaction') {
         const roomId = getEventRoomId(event)
         const redactedId =
@@ -99,10 +100,11 @@ export function registerMatrixListeners(
           event.event?.redacts ||
           event.redacts ||
           (typeof event.getContent === 'function' ? event.getContent()?.redacts : undefined)
-        const list = roomId ? chatStore.messages[roomId] : null
-        if (list && typeof redactedId === 'string') {
-          const idx = list.findIndex((m) => m.id === redactedId)
-          if (idx !== -1) list.splice(idx, 1)
+        if (roomId && typeof redactedId === 'string') {
+          markDeleted(chatStore.messages[roomId], redactedId, {
+            by: getEventSender(event),
+            at: getEventTs(event),
+          })
         }
         return
       }

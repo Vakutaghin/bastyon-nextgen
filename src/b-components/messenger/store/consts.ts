@@ -55,3 +55,6 @@ export const ENCRYPTED_MESSAGE_PLACEHOLDER = '*** Encrypted Message ***'
 
 /** Эмодзи быстрых реакций в меню сообщения */
 export const QUICK_REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'] as const
+
+/** Ключей мессенджера в профиле (`k`): без всех двенадцати прежний клиент чат не начинает. */
+export const MESSENGER_KEYS_COUNT = 12

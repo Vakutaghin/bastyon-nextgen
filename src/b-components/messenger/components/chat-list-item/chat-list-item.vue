@@ -70,11 +70,18 @@
         >
         {{ lastMessagePreview }}
       </SC_LastMessage>
+      <!-- Приглашение: до вступления ленты нет, раньше строка была пустой. -->
+      <SC_LastMessage v-else-if="dialog.invite" data-testid="invite-preview">
+        {{ invitePreview }}
+      </SC_LastMessage>
     </SC_Info>
 
     <SC_Meta>
       <SC_Time v-if="dialog.lastMessage">
         {{ formatTime(dialog.lastMessage.timestamp) }}
+      </SC_Time>
+      <SC_Time v-else-if="dialog.invite && dialog.createdAt">
+        {{ formatTime(dialog.createdAt) }}
       </SC_Time>
 
       <SC_MenuWrap>
@@ -165,6 +172,7 @@ import { useMessengerChatStore } from '../../store/messenger-chat-store'
 import { seenMessageIds, type ReceiptRoom } from '../../store/messenger-chat-store/read-receipts'
 import { matrixService } from '../../services/matrix-service'
 import { chatUserName } from '../../helpers'
+import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../../store/consts'
 import { lastMessageMark } from './last-message-mark'
 import GroupAvatar from '../group-avatar/group-avatar.vue'
 import {
@@ -247,6 +255,8 @@ const isActive = computed<boolean>(() => store.activeChatId === props.dialog.id)
 const lastMessagePreview = computed<string>(() => {
   const m = props.dialog.lastMessage
   if (!m) return ''
+  if (m.deleted) return t('messenger.history.deletedPreview')
+  if (m.text === ENCRYPTED_MESSAGE_PLACEHOLDER) return t('messenger.history.undecryptable')
   switch (m.type) {
     case 'audio':
       return t('chat.audioMessage')
@@ -265,6 +275,15 @@ const lastMessagePreview = computed<string>(() => {
       return supportReportPreview(m.text) ?? m.text
     }
   }
+})
+
+/** «Приглашение в чат», в группе — с тем, кто пригласил. */
+const invitePreview = computed<string>(() => {
+  const by = props.dialog.invite?.by
+  if (!isGroup.value || !by) return t('messenger.history.invitePreview')
+  return t('messenger.history.inviteGroupPreview', {
+    name: chatUserName(by, store.userProfiles),
+  })
 })
 
 const dropdownStyle = computed(() => ({
@@ -303,7 +322,7 @@ const lastSeen = computed<boolean>(() => {
 
 const lastMark = computed(() => {
   const m = props.dialog.lastMessage
-  return m && isMine(m) ? lastMessageMark(m, lastSeen.value, t) : null
+  return m && isMine(m) && !m.deleted ? lastMessageMark(m, lastSeen.value, t) : null
 })
 
 const lastFailed = computed<boolean>(() => {

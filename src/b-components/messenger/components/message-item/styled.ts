@@ -292,3 +292,9 @@ export const SC_MeshBindingNote = styled.div`
   font-size: 12px;
   color: var(--ui-text-muted);
 `
+
+/** Сообщение не расшифровалось: курсивом, приглушённо — это сбой, а не текст. */
+export const SC_UndecryptableNote = styled.span`
+  font-style: italic;
+  color: var(--ui-text-muted);
+`

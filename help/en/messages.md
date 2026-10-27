@@ -23,7 +23,7 @@ To send a photo, a file or a voice message, see [Photos, videos and files in cha
 
 ## Deleting
 
-In the **“Actions”** menu of your own message — **“Delete”**. The app asks again: **“Delete message?”** The message is deleted for everyone in the chat.
+In the **“Actions”** menu of your own message — **“Delete”**. The app asks again: **“Delete message?”** The message is deleted for everyone in the chat, and in its place a **“You deleted a message”** mark with the time stays — for the other person, with your name.
 
 A sent message cannot be edited.
 

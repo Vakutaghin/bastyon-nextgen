@@ -58,14 +58,7 @@
           </SC_MobileBackButton>
           <ChatPartnerTitle v-if="shownPartner" :partner="shownPartner" />
         </SC_ChatTopBar>
-        <ChatRoom
-          :messages="[]"
-          :invite-mode="true"
-          :is-loading="false"
-          @send="() => {}"
-          @load-more="() => {}"
-          @open-chat="onChatStarted"
-        />
+        <ChatRoom :messages="[]" :invite-mode="true" :is-loading="false" />
       </template>
       <SC_EmptyState v-else>
         <MessagesIcon />
@@ -134,9 +127,5 @@ function handleLoadMore(): void {
   if (activeChatId.value) {
     store.loadMoreMessages(activeChatId.value)
   }
-}
-
-function onChatStarted(roomId: string): void {
-  store.switchToChatAndLoad(roomId)
 }
 </script>

@@ -60,14 +60,14 @@ export async function signedIn(
 }
 
 /**
- * Открыть личный чат из профиля собеседника. Новый чат начинается кнопкой на
- * карточке собеседника; существующий открывается сразу — и сразу после
- * запуска, пока не пришёл первый синк.
+ * Открыть личный чат из профиля собеседника. У нового сразу поле ввода, а
+ * комната создаётся первым сообщением; существующий открывается сразу — и
+ * сразу после запуска, пока не пришёл первый синк.
  */
 export async function openChatWith(page: Page, partner: Account, isNew: boolean): Promise<void> {
   await page.goto(`/${partner.address}`)
   await page.getByRole('button', { name: 'Начать чат' }).first().click()
-  if (isNew) await page.getByRole('button', { name: 'Начать чат' }).nth(1).click()
+  if (isNew) await expect(page.getByText(/Напишите первое сообщение/)).toBeVisible()
   await expect(page.getByPlaceholder('Введите сообщение...')).toBeVisible({ timeout: 60_000 })
   await expect(page.getByRole('button', { name: 'Начать чат' })).toHaveCount(1)
 }

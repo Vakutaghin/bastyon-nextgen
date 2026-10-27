@@ -339,6 +339,24 @@ describe('useDialogMapping — mapRoomToDialog', () => {
       expect(d.hasUnread).toBeUndefined()
     })
 
+    it('кто пригласил — в списке «Приглашение в чат» вместо пустой строки', async () => {
+      const { ctx: c } = ctx()
+      const invite = { ...mxEvent('m.room.member', 5000), getSender: () => PEER_ID }
+      const d = await useDialogMapping(c).mapRoomToDialog(
+        invitedRoom({
+          getMember: (id: string) =>
+            id === me.userId ? { ...me, events: { member: invite } } : null,
+        })
+      )
+      expect(d.invite).toEqual({ by: PEER_ID })
+    })
+
+    it('вступили — приглашения в диалоге нет', async () => {
+      const { ctx: c } = ctx()
+      const d = await useDialogMapping(c).mapRoomToDialog(fakeRoom())
+      expect(d.invite).toBeUndefined()
+    })
+
     it('события приглашения нет — createdAt не задан', async () => {
       const { ctx: c } = ctx()
       const d = await useDialogMapping(c).mapRoomToDialog(invitedRoom({ getMember: () => null }))

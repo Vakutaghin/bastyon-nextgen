@@ -273,30 +273,13 @@ export const SC_CancelButton = styled.button`
   }
 `
 
-export const SC_StartChatContainer = styled.div`
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  box-sizing: border-box;
-`
-
-export const SC_StartChatButton = styled.button`
-  padding: 10px 16px;
-  border-radius: var(--ui-radius-lg);
-  border: none;
-  background-color: var(--ui-primary);
-  color: var(--ui-text-inverted);
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  box-shadow: var(--shadow-sm);
-
-  &:hover {
-    background-color: rgb(var(--ui-primary-rgb) / 75%);
-  }
+/** Новый чат: собеседник увидит его, когда уйдёт первое сообщение. */
+export const SC_FirstMessageHint = styled.div`
+  padding: 16px 20px;
+  color: var(--ui-text-muted);
+  font-size: 13px;
+  line-height: calc(1.45 * var(--leading-scale));
+  text-align: center;
 `
 
 export const SC_PartnerHeader = styled.div`

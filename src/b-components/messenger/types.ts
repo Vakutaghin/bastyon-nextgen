@@ -76,6 +76,8 @@ export interface Message {
   transport?: ChatTransport
   /** Meshtastic: у сообщения есть id пакета — на него можно ответить и отреагировать по радио. */
   meshReplyable?: boolean
+  /** Удалено (redaction): в ленте — отметка, кто и когда удалил. */
+  deleted?: { by: string; at: number }
 }
 
 /** Групповой чат Matrix: сколько в нём людей и кого показать вместо аватара. */
@@ -113,6 +115,8 @@ export interface Dialog {
   muted?: boolean
   /** Без звука сервер не считает непрочитанные — есть ли новое, видно по отметке прочтения. */
   hasUnread?: boolean
+  /** Нас пригласили, а мы ещё не вступили: кто пригласил (matrix-id). Ленты до вступления нет. */
+  invite?: { by: string }
 }
 
 /** Переписка на несколько человек: группа Matrix, канал или комната mesh-сети. */

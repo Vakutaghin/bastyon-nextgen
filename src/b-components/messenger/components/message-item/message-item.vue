@@ -23,7 +23,14 @@
         <SC_ReplyQuoteText>{{ repliedPreview.text }}</SC_ReplyQuoteText>
       </SC_ReplyQuote>
 
-      <div v-if="message.type === 'audio'" class="message-audio">
+      <!-- Не расшифровалось: вместо служебной строки «*** Encrypted Message ***». -->
+      <div v-if="undecryptable" class="message-text">
+        <SC_UndecryptableNote data-testid="undecryptable">
+          🔒 {{ t('messenger.history.undecryptable') }}
+        </SC_UndecryptableNote>
+      </div>
+
+      <div v-else-if="message.type === 'audio'" class="message-audio">
         <AudioMessage :message="message" :compact="isCompact" />
         <SC_AudioUrlMissing v-if="!message.url">Audio URL missing</SC_AudioUrlMissing>
       </div>
@@ -174,6 +181,7 @@ import { appToast } from '@/b-components/app-toast'
 import { isMeshTransport, type Message } from '../../types'
 import { deliveryMark } from './delivery-mark'
 import { useMessengerStore } from '../../store'
+import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../../store/consts'
 import { chatUserName, getAddressFromMatrixId } from '../../helpers'
 import {
   formatDateTimeFromString as formatTime,
@@ -223,6 +231,7 @@ import {
   SC_ReplyQuoteText,
   SC_MeshRouteButton,
   SC_MeshBindingNote,
+  SC_UndecryptableNote,
 } from './styled'
 
 const APopover = Popover
@@ -456,6 +465,8 @@ const canShowActions = computed<boolean>(() => canReply.value || canDelete.value
 
 /** Превью цитируемого сообщения (на которое отвечает текущее). Резолвится по
  *  загруженным сообщениям диалога; если оригинал не в списке — общий плейсхолдер. */
+const undecryptable = computed<boolean>(() => props.message.text === ENCRYPTED_MESSAGE_PLACEHOLDER)
+
 const repliedPreview = computed<{ name: string; text: string } | null>(() => {
   const rid = props.message.replyTo?.id
   if (!rid) return null
@@ -478,6 +489,10 @@ const repliedPreview = computed<{ name: string; text: string } | null>(() => {
   const name = isRefMine
     ? store.currentUser.name || t('messenger.you')
     : chatUserName(ref.senderId, store.userProfiles, ref.senderName)
+  if (ref.deleted) return { name, text: t('messenger.history.deletedPreview') }
+  if (ref.text === ENCRYPTED_MESSAGE_PLACEHOLDER) {
+    return { name, text: t('messenger.history.undecryptable') }
+  }
   const text =
     ref.type && ref.type !== 'text'
       ? `[${ref.type}]`

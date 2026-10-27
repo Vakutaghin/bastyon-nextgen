@@ -14,7 +14,7 @@ import { userMark } from '@/helpers/profile/user-mark'
 import { logger } from '@/services/logger'
 import { t } from '@/i18n'
 
-import { matrixService } from '../services/matrix-service'
+import { MatrixService, matrixService } from '../services/matrix-service'
 import { isMeshDialogId } from '@/mesh/ids'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
@@ -22,7 +22,7 @@ import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection
 import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import { useMeshRoutesStore } from '@/mesh/store/mesh-routes-store'
 
-import { getAddressFromMatrixId, resolveMatrixHost } from '../helpers'
+import { getAddressFromMatrixId, parseProfileKeys, resolveMatrixHost } from '../helpers'
 import { findExistingRoomByAddress, getPartnerMatrixId } from '../room-helpers'
 
 import {
@@ -30,6 +30,7 @@ import {
   LOGIN_RETRY_MAX_DELAY,
   LOGIN_RETRY_MIN_DELAY,
   PROFILE_UPDATE_DEBOUNCE,
+  MESSENGER_KEYS_COUNT,
 } from './consts'
 
 const log = logger.scope('[MessengerStore]')
@@ -593,6 +594,43 @@ export const useMessengerStore = defineStore('messenger', () => {
     return roomId || null
   }
 
+  /** Собеседник опубликовал ключи мессенджера: как прежний клиент, все двенадцать. */
+  const partnerHasKeys = (address: string): boolean => {
+    const keys = profileCache.userProfiles[address]?.k
+    return parseProfileKeys(typeof keys === 'string' ? keys : '').length >= MESSENGER_KEYS_COUNT
+  }
+
+  /**
+   * Первое сообщение новому собеседнику. Комната создаётся только сейчас: по
+   * «Начать чат» она появлялась у собеседника пустым приглашением, даже если
+   * ему так ничего и не написали. Прежний клиент тоже создаёт её с первым
+   * сообщением.
+   */
+  const sendToNewChat = async (text: string): Promise<boolean> => {
+    const address = uiStore.lastTargetAddress
+    if (!address || !text.trim()) return false
+    try {
+      await profileCache.fetchProfiles([address])
+    } catch {
+      /* ниже скажем, что ключей нет */
+    }
+    // Без ключей собеседника сообщение не зашифровать — комната осталась бы пустой.
+    if (!partnerHasKeys(address)) {
+      appToast.error({ message: t('appMsg.messenger.recipientNoKeys') })
+      return false
+    }
+    const roomId = await startChatWithAddress(address)
+    if (!roomId) {
+      appToast.error({ message: t('messenger.startChatFailed') })
+      return false
+    }
+    // Шифровать можно, когда синк принёс комнату с участниками.
+    await MatrixService.waitForJoin(() => matrixService.getRoom(roomId))
+    switchToChatAndLoad(roomId)
+    await sendMessage(roomId, text)
+    return true
+  }
+
   /** Открыть канал автора в мессенджере (из профиля, из тоста «Открыть»). */
   const openChannel = async (address: string): Promise<void> => {
     if (!address || !authStore.isUserAuthenticated) return
@@ -823,6 +861,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     dialogs: allDialogs,
     messages: chatStore.messages,
     activeMessages,
+    /** Что известно об истории открытого чата (lib/chat-history). */
+    activeHistory: computed(() =>
+      uiStore.activeChatId ? (chatStore.history[uiStore.activeChatId] ?? null) : null
+    ),
     // ВАЖНО: та же проблема, что и с pcryptoService — `activeDialog` initial value
     // (нет активного чата) = null. Голый null ломает storeToRefs.
     activeDialog: computed(
@@ -925,6 +967,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     fetchProfiles: profileCache.fetchProfiles,
     decryptAudioData: chatStore.decryptAudioData,
     startChatWithAddress,
+    sendToNewChat,
     switchToChatAndLoad,
     openInviteWithAddress,
     clearInviteTarget: uiStore.clearInviteTarget,

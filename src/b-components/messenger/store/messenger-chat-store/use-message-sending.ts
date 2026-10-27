@@ -15,6 +15,7 @@ import {
 import { getAddressFromMatrixId, getMatrixId, isTetatetchat } from '../../helpers'
 import { getPartnerMatrixId } from '../../room-helpers'
 import type { Message } from '../../types'
+import { markDeleted } from '../../lib/chat-history'
 import { pushOptimistic } from './media-sending-helpers'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
@@ -357,15 +358,11 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     }
   }
 
-  /** Удаление своего сообщения (redaction). Оптимистично убираем локально. */
+  /** Удаление своего сообщения (redaction): в ленте остаётся отметка «Вы удалили». */
   const deleteMessage = async (chatId: string, eventId: string) => {
     try {
       await matrixService.redactEvent(chatId, eventId, 'deleted')
-      const list = messages[chatId]
-      if (list) {
-        const idx = list.findIndex((m) => m.id === eventId)
-        if (idx !== -1) list.splice(idx, 1)
-      }
+      markDeleted(messages[chatId], eventId, { by: ctx.currentUser.value.id, at: Date.now() })
     } catch (e) {
       console.error('[ChatStore] Ошибка удаления сообщения:', e)
       throw e

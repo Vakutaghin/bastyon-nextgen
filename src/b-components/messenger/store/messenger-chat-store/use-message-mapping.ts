@@ -11,9 +11,11 @@ import {
   getEventRoomId,
   getEventSender,
   getEventTs,
+  isMessageEvent,
   isRenderableMessageEvent,
   getAddressFromMatrixId,
 } from '../../helpers'
+import { redactionOf } from '../../lib/chat-history'
 import { matrixService } from '../../services/matrix-service'
 import { useMeshRoutesStore } from '@/mesh/store/mesh-routes-store'
 import { resolveMediaUrl } from '../../services/matrix-service/mxc-resolver'
@@ -47,6 +49,24 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
     event: MxEvent,
     skipDecryption = false
   ): Promise<Message | null> => {
+    // Удалённое сообщение приходит с пустым содержимым. Раньше оно молча
+    // пропадало, и переписка выглядела пустой без объяснений: теперь это
+    // отметка «удалено» — кем и когда.
+    const deleted = isMessageEvent(event) ? redactionOf(event) : null
+    if (deleted) {
+      return {
+        id: getEventId(event),
+        chatId: getEventRoomId(event),
+        senderId: getEventSender(event),
+        text: '',
+        type: 'text',
+        rawContent: null,
+        timestamp: getEventTs(event),
+        read: false,
+        status: 'sent',
+        deleted,
+      }
+    }
     if (!isRenderableMessageEvent(event)) return null
 
     const eventId = getEventId(event)

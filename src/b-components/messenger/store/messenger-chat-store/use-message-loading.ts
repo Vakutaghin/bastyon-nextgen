@@ -1,15 +1,25 @@
 // Загрузка и пагинация истории сообщений комнаты. Маппинг и обогащение
 // реакциями делегируются use-message-mapping; ожидание pcrypto — use-chat-crypto.
 
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 
 import { matrixService } from '../../services/matrix-service'
-import { getRoomTimelineEvents } from '../../helpers'
+import { getRoomTimelineEvents, isMessageEvent } from '../../helpers'
+import {
+  reachedHistoryStart,
+  readHistory,
+  type ChatHistory,
+  type HistoryRoom,
+} from '../../lib/chat-history'
 import type { Message } from '../../types'
 import { MESSAGES_PER_PAGE, ROOM_WAIT_TIMEOUT } from '../consts'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
 import type { MessageMapping } from './use-message-mapping'
+
+/** Сколько сообщений нужно на экране сразу, и сколько страниц листать ради них. */
+const MIN_SHOWN_MESSAGES = 10
+const MAX_HISTORY_PAGES = 5
 
 export function useMessageLoading(
   ctx: ChatContext,
@@ -21,21 +31,44 @@ export function useMessageLoading(
   const { mapEventToMessage, enrichMessagesWithReactions } = mapping
 
   const isLoadingMore = ref(false)
+  /** Что известно об истории чатов: начало, создатель, чистка сервером, ошибка. */
+  const history = reactive<Record<string, ChatHistory>>({})
+
+  const noteHistory = (chatId: string, room: MxRoom | null, error?: unknown) => {
+    const myUserId = matrixService.getClient()?.getUserId() || ''
+    const state: ChatHistory = room
+      ? readHistory(room as unknown as HistoryRoom, myUserId)
+      : { reachedStart: false }
+    if (error !== undefined) {
+      state.error = error instanceof Error ? error.message : String(error || 'unknown')
+    }
+    history[chatId] = state
+  }
   /**
    * Флаг загрузки общий на все чаты: гасит его только последний вызов. Иначе
    * чат, который ещё ждал комнату, снимал загрузку у чата, открытого после него.
    */
   let loadSeq = 0
 
+  /**
+   * Листаем назад, пока на экране не наберётся сообщений или не кончится
+   * история. Раньше — одну страницу: если в конце ленты были только служебные
+   * события (вступления, роли, реакции), чат открывался пустым.
+   */
   const paginateRoomHistory = async (room: MxRoom) => {
     const client = matrixService.getClient()
     if (!client || !room || typeof room.getLiveTimeline !== 'function') return
     const liveTimeline = room.getLiveTimeline()
-    if (liveTimeline.getEvents().length < MESSAGES_PER_PAGE) {
-      await client.paginateEventTimeline(liveTimeline, {
+    for (let page = 0; page < MAX_HISTORY_PAGES; page++) {
+      const events = liveTimeline.getEvents()
+      const messageCount = events.filter(isMessageEvent).length
+      if (events.length >= MESSAGES_PER_PAGE && messageCount >= MIN_SHOWN_MESSAGES) return
+      if (reachedHistoryStart(room as unknown as HistoryRoom)) return
+      const more = await client.paginateEventTimeline(liveTimeline, {
         backwards: true,
         limit: MESSAGES_PER_PAGE,
       })
+      if (!more) return
     }
   }
 
@@ -105,9 +138,15 @@ export function useMessageLoading(
         messages[chatId] = list
         const client = matrixService.getClient()
         if (client) enrichMessagesWithReactions(room, list, client.getUserId() || '')
+        noteHistory(chatId, room)
+      } else if (uiStore.activeChatId === chatId) {
+        // Синк прошёл, а комнаты нет: сервер её не знает или нас в ней нет.
+        noteHistory(chatId, null, 'room_not_found')
       }
     } catch (e) {
       console.error('[ChatStore] Ошибка загрузки сообщений:', e)
+      // Раньше чат просто оставался пустым — теперь видно, что история не загрузилась.
+      noteHistory(chatId, matrixService.getRoom(chatId), e)
     } finally {
       if (seq === loadSeq) uiStore.isMessagesLoading = false
     }
@@ -137,14 +176,16 @@ export function useMessageLoading(
         messages[chatId] = list
         if (client) enrichMessagesWithReactions(room, list, client.getUserId() || '')
       }
+      noteHistory(chatId, room)
     } catch (e) {
       console.error('[ChatStore] Ошибка подгрузки истории:', e)
+      noteHistory(chatId, room, e)
     } finally {
       isLoadingMore.value = false
     }
   }
 
-  return { loadMessages, loadMoreMessages }
+  return { history, loadMessages, loadMoreMessages }
 }
 
 export type MessageLoading = ReturnType<typeof useMessageLoading>
