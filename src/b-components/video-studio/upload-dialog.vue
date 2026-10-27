@@ -86,7 +86,7 @@
       <VideoCoverPicker
         v-if="job.cover && coverFile"
         :key="job.id"
-        :file="coverFile"
+        :media="coverFile"
         :cover="job.cover"
         @pick="(image, source, time) => store.setCover(job!.id, image, source, time)"
         @retry="store.retryCover(job!.id)"

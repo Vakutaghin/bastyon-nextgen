@@ -29,6 +29,10 @@ export interface MyVideoItem {
   duration?: number
   /** ISO-дата загрузки. */
   createdAt?: string
+  /** Начало описания (до 250 знаков). */
+  description?: string | null
+  views?: number
+  isAudio?: boolean
 }
 
 /** Страница списка видео аккаунта. */
@@ -383,6 +387,10 @@ export interface NodeVideoInfo {
   thumbnailPath?: string
   duration?: number
   createdAt?: string
+  /** Начало описания (до 250 знаков). */
+  description?: string | null
+  views?: number
+  isAudio?: boolean
 }
 
 /**
@@ -392,15 +400,15 @@ export interface NodeVideoInfo {
  */
 export async function getVideosInfo(params: {
   urls: string[]
+  /** Спросить видеосервер заново, а не брать из кэша ноды (после правки ролика). */
+  update?: boolean
   fetchNode?: NodeFetch
 }): Promise<Map<string, NodeVideoInfo>> {
   const info = new Map<string, NodeVideoInfo>()
   if (!params.urls.length) return info
   const fetchNode: NodeFetch = params.fetchNode ?? ((path, data) => fetchHttp({ path, data }))
-  const raw = (await fetchNode('peertube/videos', { urls: params.urls })) as Record<
-    string,
-    unknown
-  > | null
+  const payload = params.update ? { urls: params.urls, update: true } : { urls: params.urls }
+  const raw = (await fetchNode('peertube/videos', payload)) as Record<string, unknown> | null
   for (const url of params.urls) {
     const item = raw?.[url]
     if (item && typeof item === 'object' && !Array.isArray(item))

@@ -3,11 +3,12 @@
     <!-- Обложка видео: по умолчанию первый кадр. Ползунок по ленте кадров
          показывает кадр прямо в превью, отпустили — он стал обложкой. Или своя
          картинка: обрежется под формат ролика. У звука кадров нет: своя
-         картинка или та, что сделает видеосервер. -->
+         картинка или та, что сделает видеосервер. В «Медиастудии» (mode
+         edit) кадры берутся из файла ролика на видеосервере. -->
     <SC_CoverHead>
       <SC_CoverTitle>{{ t('videoCover.title') }}</SC_CoverTitle>
       <Tooltip
-        :title="cover.audio ? t('videoCover.hintAudio') : t('videoCover.hint')"
+        :title="hintText"
         :trigger="['hover', 'focus', 'click']"
         :get-popup-container="popupContainer"
         placement="top"
@@ -25,6 +26,7 @@
         v-show="scrubbing"
         ref="previewRef"
         :src="previewUrl"
+        crossorigin="anonymous"
         muted
         playsinline
         preload="auto"
@@ -55,7 +57,7 @@
       />
     </SC_Strip>
     <SC_CoverNote v-else-if="!cover.audio && unsupported">{{
-      t('videoCover.noFrames')
+      noFramesText || t('videoCover.noFrames')
     }}</SC_CoverNote>
 
     <SC_CoverActions>
@@ -96,10 +98,13 @@ import {
   canCaptureFrames,
   coverFromImage,
   drawFrame,
+  frameSeekTimeout,
+  isRemoteFrames,
   openFrameSource,
   seekTo,
   stripTimes,
   STRIP_MAX_SIDE,
+  type FrameInput,
   type FrameSource,
 } from './video-frames'
 import {
@@ -126,9 +131,16 @@ const STRIP_FRAMES = 8
 const STEP = 0.1
 
 const props = defineProps<{
-  file: File
+  /** Выбранный файл или ссылка на файл ролика на видеосервере; null — кадров нет. */
+  media: FrameInput | null
   cover: VideoCoverState
   disabled?: boolean
+  /** upload — ролик загружается; edit — уже на сервере («Медиастудия»). */
+  mode?: 'upload' | 'edit'
+  /** Формат ролика, если кадров нет: под него обрежется своя картинка. */
+  aspect?: number | null
+  /** Почему кадров нет, если причина не в самом файле (например, Tor). */
+  noFramesText?: string
 }>()
 const emit = defineEmits<{
   (e: 'pick', image: Blob, source: CoverSource, time: number): void
@@ -138,15 +150,18 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const canDraw = canCaptureFrames()
+const media = props.media
 /** У звука кадров нет — файл не открываем. */
-const opensFrames = canDraw && !props.cover.audio
-const previewUrl = opensFrames ? URL.createObjectURL(props.file) : ''
+const opensFrames = canDraw && !props.cover.audio && !!media
+const previewUrl =
+  !opensFrames || !media ? '' : isRemoteFrames(media) ? media : URL.createObjectURL(media)
+const ownsPreviewUrl = !!media && !isRemoteFrames(media) && !!previewUrl
 const previewRef = ref<HTMLVideoElement | null>(null)
 const source = shallowRef<FrameSource | null>(null)
 const frames = ref<string[]>([])
 const duration = ref(0)
 const loading = ref(opensFrames)
-const unsupported = ref(!canDraw)
+const unsupported = ref(!canDraw || !media)
 const time = ref(props.cover.time)
 const scrubbing = ref(false)
 const capturing = ref(false)
@@ -163,9 +178,17 @@ const sourceText = computed<string>(() => {
       return t('videoCover.sourceImage')
     case 'server':
       return t('videoCover.sourceServer')
+    case 'current':
+      return t('videoCover.sourceCurrent')
     default:
       return ''
   }
+})
+
+const hintText = computed<string>(() => {
+  if (props.mode === 'edit')
+    return props.cover.audio ? t('videoCover.hintAudioEdit') : t('videoCover.hintEdit')
+  return props.cover.audio ? t('videoCover.hintAudio') : t('videoCover.hint')
 })
 
 const emptyText = computed<string>(() => {
@@ -199,8 +222,8 @@ const statusText = computed<string>(() => {
 })
 
 onMounted(async () => {
-  if (!opensFrames) return
-  const opened = await openFrameSource(props.file)
+  if (!opensFrames || !media) return
+  const opened = await openFrameSource(media)
   if (unmounted) {
     opened?.close()
     return
@@ -226,7 +249,7 @@ onBeforeUnmount(() => {
   unmounted = true
   source.value?.close()
   for (const frame of frames.value) if (frame) URL.revokeObjectURL(frame)
-  if (previewUrl) URL.revokeObjectURL(previewUrl)
+  if (ownsPreviewUrl) URL.revokeObjectURL(previewUrl)
 })
 
 function onScrub(event: Event): void {
@@ -244,7 +267,7 @@ async function onPickFrame(event: Event): Promise<void> {
   if (!video) return
   capturing.value = true
   try {
-    await seekTo(video, at)
+    await seekTo(video, at, media ? frameSeekTimeout(media) : undefined)
     const frame = await drawFrame(video)
     if (!unmounted) emit('pick', frame, at < STEP ? 'first' : 'frame', at)
   } catch {
@@ -262,8 +285,11 @@ async function onPickImage(event: Event): Promise<void> {
   if (!picked) return
   imageError.value = false
   // Картинку звука не режем: кадра, под который подгонять, нет.
-  const aspect =
-    source.value && !props.cover.audio ? source.value.width / source.value.height : null
+  const aspect = props.cover.audio
+    ? null
+    : source.value
+      ? source.value.width / source.value.height
+      : (props.aspect ?? null)
   try {
     const image = await coverFromImage(picked, aspect)
     if (!unmounted) emit('pick', image, 'image', time.value)

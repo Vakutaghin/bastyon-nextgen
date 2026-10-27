@@ -98,6 +98,8 @@
   /* Нажатие и «глубокий» текст на мягкой подложке. */
   --ui-primary-strong: var(--ui-color-blue-700);
   --ui-primary-deep: var(--ui-color-blue-800);
+  /* Заливка графиков (статистика «Медиастудии»): контраст с фоном ≥ 3:1. */
+  --ui-chart: var(--ui-color-blue-600);
   /* Ссылки в тексте: у blue-600 на белом те же 5.3:1, отдельный оттенок не нужен. */
   --ui-primary-text: var(--ui-color-blue-600);
   /* Акцент на тёмной подложке в любой теме (плеер поверх видео) — яркий оттенок. */
@@ -427,6 +429,8 @@
   --ui-primary-rgb: 0 220 130;
   --ui-primary-strong: var(--ui-color-green-300);
   --ui-primary-deep: var(--ui-color-green-200);
+  /* green-400 для заливки графика слишком светлый — на шаг темнее. */
+  --ui-chart: var(--ui-color-green-600);
   --ui-primary-text: var(--ui-color-green-400);
   --ui-primary-on-dark: var(--ui-color-green-400);
 

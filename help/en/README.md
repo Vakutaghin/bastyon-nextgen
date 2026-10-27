@@ -54,6 +54,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
 - [Video and audio](video.md)
   - [Watching videos](video-player.md)
   - [Uploading video and audio](video-upload.md)
+  - [Media studio](media-studio.md)
   - [Compressing a video](video-compression.md)
 - [Wallet and PKOIN](wallet.md)
   - [PKOIN](pkoin.md)

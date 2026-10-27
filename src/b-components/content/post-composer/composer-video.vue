@@ -75,7 +75,7 @@
   >
     <SC_CoverDialog v-if="coverOpen && cover && file">
       <VideoCoverPicker
-        :file="file"
+        :media="file"
         :cover="cover.state"
         :disabled="disabled"
         @pick="setCover"

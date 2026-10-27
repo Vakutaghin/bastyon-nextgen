@@ -14,8 +14,11 @@ import { reactive } from 'vue'
 
 import { firstFrame } from './video-frames'
 
-/** Откуда обложка: первый кадр, выбранный кадр, своя картинка или видеосервер. */
-export type CoverSource = 'first' | 'frame' | 'image' | 'server'
+/**
+ * Откуда обложка: первый кадр, выбранный кадр, своя картинка, видеосервер или
+ * (в «Медиастудии») обложка, которая у ролика уже стоит.
+ */
+export type CoverSource = 'first' | 'frame' | 'image' | 'server' | 'current'
 
 /** none — своей обложки нет, её делает видеосервер. */
 export type CoverStatus = 'none' | 'pending' | 'saving' | 'saved' | 'error'

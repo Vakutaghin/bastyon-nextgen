@@ -54,6 +54,7 @@
 - [Видео и аудио](video.md)
   - [Просмотр видео](video-player.md)
   - [Загрузка видео и аудио](video-upload.md)
+  - [Медиастудия](media-studio.md)
   - [Сжатие видео](video-compression.md)
 - [Кошелёк и PKOIN](wallet.md)
   - [PKOIN](pkoin.md)

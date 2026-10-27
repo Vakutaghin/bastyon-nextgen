@@ -22,7 +22,6 @@ import { computed, getCurrentScope, onScopeDispose, ref, watch } from 'vue'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { composePeerTubeUrl, parsePeerTubeUrl } from '@/helpers/api/peertube-parser'
 import { resolvePeertubeHosts } from '@/services/peertube/peertube-host'
-import { buildPeertubeSignature, ensurePeertubeToken } from '@/services/peertube/peertube-auth'
 import {
   deleteInstanceVideo,
   findPostedVideos,
@@ -35,6 +34,7 @@ import {
 } from '@/services/peertube/peertube-videos'
 import { usePendingPostsStore } from '@/stores/pending-posts-store'
 import { logger } from '@/services/logger'
+import { useVideoServerToken } from './video-server-token'
 
 const log = logger.scope('[my-videos]')
 
@@ -63,10 +63,15 @@ export interface ServerVideo {
   id: number | string
   uuid: string
   name: string
+  /** Начало описания на видеосервере (до 250 знаков); пусто — описания нет. */
+  description: string
   /** peertube://host/uuid[/audio] — им видео прикрепляется к посту. */
   pointer: string
   thumbnailUrl: string | null
   duration: number | null
+  /** Просмотры за всё время; null — сервер не сказал. */
+  views: number | null
+  isAudio: boolean
   processing: boolean
   posted: boolean
   /** Посты с этим видео, свежие первыми. */
@@ -80,6 +85,9 @@ export function videoKey(pointer: string): string {
   const parsed = parsePeerTubeUrl(pointer)
   return parsed ? `${parsed.host.toLowerCase()}/${parsed.videoId}` : pointer
 }
+
+const viewsOf = (value: unknown): number | null =>
+  typeof value === 'number' && value >= 0 ? value : null
 
 const dateMs = (iso: string | undefined): number => {
   const ms = iso ? Date.parse(iso) : NaN
@@ -102,9 +110,12 @@ function fromPost(posted: PostedVideo, info: NodeVideoInfo | undefined): ServerV
     id: info?.id ?? uuid,
     uuid,
     name: info?.name || posted.post.caption || uuid,
+    description: info?.description ?? '',
     pointer: posted.pointer,
     thumbnailUrl: info?.thumbnailPath ? `https://${host}${info.thumbnailPath}` : null,
     duration: typeof info?.duration === 'number' ? info.duration : null,
+    views: viewsOf(info?.views),
+    isAudio: info?.isAudio ?? parsed?.type === 'audio',
     processing: PROCESSING_STATES.has(info?.state?.id ?? 0),
     posted: true,
     posts: [posted.post],
@@ -122,6 +133,7 @@ export function useServerVideos() {
   const loaded = ref(false)
 
   const signedIn = computed(() => !!authStore.getKeyPair && !!authStore.getUserAddress)
+  const tokenFor = useVideoServerToken()
 
   /** Серверы роёв по порядку и что пришло из каждого источника. */
   let hosts: string[] = []
@@ -161,14 +173,6 @@ export function useServerVideos() {
     }
   }
 
-  async function tokenFor(host: string): Promise<string> {
-    const keyPair = authStore.getKeyPair
-    const address = authStore.getUserAddress
-    if (!keyPair || !address) throw new Error('signed_out')
-    const signature = buildPeertubeSignature(keyPair, address)
-    return (await ensurePeertubeToken({ host, address, signature })).access_token
-  }
-
   async function listHost(host: string): Promise<ServerVideo[]> {
     const accessToken = await tokenFor(host)
     const page = await getMyAccountVideos({ host, accessToken, count: SERVER_PAGE_SIZE })
@@ -177,9 +181,13 @@ export function useServerVideos() {
       id: item.id,
       uuid: item.uuid,
       name: item.name,
-      pointer: composePeerTubeUrl(host, item.uuid),
+      description: item.description ?? '',
+      // Без `/audio` пост с этим звуком показал бы его как видео.
+      pointer: composePeerTubeUrl(host, item.uuid, { isAudio: item.isAudio === true }),
       thumbnailUrl: item.thumbnailPath ? `https://${host}${item.thumbnailPath}` : null,
       duration: typeof item.duration === 'number' ? item.duration : null,
+      views: viewsOf(item.views),
+      isAudio: item.isAudio === true,
       processing: PROCESSING_STATES.has(item.state?.id ?? 0),
       posted: false,
       posts: [],
@@ -307,6 +315,16 @@ export function useServerVideos() {
     videos.value = videos.value.filter((v) => videoKey(v.pointer) !== key)
   }
 
+  /** Ролик изменён в окне сведений: название, описание, обложка — во всех источниках. */
+  function patch(
+    pointer: string,
+    changes: Partial<Pick<ServerVideo, 'name' | 'description' | 'thumbnailUrl' | 'views'>>
+  ): void {
+    const key = videoKey(pointer)
+    for (const list of [videos.value, ...bySource.values()])
+      for (const video of list) if (videoKey(video.pointer) === key) Object.assign(video, changes)
+  }
+
   // ─── пост с роликом ждёт блока ────────────────────────────────────────────
 
   /** Ролики в постах, которые ушли в сеть, но ещё не попали в блок. */
@@ -362,5 +380,5 @@ export function useServerVideos() {
     { flush: 'sync' }
   )
 
-  return { videos, loading, loaded, failedHosts, signedIn, load, remove, isPublishing }
+  return { videos, loading, loaded, failedHosts, signedIn, load, remove, patch, isPublishing }
 }

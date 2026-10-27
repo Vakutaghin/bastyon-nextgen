@@ -128,6 +128,9 @@ import {
   X,
   Zap,
   ZoomIn,
+  ChartColumn,
+  Music,
+  Rows3,
 } from '@lucide/vue'
 
 /**
@@ -318,3 +321,8 @@ export const DividerIcon = lucideIcon('DividerIcon', Minus)
 
 /** Окно поста: кто увидит пост. */
 export const EyeOutlined = lucideIcon('EyeOutlined', Eye)
+
+/** «Медиастудия»: вид списком, статистика ролика, пометка «аудио». */
+export const ListViewIcon = lucideIcon('ListViewIcon', Rows3)
+export const StatsIcon = lucideIcon('StatsIcon', ChartColumn)
+export const MusicIcon = lucideIcon('MusicIcon', Music)

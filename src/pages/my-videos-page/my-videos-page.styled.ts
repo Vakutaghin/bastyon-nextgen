@@ -1,6 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
-import { COLORS } from '@/styles/theme-colors'
+import { BREAKPOINTS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
 
 export const SC_MyVideosWork = styled.div`
   display: flex;
@@ -30,7 +29,20 @@ export const SC_Header = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 24px 0;
+  margin: 24px 0 ${() => SPACING.MD};
+`
+
+export const SC_HeaderText = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+`
+
+/** «24 ролика · 3 410 просмотров». */
+export const SC_Summary = styled.div`
+  color: var(--ui-text-muted);
+  font-size: ${() => FONT_SIZE.MD};
 `
 
 export const SC_HeaderActions = styled.div`
@@ -61,85 +73,111 @@ export const SC_Note = styled.div`
   }
 `
 
-export const SC_Grid = styled.ul`
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
-`
-
-export const SC_Card = styled.li`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-`
-
-export const SC_Thumb = styled.div`
-  position: relative;
-  aspect-ratio: 16 / 9;
-  border-radius: var(--ui-radius-lg);
-  overflow: hidden;
-  background: var(--ui-bg-elevated);
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-`
-
-export const SC_Duration = styled.span`
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
-  padding: 1px 6px;
-  border-radius: var(--ui-radius-md);
-  background: ${() => COLORS.OVERLAY_70};
-  color: ${() => COLORS.WHITE};
-  font-size: 12px;
-`
-
-export const SC_CardTitle = styled.div`
-  color: var(--ui-text-highlighted);
-  font-size: 14px;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`
-
-export const SC_Badges = styled.div`
+/** Поиск, фильтр, порядок и вид — одной строкой над списком. */
+export const SC_Toolbar = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-`
+  align-items: center;
+  gap: ${() => SPACING.SM};
+  margin-bottom: ${() => SPACING.MD};
 
-export const SC_Badge = styled.span`
-  padding: 1px 8px;
-  border-radius: var(--ui-radius-full);
-  border: 1px solid var(--ui-border);
-  color: var(--ui-text-muted);
-  font-size: 12px;
-
-  &.posted {
-    border-color: var(--ui-primary);
-    color: var(--ui-primary);
+  .ant-select {
+    min-width: 150px;
   }
 
-  /* Пост ушёл в сеть и ждёт блока. */
-  &.publishing {
-    border-style: dashed;
-    border-color: var(--ui-primary);
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
+    .ant-select {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+`
+
+export const SC_Search = styled.div`
+  flex: 1 1 260px;
+  max-width: 420px;
+  min-width: 0;
+
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
+    flex-basis: 100%;
+    max-width: none;
+  }
+`
+
+/** Плиткой или списком: две кнопки-иконки, выбранная — на подложке. */
+export const SC_ViewSwitch = styled.div`
+  display: inline-flex;
+  padding: 2px;
+  background: var(--ui-bg-elevated);
+  border-radius: var(--ui-radius-md);
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    padding: 0;
+    color: var(--ui-text-muted);
+    font-size: 16px;
+    background: none;
+    border: 0;
+    border-radius: var(--ui-radius-sm);
+    cursor: pointer;
+  }
+
+  button:hover {
     color: var(--ui-text-highlighted);
   }
+
+  button.active {
+    color: var(--ui-text-highlighted);
+    background: var(--ui-bg);
+    box-shadow: var(--ui-shadow-sm);
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--ui-focus-outline);
+  }
 `
 
-export const SC_CardActions = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+/** Заголовки колонок списка — те же колонки, что у строки ролика. */
+export const SC_ListHead = styled.div`
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) 150px 110px 100px 150px 32px;
+  gap: ${() => SPACING.MD};
+  padding: 0 ${() => SPACING.SM} ${() => SPACING.SM};
+  color: var(--ui-text-muted);
+  font-size: ${() => FONT_SIZE.SM};
+  font-weight: 500;
+  border-bottom: 1px solid var(--ui-border);
+
+  .video {
+    grid-column: 1 / 3;
+  }
+
+  .views {
+    text-align: right;
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
+    display: none;
+  }
+`
+
+export const SC_Videos = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  &.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: ${() => SPACING.LG} ${() => SPACING.MD};
+  }
+
+  &.list {
+    display: flex;
+    flex-direction: column;
+  }
 `

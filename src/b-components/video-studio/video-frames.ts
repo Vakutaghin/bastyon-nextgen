@@ -3,6 +3,10 @@
  * окне (<video> на blob:), кадр рисуется на canvas и сохраняется в JPEG. Сеть не
  * нужна: обложка готова раньше, чем видео догрузится.
  *
+ * Ролик, уже лежащий на видеосервере («Медиастудия»), открывается по ссылке на
+ * его файл: сервер отдаёт файлы с `Access-Control-Allow-Origin: *`, поэтому с
+ * `crossOrigin = 'anonymous'` canvas не «пачкается» и кадр можно сохранить.
+ *
  * Окно, которое не декодирует файл (H.264 на Linux без кодека, HEVC в Chrome
  * на Windows), кадра не даст. Тогда обложку выбирает видеосервер сам, а человек
  * может загрузить свою картинку.
@@ -13,10 +17,12 @@ export const COVER_MAX_SIDE = 1280
 /** Длинная сторона кадров в ленте выбора. */
 export const STRIP_MAX_SIDE = 160
 const JPEG_QUALITY = 0.9
-/** Сколько ждать, пока окно откроет файл. */
+/** Сколько ждать, пока окно откроет файл; ролик с сервера — дольше. */
 const LOAD_TIMEOUT_MS = 10_000
-/** Сколько ждать перемотки на кадр. */
+const REMOTE_LOAD_TIMEOUT_MS = 30_000
+/** Сколько ждать перемотки на кадр; на сервере за кадром идёт запрос. */
 const SEEK_TIMEOUT_MS = 5_000
+const REMOTE_SEEK_TIMEOUT_MS = 20_000
 /**
  * Первый кадр берём чуть после нуля: перемотка на ту же позицию, где видео уже
  * стоит, в WebKit может не закончиться событием, а кадр от этого не меняется.
@@ -51,10 +57,14 @@ function waitForEvent(media: HTMLMediaElement, event: string, timeoutMs: number)
 }
 
 /** Перемотать на `time` (секунды) и дождаться кадра. */
-export async function seekTo(video: HTMLVideoElement, time: number): Promise<void> {
+export async function seekTo(
+  video: HTMLVideoElement,
+  time: number,
+  timeoutMs = SEEK_TIMEOUT_MS
+): Promise<void> {
   const duration = Number.isFinite(video.duration) ? video.duration : 0
   const target = Math.max(FIRST_FRAME_TIME, duration ? Math.min(time, duration - 0.05) : time)
-  const seeked = waitForEvent(video, 'seeked', SEEK_TIMEOUT_MS)
+  const seeked = waitForEvent(video, 'seeked', timeoutMs)
   video.currentTime = target
   await seeked
 }
@@ -100,21 +110,42 @@ export interface FrameSource {
   close(): void
 }
 
-/** Открыть файл для кадров; null — окно его не показывает или в нём нет видео. */
-export async function openFrameSource(file: Blob): Promise<FrameSource | null> {
+/** Что открыть для кадров: выбранный файл или ссылка на файл ролика на видеосервере. */
+export type FrameInput = Blob | string
+
+/** Ролик на видеосервере, а не файл на устройстве: перемотка дольше. */
+export const isRemoteFrames = (input: FrameInput): input is string => typeof input === 'string'
+
+/** Сколько ждать кадра при перемотке: ролик на сервере отвечает дольше файла. */
+export const frameSeekTimeout = (input: FrameInput): number =>
+  isRemoteFrames(input) ? REMOTE_SEEK_TIMEOUT_MS : SEEK_TIMEOUT_MS
+
+/**
+ * Открыть файл для кадров; null — окно его не показывает, в нём нет видео или
+ * сервер не отдал файл вовремя.
+ */
+export async function openFrameSource(input: FrameInput): Promise<FrameSource | null> {
   if (!canCaptureFrames()) return null
-  const url = URL.createObjectURL(file)
+  const remote = isRemoteFrames(input)
+  const url = remote ? input : URL.createObjectURL(input)
   const video = document.createElement('video')
+  // До src: иначе кадры с чужого сервера закроют canvas на сохранение.
+  if (remote) video.crossOrigin = 'anonymous'
   video.muted = true
   video.playsInline = true
   video.preload = 'auto'
   const close = (): void => {
     video.removeAttribute('src')
     video.load()
-    URL.revokeObjectURL(url)
+    if (!remote) URL.revokeObjectURL(url)
   }
+  const seekTimeout = frameSeekTimeout(input)
   try {
-    const loaded = waitForEvent(video, 'loadedmetadata', LOAD_TIMEOUT_MS)
+    const loaded = waitForEvent(
+      video,
+      'loadedmetadata',
+      remote ? REMOTE_LOAD_TIMEOUT_MS : LOAD_TIMEOUT_MS
+    )
     video.src = url
     await loaded
   } catch {
@@ -130,7 +161,7 @@ export async function openFrameSource(file: Blob): Promise<FrameSource | null> {
   let queue: Promise<unknown> = Promise.resolve()
   const frameAt = (time: number, maxSide = COVER_MAX_SIDE): Promise<Blob> => {
     const next = queue.then(async () => {
-      await seekTo(video, time)
+      await seekTo(video, time, seekTimeout)
       return drawFrame(video, maxSide)
     })
     queue = next.catch(() => {})

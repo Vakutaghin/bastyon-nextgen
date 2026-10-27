@@ -74,7 +74,7 @@ const router = createRouter({
       path: '/my-videos',
       name: 'my-videos',
       component: MyVideosPage,
-      meta: { titleKey: 'routes.my-videos', helpTopic: 'video-upload' },
+      meta: { titleKey: 'routes.my-videos', helpTopic: 'media-studio' },
     },
     {
       path: '/paid-subscriptions',

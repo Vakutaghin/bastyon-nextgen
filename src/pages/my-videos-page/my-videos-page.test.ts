@@ -1,13 +1,15 @@
 // «Медиастудия» как раздел «Контент» студии YouTube: «Загрузить» открывает
-// окно загрузки, «Обновить» — иконка рядом; свои ролики — с «Создать пост» и
-// «Открыть пост» (постов несколько — выбор из списка); пост ждёт блока —
-// «Публикуется»; не вошли — приглашение войти. Сжатых копий нет и на компьютере: загруженный ролик — на
-// сервере, а «Повторить» берёт сжатый файл из задачи.
+// окно загрузки, «Обновить» — иконка рядом; свои ролики — плиткой или
+// списком, с поиском, фильтром и порядком; у ролика без поста — «Создать
+// пост», в посте — «Открыть пост» (постов несколько — выбор из списка); пост
+// ждёт блока — «Публикуется»; обложка и название открывают окно ролика, «⋯» —
+// сведения, статистику и удаление; не вошли — приглашение войти. Сжатых копий
+// нет и на компьютере: загруженный ролик — на сервере.
 
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 
 import { i18n, setI18nLocale } from '@/i18n'
 
@@ -15,6 +17,8 @@ const mocks = vi.hoisted(() => ({
   desktop: false,
   signedIn: true,
   load: vi.fn(),
+  remove: vi.fn(async () => {}),
+  patch: vi.fn(),
   openComposer: vi.fn(),
   publishing: new Set<string>(),
   fetchPost: vi.fn(async (txid: string) => ({ id: txid, title: 'Пост' })),
@@ -31,6 +35,10 @@ vi.mock('./use-server-videos', () => ({
         id: 1,
         uuid: 'u1',
         name: 'Море',
+        description: 'Летом на побережье',
+        views: 120,
+        isAudio: false,
+        time: 3_000,
         pointer: 'peertube://pt.host/u1',
         thumbnailUrl: null,
         duration: 75,
@@ -43,6 +51,10 @@ vi.mock('./use-server-videos', () => ({
         id: 2,
         uuid: 'u2',
         name: 'Горы',
+        description: '',
+        views: null,
+        isAudio: false,
+        time: 2_000,
         pointer: 'peertube://pt.host/u2',
         thumbnailUrl: null,
         duration: null,
@@ -55,6 +67,10 @@ vi.mock('./use-server-videos', () => ({
         id: 3,
         uuid: 'u3',
         name: 'Лес',
+        description: 'Тихий лес',
+        views: 5,
+        isAudio: true,
+        time: 1_000,
         pointer: 'peertube://pt.host/u3',
         thumbnailUrl: null,
         duration: 30,
@@ -71,7 +87,8 @@ vi.mock('./use-server-videos', () => ({
     failedHosts: ref<string[]>([]),
     signedIn: ref(mocks.signedIn),
     load: mocks.load,
-    remove: vi.fn(),
+    remove: mocks.remove,
+    patch: mocks.patch,
     isPublishing: (video: { uuid: string }) => mocks.publishing.has(video.uuid),
   }),
 }))
@@ -82,6 +99,16 @@ vi.mock('@/b-components/video-studio/use-open-composer-with-video', () => ({
 vi.mock('@/blockchain/store/auth-store', () => ({
   useAuthStore: () => ({ getKeyPair: { privateKey: 'k' }, getUserAddress: 'PMe' }),
 }))
+// Окно ролика проверяется отдельно: здесь — только что и с чем оно открылось.
+vi.mock('./video-details/video-details-modal.vue', () => ({
+  default: defineComponent({
+    name: 'VideoDetailsModal',
+    props: ['video', 'initialTab', 'publishing'],
+    emits: ['close', 'changed', 'open-post', 'create-post', 'remove'],
+    setup: (props) => () =>
+      h('div', { class: 'details-stub' }, `${props.video.name}:${props.initialTab}`),
+  }),
+}))
 
 import { useModalStore } from '@/stores/modal-store'
 import { useVideoUploadsStore } from '@/stores/video-uploads-store'
@@ -89,6 +116,15 @@ import MyVideosPage from './my-videos-page.vue'
 
 let wrapper: VueWrapper | null = null
 const button = (label: string) => wrapper!.findAll('button').find((b) => b.text().trim() === label)
+const card = (name: string) => wrapper!.findAll('li').find((li) => li.text().includes(name))!
+const menuItems = () =>
+  Array.from(document.body.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'))
+
+async function openMenu(name: string): Promise<HTMLElement[]> {
+  await card(name).find('button[aria-label="Ещё"]').trigger('click')
+  await flushPromises()
+  return menuItems()
+}
 
 async function mountPage(): Promise<void> {
   wrapper = mount(MyVideosPage, {
@@ -105,6 +141,7 @@ describe('MyVideosPage', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    localStorage.clear()
     mocks.desktop = false
     mocks.signedIn = true
     mocks.publishing = new Set()
@@ -125,7 +162,7 @@ describe('MyVideosPage', () => {
     expect(useModalStore().authModal.isOpen).toBe(true)
   })
 
-  it('свои ролики: обработка и «в посте» видно, «Создать пост» берёт ролик и его имя', async () => {
+  it('свои ролики: обработка и «в посте» видно, «Создать пост» — у ролика без поста', async () => {
     await mountPage()
     expect(mocks.load).toHaveBeenCalled()
     const text = wrapper!.text()
@@ -133,10 +170,15 @@ describe('MyVideosPage', () => {
     expect(text).toContain('В посте')
     expect(text).toContain('Обрабатывается')
     expect(text).toContain('1:15')
-    await button('Создать пост')!.trigger('click')
+    expect(text).toContain('3 ролика · 125 просмотров')
+    expect(card('Море').text()).not.toContain('Создать пост')
+    await card('Горы')
+      .findAll('button')
+      .find((b) => b.text() === 'Создать пост')!
+      .trigger('click')
     expect(mocks.openComposer).toHaveBeenCalledWith({
-      pointer: 'peertube://pt.host/u1',
-      title: 'Море',
+      pointer: 'peertube://pt.host/u2',
+      title: 'Горы',
     })
   })
 
@@ -213,5 +255,77 @@ describe('MyVideosPage', () => {
       .trigger('click')
     await flushPromises()
     expect(useModalStore().postModal.isOpen).toBe(false)
+  })
+
+  it('список: описание рядом с названием; выбранный вид запоминается', async () => {
+    await mountPage()
+    expect(wrapper!.find('ul.grid').exists()).toBe(true)
+    await wrapper!.find('button[aria-label="Списком"]').trigger('click')
+    expect(wrapper!.find('ul.list').exists()).toBe(true)
+    expect(card('Море').text()).toContain('Летом на побережье')
+    expect(card('Горы').text()).toContain('Без описания')
+    expect(localStorage.getItem('bastyon_media_studio_view')).toBe('list')
+
+    wrapper!.unmount()
+    await mountPage()
+    expect(wrapper!.find('ul.list').exists()).toBe(true)
+    expect(wrapper!.find('button[aria-label="Списком"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('поиск — по названию, описанию и заголовку поста; ничего нет — «Сбросить»', async () => {
+    await mountPage()
+    const search = wrapper!.find('input[aria-label="Поиск по названию и описанию"]')
+    await search.setValue('побережье')
+    expect(wrapper!.findAll('li').map((li) => li.text())).toEqual([expect.stringContaining('Море')])
+    await search.setValue('весной')
+    expect(wrapper!.findAll('li')).toHaveLength(1)
+    expect(card('Лес').exists()).toBe(true)
+    await search.setValue('пустыня')
+    expect(wrapper!.text()).toContain('Ничего не нашлось.')
+    await button('Сбросить поиск и фильтр')!.trigger('click')
+    expect(wrapper!.findAll('li')).toHaveLength(3)
+  })
+
+  it('аудио помечено на обложке', async () => {
+    await mountPage()
+    expect(card('Лес').text()).toContain('Аудио')
+    expect(card('Море').text()).not.toContain('Аудио')
+  })
+
+  it('обложка и «⋯ → Статистика» открывают окно ролика на нужной вкладке', async () => {
+    await mountPage()
+    await card('Море').find('button[aria-label="Открыть ролик «Море»"]').trigger('click')
+    expect(wrapper!.find('.details-stub').text()).toBe('Море:details')
+
+    const items = await openMenu('Горы')
+    items.find((item) => item.textContent?.includes('Статистика'))!.click()
+    await flushPromises()
+    expect(wrapper!.find('.details-stub').text()).toBe('Горы:stats')
+  })
+
+  it('«⋯ → Удалить»: подтверждение называет, что станет с постом, и удаляет', async () => {
+    await mountPage()
+    const items = await openMenu('Море')
+    items.find((item) => item.textContent?.includes('Удалить'))!.click()
+    await flushPromises()
+    const confirm = document.body.querySelector('.ant-modal-confirm')!
+    expect(confirm.textContent).toContain('В постах с ним останется только текст')
+    const ok = Array.from(confirm.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Удалить'
+    )!
+    ok.click()
+    await flushPromises()
+    expect(mocks.remove).toHaveBeenCalledWith(expect.objectContaining({ uuid: 'u1' }))
+  })
+
+  it('ролик в посте: ещё один пост — из «⋯»', async () => {
+    await mountPage()
+    const items = await openMenu('Море')
+    items.find((item) => item.textContent?.includes('Создать пост'))!.click()
+    await flushPromises()
+    expect(mocks.openComposer).toHaveBeenCalledWith({
+      pointer: 'peertube://pt.host/u1',
+      title: 'Море',
+    })
   })
 })

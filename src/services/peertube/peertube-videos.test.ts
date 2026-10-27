@@ -373,3 +373,14 @@ describe('removeVideoByPointer', () => {
     expect(deps.del).not.toHaveBeenCalled()
   })
 })
+
+describe('getVideosInfo: после правки', () => {
+  it('update — нода спрашивает видеосервер заново, а не берёт кэш', async () => {
+    const fetchNode = vi.fn(async () => ({}))
+    await getVideosInfo({ urls: ['peertube://h/u1'], update: true, fetchNode })
+    expect(fetchNode).toHaveBeenCalledWith('peertube/videos', {
+      urls: ['peertube://h/u1'],
+      update: true,
+    })
+  })
+})

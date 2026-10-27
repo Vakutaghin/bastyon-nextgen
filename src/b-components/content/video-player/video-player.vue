@@ -364,6 +364,7 @@ import { useVideoPip } from './composables/use-video-pip'
 import { isKeptInPip } from './pip-keeper'
 import { useVideoHls } from './composables/use-video-hls'
 import { useVideoResume } from './composables/use-video-resume'
+import { useVideoViews } from './composables/use-video-views'
 import { useBackgroundPlayback } from './composables/use-background-playback'
 import { useVideoNotifications, type BezelIcon } from './composables/use-video-notifications'
 import { useVideoThumbnail } from './composables/use-video-thumbnail'
@@ -623,6 +624,9 @@ setupIntersectionObserver = videoElementEvents.setupIntersectionObserver
 
 // Продолжение просмотра с последней позиции — по самому ролику, не по посту.
 useVideoResume({ videoElement, videoUrl: () => props.videoUrl })
+
+// Видеосервер узнаёт, что ролик смотрят: просмотры и статистика для автора.
+useVideoViews({ videoElement, videoUrl: () => props.videoUrl })
 
 // === Главы (тайм-коды из описания) — в use-video-chapters. ===
 const { chapterMarkers, activeChapter } = useVideoChapters(

@@ -52,7 +52,7 @@ Click your avatar in the header:
 - **“Profile”** — your page, see [Your profile](edit-profile.md);
 - **“Wallets”** — see [Wallet and PKOIN](wallet.md);
 - **“Limits”** — see [Account status and limits](limits.md);
-- **“Media studio”** — uploading video and audio, your clips on the video server, see [Uploading video and audio](video-upload.md);
+- **“Media studio”** — uploading video and audio, your clips, their covers and statistics, see [Media studio](media-studio.md);
 - **“My files”** — only in the desktop app, see [My files](my-files.md);
 - **“Help”** and **“Settings”**;
 - **“Switch account”** and **“Sign out”** — see [Several accounts and signing out](accounts.md).

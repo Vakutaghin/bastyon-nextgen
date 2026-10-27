@@ -17,16 +17,7 @@ The section is in the account menu: **“Media studio”**. It works like YouTub
 
 On a computer the upload window has **“Compress on this computer first”**: the video is made smaller first and then uploaded. If there is nothing to compress with yet, the window offers **“Download the compression module”**, see [Compressing a video](video-compression.md).
 
-You can also make the post later. The section shows all your clips, newest first: those from your posts — whichever video server they are on — and the unpublished ones on the servers that take uploads now. The button with arrows next to **“Upload”** is **“Refresh”**. Each clip has:
-
-- **“In a post”** — the clip is already published, **“Not in a post”** — not yet;
-- **“Publishing”** — a post with the clip has been sent and is waiting to get into the blockchain. Once it does, **“In a post”** appears, no need to reload the page;
-- **“Processing”** — the server is still preparing different qualities;
-- **“Open post”** — open the post with this clip. If there are several posts, the button shows their number, for example “Posts: 2”, and opens a list: pick the post by date and title;
-- **“Create post”** — a new post with this clip;
-- **“Delete”** — delete the clip from the video server. Posts with it will stop playing it, so the app asks first.
-
-There are several video servers, and they answer at different speeds. Clips from each one appear as soon as it answers. If a server or the list of posts stays silent for more than 15 seconds, **“Not every video server sent its list — some videos may be missing.”** appears; when it answers later, its clips are added on their own.
+You can also make the post later: the clip stays in the “Media studio” list, and it has a **“Create post”** button there, see [Media studio](media-studio.md).
 
 ## Right in a post
 
@@ -44,6 +35,8 @@ You can choose another cover in the upload window in the “Media studio” — 
 
 - Slide along the frame strip under the preview: the frame shows in the preview at once, and when you let go it becomes the cover. Above the preview you see what is chosen: “First frame”, “Frame at 0:15” or “Your image”.
 - Or click **“Upload image”** and choose a JPEG, PNG or WebP. The image is cropped around the center to the clip's shape, so the preview in the feed does not change size when the video starts playing.
+
+The cover, title and description of a clip that is already uploaded can be changed in the “Media studio”, in the clip window, see [Media studio](media-studio.md#cover).
 
 You can change the cover while the video is uploading too: the video server gets it when the upload finishes — until then you see “Will be saved when the upload finishes”. After the upload a new cover goes at once, then “Cover saved” appears. The post is published and **“Create post”** opens the post window only once the cover is on the server. If it did not get there — “Couldn't save the cover” and **“Retry”**.
 
@@ -79,12 +72,13 @@ The upload runs while the app is open. If you close it, start the upload again.
 ## What is not there yet
 
 - The “Media studio” does not show the video server quota yet — only during an upload, when a file does not fit.
-- You cannot add a description for the clip, change the cover of a clip uploaded earlier, import a video by link or replace the file of an uploaded clip.
+- You cannot import a video by link or replace the file of an uploaded clip.
 
 The post with the video can be deleted like any other — see [Editing or deleting a post](edit-delete-post.md).
 
 ## See also
 
+- [Media studio](media-studio.md)
 - [Compressing a video](video-compression.md)
 - [The post editor](post-composer.md)
 - [Account status and limits](limits.md)

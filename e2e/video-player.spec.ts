@@ -150,3 +150,29 @@ test.describe('Плеер пальцем', () => {
     await expect(container(page).getByText(/20 секунд/)).toBeVisible()
   })
 })
+
+test.describe('Просмотры', () => {
+  test('видеосервер узнаёт, что ролик смотрят: первая отметка через 5 с, на паузе — тишина', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000)
+    const reports: Array<{ currentTime: number; viewEvent?: string }> = []
+    await open(page)
+    await page.route('**/api/peertube/video.e2e.test/api/v1/videos/e2e-video/views', (route) => {
+      reports.push(route.request().postDataJSON())
+      return route.fulfill({ status: 204, body: '' })
+    })
+    await start(page)
+    await page.waitForTimeout(3_000)
+    // Мелькнул — ещё не просмотр.
+    expect(reports).toHaveLength(0)
+    await expect.poll(() => reports.length, { timeout: 10_000 }).toBeGreaterThan(0)
+    expect(reports[0]!.currentTime).toBeGreaterThanOrEqual(4)
+
+    await container(page).click()
+    await expect.poll(async () => (await state(page)).paused).toBe(true)
+    const sent = reports.length
+    await page.waitForTimeout(6_000)
+    expect(reports).toHaveLength(sent)
+  })
+})
