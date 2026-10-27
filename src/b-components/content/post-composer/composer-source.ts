@@ -10,7 +10,7 @@ import type { ArticleContent } from '@/blockchain/core/actions/post-action'
 export type ComposerMode = 'create' | 'edit' | 'repost'
 
 /**
- * Своё видео, уже загруженное на видеосервер («Мои видео» → «Создать пост»):
+ * Своё видео, уже загруженное на видеосервер («Медиастудия» → «Создать пост»):
  * редактор открывается с прикреплённым видео и заголовком.
  */
 export interface ComposerVideoPrefill {

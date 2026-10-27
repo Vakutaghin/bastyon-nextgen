@@ -152,6 +152,31 @@ export async function setInstanceVideoCover(params: SetVideoCoverParams): Promis
   if (!res.ok && res.status !== 204) throw new Error(`peertube_video_cover_${res.status}`)
 }
 
+/**
+ * Обложка, которую видеосервер сделал сам (GET videos/:id без входа): превью,
+ * а нет его — миниатюра. Без кэша описаний ленты: обложку могут тут же сменить.
+ */
+export async function getInstanceVideoCover(params: {
+  host: string
+  id: string | number
+  fetchInstance?: InstanceFetch
+}): Promise<string | null> {
+  const { host, id } = params
+  const fetchInstance: InstanceFetch =
+    params.fetchInstance ?? ((path, init) => peertubeInstanceFetch(host, path, init))
+  const res = await fetchInstance(`api/v1/videos/${encodeURIComponent(String(id))}`, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+  })
+  if (!res.ok) return null
+  const video = (await res.json()) as { previewPath?: string; thumbnailPath?: string } | null
+  const path = video?.previewPath || video?.thumbnailPath
+  if (!path) return null
+  return /^https?:\/\//.test(path)
+    ? path
+    : `https://${host}${path.startsWith('/') ? '' : '/'}${path}`
+}
+
 /** Обложка видео от имени автора: вход на сервер его ключом, затем PUT. */
 export async function saveVideoCover(params: {
   host: string

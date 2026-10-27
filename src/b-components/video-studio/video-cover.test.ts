@@ -128,4 +128,58 @@ describe('createVideoCover', () => {
     expect(cover.state.url).toBe('')
     revoke.mockRestore()
   })
+
+  it('своей обложки нет — после загрузки видна та, что сделал сервер; своя её заменяет', async () => {
+    const { save, calls } = controllableSave()
+    const serverCover = vi.fn(async () => 'https://pt.host/lazy-static/previews/x.jpg')
+    const cover = createVideoCover({ save, firstFrame: async () => null, serverCover })
+    cover.begin(VIDEO)
+    await flush()
+    cover.attach(TARGET)
+    await flush()
+    expect(serverCover).toHaveBeenCalledWith(TARGET)
+    expect(cover.state).toMatchObject({
+      source: 'server',
+      status: 'none',
+      url: 'https://pt.host/lazy-static/previews/x.jpg',
+    })
+    expect(save).not.toHaveBeenCalled()
+
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    cover.set(jpeg('mine'), 'image')
+    expect(revoke).not.toHaveBeenCalled()
+    expect(cover.state).toMatchObject({ source: 'image', status: 'saving' })
+    expect(calls).toHaveLength(1)
+    revoke.mockRestore()
+  })
+
+  it('звук: кадр не снимается, картинку свою можно', async () => {
+    const firstFrame = vi.fn(async () => jpeg('frame'))
+    const save = vi.fn(async () => {})
+    const cover = createVideoCover({ save, firstFrame }, { audio: true })
+    cover.begin(new File(['x'], 'song.mp3', { type: 'audio/mpeg' }))
+    expect(firstFrame).not.toHaveBeenCalled()
+    expect(cover.state).toMatchObject({ audio: true, status: 'none', busy: false })
+    cover.set(jpeg('art'), 'image')
+    cover.attach(TARGET, { audio: true })
+    await cover.flush()
+    expect(save).toHaveBeenCalledTimes(1)
+  })
+
+  it('сервер сказал «это звук» — снятый «кадр» не отправляется, обложку берёт сервер', async () => {
+    const save = vi.fn(async () => {})
+    const serverCover = vi.fn(async () => 'https://pt.host/art.jpg')
+    const cover = createVideoCover({ save, firstFrame: async () => jpeg('first'), serverCover })
+    cover.begin(VIDEO)
+    await flush()
+    expect(cover.state.source).toBe('first')
+    cover.attach(TARGET, { audio: true })
+    await flush()
+    expect(save).not.toHaveBeenCalled()
+    expect(cover.state).toMatchObject({
+      audio: true,
+      source: 'server',
+      url: 'https://pt.host/art.jpg',
+    })
+  })
 })

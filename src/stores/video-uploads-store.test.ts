@@ -12,6 +12,11 @@ const mocks = vi.hoisted(() => ({
   ensureToken: vi.fn(async () => ({ access_token: 'AT' })),
 }))
 
+vi.mock('@/services/peertube/peertube-videos', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/services/peertube/peertube-videos')>()),
+  // Обложка от видеосервера — без сети.
+  getInstanceVideoCover: vi.fn(async () => null),
+}))
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
 vi.mock('@/blockchain/store/auth-store', () => ({ useAuthStore: () => mocks.auth }))
 vi.mock('./modal-store', () => ({ useModalStore: () => ({ openAuthModal: mocks.openAuthModal }) }))
@@ -270,16 +275,36 @@ describe('video-uploads-store', () => {
     expect(store.jobs[0]!.cover).toMatchObject({ source: 'frame', time: 12, status: 'saved' })
   })
 
-  it('у звука обложки нет', async () => {
+  it('у звука кадров нет: своя картинка уходит на сервер, а без неё видна обложка сервера', async () => {
     const store = useVideoUploadsStore()
+    const up = controllableUpload()
     const firstFrame = vi.fn(async () => null)
-    store.setDepsForTests({ upload: controllableUpload().upload as never, firstFrame })
-    store.start(new File(['x'], 'song.mp3', { type: 'audio/mpeg' }))
-    expect(store.jobs[0]!.cover).toBeUndefined()
+    const saveCover = vi.fn(async () => {})
+    const serverCover = vi.fn(async () => 'https://pt.host/lazy-static/previews/art.jpg')
+    store.setDepsForTests({
+      upload: up.upload as never,
+      rename: vi.fn(),
+      firstFrame,
+      saveCover,
+      serverCover,
+    })
+    const id = store.start(new File(['x'], 'song.mp3', { type: 'audio/mpeg' }))!
+    expect(store.jobs[0]!.cover).toMatchObject({ audio: true, status: 'none' })
     expect(firstFrame).not.toHaveBeenCalled()
+
+    up.finish({ ...RESULT, isAudio: true })
+    await vi.waitFor(() => expect(store.jobs[0]!.cover?.source).toBe('server'))
+    expect(store.jobs[0]!.cover?.url).toBe('https://pt.host/lazy-static/previews/art.jpg')
+    expect(serverCover).toHaveBeenCalledWith({ host: 'pt.host', id: 'uuid1' })
+    expect(saveCover).not.toHaveBeenCalled()
+
+    store.setCover(id, new Blob(['album art']), 'image')
+    await store.commitCover(id)
+    expect(saveCover).toHaveBeenCalledTimes(1)
+    expect(store.jobs[0]!.cover).toMatchObject({ source: 'image', status: 'saved' })
   })
 
-  it('файл без MIME оказался звуком — обложка убирается и не отправляется', async () => {
+  it('файл без MIME оказался звуком — сервер говорит об этом, кадров больше не ищем', async () => {
     const store = useVideoUploadsStore()
     const up = controllableUpload()
     const saveCover = vi.fn(async () => {})
@@ -288,12 +313,13 @@ describe('video-uploads-store', () => {
       rename: vi.fn(),
       firstFrame: async () => null,
       saveCover,
+      serverCover: async () => null,
     })
     const id = store.start(new File(['x'], 'song.flac'))!
-    expect(store.jobs[0]!.cover).toBeDefined()
+    expect(store.jobs[0]!.cover?.audio).toBe(false)
     up.finish({ ...RESULT, isAudio: true })
     await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('done'))
-    expect(store.jobs[0]!.cover).toBeUndefined()
+    expect(store.jobs[0]!.cover?.audio).toBe(true)
     await store.commitCover(id)
     expect(saveCover).not.toHaveBeenCalled()
   })

@@ -76,7 +76,7 @@ export default {
     settings: 'Impostazioni',
     limits: 'Limiti',
     wallets: 'Portafogli',
-    'my-videos': 'I miei video',
+    'my-videos': 'Studio multimediale',
     'paid-subscriptions': 'Abbonamenti a pagamento',
     'my-files': 'I miei file',
     mesh: 'Reti mesh',
@@ -1870,8 +1870,8 @@ export default {
   },
   misc: {
     bastyonFeed: 'Feed di Bastyon',
-    myVideos: 'I miei video',
-    myVideosPlaceholder: 'La sezione «I miei video»: i contenuti arriveranno più avanti.',
+    myVideos: 'Studio multimediale',
+    myVideosPlaceholder: 'La sezione «Studio multimediale»: i contenuti arriveranno più avanti.',
     enterTextFromImage: 'Inserisci il testo dell’immagine',
     enterText: 'Inserisci il testo',
     next: 'Avanti',
@@ -2973,7 +2973,7 @@ export default {
     menuWallets: 'Portafogli',
     menuPaidSubscriptions: 'Abbonamenti a pagamento',
     menuLimits: 'Limiti',
-    menuMyVideos: 'I miei video',
+    menuMyVideos: 'Studio multimediale',
     menuMyFiles: 'I miei file',
     menuMesh: 'Reti mesh',
     menuHelp: 'Guida',
@@ -3049,6 +3049,11 @@ export default {
     sourceFirst: 'Primo fotogramma',
     sourceFrame: 'Fotogramma a {time}',
     sourceImage: 'Immagine tua',
+    sourceServer: 'Dal server video',
+    audioServerPicks:
+      "Senza un'immagine tua, la copertina la crea il server video: prende l'immagine incorporata nel file o, se manca, la schermata di Bastyon. La vedrai al termine del caricamento.",
+    hintAudio:
+      "La copertina è l'immagine dell'audio nel feed. Senza una tua, il server video prende l'immagine incorporata nel file (ad esempio la copertina dell'album) o, se manca, la schermata di Bastyon. Puoi caricare una tua immagine durante il caricamento o dopo.",
     serverPicks: 'La copertina la sceglierà il server video',
     loading: 'Apertura del video…',
     noFrames:
@@ -3065,7 +3070,7 @@ export default {
     done: 'Fatto',
   },
   videoStudio: {
-    title: 'Carica video',
+    title: 'Carica video o audio',
     dropTitle: 'Trascina qui un video o un audio',
     dropHint:
       'MP4, MOV, MKV, WebM, AVI o audio MP3, M4A, FLAC, OGG, fino a {max}. Il caricamento parte subito.',
@@ -3083,6 +3088,8 @@ export default {
     statusUploading: 'Caricamento: {percent}',
     statusDone:
       'Il video è caricato. Il server impiega ancora qualche minuto per preparare le altre qualità, ma puoi già creare il post.',
+    statusDoneAudio:
+      "L'audio è caricato. Il server impiega ancora qualche minuto per elaborarlo, ma puoi già creare il post.",
     cancelUpload: 'Annulla il caricamento',
     minimize: 'Riduci',
     remove: 'Rimuovi',
@@ -3096,12 +3103,12 @@ export default {
     panelUploading: 'In caricamento: {count}',
     panelDone: 'Caricamenti completati',
     rowDone: 'Caricato',
-    upload: 'Carica video',
+    upload: 'Carica',
     signIn: 'Accedi per caricare video e vedere i tuoi.',
     signInButton: 'Accedi',
     refresh: 'Aggiorna',
     loadFailed: 'Non tutti i server video hanno inviato l’elenco: alcuni video potrebbero mancare.',
-    empty: 'Qui compariranno i video che carichi.',
+    empty: 'Qui compariranno i video e gli audio che carichi.',
     processing: 'In elaborazione',
     posted: 'In un post',
     notPosted: 'Non in un post',

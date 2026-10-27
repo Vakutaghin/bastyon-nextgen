@@ -77,7 +77,7 @@ export default {
     settings: 'Paramètres',
     limits: 'Limites',
     wallets: 'Portefeuilles',
-    'my-videos': 'Mes vidéos',
+    'my-videos': 'Studio média',
     'paid-subscriptions': 'Abonnements payants',
     'my-files': 'Mes fichiers',
     mesh: 'Réseaux mesh',
@@ -1882,8 +1882,8 @@ export default {
   },
   misc: {
     bastyonFeed: 'Fil Bastyon',
-    myVideos: 'Mes vidéos',
-    myVideosPlaceholder: 'La section « Mes vidéos » — le contenu arrivera plus tard.',
+    myVideos: 'Studio média',
+    myVideosPlaceholder: 'La section « Studio média » — le contenu arrivera plus tard.',
     enterTextFromImage: 'Saisissez le texte de l’image',
     enterText: 'Saisissez le texte',
     next: 'Suivant',
@@ -3001,7 +3001,7 @@ export default {
     menuWallets: 'Portefeuilles',
     menuPaidSubscriptions: 'Abonnements payants',
     menuLimits: 'Limites',
-    menuMyVideos: 'Mes vidéos',
+    menuMyVideos: 'Studio média',
     menuMyFiles: 'Mes fichiers',
     menuMesh: 'Réseaux mesh',
     menuHelp: 'Aide',
@@ -3081,6 +3081,11 @@ export default {
     sourceFirst: 'Première image',
     sourceFrame: 'Image à {time}',
     sourceImage: 'Image personnelle',
+    sourceServer: 'Du serveur vidéo',
+    audioServerPicks:
+      "Sans image personnelle, le serveur vidéo crée la miniature : il prend l'image intégrée au fichier ou, à défaut, l'écran Bastyon. Vous la verrez à la fin de l'envoi.",
+    hintAudio:
+      "La miniature est l'image du son dans le fil. Sans image personnelle, le serveur vidéo prend celle intégrée au fichier (une pochette d'album, par exemple) ou, à défaut, l'écran Bastyon. Vous pouvez importer votre propre image pendant l'envoi ou après.",
     serverPicks: 'Le serveur vidéo choisira la miniature',
     loading: 'Ouverture de la vidéo…',
     noFrames:
@@ -3097,7 +3102,7 @@ export default {
     done: 'Terminé',
   },
   videoStudio: {
-    title: 'Mettre en ligne une vidéo',
+    title: 'Mettre en ligne une vidéo ou un son',
     dropTitle: 'Glissez ici une vidéo ou un son',
     dropHint:
       'MP4, MOV, MKV, WebM, AVI ou son MP3, M4A, FLAC, OGG, jusqu’à {max}. L’envoi commence aussitôt.',
@@ -3115,6 +3120,8 @@ export default {
     statusUploading: 'Envoi : {percent}',
     statusDone:
       'La vidéo est en ligne. Le serveur prépare encore les autres qualités pendant quelques minutes, mais vous pouvez déjà créer la publication.',
+    statusDoneAudio:
+      'Le son est en ligne. Le serveur le traite encore pendant quelques minutes, mais vous pouvez déjà créer la publication.',
     cancelUpload: 'Annuler l’envoi',
     minimize: 'Réduire',
     remove: 'Retirer',
@@ -3128,13 +3135,13 @@ export default {
     panelUploading: 'Envoi en cours : {count}',
     panelDone: 'Envois terminés',
     rowDone: 'En ligne',
-    upload: 'Mettre en ligne une vidéo',
+    upload: 'Mettre en ligne',
     signIn: 'Connectez-vous pour envoyer des vidéos et voir les vôtres.',
     signInButton: 'Se connecter',
     refresh: 'Actualiser',
     loadFailed:
       'Tous les serveurs vidéo n’ont pas envoyé leur liste : certaines vidéos peuvent manquer.',
-    empty: 'Les vidéos que vous envoyez apparaîtront ici.',
+    empty: 'Les vidéos et les sons que vous envoyez apparaîtront ici.',
     processing: 'En traitement',
     posted: 'Dans une publication',
     notPosted: 'Pas dans une publication',

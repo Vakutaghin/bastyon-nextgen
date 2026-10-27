@@ -1,12 +1,13 @@
 <template>
   <!-- Обложка видео: по умолчанию первый кадр. Ползунок по ленте кадров
        показывает кадр прямо в превью, отпустили — он стал обложкой. Или своя
-       картинка: обрежется под формат ролика. -->
+       картинка: обрежется под формат ролика. У звука кадров нет: своя
+       картинка или та, что сделает видеосервер. -->
   <SC_Cover>
     <SC_CoverHead>
       <SC_CoverTitle>{{ t('videoCover.title') }}</SC_CoverTitle>
       <Tooltip
-        :title="t('videoCover.hint')"
+        :title="cover.audio ? t('videoCover.hintAudio') : t('videoCover.hint')"
         :trigger="['hover', 'focus', 'click']"
         :get-popup-container="popupContainer"
         placement="top"
@@ -20,21 +21,20 @@
 
     <SC_Stage>
       <video
+        v-if="previewUrl"
         v-show="scrubbing"
         ref="previewRef"
-        :src="previewUrl || undefined"
+        :src="previewUrl"
         muted
         playsinline
         preload="auto"
         aria-hidden="true"
       />
       <img v-if="cover.url" v-show="!scrubbing" :src="cover.url" :alt="t('videoCover.title')" />
-      <SC_StageEmpty v-else-if="!scrubbing">{{
-        loading ? t('videoCover.loading') : t('videoCover.serverPicks')
-      }}</SC_StageEmpty>
+      <SC_StageEmpty v-else-if="!scrubbing">{{ emptyText }}</SC_StageEmpty>
     </SC_Stage>
 
-    <SC_Strip v-if="duration > 0">
+    <SC_Strip v-if="!cover.audio && duration > 0">
       <SC_StripFrames aria-hidden="true">
         <SC_StripFrame v-for="(frame, index) in frames" :key="index">
           <img v-if="frame" :src="frame" alt="" />
@@ -54,7 +54,9 @@
         @change="onPickFrame"
       />
     </SC_Strip>
-    <SC_CoverNote v-else-if="unsupported">{{ t('videoCover.noFrames') }}</SC_CoverNote>
+    <SC_CoverNote v-else-if="!cover.audio && unsupported">{{
+      t('videoCover.noFrames')
+    }}</SC_CoverNote>
 
     <SC_CoverActions>
       <SC_CoverButton :class="{ disabled }">
@@ -136,12 +138,14 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const canDraw = canCaptureFrames()
-const previewUrl = canDraw ? URL.createObjectURL(props.file) : ''
+/** У звука кадров нет — файл не открываем. */
+const opensFrames = canDraw && !props.cover.audio
+const previewUrl = opensFrames ? URL.createObjectURL(props.file) : ''
 const previewRef = ref<HTMLVideoElement | null>(null)
 const source = shallowRef<FrameSource | null>(null)
 const frames = ref<string[]>([])
 const duration = ref(0)
-const loading = ref(canDraw)
+const loading = ref(opensFrames)
 const unsupported = ref(!canDraw)
 const time = ref(props.cover.time)
 const scrubbing = ref(false)
@@ -157,9 +161,16 @@ const sourceText = computed<string>(() => {
       return t('videoCover.sourceFrame', { time: formatDuration(props.cover.time) })
     case 'image':
       return t('videoCover.sourceImage')
+    case 'server':
+      return t('videoCover.sourceServer')
     default:
       return ''
   }
+})
+
+const emptyText = computed<string>(() => {
+  if (props.cover.audio) return t('videoCover.audioServerPicks')
+  return loading.value ? t('videoCover.loading') : t('videoCover.serverPicks')
 })
 
 /**
@@ -188,7 +199,7 @@ const statusText = computed<string>(() => {
 })
 
 onMounted(async () => {
-  if (!canDraw) return
+  if (!opensFrames) return
   const opened = await openFrameSource(props.file)
   if (unmounted) {
     opened?.close()
@@ -250,7 +261,9 @@ async function onPickImage(event: Event): Promise<void> {
   input.value = ''
   if (!picked) return
   imageError.value = false
-  const aspect = source.value ? source.value.width / source.value.height : null
+  // Картинку звука не режем: кадра, под который подгонять, нет.
+  const aspect =
+    source.value && !props.cover.audio ? source.value.width / source.value.height : null
   try {
     const image = await coverFromImage(picked, aspect)
     if (!unmounted) emit('pick', image, 'image', time.value)

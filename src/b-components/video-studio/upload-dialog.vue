@@ -210,7 +210,9 @@ const statusText = computed<string>(() => {
     case 'uploading':
       return t('videoStudio.statusUploading', { percent: percent(current.progress) })
     case 'done':
-      return t('videoStudio.statusDone')
+      return current.result?.isAudio
+        ? t('videoStudio.statusDoneAudio')
+        : t('videoStudio.statusDone')
     default:
       return current.error
   }

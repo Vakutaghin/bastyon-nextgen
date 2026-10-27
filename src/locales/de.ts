@@ -76,7 +76,7 @@ export default {
     settings: 'Einstellungen',
     limits: 'Limits',
     wallets: 'Wallets',
-    'my-videos': 'Meine Videos',
+    'my-videos': 'Medienstudio',
     'paid-subscriptions': 'Bezahlte Abonnements',
     'my-files': 'Meine Dateien',
     mesh: 'Mesh-Netze',
@@ -1882,8 +1882,8 @@ export default {
   },
   misc: {
     bastyonFeed: 'Bastyon-Feed',
-    myVideos: 'Meine Videos',
-    myVideosPlaceholder: 'Der Bereich „Meine Videos“ — Inhalte kommen später.',
+    myVideos: 'Medienstudio',
+    myVideosPlaceholder: 'Der Bereich „Medienstudio“ — Inhalte kommen später.',
     enterTextFromImage: 'Gib den Text aus dem Bild ein',
     enterText: 'Text eingeben',
     next: 'Weiter',
@@ -3003,7 +3003,7 @@ export default {
     menuWallets: 'Wallets',
     menuPaidSubscriptions: 'Bezahlte Abonnements',
     menuLimits: 'Limits',
-    menuMyVideos: 'Meine Videos',
+    menuMyVideos: 'Medienstudio',
     menuMyFiles: 'Meine Dateien',
     menuMesh: 'Mesh-Netze',
     menuHelp: 'Hilfe',
@@ -3082,6 +3082,11 @@ export default {
     sourceFirst: 'Erstes Bild',
     sourceFrame: 'Bild bei {time}',
     sourceImage: 'Eigenes Bild',
+    sourceServer: 'Vom Videoserver',
+    audioServerPicks:
+      'Ohne eigenes Bild erstellt der Videoserver das Vorschaubild: Er nimmt das in die Datei eingebettete Bild oder, falls keines vorhanden ist, das Bastyon-Startbild. Sie sehen es, sobald der Upload fertig ist.',
+    hintAudio:
+      'Das Vorschaubild ist das Bild des Audios im Feed. Ohne eigenes nimmt der Videoserver das in die Datei eingebettete Bild (zum Beispiel ein Albumcover) oder, falls keines vorhanden ist, das Bastyon-Startbild. Ein eigenes Bild können Sie während des Uploads oder danach hochladen.',
     serverPicks: 'Das Vorschaubild wählt der Videoserver',
     loading: 'Video wird geöffnet…',
     noFrames:
@@ -3098,7 +3103,7 @@ export default {
     done: 'Fertig',
   },
   videoStudio: {
-    title: 'Video hochladen',
+    title: 'Video oder Audio hochladen',
     dropTitle: 'Video oder Audio hierher ziehen',
     dropHint:
       'MP4, MOV, MKV, WebM, AVI oder Audio MP3, M4A, FLAC, OGG – bis {max}. Der Upload beginnt sofort.',
@@ -3117,6 +3122,8 @@ export default {
     statusUploading: 'Upload: {percent}',
     statusDone:
       'Das Video ist hochgeladen. Der Server braucht noch einige Minuten für weitere Qualitäten, den Beitrag können Sie schon jetzt erstellen.',
+    statusDoneAudio:
+      'Das Audio ist hochgeladen. Der Server braucht noch einige Minuten für die Verarbeitung, den Beitrag können Sie schon jetzt erstellen.',
     cancelUpload: 'Upload abbrechen',
     minimize: 'Minimieren',
     remove: 'Entfernen',
@@ -3130,13 +3137,13 @@ export default {
     panelUploading: 'Wird hochgeladen: {count}',
     panelDone: 'Uploads abgeschlossen',
     rowDone: 'Hochgeladen',
-    upload: 'Video hochladen',
+    upload: 'Hochladen',
     signIn: 'Melden Sie sich an, um Videos hochzuladen und Ihre Videos zu sehen.',
     signInButton: 'Anmelden',
     refresh: 'Aktualisieren',
     loadFailed:
       'Nicht alle Videoserver haben ihre Liste geschickt – einige Videos fehlen eventuell.',
-    empty: 'Hier erscheinen die Videos, die Sie hochladen.',
+    empty: 'Hier erscheinen die Videos und Audiodateien, die Sie hochladen.',
     processing: 'Wird verarbeitet',
     posted: 'Im Beitrag',
     notPosted: 'Nicht in einem Beitrag',

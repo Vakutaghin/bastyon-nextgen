@@ -77,7 +77,7 @@ export default {
     settings: 'Ajustes',
     limits: 'Límites',
     wallets: 'Billeteras',
-    'my-videos': 'Mis vídeos',
+    'my-videos': 'Estudio multimedia',
     'paid-subscriptions': 'Suscripciones de pago',
     'my-files': 'Mis archivos',
     mesh: 'Redes mesh',
@@ -1876,8 +1876,8 @@ export default {
   },
   misc: {
     bastyonFeed: 'Feed de Bastyon',
-    myVideos: 'Mis vídeos',
-    myVideosPlaceholder: 'La sección «Mis vídeos»: el contenido llegará más adelante.',
+    myVideos: 'Estudio multimedia',
+    myVideosPlaceholder: 'La sección «Estudio multimedia»: el contenido llegará más adelante.',
     enterTextFromImage: 'Introduce el texto de la imagen',
     enterText: 'Introduce el texto',
     next: 'Siguiente',
@@ -2985,7 +2985,7 @@ export default {
     menuWallets: 'Billeteras',
     menuPaidSubscriptions: 'Suscripciones de pago',
     menuLimits: 'Límites',
-    menuMyVideos: 'Mis vídeos',
+    menuMyVideos: 'Estudio multimedia',
     menuMyFiles: 'Mis archivos',
     menuMesh: 'Redes mesh',
     menuHelp: 'Ayuda',
@@ -3063,6 +3063,11 @@ export default {
     sourceFirst: 'Primer fotograma',
     sourceFrame: 'Fotograma en {time}',
     sourceImage: 'Imagen propia',
+    sourceServer: 'Del servidor de vídeo',
+    audioServerPicks:
+      'Sin imagen propia, la portada la hará el servidor de vídeo: tomará la imagen incrustada en el archivo o, si no la hay, la imagen de Bastyon. La verás cuando termine la subida.',
+    hintAudio:
+      'La portada es la imagen del audio en el feed. Sin una propia, el servidor de vídeo toma la imagen incrustada en el archivo (por ejemplo, la portada del álbum) o, si no la hay, la imagen de Bastyon. Puedes subir tu propia imagen durante la subida o después.',
     serverPicks: 'La portada la elegirá el servidor de vídeo',
     loading: 'Abriendo el vídeo…',
     noFrames:
@@ -3079,7 +3084,7 @@ export default {
     done: 'Listo',
   },
   videoStudio: {
-    title: 'Subir vídeo',
+    title: 'Subir vídeo o audio',
     dropTitle: 'Arrastra aquí un vídeo o un audio',
     dropHint:
       'MP4, MOV, MKV, WebM, AVI o audio MP3, M4A, FLAC, OGG, hasta {max}. La subida empieza enseguida.',
@@ -3097,6 +3102,8 @@ export default {
     statusUploading: 'Subiendo: {percent}',
     statusDone:
       'El vídeo está subido. El servidor necesita unos minutos más para preparar otras calidades, pero ya puedes crear la publicación.',
+    statusDoneAudio:
+      'El audio está subido. El servidor necesita unos minutos más para procesarlo, pero ya puedes crear la publicación.',
     cancelUpload: 'Cancelar la subida',
     minimize: 'Minimizar',
     remove: 'Quitar',
@@ -3110,12 +3117,12 @@ export default {
     panelUploading: 'Subiendo: {count}',
     panelDone: 'Subidas completadas',
     rowDone: 'Subido',
-    upload: 'Subir vídeo',
+    upload: 'Subir',
     signIn: 'Inicia sesión para subir vídeos y ver los tuyos.',
     signInButton: 'Iniciar sesión',
     refresh: 'Actualizar',
     loadFailed: 'No todos los servidores de vídeo enviaron su lista: puede faltar algún vídeo.',
-    empty: 'Aquí aparecerán los vídeos que subas.',
+    empty: 'Aquí aparecerán los vídeos y audios que subas.',
     processing: 'Procesando',
     posted: 'En una publicación',
     notPosted: 'Sin publicar',

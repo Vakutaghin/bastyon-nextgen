@@ -2,7 +2,7 @@ import { test, expect, type Page, type Route } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 
 /**
- * «Мои видео», как творческая студия YouTube: файл выбран — загрузка идёт,
+ * «Медиастудия», как творческая студия YouTube: файл выбран — загрузка идёт,
  * окно сворачивается в плашку «Загрузки», по приложению можно ходить; когда
  * видео загружено, название уходит на сервер, а «Создать пост» открывает
  * редактор с прикреплённым видео. Нода и видеосервер подменные: ответ на
@@ -58,7 +58,10 @@ interface VideoServer {
 }
 
 /** Подменный видеосервер: вход, канал и квота, возобновляемая загрузка, список, имя. */
-async function useVideoServer(page: Page): Promise<VideoServer> {
+/** Обложка, которую подменный сервер «сделал сам». */
+const SERVER_COVER = `https://${HOST}/lazy-static/previews/server-cover.jpg`
+
+async function useVideoServer(page: Page, options: { audio?: boolean } = {}): Promise<VideoServer> {
   let release: () => void = () => {}
   const held = new Promise<void>((resolve) => (release = resolve))
   const server: VideoServer = { renamed: [], covers: [], release: () => release() }
@@ -125,11 +128,19 @@ async function useVideoServer(page: Page): Promise<VideoServer> {
     if (method === 'PUT') {
       await held
       uploaded = true
-      return route.fulfill({ json: { video: { id: 42, uuid: UUID, shortUUID: 'short' } } })
+      return route.fulfill({
+        json: { video: { id: 42, uuid: UUID, shortUUID: 'short', isAudio: !!options.audio } },
+      })
     }
     return route.fulfill({ status: 204, body: '' })
   })
   await page.route(api(`videos/${UUID}`), async (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({
+        headers: CORS,
+        json: { id: 42, uuid: UUID, previewPath: new URL(SERVER_COVER).pathname },
+      })
+    }
     if (route.request().method() !== 'PUT') return route.fallback()
     const raw = route.request().postDataBuffer() ?? Buffer.alloc(0)
     const body = raw.toString('utf8')
@@ -147,6 +158,9 @@ async function useVideoServer(page: Page): Promise<VideoServer> {
     }
     return route.fulfill({ status: 204, body: '' })
   })
+  await page.route(SERVER_COVER, (route) =>
+    route.fulfill({ path: 'e2e/fixtures/test-video.jpg', contentType: 'image/jpeg' })
+  )
   return server
 }
 
@@ -187,17 +201,17 @@ test('загрузка в фоне: свернуть, уйти со страни
     .catch(() => {})
   await signIn(page)
   await page.goto('/my-videos')
-  await expect(page.getByRole('heading', { name: 'Мои видео', level: 1 })).toBeVisible({
+  await expect(page.getByRole('heading', { name: 'Медиастудия', level: 1 })).toBeVisible({
     timeout: 30_000,
   })
-  await expect(page.getByText('Здесь появятся видео, которые вы загрузите.')).toBeVisible({
+  await expect(page.getByText('Здесь появятся видео и аудио, которые вы загрузите.')).toBeVisible({
     timeout: 20_000,
   })
   // Круглой кнопки сжатия больше нет.
   await expect(page.getByRole('button', { name: /Сжатие видео/ })).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Загрузить видео' }).click()
-  const dialog = page.getByRole('dialog', { name: 'Загрузка видео' })
+  await page.getByRole('button', { name: 'Загрузить', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Загрузка видео или звука' })
   await expect(dialog).toBeVisible()
   await dialog.locator('input[type="file"]').setInputFiles('e2e/fixtures/test-video.mp4')
 
@@ -242,9 +256,9 @@ test('обложка: первый кадр по умолчанию, кадр с
     .catch(() => {})
   await signIn(page)
   await page.goto('/my-videos')
-  await page.getByRole('button', { name: 'Загрузить видео' }).click()
+  await page.getByRole('button', { name: 'Загрузить', exact: true }).click()
   await page
-    .getByRole('dialog', { name: 'Загрузка видео' })
+    .getByRole('dialog', { name: 'Загрузка видео или звука' })
     .locator('input[type="file"]')
     .setInputFiles('e2e/fixtures/test-video.mp4')
   // Файл выбран — окно называется по ролику.
@@ -316,6 +330,60 @@ test('обложка в окне поста: «Изменить обложку»
   await expect(composer.getByText('Видео PeerTube прикреплено')).toBeVisible({ timeout: 20_000 })
   await expect.poll(() => server.covers.length).toBe(1)
   expectJpegCover(server.covers[0], browserName)
+})
+
+test('обложка звука: без своей — та, что сделал сервер; своя картинка уходит после загрузки', async ({
+  page,
+  browserName,
+}) => {
+  test.setTimeout(120_000)
+  await useMockNode(page, DATA)
+  const server = await useVideoServer(page, { audio: true })
+  await page.goto('/')
+  await page.waitForSelector('#app > *', { timeout: 30_000 })
+  await page
+    .getByRole('button', { name: 'Понятно' })
+    .click({ timeout: 5_000 })
+    .catch(() => {})
+  await signIn(page)
+  await page.goto('/my-videos')
+  await expect(page.getByRole('heading', { name: 'Медиастудия', level: 1 })).toBeVisible({
+    timeout: 30_000,
+  })
+  await page.getByRole('button', { name: 'Загрузить', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Загрузка видео или звука' })
+    .locator('input[type="file"]')
+    .setInputFiles('e2e/fixtures/test-audio.mp3')
+  const dialog = page.getByRole('dialog', { name: 'test-audio' })
+
+  // Кадров у звука нет: ни ленты, ни ползунка — только своя картинка.
+  await expect(dialog.getByText('Без своей картинки обложку сделает видеосервер')).toBeVisible()
+  await expect(dialog.getByTestId('video-cover-range')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Как выбрать обложку' }).click()
+  await expect(page.getByRole('tooltip')).toContainText('обложку альбома')
+  await dialog.getByText('Название', { exact: true }).click()
+
+  server.release()
+  // Загружено — видна обложка, которую сделал сервер.
+  const cover = dialog.getByRole('img', { name: 'Обложка' })
+  await expect(cover).toHaveAttribute('src', SERVER_COVER, { timeout: 20_000 })
+  await expect(dialog.getByText('От видеосервера')).toBeVisible()
+  await expect(dialog.getByText('Аудио загружено')).toBeVisible()
+  expect(server.covers).toHaveLength(0)
+
+  await dialog
+    .locator('input[type="file"][accept^="image"]')
+    .setInputFiles('e2e/fixtures/test-video.jpg')
+  await expect(dialog.getByText('Своя картинка')).toBeVisible()
+  await expect.poll(() => server.covers.length).toBe(1)
+  await expect(dialog.getByText('Обложка сохранена')).toBeVisible()
+  expectJpegCover(server.covers[0], browserName)
+  await expect(cover).toHaveAttribute('src', /^blob:/)
+
+  await dialog.getByRole('button', { name: 'Создать пост' }).click()
+  const composer = page.getByRole('dialog', { name: 'Новый пост' })
+  await expect(composer.getByText('Аудио PeerTube прикреплено')).toBeVisible()
 })
 
 test('видеотека: ролики из постов на любом сервере, пост открывается в окне', async ({ page }) => {

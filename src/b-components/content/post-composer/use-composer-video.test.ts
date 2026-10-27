@@ -25,6 +25,7 @@ function setup(overrides: Partial<UseComposerVideoOptions> = {}) {
     onRemoved: vi.fn(),
     onAuthRequired: vi.fn(),
     upload: vi.fn(),
+    serverCover: vi.fn(async () => null),
     ...overrides,
   }
   return { options, video: useComposerVideo(options) }
@@ -144,21 +145,26 @@ describe('useComposerVideo', () => {
     expect(video.cover.value?.state).toMatchObject({ source: 'first', status: 'saved' })
   })
 
-  it('у аудио обложки нет; «Убрать» убирает и её', async () => {
+  it('звук: кадров нет, после загрузки видна обложка видеосервера; «Убрать» убирает её', async () => {
+    const firstFrame = vi.fn(async () => null)
+    const serverCover = vi.fn(async () => 'https://h/lazy-static/previews/cover.jpg')
+    const saveCover = vi.fn(async () => {})
     const upload = vi.fn().mockResolvedValue({ pointer: 'p', host: 'h', uuid: 'u', isAudio: true })
-    const { video } = setup({ upload, firstFrame: async () => null })
-    await video.start(file('Песня.mp3'))
-    expect(video.cover.value).toBeNull()
-
-    const { video: other } = setup({
-      upload: vi.fn().mockResolvedValue({ pointer: 'p', host: 'h', uuid: 'u', isAudio: false }),
-      saveCover: vi.fn(async () => {}),
-      firstFrame: async () => null,
+    const { video } = setup({ upload, firstFrame, serverCover, saveCover })
+    await video.start(new File(['x'], 'Песня.mp3', { type: 'audio/mpeg' }))
+    await flush()
+    expect(firstFrame).not.toHaveBeenCalled()
+    expect(serverCover).toHaveBeenCalledWith({ host: 'h', id: 'u' })
+    expect(video.cover.value?.state).toMatchObject({
+      audio: true,
+      source: 'server',
+      url: 'https://h/lazy-static/previews/cover.jpg',
     })
-    await other.start(file())
-    expect(other.cover.value).not.toBeNull()
-    other.remove()
-    expect(other.cover.value).toBeNull()
+    expect(saveCover).not.toHaveBeenCalled()
+    expect(video.busy.value).toBe(false)
+
+    video.remove()
+    expect(video.cover.value).toBeNull()
   })
 
   it('заново смонтированная панель видит уже прикреплённое видео', () => {

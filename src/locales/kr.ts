@@ -75,7 +75,7 @@ export default {
     settings: '설정',
     limits: '한도',
     wallets: '지갑',
-    'my-videos': '내 동영상',
+    'my-videos': '미디어 스튜디오',
     'paid-subscriptions': '유료 구독',
     'my-files': '내 파일',
     mesh: '메시 네트워크',
@@ -1845,8 +1845,8 @@ export default {
   },
   misc: {
     bastyonFeed: 'Bastyon 피드',
-    myVideos: '내 동영상',
-    myVideosPlaceholder: '"내 동영상" 섹션입니다. 콘텐츠는 나중에 추가됩니다.',
+    myVideos: '미디어 스튜디오',
+    myVideosPlaceholder: '"미디어 스튜디오" 섹션입니다. 콘텐츠는 나중에 추가됩니다.',
     enterTextFromImage: '이미지의 텍스트를 입력하세요',
     enterText: '텍스트 입력',
     next: '다음',
@@ -2927,7 +2927,7 @@ export default {
     menuWallets: '지갑',
     menuPaidSubscriptions: '유료 구독',
     menuLimits: '한도',
-    menuMyVideos: '내 동영상',
+    menuMyVideos: '미디어 스튜디오',
     menuMyFiles: '내 파일',
     menuMesh: '메시 네트워크',
     menuHelp: '도움말',
@@ -3002,6 +3002,11 @@ export default {
     sourceFirst: '첫 프레임',
     sourceFrame: '{time} 프레임',
     sourceImage: '직접 올린 이미지',
+    sourceServer: '동영상 서버가 만든 커버',
+    audioServerPicks:
+      '직접 올린 이미지가 없으면 동영상 서버가 커버를 만듭니다. 파일에 들어 있는 이미지를 쓰고, 없으면 Bastyon 기본 화면을 씁니다. 업로드가 끝나면 볼 수 있습니다.',
+    hintAudio:
+      '커버는 피드에 보이는 오디오의 이미지입니다. 직접 올리지 않으면 동영상 서버가 파일에 들어 있는 이미지(예: 앨범 커버)를 쓰고, 없으면 Bastyon 기본 화면을 씁니다. 업로드 중이나 후에 직접 이미지를 올릴 수 있습니다.',
     serverPicks: '커버는 동영상 서버가 고릅니다',
     loading: '동영상을 여는 중…',
     noFrames:
@@ -3018,7 +3023,7 @@ export default {
     done: '완료',
   },
   videoStudio: {
-    title: '동영상 업로드',
+    title: '동영상 또는 오디오 업로드',
     dropTitle: '동영상이나 오디오 파일을 여기로 끌어 놓으세요',
     dropHint:
       'MP4, MOV, MKV, WebM, AVI 또는 오디오 MP3, M4A, FLAC, OGG, 최대 {max}. 바로 업로드가 시작됩니다.',
@@ -3035,6 +3040,8 @@ export default {
     statusUploading: '업로드 중: {percent}',
     statusDone:
       '동영상이 업로드되었습니다. 서버가 다른 화질을 준비하는 데 몇 분 더 걸리지만 지금 바로 게시물을 만들 수 있습니다.',
+    statusDoneAudio:
+      '오디오가 업로드되었습니다. 서버가 처리하는 데 몇 분 더 걸리지만 지금 바로 게시물을 만들 수 있습니다.',
     cancelUpload: '업로드 취소',
     minimize: '최소화',
     remove: '목록에서 제거',
@@ -3048,12 +3055,12 @@ export default {
     panelUploading: '업로드 중: {count}',
     panelDone: '업로드 완료',
     rowDone: '업로드됨',
-    upload: '동영상 업로드',
+    upload: '업로드',
     signIn: '동영상을 업로드하고 내 동영상을 보려면 로그인하세요.',
     signInButton: '로그인',
     refresh: '새로 고침',
     loadFailed: '일부 동영상 서버에서 목록을 받지 못해 일부 동영상이 보이지 않을 수 있습니다.',
-    empty: '업로드한 동영상이 여기에 표시됩니다.',
+    empty: '업로드한 동영상과 오디오가 여기에 표시됩니다.',
     processing: '처리 중',
     posted: '게시됨',
     notPosted: '게시 안 됨',

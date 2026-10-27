@@ -43,6 +43,11 @@ vi.mock('@tauri-apps/api/event', () => ({
     return () => {}
   },
 }))
+vi.mock('@/services/peertube/peertube-videos', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/services/peertube/peertube-videos')>()),
+  // Обложка от видеосервера — без сети.
+  getInstanceVideoCover: vi.fn(async () => null),
+}))
 vi.mock('./use-open-composer-with-video', () => ({
   useOpenComposerWithVideo: () => mocks.openComposer,
 }))

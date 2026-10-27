@@ -6,8 +6,9 @@
  *
  * Задача: (сжатие на компьютере →) загрузка на видеосервер PeerTube → указатель
  * `peertube://host/uuid[/audio]` для поста. «Повторить» продолжает загрузку с
- * места обрыва (транспорт помнит upload_id). У видео есть обложка: первый кадр
- * или то, что выбрал человек; сервер получает её, когда видео загружено.
+ * места обрыва (транспорт помнит upload_id). У ролика есть обложка: у видео —
+ * первый кадр, у звука — та, что сделает сервер, или то, что выбрал человек;
+ * сервер получает её, когда ролик загружен.
  */
 
 import { defineStore } from 'pinia'
@@ -20,7 +21,11 @@ import {
 } from '@/b-components/content/post-composer/use-composer-video'
 import { uploadVideoToPeertube } from '@/services/peertube/peertube-video-service'
 import { PeertubeUploadError } from '@/services/peertube/peertube-upload'
-import { renameInstanceVideo, saveVideoCover } from '@/services/peertube/peertube-videos'
+import {
+  getInstanceVideoCover,
+  renameInstanceVideo,
+  saveVideoCover,
+} from '@/services/peertube/peertube-videos'
 import { buildPeertubeSignature, ensurePeertubeToken } from '@/services/peertube/peertube-auth'
 import { logger } from '@/services/logger'
 import { useModalStore } from './modal-store'
@@ -66,7 +71,7 @@ export interface VideoUploadJob {
   error: string
   result: VideoUploadResult | null
   startedAt: number
-  /** Обложка видео; у звука её нет. */
+  /** Обложка ролика. */
   cover?: VideoCoverState
 }
 
@@ -87,6 +92,7 @@ export interface VideoUploadsDeps {
   compress: (file: File, options: CompressOptions) => Promise<CompressOutcome>
   firstFrame: (file: File) => Promise<Blob | null>
   saveCover: typeof saveVideoCover
+  serverCover: typeof getInstanceVideoCover
 }
 
 const defaultDeps = (): VideoUploadsDeps => ({
@@ -99,6 +105,7 @@ const defaultDeps = (): VideoUploadsDeps => ({
     ),
   firstFrame,
   saveCover: saveVideoCover,
+  serverCover: getInstanceVideoCover,
 })
 
 const isActive = (job: VideoUploadJob): boolean =>
@@ -150,7 +157,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     }
     const id = `upload_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
     const title = titleFromFileName(file.name)
-    const cover = file.type.startsWith('audio/') ? null : createCover()
+    const cover = createCover(file.type.startsWith('audio/'))
     jobs.value.unshift({
       id,
       fileName: file.name,
@@ -224,13 +231,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       job.progress = 100
       // Название дописали, пока шла загрузка, — пусть и на сервере будет оно.
       void commitTitle(id)
-      if (!result.isAudio) rt.cover?.attach({ host: result.host, uuid: result.uuid })
-      else if (rt.cover) {
-        // Файл без MIME оказался звуком: обложки у него нет.
-        rt.cover.dispose()
-        rt.cover = null
-        job.cover = undefined
-      }
+      rt.cover?.attach({ host: result.host, uuid: result.uuid }, { audio: result.isAudio })
     } catch (error) {
       if (rt.controller !== controller) return
       if (error instanceof PeertubeUploadError && error.cancelled) return
@@ -307,15 +308,19 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     }
   }
 
-  function createCover(): VideoCover {
-    return createVideoCover({
-      firstFrame: (file) => deps.firstFrame(file),
-      save: async ({ host, uuid }, image) => {
-        const author = auth()
-        if (!author) throw new Error('peertube_token_signed_out')
-        await deps.saveCover({ host, uuid, image, ...author })
+  function createCover(audio: boolean): VideoCover {
+    return createVideoCover(
+      {
+        firstFrame: (file) => deps.firstFrame(file),
+        save: async ({ host, uuid }, image) => {
+          const author = auth()
+          if (!author) throw new Error('peertube_token_signed_out')
+          await deps.saveCover({ host, uuid, image, ...author })
+        },
+        serverCover: ({ host, uuid }) => deps.serverCover({ host, id: uuid }),
       },
-    })
+      { audio }
+    )
   }
 
   /** Исходный файл: из него выбирают кадр обложки. */

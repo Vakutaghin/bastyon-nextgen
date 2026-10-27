@@ -75,7 +75,7 @@ export default {
     settings: 'Settings',
     limits: 'Limits',
     wallets: 'Wallets',
-    'my-videos': 'My videos',
+    'my-videos': 'Media studio',
     'paid-subscriptions': 'Paid subscriptions',
     'my-files': 'My files',
     mesh: 'Mesh networks',
@@ -1861,8 +1861,8 @@ export default {
   },
   misc: {
     bastyonFeed: 'Bastyon Feed',
-    myVideos: 'My Videos',
-    myVideosPlaceholder: 'The "My Videos" section — content will be added later.',
+    myVideos: 'Media studio',
+    myVideosPlaceholder: 'The "Media studio" section — content will be added later.',
     enterTextFromImage: 'Enter the text from the image',
     enterText: 'Enter text',
     next: 'Next',
@@ -2955,7 +2955,7 @@ export default {
     menuWallets: 'Wallets',
     menuPaidSubscriptions: 'Paid subscriptions',
     menuLimits: 'Limits',
-    menuMyVideos: 'My videos',
+    menuMyVideos: 'Media studio',
     menuMyFiles: 'My files',
     menuMesh: 'Mesh networks',
     menuHelp: 'Help',
@@ -3031,6 +3031,11 @@ export default {
     sourceFirst: 'First frame',
     sourceFrame: 'Frame at {time}',
     sourceImage: 'Your image',
+    sourceServer: 'From the video server',
+    audioServerPicks:
+      "Without your own image, the video server makes the cover: it takes the picture embedded in the file, or the Bastyon splash if there is none. You'll see it when the upload finishes.",
+    hintAudio:
+      "The cover is the audio's picture in the feed. Without your own, the video server takes the picture embedded in the file (an album cover, for example), or the Bastyon splash if there is none. You can upload your own image during the upload or after.",
     serverPicks: 'The video server will pick the cover',
     loading: 'Opening the video…',
     noFrames:
@@ -3047,7 +3052,7 @@ export default {
     done: 'Done',
   },
   videoStudio: {
-    title: 'Upload video',
+    title: 'Upload video or audio',
     dropTitle: 'Drag a video or audio file here',
     dropHint:
       'MP4, MOV, MKV, WebM, AVI or audio MP3, M4A, FLAC, OGG — up to {max}. The upload starts right away.',
@@ -3064,6 +3069,8 @@ export default {
     statusUploading: 'Uploading: {percent}',
     statusDone:
       'The video is uploaded. The server needs a few more minutes to prepare other qualities, but you can create the post now.',
+    statusDoneAudio:
+      'The audio is uploaded. The server needs a few more minutes to process it, but you can create the post now.',
     cancelUpload: 'Cancel upload',
     minimize: 'Minimize',
     remove: 'Remove',
@@ -3077,12 +3084,12 @@ export default {
     panelUploading: 'Uploading: {count}',
     panelDone: 'Uploads complete',
     rowDone: 'Uploaded',
-    upload: 'Upload video',
+    upload: 'Upload',
     signIn: 'Sign in to upload videos and see yours.',
     signInButton: 'Sign in',
     refresh: 'Refresh',
     loadFailed: 'Not every video server sent its list — some videos may be missing.',
-    empty: 'Videos you upload will appear here.',
+    empty: 'Videos and audio you upload will appear here.',
     processing: 'Processing',
     posted: 'In a post',
     notPosted: 'Not in a post',

@@ -79,7 +79,7 @@ export default {
     settings: 'Настройки',
     limits: 'Лимиты',
     wallets: 'Кошельки',
-    'my-videos': 'Мои видео',
+    'my-videos': 'Медиастудия',
     'paid-subscriptions': 'Платные подписки',
     'my-files': 'Мои файлы',
     mesh: 'Mesh-сети',
@@ -1862,8 +1862,8 @@ export default {
   },
   misc: {
     bastyonFeed: 'Лента Bastyon',
-    myVideos: 'Мои видео',
-    myVideosPlaceholder: 'Раздел «Мои видео» — контент будет добавлен позже.',
+    myVideos: 'Медиастудия',
+    myVideosPlaceholder: 'Раздел «Медиастудия» — контент будет добавлен позже.',
     enterTextFromImage: 'Введите текст с изображения',
     enterText: 'Введите текст',
     next: 'Далее',
@@ -2945,7 +2945,7 @@ export default {
     menuWallets: 'Кошельки',
     menuPaidSubscriptions: 'Платные подписки',
     menuLimits: 'Лимиты',
-    menuMyVideos: 'Мои видео',
+    menuMyVideos: 'Медиастудия',
     menuMyFiles: 'Мои файлы',
     menuMesh: 'Mesh-сети',
     menuHelp: 'Справка',
@@ -3021,6 +3021,11 @@ export default {
     sourceFirst: 'Первый кадр',
     sourceFrame: 'Кадр {time}',
     sourceImage: 'Своя картинка',
+    sourceServer: 'От видеосервера',
+    audioServerPicks:
+      'Без своей картинки обложку сделает видеосервер: возьмёт картинку из файла, а если её нет — заставку Bastyon. Её будет видно, когда загрузка закончится.',
+    hintAudio:
+      'Обложка — картинка аудио в ленте. Без своей видеосервер возьмёт картинку, вшитую в файл (например, обложку альбома), а если её нет — заставку Bastyon. Свою картинку можно загрузить и во время загрузки, и после.',
     serverPicks: 'Обложку выберет видеосервер',
     loading: 'Открываю видео…',
     noFrames:
@@ -3037,7 +3042,7 @@ export default {
     done: 'Готово',
   },
   videoStudio: {
-    title: 'Загрузка видео',
+    title: 'Загрузка видео или звука',
     dropTitle: 'Перетащите сюда видео или звук',
     dropHint:
       'MP4, MOV, MKV, WebM, AVI или звук MP3, M4A, FLAC, OGG — до {max}. Загрузка начнётся сразу.',
@@ -3054,6 +3059,8 @@ export default {
     statusUploading: 'Загрузка: {percent}',
     statusDone:
       'Видео загружено. Сервер ещё несколько минут готовит разные качества, пост можно создать уже сейчас.',
+    statusDoneAudio:
+      'Аудио загружено. Сервер ещё несколько минут его обрабатывает, пост можно создать уже сейчас.',
     cancelUpload: 'Отменить загрузку',
     minimize: 'Свернуть',
     remove: 'Убрать',
@@ -3067,12 +3074,12 @@ export default {
     panelUploading: 'Загружается: {count}',
     panelDone: 'Загрузки завершены',
     rowDone: 'Загружено',
-    upload: 'Загрузить видео',
+    upload: 'Загрузить',
     signIn: 'Войдите, чтобы загружать видео и видеть свои ролики.',
     signInButton: 'Войти',
     refresh: 'Обновить',
     loadFailed: 'Не со всех видеосерверов пришёл список — часть роликов может не показываться.',
-    empty: 'Здесь появятся видео, которые вы загрузите.',
+    empty: 'Здесь появятся видео и аудио, которые вы загрузите.',
     processing: 'Обрабатывается',
     posted: 'В посте',
     notPosted: 'Не в посте',

@@ -4,6 +4,7 @@ import {
   deleteInstanceVideo,
   renameInstanceVideo,
   setInstanceVideoCover,
+  getInstanceVideoCover,
   checkTranscodingReady,
   findPostedVideos,
   getPostedVideosPage,
@@ -131,6 +132,45 @@ describe('setInstanceVideoCover', () => {
         fetchInstance: fetchInstance as unknown as InstanceFetch,
       })
     ).rejects.toThrow('peertube_video_cover_400')
+  })
+})
+
+describe('getInstanceVideoCover', () => {
+  it('превью ролика с его сервера, без входа', async () => {
+    const fetchInstance = vi.fn(async () =>
+      jsonRes({
+        previewPath: '/lazy-static/previews/p.jpg',
+        thumbnailPath: '/static/thumbnails/t.jpg',
+      })
+    )
+    const url = await getInstanceVideoCover({
+      host: 'h',
+      id: 'uuid1',
+      fetchInstance: fetchInstance as unknown as InstanceFetch,
+    })
+    expect(url).toBe('https://h/lazy-static/previews/p.jpg')
+    const [path, init] = fetchInstance.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('api/v1/videos/uuid1')
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined()
+  })
+
+  it('нет превью — миниатюра; сервер не ответил — null', async () => {
+    const thumbOnly = vi.fn(async () => jsonRes({ thumbnailPath: '/static/thumbnails/t.jpg' }))
+    await expect(
+      getInstanceVideoCover({
+        host: 'h',
+        id: 'u',
+        fetchInstance: thumbOnly as unknown as InstanceFetch,
+      })
+    ).resolves.toBe('https://h/static/thumbnails/t.jpg')
+    const failing = vi.fn(async () => new Response(null, { status: 404 }))
+    await expect(
+      getInstanceVideoCover({
+        host: 'h',
+        id: 'u',
+        fetchInstance: failing as unknown as InstanceFetch,
+      })
+    ).resolves.toBeNull()
   })
 })
 

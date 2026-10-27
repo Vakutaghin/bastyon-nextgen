@@ -173,6 +173,8 @@ const coverLabel = computed<string>(() => {
       return t('videoCover.sourceFrame', { time: formatDuration(current.time) })
     case 'image':
       return t('videoCover.sourceImage')
+    case 'server':
+      return t('videoCover.sourceServer')
     default:
       return t('videoCover.serverPicks')
   }

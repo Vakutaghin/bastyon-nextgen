@@ -52,7 +52,7 @@ Click your avatar in the header:
 - **“Profile”** — your page, see [Your profile](edit-profile.md);
 - **“Wallets”** — see [Wallet and PKOIN](wallet.md);
 - **“Limits”** — see [Account status and limits](limits.md);
-- **“My videos”** — uploading videos and your clips on the video server, see [Uploading video and audio](video-upload.md);
+- **“Media studio”** — uploading video and audio, your clips on the video server, see [Uploading video and audio](video-upload.md);
 - **“My files”** — only in the desktop app, see [My files](my-files.md);
 - **“Help”** and **“Settings”**;
 - **“Switch account”** and **“Sign out”** — see [Several accounts and signing out](accounts.md).
@@ -69,7 +69,7 @@ When the screen is narrow — on a phone or in a shrunk window on a computer —
 
 The header slides away as you scroll down and comes back as soon as you scroll up a little. While the on-screen keyboard is open, the bottom bar is hidden to leave room for the text.
 
-The menu behind the three-line button in the header, right of the logo, is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“My videos”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
+The menu behind the three-line button in the header, right of the logo, is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“Media studio”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
 
 To the right of the menu button, the **“Back”** arrow appears when there is somewhere to go back to; a narrow screen has no **“Forward”** arrow. On Android, the system Back button or gesture also goes back.
 

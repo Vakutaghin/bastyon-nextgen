@@ -10,7 +10,7 @@ Video from a phone or a camera often weighs gigabytes. The desktop app can re-en
 
 ## Where it is
 
-In the upload window: **“My videos”** → **“Upload video”** → **“Compress on this computer first”**. It is checked by itself when there is something to compress with. Compression is only in the desktop app.
+In the upload window: **“Media studio”** → **“Upload”** → **“Compress on this computer first”**. It is checked by itself when there is something to compress with. Compression is only in the desktop app.
 
 ## The compression module
 
@@ -29,7 +29,7 @@ If FFmpeg is already installed on the system and can encode H.264 (x264), the mo
 
 ## How to compress
 
-1. Open **“My videos”** → **“Upload video”** and make sure **“Compress on this computer first”** is checked.
+1. Open **“Media studio”** → **“Upload”** and make sure **“Compress on this computer first”** is checked.
 2. Drag a video into the window or click **“Select file”**.
 3. Compression runs first, then the upload starts right away — you see the percentage in the window and in the **“Uploads”** panel. You can minimize the window: compression and upload go on while you use the app.
 
@@ -49,7 +49,7 @@ Several videos are compressed one at a time: while FFmpeg is busy, the next one 
 
 ## If the upload fails
 
-The compressed file stays with the upload while the app is open: **“Retry”** uploads it without compressing it again. The app does not keep compressed copies on disk — the uploaded clip is already on the video server, see **“My videos”**. If you close the app before the upload finishes, the video is compressed again.
+The compressed file stays with the upload while the app is open: **“Retry”** uploads it without compressing it again. The app does not keep compressed copies on disk — the uploaded clip is already on the video server, see **“Media studio”**. If you close the app before the upload finishes, the video is compressed again.
 
 ## See also
 
