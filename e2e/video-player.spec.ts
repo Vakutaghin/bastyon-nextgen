@@ -103,15 +103,23 @@ test.describe('Плеер мышью', () => {
     await expect.poll(async () => (await state(page)).paused).toBe(true)
   })
 
-  test('скорость — из меню настроек, как у YouTube', async ({ page }) => {
+  test('скорость — из меню настроек, как у YouTube', async ({ page, browserName }) => {
     await open(page)
     await start(page)
     await container(page).hover()
     await container(page).getByRole('button', { name: 'Настройки' }).click()
     await page.getByRole('menuitem', { name: /Скорость/ }).click()
+    const before = (await state(page)).time
     await page.getByRole('menuitemradio', { name: '1,5' }).click()
     await expect.poll(async () => (await state(page)).rate).toBe(1.5)
     await expect(page.getByRole('menu')).toHaveCount(0)
+    // Выбор скорости не ставит на паузу и не сбивает ролик. WebKit сам
+    // замирает на 0,1–0,3 с при любой смене playbackRate (AVFoundation, из JS
+    // не обойти), поэтому ход времени меряем только в Chromium.
+    await page.waitForTimeout(1000)
+    const after = await state(page)
+    expect(after.paused).toBe(false)
+    if (browserName === 'chromium') expect(after.time - before).toBeGreaterThan(1.3)
   })
 })
 
