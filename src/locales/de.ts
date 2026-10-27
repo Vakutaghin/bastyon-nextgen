@@ -3075,6 +3075,28 @@ export default {
     permissionNeeded:
       'Android hat Bastyon keine Installation von Updates erlaubt. Tippen Sie auf „Aktualisieren“ und erlauben Sie in den geöffneten Einstellungen die Installation aus dieser Quelle.',
   },
+  videoCover: {
+    title: 'Vorschaubild',
+    hint: 'Standardmäßig ist das Vorschaubild das erste Bild des Videos. Gestalten Sie die ersten ein, zwei Sekunden als Standbild, dann wird es zum Vorschaubild. Oder ziehen Sie über den Bildstreifen und wählen Sie ein anderes Bild, oder laden Sie ein eigenes Bild hoch — es wird auf das Videoformat zugeschnitten.',
+    hintLabel: 'So wählen Sie das Vorschaubild',
+    sourceFirst: 'Erstes Bild',
+    sourceFrame: 'Bild bei {time}',
+    sourceImage: 'Eigenes Bild',
+    serverPicks: 'Das Vorschaubild wählt der Videoserver',
+    loading: 'Video wird geöffnet…',
+    noFrames:
+      'Hier lässt sich kein Bild wählen: Die App kann diese Datei nicht anzeigen. Laden Sie ein eigenes Bild hoch oder überlassen Sie die Wahl dem Videoserver.',
+    frameLabel: 'Bild für das Vorschaubild',
+    uploadImage: 'Bild hochladen',
+    imageFailed: 'Bild konnte nicht geöffnet werden',
+    pending: 'Wird gespeichert, sobald das Video hochgeladen ist',
+    saving: 'Vorschaubild wird gespeichert…',
+    saved: 'Vorschaubild gespeichert',
+    saveFailed: 'Vorschaubild konnte nicht gespeichert werden',
+    retry: 'Erneut versuchen',
+    change: 'Vorschaubild ändern',
+    done: 'Fertig',
+  },
   videoStudio: {
     title: 'Video hochladen',
     dropTitle: 'Video oder Audio hierher ziehen',

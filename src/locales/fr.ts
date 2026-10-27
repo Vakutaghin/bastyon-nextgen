@@ -3074,6 +3074,28 @@ export default {
     permissionNeeded:
       'Android n’a pas autorisé Bastyon à installer des mises à jour. Appuyez sur « Mettre à jour » et, dans les réglages qui s’ouvrent, autorisez l’installation depuis cette source.',
   },
+  videoCover: {
+    title: 'Miniature',
+    hint: "Par défaut, la miniature est la première image. Faites des une ou deux premières secondes de la vidéo une image fixe : elle deviendra la miniature. Ou faites glisser sur la bande d'images pour en choisir une autre, ou importez votre propre image : elle sera recadrée au format de la vidéo.",
+    hintLabel: 'Comment choisir la miniature',
+    sourceFirst: 'Première image',
+    sourceFrame: 'Image à {time}',
+    sourceImage: 'Image personnelle',
+    serverPicks: 'Le serveur vidéo choisira la miniature',
+    loading: 'Ouverture de la vidéo…',
+    noFrames:
+      "Impossible de choisir une image ici : l'application ne peut pas afficher ce fichier. Importez votre propre image ou laissez le serveur vidéo choisir.",
+    frameLabel: 'Image de la miniature',
+    uploadImage: 'Importer une image',
+    imageFailed: "Impossible d'ouvrir l'image",
+    pending: "Sera enregistrée à la fin de l'envoi",
+    saving: 'Enregistrement de la miniature…',
+    saved: 'Miniature enregistrée',
+    saveFailed: "Impossible d'enregistrer la miniature",
+    retry: 'Réessayer',
+    change: 'Changer la miniature',
+    done: 'Terminé',
+  },
   videoStudio: {
     title: 'Mettre en ligne une vidéo',
     dropTitle: 'Glissez ici une vidéo ou un son',

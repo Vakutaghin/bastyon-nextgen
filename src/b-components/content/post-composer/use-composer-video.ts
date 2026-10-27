@@ -5,6 +5,8 @@
  *
  * Состояния: idle → uploading → done | error. Отмена возвращает в idle,
  * «Повторить» продолжает с места обрыва (транспорт помнит upload_id).
+ * Обложка видео — первый кадр или выбранная человеком; пока она снимается
+ * или уходит на сервер, пост не публикуется (`busy`).
  */
 
 import { computed, ref, shallowRef } from 'vue'
@@ -16,6 +18,12 @@ import { uploadVideoToPeertube } from '@/services/peertube/peertube-video-servic
 import { QuotaExceededError } from '@/services/peertube/peertube-quota'
 import { PeertubeUploadError } from '@/services/peertube/peertube-upload'
 import { MAX_VIDEO_SIZE_BYTES, VideoValidationError } from '@/services/peertube/peertube-validation'
+import { saveVideoCover } from '@/services/peertube/peertube-videos'
+import {
+  createVideoCover,
+  type CoverSource,
+  type VideoCover,
+} from '@/b-components/video-studio/video-cover'
 
 export type ComposerVideoState = 'idle' | 'uploading' | 'done' | 'error'
 
@@ -36,6 +44,8 @@ export interface UseComposerVideoOptions {
   onAuthRequired: () => void
   /** Подмена сервиса в тестах. */
   upload?: typeof uploadVideoToPeertube
+  saveCover?: typeof saveVideoCover
+  firstFrame?: (file: File) => Promise<Blob | null>
 }
 
 /** Имя файла без расширения: «Отпуск 2026.mp4» → «Отпуск 2026». */
@@ -87,17 +97,45 @@ export function useComposerVideo(options: UseComposerVideoOptions) {
   const file = shallowRef<File | null>(null)
   const isAudio = ref(false)
   const errorText = ref('')
+  /** Обложка видео; у звука и у видео из черновика её нет. */
+  const cover = shallowRef<VideoCover | null>(null)
   let controller: AbortController | null = null
 
   const fileLabel = computed(() =>
     file.value ? `${file.value.name} · ${formatFileSize(file.value.size)}` : ''
   )
+  /** Видео грузится или обложка ещё не на сервере: пост публиковать рано. */
+  const busy = computed(() => state.value === 'uploading' || !!cover.value?.state.busy)
+
+  function newCover(picked: File): VideoCover | null {
+    if (picked.type.startsWith('audio/')) return null
+    const created = createVideoCover({
+      firstFrame: options.firstFrame,
+      save: async ({ host, uuid }, image) => {
+        const auth = options.getAuth()
+        if (!auth) throw new Error('peertube_token_signed_out')
+        await (options.saveCover ?? saveVideoCover)({ host, uuid, image, ...auth })
+      },
+    })
+    created.begin(picked)
+    return created
+  }
+
+  function dropCover(): void {
+    cover.value?.dispose()
+    cover.value = null
+  }
 
   async function start(picked: File): Promise<void> {
     const auth = options.getAuth()
     if (!auth) {
       options.onAuthRequired()
       return
+    }
+    // «Повторить» — тот же файл: выбранная обложка остаётся.
+    if (file.value !== picked) {
+      dropCover()
+      cover.value = newCover(picked)
     }
     file.value = picked
     state.value = 'uploading'
@@ -119,6 +157,8 @@ export function useComposerVideo(options: UseComposerVideoOptions) {
       })
       if (controller !== current) return
       isAudio.value = result.isAudio
+      if (result.isAudio) dropCover()
+      else cover.value?.attach({ host: result.host, uuid: result.uuid })
       state.value = 'done'
       options.onUploaded({
         pointer: result.pointer,
@@ -145,6 +185,8 @@ export function useComposerVideo(options: UseComposerVideoOptions) {
     controller = null
     state.value = 'idle'
     percent.value = 0
+    file.value = null
+    dropCover()
   }
 
   /** Тот же файл ещё раз: загрузка продолжится с места обрыва. */
@@ -157,6 +199,7 @@ export function useComposerVideo(options: UseComposerVideoOptions) {
     state.value = 'idle'
     file.value = null
     percent.value = 0
+    dropCover()
     options.onRemoved()
   }
 
@@ -178,12 +221,25 @@ export function useComposerVideo(options: UseComposerVideoOptions) {
     file.value = null
     percent.value = 0
     errorText.value = ''
+    dropCover()
+  }
+
+  /** Новая обложка: сервер получит её сразу, если видео уже загружено. */
+  function setCover(image: Blob, source: CoverSource, time = 0): void {
+    cover.value?.set(image, source, time)
+  }
+
+  function retryCover(): void {
+    cover.value?.retry()
   }
 
   return {
     state,
     percent,
+    file,
     fileLabel,
+    cover,
+    busy,
     isAudio,
     errorText,
     start,
@@ -192,5 +248,7 @@ export function useComposerVideo(options: UseComposerVideoOptions) {
     remove,
     restore,
     reset,
+    setCover,
+    retryCover,
   }
 }

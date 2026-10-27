@@ -222,4 +222,79 @@ describe('video-uploads-store', () => {
     expect(store.jobs.map((j) => j.fileName)).toEqual(['b.mp4'])
     expect(store.panelHidden).toBe(true)
   })
+
+  it('обложка: первый кадр по умолчанию, уходит на сервер, когда видео загружено', async () => {
+    const store = useVideoUploadsStore()
+    const up = controllableUpload()
+    const saveCover = vi.fn(async () => {})
+    const frame = new Blob(['first'], { type: 'image/jpeg' })
+    store.setDepsForTests({
+      upload: up.upload as never,
+      rename: vi.fn(),
+      firstFrame: async () => frame,
+      saveCover,
+    })
+    const id = store.start(file())!
+    await vi.waitFor(() => expect(store.jobs[0]!.cover?.source).toBe('first'))
+    expect(store.jobs[0]!.cover?.status).toBe('pending')
+    expect(store.fileOf(id)?.name).toBe('Отпуск 2026.mp4')
+    expect(saveCover).not.toHaveBeenCalled()
+
+    up.finish()
+    await vi.waitFor(() => expect(store.jobs[0]!.cover?.status).toBe('saved'))
+    expect(saveCover).toHaveBeenCalledWith(
+      expect.objectContaining({ host: 'pt.host', uuid: 'uuid1', address: 'PMe' })
+    )
+  })
+
+  it('обложку выбрали во время загрузки — сервер получает её, а не первый кадр', async () => {
+    const store = useVideoUploadsStore()
+    const up = controllableUpload()
+    const images: string[] = []
+    const saveCover = vi.fn(async ({ image }: { image: File }) => {
+      images.push(await image.text())
+    })
+    store.setDepsForTests({
+      upload: up.upload as never,
+      rename: vi.fn(),
+      firstFrame: async () => new Blob(['first']),
+      saveCover: saveCover as never,
+    })
+    const id = store.start(file())!
+    await vi.waitFor(() => expect(store.jobs[0]!.cover?.source).toBe('first'))
+    store.setCover(id, new Blob(['frame 12']), 'frame', 12)
+    up.finish()
+    await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('done'))
+    await store.commitCover(id)
+    expect(images).toEqual(['frame 12'])
+    expect(store.jobs[0]!.cover).toMatchObject({ source: 'frame', time: 12, status: 'saved' })
+  })
+
+  it('у звука обложки нет', async () => {
+    const store = useVideoUploadsStore()
+    const firstFrame = vi.fn(async () => null)
+    store.setDepsForTests({ upload: controllableUpload().upload as never, firstFrame })
+    store.start(new File(['x'], 'song.mp3', { type: 'audio/mpeg' }))
+    expect(store.jobs[0]!.cover).toBeUndefined()
+    expect(firstFrame).not.toHaveBeenCalled()
+  })
+
+  it('файл без MIME оказался звуком — обложка убирается и не отправляется', async () => {
+    const store = useVideoUploadsStore()
+    const up = controllableUpload()
+    const saveCover = vi.fn(async () => {})
+    store.setDepsForTests({
+      upload: up.upload as never,
+      rename: vi.fn(),
+      firstFrame: async () => null,
+      saveCover,
+    })
+    const id = store.start(new File(['x'], 'song.flac'))!
+    expect(store.jobs[0]!.cover).toBeDefined()
+    up.finish({ ...RESULT, isAudio: true })
+    await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('done'))
+    expect(store.jobs[0]!.cover).toBeUndefined()
+    await store.commitCover(id)
+    expect(saveCover).not.toHaveBeenCalled()
+  })
 })

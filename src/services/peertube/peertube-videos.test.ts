@@ -3,6 +3,7 @@ import {
   getMyAccountVideos,
   deleteInstanceVideo,
   renameInstanceVideo,
+  setInstanceVideoCover,
   checkTranscodingReady,
   findPostedVideos,
   getPostedVideosPage,
@@ -96,6 +97,40 @@ describe('deleteInstanceVideo', () => {
     }
     await deleteInstanceVideo({ host: 'h', id: 'a/b', accessToken: 'AT', fetchInstance })
     expect(fetchInstance.mock.calls[0]?.[0]).toBe('api/v1/videos/a%2Fb')
+  })
+})
+
+describe('setInstanceVideoCover', () => {
+  it('PUT videos/:id: одна картинка и в thumbnailfile, и в previewfile', async () => {
+    const fetchInstance = vi.fn(async () => new Response(null, { status: 204 }))
+    const image = new File(['jpeg'], 'cover.jpg', { type: 'image/jpeg' })
+    await setInstanceVideoCover({
+      host: 'h',
+      id: 'uuid1',
+      image,
+      accessToken: 'AT',
+      fetchInstance: fetchInstance as unknown as InstanceFetch,
+    })
+    const [path, init] = fetchInstance.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('api/v1/videos/uuid1')
+    expect(init.method).toBe('PUT')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer AT')
+    const body = init.body as FormData
+    expect(body.get('thumbnailfile')).toBeInstanceOf(File)
+    expect((body.get('previewfile') as File).name).toBe('cover.jpg')
+  })
+
+  it('сервер отказал — ошибка с кодом', async () => {
+    const fetchInstance = vi.fn(async () => new Response(null, { status: 400 }))
+    await expect(
+      setInstanceVideoCover({
+        host: 'h',
+        id: 'u',
+        image: new File(['x'], 'cover.jpg', { type: 'image/jpeg' }),
+        accessToken: 'AT',
+        fetchInstance: fetchInstance as unknown as InstanceFetch,
+      })
+    ).rejects.toThrow('peertube_video_cover_400')
   })
 })
 

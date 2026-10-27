@@ -3056,6 +3056,28 @@ export default {
     permissionNeeded:
       'Android no permitió a Bastyon instalar actualizaciones. Pulsa «Actualizar» y, en los ajustes que se abren, permite instalar desde esta fuente.',
   },
+  videoCover: {
+    title: 'Portada',
+    hint: 'Por defecto, la portada es el primer fotograma. Haz que el primer segundo o dos del vídeo sean una imagen fija y se convertirá en la portada. O desliza por la tira de fotogramas y elige otro, o sube tu propia imagen: se recortará al formato del vídeo.',
+    hintLabel: 'Cómo elegir la portada',
+    sourceFirst: 'Primer fotograma',
+    sourceFrame: 'Fotograma en {time}',
+    sourceImage: 'Imagen propia',
+    serverPicks: 'La portada la elegirá el servidor de vídeo',
+    loading: 'Abriendo el vídeo…',
+    noFrames:
+      'Aquí no se puede elegir un fotograma: la aplicación no puede mostrar este archivo. Sube tu propia imagen o deja que elija el servidor de vídeo.',
+    frameLabel: 'Fotograma de portada',
+    uploadImage: 'Subir imagen',
+    imageFailed: 'No se pudo abrir la imagen',
+    pending: 'Se guardará cuando termine la subida',
+    saving: 'Guardando la portada…',
+    saved: 'Portada guardada',
+    saveFailed: 'No se pudo guardar la portada',
+    retry: 'Reintentar',
+    change: 'Cambiar portada',
+    done: 'Listo',
+  },
   videoStudio: {
     title: 'Subir vídeo',
     dropTitle: 'Arrastra aquí un vídeo o un audio',

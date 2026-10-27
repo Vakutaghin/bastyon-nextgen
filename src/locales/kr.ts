@@ -2995,6 +2995,28 @@ export default {
     permissionNeeded:
       'Android가 Bastyon의 업데이트 설치를 허용하지 않았습니다. “업데이트”를 누르고 열리는 설정에서 이 출처의 앱 설치를 허용하세요.',
   },
+  videoCover: {
+    title: '커버',
+    hint: '기본 커버는 첫 프레임입니다. 영상의 처음 1~2초를 정지 이미지로 만들면 그 이미지가 커버가 됩니다. 또는 프레임 띠를 밀어 다른 프레임을 고르거나, 직접 이미지를 올리세요. 이미지는 영상 비율에 맞게 잘립니다.',
+    hintLabel: '커버 고르는 방법',
+    sourceFirst: '첫 프레임',
+    sourceFrame: '{time} 프레임',
+    sourceImage: '직접 올린 이미지',
+    serverPicks: '커버는 동영상 서버가 고릅니다',
+    loading: '동영상을 여는 중…',
+    noFrames:
+      '여기서는 프레임을 고를 수 없습니다. 앱이 이 파일을 표시하지 못합니다. 직접 이미지를 올리거나 동영상 서버에 맡기세요.',
+    frameLabel: '커버 프레임',
+    uploadImage: '이미지 올리기',
+    imageFailed: '이미지를 열 수 없습니다',
+    pending: '업로드가 끝나면 저장됩니다',
+    saving: '커버 저장 중…',
+    saved: '커버를 저장했습니다',
+    saveFailed: '커버를 저장하지 못했습니다',
+    retry: '다시 시도',
+    change: '커버 바꾸기',
+    done: '완료',
+  },
   videoStudio: {
     title: '동영상 업로드',
     dropTitle: '동영상이나 오디오 파일을 여기로 끌어 놓으세요',

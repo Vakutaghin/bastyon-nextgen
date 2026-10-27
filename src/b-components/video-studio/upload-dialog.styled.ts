@@ -105,6 +105,11 @@ export const SC_PrimaryButton = styled.button`
   &:hover {
     opacity: 0.9;
   }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.6;
+  }
 `
 
 export const SC_GhostButton = styled.button`

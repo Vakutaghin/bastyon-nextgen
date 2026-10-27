@@ -83,6 +83,14 @@
         />
         <SC_Hint>{{ t('videoStudio.titleHint') }}</SC_Hint>
       </SC_Field>
+      <VideoCoverPicker
+        v-if="job.cover && coverFile"
+        :key="job.id"
+        :file="coverFile"
+        :cover="job.cover"
+        @pick="(image, source, time) => store.setCover(job!.id, image, source, time)"
+        @retry="store.retryCover(job!.id)"
+      />
       <Progress
         v-if="active"
         :percent="job.progress"
@@ -119,7 +127,7 @@
           <SC_GhostButton type="button" @click="store.closeDialog()">
             {{ t('videoStudio.done') }}
           </SC_GhostButton>
-          <SC_PrimaryButton type="button" @click="createPost">
+          <SC_PrimaryButton type="button" :disabled="creating" @click="createPost">
             {{ t('videoStudio.createPost') }}
           </SC_PrimaryButton>
         </template>
@@ -142,6 +150,7 @@ import { useVideoUploadsStore, type VideoUploadJob } from '@/stores/video-upload
 import { useCompressionModuleStore } from '@/stores/compression-module-store'
 import { getFfmpegMissingInstruction } from './ffmpeg-instruction'
 import { useOpenComposerWithVideo } from './use-open-composer-with-video'
+import VideoCoverPicker from './video-cover-picker.vue'
 import {
   SC_Body,
   SC_Drop,
@@ -166,6 +175,10 @@ const job = computed<VideoUploadJob | null>(() => store.dialogJob)
 const active = computed(
   () => job.value?.status === 'compressing' || job.value?.status === 'uploading'
 )
+/** Исходный файл задачи: из него выбирают кадр обложки. */
+const coverFile = computed(() => (job.value ? store.fileOf(job.value.id) : null))
+/** «Создать пост» ждёт, пока название и обложка дойдут до сервера. */
+const creating = ref(false)
 
 const desktop = isTauri()
 /** Чем сжимать: модуль сжатия или FFmpeg из системы. */
@@ -227,8 +240,13 @@ function onDrop(event: DragEvent): void {
 
 async function createPost(): Promise<void> {
   const current = job.value
-  if (!current?.result) return
-  await store.commitTitle(current.id)
+  if (!current?.result || creating.value) return
+  creating.value = true
+  try {
+    await Promise.all([store.commitTitle(current.id), store.commitCover(current.id)])
+  } finally {
+    creating.value = false
+  }
   openComposer({ pointer: current.result.pointer, title: current.title.trim() })
   store.closeDialog()
   store.dismiss(current.id)

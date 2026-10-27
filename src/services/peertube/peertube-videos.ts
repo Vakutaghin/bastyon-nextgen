@@ -122,6 +122,55 @@ export async function renameInstanceVideo(params: RenameVideoParams): Promise<vo
   if (!res.ok && res.status !== 204) throw new Error(`peertube_rename_video_${res.status}`)
 }
 
+export interface SetVideoCoverParams {
+  host: string
+  id: string | number
+  /** JPEG обложки. */
+  image: File
+  accessToken: string
+  fetchInstance?: InstanceFetch
+}
+
+/**
+ * PUT videos/:id (Bearer, multipart) с обложкой: одна картинка уходит и в
+ * thumbnailfile (миниатюра в списках), и в previewfile (кадр в плеере), как у
+ * старого клиента (`orig:components/videoCabinet uploadVideoWallpaper`).
+ */
+export async function setInstanceVideoCover(params: SetVideoCoverParams): Promise<void> {
+  const { host, id, image, accessToken } = params
+  const fetchInstance: InstanceFetch =
+    params.fetchInstance ?? ((path, init) => peertubeInstanceFetch(host, path, init))
+
+  const body = new FormData()
+  body.append('thumbnailfile', image)
+  body.append('previewfile', image)
+  const res = await fetchInstance(`api/v1/videos/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body,
+  })
+  if (!res.ok && res.status !== 204) throw new Error(`peertube_video_cover_${res.status}`)
+}
+
+/** Обложка видео от имени автора: вход на сервер его ключом, затем PUT. */
+export async function saveVideoCover(params: {
+  host: string
+  uuid: string
+  image: File
+  keyPair: KeyPair
+  address: string
+}): Promise<void> {
+  const { host, address } = params
+  const signature = buildPeertubeSignature(params.keyPair, address)
+  const token = await ensurePeertubeToken({ host, address, signature })
+  await setInstanceVideoCover({
+    host,
+    id: params.uuid,
+    image: params.image,
+    accessToken: token.access_token,
+  })
+}
+
 /** Состояния PeerTube, означающие «ещё не готово к постингу» (транскодинг/импорт идёт). */
 const NOT_READY_STATES = new Set([2, 3])
 

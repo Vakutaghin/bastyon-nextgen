@@ -122,6 +122,45 @@ describe('useComposerVideo', () => {
     expect(video.state.value).toBe('idle')
   })
 
+  it('обложка: первый кадр уходит на сервер после загрузки, пост ждёт её', async () => {
+    let saved!: () => void
+    const saveCover = vi.fn(() => new Promise<void>((resolve) => (saved = resolve)))
+    const upload = vi.fn().mockResolvedValue({ pointer: 'p', host: 'h', uuid: 'u', isAudio: false })
+    const { video } = setup({
+      upload,
+      saveCover,
+      firstFrame: async () => new Blob(['first'], { type: 'image/jpeg' }),
+    })
+    await video.start(file())
+    await flush()
+    expect(video.state.value).toBe('done')
+    expect(saveCover).toHaveBeenCalledWith(
+      expect.objectContaining({ host: 'h', uuid: 'u', address: 'PAddr' })
+    )
+    expect(video.busy.value).toBe(true)
+    saved()
+    await flush()
+    expect(video.busy.value).toBe(false)
+    expect(video.cover.value?.state).toMatchObject({ source: 'first', status: 'saved' })
+  })
+
+  it('у аудио обложки нет; «Убрать» убирает и её', async () => {
+    const upload = vi.fn().mockResolvedValue({ pointer: 'p', host: 'h', uuid: 'u', isAudio: true })
+    const { video } = setup({ upload, firstFrame: async () => null })
+    await video.start(file('Песня.mp3'))
+    expect(video.cover.value).toBeNull()
+
+    const { video: other } = setup({
+      upload: vi.fn().mockResolvedValue({ pointer: 'p', host: 'h', uuid: 'u', isAudio: false }),
+      saveCover: vi.fn(async () => {}),
+      firstFrame: async () => null,
+    })
+    await other.start(file())
+    expect(other.cover.value).not.toBeNull()
+    other.remove()
+    expect(other.cover.value).toBeNull()
+  })
+
   it('заново смонтированная панель видит уже прикреплённое видео', () => {
     const { video } = setup()
     video.restore('peertube://h/uuid/audio')

@@ -6,7 +6,8 @@
  *
  * Задача: (сжатие на компьютере →) загрузка на видеосервер PeerTube → указатель
  * `peertube://host/uuid[/audio]` для поста. «Повторить» продолжает загрузку с
- * места обрыва (транспорт помнит upload_id).
+ * места обрыва (транспорт помнит upload_id). У видео есть обложка: первый кадр
+ * или то, что выбрал человек; сервер получает её, когда видео загружено.
  */
 
 import { defineStore } from 'pinia'
@@ -19,7 +20,7 @@ import {
 } from '@/b-components/content/post-composer/use-composer-video'
 import { uploadVideoToPeertube } from '@/services/peertube/peertube-video-service'
 import { PeertubeUploadError } from '@/services/peertube/peertube-upload'
-import { renameInstanceVideo } from '@/services/peertube/peertube-videos'
+import { renameInstanceVideo, saveVideoCover } from '@/services/peertube/peertube-videos'
 import { buildPeertubeSignature, ensurePeertubeToken } from '@/services/peertube/peertube-auth'
 import { logger } from '@/services/logger'
 import { useModalStore } from './modal-store'
@@ -28,6 +29,13 @@ import type {
   CompressOutcome,
   CompressSkip,
 } from '@/b-components/video-studio/compress-for-upload'
+import {
+  createVideoCover,
+  type CoverSource,
+  type VideoCover,
+  type VideoCoverState,
+} from '@/b-components/video-studio/video-cover'
+import { firstFrame } from '@/b-components/video-studio/video-frames'
 
 const log = logger.scope('[video-uploads]')
 
@@ -58,6 +66,8 @@ export interface VideoUploadJob {
   error: string
   result: VideoUploadResult | null
   startedAt: number
+  /** Обложка видео; у звука её нет. */
+  cover?: VideoCoverState
 }
 
 interface JobRuntime {
@@ -67,6 +77,7 @@ interface JobRuntime {
   controller: AbortController | null
   /** Имя, под которым видео сейчас на сервере. */
   serverName: string
+  cover: VideoCover | null
 }
 
 /** Подмена шагов в тестах. */
@@ -74,6 +85,8 @@ export interface VideoUploadsDeps {
   upload: typeof uploadVideoToPeertube
   rename: typeof renameInstanceVideo
   compress: (file: File, options: CompressOptions) => Promise<CompressOutcome>
+  firstFrame: (file: File) => Promise<Blob | null>
+  saveCover: typeof saveVideoCover
 }
 
 const defaultDeps = (): VideoUploadsDeps => ({
@@ -84,6 +97,8 @@ const defaultDeps = (): VideoUploadsDeps => ({
       file,
       options
     ),
+  firstFrame,
+  saveCover: saveVideoCover,
 })
 
 const isActive = (job: VideoUploadJob): boolean =>
@@ -135,6 +150,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     }
     const id = `upload_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
     const title = titleFromFileName(file.name)
+    const cover = file.type.startsWith('audio/') ? null : createCover()
     jobs.value.unshift({
       id,
       fileName: file.name,
@@ -148,8 +164,10 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       error: '',
       result: null,
       startedAt: Date.now(),
+      cover: cover?.state,
     })
-    runtime.set(id, { file, uploadFile: null, controller: null, serverName: title })
+    runtime.set(id, { file, uploadFile: null, controller: null, serverName: title, cover })
+    cover?.begin(file)
     panelHidden.value = false
     void run(id)
     return id
@@ -206,6 +224,13 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       job.progress = 100
       // Название дописали, пока шла загрузка, — пусть и на сервере будет оно.
       void commitTitle(id)
+      if (!result.isAudio) rt.cover?.attach({ host: result.host, uuid: result.uuid })
+      else if (rt.cover) {
+        // Файл без MIME оказался звуком: обложки у него нет.
+        rt.cover.dispose()
+        rt.cover = null
+        job.cover = undefined
+      }
     } catch (error) {
       if (rt.controller !== controller) return
       if (error instanceof PeertubeUploadError && error.cancelled) return
@@ -241,14 +266,19 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
 
   function remove(id: string): void {
     jobs.value = jobs.value.filter((j) => j.id !== id)
-    runtime.delete(id)
+    forget(id)
     if (dialogJobId.value === id) dialogJobId.value = null
+  }
+
+  function forget(id: string): void {
+    runtime.get(id)?.cover?.dispose()
+    runtime.delete(id)
   }
 
   /** Закрыть плашку: законченные убираются, идущие загрузки продолжаются. */
   function hidePanel(): void {
     jobs.value = jobs.value.filter(isActive)
-    for (const id of [...runtime.keys()]) if (!find(id)) runtime.delete(id)
+    for (const id of [...runtime.keys()]) if (!find(id)) forget(id)
     panelHidden.value = jobs.value.length > 0
   }
 
@@ -277,6 +307,36 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     }
   }
 
+  function createCover(): VideoCover {
+    return createVideoCover({
+      firstFrame: (file) => deps.firstFrame(file),
+      save: async ({ host, uuid }, image) => {
+        const author = auth()
+        if (!author) throw new Error('peertube_token_signed_out')
+        await deps.saveCover({ host, uuid, image, ...author })
+      },
+    })
+  }
+
+  /** Исходный файл: из него выбирают кадр обложки. */
+  function fileOf(id: string): File | null {
+    return runtime.get(id)?.file ?? null
+  }
+
+  /** Новая обложка: сервер получит её сразу, если видео уже загружено. */
+  function setCover(id: string, image: Blob, source: CoverSource, time = 0): void {
+    runtime.get(id)?.cover?.set(image, source, time)
+  }
+
+  function retryCover(id: string): void {
+    runtime.get(id)?.cover?.retry()
+  }
+
+  /** Дождаться, пока обложка дойдёт до сервера (перед постом). */
+  async function commitCover(id: string): Promise<void> {
+    await runtime.get(id)?.cover?.flush()
+  }
+
   /** Подмена шагов — только для тестов. */
   function setDepsForTests(next: Partial<VideoUploadsDeps>): void {
     deps = { ...defaultDeps(), ...next }
@@ -299,6 +359,10 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     hidePanel,
     setTitle,
     commitTitle,
+    fileOf,
+    setCover,
+    retryCover,
+    commitCover,
     setDepsForTests,
   }
 })

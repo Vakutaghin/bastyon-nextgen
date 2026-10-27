@@ -3024,6 +3024,28 @@ export default {
     permissionNeeded:
       'Android did not allow Bastyon to install updates. Press “Update” and, in the settings that open, allow installing from this source.',
   },
+  videoCover: {
+    title: 'Cover',
+    hint: "By default, the cover is the first frame. Make the first second or two of your video a still image, and it becomes the cover. Or slide along the frame strip to pick any other frame, or upload your own image — it will be cropped to the video's shape.",
+    hintLabel: 'How to choose a cover',
+    sourceFirst: 'First frame',
+    sourceFrame: 'Frame at {time}',
+    sourceImage: 'Your image',
+    serverPicks: 'The video server will pick the cover',
+    loading: 'Opening the video…',
+    noFrames:
+      "Frames can't be picked here: the app can't show this file. Upload your own image or let the video server pick.",
+    frameLabel: 'Cover frame',
+    uploadImage: 'Upload image',
+    imageFailed: "Couldn't open the image",
+    pending: 'Will be saved when the upload finishes',
+    saving: 'Saving the cover…',
+    saved: 'Cover saved',
+    saveFailed: "Couldn't save the cover",
+    retry: 'Retry',
+    change: 'Change cover',
+    done: 'Done',
+  },
   videoStudio: {
     title: 'Upload video',
     dropTitle: 'Drag a video or audio file here',

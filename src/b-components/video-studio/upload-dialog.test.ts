@@ -2,6 +2,7 @@
 // идёт, окно можно свернуть; по состоянию — «Отменить»/«Свернуть»,
 // «Убрать»/«Повторить», «Готово»/«Создать пост». На компьютере с FFmpeg —
 // «Сначала сжать на этом компьютере»; без него — скачать модуль сжатия.
+// У видео — обложка: первый кадр, свой кадр или картинка.
 
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
@@ -241,5 +242,36 @@ describe('UploadDialog', () => {
     })
     expect(store.dialogOpen).toBe(false)
     expect(store.jobs).toHaveLength(0)
+  })
+
+  it('обложка видна в окне, а «Создать пост» ждёт, пока она дойдёт до сервера', async () => {
+    const store = await open()
+    let saved: () => void = () => {}
+    store.setDepsForTests({
+      upload: vi.fn().mockResolvedValue({
+        pointer: 'peertube://pt.host/uuid1',
+        host: 'pt.host',
+        uuid: 'uuid1',
+        isAudio: false,
+      }),
+      rename: vi.fn(),
+      firstFrame: async () => new Blob(['first'], { type: 'image/jpeg' }),
+      saveCover: vi.fn(() => new Promise<void>((resolve) => (saved = resolve))),
+    })
+    const id = store.start(new File(['x'], 'Отпуск.mp4', { type: 'video/mp4' }))!
+    store.openDialog(id)
+    await vi.waitFor(() => expect(store.jobs[0]!.cover?.status).toBe('saving'))
+    await flushPromises()
+    expect(text()).toContain('Первый кадр')
+    expect(text()).toContain('Сохраняю обложку')
+    expect(document.body.querySelector('button[aria-label="Как выбрать обложку"]')).toBeTruthy()
+    expect(button('Загрузить картинку')).toBeUndefined()
+    expect(text()).toContain('Загрузить картинку')
+
+    button('Создать пост')!.click()
+    await flushPromises()
+    expect(mocks.openComposer).not.toHaveBeenCalled()
+    saved()
+    await vi.waitFor(() => expect(mocks.openComposer).toHaveBeenCalled())
   })
 })

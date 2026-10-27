@@ -3042,6 +3042,28 @@ export default {
     permissionNeeded:
       'Android non ha consentito a Bastyon di installare aggiornamenti. Tocca «Aggiorna» e, nelle impostazioni che si aprono, consenti l’installazione da questa fonte.',
   },
+  videoCover: {
+    title: 'Copertina',
+    hint: "Per impostazione predefinita la copertina è il primo fotogramma. Rendi il primo secondo o due del video un'immagine fissa e diventerà la copertina. Oppure scorri la striscia dei fotogrammi e scegline un altro, o carica una tua immagine: verrà ritagliata nel formato del video.",
+    hintLabel: 'Come scegliere la copertina',
+    sourceFirst: 'Primo fotogramma',
+    sourceFrame: 'Fotogramma a {time}',
+    sourceImage: 'Immagine tua',
+    serverPicks: 'La copertina la sceglierà il server video',
+    loading: 'Apertura del video…',
+    noFrames:
+      "Qui non si può scegliere un fotogramma: l'app non riesce a mostrare questo file. Carica una tua immagine o lascia scegliere al server video.",
+    frameLabel: 'Fotogramma di copertina',
+    uploadImage: 'Carica immagine',
+    imageFailed: "Impossibile aprire l'immagine",
+    pending: 'Verrà salvata al termine del caricamento',
+    saving: 'Salvataggio della copertina…',
+    saved: 'Copertina salvata',
+    saveFailed: 'Impossibile salvare la copertina',
+    retry: 'Riprova',
+    change: 'Cambia copertina',
+    done: 'Fatto',
+  },
   videoStudio: {
     title: 'Carica video',
     dropTitle: 'Trascina qui un video o un audio',

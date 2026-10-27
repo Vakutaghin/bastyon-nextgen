@@ -1,10 +1,10 @@
 ---
-keywords: [upload video, upload audio, quota, PeerTube, file size, podcast, my videos, uploads, minimize upload]
+keywords: [upload video, upload audio, quota, PeerTube, file size, podcast, my videos, uploads, minimize upload, cover, video thumbnail, preview image, frame]
 ---
 
 # Uploading video and audio
 
-How to upload your own video or audio: in the “My videos” section or right from the post window. Also formats, size, the daily quota and what to do if an upload was interrupted.
+How to upload your own video or audio: in the “My videos” section or right from the post window. Also the clip's cover, formats, size, the daily quota and what to do if an upload was interrupted.
 
 ## In the “My videos” section
 
@@ -34,6 +34,21 @@ There are several video servers, and they answer at different speeds. Clips from
 2. While the file uploads, you see what percentage is already on the server. Do not close the post window until the upload finishes — or upload the video in “My videos”, where you can minimize it.
 3. When **“PeerTube video attached”** or **“PeerTube audio attached”** appears, fill in **“Video title”** — without it the post will not be published: **“Add a title for the video”**. Add text and tags and publish the post as usual.
 
+## Cover
+
+The cover is the clip's picture in the feed before someone plays it. By default it is the first frame: the app takes it as soon as you choose the file.
+
+The easiest way is to make the first second or two of the clip a still image, such as a title card. It becomes the cover, and there is nothing to choose. The (i) icon next to **“Cover”** reminds you of this.
+
+You can choose another cover in the upload window in “My videos” — the **“Cover”** block under the title. In the post window, click **“Change cover”** next to the thumbnail, and **“Done”** when you have chosen.
+
+- Slide along the frame strip under the preview: the frame shows in the preview at once, and when you let go it becomes the cover. Above the preview you see what is chosen: “First frame”, “Frame at 0:15” or “Your image”.
+- Or click **“Upload image”** and choose a JPEG, PNG or WebP. The image is cropped around the center to the clip's shape, so the preview in the feed does not change size when the video starts playing.
+
+You can change the cover while the video is uploading too: the video server gets it when the upload finishes — until then you see “Will be saved when the upload finishes”. After the upload a new cover goes at once, then “Cover saved” appears. The post is published and **“Create post”** opens the post window only once the cover is on the server. If it did not get there — “Couldn't save the cover” and **“Retry”**.
+
+If the app cannot show the file, you cannot pick a frame. This happens, for example, in the Linux app without the video codec, see [Images or videos do not show](media-problems.md). Then upload your own image or leave the choice to the video server: without your cover it takes a frame from the middle of the clip. Audio has no cover.
+
 ## How it works
 
 The file goes to a [PeerTube](glossary.md#peertube) video server chosen by the network, and the app signs in to the server by itself, with your Bastyon key. The post gets a link to the clip.
@@ -62,7 +77,7 @@ The upload runs while the app is open. If you close it, start the upload again.
 ## What is not there yet
 
 - “My videos” does not show the video server quota yet — only during an upload, when a file does not fit.
-- You cannot set a cover or a description for the clip, import a video by link or replace the file of an uploaded clip.
+- You cannot add a description for the clip, change the cover of a clip uploaded earlier, import a video by link or replace the file of an uploaded clip.
 
 The post with the video can be deleted like any other — see [Editing or deleting a post](edit-delete-post.md).
 

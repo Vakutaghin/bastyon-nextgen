@@ -102,7 +102,7 @@ function statusOf(job: VideoUploadJob): string {
 
 async function createPost(job: VideoUploadJob): Promise<void> {
   if (!job.result) return
-  await store.commitTitle(job.id)
+  await Promise.all([store.commitTitle(job.id), store.commitCover(job.id)])
   openComposer({ pointer: job.result.pointer, title: job.title.trim() })
   store.dismiss(job.id)
 }

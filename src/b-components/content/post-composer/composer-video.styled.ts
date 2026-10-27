@@ -133,3 +133,55 @@ export const SC_VideoAction = styled.button`
     outline-offset: 2px;
   }
 `
+
+/** Строка «Обложка: …» с миниатюрой и «Изменить». */
+export const SC_CoverRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${() => SPACING.SM};
+  min-width: 0;
+`
+
+export const SC_CoverThumb = styled.div`
+  flex-shrink: 0;
+  width: 64px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--color-black);
+  border-radius: var(--ui-radius-sm);
+
+  & img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+`
+
+export const SC_CoverDialog = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${() => SPACING.MD};
+`
+
+export const SC_CoverDone = styled.button`
+  align-self: flex-end;
+  padding: 8px 20px;
+  font-size: ${() => FONT_SIZE.MD};
+  font-weight: 500;
+  color: var(--ui-text-inverted);
+  background: var(--ui-primary);
+  border: 1px solid var(--ui-primary);
+  border-radius: var(--ui-radius-lg);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-focus-outline);
+    outline-offset: 2px;
+  }
+`
