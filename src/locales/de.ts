@@ -2794,7 +2794,7 @@ export default {
       'Die Spracheingabe ist bereit: Klicken Sie auf die Schaltfläche mit den Balken neben dem Eingabefeld',
     modal: {
       title: 'Spracheingabe',
-      lead: 'Sprechen Sie — der Text erscheint im Eingabefeld. Die Sprache wird direkt auf diesem Computer erkannt, die Aufnahme verlässt ihn nicht.',
+      lead: 'Sprechen Sie — der Text erscheint im Eingabefeld. Die Sprache wird direkt auf diesem Gerät erkannt, die Aufnahme verlässt es nicht.',
       download: 'Dafür muss das Spracherkennungsmodell einmal heruntergeladen werden.',
       commands:
         'Satzzeichen lassen sich diktieren: „Punkt“, „Komma“, „Fragezeichen“, „neue Zeile“. Esc beendet das Diktat.',
@@ -2825,6 +2825,12 @@ export default {
       micDeniedWindows:
         'Kein Zugriff auf das Mikrofon. Aktivieren Sie in den Windows-Einstellungen → Datenschutz und Sicherheit → Mikrofon „Zugriff auf das Mikrofon“ und „Desktop-Apps den Zugriff auf Ihr Mikrofon erlauben“.',
       openSettings: 'Klicken, um die Einstellungen zu öffnen.',
+      micDeniedAndroid:
+        'Kein Zugriff auf das Mikrofon. Erlauben Sie ihn der App in den Einstellungen des Telefons.',
+      unsupportedPhone:
+        'Auf diesem Telefon ist die Spracheingabe nicht verfügbar: Die Erkennung braucht einen 64-Bit-Prozessor.',
+      noSpace:
+        'Nicht genug Speicherplatz für das Modell. Geben Sie Speicher frei und versuchen Sie es erneut.',
       noMicrophone: 'Kein Mikrofon gefunden.',
       micBusy: 'Das Mikrofon wird von einer anderen App verwendet.',
       unsupportedCpu:
@@ -2840,7 +2846,7 @@ export default {
     settings: {
       title: 'Spracheingabe',
       description:
-        'Diktieren im Chat und beim Erstellen eines Beitrags — die Schaltfläche mit den Balken neben dem Eingabefeld. Die Sprache wird direkt auf diesem Computer erkannt, die Aufnahme verlässt ihn nicht.',
+        'Diktieren im Chat und beim Erstellen eines Beitrags — die Schaltfläche mit den Balken neben dem Eingabefeld. Die Sprache wird direkt auf diesem Gerät erkannt, die Aufnahme verlässt es nicht.',
       model: 'Spracherkennungsmodell',
       installed: 'heruntergeladen',
       download: 'Herunterladen',

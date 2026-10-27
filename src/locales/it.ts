@@ -2771,7 +2771,7 @@ export default {
     ready: 'L’input vocale è pronto: clicca sul pulsante con le barre accanto al campo di testo',
     modal: {
       title: 'Input vocale',
-      lead: 'Parla e il testo compare nel campo. Il parlato viene riconosciuto direttamente su questo computer; la registrazione non va da nessuna parte.',
+      lead: 'Parla e il testo compare nel campo. Il parlato viene riconosciuto direttamente su questo dispositivo; la registrazione non va da nessuna parte.',
       download: 'Per questo occorre scaricare una volta il modello di riconoscimento vocale.',
       commands:
         'La punteggiatura si può dettare: «punto», «virgola», «punto interrogativo», «a capo». Esc termina la dettatura.',
@@ -2802,6 +2802,11 @@ export default {
       micDeniedWindows:
         'Nessun accesso al microfono. In Impostazioni di Windows → Privacy e sicurezza → Microfono attiva «Accesso al microfono» e «Consenti alle app desktop di accedere al microfono».',
       openSettings: 'Fai clic per aprire le impostazioni.',
+      micDeniedAndroid:
+        'Nessun accesso al microfono. Consentilo all’app nelle impostazioni del telefono.',
+      unsupportedPhone:
+        'L’input vocale non è disponibile su questo telefono: il riconoscimento richiede un processore a 64 bit.',
+      noSpace: 'Spazio insufficiente per il modello. Libera memoria e riprova.',
       noMicrophone: 'Nessun microfono trovato.',
       micBusy: 'Il microfono è usato da un’altra app.',
       unsupportedCpu:
@@ -2816,7 +2821,7 @@ export default {
     settings: {
       title: 'Input vocale',
       description:
-        'Dettatura nelle chat e nella creazione di un post: il pulsante con le barre accanto al campo di testo. Il parlato viene riconosciuto direttamente su questo computer; la registrazione non va da nessuna parte.',
+        'Dettatura nelle chat e nella creazione di un post: il pulsante con le barre accanto al campo di testo. Il parlato viene riconosciuto direttamente su questo dispositivo; la registrazione non va da nessuna parte.',
       model: 'Modello di riconoscimento vocale',
       installed: 'scaricato',
       download: 'Scarica',

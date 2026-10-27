@@ -544,9 +544,10 @@ jobs:
       - name: Sync Capacitor Android project
         run: pnpm exec cap sync android
 
-      # Узел Reticulum (src-tauri/crates/bastyon-rns-jni): Gradle собирает его
-      # scripts/build-rns-android.sh под NDK раннера. Без Rust APK собрался бы
-      # без узла. armeabi-v7a — телефоны с 32-битным Android при 64-битном
+      # Узел Reticulum (src-tauri/crates/bastyon-rns-jni) и голосовой ввод
+      # (crates/bastyon-asr-jni, whisper.cpp через cmake): Gradle собирает их
+      # scripts/build-rns-android.sh и build-asr-android.sh под NDK раннера.
+      # Без Rust APK собрался бы без узла и без диктовки. armeabi-v7a — телефоны с 32-битным Android при 64-битном
       # процессоре (Redmi 9A и другие недорогие): APK с одной arm64-v8a в lib/
       # они не ставят, «приложение несовместимо с устройством».
       - name: Install Rust for the Reticulum node
@@ -609,6 +610,14 @@ jobs:
           for abi in $RNS_ANDROID_ABIS; do
             grep -qx "lib/$abi/libbastyon_rns_jni.so" <<<"$LIBS" || {
               echo "::error::В APK нет lib/$abi/libbastyon_rns_jni.so — на таких телефонах он не встанет"
+              exit 1
+            }
+          done
+          # Голосовой ввод — только 64-битный ARM: build-asr-android.sh без
+          # cmake или цели Rust тоже молча пропускает его.
+          for lib in libbastyon_asr_jni.so libc++_shared.so; do
+            grep -qx "lib/arm64-v8a/$lib" <<<"$LIBS" || {
+              echo "::error::В APK нет lib/arm64-v8a/$lib — голосового ввода на телефоне не будет"
               exit 1
             }
           done

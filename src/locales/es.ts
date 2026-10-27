@@ -2780,7 +2780,7 @@ export default {
     ready: 'La entrada de voz está lista: haga clic en el botón con barras junto al campo de texto',
     modal: {
       title: 'Entrada de voz',
-      lead: 'Hable y el texto aparecerá en el campo. La voz se reconoce en este mismo ordenador; la grabación no se envía a ninguna parte.',
+      lead: 'Hable y el texto aparecerá en el campo. La voz se reconoce en este mismo dispositivo; la grabación no se envía a ninguna parte.',
       download: 'Para ello hay que descargar una vez el modelo de reconocimiento de voz.',
       commands:
         'Puede dictar la puntuación: «punto», «coma», «signo de interrogación», «nueva línea». Esc termina el dictado.',
@@ -2811,6 +2811,12 @@ export default {
       micDeniedWindows:
         'No hay acceso al micrófono. En Configuración de Windows → Privacidad y seguridad → Micrófono, active «Acceso al micrófono» y «Permitir que las aplicaciones de escritorio accedan al micrófono».',
       openSettings: 'Haga clic para abrir la configuración.',
+      micDeniedAndroid:
+        'No hay acceso al micrófono. Permítalo para la aplicación en los ajustes del teléfono.',
+      unsupportedPhone:
+        'La entrada de voz no está disponible en este teléfono: el reconocimiento necesita un procesador de 64 bits.',
+      noSpace:
+        'No hay espacio suficiente para el modelo. Libere almacenamiento e inténtelo de nuevo.',
       noMicrophone: 'No se encontró ningún micrófono.',
       micBusy: 'El micrófono está ocupado por otra aplicación.',
       unsupportedCpu:
@@ -2825,7 +2831,7 @@ export default {
     settings: {
       title: 'Entrada de voz',
       description:
-        'Dictado en los chats y al crear una publicación: el botón con barras junto al campo de texto. La voz se reconoce en este mismo ordenador; la grabación no se envía a ninguna parte.',
+        'Dictado en los chats y al crear una publicación: el botón con barras junto al campo de texto. La voz se reconoce en este mismo dispositivo; la grabación no se envía a ninguna parte.',
       model: 'Modelo de reconocimiento de voz',
       installed: 'descargado',
       download: 'Descargar',

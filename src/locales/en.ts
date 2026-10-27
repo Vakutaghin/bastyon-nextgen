@@ -2756,7 +2756,7 @@ export default {
     ready: 'Voice input is ready: click the button with bars next to the text field',
     modal: {
       title: 'Voice input',
-      lead: 'Speak and the text appears in the field. Speech is recognized right on this computer; the recording goes nowhere.',
+      lead: 'Speak and the text appears in the field. Speech is recognized right on this device; the recording goes nowhere.',
       download: 'For that, the speech recognition model has to be downloaded once.',
       commands:
         'You can dictate punctuation: “period”, “comma”, “question mark”, “new line”. Esc stops dictation.',
@@ -2787,6 +2787,10 @@ export default {
       micDeniedWindows:
         'No access to the microphone. In Windows Settings → Privacy & security → Microphone, turn on “Microphone access” and “Let desktop apps access your microphone”.',
       openSettings: 'Click to open the settings.',
+      micDeniedAndroid: 'No access to the microphone. Allow it for the app in the phone settings.',
+      unsupportedPhone:
+        'Voice input is not available on this phone: recognition needs a 64-bit processor.',
+      noSpace: 'Not enough space for the model. Free up some storage and try again.',
       noMicrophone: 'No microphone found.',
       micBusy: 'The microphone is busy with another app.',
       unsupportedCpu:
@@ -2801,7 +2805,7 @@ export default {
     settings: {
       title: 'Voice input',
       description:
-        'Dictation in chats and when creating a post — the button with bars next to the text field. Speech is recognized right on this computer; the recording goes nowhere.',
+        'Dictation in chats and when creating a post — the button with bars next to the text field. Speech is recognized right on this device; the recording goes nowhere.',
       model: 'Speech recognition model',
       installed: 'downloaded',
       download: 'Download',

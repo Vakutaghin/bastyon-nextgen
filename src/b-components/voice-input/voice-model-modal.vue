@@ -86,7 +86,7 @@
       </template>
 
       <template v-else>
-        <SC_Text>{{ t('voiceInput.errors.unsupportedCpu') }}</SC_Text>
+        <SC_Text>{{ voiceErrorText('unsupported_cpu') }}</SC_Text>
         <SC_Footer>
           <SC_PrimaryButton type="button" @click="onClose">
             {{ t('voiceInput.modal.ok') }}

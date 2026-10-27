@@ -4,7 +4,7 @@
 # vendor/rns-crypto — с правками (VENDORED.md в каждом): не члены workspace,
 # подменяют версии с crates.io через [patch.crates-io] ниже.
 [workspace]
-members = ["crates/bastyon-rns", "crates/bastyon-rns-jni", "crates/bastyon-mesh"]
+members = ["crates/bastyon-rns", "crates/bastyon-rns-jni", "crates/bastyon-mesh", "crates/bastyon-asr-jni"]
 exclude = ["vendor/rns-net", "vendor/rns-crypto"]
 
 [package]

@@ -54,6 +54,16 @@ tasks.register('buildRnsNative', Exec) {
 }
 preBuild.dependsOn 'buildRnsNative'
 
+// Голосовой ввод (src-tauri/crates/bastyon-asr-jni): whisper.cpp под NDK, тем же
+// cargo. Без cargo, NDK или cmake скрипт только предупреждает — APK соберётся
+// без голосового ввода, кнопки диктовки в нём не будет.
+def asrScript = rootProject.file('../scripts/build-asr-android.sh')
+tasks.register('buildAsrNative', Exec) {
+    onlyIf { asrScript.exists() && System.getenv('BASTYON_SKIP_ASR') == null }
+    commandLine 'bash', asrScript.absolutePath
+}
+preBuild.dependsOn 'buildAsrNative'
+
 repositories {
     flatDir{
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'

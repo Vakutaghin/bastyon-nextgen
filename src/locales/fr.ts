@@ -2795,7 +2795,7 @@ export default {
     ready: 'La saisie vocale est prête : cliquez sur le bouton à barres à côté du champ de saisie',
     modal: {
       title: 'Saisie vocale',
-      lead: 'Parlez, le texte apparaît dans le champ. La parole est reconnue directement sur cet ordinateur, l’enregistrement n’est envoyé nulle part.',
+      lead: 'Parlez, le texte apparaît dans le champ. La parole est reconnue directement sur cet appareil, l’enregistrement n’est envoyé nulle part.',
       download: 'Pour cela, il faut télécharger une fois le modèle de reconnaissance vocale.',
       commands:
         'La ponctuation peut être dictée : « point », « virgule », « point d’interrogation », « à la ligne ». Échap arrête la dictée.',
@@ -2826,6 +2826,11 @@ export default {
       micDeniedWindows:
         'Pas d’accès au micro. Dans Paramètres Windows → Confidentialité et sécurité → Microphone, activez « Accès au microphone » et « Autoriser les applications de bureau à accéder à votre microphone ».',
       openSettings: 'Cliquez pour ouvrir les paramètres.',
+      micDeniedAndroid:
+        'Pas d’accès au micro. Autorisez-le pour l’application dans les réglages du téléphone.',
+      unsupportedPhone:
+        'La saisie vocale n’est pas disponible sur ce téléphone : la reconnaissance nécessite un processeur 64 bits.',
+      noSpace: 'Pas assez d’espace pour le modèle. Libérez de la mémoire et réessayez.',
       noMicrophone: 'Aucun micro trouvé.',
       micBusy: 'Le micro est utilisé par une autre application.',
       unsupportedCpu:
@@ -2840,7 +2845,7 @@ export default {
     settings: {
       title: 'Saisie vocale',
       description:
-        'Dictée dans les discussions et lors de la création d’une publication — le bouton à barres à côté du champ de saisie. La parole est reconnue directement sur cet ordinateur, l’enregistrement n’est envoyé nulle part.',
+        'Dictée dans les discussions et lors de la création d’une publication — le bouton à barres à côté du champ de saisie. La parole est reconnue directement sur cet appareil, l’enregistrement n’est envoyé nulle part.',
       model: 'Modèle de reconnaissance vocale',
       installed: 'téléchargé',
       download: 'Télécharger',

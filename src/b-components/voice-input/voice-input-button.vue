@@ -1,6 +1,6 @@
 <template>
-  <!-- Голосовой ввод в поле: кнопка есть только в десктопе на подходящем
-       процессоре. Модель и окно скачивания — общие (voice-model-modal). -->
+  <!-- Голосовой ввод в поле: кнопка есть на компьютере и в Android, если
+       процессор подходит. Модель и окно скачивания — общие (voice-model-modal). -->
   <Tooltip v-if="usable" :title="tooltip" placement="top" :mouse-enter-delay="0.3">
     <SC_DictationButton
       ref="buttonRef"

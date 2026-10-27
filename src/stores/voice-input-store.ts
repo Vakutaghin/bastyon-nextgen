@@ -2,11 +2,18 @@ import { defineStore } from 'pinia'
 
 import { t } from '@/i18n'
 import { appToast } from '@/b-components/app-toast'
+import {
+  isAndroidVoice,
+  voiceAvailable,
+  voiceInvoke,
+  voiceListen,
+} from '@/helpers/voice-input/voice-backend'
 
 /**
- * Голосовой ввод в десктопе: распознавание прямо на компьютере
- * (src-tauri/src/asr). Стор держит модели, скачивание, одну активную диктовку
- * и раздаёт распознанный текст полю, которое её начало.
+ * Голосовой ввод: распознавание прямо на устройстве — на компьютере
+ * (src-tauri/src/asr) и на Android (плагин VoiceInput, voice-backend). Стор
+ * держит модели, скачивание, одну активную диктовку и раздаёт распознанный
+ * текст полю, которое её начало.
  */
 
 export type VoiceModelId = 'base' | 'small' | 'turbo'
@@ -51,16 +58,6 @@ const MODEL_IDS: VoiceModelId[] = ['base', 'small', 'turbo']
 /** Поля с диктовкой; не реактивно — стор хранит только id владельца. */
 const targets = new Map<string, DictationTarget>()
 
-function isTauriEnv(): boolean {
-  if (typeof window === 'undefined') return false
-  return '__TAURI_INTERNALS__' in window || '__TAURI__' in window
-}
-
-async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  const { invoke } = await import('@tauri-apps/api/core')
-  return invoke<T>(cmd, args)
-}
-
 function loadModel(): VoiceModelId {
   try {
     const raw = localStorage.getItem(LS_MODEL)
@@ -97,6 +94,7 @@ const ERROR_KEYS: Record<string, string> = {
   download_failed: 'voiceInput.errors.downloadFailed',
   hash_mismatch: 'voiceInput.errors.hashMismatch',
   size_mismatch: 'voiceInput.errors.hashMismatch',
+  no_space: 'voiceInput.errors.noSpace',
   busy: 'voiceInput.errors.busy',
 }
 
@@ -104,6 +102,9 @@ const ERROR_KEYS: Record<string, string> = {
 export function voiceErrorText(error: unknown): string {
   const code = voiceErrorCode(error)
   if (code === 'mic_denied' && isWindows()) return t('voiceInput.errors.micDeniedWindows')
+  // На телефоне свои слова: настройки телефона, 64-битный процессор.
+  if (code === 'mic_denied' && isAndroidVoice()) return t('voiceInput.errors.micDeniedAndroid')
+  if (code === 'unsupported_cpu' && isAndroidVoice()) return t('voiceInput.errors.unsupportedPhone')
   return t(ERROR_KEYS[code] ?? 'voiceInput.errors.generic')
 }
 
@@ -118,7 +119,7 @@ export function voiceErrorDetails(error: unknown): string {
 
 export const useVoiceInputStore = defineStore('voice-input', {
   state: () => ({
-    available: isTauriEnv(),
+    available: voiceAvailable(),
     status: null as VoiceStatus | null,
     /** Выбранная модель (для скачивания и диктовки). */
     model: loadModel(),
@@ -184,7 +185,7 @@ export const useVoiceInputStore = defineStore('voice-input', {
     async refresh(): Promise<VoiceStatus | null> {
       if (!this.available) return null
       try {
-        this.status = await tauriInvoke<VoiceStatus>('asr_status')
+        this.status = await voiceInvoke<VoiceStatus>('asr_status')
       } catch (e) {
         console.warn('[voice-input] asr_status failed:', e)
       }
@@ -209,10 +210,7 @@ export const useVoiceInputStore = defineStore('voice-input', {
     async subscribe(): Promise<void> {
       if (this._subscribed || !this.available) return
       this._subscribed = true
-      // Модуль событий — один раз, подписки по очереди.
-      const { listen } = await import('@tauri-apps/api/event')
-      const on = <T>(event: string, cb: (payload: T) => void) =>
-        listen<T>(event, (e) => cb(e.payload))
+      const on = voiceListen
       await on<InstallProgress>('asr:install-progress', (p) => {
         this.install = p
       })
@@ -256,13 +254,13 @@ export const useVoiceInputStore = defineStore('voice-input', {
       }
       // Нет доступа к микрофону: клик по уведомлению открывает нужную
       // страницу системных настроек.
-      if (code === 'mic_denied' && (isWindows() || isMac())) {
+      if (code === 'mic_denied' && (isWindows() || isMac() || isAndroidVoice())) {
         appToast.error({
           message: voiceErrorText(error),
           description: t('voiceInput.errors.openSettings'),
           duration: 15,
           onClick: () => {
-            tauriInvoke('asr_open_mic_settings').catch(() => {})
+            voiceInvoke('asr_open_mic_settings').catch(() => {})
           },
         })
         return
@@ -315,7 +313,7 @@ export const useVoiceInputStore = defineStore('voice-input', {
       this.speaking = false
       this.pending = 0
       try {
-        const session = await tauriInvoke<number>('asr_start', {
+        const session = await voiceInvoke<number>('asr_start', {
           model,
           language: target.language(),
           prompt: target.context(),
@@ -325,7 +323,7 @@ export const useVoiceInputStore = defineStore('voice-input', {
         // сессия уже закончилась с ошибкой (пришло asr:end).
         if (this.ownerId !== ownerId || (this.phase !== 'starting' && this.session !== session)) {
           if (this.session === session || this.session === null)
-            void tauriInvoke('asr_cancel', { session })
+            void voiceInvoke('asr_cancel', { session })
           return
         }
         if (this.phase === 'starting') {
@@ -347,14 +345,14 @@ export const useVoiceInputStore = defineStore('voice-input', {
       this.phase = 'finishing'
       this.level = 0
       this.speaking = false
-      await tauriInvoke('asr_stop', { session: this.session }).catch(() => this.finishSession())
+      await voiceInvoke('asr_stop', { session: this.session }).catch(() => this.finishSession())
     },
 
     /** Прервать без хвоста: поле закрыли, или ждать распознавания не хотят. */
     async cancel(): Promise<void> {
       const session = this.session
       this.finishSession()
-      if (session !== null) await tauriInvoke('asr_cancel', { session }).catch(() => {})
+      if (session !== null) await voiceInvoke('asr_cancel', { session }).catch(() => {})
     },
 
     async installModel(model: VoiceModelId = this.model): Promise<void> {
@@ -364,7 +362,7 @@ export const useVoiceInputStore = defineStore('voice-input', {
       this.install = { model, received: 0, total: info?.size ?? 0 }
       this.openModal('progress')
       try {
-        await tauriInvoke('asr_install', { model })
+        await voiceInvoke('asr_install', { model })
         await this.refresh()
         const wasOpen = this.modalOpen && this.modalPhase === 'progress'
         this.modalOpen = false
@@ -389,12 +387,12 @@ export const useVoiceInputStore = defineStore('voice-input', {
     },
 
     async cancelInstall(): Promise<void> {
-      await tauriInvoke('asr_cancel_install').catch(() => {})
+      await voiceInvoke('asr_cancel_install').catch(() => {})
     },
 
     async removeModel(model: VoiceModelId): Promise<void> {
       if (this.session !== null) await this.cancel()
-      await tauriInvoke('asr_remove', { model })
+      await voiceInvoke('asr_remove', { model })
       await this.refresh()
     },
 

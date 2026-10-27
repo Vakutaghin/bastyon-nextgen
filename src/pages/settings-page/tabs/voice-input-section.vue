@@ -1,5 +1,5 @@
 <template>
-  <!-- Голосовой ввод есть только в десктопе: распознавание идёт на компьютере. -->
+  <!-- Голосовой ввод — на компьютере и в Android: распознавание прямо на устройстве. -->
   <SC_VoiceCard v-if="store.available">
     <SC_VoiceHead>
       <SC_VoiceTitle>{{ t('voiceInput.settings.title') }}</SC_VoiceTitle>
@@ -9,7 +9,7 @@
     <ModuleInfo module="voice" />
 
     <SC_VoiceDesc v-if="store.status && !store.status.supported">
-      {{ t('voiceInput.errors.unsupportedCpu') }}
+      {{ voiceErrorText('unsupported_cpu') }}
     </SC_VoiceDesc>
 
     <SC_ModelRows v-else role="radiogroup" :aria-label="t('voiceInput.settings.model')">
@@ -73,7 +73,7 @@ import { Button, Modal } from 'ant-design-vue'
 
 import { formatFileSize } from '@/b-components/video-uploader/utils/video-formatter'
 import { spokenCommandHints } from '@/helpers/voice-input/spoken-commands'
-import { useVoiceInputStore, type VoiceModelId } from '@/stores/voice-input-store'
+import { useVoiceInputStore, voiceErrorText, type VoiceModelId } from '@/stores/voice-input-store'
 import ModuleInfo from './module-info.vue'
 import {
   SC_CommandList,

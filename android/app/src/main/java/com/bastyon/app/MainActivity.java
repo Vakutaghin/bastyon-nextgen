@@ -19,6 +19,7 @@ import com.bastyon.app.plugins.BackgroundMediaPlugin;
 import com.bastyon.app.plugins.MatrixHttpPlugin;
 import com.bastyon.app.plugins.radio.MeshRadioPlugin;
 import com.bastyon.app.plugins.radio.MeshRnsPlugin;
+import com.bastyon.app.plugins.voice.VoiceInputPlugin;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -29,6 +30,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MatrixHttpPlugin.class);
         registerPlugin(MeshRadioPlugin.class);
         registerPlugin(MeshRnsPlugin.class);
+        registerPlugin(VoiceInputPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Edge-to-edge: WebView рисует под status/navigation barами.

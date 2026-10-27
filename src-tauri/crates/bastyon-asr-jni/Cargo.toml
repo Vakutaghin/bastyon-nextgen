@@ -1,0 +1,22 @@
+[package]
+name = "bastyon-asr-jni"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+publish = false
+
+# Голосовой ввод на Android: libbastyon_asr_jni.so, которую грузит плагин
+# VoiceInputPlugin (android/, пакет plugins.voice). Движок и нарезка на фразы —
+# те же файлы, что у компьютера (src/asr). Собирает scripts/build-asr-android.sh.
+[lib]
+name = "bastyon_asr_jni"
+crate-type = ["cdylib"]
+
+[dependencies]
+jni = "0.21"
+log = "0.4"
+serde_json = "1"
+whisper-rs = { version = "0.16", features = ["log_backend"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android_logger = "0.14"

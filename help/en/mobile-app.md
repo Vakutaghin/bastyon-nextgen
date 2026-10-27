@@ -21,7 +21,7 @@ When you turn the phone sideways, the bar moves to the left edge of the screen a
 ## What the phone can do
 
 - **Video and audio in the background.** A video keeps playing when the app is in the background or the screen is off, and you can control it from the notification, see [Watching videos](video-player.md).
-- **Camera and microphone** — to [sign in with a QR code](sign-in.md) and record [voice messages](voice-messages.md). The phone asks for permission the first time.
+- **Camera and microphone** — to [sign in with a QR code](sign-in.md), record [voice messages](voice-messages.md) and [dictate text](voice-input.md). The phone asks for permission the first time.
 - **“Share”** — a link to a post can be sent to any app through the system menu, see [Reposting and linking to a post](sharing.md).
 - **IPFS files** are saved through the system share menu, see [Opening an IPFS link](open-ipfs-links.md).
 
@@ -31,7 +31,6 @@ Notifications about new events arrive while the app is open — see [Notificatio
 
 - [Tor](tor.md);
 - sharing files over IPFS — opening IPFS links works;
-- [voice input](voice-input.md);
 - [compressing a video](video-compression.md) before upload.
 
 All of these are in the [desktop app](desktop-app.md).
