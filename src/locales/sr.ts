@@ -1432,6 +1432,7 @@ export default {
     badgeMore: 'Више у помоћи',
     startChat: 'Започни ћаскање',
     info: 'Информације',
+    more: 'Детаљније',
     copyAddress: 'Копирај адресу',
     addressCopied: 'Адреса је копирана',
     publications: 'Објаве:',

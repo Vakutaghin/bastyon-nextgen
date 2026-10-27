@@ -1,5 +1,5 @@
-// Форматирование текста «О себе» профиля: оппортунистический URI-decode старых
-// записей, HTML-escape и линкификация URL. Чистая функция — вынесено из
+// Форматирование полей профиля. «О себе»: оппортунистический URI-decode старых
+// записей, HTML-escape и линкификация URL. Чистые функции — вынесено из
 // profile-sidebar.vue (аудит крупных файлов 2026-08).
 import { safeDecode } from '@/helpers/content/safe-decode'
 
@@ -25,4 +25,10 @@ export function formatAbout(raw: string): string {
     if (!href.match(/^https?:\/\//)) href = 'https://' + href
     return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`
   })
+}
+
+/** Репутация с одним знаком после запятой: нода отдаёт число или строку. */
+export function formatReputation(value: unknown): string {
+  const num = typeof value === 'number' ? value : Number(value || 0)
+  return (Number.isFinite(num) ? num : 0).toFixed(1)
 }

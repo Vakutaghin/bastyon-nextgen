@@ -25,6 +25,9 @@ export interface MockProfile {
   subscribers?: string[]
   /** Адреса для пожертвований (`b`). */
   donations?: Array<{ currency: string; address: string }>
+  /** «О себе» (`a`) и сайт (`s`). */
+  about?: string
+  site?: string
 }
 
 export interface MockPost {
@@ -91,9 +94,9 @@ function profileJson(p: MockProfile) {
     blockers_count: 0,
     likers_count: 5,
     k: p.k ?? '',
-    a: '',
+    a: p.about ?? '',
     l: 'ru',
-    s: '',
+    s: p.site ?? '',
     update: NOW - 86_400,
     regdate: NOW - 90 * 86_400,
     flags: {},

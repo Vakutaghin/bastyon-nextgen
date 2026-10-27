@@ -1322,6 +1322,48 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   overflow: hidden !important;
 }
 
+/* «Подробнее» профиля на телефоне (profile-info-sheet) — шторкой снизу:
+   профиль виден над ней. Прокручивается содержимое, заголовок остаётся. */
+:root[data-shell='compact'] .ant-modal.profile-info-modal {
+  position: absolute;
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100vw !important;
+  max-width: 100vw;
+  margin: 0;
+  padding-bottom: 0;
+}
+
+:root[data-shell='compact'] .profile-info-modal .ant-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--safe-top) - 48px);
+  padding: 16px calc(16px + var(--safe-right)) calc(16px + var(--safe-bottom))
+    calc(16px + var(--safe-left));
+  border-radius: var(--ui-radius-xl) var(--ui-radius-xl) 0 0;
+  box-sizing: border-box;
+}
+
+:root[data-shell='compact'] .profile-info-modal .ant-modal-header {
+  padding-right: 32px;
+}
+
+:root[data-shell='compact'] .profile-info-modal .ant-modal-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-shell='compact'] .profile-info-modal .ant-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 /* Кнопки под постом (post-card): в узкой карточке — только иконки, подписи
    вылезали за край экрана. Решает ширина строки, а не окна: карточка узкая и
    в широком окне с боковой панелью (планшет стоя). Здесь, а не в styled.ts:

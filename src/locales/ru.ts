@@ -1435,6 +1435,7 @@ export default {
     badgeMore: 'Подробнее в справке',
     startChat: 'Начать чат',
     info: 'Информация',
+    more: 'Подробнее',
     copyAddress: 'Скопировать адрес',
     addressCopied: 'Адрес скопирован',
     publications: 'Публикации:',

@@ -1432,6 +1432,7 @@ export default {
     badgeMore: 'More in the help',
     startChat: 'Start chat',
     info: 'Information',
+    more: 'Details',
     copyAddress: 'Copy address',
     addressCopied: 'Address copied',
     publications: 'Publications:',

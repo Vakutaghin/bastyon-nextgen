@@ -29,11 +29,15 @@ In the top left corner of an avatar — in the feed, in comments, in search, in 
 - **“Start chat”** — see [Chats](chats.md).
 - **“Block”** — see [Blocking](blocking.md).
 
-On a phone there is no side column: the name, **“Subscribe”**, **“Read in Messenger”** and the chat button are at the top of the page, above the posts.
-
 Subscribing, reading in the messenger and blocking are available only when you are signed in. You can tip the person from the header of any of their posts — see [Tipping the author](tips.md).
 
 On your own page these buttons are replaced by **“Edit profile”**, see [Your profile](edit-profile.md), and above the feed there is **“Create post”**.
+
+## On a phone
+
+There is no side column on a phone. At the top of the page, above the posts, are the avatar, the name with its marks, **“Reputation”**, **“Subscribers”** and **“Subscriptions”**, the first three lines of what the person wrote about themselves, and the buttons: **“Subscribe”** with the bell, chat and **“Read in Messenger”**. On your own page there is **“Edit profile”** instead.
+
+The rest opens from the bottom of the screen with **“Details”** or a tap on the about text: the full text, the account address, **“On blockchain”**, the website, **“Publications:”**, **“Registered:”** and **“Block”**. Close it with the cross or a tap above the panel.
 
 ## If a profile does not open
 

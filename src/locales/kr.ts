@@ -1424,6 +1424,7 @@ export default {
     badgeMore: '도움말에서 자세히 보기',
     startChat: '채팅 시작',
     info: '정보',
+    more: '자세히',
     copyAddress: '주소 복사',
     addressCopied: '주소가 복사되었습니다',
     publications: '게시물:',

@@ -1380,6 +1380,7 @@ export default {
     badgeMore: '在帮助中了解更多',
     startChat: '开始聊天',
     info: '信息',
+    more: '详细信息',
     copyAddress: '复制地址',
     addressCopied: '地址已复制',
     publications: '帖子：',

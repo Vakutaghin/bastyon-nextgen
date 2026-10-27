@@ -1445,6 +1445,7 @@ export default {
     badgeMore: 'Más en la ayuda',
     startChat: 'Iniciar chat',
     info: 'Información',
+    more: 'Más información',
     copyAddress: 'Copiar dirección',
     addressCopied: 'Dirección copiada',
     publications: 'Publicaciones:',

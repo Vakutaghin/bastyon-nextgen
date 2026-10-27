@@ -7,11 +7,16 @@
       <ProfileCover :profile="profile" />
 
       <SC_ProfileContentWrapper>
-        <ProfileSidebar :profile="profile" @profile-updated="onSidebarProfileUpdated" />
+        <ProfileSidebar :profile="profile" @profile-updated="onProfileEdited" />
 
         <SC_ProfileMainContent>
-          <!-- На телефоне боковой колонки нет: имя и кнопки — над постами. -->
-          <ProfileMobileHeader v-if="profile && !loading && !error" :profile="profile" />
+          <!-- На телефоне боковой колонки нет: главное из неё — над постами,
+               остальное — в «Подробнее». -->
+          <ProfileMobileHeader
+            v-if="profile && !loading && !error"
+            :profile="profile"
+            @profile-updated="onProfileEdited"
+          />
           <SC_LoadingProfile v-if="loading">
             <Spin :tip="t('profile.loadingProfile')">
               <template #indicator>
@@ -260,7 +265,7 @@ function onProfileLoaded(newProfile: UserProfile): void {
 }
 
 // Оптимистичный апдейт после редактирования профиля (edit-profile-modal).
-function onSidebarProfileUpdated(patch: Partial<UserProfile>): void {
+function onProfileEdited(patch: Partial<UserProfile>): void {
   if (patch) {
     profile.value = { ...(profile.value ?? {}), ...patch } as ProfileWithAccSet
   }

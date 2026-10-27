@@ -61,9 +61,11 @@ export const SC_UserName = styled.h2`
   word-break: break-word;
 `
 
+/** По центру: у кнопок-счётчиков есть поле, у репутации нет, и подписи стояли вразнобой. */
 export const SC_UserStats = styled.div`
   display: flex;
   flex-direction: row;
+  align-items: center;
   gap: 12px;
   justify-content: space-between;
   margin: 12px 0 20px;
@@ -291,49 +293,6 @@ export const SC_BlockButton = styled.button`
   }
 `
 
-export const SC_UserAddress = styled.div`
-  font-size: 12px;
-  color: var(--ui-text-dimmed);
-  word-break: break-all;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  margin-top: 10px;
-`
-
-export const SC_ExplorerLinkRow = styled.div`
-  margin-top: 4px;
-  margin-bottom: 8px;
-`
-
-export const SC_ExplorerLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--color-primary);
-  text-decoration: none;
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`
-
-export const SC_UserSite = styled.a`
-  font-size: 14px;
-  color: var(--ui-primary);
-  text-decoration: none;
-  word-break: break-all;
-  display: flex;
-  align-items: center;
-  border: 0;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`
-
 export const SC_StatItem = styled.div`
   display: flex;
   flex-direction: column;
@@ -374,27 +333,13 @@ export const SC_StatValue = styled.span`
   line-height: 1.2;
 `
 
-export const SC_UserAbout = styled.div`
-  margin-top: 20px;
-  font-size: 14px;
-  color: var(--color-text-primary);
-  line-height: calc(1.5 * var(--leading-scale));
-  white-space: pre-wrap;
-  word-break: break-word;
-
-  a {
-    color: var(--ui-primary);
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: none;
-      opacity: 0.8;
-    }
-  }
-`
-
 export const SC_LoadingState = styled.div`
   text-align: center;
   padding: 20px;
   color: var(--ui-text-dimmed);
+`
+
+/** Место «Информации» в колонке — под кнопками. */
+export const SC_SidebarDetails = styled.div`
+  margin-top: 20px;
 `

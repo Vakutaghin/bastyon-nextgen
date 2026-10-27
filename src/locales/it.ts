@@ -1439,6 +1439,7 @@ export default {
     badgeMore: 'Altro nella guida',
     startChat: 'Avvia la chat',
     info: 'Informazioni',
+    more: 'Dettagli',
     copyAddress: 'Copia indirizzo',
     addressCopied: 'Indirizzo copiato',
     publications: 'Pubblicazioni:',
