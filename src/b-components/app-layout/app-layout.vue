@@ -41,6 +41,7 @@ import { classifyContentLink } from '@/helpers/common/content-link'
 import { openExternal } from '@/helpers/common/open-external'
 import { isTauriEnv } from '@/helpers/api/request-tor'
 import { useViewport } from '@/composables/use-viewport'
+import { watchSoftKeyboard } from '@/composables/use-soft-keyboard'
 import { SC_Application, SC_Camera, SC_Appcnt } from './styled'
 
 const uiStore = useUIStore()
@@ -78,6 +79,7 @@ function onDocumentClick(e: MouseEvent): void {
 
 onMounted(() => {
   void uiStore.loadLanguage()
+  watchSoftKeyboard()
   document.addEventListener('click', onDocumentClick)
 })
 

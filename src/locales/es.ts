@@ -458,6 +458,7 @@ export default {
   },
   common: {
     cancel: 'Cancelar',
+    close: 'Cerrar',
     deletedAccount: 'Cuenta eliminada',
   },
   settings: {
@@ -1591,6 +1592,8 @@ export default {
     login: 'Iniciar sesión',
     imageAlt: 'Imagen {index}',
     postTitle: 'Publicación',
+    openAsPage: 'Abrir como página',
+    openPost: 'Abrir publicación',
     expandMenu: 'Desplegar el menú',
     collapseMenu: 'Contraer el menú',
     feedTitle: 'Feed',

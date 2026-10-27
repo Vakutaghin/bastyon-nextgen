@@ -18,6 +18,11 @@ export const SC_BottomNav = styled.nav`
      тех же 56px, на контент оставалось меньше, и иконки с подписями вылезали
      поверх ленты. --bottom-nav-height-total = 50px + safe-area. */
   height: var(--bottom-nav-height-total);
+
+  /* Клавиатура открыта (use-soft-keyboard): панель уступает место тексту. */
+  ${() => SHELL.COMPACT}[data-keyboard='open'] & {
+    display: none;
+  }
   padding-bottom: var(--safe-bottom);
   /* Как шапка: фон страницы на 75% с размытием, линия сверху. */
   background: rgb(var(--ui-bg-rgb) / 75%);

@@ -129,10 +129,13 @@ export const useModalStore = defineStore('modal', {
     /**
      * Закрывает модалку с постом
      */
-    closePostModal(): void {
+    closePostModal(options: { restoreScroll?: boolean } = {}): void {
       this.postModal.isOpen = false
       this.postModal.post = null
       this.postModal.autoplay = false
+
+      // Ушли из окна на другую страницу — её прокрутку не трогаем.
+      if (options.restoreScroll === false) return
 
       // Восстанавливаем позицию скролла
       requestAnimationFrame(() => {

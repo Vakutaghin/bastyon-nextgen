@@ -66,6 +66,8 @@ export interface MockNodeData {
   subscribes?: string[]
   /** Настройки аккаунтов (`getaccountsetting`): обложка, цена подписки… */
   settings?: Record<string, Record<string, unknown>>
+  /** Облако популярных тегов (`gettags`): подсказки тегов в форме поста. */
+  tags?: string[]
 }
 
 const HEIGHT = 4_037_000
@@ -248,6 +250,8 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
       const settings = data.settings?.[params[0] as string]
       return settings ? JSON.stringify(settings) : ''
     }
+    case 'gettags':
+      return (data.tags ?? []).map((tag, i) => ({ tag, count: 100 - i }))
     case 'getboostfeed':
       return { height: HEIGHT, boosts: [] }
     case 'getnodeinfo':

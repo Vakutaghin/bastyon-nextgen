@@ -451,6 +451,7 @@ export default {
   },
   common: {
     cancel: 'Откажи',
+    close: 'Затвори',
     deletedAccount: 'Налог је обрисан',
   },
   settings: {
@@ -1574,6 +1575,8 @@ export default {
     login: 'Пријави се',
     imageAlt: 'Слика {index}',
     postTitle: 'Објава',
+    openAsPage: 'Отвори као страницу',
+    openPost: 'Отвори објаву',
     expandMenu: 'Прошири мени',
     collapseMenu: 'Скупи мени',
     feedTitle: 'Фид',

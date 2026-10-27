@@ -140,3 +140,16 @@ export const SC_Right = styled.div`
     margin-left: auto;
   }
 `
+
+/** Под строкой состояния телефона: виден, когда шапка уехала вверх. */
+export const SC_StatusBarShield = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--safe-top);
+  background: var(--ui-bg);
+  /* Слой шапки: окна antd (тоже 1000) идут позже в body и накрывают его. */
+  z-index: 1000;
+  pointer-events: none;
+`

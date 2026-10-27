@@ -58,7 +58,17 @@
           <SC_PostAuthorRep>{{ formattedReputation }}</SC_PostAuthorRep>
         </SC_AuthorNameRow>
 
-        <SC_PostTime>{{ formatTime(post.timestamp) }}</SC_PostTime>
+        <!-- Время — ссылка на пост: в ленте открывает его окном, из окна — страницей. -->
+        <SC_PostTimeLink
+          v-if="postHref"
+          :href="postHref"
+          :title="t('postCard.openPost')"
+          data-testid="post-time-link"
+          @click="onTimeClick"
+        >
+          {{ formatTime(post.timestamp) }}
+        </SC_PostTimeLink>
+        <SC_PostTime v-else>{{ formatTime(post.timestamp) }}</SC_PostTime>
 
         <SC_RepostLine v-if="post.repost">
           <ShareAltOutlined class="repost-icon" />
@@ -116,6 +126,7 @@ import {
   SC_AuthorNameRow,
   SC_PostAuthorRep,
   SC_PostTime,
+  SC_PostTimeLink,
   SC_ChatBtn,
   SC_FollowBtn,
   SC_DonateBtn,
@@ -163,9 +174,23 @@ const props = withDefaults(
   defineProps<{
     post: PostHeaderPost
     authorOverride?: AuthorOverride | null
+    /** Адрес страницы поста; пусто — время просто подписью. */
+    postHref?: string
   }>(),
-  { authorOverride: null }
+  { authorOverride: null, postHref: '' }
 )
+
+const emit = defineEmits<{ 'open-post': [] }>()
+
+/** Обычный клик открывает пост внутри приложения; с Ctrl/Cmd — как у ссылки. */
+function onTimeClick(event: MouseEvent): void {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    return
+  }
+  event.preventDefault()
+  event.stopPropagation()
+  emit('open-post')
+}
 
 const { t } = useI18n()
 const authStore = useAuthStore()

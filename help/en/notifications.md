@@ -8,7 +8,7 @@ Who rated you, commented or subscribed: where to see notifications and how to ch
 
 ## The bell
 
-The bell in the header is there once you are signed in. The number on it is how many new notifications you have not seen yet. Click it to open the **“Notifications”** list: new ones are highlighted until you close the list.
+The bell in the header is there once you are signed in. The number on it is how many new notifications you have not seen yet. Click it to open the **“Notifications”** list: new ones are highlighted until you close the list. On a phone and in a narrow window the list opens full screen; the cross at the top right closes it.
 
 Each notification shows the kind of event, the time, who did it and the details: the stars of a rating, the text of a comment, the beginning of a post, an amount. Click a notification to go:
 

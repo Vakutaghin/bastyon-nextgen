@@ -8,7 +8,7 @@ What a post in the feed consists of and what you can do with it: read it in full
 
 ## What it consists of
 
-- **The header:** the author's avatar and name; the number next to the name is their [reputation](reputation.md), and the publishing time is under the name. Next to them are buttons to start a chat with the author, follow them and send a tip (your own posts have none), and on the right a bookmark for [favorites](favorites.md).
+- **The header:** the author's avatar and name; the number next to the name is their [reputation](reputation.md), and the publishing time is under the name: click it to open the post in a window over the feed. Next to them are buttons to start a chat with the author, follow them and send a tip (your own posts have none), and on the right a bookmark for [favorites](favorites.md).
 - **The text.** Long text is collapsed — the **“Show full”** button opens the whole post in a window over the feed. For an article it is **“Read article”** instead.
 - **Images, video or audio.** Video and audio play right in the feed — see [Watching videos](video-player.md).
 - **A link card** — the title and image of the site the post links to.
@@ -37,7 +37,7 @@ Your own post also has **“Edit”** and **“Delete”** — see [Editing or d
 
 ## The post page
 
-Every post has its own page — with the whole text and all comments, and for a video also a **“More from this author”** block. It is reached from `bastyon://` links to the post, from items in the Latest comments block and from clips in More from this author. The link that **“Copy link”** copies opens the post on the bastyon.com website — you can send it to anyone.
+Every post has its own page — with the whole text and all comments, and for a video also a **“More from this author”** block. From the post window, the **“Open as a page”** button next to the window title and the publishing time lead to it. It is also reached from `bastyon://` links to the post, from items in the Latest comments block and from clips in More from this author. The link that **“Copy link”** copies opens the post on the bastyon.com website — you can send it to anyone.
 
 ## A post that is not on the blockchain yet
 

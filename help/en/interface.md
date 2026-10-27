@@ -67,6 +67,8 @@ The speech bubble in the header or the round button in the bottom right corner o
 
 When the screen is narrow — on a phone or in a shrunk window on a computer — there are no side panels, and a bar appears at the bottom: **“Home”**, **“Search”**, **“Chats”**, **“Wallet”** and **“Services”**. Tapping the section you are in takes the page back to the top.
 
+The header slides away as you scroll down and comes back as soon as you scroll up a little. While the on-screen keyboard is open, the bottom bar is hidden to leave room for the text.
+
 The menu behind the three-line button in the header, right of the logo, is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: **“Profile”**, **“Wallets”**, **“Limits”**, **“My videos”** and **“Settings”**. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
 
 To the right of the menu button, the **“Back”** arrow appears when there is somewhere to go back to; a narrow screen has no **“Forward”** arrow. On Android, the system Back button or gesture also goes back.

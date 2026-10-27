@@ -1,11 +1,15 @@
 import styled from 'vue3-styled-components'
 
-import { FONT_SIZE, SPACING } from '@/styles/design-tokens'
+import { BREAKPOINTS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
 
 export const SC_Settings = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${SPACING.MD};
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    gap: 12px;
+  }
 `
 
 export const SC_SettingItem = styled.div`

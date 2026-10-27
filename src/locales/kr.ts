@@ -454,6 +454,7 @@ export default {
   },
   common: {
     cancel: '취소',
+    close: '닫기',
     deletedAccount: '삭제된 계정',
   },
   settings: {
@@ -1565,6 +1566,8 @@ export default {
     login: '로그인',
     imageAlt: '이미지 {index}',
     postTitle: '게시물',
+    openAsPage: '페이지로 열기',
+    openPost: '게시물 열기',
     expandMenu: '메뉴 펼치기',
     collapseMenu: '메뉴 접기',
     feedTitle: '피드',

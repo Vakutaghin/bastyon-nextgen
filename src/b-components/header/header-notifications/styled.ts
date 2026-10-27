@@ -29,6 +29,17 @@ export const SC_NotificationsMenu = styled.div`
   overflow: hidden;
   display: flex;
   flex-direction: column;
+
+  /* Окно во весь экран телефона: список занимает всю высоту под заголовком. */
+  &.sheet {
+    min-width: 0;
+    max-width: none;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0 8px;
+  }
 `
 
 export const SC_NotificationsHeader = styled.div`
@@ -67,11 +78,35 @@ export const SC_ClearAllButton = styled.button`
   }
 `
 
+export const SC_CloseButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-right: -6px;
+  padding: 0;
+  border: none;
+  border-radius: var(--ui-radius-md);
+  background: none;
+  color: var(--ui-text-muted);
+  font-size: 18px;
+  cursor: pointer;
+
+  &:hover,
+  &:active {
+    color: var(--ui-text-highlighted);
+    background: var(--ui-bg-elevated);
+  }
+`
+
 export const SC_NotificationsList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2px;
   overflow-y: auto;
+  /* Докрутили список до конца — страница под ним стоит на месте. */
+  overscroll-behavior: contain;
   flex: 1;
   min-height: 0;
   padding-right: 2px;

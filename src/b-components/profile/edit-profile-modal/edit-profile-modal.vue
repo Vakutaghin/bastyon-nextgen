@@ -225,9 +225,13 @@ const addressError = ref('')
 
 const avatarInitial = computed<string>(() => (name.value.trim()[0] || '?').toUpperCase())
 
+/** Профиль, которым заполнена форма: правки считаются от него. */
+const filledFrom = ref<UserProfile | null>(null)
+
 /** Заполняет форму из профиля при каждом открытии. */
 function resetFromProfile(): void {
   const p = props.profile
+  filledFrom.value = p ?? null
   name.value = p?.name || ''
   // Только `a`: `r` — адрес реферера, его нельзя подставлять в «О себе» (S54).
   // Старые записи бывают URL-кодированы — в поле показываем текст, как в профиле.
@@ -246,7 +250,7 @@ function resetFromProfile(): void {
  * транзакцию не слал — здесь кнопка просто неактивна.
  */
 const hasChanges = computed<boolean>(() => {
-  const p = props.profile
+  const p = filledFrom.value
   if (!p) return true
   return (
     avatarChanged.value ||
@@ -286,6 +290,20 @@ watch(
     if (isOpen) resetFromProfile()
   },
   { immediate: true }
+)
+
+// Профиль догрузился, пока окно открыто: форму без правок заполняем заново.
+// Раньше в полях оставались прежние данные, а сравнивались они уже с новыми —
+// и «Сохранить» горела без единой правки.
+watch(
+  () => props.profile,
+  () => {
+    if (!props.open) return
+    const untouched = filledFrom.value
+      ? !hasChanges.value
+      : !name.value && !about.value && !site.value && !addresses.value.length
+    if (untouched) resetFromProfile()
+  }
 )
 
 function triggerFilePicker(): void {

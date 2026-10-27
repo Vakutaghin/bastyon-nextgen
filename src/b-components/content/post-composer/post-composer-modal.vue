@@ -1,5 +1,6 @@
 <template>
   <Modal
+    class="post-composer-modal"
     :open="modalStore.postComposerModal.isOpen"
     :title="modalTitle"
     :width="600"

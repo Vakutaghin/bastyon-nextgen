@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 
-import { FONT_SIZE, SPACING, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
+import { BREAKPOINTS, FONT_SIZE, SPACING, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 import { COLORS } from '@/styles/theme-colors'
 import { nuxtField } from '@/styles/field-styles'
 
@@ -84,6 +84,10 @@ export const SC_Composer = styled.div`
   flex-direction: column;
   gap: ${SPACING.MD};
   width: 100%;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    gap: 12px;
+  }
 `
 
 export const SC_EmojiRow = styled.div`

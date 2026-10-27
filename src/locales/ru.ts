@@ -455,6 +455,7 @@ export default {
   },
   common: {
     cancel: 'Отмена',
+    close: 'Закрыть',
     deletedAccount: 'Аккаунт удалён',
   },
   settings: {
@@ -1627,6 +1628,8 @@ export default {
     login: 'Войти',
     imageAlt: 'Изображение {index}',
     postTitle: 'Пост',
+    openAsPage: 'Открыть отдельной страницей',
+    openPost: 'Открыть пост',
     expandMenu: 'Развернуть меню',
     collapseMenu: 'Свернуть меню',
     feedTitle: 'Лента',

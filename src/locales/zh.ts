@@ -426,6 +426,7 @@ export default {
   },
   common: {
     cancel: '取消',
+    close: '关闭',
     deletedAccount: '账户已删除',
   },
   settings: {
@@ -1521,6 +1522,8 @@ export default {
     login: '登录',
     imageAlt: '图片 {index}',
     postTitle: '帖子',
+    openAsPage: '以页面打开',
+    openPost: '打开帖子',
     expandMenu: '展开菜单',
     collapseMenu: '收起菜单',
     feedTitle: '信息流',

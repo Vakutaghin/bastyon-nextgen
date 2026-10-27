@@ -18,7 +18,12 @@
       <LockOutlined />
       {{ visibilityLabel }}
     </SC_VisibilityBadge>
-    <PostCardHeader :post="post" :author-override="authorOverride" />
+    <PostCardHeader
+      :post="post"
+      :author-override="authorOverride"
+      :post-href="postHref"
+      @open-post="openPost"
+    />
 
     <component :is="isRepost ? SC_RepostInnerCard : 'div'">
       <SC_RepostDeleted v-if="isRepost && post.repostDeleted">
@@ -239,6 +244,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import {
   DeleteOutlined,
   ShareAltOutlined,
@@ -330,6 +336,8 @@ const props = withDefaults(
     boosted?: boolean
     /** Сразу запустить ролик: окно поста открыли нажатием на видео. */
     autoplayVideo?: boolean
+    /** Карточка в окне поста (post-modal), а не в ленте или на странице. */
+    inModal?: boolean
   }>(),
   {
     maxLength: DEFAULT_MAX_TEXT_LENGTH,
@@ -338,6 +346,7 @@ const props = withDefaults(
     authorOverride: null,
     boosted: false,
     autoplayVideo: false,
+    inModal: false,
   }
 )
 
@@ -350,6 +359,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const modalStore = useModalStore()
+const router = useRouter()
 const postsStore = usePostsStore()
 const authStore = useAuthStore()
 
@@ -507,6 +517,21 @@ const shareMenuOpen = ref(false)
 // Ссылка уходит наружу, поэтому origin — публичный: в Tauri свой origin
 // выглядит как `tauri://localhost`, в Capacitor — `https://localhost` (S20).
 const postUrl = computed<string>(() => publicPostUrl(postId.value))
+
+// Страница поста. У поста в мемпуле её ещё нет: время остаётся подписью.
+const postPath = computed<string>(() =>
+  postId.value && !props.post.pending ? `/post/${postId.value}` : ''
+)
+const postHref = computed<string>(() => (postPath.value ? router.resolve(postPath.value).href : ''))
+
+/** В ленте — окно поверх ленты, место в ней остаётся; из окна — страница поста. */
+function openPost(): void {
+  if (!props.showFull) {
+    modalStore.openPostModal(props.post as never)
+    return
+  }
+  if (props.inModal && postPath.value) void router.push(postPath.value)
+}
 const embedCode = computed<string>(() => (postId.value ? publicEmbedCode(postId.value) : ''))
 const shareText = computed<string>(
   () => decodeUrlEncoded(props.post.title || '') || props.post.author?.name || 'Bastyon'

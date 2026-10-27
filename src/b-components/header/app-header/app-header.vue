@@ -1,5 +1,5 @@
 <template>
-  <SC_Header>
+  <SC_Header ref="headerRef">
     <SC_Sections>
       <!-- Телефон: логотип, за ним меню и «Назад» — одной группой слева; на
            компьютере обе стрелки у поиска, как у адресной строки. Группа — один
@@ -39,6 +39,10 @@
     </SC_Sections>
   </SC_Header>
 
+  <!-- Шапка уехала вверх — строка состояния телефона остаётся на фоне
+       приложения, а не на ленте, проезжающей под её значками. -->
+  <SC_StatusBarShield v-if="autohide" />
+
   <MobileNavDrawer :is-open="drawerOpen" @close="closeDrawer" />
 </template>
 
@@ -62,6 +66,7 @@ import { MobileNavDrawer } from '@/b-components/mobile-nav-drawer'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
+import { useHeaderAutohide } from '@/composables/use-header-autohide'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import { vHideZeroWidth } from './hide-zero-width'
@@ -73,6 +78,7 @@ import {
   SC_UnreadBadge,
   SC_HamburgerButton,
   SC_Left,
+  SC_StatusBarShield,
 } from './styled'
 
 const { t } = useI18n()
@@ -80,7 +86,16 @@ const { t } = useI18n()
 const messengerStore = useMessengerStore()
 const authStore = useAuthStore()
 const { isFullScreen, totalUnreadCount } = storeToRefs(messengerStore)
-const { isMobileOrTablet: mobile } = useViewport()
+const { isMobileOrTablet: mobile, shell } = useViewport()
+
+// Телефон стоя: шапка уезжает при прокрутке вниз. Боком под ней колонка
+// разделов, которая без шапки повисла бы с пустотой сверху.
+const autohide = computed<boolean>(() => shell.value === 'compact')
+const headerRef = ref<HTMLElement | { $el?: HTMLElement } | null>(null)
+useHeaderAutohide(() => {
+  const r = headerRef.value
+  return r instanceof HTMLElement ? r : (r?.$el ?? null)
+}, autohide)
 
 const drawerOpen = ref(false)
 

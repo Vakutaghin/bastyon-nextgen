@@ -45,6 +45,18 @@ export const SC_PostTime = styled.time`
   margin-top: 2px;
 `
 
+export const SC_PostTimeLink = styled.a`
+  align-self: flex-start;
+  font-size: 12px;
+  color: var(--ui-text-muted);
+  margin-top: 2px;
+
+  &:hover {
+    color: var(--ui-text-highlighted);
+    text-decoration: underline;
+  }
+`
+
 export const SC_AuthorNameRow = styled.div`
   display: flex;
   align-items: center;

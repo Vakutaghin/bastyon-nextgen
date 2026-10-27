@@ -26,7 +26,7 @@ Pick with the arrow keys and Enter or with the mouse, and `@name` goes into the 
 
 ## Tags
 
-A post cannot be published without tags: you need at least one, and you can add up to five. Start typing a tag under the text — popular tags appear; pick with the arrow keys or the mouse. Enter, a comma or a space adds the tag; you do not need to type the hash sign. Only letters and digits stay in a tag, and capitals become lowercase. Backspace in the empty field removes the last tag, the cross removes any.
+A post cannot be published without tags: you need at least one, and you can add up to five. Start typing a tag under the text — popular tags appear; pick with the arrow keys or the mouse. The list stays open after a pick, so you can choose the next one right away. Enter, a comma or a space adds the tag; you do not need to type the hash sign. Only letters and digits stay in a tag, and capitals become lowercase. Backspace in the empty field removes the last tag, the cross removes any.
 
 Tags help people find the post: categories and feed filters work by them — see [Categories, tags and sorting](feed-filters.md).
 

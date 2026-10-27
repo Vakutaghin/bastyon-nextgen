@@ -53,7 +53,10 @@ public class MainActivity extends BridgeActivity {
                 WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             float density = getResources().getDisplayMetrics().density;
             int topPx = Math.round(safe.top / density);
-            int bottomPx = Math.round(safe.bottom / density);
+            // Клавиатура закрывает полосу жестов: снизу отступать не от чего.
+            // Иначе панель над клавиатурой получала лишний пустой зазор.
+            boolean imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
+            int bottomPx = imeVisible ? 0 : Math.round(safe.bottom / density);
             int leftPx = Math.round(safe.left / density);
             int rightPx = Math.round(safe.right / density);
 

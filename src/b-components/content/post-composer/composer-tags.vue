@@ -21,11 +21,12 @@
         @input="onInput"
         @keydown="onKeydown"
         @focus="open = true"
+        @click="open = true"
         @blur="onBlur"
       />
     </SC_TagsRow>
 
-    <SC_Dropdown v-if="open && suggestions.length">
+    <SC_Dropdown v-if="open && !full && suggestions.length">
       <SC_Suggestion
         v-for="(s, i) in suggestions"
         :key="s"
@@ -135,9 +136,11 @@ const onInput = (e: Event): void => {
   activeIndex.value = NO_ACTIVE_SUGGESTION
 }
 
+// Список после выбора не закрывается: теги выбирают подряд. Раньше он
+// закрывался, а поле оставалось в фокусе, и следующий тег открывался, только
+// если убрать фокус и нажать на поле снова.
 const select = (tag: string): void => {
   emit('add', tag)
-  open.value = false
   activeIndex.value = NO_ACTIVE_SUGGESTION
 }
 
