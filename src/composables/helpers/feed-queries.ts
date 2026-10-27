@@ -205,6 +205,8 @@ async function fetchFavoritePostsByIds(ids: string[]): Promise<RawFavoritePost[]
     else if (Array.isArray(result.result)) posts = result.result
   }
 
+  // Удалённый пост нода отдаёт null: остальное «Избранное» из-за него не пропадает.
+  posts = posts.filter((p): p is RawFavoritePost => !!p && typeof p === 'object')
   if (posts.length === 0) return []
 
   // Сортируем посты в порядке запрошенных ID для корректной пагинации.

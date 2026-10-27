@@ -61,7 +61,10 @@ export function useBoostedFeed(limit = 3, enabled: () => boolean = () => true) {
         parameters: [txids],
       })) as ContentResponse
 
-      const contents = Array.isArray(contentResp?.data) ? contentResp.data : []
+      // Удалённый пост нода отдаёт null — без него, а не падение всей подборки.
+      const contents = Array.isArray(contentResp?.data)
+        ? contentResp.data.filter((p) => !!p && typeof p === 'object')
+        : []
       await preloadLastCommentAuthors(contents)
       return contents
     },

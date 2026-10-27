@@ -11,7 +11,7 @@ vi.mock('@/helpers/api/request', () => ({
 }))
 
 import { __resetUserNamesForTests, userName } from '@/services/user-names'
-import { preloadLastCommentAuthors } from './feed-enrichment'
+import { fetchAndMergeRepostOriginals, preloadLastCommentAuthors } from './feed-enrichment'
 
 beforeEach(() => {
   __resetUserNamesForTests()
@@ -51,5 +51,21 @@ describe('preloadLastCommentAuthors', () => {
     await preloadLastCommentAuthors([{ txid: 'a', lastComment: null }])
     await preloadLastCommentAuthors(undefined)
     expect(mocks.getByPRC).not.toHaveBeenCalled()
+  })
+})
+
+describe('fetchAndMergeRepostOriginals', () => {
+  it('удалённый оригинал (нода отдаёт null) не мешает остальным репостам', async () => {
+    mocks.getByPRCWithAuth.mockResolvedValue([null, { txid: 'orig2', m: 'Текст оригинала' }])
+    const adapted = [
+      { repost: 'orig1', content: '' },
+      { repost: 'orig2', content: '' },
+    ]
+    await fetchAndMergeRepostOriginals(adapted as never, [
+      { txid: 'r1', repost: 'orig1' },
+      { txid: 'r2', repost: 'orig2' },
+    ])
+    expect(adapted[0]!.content).toBe('')
+    expect(adapted[1]!.content).toContain('Текст оригинала')
   })
 })

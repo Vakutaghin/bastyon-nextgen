@@ -88,6 +88,8 @@ export interface StoredNotification {
   from?: string
   shareId?: string
   commentId?: string
+  /** Комментарий и ответ: корневой комментарий ветки, `''` — сам корневой. */
+  parentId?: string
   mesType?: string
   upvoteVal?: number
   /** К комментарию приложены монеты (сумма — в description). */

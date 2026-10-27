@@ -165,10 +165,11 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
             options: {},
             state: 1,
           })
-          const originals = Array.isArray(result) ? result : []
-          const originalMap = new Map(
-            (Array.isArray(originals) ? originals : []).map((p) => [p.txid || p.hash || p.id, p])
+          // Удалённый оригинал нода отдаёт null — он не должен ронять остальные.
+          const originals = (Array.isArray(result) ? result : []).filter(
+            (p): p is RawRepostPost => !!p && typeof p === 'object'
           )
+          const originalMap = new Map(originals.map((p) => [p.txid || p.hash || p.id, p]))
           newPosts.forEach((adapted) => {
             if (!adapted.repost) return
             const orig = originalMap.get(adapted.repost)

@@ -46,6 +46,7 @@ import { configureUnlockUi, ensureVaultUnlocked } from '@/blockchain/storage/vau
 import '@/helpers/api/request'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { showToastsForNewNotifications } from '@/b-components/header/header-notifications/notification-toasts'
+import type { NotificationItem } from '@/stores/notifications-store'
 import { bootMiniApps } from '@/mini-apps/ui/use-mini-app-bridge'
 import { installGlobalErrorHandler } from '@/composables/use-error-boundary'
 import { notifyNewNotifications } from '@/composables/use-browser-notifications'
@@ -116,9 +117,16 @@ void router.isReady().then(() => {
 useUIStore(pinia)
   .loadLanguage()
   .catch((e) => console.warn('[main] loadLanguage failed:', e))
+// Нажатие на всплывающее или системное уведомление ведёт туда же, куда оно в
+// списке. Модуль перехода — по нажатию: стартовой загрузке он не нужен.
+const openFromToast = (item: NotificationItem): void => {
+  void import('@/b-components/header/header-notifications/open-notification').then((m) =>
+    m.openNotification(item, { router })
+  )
+}
 notificationsStore.setOnNewNotifications((items) => {
-  showToastsForNewNotifications(pinia, items)
-  notifyNewNotifications(items)
+  showToastsForNewNotifications(pinia, items, openFromToast)
+  notifyNewNotifications(items, openFromToast)
 })
 
 const NOTIFICATIONS_POLL_INTERVAL_MS = 30 * 1000

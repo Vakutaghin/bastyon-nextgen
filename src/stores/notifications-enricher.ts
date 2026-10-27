@@ -35,8 +35,11 @@ function commentIdOf(n: NotificationItem): string | undefined {
   return n.commentId
 }
 
-/** Посты по txid — в кеш (тем же RPC, что и комментарии: это тоже транзакции). */
-async function fetchPosts(caches: EnrichmentCaches, ids: string[]): Promise<void> {
+/** Посты по txid — в кеш. */
+export async function fetchPosts(
+  caches: Pick<EnrichmentCaches, 'postCache'>,
+  ids: string[]
+): Promise<void> {
   const arr = await rpcCallWithAuth<unknown[]>({
     method: rpcEndpoints.getRawTransactionWithMessageById,
     parameters: [ids],
@@ -58,6 +61,31 @@ async function fetchPosts(caches: EnrichmentCaches, ids: string[]): Promise<void
       type: pickStr(o, 'type'),
       images: pickArr<string>(o, 'i', 'images'),
     }
+  }
+}
+
+/**
+ * Комментарии по id — в кеш. Не `getrawtransactionwithmessagebyid`: на
+ * комментарий он отвечает `null`, и раньше у уведомлений о комментариях на
+ * настоящей сети не было ни текста, ни поста — оценка комментария вела в
+ * профиль оценившего. `getcomments` с пустым постом и списком id отдаёт
+ * комментарий целиком: пост, ветку, текст (сверено с нодой 27.10.2026).
+ */
+export async function fetchCommentsById(
+  caches: Pick<EnrichmentCaches, 'commentCache'>,
+  ids: string[]
+): Promise<void> {
+  const arr = await rpcCallWithAuth<unknown[]>({
+    method: rpcEndpoints.getComments,
+    parameters: ['', '', '', ids],
+    cachehash: generateCacheHash(),
+    options: {},
+    state: 1,
+  })
+  const list = Array.isArray(arr) ? arr : []
+  for (const raw of list) {
+    const snap = extractCommentSnapshot(raw)
+    if (snap) caches.commentCache[snap.id] = snap
   }
 }
 
@@ -121,27 +149,11 @@ export async function enrichNotifications(
   }
 
   if (commentTxids.size > 0) {
-    // Комментарии — это тоже tx, поэтому грузим тем же RPC
-    const ids = [...commentTxids]
     tasks.push(
-      rpcCallWithAuth<unknown[]>({
-        method: rpcEndpoints.getRawTransactionWithMessageById,
-        parameters: [ids],
-        cachehash: generateCacheHash(),
-        options: {},
-        state: 1,
+      fetchCommentsById(caches, [...commentTxids]).catch((e) => {
+        commentsFailed = true
+        console.warn('[notifications] enrich comments failed', e)
       })
-        .then((arr) => {
-          const list = Array.isArray(arr) ? arr : []
-          for (const raw of list) {
-            const snap = extractCommentSnapshot(raw)
-            if (snap) caches.commentCache[snap.id] = snap
-          }
-        })
-        .catch((e) => {
-          commentsFailed = true
-          console.warn('[notifications] enrich comments failed', e)
-        })
     )
   }
   if (profileAddrs.size > 0) {

@@ -1,5 +1,5 @@
 ---
-keywords: [notifications, bell, alerts, sound, notification filter, system notifications, push]
+keywords: [notifications, bell, alerts, sound, notification filter, system notifications, push, reply to a comment, you replied, comments on my posts]
 ---
 
 # Notifications
@@ -10,13 +10,28 @@ Who rated you, commented or subscribed: where to see notifications and how to ch
 
 The bell in the header is there once you are signed in. The number on it is how many new notifications you have not seen yet. Click it to open the **“Notifications”** list: new ones are highlighted until you close the list. On a phone and in a narrow window the list opens full screen; the cross at the top right closes it.
 
-Each notification shows the kind of event, the time, who did it and the details: the stars of a rating, the text of a comment, the beginning of a post, an amount. Click a notification to go:
+Each notification shows the kind of event, the time, who did it and the details: the stars of a rating, the text of a comment, the beginning of a post, an amount. Click a notification to go where it points:
 
-- to the post — for ratings, comments, replies, reposts, boosts and new posts; the post opens in a window over the page;
+- to the comment — for comments, replies and ratings of your comments. The post opens in a window over the page, scrolls to the comment and highlights it; for a reply in a thread it expands the thread first;
+- to the post — for post ratings, reposts, boosts and new posts;
 - to the person’s profile — for subscriptions;
 - to the wallet — for transfers and rewards.
 
-The three-dot button on a notification has **“On blockchain”**, the event’s transaction in a window over the page (see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed)), and **“Hide notification”**. **“Clear all”** at the top hides the whole list. Hidden notifications do not come back.
+While the post or comment is loading, a spinner turns where the time was, and the window opens once it arrives. If the comment has been deleted, the app says so.
+
+The avatar and the name in a notification lead to the profile of whoever did it.
+
+The list starts with the last 20 notifications; **“Show more”** at the bottom adds the next ones.
+
+The three-dot button on a notification has **“Open”**, the same as clicking the notification itself, **“On blockchain”**, the event’s transaction in a window over the page (see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed)), and **“Hide notification”**. **“Clear all”** at the top hides the whole list, and with the **“Comments”** filter — only the comments. Hidden notifications do not come back.
+
+## Comments
+
+Above the list are **“All”** and **“Comments”**. **“Comments”** keeps comments on your posts and replies to you — the things you can reply to. The number on the button is how many of them are new.
+
+A comment or a reply has a **“Reply”** button. The post opens at that comment with the reply field already open, ready for typing. A reply to a reply already starts with the author’s name, for example “@alice,”, so that everyone in the thread sees whom you are answering. More in [Comments](comments.md).
+
+If you have already replied to a comment, **“You replied”** shows under it — whether you replied from this device or another one: the app looks at the comment’s thread on the network. That way you see which comments are still waiting for an answer. A reply sent from another device may take a few minutes to show up here.
 
 ## What you are notified about
 
@@ -33,7 +48,7 @@ Unsubscriptions are not shown in the list.
 
 ## When they arrive
 
-While the app is open, it checks for new events every 30 seconds. A new notification also pops up for a few seconds with a sound — no more than two at a time.
+While the app is open, it checks for new events every 30 seconds. A new notification also pops up for a few seconds with a sound — no more than two at a time. Click a pop-up notification to go where it points, as in the list.
 
 The sound depends on the event. When coins arrive — a transfer, a tip, coins with a comment, a subscription payment, a lottery reward — you hear a coin; for everything else, a short chime. The coin also plays when you send PKOIN yourself: a transfer, a tip, a boost, a subscription or mini-app payment. A batch of events makes one sound.
 
@@ -58,7 +73,7 @@ The list is kept on this device, separately for each account: the latest 300 not
 
 ## System notifications
 
-If you turn on **“Browser notifications”**, the app asks the system for permission to show notifications. Then, while its window is minimised or covered by another window, the system itself tells you about new events. This does not work everywhere: the built-in browser of some systems does not support such notifications, and then the switch changes nothing.
+If you turn on **“Browser notifications”**, the app asks the system for permission to show notifications. Then, while its window is minimised or covered by another window, the system itself tells you about new events. Clicking such a notification brings up the app window, and if it is about a single event, also takes you to it. This does not work everywhere: the built-in browser of some systems does not support such notifications, and then the switch changes nothing.
 
 ## The hourglass is not a notification
 

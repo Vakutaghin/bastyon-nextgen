@@ -285,6 +285,8 @@ const props = defineProps<{
   targetCommentId?: string
   /** Deep-link: txid корневого коммента ветки, если цель — ответ (раскрыть ветку). */
   targetParentId?: string
+  /** Deep-link: сразу открыть форму ответа на этот комментарий (из уведомления). */
+  targetReply?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -630,10 +632,16 @@ onBeforeUnmount(() => {
 
 // --- Deep-link (#40/#41): развернуть комментарии, проскроллить и подсветить. ---
 onMounted(() => {
-  if (props.targetCommentId) void deepLinkToComment(props.targetCommentId, props.targetParentId)
+  if (props.targetCommentId) {
+    void deepLinkToComment(props.targetCommentId, props.targetParentId, props.targetReply)
+  }
 })
 
-async function deepLinkToComment(targetId: string, parentId?: string): Promise<void> {
+async function deepLinkToComment(
+  targetId: string,
+  parentId?: string,
+  reply = false
+): Promise<void> {
   try {
     await loader.loadAllComments(true) // загрузить и показать все корневые
   } catch {
@@ -646,10 +654,35 @@ async function deepLinkToComment(targetId: string, parentId?: string): Promise<v
       /* noop */
     }
   }
-  void nextTick(() => tryScrollHighlight(targetId, 0))
+  void nextTick(() => tryScrollHighlight(targetId, 0, reply))
 }
 
-function tryScrollHighlight(id: string, attempt: number): void {
+/**
+ * Форма ответа на комментарий, как кнопками под ним: корневому — просто
+ * ответ, ответу в ветке — с обращением «@имя,», чтобы в общей ветке было
+ * видно, кому. Поле — в фокусе: можно сразу писать.
+ */
+function openReplyTo(id: string, row: HTMLElement): void {
+  const root = loader.allComments.value?.find((c) => c.id === id)
+  const nested = root
+    ? undefined
+    : Object.values(replies.repliesByParentId.value)
+        .flat()
+        .find((c) => c.id === id)
+  if (root) form.onReplyToFirstLevel(root)
+  else if (nested) form.onReplyToComment(nested)
+  else return
+  void nextTick(() => {
+    // Плашка ответа — сразу за карточкой комментария, в той же обёртке.
+    const field = row.parentElement?.querySelector('textarea')
+    if (!field) return
+    field.focus({ preventScroll: true })
+    const end = field.value.length
+    field.setSelectionRange(end, end)
+  })
+}
+
+function tryScrollHighlight(id: string, attempt: number, reply = false): void {
   const raw = commentsRootRef.value
   const root =
     raw && '$el' in (raw as object)
@@ -663,10 +696,11 @@ function tryScrollHighlight(id: string, attempt: number): void {
     window.setTimeout(() => {
       if (highlightedCommentId.value === id) highlightedCommentId.value = null
     }, 4000)
+    if (reply) openReplyTo(id, el)
     return
   }
   // DOM ещё не готов (async-загрузка) — повторяем до ~3.2 c.
-  if (attempt < 16) window.setTimeout(() => tryScrollHighlight(id, attempt + 1), 200)
+  if (attempt < 16) window.setTimeout(() => tryScrollHighlight(id, attempt + 1, reply), 200)
 }
 
 // Деструктурируем композаблы в плоские const'ы — Vue в template распакует ref'ы автоматически.

@@ -15,6 +15,7 @@
           :show-full="true"
           :target-comment-id="targetCommentId"
           :target-parent-id="targetParentId"
+          :target-reply="targetReply"
         />
 
         <RelatedVideos
@@ -60,6 +61,16 @@ const targetCommentId = computed<string | undefined>(
 const targetParentId = computed<string | undefined>(
   () => queryStr('parentid') ?? queryStr('parentId')
 )
+/**
+ * Открыть форму ответа — страницу открыли кнопкой «Ответить» в уведомлении.
+ * Флаг в состоянии истории, а не в адресе: ссылкой на комментарий делятся, и
+ * у получателя форма ответа сама открываться не должна.
+ */
+const targetReply = computed<boolean>(() => {
+  void route.fullPath
+  const state: unknown = typeof window !== 'undefined' ? window.history.state : null
+  return !!(state && typeof state === 'object' && (state as { reply?: unknown }).reply === true)
+})
 
 const { post, isLoading, isMissing, isError } = usePostByTxid(txid)
 

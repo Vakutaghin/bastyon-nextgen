@@ -28,6 +28,8 @@ Images in comments written in the previous Bastyon app are shown, but you cannot
 
 A discussion has two levels: comments on the post and replies to them. A reply to a reply goes into the same thread. The “Replies” link with a number under a comment expands the thread, **“Collapse replies”** collapses it.
 
+You can also reply to a comment on your post or to a reply to you straight from the [notifications](notifications.md#comments), which also show which of them you have already answered.
+
 ## Mentioning someone
 
 Type `@` and a list of people already taking part in the discussion appears. Keep typing the name to narrow the list, then pick a person with the arrow keys and Enter or with the mouse. In the published comment the mention becomes a link to the profile.

@@ -3,7 +3,7 @@
     <SC_NotificationsHeader>
       <SC_NotificationsTitle>{{ t('header.notifications') }}</SC_NotificationsTitle>
       <SC_NotificationsHeaderActions>
-        <SC_ClearAllButton v-if="list.length > 0" type="button" @click.stop="onClearAll">
+        <SC_ClearAllButton v-if="source.length > 0" type="button" @click.stop="onClearAll">
           {{ t('header.clearAll') }}
         </SC_ClearAllButton>
         <SC_CloseButton
@@ -17,65 +17,107 @@
       </SC_NotificationsHeaderActions>
     </SC_NotificationsHeader>
 
+    <!-- Комментарии отдельно: их легко потерять среди оценок и подписок. -->
+    <SC_FilterRow
+      v-if="notificationsStore.list.length > 0"
+      role="group"
+      :aria-label="t('header.filterLabel')"
+    >
+      <SC_FilterChip type="button" :aria-pressed="filter === 'all'" @click.stop="setFilter('all')">
+        {{ t('header.filterAll') }}
+      </SC_FilterChip>
+      <SC_FilterChip
+        type="button"
+        :aria-pressed="filter === 'comments'"
+        @click.stop="setFilter('comments')"
+      >
+        {{ t('header.filterComments') }}
+        <SC_FilterCount v-if="unreadComments > 0">{{ unreadComments }}</SC_FilterCount>
+      </SC_FilterChip>
+    </SC_FilterRow>
+
     <SC_EnrichingHint v-if="isEnriching && list.length > 0" />
 
     <SC_LoaderWrap v-if="isLoading && list.length === 0">
       {{ t('header.loading') }}
     </SC_LoaderWrap>
     <SC_EmptyMessage v-else-if="list.length === 0">
-      {{ t('header.noNewNotifications') }}
+      {{
+        filter === 'comments' && notificationsStore.list.length > 0
+          ? t('header.noComments')
+          : t('header.noNewNotifications')
+      }}
     </SC_EmptyMessage>
     <SC_NotificationsList v-else>
-      <SC_NotificationItem v-for="item in list" :key="item.id" :seen="isSeen(item)">
-        <SC_NotificationItemBody @click="onItemClick(item)">
+      <SC_NotificationItem
+        v-for="item in list"
+        :key="item.id"
+        :seen="isSeen(item)"
+        :aria-busy="openingId === item.id || undefined"
+        data-testid="notification-item"
+      >
+        <SC_NotificationItemBody @click="openItem(item)">
           <SC_NotificationHead>
             <SC_NotificationTypePill :variant="item.type">
               <component :is="iconComponentFor(item)" />
               <span>{{ getTypeLabel(item) }}</span>
             </SC_NotificationTypePill>
             <SC_NotificationItemTime>
-              {{ formatTime(item) }}
+              <!-- Пока догружается пост или комментарий — крутилка вместо времени. -->
+              <LoadingOutlined v-if="openingId === item.id" spin />
+              <template v-else>{{ formatTime(item) }}</template>
             </SC_NotificationItemTime>
           </SC_NotificationHead>
 
           <SC_NotificationActor>
-            <UserMark :mark="userMarkOf(item.from ?? item.fromSnapshot?.address)" :size="14">
-              <!-- Профиль ещё грузится: скелетоны вместо адреса и буквы. -->
-              <Skeleton
-                v-if="notificationsStore.isActorPending(item)"
-                data-testid="actor-avatar-skeleton"
-                :width="28"
-                :height="28"
-                radius="50%"
-              />
-              <SC_NotificationAvatar
-                v-else-if="avatarOf(item)"
-                :class="{ loaded: loadedAvatars.has(avatarOf(item)!) }"
-              >
-                <img
-                  :src="avatarOf(item)!"
-                  :alt="getDisplayName(item)"
-                  loading="lazy"
-                  decoding="async"
-                  @load="loadedAvatars.add(avatarOf(item)!)"
-                  @error="brokenAvatars.add(avatarOf(item)!)"
-                />
-              </SC_NotificationAvatar>
-              <SC_NotificationAvatarLetter v-else>
-                {{ getInitial(item) }}
-              </SC_NotificationAvatarLetter>
-            </UserMark>
-
-            <SC_NotificationActorText>
-              <SC_NotificationActorName>
+            <!-- Аватар и имя — в профиль; всё остальное — туда, о чём уведомление. -->
+            <SC_ActorAvatarButton
+              type="button"
+              tabindex="-1"
+              aria-hidden="true"
+              @click.stop="openActor(item)"
+            >
+              <UserMark :mark="userMarkOf(item.from ?? item.fromSnapshot?.address)" :size="14">
+                <!-- Профиль ещё грузится: скелетоны вместо адреса и буквы. -->
                 <Skeleton
                   v-if="notificationsStore.isActorPending(item)"
-                  data-testid="actor-name-skeleton"
-                  :width="96"
-                  :height="12"
+                  data-testid="actor-avatar-skeleton"
+                  :width="28"
+                  :height="28"
+                  radius="50%"
                 />
-                <template v-else>{{ getDisplayName(item) }}</template>
+                <SC_NotificationAvatar
+                  v-else-if="avatarOf(item)"
+                  :class="{ loaded: loadedAvatars.has(avatarOf(item)!) }"
+                >
+                  <img
+                    :src="avatarOf(item)!"
+                    :alt="getDisplayName(item)"
+                    loading="lazy"
+                    decoding="async"
+                    @load="loadedAvatars.add(avatarOf(item)!)"
+                    @error="brokenAvatars.add(avatarOf(item)!)"
+                  />
+                </SC_NotificationAvatar>
+                <SC_NotificationAvatarLetter v-else>
+                  {{ getInitial(item) }}
+                </SC_NotificationAvatarLetter>
+              </UserMark>
+            </SC_ActorAvatarButton>
+
+            <SC_NotificationActorText>
+              <SC_NotificationActorName v-if="notificationsStore.isActorPending(item)">
+                <Skeleton data-testid="actor-name-skeleton" :width="96" :height="12" />
               </SC_NotificationActorName>
+              <SC_ActorNameButton
+                v-else-if="actorAddress(item)"
+                type="button"
+                :aria-label="t('header.openActorProfile', { name: getDisplayName(item) })"
+                @click.stop="openActor(item)"
+              >
+                {{ getDisplayName(item) }}
+              </SC_ActorNameButton>
+              <SC_NotificationActorName v-else>{{ getDisplayName(item) }}</SC_NotificationActorName>
               <SC_NotificationAction>{{ getActionLine(item) }}</SC_NotificationAction>
             </SC_NotificationActorText>
           </SC_NotificationActor>
@@ -110,6 +152,22 @@
               <SC_PostRefText>{{ getPostCaption(item) }}</SC_PostRefText>
             </SC_PostRef>
           </SC_NotificationPreview>
+
+          <!-- Комментарий к посту или ответ вам: ответить сразу, у самого комментария. -->
+          <SC_ReplyRow v-if="isReplyableNotification(item)">
+            <SC_ReplyButton
+              type="button"
+              :disabled="openingId !== null"
+              @click.stop="openItem(item, true)"
+            >
+              <MessageOutlined />
+              {{ t('header.reply') }}
+            </SC_ReplyButton>
+            <SC_AnsweredMark v-if="notificationsStore.answeredIds.has(item.id)">
+              <CheckOutlined />
+              {{ t('header.answered') }}
+            </SC_AnsweredMark>
+          </SC_ReplyRow>
         </SC_NotificationItemBody>
 
         <SC_NotificationItemActions @click.stop>
@@ -118,20 +176,25 @@
             placement="bottomRight"
             :get-popup-container="getPopupContainerInner"
           >
-            <SC_NotificationItemTrigger><EllipsisOutlined /></SC_NotificationItemTrigger>
+            <SC_NotificationItemTrigger type="button" :aria-label="t('header.more')">
+              <EllipsisOutlined />
+            </SC_NotificationItemTrigger>
             <template #overlay>
               <Menu :items="itemMenu(item)" @click="onItemMenuClick" />
             </template>
           </Dropdown>
         </SC_NotificationItemActions>
       </SC_NotificationItem>
+
+      <SC_ShowMoreButton v-if="source.length > list.length" type="button" @click.stop="showMore">
+        {{ t('header.showMore') }}
+      </SC_ShowMoreButton>
     </SC_NotificationsList>
   </SC_NotificationsMenu>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch, type Component } from 'vue'
-import { openExternal } from '@/helpers/common/open-external'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Dropdown, Menu } from 'ant-design-vue'
@@ -145,14 +208,15 @@ import {
   DollarOutlined,
   NotificationOutlined,
   EditOutlined,
+  CheckOutlined,
+  LoadingOutlined,
 } from '@/components/icons'
 import { useNotificationsStore } from '@/stores'
-import { useModalStore } from '@/stores/modal-store'
 import { useChainInfoStore } from '@/stores/chain-info-store'
 import { isTxid } from '@/b-components/chain-info/chain-link'
 import type { NotificationItem } from '@/stores/notifications-store'
 import { isLowRatingValue } from '@/stores/notification-filtering'
-import { adaptPostData } from '@/composables/use-feed'
+import { isReplyableNotification, notificationTarget } from '@/stores/notification-target'
 import UserMark from '@/components/user-mark'
 import Skeleton from '@/components/skeleton'
 import { userMarkOf } from '@/services/user-marks'
@@ -164,7 +228,7 @@ import {
 } from './helpers/notification-formatter'
 import { formatTimeCompact } from '@/helpers/common/date-formatter'
 import { ICON_BY_TYPE, notificationTypeLabelKey } from './helpers/notification-type-map'
-import { classifyNotificationLink } from './helpers/notification-link'
+import { openNotification } from './open-notification'
 import {
   SC_NotificationsMenu,
   SC_NotificationsHeader,
@@ -196,6 +260,15 @@ import {
   SC_EmptyMessage,
   SC_LoaderWrap,
   SC_EnrichingHint,
+  SC_FilterRow,
+  SC_FilterChip,
+  SC_FilterCount,
+  SC_ActorAvatarButton,
+  SC_ActorNameButton,
+  SC_ReplyRow,
+  SC_ReplyButton,
+  SC_AnsweredMark,
+  SC_ShowMoreButton,
 } from './styled'
 
 // ICON_BY_TYPE возвращает строковые имена; в script setup нужны сами компоненты.
@@ -224,22 +297,56 @@ const props = withDefaults(
 const emit = defineEmits<{ close: [] }>()
 
 const notificationsStore = useNotificationsStore()
-const modalStore = useModalStore()
 const router = useRouter()
 
 const expandedIds = ref(new Set<string>())
 
-const list = computed(() => notificationsStore.list.slice(0, 20))
+/** Сколько показывать за раз; «Показать ещё» — следующие столько же. */
+const PAGE_SIZE = 20
+
+/** «Все» или только комментарии и ответы — те, на которые можно ответить. */
+const filter = ref<'all' | 'comments'>('all')
+const limit = ref(PAGE_SIZE)
+
+const source = computed(() =>
+  filter.value === 'comments'
+    ? notificationsStore.list.filter(isReplyableNotification)
+    : notificationsStore.list
+)
+const list = computed(() => source.value.slice(0, limit.value))
+const unreadComments = computed(
+  () => notificationsStore.unreadList.filter(isReplyableNotification).length
+)
 const isLoading = computed(() => notificationsStore.loading)
 const isEnriching = computed(() => notificationsStore.enriching)
+
+function setFilter(next: 'all' | 'comments'): void {
+  filter.value = next
+  limit.value = PAGE_SIZE
+}
+
+function showMore(): void {
+  limit.value += PAGE_SIZE
+}
+
+// Закрыли список — в следующий раз он снова с начала.
+watch(
+  () => props.visible,
+  (open) => {
+    if (!open) limit.value = PAGE_SIZE
+  }
+)
 
 // Имена, тексты и посты догружаются, пока список открыт: и при открытии, и
 // когда уведомления пришли уже при открытом (первая загрузка, новое событие).
 // Раньше только при открытии, и пришедшие позже оставались с адресами.
+// Потом — ответили ли вы на показанные комментарии: для этого нужна их ветка.
 watch(
   () => (props.visible ? list.value.map((i) => i.id).join(',') : ''),
   (ids) => {
-    if (ids) void notificationsStore.enrichVisible(list.value)
+    if (!ids) return
+    const shown = list.value
+    void notificationsStore.enrichVisible(shown).then(() => notificationsStore.checkAnswered(shown))
   }
 )
 // Read-pointer (P2-8): «прочитано до» двигается только по явному открытию
@@ -400,107 +507,62 @@ function getRatingDisplay(item: NotificationItem): { label: string; positive: bo
   }
 }
 
-function openPostFromItem(item: NotificationItem): boolean {
-  const e = enrichmentFor(item)
-  const postId = item.shareId ?? e.comment?.postid
-  if (!postId) return false
-  const cached =
-    (e.post as Record<string, unknown> | undefined) ?? notificationsStore.postCache[postId]
-  if (!cached) return false
+/** Кто это сделал — адрес для перехода в профиль; у награды сети его нет. */
+function actorAddress(item: NotificationItem): string | undefined {
+  if (item.mesType === 'win') return undefined
+  return item.from ?? item.fromSnapshot?.address
+}
+
+/** Уведомление, которое сейчас открывается: догружается пост или комментарий. */
+const openingId = ref<string | null>(null)
+
+/**
+ * Туда, о чём уведомление: к комментарию, посту, в кошелёк. `reply` — сразу
+ * с формой ответа на комментарий. Список закрывается, когда нужное
+ * догрузилось, — а пока на уведомлении крутилка.
+ */
+async function openItem(item: NotificationItem, reply = false): Promise<void> {
+  if (openingId.value) return
+  openingId.value = item.id
   try {
-    const usersMap: Record<string, unknown> = {}
-    const sender = e.from
-    if (sender?.address) {
-      usersMap[sender.address] = {
-        address: sender.address,
-        name: sender.name,
-        i: sender.avatar,
-        reputation: sender.reputation,
-      }
-    }
-    const adapted = adaptPostData(cached, 0, usersMap)
-    modalStore.openPostModal(adapted as never)
-    return true
-  } catch (err) {
-    console.warn('[notifications] adapt post failed', err)
-    return false
+    await openNotification(item, { router, reply, onLeave: () => emit('close') })
+  } finally {
+    openingId.value = null
   }
 }
 
-function navigateToProfile(item: NotificationItem): boolean {
-  const addr = item.from ?? item.fromSnapshot?.address
-  if (!addr) return false
-  router.push(`/${addr}`)
-  return true
+function openActor(item: NotificationItem): void {
+  const address = actorAddress(item)
+  if (!address) {
+    void openItem(item)
+    return
+  }
+  emit('close')
+  void router.push(`/${address}`)
 }
 
 /**
- * Безопасно открывает `item.link` из уведомления (P1-5, open-redirect guard).
- * Решение — в чистом `classifyNotificationLink` (тестируемо); здесь только
- * исполнение намерения.
+ * Меню уведомления: «Открыть» — то же, что нажатие (с клавиатуры иначе не
+ * открыть), «В блокчейне» — у событий с транзакцией, и «Скрыть».
  */
-function openNotificationLink(link: string): void {
-  const action = classifyNotificationLink(link)
-  switch (action.kind) {
-    case 'same-tab':
-      window.location.href = action.href
-      break
-    case 'new-tab':
-      // Общий openExternal: в десктопной сборке window.open ничего не делает (V40).
-      void openExternal(action.href)
-      break
-    case 'router':
-      router.push(action.path)
-      break
-    case 'ignore':
-      break
-  }
-}
-
-function onItemClick(item: NotificationItem): void {
-  emit('close')
-
-  // Оплата платной подписки — к списку своих платных подписчиков.
-  if (item.mesType === 'paidSubscription') {
-    void router.push({ name: 'paid-subscriptions', query: { tab: 'subscribers' } })
-    return
-  }
-
-  // Монеты — перевод или награда — видны в истории кошелька.
-  if (item.type === 'tip' || item.mesType === 'win') {
-    void router.push({ name: 'wallets' })
-    return
-  }
-
-  // Подписки/профильные события → переход на профиль отправителя.
-  if (item.type === 'subscribe' || item.mesType === 'userInfo') {
-    if (navigateToProfile(item)) return
-  }
-
-  // Связано с постом → PostModal.
-  if (openPostFromItem(item)) return
-
-  // Фолбэк: прямая ссылка из уведомления.
-  if (item.link) {
-    openNotificationLink(item.link)
-    return
-  }
-
-  // Последний фолбэк — профиль отправителя.
-  navigateToProfile(item)
-}
-
-/** Меню уведомления: «В блокчейне» — у событий с транзакцией, и «Скрыть». */
 function itemMenu(item: NotificationItem): { key: string; label: string }[] {
-  const hide = { key: `hide:${item.id}`, label: t('header.hideNotification') }
-  return isTxid(item.id)
-    ? [{ key: `chain:${item.id}`, label: t('chainInfo.action') }, hide]
-    : [hide]
+  const menu: { key: string; label: string }[] = []
+  if (notificationTarget(item, notificationsStore.getEnrichment(item).comment).kind !== 'none') {
+    menu.push({ key: `open:${item.id}`, label: t('header.open') })
+  }
+  if (isTxid(item.id)) menu.push({ key: `chain:${item.id}`, label: t('chainInfo.action') })
+  menu.push({ key: `hide:${item.id}`, label: t('header.hideNotification') })
+  return menu
 }
 
 function onItemMenuClick({ key }: { key: string | number }): void {
   const [action, ...rest] = String(key).split(':')
   const id = rest.join(':')
+  if (action === 'open') {
+    const item = list.value.find((n) => n.id === id)
+    if (item) void openItem(item)
+    return
+  }
   if (action === 'chain') {
     // Транзакция события: перевод, оценка, комментарий, подписка.
     emit('close')
@@ -510,8 +572,9 @@ function onItemMenuClick({ key }: { key: string | number }): void {
   notificationsStore.hideNotification(id)
 }
 
+/** «Убрать все» — то, что сейчас в списке: при фильтре — только комментарии. */
 function onClearAll(): void {
-  notificationsStore.hideAllNotifications()
+  notificationsStore.hideAllNotifications(source.value.map((n) => n.id))
 }
 
 function safeDocument(): Document | undefined {

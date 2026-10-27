@@ -16,7 +16,7 @@ import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 import { haptic } from '@/helpers/common/haptics'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
-import { useCommentsStore, usePostsStore } from '@/stores'
+import { useCommentsStore, useNotificationsStore, usePostsStore } from '@/stores'
 import { PENDING_COMMENT_TTL_MS } from '@/stores/comments-store'
 import { sendComment } from '../comment-sender'
 import { isCommentLengthValid, getCommentLengthHint } from '../helpers'
@@ -369,6 +369,8 @@ export function useCommentForm(opts: UseCommentFormOptions) {
       if (txid) {
         commentsStore.replacePendingId(opts.postId.value, localId, txid)
       }
+      // Ответили на комментарий — в уведомлении о нём сразу «Вы ответили».
+      if (answerId) useNotificationsStore().markAnswered(answerId)
       await refreshPromise
     } catch (e) {
       commentsStore.removePending(opts.postId.value, localId)

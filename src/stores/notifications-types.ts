@@ -27,6 +27,8 @@ export interface NotificationCommentSnapshot {
   answerid?: string
   address?: string
   message?: string
+  /** Комментарий удалён автором: текста у него больше нет. */
+  deleted?: boolean
 }
 
 export interface NotificationUserSnapshot {
@@ -54,6 +56,11 @@ export interface NotificationItem {
   shareId?: string
   /** Оценка комментария: id вашего комментария (пост находится через него). */
   commentId?: string
+  /**
+   * Комментарий и ответ: корневой комментарий ветки, `''` — сам корневой.
+   * Нода присылает его в событии; у записей старше поля — неизвестно.
+   */
+  parentId?: string
   /** Raw mesType from API (для filter mapping: comment, answer, upvoteShare, subscribe, ...) */
   mesType?: string
   /** Для upvoteShare: значение оценки (положительное — апвоут, отрицательное — даунвоут) */

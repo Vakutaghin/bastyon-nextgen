@@ -68,8 +68,11 @@ export async function fetchAndMergeRepostOriginals(
     })) as RawContentLike[] | RpcArrayEnvelope<RawContentLike>
 
     const originals = Array.isArray(result) ? result : (result?.data ?? result?.result ?? [])
+    // Удалённый оригинал нода отдаёт null — он не должен ронять остальные.
     const originalMap = new Map(
-      (Array.isArray(originals) ? originals : []).map((p) => [p.txid || p.hash || p.id, p])
+      (Array.isArray(originals) ? originals : [])
+        .filter((p): p is RawContentLike => !!p && typeof p === 'object')
+        .map((p) => [p.txid || p.hash || p.id, p])
     )
 
     adaptedPosts.forEach((adapted) => {

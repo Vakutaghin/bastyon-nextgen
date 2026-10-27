@@ -15,6 +15,9 @@ const mocks = vi.hoisted(() => ({
   deleteMany: vi.fn(async () => {}),
   loadHidden: vi.fn(async () => new Set<string>()),
   fetchMissedInfo: vi.fn(),
+  rpcCall: vi.fn(),
+  fetchCommentsById: vi.fn(),
+  fetchPosts: vi.fn(),
 }))
 vi.mock('@/stores', () => ({ useAuthStore: () => mocks.auth }))
 vi.mock('@/db/apis/notifications-api', () => ({
@@ -37,7 +40,12 @@ vi.mock('./notifications-fetch', () => ({
   isTimeoutError: () => false,
   fetchMissedInfo: mocks.fetchMissedInfo,
 }))
-vi.mock('./notifications-enricher', () => ({ enrichNotifications: vi.fn() }))
+vi.mock('./notifications-enricher', () => ({
+  enrichNotifications: vi.fn(),
+  fetchCommentsById: mocks.fetchCommentsById,
+  fetchPosts: mocks.fetchPosts,
+}))
+vi.mock('@/helpers/api/request', () => ({ rpcCall: mocks.rpcCall }))
 
 import { useNotificationsStore } from './notifications-store'
 import { useNotificationSettingsStore } from './notification-settings-store'
@@ -276,6 +284,91 @@ describe('notifications-store: курсор, снимки, бейдж (V38, V39,
     expect(store.list.map((n) => n.id).sort()).toEqual(['n1', 'n2'])
 
     settings.$patch({ comments: false })
+    expect(store.list.map((n) => n.id)).toEqual(['n2'])
+  })
+})
+
+describe('notifications-store: комментарии — переход и «Вы ответили»', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mocks.auth.getUserAddress = 'PA'
+    mocks.getAllByAddress.mockReset().mockResolvedValue([])
+    mocks.putMany.mockClear()
+    mocks.rpcCall.mockReset()
+    mocks.fetchCommentsById.mockReset()
+    mocks.fetchPosts.mockReset()
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  it('ветка ответа из события сохраняется в IDB — ведёт к нему и после перезапуска', async () => {
+    mocks.fetchMissedInfo.mockResolvedValueOnce([
+      { block: 101, contentsLang: {} },
+      { ...event('a1'), mesType: 'answer', parentid: 'c1', answerid: 'c1' },
+    ])
+    const store = useNotificationsStore()
+    await store.init()
+    expect(store.items[0]).toMatchObject({ id: 'a1', mesType: 'answer', parentId: 'c1' })
+    expect(mocks.putMany).toHaveBeenCalledWith('PA', [
+      expect.objectContaining({ id: 'a1', parentId: 'c1' }),
+    ])
+  })
+
+  it('ensureComment догружает комментарий и говорит, нашёлся ли его пост', async () => {
+    const store = useNotificationsStore()
+    mocks.fetchCommentsById.mockImplementationOnce(
+      async (caches: { commentCache: Record<string, unknown> }, ids: string[]) => {
+        caches.commentCache[ids[0]!] = { id: ids[0], postid: 'p7' }
+      }
+    )
+    await expect(store.ensureComment('c7')).resolves.toBe(true)
+    // Уже в кеше — без запроса.
+    await expect(store.ensureComment('c7')).resolves.toBe(true)
+    expect(mocks.fetchCommentsById).toHaveBeenCalledTimes(1)
+    // Нода не отдала — false, а не исключение.
+    mocks.fetchCommentsById.mockRejectedValueOnce(new Error('offline'))
+    await expect(store.ensureComment('gone')).resolves.toBe(false)
+  })
+
+  it('«Вы ответили»: ветка — одним запросом, ваш ответ адресован комментарию', async () => {
+    const store = useNotificationsStore()
+    const item = (id: string, parentId: string) => ({
+      id,
+      type: 'comment' as const,
+      mesType: 'comment',
+      title: '',
+      time: 1,
+      seen: false,
+      shareId: 'p',
+      parentId,
+    })
+    mocks.rpcCall.mockResolvedValueOnce([
+      { address: 'PX', answerid: 'c1' },
+      { address: 'PA', answerid: 'r2' },
+    ])
+    await store.checkAnswered([item('r2', 'c1'), item('r3', 'c1')])
+    expect(mocks.rpcCall).toHaveBeenCalledTimes(1)
+    expect(mocks.rpcCall.mock.calls[0]![0]).toMatchObject({
+      method: 'getcomments',
+      parameters: ['p', 'c1', 'PA'],
+    })
+    expect([...store.answeredIds]).toEqual(['r2'])
+
+    // Только что проверенную ветку снова не спрашиваем; ответ из приложения — сразу.
+    await store.checkAnswered([item('r3', 'c1')])
+    expect(mocks.rpcCall).toHaveBeenCalledTimes(1)
+    store.markAnswered('r3')
+    expect(store.answeredIds.has('r3')).toBe(true)
+  })
+
+  it('«Убрать все» с фильтром скрывает только показанные', async () => {
+    mocks.fetchMissedInfo.mockResolvedValueOnce([
+      { block: 101, contentsLang: {} },
+      event('n1'),
+      { mesType: 'subscribe', txid: 'n2', time: 1, nblock: 101, addrFrom: 'PX' },
+    ])
+    const store = useNotificationsStore()
+    await store.init()
+    await store.hideAllNotifications(['n1'])
     expect(store.list.map((n) => n.id)).toEqual(['n2'])
   })
 })

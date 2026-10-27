@@ -28,12 +28,20 @@
           </SC_OpenPageLink>
         </SC_PostModalTitle>
       </template>
-      <SC_PostModalContent v-if="isModalOpen && postData" :key="postData.id ?? postData.txid ?? ''">
+      <!-- Номер открытия в ключе: окно того же поста, открытое заново из
+           уведомления, заново ведёт к комментарию. -->
+      <SC_PostModalContent
+        v-if="isModalOpen && postData"
+        :key="`${postData.id ?? postData.txid ?? ''}:${postModal.openSeq}`"
+      >
         <PostCard
           :post="postData"
           :show-full="true"
           :in-modal="true"
           :autoplay-video="postModal.autoplay"
+          :target-comment-id="postModal.target?.commentId"
+          :target-parent-id="postModal.target?.parentId"
+          :target-reply="postModal.target?.reply"
           @like="handleLike"
           @comment="handleComment"
           @share="handleShare"

@@ -47,7 +47,7 @@ function canShow(): boolean {
   }
 }
 
-function show(title: string, body: string, tag: string): void {
+function show(title: string, body: string, tag: string, onOpen?: () => void): void {
   try {
     const n = new Notification(title, { body, tag } as NotificationOptions)
     n.onclick = () => {
@@ -57,6 +57,7 @@ function show(title: string, body: string, tag: string): void {
         /* noop */
       }
       n.close()
+      onOpen?.()
     }
   } catch {
     /* конструктор Notification может бросить в некоторых окружениях — игнорируем */
@@ -65,16 +66,27 @@ function show(title: string, body: string, tag: string): void {
 
 /**
  * Показывает браузерное уведомление для новых событий ленты (если уместно).
- * Вызывается из колбэка onNewNotifications рядом с тостами/звуком.
+ * Вызывается из колбэка onNewNotifications рядом с тостами/звуком. Нажатие
+ * на уведомление об одном событии — `open`: туда, о чём оно; о нескольких —
+ * просто окно приложения.
  */
-export function notifyNewNotifications(items: NotificationItem[]): void {
+export function notifyNewNotifications(
+  items: NotificationItem[],
+  open?: (item: NotificationItem) => void
+): void {
   if (!items || items.length === 0 || !canShow()) return
   // Тумблеры типов («Оценки», «Комментарии», «Транзакции», …) до этого
   // фильтровали только тосты — системные уведомления шли мимо них (S56).
   const settings = useNotificationSettingsStore()
   const allowed = items.filter((item) => isNotificationAllowed(settings, item))
   if (allowed.length === 0) return
-  show(APP_NAME, bodyFor(allowed), 'bastyon-notifications')
+  const single = allowed.length === 1 ? allowed[0] : undefined
+  show(
+    APP_NAME,
+    bodyFor(allowed),
+    'bastyon-notifications',
+    single && open ? () => open(single) : undefined
+  )
 }
 
 /** Браузерное уведомление о новом сообщении мессенджера (вкладка в фоне). */

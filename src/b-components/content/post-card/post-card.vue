@@ -245,6 +245,7 @@
           :post="post"
           :target-comment-id="targetCommentId"
           :target-parent-id="targetParentId"
+          :target-reply="targetReply"
           @collapsed="onCommentsCollapsed"
         />
       </template>
@@ -347,6 +348,8 @@ const props = withDefaults(
     targetCommentId?: string
     /** Deep-link: корневой коммент ветки, если цель — ответ. */
     targetParentId?: string
+    /** Deep-link: сразу открыть форму ответа на этот комментарий. */
+    targetReply?: boolean
     /** Показывать метку «Продвигаемое» (буст, вплетённый в ленту). */
     boosted?: boolean
     /** Сразу запустить ролик: окно поста открыли нажатием на видео. */

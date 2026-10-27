@@ -18,7 +18,15 @@ import {
   notificationTypeFor,
   preferEventsOverTransfers,
 } from './notifications-mappers'
-import { enrichNotifications } from './notifications-enricher'
+import { enrichNotifications, fetchCommentsById, fetchPosts } from './notifications-enricher'
+import {
+  isAnsweredInThread,
+  isReplyableNotification,
+  notificationParentId,
+  type ThreadReply,
+} from './notification-target'
+import { rpcCall } from '@/helpers/api/request'
+import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import {
   loadLastBlockFromSettings,
   saveLastBlockToSettings,
@@ -63,6 +71,12 @@ function mergeUser<T extends NotificationUserSnapshot>(
   return out
 }
 
+/**
+ * Как долго верить проверке «ответили ли вы»: ответ с другого устройства
+ * за это время не увидим, зато открытие списка не опрашивает ветки заново.
+ */
+const ANSWER_CHECK_TTL_MS = 5 * 60 * 1000
+
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     items: [] as NotificationItem[],
@@ -99,6 +113,10 @@ export const useNotificationsStore = defineStore('notifications', {
     enrichedIds: new Set<string>() as Set<string>,
     /** Адреса, чьи профили сейчас грузятся: имя и аватар — скелетоном. */
     pendingProfiles: new Set<string>() as Set<string>,
+    /** Комментарии, на которые вы уже ответили («Вы ответили»). */
+    answeredIds: new Set<string>() as Set<string>,
+    /** Ветка `пост:корень` → когда её проверяли на ваш ответ. */
+    answerChecks: new Map<string, number>() as Map<string, number>,
   }),
   getters: {
     /**
@@ -200,6 +218,7 @@ export const useNotificationsStore = defineStore('notifications', {
         from?: string
         shareId?: string
         commentId?: string
+        parentId?: string
         mesType?: string
         upvoteVal?: number
         donation?: boolean
@@ -218,6 +237,7 @@ export const useNotificationsStore = defineStore('notifications', {
           from: s.from,
           shareId: s.shareId,
           commentId: s.commentId,
+          ...(s.parentId !== undefined ? { parentId: s.parentId } : {}),
           mesType,
           upvoteVal: s.upvoteVal,
           ...(s.donation ? { donation: true } : {}),
@@ -272,6 +292,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 from,
                 shareId,
                 commentId,
+                parentId,
                 mesType,
                 upvoteVal,
                 donation,
@@ -286,6 +307,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 from,
                 shareId,
                 commentId,
+                ...(parentId !== undefined ? { parentId } : {}),
                 mesType,
                 upvoteVal,
                 ...(donation ? { donation } : {}),
@@ -396,6 +418,8 @@ export const useNotificationsStore = defineStore('notifications', {
       this.enrichedIds = new Set()
       this.pendingProfiles = new Set()
       this.enriching = false
+      this.answeredIds = new Set()
+      this.answerChecks = new Map()
     },
     setItems(items: NotificationItem[]) {
       this.items = items
@@ -431,10 +455,11 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     /**
-     * Скрыть все уведомления (кнопка «Убрать все уведомления»).
+     * Скрыть все уведомления (кнопка «Убрать все»). `ids` — только эти: так
+     * при фильтре «Комментарии» убираются комментарии, а не весь список.
      */
-    async hideAllNotifications() {
-      const ids = this.list.map((n) => n.id)
+    async hideAllNotifications(only?: string[]) {
+      const ids = only ?? this.list.map((n) => n.id)
       this.hiddenIds = new Set([...this.hiddenIds, ...ids])
       const auth = useAuthStore()
       const address = auth.getUserAddress
@@ -458,6 +483,82 @@ export const useNotificationsStore = defineStore('notifications', {
         (v) => {
           this.enriching = v
         }
+      )
+    },
+
+    /**
+     * Комментарий по id — в кеш, если его там ещё нет. Нужен по клику, когда
+     * список не успел его догрузить: у оценки комментария пост известен
+     * только из него. false — нода комментария не отдала.
+     */
+    async ensureComment(id: string): Promise<boolean> {
+      if (!this.commentCache[id]?.postid) {
+        try {
+          await fetchCommentsById(this, [id])
+        } catch (e) {
+          console.warn('[notifications] load comment failed', e)
+        }
+      }
+      return !!this.commentCache[id]?.postid
+    },
+
+    /** Пост по txid — в кеш, если его там ещё нет. false — нода поста не отдала. */
+    async ensurePost(id: string): Promise<boolean> {
+      if (!this.postCache[id]?.address) {
+        try {
+          await fetchPosts(this, [id])
+        } catch (e) {
+          console.warn('[notifications] load post failed', e)
+        }
+      }
+      return !!this.postCache[id]?.address
+    },
+
+    /** Вы ответили на комментарий из этого приложения — отметка сразу, без ноды. */
+    markAnswered(commentId: string) {
+      if (!commentId || this.answeredIds.has(commentId)) return
+      this.answeredIds = new Set([...this.answeredIds, commentId])
+    },
+
+    /**
+     * Ответили ли вы на комментарии из списка: ветку каждого — одним запросом
+     * `getcomments`, ваш ответ в ней — тот, что адресован комментарию. Нужны
+     * пост и ветка комментария: у старых записей ветка известна после догрузки.
+     */
+    async checkAnswered(items: NotificationItem[]) {
+      const me = useAuthStore().getUserAddress
+      if (!me) return
+      const now = Date.now()
+      const threads = new Map<string, { postId: string; root: string; ids: string[] }>()
+      for (const item of items) {
+        if (!isReplyableNotification(item) || this.answeredIds.has(item.id)) continue
+        const { comment } = this.getEnrichment(item)
+        const postId = item.shareId ?? comment?.postid
+        const parentId = notificationParentId(item, comment)
+        if (!postId || parentId === undefined) continue
+        const root = parentId || item.id
+        const key = `${postId}:${root}`
+        if (now - (this.answerChecks.get(key) ?? 0) < ANSWER_CHECK_TTL_MS) continue
+        const thread = threads.get(key) ?? { postId, root, ids: [] }
+        thread.ids.push(item.id)
+        threads.set(key, thread)
+      }
+      await Promise.all(
+        [...threads].map(async ([key, { postId, root, ids }]) => {
+          try {
+            const replies = await rpcCall<ThreadReply[]>({
+              method: rpcEndpoints.getComments,
+              parameters: [postId, root, me],
+              options: { auth: false },
+            })
+            const list = Array.isArray(replies) ? replies : []
+            const answered = ids.filter((id) => isAnsweredInThread(list, me, id, root))
+            if (answered.length) this.answeredIds = new Set([...this.answeredIds, ...answered])
+            this.answerChecks.set(key, Date.now())
+          } catch (e) {
+            console.warn('[notifications] answered check failed', e)
+          }
+        })
       )
     },
 

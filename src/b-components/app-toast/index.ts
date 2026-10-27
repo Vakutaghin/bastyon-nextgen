@@ -38,4 +38,6 @@ export const appToast = {
   error: createMethod('error'),
   info: createMethod('info'),
   warning: createMethod('warning'),
+  /** Убрать тост с этим `key` — например, по клику на него. */
+  close: (key: string) => notification.close(key),
 }

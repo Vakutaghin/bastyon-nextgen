@@ -12,9 +12,11 @@ vi.mock('@/helpers/common/haptics', () => ({ haptic: vi.fn() }))
 vi.mock('@/helpers/common/post-title-resolver', () => ({
   resolvePostTitleFromPost: () => ({ title: 'T' }),
 }))
+const notificationsStore = vi.hoisted(() => ({ markAnswered: vi.fn() }))
 vi.mock('@/stores', () => ({
   useCommentsStore: () => commentsStore,
   usePostsStore: () => ({ getPostByShareId: () => undefined }),
+  useNotificationsStore: () => notificationsStore,
 }))
 vi.mock('../comment-sender', () => ({ sendComment }))
 vi.mock('./comment-draft-storage', () => ({
@@ -84,6 +86,8 @@ describe('sendReply — parentid/answerid как в legacy (K4)', () => {
     api.replyDraft.value = 'yo'
     await api.sendReply()
     expect(sendComment).toHaveBeenCalledWith('POST', 'c1', 'c1', 'yo')
+    // В уведомлении об этом комментарии — «Вы ответили».
+    expect(notificationsStore.markAnswered).toHaveBeenCalledWith('c1')
   })
 
   it('корневой комментарий к посту: parentid и answerid пустые', async () => {
@@ -92,6 +96,7 @@ describe('sendReply — parentid/answerid как в legacy (K4)', () => {
     api.replyDraft.value = 'root'
     await api.sendReply()
     expect(sendComment).toHaveBeenCalledWith('POST', '', '', 'root')
+    expect(notificationsStore.markAnswered).not.toHaveBeenCalled()
   })
 
   it('ошибка отправки: pending снимается, черновик и цель возвращаются', async () => {
@@ -104,5 +109,7 @@ describe('sendReply — parentid/answerid как в legacy (K4)', () => {
     expect(api.replyDraft.value).toBe('hi')
     expect(api.replyTarget.value).toEqual({ commentId: 'r1', parentId: 'c1', prefix: '' })
     expect(toast.error).toHaveBeenCalledWith({ message: 'node' })
+    // Ответ не ушёл — и отметки нет.
+    expect(notificationsStore.markAnswered).not.toHaveBeenCalled()
   })
 })

@@ -30,13 +30,25 @@ const note = (overrides: Partial<NotificationItem>): NotificationItem => ({
   ...overrides,
 })
 
-/** Нода: транзакции по id и профили по адресу. */
+/**
+ * Нода: посты (`getrawtransactionwithmessagebyid`), комментарии — у них `msg`
+ * (`getcomments` с пустым постом и списком id) и профили по адресу. На
+ * комментарий `getrawtransactionwithmessagebyid` отвечает null — как настоящая.
+ */
 function node(
   txs: Record<string, Record<string, unknown>>,
   profiles: Record<string, Record<string, unknown>> = {}
 ) {
-  mocks.rpcCallWithAuth.mockImplementation(async (req: { parameters: [string[]] }) =>
-    req.parameters[0].map((id) => txs[id]).filter(Boolean)
+  const isComment = (tx: Record<string, unknown> | undefined) => !!tx && 'msg' in tx
+  mocks.rpcCallWithAuth.mockImplementation(
+    async (req: { method: string; parameters: unknown[] }) => {
+      if (req.method === 'getcomments') {
+        return (req.parameters[3] as string[]).map((id) => txs[id]).filter(isComment)
+      }
+      return (req.parameters[0] as string[]).map((id) =>
+        txs[id] && !isComment(txs[id]) ? txs[id] : null
+      )
+    }
   )
   mocks.rpcCall.mockImplementation(async (req: { parameters: [string[]] }) =>
     req.parameters[0].map((address) => ({ address, ...profiles[address] }))
@@ -104,6 +116,12 @@ describe('enrichNotifications', () => {
       method: 'getrawtransactionwithmessagebyid',
       parameters: [['post1']],
     })
+    // Комментарий — через getcomments: getrawtransactionwithmessagebyid на него
+    // отвечает null, и без текста оставались все уведомления о комментариях.
+    expect(mocks.rpcCallWithAuth.mock.calls[1]![0]).toMatchObject({
+      method: 'getcomments',
+      parameters: ['', '', '', ['cm1']],
+    })
     expect(mocks.rpcCall.mock.calls[0]![0]).toMatchObject({
       method: 'getuserprofile',
       parameters: [['PBob']],
@@ -158,6 +176,18 @@ describe('enrichNotifications', () => {
       vi.fn()
     )
     expect(c.postCache.post9?.message).toBe('Родительский пост')
+  })
+
+  it('удалённый комментарий — без текста, с отметкой', async () => {
+    node({ c5: { id: 'c5', postid: 'post5', msg: '', deleted: true } })
+    const c = caches()
+    await enrichNotifications(
+      c,
+      [note({ id: 'c5', type: 'comment', shareId: 'post5', mesType: 'comment' })],
+      vi.fn()
+    )
+    expect(c.commentCache.c5).toMatchObject({ postid: 'post5', deleted: true })
+    expect(c.commentCache.c5?.message).toBeUndefined()
   })
 
   it('оценка комментария: сначала комментарий, потом его пост', async () => {

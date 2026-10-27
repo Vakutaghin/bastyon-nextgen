@@ -61,6 +61,10 @@ export interface MockComment {
   blockedByPostAuthor?: boolean
   /** Лайков у комментария; по умолчанию 0. */
   scoreUp?: number
+  /** Ответ в ветке: корневой комментарий ветки. */
+  parentid?: string
+  /** Ответ в ветке: комментарий, которому он адресован. */
+  answerid?: string
 }
 
 export interface MockNodeData {
@@ -171,11 +175,11 @@ function commentJson(c: MockComment, index: number, data: MockNodeData) {
     timeUpd: NOW - 300 + index,
     block: HEIGHT - 5,
     msg: JSON.stringify(body),
-    parentid: '',
-    answerid: '',
+    parentid: c.parentid ?? '',
+    answerid: c.answerid ?? '',
     scoreUp: c.scoreUp ?? 0,
     scoreDown: 0,
-    children: 0,
+    children: data.comments.filter((r) => r.parentid === c.id).length,
     flags: {},
     type: 204,
     ...(c.blockedByPostAuthor ? { blck_cnt_cmt: 1 } : {}),
@@ -220,22 +224,28 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
         videos: {},
       }
     case 'getrawtransactionwithmessagebyid': {
+      // Как у настоящей ноды: на id комментария — null.
       const ids = (params[0] as string[]) ?? []
-      return data.posts
-        .map((p, i) => [p, i] as const)
-        .filter(([p]) => ids.includes(p.txid))
-        .map(([p, i]) => postJson(p, data, i))
+      return ids.map((id) => {
+        const i = data.posts.findIndex((p) => p.txid === id)
+        return i < 0 ? null : postJson(data.posts[i]!, data, i)
+      })
     }
     case 'getuserprofile': {
       const addresses = (params[0] as string[]) ?? []
       return data.profiles.filter((p) => addresses.includes(p.address)).map(profileJson)
     }
     case 'getcomments': {
-      const [postId, parentId] = params as [string, string]
-      if (parentId) return []
+      // [пост, ветка, читатель, id]: со списком id — эти комментарии с любого
+      // поста; иначе корневые комментарии поста или ответы ветки.
+      const [postId, parentId, , ids] = params as [string, string, string, string[]?]
       return data.comments
         .map((c, i) => [c, i] as const)
-        .filter(([c]) => c.postid === postId)
+        .filter(([c]) =>
+          ids?.length
+            ? ids.includes(c.id)
+            : c.postid === postId && (c.parentid ?? '') === (parentId ?? '')
+        )
         .map(([c, i]) => commentJson(c, i, data))
     }
     case 'getusersubscribers': {

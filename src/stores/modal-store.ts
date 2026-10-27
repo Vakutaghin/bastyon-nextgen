@@ -9,6 +9,15 @@ import type {
 } from '@/b-components/content/post-composer/composer-source'
 import type { UnlockPhase } from '@/blockchain/storage/vault/vault-unlock'
 
+/** Куда в окне поста перейти сразу: комментарий (с веткой) и, может быть, ответ на него. */
+export interface PostModalTarget {
+  commentId: string
+  /** Корневой комментарий ветки, если цель — ответ: ветку надо раскрыть. */
+  parentId?: string
+  /** Сразу открыть форму ответа на этот комментарий. */
+  reply?: boolean
+}
+
 interface ImageGalleryState {
   isOpen: boolean
   images: string[]
@@ -24,6 +33,10 @@ export const useModalStore = defineStore('modal', {
       scrollPosition: 0,
       /** Видео поста запускается сразу: окно открыли нажатием на ролик. */
       autoplay: false,
+      /** Комментарий, к которому прокрутить, — окно открыли из уведомления. */
+      target: null as PostModalTarget | null,
+      /** Номер открытия: то же окно, открытое заново, — заново и переход к цели. */
+      openSeq: 0,
     },
     imageGallery: {
       isOpen: false,
@@ -108,7 +121,10 @@ export const useModalStore = defineStore('modal', {
     /**
      * Открывает модалку с постом
      */
-    openPostModal(post: Post, options: { autoplay?: boolean } = {}): void {
+    openPostModal(
+      post: Post,
+      options: { autoplay?: boolean; target?: PostModalTarget } = {}
+    ): void {
       // Сохраняем позицию скролла
       const scrollTop =
         window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
@@ -123,6 +139,8 @@ export const useModalStore = defineStore('modal', {
 
       this.postModal.post = post
       this.postModal.autoplay = !!options.autoplay
+      this.postModal.target = options.target ?? null
+      this.postModal.openSeq++
       this.postModal.isOpen = true
     },
 
@@ -133,6 +151,7 @@ export const useModalStore = defineStore('modal', {
       this.postModal.isOpen = false
       this.postModal.post = null
       this.postModal.autoplay = false
+      this.postModal.target = null
 
       // Ушли из окна на другую страницу — её прокрутку не трогаем.
       if (options.restoreScroll === false) return

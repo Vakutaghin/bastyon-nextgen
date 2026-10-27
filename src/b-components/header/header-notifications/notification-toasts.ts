@@ -1,5 +1,5 @@
 import type { Pinia } from 'pinia'
-import { useNotificationSettingsStore } from '@/stores'
+import { useNotificationSettingsStore, useNotificationsStore } from '@/stores'
 import { isNotificationAllowed } from '@/stores/notification-filtering'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
@@ -10,12 +10,24 @@ import { playSound } from '@/services/app-sounds'
 /** Максимум тостов за раз при пачке уведомлений — показываем только последние 2. */
 const MAX_TOASTS_AT_ONCE = 2
 
+/** «От кого»: ник, если уже известен, иначе начало адреса — как в списке. */
+function senderLabel(pinia: Pinia, item: NotificationItem): string | undefined {
+  if (!item.from) return undefined
+  const name = useNotificationsStore(pinia).getEnrichment(item).from?.name?.trim()
+  return name || `${item.from.slice(0, 8)}…`
+}
+
 /**
  * Показать тосты для новых уведомлений и один раз проиграть звук.
  * Вызывается из колбэка store (при опросе getmissedinfo раз в 30 сек).
  * Если пришло больше двух уведомлений — показываем только последние 2.
+ * Нажатие на тост — `open`: туда же, куда уведомление в списке.
  */
-export function showToastsForNewNotifications(pinia: Pinia, items: NotificationItem[]): void {
+export function showToastsForNewNotifications(
+  pinia: Pinia,
+  items: NotificationItem[],
+  open?: (item: NotificationItem) => void
+): void {
   if (items.length === 0) return
   const settings = useNotificationSettingsStore(pinia)
   const allowed = items.filter((item) => isNotificationAllowed(settings, item))
@@ -38,10 +50,18 @@ export function showToastsForNewNotifications(pinia: Pinia, items: NotificationI
           : item.upvoteVal != null
             ? t('notif.scoreValue', { n: item.upvoteVal })
             : item.from
-              ? t('notif.from', { name: item.from })
+              ? t('notif.from', { name: senderLabel(pinia, item) })
               : undefined),
       key: item.id,
       duration: 4,
+      ...(open
+        ? {
+            onClick: () => {
+              appToast.close(item.id)
+              open(item)
+            },
+          }
+        : {}),
     })
   }
 

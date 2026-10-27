@@ -77,13 +77,15 @@ export function extractCommentSnapshot(
     const inner = (msgRaw as Record<string, unknown>).message
     if (typeof inner === 'string') message = inner
   }
+  const deleted = o.deleted === true || o.deleted === 'true'
   return {
     id,
     postid: pickStr(o, 'postid', 'rootTxHash', 'posttxid') ?? fallbackPostId,
     parentid: pickStr(o, 'parentid'),
     answerid: pickStr(o, 'answerid'),
     address: pickStr(o, 'address'),
-    message,
+    message: deleted ? undefined : message,
+    ...(deleted ? { deleted } : {}),
   }
 }
 
@@ -158,6 +160,11 @@ export function canonicalMesType(msg: unknown, mesType: unknown): string | undef
 export function canonicalStoredMesType(mesType: string | undefined): string | undefined {
   if (mesType === 'post') return 'comment'
   return canonicalMesType(undefined, mesType)
+}
+
+/** Событие — комментарий к вашему посту или ответ вам: на него можно ответить. */
+function isCommentEvent(mesType: string | undefined): boolean {
+  return mesType === 'comment' || mesType === 'answer'
 }
 
 /** Тип уведомления (иконка, фильтр, переход по клику) по mesType приложения. */
@@ -318,6 +325,10 @@ export function mapMissedEventToNotification(
     | undefined
   // Оценка комментария знает только комментарий; пост найдётся через него.
   const commentId = mesType === 'upvoteComment' ? pickStr(n, 'commentid') : undefined
+  // Комментарий и ответ приходят без текста, но с веткой: по ней уведомление
+  // сразу ведёт к комментарию, не дожидаясь, пока он догрузится.
+  const parentId =
+    isCommentEvent(mesType) && typeof n.parentid === 'string' ? n.parentid : undefined
 
   const postSnapshot = extractPostSnapshot(n.share, shareId)
   const commentSnapshot = extractCommentSnapshot(n.comment, String(id), shareId)
@@ -341,6 +352,7 @@ export function mapMissedEventToNotification(
     from: fromAddress ?? fromSnapshot?.address,
     shareId,
     commentId,
+    ...(parentId !== undefined ? { parentId } : {}),
     mesType,
     upvoteVal,
     ...(donation ? { donation } : {}),

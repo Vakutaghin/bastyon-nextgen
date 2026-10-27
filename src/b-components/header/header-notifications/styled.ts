@@ -100,6 +100,55 @@ export const SC_CloseButton = styled.button`
   }
 `
 
+/** «Все · Комментарии» над списком — как фильтр чатов в мессенджере. */
+export const SC_FilterRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 6px 8px;
+`
+
+export const SC_FilterChip = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: calc(1.4 * var(--leading-scale));
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-tertiary);
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--ui-primary);
+    background: rgb(var(--ui-primary-rgb) / 10%);
+    color: var(--ui-primary-text);
+  }
+`
+
+/** Сколько непрочитанных комментариев. */
+export const SC_FilterCount = styled.span`
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-primary);
+  color: var(--ui-text-inverted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+`
+
 export const SC_NotificationsList = styled.div`
   display: flex;
   flex-direction: column;
@@ -146,11 +195,13 @@ export const SC_NotificationItemActions = styled.div`
   align-items: flex-start;
 `
 
-export const SC_NotificationItemTrigger = styled.span`
+export const SC_NotificationItemTrigger = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 2px 4px;
+  border: 0;
+  background: none;
   border-radius: var(--ui-radius-sm);
   cursor: pointer;
   color: var(--ui-text-dimmed);
@@ -267,6 +318,35 @@ export const SC_NotificationActorName = styled.span`
   margin-right: 4px;
 `
 
+/** Аватар — в профиль. Своей рамки и подложки нет: выглядит как раньше. */
+export const SC_ActorAvatarButton = styled.button`
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+`
+
+/** Имя — в профиль, ссылкой. */
+export const SC_ActorNameButton = styled.button`
+  display: inline;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ui-text-highlighted);
+  text-align: start;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
 export const SC_NotificationAction = styled.span`
   color: var(--ui-text-toned);
 `
@@ -365,6 +445,72 @@ export const SC_PostRefText = styled.span`
   white-space: nowrap;
   min-width: 0;
   flex: 1;
+`
+
+/** «Ответить» и «Вы ответили» под комментарием. */
+export const SC_ReplyRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+`
+
+export const SC_ReplyButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-bg);
+  color: var(--ui-text-highlighted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+
+  &:hover {
+    background: var(--ui-bg-elevated);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .anticon {
+    font-size: 12px;
+  }
+`
+
+export const SC_AnsweredMark = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ui-text-muted);
+
+  .anticon {
+    color: var(--ui-success);
+  }
+`
+
+export const SC_ShowMoreButton = styled.button`
+  align-self: center;
+  margin: 4px 0;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: var(--ui-radius-md);
+  background: none;
+  color: var(--ui-primary-text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--ui-bg-elevated);
+  }
 `
 
 export const SC_EmptyMessage = styled.div`
