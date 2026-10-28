@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -31,6 +32,7 @@ import com.getcapacitor.annotation.Permission;
  *                    the rewind/forward buttons (delta is resolved in the
  *                    service).
  *   - "stop"       — user dismissed playback.
+ *   - "next" / "previous" — кнопки очереди мини-плеера, пока звук играет WebView.
  */
 @CapacitorPlugin(
         name = "BackgroundMedia",
@@ -64,6 +66,16 @@ public class BackgroundMediaPlugin extends Plugin {
             @Override
             public void onStop() {
                 notifyListeners("stop", new JSObject());
+            }
+
+            @Override
+            public void onNext() {
+                notifyListeners("next", new JSObject());
+            }
+
+            @Override
+            public void onPrevious() {
+                notifyListeners("previous", new JSObject());
             }
         });
     }
@@ -120,6 +132,10 @@ public class BackgroundMediaPlugin extends Plugin {
         intent.putExtra(MediaPlaybackService.EXTRA_URL, url);
         Float volume = call.getFloat("volume", 1.0f);
         intent.putExtra(MediaPlaybackService.EXTRA_VOLUME, volume == null ? 1.0f : volume);
+        JSArray queue = call.getArray("queue", null);
+        if (queue != null && queue.length() > 0) {
+            intent.putExtra(MediaPlaybackService.EXTRA_QUEUE, queue.toString());
+        }
         startForegroundService(ctx, intent);
         call.resolve();
     }
@@ -134,6 +150,7 @@ public class BackgroundMediaPlugin extends Plugin {
             if (state != null) {
                 ret.put("position", state[0] / 1000d);
                 ret.put("isPlaying", state[1] == 1L);
+                ret.put("index", state[2]);
             }
             call.resolve(ret);
         });
@@ -154,6 +171,8 @@ public class BackgroundMediaPlugin extends Plugin {
         Double positionSec = call.getDouble("position", 0d);
         Float speed = call.getFloat("playbackSpeed", 1.0f);
         Boolean isPlaying = call.getBoolean("isPlaying", true);
+        Boolean hasQueue = call.getBoolean("hasQueue", false);
+        intent.putExtra(MediaPlaybackService.EXTRA_HAS_QUEUE, hasQueue != null && hasQueue);
 
         intent.putExtra(MediaPlaybackService.EXTRA_TITLE, title);
         intent.putExtra(MediaPlaybackService.EXTRA_ARTIST, artist);
