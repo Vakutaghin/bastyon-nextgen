@@ -8,11 +8,15 @@
 //! - `asr:install-progress` { model, received, total } — скачивание модели;
 //! - `asr:level` { session, level, speaking } — громкость 0..1, ~20 раз в секунду;
 //! - `asr:state` { session, loading, pending } — модель грузится / фраз в очереди;
-//! - `asr:text` { session, seq, text } — распознанная фраза, по порядку;
+//! - `asr:partial` { session, seq, text } — черновик фразы `seq`, пока её
+//!   говорят (draft.rs); заменяется следующим черновиком или её текстом;
+//! - `asr:text` { session, seq, text } — распознанная фраза, по порядку; текст
+//!   может быть пустым — тогда черновик фразы просто убирается;
 //! - `asr:end` { session, reason, error } — сессия закончилась
 //!   (stopped | cancelled | error).
 
 mod capture;
+mod draft;
 mod engine;
 mod keep_awake;
 pub mod models;
@@ -51,6 +55,8 @@ enum EngineJob {
         samples: Vec<f32>,
         language: String,
         prompt: String,
+        pass: engine::Pass,
+        /// Прерывает и ещё не начатый расчёт, и идущий.
         cancelled: Arc<AtomicBool>,
         reply: mpsc::Sender<Result<String, String>>,
     },
@@ -110,6 +116,7 @@ fn engine_loop(rx: mpsc::Receiver<EngineJob>) {
                 samples,
                 language,
                 prompt,
+                pass,
                 cancelled,
                 reply,
             }) => {
@@ -117,10 +124,9 @@ fn engine_loop(rx: mpsc::Receiver<EngineJob>) {
                     continue;
                 }
                 let result = ensure_engine(&mut engine, &model_file).and_then(|_| {
-                    engine
-                        .as_ref()
-                        .expect("engine just loaded")
-                        .transcribe(&samples, &language, &prompt)
+                    engine.as_ref().expect("engine just loaded").transcribe(
+                        &samples, &language, &prompt, pass, &cancelled,
+                    )
                 });
                 let _ = reply.send(result);
             }
@@ -505,6 +511,14 @@ struct TextEvent {
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct PartialEvent {
+    session: u32,
+    seq: u32,
+    text: String,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct EndEvent {
     session: u32,
     reason: &'static str,
@@ -517,13 +531,21 @@ struct EndEvent {
 /// канале, детектор его догоняет.
 struct VadWorker {
     input: Option<mpsc::Sender<VadInput>>,
-    output: mpsc::Receiver<Result<Vec<f32>, String>>,
+    output: mpsc::Receiver<Result<VadOutput, String>>,
     speaking: Arc<AtomicBool>,
+    /// Распознавание свободно: отдать черновик начатой фразы, как наберётся.
+    want_draft: Arc<AtomicBool>,
 }
 
 enum VadInput {
     Samples(Vec<f32>),
     Finish,
+}
+
+enum VadOutput {
+    Phrase(Vec<f32>),
+    /// Начатая фраза: её номер и звук до сих пор.
+    Draft(u32, Vec<f32>),
 }
 
 impl VadWorker {
@@ -532,6 +554,8 @@ impl VadWorker {
         let (out_tx, out_rx) = mpsc::channel();
         let speaking = Arc::new(AtomicBool::new(false));
         let flag = speaking.clone();
+        let want_draft = Arc::new(AtomicBool::new(false));
+        let want = want_draft.clone();
         let spawned = std::thread::Builder::new()
             .name("asr-vad".into())
             .spawn(move || {
@@ -549,7 +573,7 @@ impl VadWorker {
                         VadInput::Finish => {
                             match segmenter.finish() {
                                 Ok(Some(tail)) => {
-                                    let _ = out_tx.send(Ok(tail));
+                                    let _ = out_tx.send(Ok(VadOutput::Phrase(tail)));
                                 }
                                 Ok(None) => {}
                                 Err(e) => {
@@ -563,8 +587,14 @@ impl VadWorker {
                     match result {
                         Ok(utterances) => {
                             for u in utterances {
-                                if out_tx.send(Ok(u)).is_err() {
+                                if out_tx.send(Ok(VadOutput::Phrase(u))).is_err() {
                                     return;
+                                }
+                            }
+                            if want.load(Ordering::Relaxed) {
+                                if let Some((phrase, samples)) = segmenter.draft() {
+                                    want.store(false, Ordering::Relaxed);
+                                    let _ = out_tx.send(Ok(VadOutput::Draft(phrase, samples)));
                                 }
                             }
                         }
@@ -582,13 +612,19 @@ impl VadWorker {
                 input: None,
                 output: err_rx,
                 speaking,
+                want_draft,
             };
         }
         Self {
             input: Some(in_tx),
             output: out_rx,
             speaking,
+            want_draft,
         }
+    }
+
+    fn want_draft(&self, want: bool) {
+        self.want_draft.store(want, Ordering::Relaxed);
     }
 
     fn speaking(&self) -> bool {
@@ -601,8 +637,8 @@ impl VadWorker {
         }
     }
 
-    /// Готовая фраза, если есть; ошибка детектора заканчивает сессию.
-    fn try_next(&self) -> Result<Option<Vec<f32>>, String> {
+    /// Готовая фраза или черновик, если есть; ошибка детектора заканчивает сессию.
+    fn try_next(&self) -> Result<Option<VadOutput>, String> {
         match self.output.try_recv() {
             Ok(Ok(u)) => Ok(Some(u)),
             Ok(Err(e)) => Err(e),
@@ -618,7 +654,9 @@ impl VadWorker {
         let mut out = Vec::new();
         // Поток детектора закрывает канал, когда отдал последнюю фразу.
         for item in self.output.iter() {
-            out.push(item?);
+            if let VadOutput::Phrase(u) = item? {
+                out.push(u);
+            }
         }
         Ok(out)
     }
@@ -693,6 +731,7 @@ impl Session {
         let cancelled = Arc::new(AtomicBool::new(false));
         let mut pending: Pending = VecDeque::new();
         let mut seq: u32 = 0;
+        let mut drafts = draft::DraftSlot::default();
         let mut last_level = Instant::now() - LEVEL_EVERY;
         let mut heard_samples: usize = 0;
         let mut heard_sound = false;
@@ -748,12 +787,37 @@ impl Session {
                     return Err("mic_error: capture stopped".into());
                 }
             }
-            while let Some(utterance) = vad.try_next()? {
-                self.submit(utterance, &cancelled, &mut pending, &mut seq, loading);
+            while let Some(out) = vad.try_next()? {
+                match out {
+                    VadOutput::Phrase(utterance) => {
+                        drafts.supersede(seq);
+                        self.submit(utterance, &cancelled, &mut pending, &mut seq, loading);
+                    }
+                    // Черновик ещё не законченной фразы, и распознавание свободно.
+                    VadOutput::Draft(phrase, samples) => {
+                        if phrase == seq && pending.is_empty() && !drafts.busy() && !loading {
+                            self.submit_draft(phrase, samples, &mut drafts);
+                        }
+                    }
+                }
             }
             self.collect(&mut pending, false, loading)?;
+            if let Some((phrase, text)) = drafts.poll() {
+                if phrase == seq {
+                    let _ = self.app.emit(
+                        "asr:partial",
+                        PartialEvent {
+                            session: self.id,
+                            seq: phrase,
+                            text,
+                        },
+                    );
+                }
+            }
+            vad.want_draft(!loading && pending.is_empty() && !drafts.busy());
         };
         drop(capture);
+        drafts.abort();
 
         if outcome == "cancelled" {
             cancelled.store(true, Ordering::Relaxed);
@@ -795,12 +859,28 @@ impl Session {
             samples,
             language: self.language.clone(),
             prompt: self.context.clone(),
+            pass: engine::Pass::Phrase,
             cancelled: cancelled.clone(),
             reply,
         });
         pending.push_back((*seq, rx));
         *seq += 1;
         self.emit_state(loading, pending.len() as u32);
+    }
+
+    fn submit_draft(&self, phrase: u32, samples: Vec<f32>, drafts: &mut draft::DraftSlot) {
+        let (reply, rx) = mpsc::channel();
+        let abort = Arc::new(AtomicBool::new(false));
+        self.engine.send(EngineJob::Transcribe {
+            model_file: self.model_file.clone(),
+            samples,
+            language: self.language.clone(),
+            prompt: self.context.clone(),
+            pass: engine::Pass::Draft,
+            cancelled: abort.clone(),
+            reply,
+        });
+        drafts.started(phrase, abort, rx);
     }
 
     /// Отдать готовые фразы по порядку; `wait` — дождаться всех.
@@ -824,15 +904,16 @@ impl Session {
             if !text.is_empty() {
                 self.context.push(' ');
                 self.context.push_str(&text);
-                let _ = self.app.emit(
-                    "asr:text",
-                    TextEvent {
-                        session: self.id,
-                        seq,
-                        text,
-                    },
-                );
             }
+            // И пустой: у фразы мог быть черновик, его надо убрать.
+            let _ = self.app.emit(
+                "asr:text",
+                TextEvent {
+                    session: self.id,
+                    seq,
+                    text,
+                },
+            );
         }
         if pending.len() != before {
             self.emit_state(loading, pending.len() as u32);
@@ -894,17 +975,39 @@ mod live_tests {
         let mut resampler = resample::Resampler::new(rate);
         let detector = engine::SileroDetector::load(&paths.file(&VAD_MODEL).to_string_lossy()).unwrap();
         let mut seg = Segmenter::new(detector);
-        let mut phrases = Vec::new();
-        for chunk in audio.chunks(rate as usize / 50) {
-            phrases.extend(seg.push(&resampler.process(chunk)).unwrap());
-        }
-        phrases.extend(seg.finish().unwrap());
         let engine = engine::Engine::load(&paths.file(spec).to_string_lossy()).unwrap();
         let lang = std::env::var("BASTYON_ASR_LANG").unwrap_or_else(|_| "ru".into());
+        let keep = AtomicBool::new(false);
+        // Черновики — как в сессии: один в расчёте, следующий — когда тот
+        // готов. Запись идёт «в реальном времени»: звук, пришедший за время
+        // расчёта черновика, нарезается до следующего.
+        let mut phrases = Vec::new();
+        let mut owed = Duration::ZERO;
+        for chunk in audio.chunks(rate as usize / 50) {
+            phrases.extend(seg.push(&resampler.process(chunk)).unwrap());
+            owed = owed.saturating_sub(Duration::from_millis(20));
+            if owed.is_zero() {
+                if let Some((n, d)) = seg.draft() {
+                    let t0 = Instant::now();
+                    let text = engine
+                        .transcribe(&d, &lang, "", engine::Pass::Draft, &keep)
+                        .unwrap();
+                    owed = t0.elapsed();
+                    println!(
+                        "  draft #{n} {:.1}s → {:.2}s: {text}",
+                        d.len() as f32 / 16_000.0,
+                        owed.as_secs_f32()
+                    );
+                }
+            }
+        }
+        phrases.extend(seg.finish().unwrap());
         let mut context = String::new();
         for p in &phrases {
             let t0 = Instant::now();
-            let text = engine.transcribe(p, &lang, &context).unwrap();
+            let text = engine
+                .transcribe(p, &lang, &context, engine::Pass::Phrase, &keep)
+                .unwrap();
             println!(
                 "phrase {:.1}s → {:.2}s: {text}",
                 p.len() as f32 / 16_000.0,
@@ -913,6 +1016,18 @@ mod live_tests {
             context.push(' ');
             context.push_str(&text);
         }
+        // Прерванный расчёт отпускает модель быстро, а не досчитывает фразу.
+        let abort = Arc::new(AtomicBool::new(false));
+        let flag = abort.clone();
+        let stopper = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(30));
+            flag.store(true, Ordering::Relaxed);
+        });
+        let t0 = Instant::now();
+        let aborted = engine.transcribe(&phrases[0], &lang, "", engine::Pass::Phrase, &abort);
+        stopper.join().unwrap();
+        println!("aborted after {:.2}s: {aborted:?}", t0.elapsed().as_secs_f32());
+        assert_eq!(aborted, Err("cancelled".into()));
         assert!(!phrases.is_empty());
     }
 }

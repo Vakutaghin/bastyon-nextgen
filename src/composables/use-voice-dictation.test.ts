@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { insertDictated } from './use-voice-dictation'
+import { draftDictated, insertDictated } from './use-voice-dictation'
 
 function field(value: string, caret = value.length): HTMLTextAreaElement {
   const el = document.createElement('textarea')
@@ -58,5 +58,68 @@ describe('insertDictated', () => {
     insertDictated(el, '   ', 'ru')
     expect(el.value).toBe('abc')
     expect(onInput).not.toHaveBeenCalled()
+  })
+})
+
+describe('черновик по ходу речи', () => {
+  it('растёт на месте курсора, текст фразы встаёт на его место', () => {
+    const el = field('Итак')
+    const onInput = vi.fn()
+    el.addEventListener('input', onInput)
+    let d = draftDictated(el, 'Встречаемся', 'ru', 0, null)
+    expect(el.value).toBe('Итак встречаемся')
+    d = draftDictated(el, 'Встречаемся в семь', 'ru', 0, d)
+    expect(el.value).toBe('Итак встречаемся в семь')
+    expect(el.selectionStart).toBe(el.value.length)
+    insertDictated(el, 'Встречаемся в семь. Точка.', 'ru', d)
+    expect(el.value).toBe('Итак встречаемся в семь.')
+    expect(el.selectionStart).toBe(el.value.length)
+    expect(onInput).toHaveBeenCalledTimes(3)
+  })
+
+  it('пустой текст фразы убирает черновик', () => {
+    const el = field('Привет.')
+    const d = draftDictated(el, 'Продолжение следует', 'ru', 0, null)
+    expect(el.value).toBe('Привет. Продолжение следует')
+    insertDictated(el, '', 'ru', d)
+    expect(el.value).toBe('Привет.')
+  })
+
+  it('курсор переставили — черновик меняется на своём месте, курсор остаётся', () => {
+    const el = field('Начало конец', 6)
+    let d = draftDictated(el, 'середина', 'ru', 0, null)
+    expect(el.value).toBe('Начало середина конец')
+    el.setSelectionRange(0, 0)
+    d = draftDictated(el, 'середина текста', 'ru', 0, d)
+    expect(el.value).toBe('Начало середина текста конец')
+    expect(el.selectionStart).toBe(0)
+    insertDictated(el, 'середина текста', 'ru', d)
+    expect(el.value).toBe('Начало середина текста конец')
+    expect(el.selectionStart).toBe(0)
+  })
+
+  it('текст перед черновиком дописали — черновик находится по тексту', () => {
+    const el = field('Раз.')
+    const d = draftDictated(el, 'два', 'ru', 0, null)
+    expect(el.value).toBe('Раз. Два')
+    el.setRangeText('Ноль. ', 0, 0, 'preserve')
+    insertDictated(el, 'Два, три.', 'ru', d)
+    expect(el.value).toBe('Ноль. Раз. Два, три.')
+  })
+
+  it('черновик стёрли — текст фразы встаёт в позицию курсора', () => {
+    const el = field('Текст')
+    const d = draftDictated(el, 'лишнее', 'ru', 0, null)
+    el.value = 'Текст'
+    el.setSelectionRange(5, 5)
+    insertDictated(el, 'и ещё', 'ru', d)
+    expect(el.value).toBe('Текст и ещё')
+  })
+
+  it('в заблокированное поле черновик не пишется', () => {
+    const el = field('Пост публикуется')
+    el.disabled = true
+    expect(draftDictated(el, 'ещё', 'ru', 0, null)).toBeNull()
+    expect(el.value).toBe('Пост публикуется')
   })
 })

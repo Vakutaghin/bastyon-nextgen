@@ -2851,10 +2851,10 @@ export default {
     ready: 'La entrada de voz está lista: haga clic en el botón con barras junto al campo de texto',
     modal: {
       title: 'Entrada de voz',
-      lead: 'Hable y el texto aparecerá en el campo. La voz se reconoce en este mismo dispositivo; la grabación no se envía a ninguna parte.',
+      lead: 'Hable y el texto irá apareciendo en el campo mientras habla. La voz se reconoce en este mismo dispositivo; la grabación no se envía a ninguna parte.',
       download: 'Para ello hay que descargar una vez el modelo de reconocimiento de voz.',
       commands:
-        'Puede dictar la puntuación: «punto», «coma», «signo de interrogación», «nueva línea». Esc termina el dictado.',
+        'Puede dictar la puntuación: «punto», «coma», «signo de interrogación», «nueva línea». Esc termina el dictado. Tras 10 segundos de silencio, el dictado se apaga solo.',
       viaTor: 'El modelo se descargará a través de Tor; puede tardar unos minutos.',
       recommended: 'recomendado',
       downloadButton: 'Descargar · {size}',
@@ -2875,6 +2875,8 @@ export default {
       turbo: 'Máximo',
       turboHint: 'La mejor calidad de reconocimiento.',
       turboHintCpu: 'La mejor calidad, pero bastante más lento en este ordenador.',
+      speedNote:
+        'Cuanto más preciso es el modelo, más lento reconoce: las palabras aparecen en el campo con retraso. En el teléfono se nota especialmente.',
     },
     errors: {
       micDenied:

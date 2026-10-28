@@ -33,6 +33,7 @@
             <SC_ModelHint>{{ modelHint(m.id) }}</SC_ModelHint>
           </SC_ModelOption>
         </SC_ModelList>
+        <SC_Note>{{ t('voiceInput.models.speedNote') }}</SC_Note>
 
         <SC_Note>{{ t('voiceInput.modal.commands') }}</SC_Note>
         <SC_Note v-if="viaTor">{{ t('voiceInput.modal.viaTor') }}</SC_Note>

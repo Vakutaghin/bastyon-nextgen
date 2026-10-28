@@ -2868,10 +2868,10 @@ export default {
       'Die Spracheingabe ist bereit: Klicken Sie auf die Schaltfläche mit den Balken neben dem Eingabefeld',
     modal: {
       title: 'Spracheingabe',
-      lead: 'Sprechen Sie — der Text erscheint im Eingabefeld. Die Sprache wird direkt auf diesem Gerät erkannt, die Aufnahme verlässt es nicht.',
+      lead: 'Sprechen Sie — der Text erscheint schon während des Sprechens im Eingabefeld. Die Sprache wird direkt auf diesem Gerät erkannt, die Aufnahme verlässt es nicht.',
       download: 'Dafür muss das Spracherkennungsmodell einmal heruntergeladen werden.',
       commands:
-        'Satzzeichen lassen sich diktieren: „Punkt“, „Komma“, „Fragezeichen“, „neue Zeile“. Esc beendet das Diktat.',
+        'Satzzeichen lassen sich diktieren: „Punkt“, „Komma“, „Fragezeichen“, „neue Zeile“. Esc beendet das Diktat. Nach 10 Sekunden Stille schaltet sich das Diktat selbst aus.',
       viaTor: 'Das Modell wird über Tor geladen — das kann einige Minuten dauern.',
       recommended: 'empfohlen',
       downloadButton: 'Herunterladen · {size}',
@@ -2892,6 +2892,8 @@ export default {
       turbo: 'Maximal',
       turboHint: 'Die beste Erkennungsqualität.',
       turboHintCpu: 'Die beste Qualität, auf diesem Computer aber deutlich langsamer.',
+      speedNote:
+        'Je genauer das Modell, desto langsamer erkennt es: Die Wörter erscheinen verzögert im Feld. Auf dem Handy merkt man das besonders.',
     },
     errors: {
       micDenied:

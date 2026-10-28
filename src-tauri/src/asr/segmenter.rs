@@ -1,8 +1,9 @@
 //! Нарезка потока с микрофона на фразы по паузам.
 //!
-//! Каждая фраза уходит в распознавание, пока человек говорит следующую: текст
-//! появляется по ходу речи, а после «Готово» остаётся дождаться только
-//! последней фразы. Тишина и шум в распознавание не попадают вовсе — на них
+//! Каждая фраза уходит в распознавание, пока человек говорит следующую, а
+//! после «Готово» остаётся дождаться только последней фразы. Пока фраза не
+//! закончена, её начало отдаётся на черновик (`draft`): поле показывает слова
+//! по ходу речи, а текст всей фразы потом их заменяет. Тишина и шум в распознавание не попадают вовсе — на них
 //! whisper сочиняет «Редактор субтитров…» и «Продолжение следует…».
 //!
 //! Речь определяет детектор (Silero): вероятность речи на каждые 32 мс.
@@ -29,6 +30,10 @@ const PAD_AFTER_MS: usize = 250;
 /// точке последних секунд.
 const MAX_UTTERANCE_MS: usize = 20_000;
 const CUT_SEARCH_MS: usize = 4_000;
+/// Черновик начатой фразы — когда в ней набралось столько речи…
+const DRAFT_MIN_SPEECH_MS: usize = 500;
+/// …и снова, когда к ней прибавилось столько звука.
+const DRAFT_STEP_MS: usize = 600;
 /// Как часто пересчитывать детектор.
 const ANALYZE_EVERY_MS: usize = 256;
 /// Звук перед новыми кадрами, на котором детектор «вслушивается» (у Silero
@@ -51,6 +56,10 @@ pub struct Segmenter<D: SpeechDetector> {
     probs: Vec<f32>,
     since_analysis: usize,
     speaking: bool,
+    /// Сколько фраз уже отдано: номер начатой.
+    phrases: u32,
+    /// Длина начатой фразы в отсчётах, когда отдавали её прошлый черновик.
+    draft_len: usize,
 }
 
 impl<D: SpeechDetector> Segmenter<D> {
@@ -61,6 +70,8 @@ impl<D: SpeechDetector> Segmenter<D> {
             probs: Vec::new(),
             since_analysis: 0,
             speaking: false,
+            phrases: 0,
+            draft_len: 0,
         }
     }
 
@@ -93,6 +104,33 @@ impl<D: SpeechDetector> Segmenter<D> {
     /// Идёт ли речь прямо сейчас (для индикатора).
     pub fn speaking(&self) -> bool {
         self.speaking
+    }
+
+    /// Начатая фраза для черновика: её номер (по порядку фраз с нуля) и звук от
+    /// начала речи до сих пор. None — речи пока мало или она не прибавилась с
+    /// прошлого черновика.
+    pub fn draft(&mut self) -> Option<(u32, Vec<f32>)> {
+        let first = self.probs.iter().position(|&p| p >= SPEECH_PROB)?;
+        let speech = self.probs[first..]
+            .iter()
+            .filter(|&&p| p >= SPEECH_PROB)
+            .count();
+        if speech < frames(DRAFT_MIN_SPEECH_MS) {
+            return None;
+        }
+        let start = first.saturating_sub(frames(PAD_BEFORE_MS)) * FRAME;
+        let len = self.buf.len().saturating_sub(start);
+        if len < self.draft_len + frames(DRAFT_STEP_MS) * FRAME {
+            return None;
+        }
+        self.draft_len = len;
+        Some((self.phrases, self.buf[start..].to_vec()))
+    }
+
+    /// Фраза отдана — следующая начинается без черновика.
+    fn phrase_done(&mut self) {
+        self.phrases += 1;
+        self.draft_len = 0;
     }
 
     /// Добавить звук (16 кГц). Возвращает законченные фразы.
@@ -141,6 +179,7 @@ impl<D: SpeechDetector> Segmenter<D> {
             if !enough_speech {
                 // Щелчок, а не речь: выбрасываем вместе с паузой после него.
                 self.drop_frames(last + 1);
+                self.draft_len = 0;
                 return Ok(None);
             }
             let end_frame = (last + 1 + frames(PAD_AFTER_MS)).min(n);
@@ -149,6 +188,7 @@ impl<D: SpeechDetector> Segmenter<D> {
             let utterance = self.buf[start..end].to_vec();
             self.drop_frames(end_frame);
             self.speaking = false;
+            self.phrase_done();
             return Ok(Some(utterance));
         }
         if (n - first) >= frames(MAX_UTTERANCE_MS) {
@@ -160,6 +200,7 @@ impl<D: SpeechDetector> Segmenter<D> {
             let end = ((cut + 1) * FRAME).min(self.buf.len());
             let utterance = self.buf[start..end].to_vec();
             self.drop_frames(cut + 1);
+            self.phrase_done();
             return Ok(Some(utterance));
         }
         Ok(None)
@@ -250,6 +291,46 @@ mod tests {
         let longest = seg.detector.0.iter().copied().max().unwrap();
         // Секунда контекста + ~256 мс нового звука, а не вся 15-секундная фраза.
         assert!(longest <= (frames(CONTEXT_MS) + frames(ANALYZE_EVERY_MS) + 2) * FRAME, "{longest}");
+    }
+
+    #[test]
+    fn drafts_grow_with_the_phrase_and_carry_its_number() {
+        let mut seg = Segmenter::new(Energy);
+        let mut drafts = Vec::new();
+        let mut phrases = Vec::new();
+        let mut audio = ms(500, false);
+        audio.extend(ms(2000, true));
+        audio.extend(ms(900, false));
+        audio.extend(ms(1500, true));
+        for chunk in audio.chunks(1600) {
+            phrases.extend(seg.push(chunk).unwrap());
+            if let Some(d) = seg.draft() {
+                drafts.push((d.0, d.1.len(), phrases.len()));
+            }
+        }
+        // Первый черновик — когда набралось полсекунды речи, не раньше.
+        let secs = |n: usize| n as f32 / 16_000.0;
+        assert!(secs(drafts[0].1) >= 0.5, "{}", secs(drafts[0].1));
+        // Черновик — всегда той фразы, которая ещё не отдана.
+        assert!(drafts.iter().all(|&(n, _, done)| n as usize == done));
+        assert!(drafts.iter().any(|&(n, ..)| n == 0) && drafts.iter().any(|&(n, ..)| n == 1));
+        // Внутри фразы каждый следующий длиннее прежнего хотя бы на шаг.
+        for w in drafts.windows(2).filter(|w| w[0].0 == w[1].0) {
+            assert!(w[1].1 >= w[0].1 + frames(DRAFT_STEP_MS) * FRAME);
+        }
+        assert_eq!(phrases.len(), 1);
+    }
+
+    #[test]
+    fn no_draft_for_silence_or_clicks() {
+        let mut seg = Segmenter::new(Energy);
+        let mut audio = ms(2000, false);
+        audio.extend(ms(200, true));
+        audio.extend(ms(2000, false));
+        for chunk in audio.chunks(1600) {
+            seg.push(chunk).unwrap();
+            assert!(seg.draft().is_none());
+        }
     }
 
     #[test]

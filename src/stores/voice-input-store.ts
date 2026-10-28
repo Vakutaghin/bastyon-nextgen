@@ -13,7 +13,9 @@ import {
  * Голосовой ввод: распознавание прямо на устройстве — на компьютере
  * (src-tauri/src/asr) и на Android (плагин VoiceInput, voice-backend). Стор
  * держит модели, скачивание, одну активную диктовку и раздаёт распознанный
- * текст полю, которое её начало.
+ * текст полю, которое её начало: черновик фразы по ходу речи, потом её текст.
+ * Если IDLE_STOP_MS не слышно ни речи, ни распознанного текста, диктовка
+ * выключается сама, как на телефоне.
  */
 
 export type VoiceModelId = 'base' | 'small' | 'turbo'
@@ -42,7 +44,12 @@ export interface DictationTarget {
   language: () => string
   /** Текст перед курсором: подсказка модели о стиле и именах. */
   context: () => string
-  insert: (text: string) => void
+  /** Черновик фразы `seq`, пока её говорят: заменяет прежний черновик. */
+  draft: (text: string, seq: number) => void
+  /** Текст фразы `seq`: встаёт на место её черновика; пустой его убирает. */
+  insert: (text: string, seq: number) => void
+  /** Диктовка кончилась: оставшийся черновик становится обычным текстом. */
+  settle: () => void
 }
 
 interface InstallProgress {
@@ -57,6 +64,17 @@ const MODEL_IDS: VoiceModelId[] = ['base', 'small', 'turbo']
 
 /** Поля с диктовкой; не реактивно — стор хранит только id владельца. */
 const targets = new Map<string, DictationTarget>()
+
+/** Столько без речи и распознанного текста — и диктовка выключается сама. */
+export const IDLE_STOP_MS = 10_000
+let idleWatch: ReturnType<typeof setInterval> | null = null
+/** Когда последний раз слышали речь или получили текст. */
+let lastActivity = 0
+
+function stopIdleWatch(): void {
+  if (idleWatch) clearInterval(idleWatch)
+  idleWatch = null
+}
 
 function loadModel(): VoiceModelId {
   try {
@@ -218,15 +236,22 @@ export const useVoiceInputStore = defineStore('voice-input', {
         if (!this.owns(p.session) || this.phase === 'finishing') return
         this.level = p.level
         this.speaking = p.speaking
+        if (p.speaking) lastActivity = Date.now()
       })
       await on<{ session: number; loading: boolean; pending: number }>('asr:state', (p) => {
         if (!this.owns(p.session)) return
         this.loading = p.loading
         this.pending = p.pending
       })
+      await on<{ session: number; seq: number; text: string }>('asr:partial', (p) => {
+        if (!this.owns(p.session) || !this.ownerId) return
+        lastActivity = Date.now()
+        targets.get(this.ownerId)?.draft(p.text, p.seq)
+      })
       await on<{ session: number; seq: number; text: string }>('asr:text', (p) => {
         if (!this.owns(p.session) || !this.ownerId) return
-        targets.get(this.ownerId)?.insert(p.text)
+        if (p.text) lastActivity = Date.now()
+        targets.get(this.ownerId)?.insert(p.text, p.seq)
       })
       await on<{ session: number; reason: string; error: string | null }>('asr:end', (p) => {
         if (!this.owns(p.session)) return
@@ -236,6 +261,8 @@ export const useVoiceInputStore = defineStore('voice-input', {
     },
 
     finishSession(): void {
+      stopIdleWatch()
+      if (this.ownerId) targets.get(this.ownerId)?.settle()
       this.phase = 'idle'
       this.session = null
       this.ownerId = null
@@ -329,11 +356,29 @@ export const useVoiceInputStore = defineStore('voice-input', {
         if (this.phase === 'starting') {
           this.session = session
           this.phase = 'listening'
+          this.watchIdle()
         }
       } catch (e) {
         this.finishSession()
         this.reportError(e)
       }
+    },
+
+    /**
+     * Следить за тишиной: пока модель грузится, фразы ждут распознавания или
+     * детектор слышит речь, отсчёт не идёт.
+     */
+    watchIdle(): void {
+      stopIdleWatch()
+      lastActivity = Date.now()
+      idleWatch = setInterval(() => {
+        if (this.phase !== 'listening') return
+        if (this.loading || this.pending > 0 || this.speaking) {
+          lastActivity = Date.now()
+          return
+        }
+        if (Date.now() - lastActivity >= IDLE_STOP_MS) void this.stop()
+      }, 1000)
     },
 
     /** Закончить: сказанное дораспознается и допишется в поле. */
@@ -342,6 +387,7 @@ export const useVoiceInputStore = defineStore('voice-input', {
         this.finishSession()
         return
       }
+      stopIdleWatch()
       this.phase = 'finishing'
       this.level = 0
       this.speaking = false

@@ -53,6 +53,9 @@
         </SC_ModelActions>
       </SC_ModelRow>
     </SC_ModelRows>
+    <SC_VoiceDesc v-if="store.status?.supported !== false">
+      {{ t('voiceInput.models.speedNote') }}
+    </SC_VoiceDesc>
 
     <SC_Commands v-if="commands.length">
       <summary>{{ t('voiceInput.settings.commandsTitle') }}</summary>

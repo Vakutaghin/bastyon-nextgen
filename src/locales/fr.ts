@@ -2868,10 +2868,10 @@ export default {
     ready: 'La saisie vocale est prête : cliquez sur le bouton à barres à côté du champ de saisie',
     modal: {
       title: 'Saisie vocale',
-      lead: 'Parlez, le texte apparaît dans le champ. La parole est reconnue directement sur cet appareil, l’enregistrement n’est envoyé nulle part.',
+      lead: 'Parlez, le texte apparaît dans le champ au fil de vos paroles. La parole est reconnue directement sur cet appareil, l’enregistrement n’est envoyé nulle part.',
       download: 'Pour cela, il faut télécharger une fois le modèle de reconnaissance vocale.',
       commands:
-        'La ponctuation peut être dictée : « point », « virgule », « point d’interrogation », « à la ligne ». Échap arrête la dictée.',
+        'La ponctuation peut être dictée : « point », « virgule », « point d’interrogation », « à la ligne ». Échap arrête la dictée. Après 10 secondes de silence, la dictée s’arrête d’elle-même.',
       viaTor: 'Le modèle sera téléchargé via Tor — cela peut prendre quelques minutes.',
       recommended: 'recommandé',
       downloadButton: 'Télécharger · {size}',
@@ -2892,6 +2892,8 @@ export default {
       turbo: 'Maximal',
       turboHint: 'La meilleure qualité de reconnaissance.',
       turboHintCpu: 'La meilleure qualité, mais nettement plus lent sur cet ordinateur.',
+      speedNote:
+        'Plus le modèle est précis, plus il reconnaît lentement : les mots apparaissent dans le champ avec un temps de retard. C’est surtout sensible sur téléphone.',
     },
     errors: {
       micDenied:

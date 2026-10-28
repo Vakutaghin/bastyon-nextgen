@@ -41,7 +41,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *   cancelInstall(), remove({model});
  *   start({model, language, prompt}) — {session}; запись с микрофона, события
  *       `asr:level` {session, level, speaking}, `asr:state` {session, loading,
- *       pending}, `asr:text` {session, seq, text}, `asr:end` {session, reason,
+ *       pending}, `asr:partial` {session, seq, text} — черновик фразы по ходу
+ *       речи, `asr:text` {session, seq, text}, `asr:end` {session, reason,
  *       error};
  *   stop({session}) — дораспознать сказанное, cancel({session}) — без хвоста;
  *   openMicSettings() — страница приложения в настройках телефона.

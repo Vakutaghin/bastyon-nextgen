@@ -62,13 +62,23 @@ describe('voice input store на Android', () => {
     plugin.status.mockResolvedValue(status())
     plugin.start.mockResolvedValue({ session: 4 })
     const insert = vi.fn()
+    const draft = vi.fn()
     const store = useVoiceInputStore()
-    store.register({ id: 'f', language: () => 'ru', context: () => '', insert })
+    store.register({
+      id: 'f',
+      language: () => 'ru',
+      context: () => '',
+      insert,
+      draft,
+      settle: vi.fn(),
+    })
     await store.start('f')
     expect(plugin.start).toHaveBeenCalledWith({ model: 'small', language: 'ru', prompt: '' })
     expect(store.phase).toBe('listening')
+    listeners.get('asr:partial')?.({ session: 4, seq: 0, text: 'при' })
+    expect(draft).toHaveBeenCalledWith('при', 0)
     listeners.get('asr:text')?.({ session: 4, seq: 0, text: 'привет' })
-    expect(insert).toHaveBeenCalledWith('привет')
+    expect(insert).toHaveBeenCalledWith('привет', 0)
     await store.stop()
     expect(plugin.stop).toHaveBeenCalledWith({ session: 4 })
   })
@@ -77,7 +87,14 @@ describe('voice input store на Android', () => {
     plugin.status.mockResolvedValue(status())
     plugin.start.mockRejectedValue(new Error('mic_denied'))
     const store = useVoiceInputStore()
-    store.register({ id: 'f', language: () => 'ru', context: () => '', insert: vi.fn() })
+    store.register({
+      id: 'f',
+      language: () => 'ru',
+      context: () => '',
+      insert: vi.fn(),
+      draft: vi.fn(),
+      settle: vi.fn(),
+    })
     await store.start('f')
     expect(store.phase).toBe('idle')
     const toast = toastError.mock.calls[0]![0] as { message: string; onClick: () => void }

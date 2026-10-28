@@ -10,10 +10,10 @@ How to dictate the text of a post or a message: recognition runs right on your c
 
 1. Put the cursor in the text field of a post or a chat message.
 2. Click the button with bars next to the smiley — **“Voice input”** — and speak.
-3. The text appears at the cursor phrase by phrase, a second or two after you finish speaking.
-4. To stop — the same button or the Esc key: **“Stop dictation (Esc)”**. On a phone, the same button.
+3. Words appear at the cursor as you speak, like on a phone keyboard. When you finish a phrase, the app recognizes it as a whole and puts the final text in its place — more accurate and with punctuation.
+4. To stop — the same button or the Esc key: **“Stop dictation (Esc)”**. On a phone, the same button. If no speech and no recognized text come for 10 seconds, dictation turns itself off.
 
-Dictated text can be undone like normal typing: Ctrl+Z, on a Mac Cmd+Z.
+The last dictated phrase can be undone like normal typing: Ctrl+Z, on a Mac Cmd+Z.
 
 ## First launch: the recognition model
 
@@ -24,6 +24,8 @@ Recognition needs a model, which is downloaded once. The first time you click, t
 | **“Fast”** | about 60 MB | answers faster but makes more mistakes |
 | **“Accurate”** | about 190 MB | understands speech well and adds punctuation itself, recommended |
 | **“Best”** | about 575 MB | the best quality, but noticeably slower on a computer without a powerful graphics card; not available on a phone |
+
+The more accurate the model, the slower it recognizes speech, so words appear in the field with a delay. This is most noticeable on phones. The note under the list of models says the same.
 
 The model is downloaded from Hugging Face, and the app checks that the file has not been swapped. If [Tor](tor.md) is on, the model downloads through Tor — this can take a few minutes.
 
@@ -44,7 +46,7 @@ In a post the app recognizes speech in the post's language — it is chosen in t
 ## Where it works
 
 - In the desktop app — Windows, macOS and Linux — and in the Android app.
-- A phone needs a 64-bit processor, which nearly all phones of recent years have. On 32-bit ones the app says that voice input is not available. A phone recognizes more slowly than a computer, and with the **“Accurate”** model a phrase appears a few seconds later. If that is too long, choose **“Fast”**.
+- A phone needs a 64-bit processor, which nearly all phones of recent years have. On 32-bit ones the app says that voice input is not available. A phone recognizes more slowly than a computer: with the **“Accurate”** model words appear less often as you speak, and the final text of a phrase comes a few seconds after you finish it. If that is too long, choose **“Fast”**.
 - Intel and AMD processors need AVX2 support — processors made since about 2013 have it. On older ones the app says that voice input is not available. On a Mac with Apple Silicon there are no restrictions.
 - The app needs access to the microphone. On macOS the system asks for it; if you refused, allow it in System Settings → Privacy & Security → Microphone. On Windows access is turned on in Settings → Privacy & security → Microphone: both “Microphone access” and “Let desktop apps access your microphone” are needed. A phone asks for permission the first time you dictate; if you refused, allow the microphone for the app in the phone settings. If there is no access, the app says so, and clicking that message opens the right settings.
 

@@ -1,16 +1,17 @@
 //! JNI для голосового ввода на Android: класс
 //! `com.bastyon.app.plugins.voice.AsrNative`.
 //!
-//! Движок (whisper.cpp) и нарезка речи на фразы — те же файлы, что у
-//! компьютера (src/asr/engine.rs, segmenter.rs), подключённые модулями.
-//! Рабочие потоки повторяют src/asr/mod.rs: модель грузится, пока человек
-//! начинает говорить, фразы распознаются по очереди, пока он говорит
-//! следующие, и после «стоп» остаётся дождаться только последней.
+//! Движок (whisper.cpp), нарезка речи на фразы и черновики — те же файлы, что
+//! у компьютера (src/asr/engine.rs, segmenter.rs, draft.rs), подключённые
+//! модулями. Рабочие потоки повторяют src/asr/mod.rs: модель грузится, пока
+//! человек начинает говорить, фразы распознаются по очереди, пока он говорит
+//! следующие, начатая фраза — черновиком, когда распознавание свободно, и
+//! после «стоп» остаётся дождаться только последней.
 //!
 //! Звук пишет Java (AudioRecord, 16 кГц, моно) и отдаёт кусками в `push`;
 //! громкость она тоже считает сама, а `speaking()` говорит, слышит ли детектор
 //! речь. События сессии — JSON в `AsrNative.Events.onEvent` с теми же полями,
-//! что события `asr:*` у компьютера, и полем `event`: state, text, end.
+//! что события `asr:*` у компьютера, и полем `event`: state, partial, text, end.
 
 #[allow(dead_code)]
 #[path = "../../../src/asr/engine.rs"]
@@ -18,6 +19,8 @@ mod engine;
 #[allow(dead_code)]
 #[path = "../../../src/asr/segmenter.rs"]
 mod segmenter;
+#[path = "../../../src/asr/draft.rs"]
+mod draft;
 
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -46,6 +49,8 @@ enum EngineJob {
         samples: Vec<f32>,
         language: String,
         prompt: String,
+        pass: engine::Pass,
+        /// Прерывает и ещё не начатый расчёт, и идущий.
         cancelled: Arc<AtomicBool>,
         reply: mpsc::Sender<Result<String, String>>,
     },
@@ -101,6 +106,7 @@ fn engine_loop(rx: mpsc::Receiver<EngineJob>) {
                 samples,
                 language,
                 prompt,
+                pass,
                 cancelled,
                 reply,
             }) => {
@@ -108,10 +114,9 @@ fn engine_loop(rx: mpsc::Receiver<EngineJob>) {
                     continue;
                 }
                 let result = ensure_engine(&mut engine, &model_file).and_then(|_| {
-                    engine
-                        .as_ref()
-                        .expect("engine just loaded")
-                        .transcribe(&samples, &language, &prompt)
+                    engine.as_ref().expect("engine just loaded").transcribe(
+                        &samples, &language, &prompt, pass, &cancelled,
+                    )
                 });
                 let _ = reply.send(result);
             }
@@ -186,11 +191,13 @@ struct Session {
     cancelled: Arc<AtomicBool>,
     pending: Pending,
     seq: u32,
+    drafts: draft::DraftSlot,
 }
 
 impl Session {
     fn run(mut self, rx: mpsc::Receiver<Msg>) {
         let result = self.listen(rx);
+        self.drafts.abort();
         SPEAKING.store(false, Ordering::Relaxed);
         let (reason, error) = match result {
             Ok(reason) => (reason, None),
@@ -231,9 +238,16 @@ impl Session {
             match rx.recv_timeout(Duration::from_millis(40)) {
                 Ok(Msg::Audio(samples)) => {
                     for utterance in segmenter.push(&samples)? {
+                        self.drafts.supersede(self.seq);
                         self.submit(utterance, loading);
                     }
                     SPEAKING.store(segmenter.speaking(), Ordering::Relaxed);
+                    // Черновик начатой фразы — только когда распознавание свободно.
+                    if !loading && self.pending.is_empty() && !self.drafts.busy() {
+                        if let Some((phrase, draft)) = segmenter.draft() {
+                            self.submit_draft(phrase, draft);
+                        }
+                    }
                 }
                 Ok(Msg::Stop) => break "stopped",
                 Ok(Msg::Cancel) | Err(mpsc::RecvTimeoutError::Disconnected) => break "cancelled",
@@ -250,7 +264,14 @@ impl Session {
                 }
             }
             self.collect(false, loading)?;
+            if let Some((phrase, text)) = self.drafts.poll() {
+                if phrase == self.seq {
+                    self.sink
+                        .emit(json!({ "event": "partial", "seq": phrase, "text": text }));
+                }
+            }
         };
+        self.drafts.abort();
         SPEAKING.store(false, Ordering::Relaxed);
 
         if outcome == "cancelled" {
@@ -278,12 +299,28 @@ impl Session {
             samples,
             language: self.language.clone(),
             prompt: self.context.clone(),
+            pass: engine::Pass::Phrase,
             cancelled: self.cancelled.clone(),
             reply,
         });
         self.pending.push_back((self.seq, rx));
         self.seq += 1;
         self.sink.state(loading, self.pending.len());
+    }
+
+    fn submit_draft(&mut self, phrase: u32, samples: Vec<f32>) {
+        let (reply, rx) = mpsc::channel();
+        let abort = Arc::new(AtomicBool::new(false));
+        send_engine(EngineJob::Transcribe {
+            model_file: self.model_file.clone(),
+            samples,
+            language: self.language.clone(),
+            prompt: self.context.clone(),
+            pass: engine::Pass::Draft,
+            cancelled: abort.clone(),
+            reply,
+        });
+        self.drafts.started(phrase, abort, rx);
     }
 
     /// Отдать готовые фразы по порядку; `wait` — дождаться всех.
@@ -308,9 +345,10 @@ impl Session {
             if !text.is_empty() {
                 self.context.push(' ');
                 self.context.push_str(&text);
-                self.sink
-                    .emit(json!({ "event": "text", "seq": seq, "text": text }));
             }
+            // И пустой: у фразы мог быть черновик, его надо убрать.
+            self.sink
+                .emit(json!({ "event": "text", "seq": seq, "text": text }));
         }
         if self.pending.len() != before {
             self.sink.state(loading, self.pending.len());
@@ -391,6 +429,7 @@ fn start_session(
         cancelled: Arc::new(AtomicBool::new(false)),
         pending: VecDeque::new(),
         seq: 0,
+        drafts: draft::DraftSlot::default(),
     };
     std::thread::Builder::new()
         .name("asr-session".into())
@@ -516,8 +555,8 @@ mod tests {
         assert_eq!(whisper_language("xx"), "auto");
     }
 
-    /// Сессия целиком, как её ведёт телефон: куски по 100 мс, «стоп», текст
-    /// и конец. Нужны модели в `BASTYON_ASR_DIR` (ggml-base-q5_1.bin и
+    /// Сессия целиком, как её ведёт телефон: куски по 100 мс, черновики,
+    /// «стоп», текст и конец. Нужны модели в `BASTYON_ASR_DIR` (ggml-base-q5_1.bin и
     /// ggml-silero-v6.2.0.bin) и запись `BASTYON_ASR_WAV` (16 кГц, моно, 16 бит).
     #[test]
     #[ignore]
@@ -548,12 +587,15 @@ mod tests {
             }),
         )
         .unwrap();
+        // В темпе записи, как телефон: иначе черновикам некогда появиться.
         for chunk in samples.chunks(1600) {
             send_session(id, Msg::Audio(chunk.to_vec()));
+            std::thread::sleep(Duration::from_millis(100));
         }
         send_session(id, Msg::Stop);
 
         let mut texts = Vec::new();
+        let mut partials = 0;
         let end = loop {
             let ev = rx
                 .recv_timeout(Duration::from_secs(120))
@@ -561,13 +603,15 @@ mod tests {
             assert_eq!(ev["session"], json!(id));
             match ev["event"].as_str() {
                 Some("text") => texts.push(ev["text"].as_str().unwrap().to_string()),
+                Some("partial") => partials += 1,
                 Some("end") => break ev,
                 _ => {}
             }
         };
-        println!("texts: {texts:?}");
+        println!("texts: {texts:?}, partials: {partials}");
         assert_eq!(end["reason"], json!("stopped"), "{end}");
         assert!(!texts.join(" ").trim().is_empty());
+        assert!(partials > 0, "черновики по ходу речи");
         assert!(lock(&SESSION).is_none(), "session slot is freed");
     }
 }

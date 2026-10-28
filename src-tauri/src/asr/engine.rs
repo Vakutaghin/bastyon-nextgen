@@ -4,6 +4,8 @@
 //! пользуются: повторная загрузка — доли секунды, но на Apple Silicon первая
 //! после установки компилирует шейдеры Metal ~10 с.
 
+use std::ffi::c_void;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 use whisper_rs::{
     FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperVadContext,
@@ -49,6 +51,22 @@ fn install_logging() {
     ONCE.get_or_init(whisper_rs::install_logging_hooks);
 }
 
+/// Что распознаём: законченную фразу или черновик начатой (segmenter::draft).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Pass {
+    Phrase,
+    /// Текст заменится распознаванием всей фразы — важнее скорость.
+    Draft,
+}
+
+/// whisper.cpp спрашивает между шагами расчёта, не пора ли бросить.
+/// `whisper_rs::FullParams::set_abort_callback_safe` для этого не годится: он
+/// отдаёт в C указатель на `Box<dyn FnMut>`, а читает его как само замыкание.
+unsafe extern "C" fn abort_requested(flag: *mut c_void) -> bool {
+    // SAFETY: указатель на AtomicBool из `transcribe`, живой всё время `full`.
+    unsafe { (*(flag as *const AtomicBool)).load(Ordering::Relaxed) }
+}
+
 pub struct Engine {
     model_file: String,
     ctx: WhisperContext,
@@ -72,15 +90,23 @@ impl Engine {
     }
 
     /// Текст фразы. `language` — код whisper (ru, en, ko…), `prompt` — текст
-    /// перед курсором: по нему модель держит стиль, регистр и имена.
-    pub fn transcribe(&self, samples: &[f32], language: &str, prompt: &str) -> Result<String, String> {
+    /// перед курсором: по нему модель держит стиль, регистр и имена. `abort`
+    /// прерывает расчёт на полпути — ошибка `cancelled`.
+    pub fn transcribe(
+        &self,
+        samples: &[f32],
+        language: &str,
+        prompt: &str,
+        pass: Pass,
+        abort: &AtomicBool,
+    ) -> Result<String, String> {
         let mut state = self
             .ctx
             .create_state()
             .map_err(|e| format!("engine_error: {e}"))?;
         // Лучший текст даёт поиск лучом, но он вдвое дороже: там, где считает
         // видеокарта, это доли секунды, на процессоре важнее задержка.
-        let strategy = if use_gpu() {
+        let strategy = if use_gpu() && pass == Pass::Phrase {
             SamplingStrategy::BeamSearch {
                 beam_size: 5,
                 patience: -1.0,
@@ -105,9 +131,16 @@ impl Engine {
         if !prompt.is_empty() {
             params.set_initial_prompt(prompt);
         }
-        state
-            .full(params, samples)
-            .map_err(|e| format!("engine_error: {e}"))?;
+        // SAFETY: `abort` переживает `full` — он заимствован на весь вызов.
+        unsafe {
+            params.set_abort_callback(Some(abort_requested));
+            params.set_abort_callback_user_data(abort as *const AtomicBool as *mut c_void);
+        }
+        let done = state.full(params, samples);
+        if abort.load(Ordering::Relaxed) {
+            return Err("cancelled".into());
+        }
+        done.map_err(|e| format!("engine_error: {e}"))?;
         let mut text = String::new();
         for segment in state.as_iter() {
             let piece = segment.to_str_lossy().map_err(|e| format!("engine_error: {e}"))?;

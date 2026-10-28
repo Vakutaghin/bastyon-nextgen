@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 type Handler = (e: { payload: unknown }) => void
@@ -22,6 +22,7 @@ vi.mock('@/b-components/app-toast', () => ({
 
 import { t } from '@/i18n'
 import {
+  IDLE_STOP_MS,
   useVoiceInputStore,
   voiceErrorCode,
   voiceErrorDetails,
@@ -50,6 +51,8 @@ function target(id = 'field-1') {
     language: () => 'ru',
     context: () => 'Привет',
     insert: vi.fn(),
+    draft: vi.fn(),
+    settle: vi.fn(),
   }
 }
 
@@ -100,10 +103,14 @@ describe('voice input store', () => {
     expect(store.phase).toBe('listening')
     emit('asr:level', { session: 7, level: 0.6, speaking: true })
     expect(store.level).toBe(0.6)
+    emit('asr:partial', { session: 7, seq: 0, text: 'как' })
+    emit('asr:partial', { session: 6, seq: 0, text: 'чужая' })
+    expect(t.draft).toHaveBeenCalledTimes(1)
+    expect(t.draft).toHaveBeenCalledWith('как', 0)
     emit('asr:text', { session: 7, seq: 0, text: 'как дела' })
     emit('asr:text', { session: 6, seq: 0, text: 'чужая сессия' })
     expect(t.insert).toHaveBeenCalledTimes(1)
-    expect(t.insert).toHaveBeenCalledWith('как дела')
+    expect(t.insert).toHaveBeenCalledWith('как дела', 0)
 
     await store.toggle('field-1')
     expect(invoke).toHaveBeenCalledWith('asr_stop', { session: 7 })
@@ -111,6 +118,8 @@ describe('voice input store', () => {
     emit('asr:end', { session: 7, reason: 'stopped', error: null })
     expect(store.phase).toBe('idle')
     expect(store.ownerId).toBeNull()
+    // Черновик, если остался, становится обычным текстом.
+    expect(t.settle).toHaveBeenCalled()
   })
 
   it('события, пришедшие раньше ответа asr_start, не теряются', async () => {
@@ -130,7 +139,7 @@ describe('voice input store', () => {
     emit('asr:text', { session: 3, seq: 0, text: 'раньше ответа' })
     resolveStart(3)
     await starting
-    expect(t.insert).toHaveBeenCalledWith('раньше ответа')
+    expect(t.insert).toHaveBeenCalledWith('раньше ответа', 0)
     expect(store.session).toBe(3)
     expect(store.phase).toBe('listening')
   })
@@ -223,6 +232,64 @@ describe('voice input store', () => {
     await store.installModel('small')
     expect(store.modalOpen).toBe(false)
     expect(store.install).toBeNull()
+  })
+
+  describe('выключается сама, если долго нет речи и текста', () => {
+    async function listening() {
+      invoke.mockImplementation(async (cmd: string) => {
+        if (cmd === 'asr_status') return status(['small'])
+        if (cmd === 'asr_start') return 9
+      })
+      const store = useVoiceInputStore()
+      store.register(target())
+      await store.start('field-1')
+      emit('asr:state', { session: 9, loading: false, pending: 0 })
+      return store
+    }
+    const stopped = () => invoke.mock.calls.some(([cmd]) => cmd === 'asr_stop')
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('тишина — через 10 секунд «стоп», сказанное дораспознаётся', async () => {
+      vi.useFakeTimers()
+      const store = await listening()
+      await vi.advanceTimersByTimeAsync(IDLE_STOP_MS - 1000)
+      expect(stopped()).toBe(false)
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(invoke).toHaveBeenCalledWith('asr_stop', { session: 9 })
+      expect(store.phase).toBe('finishing')
+    })
+
+    it('речь и распознанный текст откладывают выключение', async () => {
+      vi.useFakeTimers()
+      await listening()
+      await vi.advanceTimersByTimeAsync(8000)
+      emit('asr:level', { session: 9, level: 0.5, speaking: true })
+      emit('asr:level', { session: 9, level: 0.1, speaking: false })
+      await vi.advanceTimersByTimeAsync(8000)
+      emit('asr:partial', { session: 9, seq: 0, text: 'привет' })
+      await vi.advanceTimersByTimeAsync(8000)
+      emit('asr:text', { session: 9, seq: 0, text: 'привет всем' })
+      await vi.advanceTimersByTimeAsync(8000)
+      expect(stopped()).toBe(false)
+      await vi.advanceTimersByTimeAsync(3000)
+      expect(stopped()).toBe(true)
+    })
+
+    it('пока грузится модель или фразы ждут распознавания, отсчёта нет', async () => {
+      vi.useFakeTimers()
+      await listening()
+      emit('asr:state', { session: 9, loading: true, pending: 0 })
+      await vi.advanceTimersByTimeAsync(IDLE_STOP_MS * 2)
+      emit('asr:state', { session: 9, loading: false, pending: 2 })
+      await vi.advanceTimersByTimeAsync(IDLE_STOP_MS * 2)
+      expect(stopped()).toBe(false)
+      emit('asr:state', { session: 9, loading: false, pending: 0 })
+      await vi.advanceTimersByTimeAsync(IDLE_STOP_MS + 1000)
+      expect(stopped()).toBe(true)
+    })
   })
 
   it('коды ошибок Rust', () => {

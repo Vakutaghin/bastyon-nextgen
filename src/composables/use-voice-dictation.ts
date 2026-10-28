@@ -2,10 +2,13 @@
  * Голосовой ввод в поле: кнопка поля зовёт `toggle`, распознанные фразы
  * вставляются туда, где стоит курсор.
  *
- * Вставка идёт через execCommand('insertText'), когда поле в фокусе: так
- * работает Ctrl+Z и срабатывает input, на который подписан v-model. Если
- * фокус ушёл в другое поле, текст всё равно встаёт в своё, на запомненное
- * полем место курсора, но уже без истории отмены.
+ * Пока фразу говорят, в поле стоит её черновик и растёт по ходу речи, как на
+ * клавиатуре телефона; распознанная целиком фраза встаёт на его место.
+ * Черновик меняется напрямую (setRangeText), а текст фразы вставляется через
+ * execCommand('insertText'), когда поле в фокусе: так Ctrl+Z убирает фразу
+ * одним шагом, а не перебирает черновики, и срабатывает input, на который
+ * подписан v-model. Если фокус ушёл в другое поле, текст всё равно встаёт в
+ * своё, на запомненное полем место курсора, но уже без истории отмены.
  */
 
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
@@ -22,32 +25,127 @@ export interface VoiceDictationOptions {
   language: () => string
 }
 
+/** Черновик фразы в поле: её номер, где он стоит и что вставлено. */
+export interface DictationDraft {
+  seq: number
+  start: number
+  text: string
+}
+
 let counter = 0
 
-/** Вставить распознанную фразу в позицию курсора. */
-export function insertDictated(el: TextField, raw: string, lang: string): void {
+/**
+ * WebKit на Ctrl+Z после фразы с черновиком отменяет в два шага: сначала
+ * убирает фразу, потом — без изменения текста — ставит курсор в начало поля
+ * (поле менялось мимо истории отмены). Запоминаем, где фраза начиналась, и
+ * держим курсор там, пока идут такие отмены.
+ */
+let undoCaret: { el: TextField; value: string; at: number } | null = null
+let watchingUndo = false
+
+function onUndo(e: Event): void {
+  const u = undoCaret
+  if (!u || e.target !== u.el) return
+  if ((e as InputEvent).inputType !== 'historyUndo' || u.el.value !== u.value) {
+    undoCaret = null
+    return
+  }
+  u.el.setSelectionRange(u.at, u.at)
+}
+
+/** Ctrl+Z вернёт в поле `value` — тогда курсор на `at`. */
+function rememberUndoCaret(el: TextField, value: string, at: number): void {
+  undoCaret = { el, value, at }
+  if (watchingUndo) return
+  watchingUndo = true
+  document.addEventListener('input', onUndo, true)
+}
+
+/**
+ * Где черновик сейчас: на своём месте или, если текст перед ним правили,
+ * там, где такой же текст ближе всего. Стёрли — null.
+ */
+function locateDraft(el: TextField, draft: DictationDraft): number | null {
+  const { value } = el
+  if (value.startsWith(draft.text, draft.start)) return draft.start
+  let best: number | null = null
+  for (let at = value.indexOf(draft.text); at >= 0; at = value.indexOf(draft.text, at + 1)) {
+    if (best === null || Math.abs(at - draft.start) < Math.abs(best - draft.start)) best = at
+  }
+  return best
+}
+
+/** Куда ставить фразу и в каком виде. */
+function placement(el: TextField, raw: string, lang: string, draft: DictationDraft | null) {
+  const caretStart = el.selectionStart ?? el.value.length
+  const caretEnd = el.selectionEnd ?? caretStart
+  const at = draft ? locateDraft(el, draft) : null
+  const start = at ?? caretStart
+  const end = at === null ? caretEnd : at + draft!.text.length
+  const chunk = applySpokenCommands(raw, lang)
+  const text = joinDictation(el.value.slice(0, start), el.value.slice(end), chunk, lang)
+  // Курсор стоял в черновике или за ним — идёт за текстом; человек поставил
+  // его в другое место — остаётся там.
+  const follow = at === null || (caretStart >= start && caretEnd <= end)
+  return { replacesDraft: at !== null, start, end, text, follow }
+}
+
+/** Показать черновик фразы `seq` вместо прежнего. Возвращает черновик, который теперь в поле. */
+export function draftDictated(
+  el: TextField,
+  raw: string,
+  lang: string,
+  seq: number,
+  draft: DictationDraft | null
+): DictationDraft | null {
+  if (el.disabled || el.readOnly) return draft
+  const { start, end, text, follow } = placement(el, raw, lang, draft)
+  if (!text) return draft
+  el.setRangeText(text, start, end, follow ? 'end' : 'preserve')
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+  return { seq, start, text }
+}
+
+/** Вставить распознанную фразу на место её черновика или в позицию курсора. */
+export function insertDictated(
+  el: TextField,
+  raw: string,
+  lang: string,
+  draft: DictationDraft | null = null
+): void {
   // Поле заблокировано (например, пост уже публикуется): хвост распознавания
   // туда не пишем.
   if (el.disabled || el.readOnly) return
-  const chunk = applySpokenCommands(raw, lang)
-  const start = el.selectionStart ?? el.value.length
-  const end = el.selectionEnd ?? start
-  const text = joinDictation(el.value.slice(0, start), el.value.slice(end), chunk, lang)
-  if (!text) return
-  if (document.activeElement === el) {
+  const { replacesDraft, start, end, text, follow } = placement(el, raw, lang, draft)
+  if (!text && !replacesDraft) return
+  let to = end
+  if (replacesDraft) {
+    // Черновик убираем мимо истории отмены: Ctrl+Z вернёт поле к тексту до фразы.
+    el.setRangeText('', start, end, follow ? 'start' : 'preserve')
+    to = start
+  }
+  if (text && follow && document.activeElement === el) {
+    el.setSelectionRange(start, to)
+    const before = el.value
     try {
-      if (document.execCommand('insertText', false, text)) return
+      if (document.execCommand('insertText', false, text)) {
+        if (replacesDraft) rememberUndoCaret(el, before, start)
+        return
+      }
     } catch {
       // execCommand недоступен — вставим напрямую
     }
   }
-  el.setRangeText(text, start, end, 'end')
+  if (text) el.setRangeText(text, start, to, follow ? 'end' : 'preserve')
   el.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
 export function useVoiceDictation(options: VoiceDictationOptions) {
   const store = useVoiceInputStore()
   const id = `dictation-${++counter}`
+
+  /** Черновик фразы, которая сейчас звучит. */
+  let draft: DictationDraft | null = null
 
   store.register({
     id,
@@ -58,9 +156,19 @@ export function useVoiceDictation(options: VoiceDictationOptions) {
       const pos = el.selectionStart ?? el.value.length
       return el.value.slice(Math.max(0, pos - 300), pos)
     },
-    insert: (text) => {
+    draft: (text, seq) => {
       const el = options.getElement()
-      if (el) insertDictated(el, text, options.language())
+      if (!el) return
+      draft = draftDictated(el, text, options.language(), seq, draft?.seq === seq ? draft : null)
+    },
+    insert: (text, seq) => {
+      const el = options.getElement()
+      const own = draft?.seq === seq ? draft : null
+      draft = null
+      if (el) insertDictated(el, text, options.language(), own)
+    },
+    settle: () => {
+      draft = null
     },
   })
 

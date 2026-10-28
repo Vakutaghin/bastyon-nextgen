@@ -2827,10 +2827,10 @@ export default {
     ready: 'Voice input is ready: click the button with bars next to the text field',
     modal: {
       title: 'Voice input',
-      lead: 'Speak and the text appears in the field. Speech is recognized right on this device; the recording goes nowhere.',
+      lead: 'Speak and the text appears in the field as you talk. Speech is recognized right on this device; the recording goes nowhere.',
       download: 'For that, the speech recognition model has to be downloaded once.',
       commands:
-        'You can dictate punctuation: “period”, “comma”, “question mark”, “new line”. Esc stops dictation.',
+        'You can dictate punctuation: “period”, “comma”, “question mark”, “new line”. Esc stops dictation. After 10 seconds of silence, dictation turns itself off.',
       viaTor: 'The model will download through Tor — this can take a few minutes.',
       recommended: 'recommended',
       downloadButton: 'Download · {size}',
@@ -2851,6 +2851,8 @@ export default {
       turbo: 'Best',
       turboHint: 'The best recognition quality.',
       turboHintCpu: 'The best quality, but noticeably slower on this computer.',
+      speedNote:
+        'The more accurate the model, the slower it recognizes speech, so words appear in the field with a delay. This is most noticeable on phones.',
     },
     errors: {
       micDenied:

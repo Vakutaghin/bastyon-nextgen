@@ -2842,10 +2842,10 @@ export default {
     ready: 'L’input vocale è pronto: clicca sul pulsante con le barre accanto al campo di testo',
     modal: {
       title: 'Input vocale',
-      lead: 'Parla e il testo compare nel campo. Il parlato viene riconosciuto direttamente su questo dispositivo; la registrazione non va da nessuna parte.',
+      lead: 'Parla e il testo compare nel campo mentre parli. Il parlato viene riconosciuto direttamente su questo dispositivo; la registrazione non va da nessuna parte.',
       download: 'Per questo occorre scaricare una volta il modello di riconoscimento vocale.',
       commands:
-        'La punteggiatura si può dettare: «punto», «virgola», «punto interrogativo», «a capo». Esc termina la dettatura.',
+        'La punteggiatura si può dettare: «punto», «virgola», «punto interrogativo», «a capo». Esc termina la dettatura. Dopo 10 secondi di silenzio la dettatura si spegne da sola.',
       viaTor: 'Il modello verrà scaricato tramite Tor: può richiedere qualche minuto.',
       recommended: 'consigliato',
       downloadButton: 'Scarica · {size}',
@@ -2866,6 +2866,8 @@ export default {
       turbo: 'Massimo',
       turboHint: 'La migliore qualità di riconoscimento.',
       turboHintCpu: 'La migliore qualità, ma su questo computer è molto più lento.',
+      speedNote:
+        'Più il modello è preciso, più è lento a riconoscere: le parole compaiono nel campo con un certo ritardo. Sul telefono si nota di più.',
     },
     errors: {
       micDenied:
