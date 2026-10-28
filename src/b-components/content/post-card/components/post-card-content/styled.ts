@@ -1,6 +1,42 @@
 import styled from 'vue3-styled-components'
 import Button from '@/components/button/button.vue'
 
+/**
+ * Ссылки в тексте поста — цветом и с подчёркиванием: правило «*» ниже красит
+ * всё в цвет текста, и без этого ссылку было не отличить. У @меншена цвет без
+ * черты (она по наведению), у тайм-кода — своя пунктирная. Длинный адрес
+ * bastyon:// переносится где угодно.
+ */
+const LINKS = `
+  a[href] {
+    color: var(--ui-primary-text) !important;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  a[href] * {
+    color: inherit !important;
+  }
+
+  a[href]:hover {
+    color: var(--ui-primary) !important;
+  }
+
+  a.mention-link,
+  a.timecode-link {
+    text-decoration: none;
+  }
+
+  a.mention-link:hover {
+    text-decoration: underline;
+  }
+
+  .bastyon-link {
+    word-break: break-all;
+  }
+`
+
 export const SC_PreviewBlock = styled.div`
   margin-bottom: 10px;
 `
@@ -42,19 +78,7 @@ export const SC_PostContent = styled.div`
     color: var(--color-text-primary) !important;
   }
 
-  .bastyon-link {
-    color: var(--ui-primary-text) !important;
-    text-decoration: underline;
-    cursor: pointer;
-    word-break: break-all;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-  }
-
-  .bastyon-link:hover {
-    color: var(--ui-primary) !important;
-    text-decoration: underline;
-  }
+  ${() => LINKS}
 
   .timecode-link {
     color: var(--ui-primary-text) !important;
@@ -88,17 +112,5 @@ export const SC_PostPreview = styled.div`
     }
   }
 
-  .bastyon-link {
-    color: var(--ui-primary-text) !important;
-    text-decoration: underline;
-    cursor: pointer;
-    word-break: break-all;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-  }
-
-  .bastyon-link:hover {
-    color: var(--ui-primary) !important;
-    text-decoration: underline;
-  }
+  ${() => LINKS}
 `

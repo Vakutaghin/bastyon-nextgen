@@ -2829,6 +2829,7 @@ export default {
   },
   linkPreview: {
     remove: 'Quitar la vista previa del enlace',
+    openImage: 'Abrir imagen',
   },
   poll: {
     label: 'Encuesta',

@@ -73,6 +73,11 @@ export interface MockNodeData {
   comments: MockComment[]
   /** На кого подписан вошедший (`getusersubscribes`). */
   subscribes?: string[]
+  /** Превью ссылок (`urlPreview`): адрес → OG-теги страницы; без записи — превью нет. */
+  linkPreviews?: Record<
+    string,
+    { title?: string; description?: string; site_name?: string; image?: string }
+  >
   /** Настройки аккаунтов (`getaccountsetting`): обложка, цена подписки… */
   settings?: Record<string, Record<string, unknown>>
   /** Облако популярных тегов (`gettags`): подсказки тегов в форме поста. */
@@ -309,6 +314,20 @@ async function answerNode(route: Route, data: MockNodeData): Promise<void> {
     return
   }
   const method = path.split('/').pop() ?? ''
+  if (method === 'urlPreview') {
+    let link = ''
+    try {
+      link = String((request.postDataJSON() as { url?: unknown })?.url ?? '')
+    } catch {
+      // без тела — превью нет
+    }
+    await route.fulfill({
+      status: 200,
+      headers: CORS,
+      json: { result: 'success', data: { og: data.linkPreviews?.[link] ?? null } },
+    })
+    return
+  }
   if (/^sendrawtransaction/.test(method)) {
     // Публикация в тестах запрещена: даже по ошибке ничего не уходит в сеть.
     await route.fulfill({ status: 500, headers: CORS, json: { error: 'mock node: no broadcasts' } })

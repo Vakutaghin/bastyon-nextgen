@@ -2820,6 +2820,7 @@ export default {
   },
   linkPreview: {
     remove: 'Rimuovi l’anteprima del link',
+    openImage: 'Apri immagine',
   },
   poll: {
     label: 'Sondaggio',

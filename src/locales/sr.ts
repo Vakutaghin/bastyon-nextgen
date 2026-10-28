@@ -2798,6 +2798,7 @@ export default {
   },
   linkPreview: {
     remove: 'Уклони преглед везе',
+    openImage: 'Отвори слику',
   },
   poll: {
     label: 'Анкета',

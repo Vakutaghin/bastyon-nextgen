@@ -2678,6 +2678,7 @@ export default {
   },
   linkPreview: {
     remove: '移除链接预览',
+    openImage: '查看图片',
   },
   poll: {
     label: '投票',

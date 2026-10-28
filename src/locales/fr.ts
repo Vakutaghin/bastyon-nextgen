@@ -2846,6 +2846,7 @@ export default {
   },
   linkPreview: {
     remove: 'Retirer l’aperçu du lien',
+    openImage: 'Ouvrir l’image',
   },
   poll: {
     label: 'Sondage',

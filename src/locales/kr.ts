@@ -2778,6 +2778,7 @@ export default {
   },
   linkPreview: {
     remove: '링크 미리보기 삭제',
+    openImage: '이미지 열기',
   },
   poll: {
     label: '투표',

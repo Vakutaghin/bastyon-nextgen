@@ -2796,6 +2796,7 @@ export default {
   },
   linkPreview: {
     remove: 'Убрать превью ссылки',
+    openImage: 'Открыть картинку',
   },
   poll: {
     label: 'Опрос',

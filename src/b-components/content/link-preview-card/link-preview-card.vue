@@ -1,23 +1,37 @@
 <template>
   <!-- Настройка «Предпросмотр ссылок» выключает карточку и в ленте, и в композере. -->
   <SC_LinkPreviewWrap v-if="prefs.linkPreviews" ref="root">
-    <template v-if="card">
-      <SC_Card :href="url" :wide="wide" target="_blank" rel="noopener noreferrer nofollow">
-        <SC_Media v-if="card.image && !imageFailed" :wide="wide">
-          <TorImage
-            :src="card.image"
-            alt=""
-            loading="lazy"
-            @load="onImageLoad"
-            @error="imageFailed = true"
-          />
-        </SC_Media>
-        <SC_Body>
-          <SC_Site>{{ card.siteName || host }}</SC_Site>
-          <SC_Title v-if="card.title">{{ card.title }}</SC_Title>
-          <SC_Description v-if="card.description">{{ card.description }}</SC_Description>
-        </SC_Body>
-      </SC_Card>
+    <!-- Картинка — квадрат слева, по нажатию открывается в просмотрщике; всё
+         остальное — ссылка в новом окне (растянута на карточку, см. styled). -->
+    <SC_Card v-if="card" data-testid="link-preview-card">
+      <SC_Media v-if="card.image && !imageFailed">
+        <TorImage
+          :src="card.image"
+          alt=""
+          loading="lazy"
+          @load="imageReady = true"
+          @error="imageFailed = true"
+        />
+        <SC_Zoom
+          v-if="imageReady"
+          type="button"
+          :aria-label="t('linkPreview.openImage')"
+          :title="t('linkPreview.openImage')"
+          @click="openImage"
+        >
+          <ZoomInOutlined />
+        </SC_Zoom>
+      </SC_Media>
+      <SC_Body
+        :href="url"
+        :class="{ 'has-remove': removable }"
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+      >
+        <SC_Site>{{ card.siteName || host }}</SC_Site>
+        <SC_Title v-if="card.title">{{ card.title }}</SC_Title>
+        <SC_Description v-if="card.description">{{ card.description }}</SC_Description>
+      </SC_Body>
       <SC_Remove
         v-if="removable"
         type="button"
@@ -28,7 +42,7 @@
       >
         <CloseOutlined />
       </SC_Remove>
-    </template>
+    </SC_Card>
   </SC_LinkPreviewWrap>
 </template>
 
@@ -36,10 +50,11 @@
 import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { CloseOutlined } from '@/components/icons'
-import TorImage from '@/components/tor-image'
+import { CloseOutlined, ZoomInOutlined } from '@/components/icons'
+import TorImage, { getTorImageUrl } from '@/components/tor-image'
 import type { LinkPreview } from '@/services/link-preview-service'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
+import { useModalStore } from '@/stores/modal-store'
 import { useLinkPreviewCard } from './use-link-preview-card'
 import {
   SC_Body,
@@ -50,6 +65,7 @@ import {
   SC_Remove,
   SC_Site,
   SC_Title,
+  SC_Zoom,
 } from './styled'
 
 const props = withDefaults(
@@ -70,9 +86,7 @@ const emit = defineEmits<{ (e: 'remove'): void }>()
 
 const { t } = useI18n()
 const prefs = useAppPreferencesStore()
-
-/** Картинка шире этого — крупно над текстом, как у старого клиента (`bigimageinlink`). */
-const WIDE_IMAGE_MIN_WIDTH = 500
+const modalStore = useModalStore()
 
 // ref на styled-компоненте — экземпляр компонента; наблюдать нужно его $el.
 const root = ref<{ $el?: Element } | HTMLElement | null>(null)
@@ -84,12 +98,13 @@ const rootEl = computed<HTMLElement | null>(() => {
 const { preview, loading } = useLinkPreviewCard(toRef(props, 'url'), rootEl, props.lazy)
 
 const imageFailed = ref(false)
-const wide = ref(false)
+/** Картинка показана: под Tor — только после нажатия на заглушку TorImage. */
+const imageReady = ref(false)
 watch(
   () => props.url,
   () => {
     imageFailed.value = false
-    wide.value = false
+    imageReady.value = false
   }
 )
 
@@ -106,8 +121,9 @@ const card = computed<LinkPreview | null>(() => {
   return props.fallback && props.url && !loading.value ? { url: props.url } : null
 })
 
-function onImageLoad(event: Event): void {
-  const img = event.target as HTMLImageElement | null
-  wide.value = !!img && img.naturalWidth >= WIDE_IMAGE_MIN_WIDTH
+/** Под Tor просмотрщику — blob уже загруженной картинки, прямой адрес заблокирован CSP. */
+function openImage(): void {
+  const image = card.value?.image
+  if (image) modalStore.openImageGallery([getTorImageUrl(image) ?? image], 0)
 }
 </script>

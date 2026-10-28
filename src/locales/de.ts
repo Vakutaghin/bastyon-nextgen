@@ -2845,6 +2845,7 @@ export default {
   },
   linkPreview: {
     remove: 'Linkvorschau entfernen',
+    openImage: 'Bild öffnen',
   },
   poll: {
     label: 'Umfrage',

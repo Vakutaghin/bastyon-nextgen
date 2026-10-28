@@ -2805,6 +2805,7 @@ export default {
   },
   linkPreview: {
     remove: 'Remove link preview',
+    openImage: 'Open image',
   },
   poll: {
     label: 'Poll',
