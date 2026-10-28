@@ -6,15 +6,20 @@ import { t } from '@/i18n'
 import type { NotificationItem } from '@/stores/notifications-store'
 import { bringsCoins } from '@/stores/notifications-mappers'
 import { playSound } from '@/services/app-sounds'
+import { preloadUserNames, userName } from '@/services/user-names'
 
 /** Максимум тостов за раз при пачке уведомлений — показываем только последние 2. */
 const MAX_TOASTS_AT_ONCE = 2
+/** Дольше тост ника не ждёт: не успевший — началом адреса. */
+const NAME_WAIT_MS = 2_500
 
-/** «От кого»: ник, если уже известен, иначе начало адреса — как в списке. */
+/**
+ * «От кого»: ник из уведомления или общего кэша имён (лента, комментарии,
+ * список уведомлений), иначе начало адреса — как в списке.
+ */
 function senderLabel(pinia: Pinia, item: NotificationItem): string | undefined {
   if (!item.from) return undefined
-  const name = useNotificationsStore(pinia).getEnrichment(item).from?.name?.trim()
-  return name || `${item.from.slice(0, 8)}…`
+  return userName(item.from, useNotificationsStore(pinia).getEnrichment(item).from)
 }
 
 /**
@@ -23,11 +28,11 @@ function senderLabel(pinia: Pinia, item: NotificationItem): string | undefined {
  * Если пришло больше двух уведомлений — показываем только последние 2.
  * Нажатие на тост — `open`: туда же, куда уведомление в списке.
  */
-export function showToastsForNewNotifications(
+export async function showToastsForNewNotifications(
   pinia: Pinia,
   items: NotificationItem[],
   open?: (item: NotificationItem) => void
-): void {
+): Promise<void> {
   if (items.length === 0) return
   const settings = useNotificationSettingsStore(pinia)
   const allowed = items.filter((item) => isNotificationAllowed(settings, item))
@@ -35,6 +40,14 @@ export function showToastsForNewNotifications(
 
   const toShow =
     allowed.length > MAX_TOASTS_AT_ONCE ? allowed.slice(0, MAX_TOASTS_AT_ONCE) : allowed
+  // Текст тоста потом не меняется: незнакомый ник догружаем до показа, иначе
+  // в тосте так и остался бы адрес.
+  const store = useNotificationsStore(pinia)
+  const unnamed = toShow
+    .filter((item) => item.from && !store.getEnrichment(item).from?.name?.trim())
+    .map((item) => item.from)
+  if (unnamed.length) await preloadUserNames(unnamed, NAME_WAIT_MS)
+
   for (const item of toShow) {
     appToast.info({
       // item.title — i18n-ключ заголовка (см. notifications-mappers).

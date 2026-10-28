@@ -220,6 +220,7 @@ import { isReplyableNotification, notificationTarget } from '@/stores/notificati
 import UserMark from '@/components/user-mark'
 import Skeleton from '@/components/skeleton'
 import { userMarkOf } from '@/services/user-marks'
+import { userAvatar, userName } from '@/services/user-names'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import {
   trimText,
@@ -383,8 +384,10 @@ function getDisplayName(item: NotificationItem): string {
   const e = enrichmentFor(item)
   const name = e.from?.name?.trim()
   if (name) return name
+  // Профиль не догрузился: общий сервис имён спросит лёгкий профиль ещё раз
+  // (с повторами) и подставит ник, когда он придёт, — а пока короткий адрес.
   const addr = item.from ?? e.from?.address
-  if (addr) return addr.slice(0, 8) + '…'
+  if (addr) return userName(addr, e.from)
   return t('header.someone')
 }
 
@@ -397,7 +400,9 @@ const loadedAvatars = reactive(new Set<string>())
 const brokenAvatars = reactive(new Set<string>())
 
 function avatarOf(item: NotificationItem): string | null {
-  const url = resolveImageUrl(enrichmentFor(item).from?.avatar) ?? null
+  const from = enrichmentFor(item).from
+  const url =
+    resolveImageUrl(from?.avatar) ?? userAvatar(item.from ?? from?.address ?? null) ?? null
   return url && !brokenAvatars.has(url) ? url : null
 }
 

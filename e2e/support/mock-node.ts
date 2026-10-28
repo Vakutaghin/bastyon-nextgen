@@ -339,6 +339,26 @@ async function answerNode(route: Route, data: MockNodeData): Promise<void> {
   } catch {
     params = []
   }
+  // Как настоящая нода (сверено 28.10.2026): полные профили (без '1') с
+  // десяти адресов она не успевает собрать и отвечает таймаутом SQL.
+  if (
+    method === 'getuserprofile' &&
+    params[1] !== '1' &&
+    Array.isArray(params[0]) &&
+    params[0].length >= 10
+  ) {
+    await route.fulfill({
+      status: 500,
+      headers: CORS,
+      json: {
+        error: {
+          code: 500,
+          message: '{"code":408,"message":"GetAccountProfiles: sql request timeout"}',
+        },
+      },
+    })
+    return
+  }
   await route.fulfill({
     status: 200,
     headers: CORS,

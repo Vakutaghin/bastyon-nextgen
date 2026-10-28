@@ -261,3 +261,75 @@ test('фильтр «Комментарии», «Вы ответили» и пр
   await menu.getByRole('button', { name: 'Профиль: alice_ng' }).click()
   await expect(page).toHaveURL(new RegExp(`/${ALICE}$`))
 })
+
+/**
+ * Много разных отправителей. Полные профили с десяти адресов нода не отдаёт
+ * (таймаут SQL), и раньше вместо всех ников оставались адреса.
+ */
+const FANS = Array.from({ length: 12 }, (_, i) => ({
+  address: `PFan${String(i + 1).padStart(2, '0')}`.padEnd(34, 'x'),
+  name: `fan_${String(i + 1).padStart(2, '0')}`,
+  comment: String(i + 1)
+    .padStart(2, '0')
+    .repeat(32),
+}))
+
+test('ники всех отправителей, когда их больше десяти', async ({ page }) => {
+  test.setTimeout(120_000)
+  await useMockNode(page, {
+    profiles: [
+      { address: ME, name: 'me_ng' },
+      ...FANS.map(({ address, name }) => ({ address, name })),
+    ],
+    posts: [{ txid: POST, address: ME, message: 'Мой пост', ago: 600, comments: FANS.length }],
+    comments: FANS.map((f) => ({
+      id: f.comment,
+      postid: POST,
+      address: f.address,
+      message: `Комментарий ${f.name}`,
+    })),
+  })
+  const now = Math.floor(Date.now() / 1000)
+  await page.route(/\.pocketnet\.app:8899\/.*getmissedinfo/, (route) =>
+    route.fulfill({
+      status: 200,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      json: {
+        result: 'success',
+        data: [
+          { block: HEIGHT, contentsLang: {} },
+          ...FANS.map((f, i) => ({
+            msg: 'comment',
+            mesType: 'post',
+            txid: f.comment,
+            posttxid: POST,
+            parentid: '',
+            answerid: '',
+            addrFrom: f.address,
+            time: now - 60 * (i + 1),
+            nblock: HEIGHT - i,
+          })),
+        ],
+      },
+    })
+  )
+  await page.goto('/')
+  await page.waitForSelector('#app > *', { timeout: 30_000 })
+  await page
+    .getByRole('button', { name: 'Понятно' })
+    .click({ timeout: 5_000 })
+    .catch(() => {})
+  await page.getByRole('button', { name: 'Войти' }).first().click()
+  const dialog = page.getByRole('dialog', { name: 'Вход в аккаунт' })
+  await dialog.locator('input, textarea').first().fill(MNEMONIC)
+  await dialog.getByRole('button', { name: 'Войти' }).click()
+  await expect(dialog).toBeHidden({ timeout: 30_000 })
+
+  const menu = await openBell(page)
+  for (const f of FANS) {
+    await expect(menu.getByRole('button', { name: `Профиль: ${f.name}` })).toBeVisible({
+      timeout: 30_000,
+    })
+  }
+  await expect(menu.getByText('PFan01xx')).toHaveCount(0)
+})

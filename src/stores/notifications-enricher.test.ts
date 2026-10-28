@@ -1,7 +1,8 @@
 // Дозагрузка для уведомлений: посты, комментарии и профили — тремя пачками,
 // без того, что уже пришло в снимке или лежит в кеше. Повторный вызов —
 // без запросов. Уведомление, чья пачка упала, не помечается готовым и
-// догружается в следующий раз (P2-9), остальные — помечаются.
+// догружается в следующий раз (P2-9), остальные — помечаются. Профили —
+// лёгкие и пачками до 50: полные с десяти адресов нода не отдаёт.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,6 +13,7 @@ vi.mock('@/helpers/api/request', () => ({
 }))
 
 import { enrichNotifications, type EnrichmentCaches } from './notifications-enricher'
+import { __resetUserNamesForTests, knownUsers } from '@/services/user-names'
 import type { NotificationItem } from './notifications-types'
 
 const caches = (): EnrichmentCaches => ({
@@ -60,6 +62,7 @@ describe('enrichNotifications', () => {
     mocks.rpcCall.mockReset()
     mocks.rpcCallWithAuth.mockReset()
     vi.spyOn(console, 'warn').mockImplementation(() => {})
+    __resetUserNamesForTests()
   })
 
   it('профиль в пути — адрес «в загрузке», повторно не запрашивается, после ответа снят', async () => {
@@ -124,7 +127,7 @@ describe('enrichNotifications', () => {
     })
     expect(mocks.rpcCall.mock.calls[0]![0]).toMatchObject({
       method: 'getuserprofile',
-      parameters: [['PBob']],
+      parameters: [['PBob'], '1'],
       options: { auth: false },
     })
     expect(c.postCache.post1).toMatchObject({
@@ -229,6 +232,28 @@ describe('enrichNotifications', () => {
     await enrichNotifications(c, [withAuthor, postOnly], vi.fn())
     expect(c.profileCache.PBob?.name).toBe('bob')
     expect(c.enrichedIds.has('needs-profile')).toBe(true)
+  })
+
+  it('профили — лёгкие, пачками до 50; упавшая пачка не мешает другой; имена — в общий кэш', async () => {
+    const addrs = Array.from({ length: 60 }, (_, i) => `PUser${String(i).padStart(2, '0')}`)
+    const failing = addrs[55]!
+    mocks.rpcCall.mockImplementation(async (req: { parameters: [string[], string] }) => {
+      if (req.parameters[0].includes(failing)) throw new Error('sql request timeout')
+      return req.parameters[0].map((address) => ({ address, name: `n_${address}` }))
+    })
+    const c = caches()
+    const notes = addrs.map((from, i) => note({ id: `n${i}`, from }))
+    await enrichNotifications(c, notes, vi.fn())
+
+    const calls = mocks.rpcCall.mock.calls.map(([r]) => r.parameters)
+    expect(calls.map(([batch, light]) => [batch.length, light])).toEqual([
+      [50, '1'],
+      [10, '1'],
+    ])
+    expect(c.enrichedIds.has('n0')).toBe(true)
+    expect(c.enrichedIds.has('n55')).toBe(false)
+    expect(c.profileCache.PUser00?.name).toBe('n_PUser00')
+    expect(knownUsers().find((u) => u.address === 'PUser00')?.name).toBe('n_PUser00')
   })
 
   it('ошибка сети не бросает, индикатор всё равно гаснет', async () => {

@@ -125,7 +125,7 @@ const openFromToast = (item: NotificationItem): void => {
   )
 }
 notificationsStore.setOnNewNotifications((items) => {
-  showToastsForNewNotifications(pinia, items, openFromToast)
+  void showToastsForNewNotifications(pinia, items, openFromToast)
   notifyNewNotifications(items, openFromToast)
 })
 

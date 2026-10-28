@@ -11,6 +11,7 @@
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCall, rpcCallWithAuth } from '@/helpers/api/request'
 import { generateCacheHash } from '@/helpers/common/cache-hash'
+import { rememberUsers } from '@/services/user-names'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type {
   NotificationItem,
@@ -27,6 +28,59 @@ export interface EnrichmentCaches {
   enrichedIds: Set<string>
   /** Адреса, чьи профили сейчас запрошены: имя и аватар у них — скелетоном. */
   pendingProfiles?: Set<string>
+}
+
+/**
+ * Профилей отправителей в одном запросе. Профиль лёгкий (`'1'`): имя, аватар,
+ * репутация, бейджи — около 1,5 КБ. Полный (со списками подписок) у активных
+ * аккаунтов весит сотни КБ: пять таких — 1,8 МБ за 11 с, а с десяти нода
+ * отвечает `GetAccountProfiles: sql request timeout`. Запрос падал целиком, и
+ * вместо ников оставались адреса (сверено на живой ноде 28.10.2026).
+ */
+const PROFILE_BATCH = 50
+
+/** Лёгкие профили адресов пачками; упавшая пачка не роняет остальные. */
+async function fetchProfileBatches(
+  caches: EnrichmentCaches,
+  addrs: string[]
+): Promise<Set<string>> {
+  const failed = new Set<string>()
+  const batches: string[][] = []
+  for (let i = 0; i < addrs.length; i += PROFILE_BATCH) {
+    batches.push(addrs.slice(i, i + PROFILE_BATCH))
+  }
+  await Promise.all(
+    batches.map((batch) =>
+      rpcCall<UserProfile[]>({
+        method: rpcEndpoints.getUserProfile,
+        parameters: [batch, '1'],
+        options: { auth: false },
+      })
+        .then((arr) => {
+          const list = Array.isArray(arr) ? arr : []
+          for (const p of list) {
+            if (!p || !p.address) continue
+            caches.profileCache[p.address] = {
+              address: p.address,
+              name: p.name,
+              avatar: typeof p.i === 'string' ? p.i : undefined,
+              reputation: typeof p.reputation === 'number' ? p.reputation : undefined,
+              profile: p,
+            }
+          }
+          // Те же имена — ленте, комментариям и тостам (services/user-names).
+          rememberUsers(list)
+        })
+        .catch((e) => {
+          for (const a of batch) failed.add(a)
+          console.warn('[notifications] enrich profiles failed', e)
+        })
+        .finally(() => {
+          for (const a of batch) caches.pendingProfiles?.delete(a)
+        })
+    )
+  )
+  return failed
 }
 
 /** id комментария, текст которого нужен уведомлению (у оценки комментария — commentId). */
@@ -112,7 +166,7 @@ export async function enrichNotifications(
   const profileAddrs = new Set<string>()
   let postsFailed = false
   let commentsFailed = false
-  let profilesFailed = false
+  let failedProfiles = new Set<string>()
 
   for (const n of fresh) {
     // Пост — нужен для типов с shareId; либо если comment имеет postid, чтобы открыть родительский пост
@@ -160,31 +214,9 @@ export async function enrichNotifications(
     const addrs = [...profileAddrs]
     for (const a of addrs) caches.pendingProfiles?.add(a)
     tasks.push(
-      rpcCall<UserProfile[]>({
-        method: rpcEndpoints.getUserProfile,
-        parameters: [addrs],
-        options: { auth: false },
+      fetchProfileBatches(caches, addrs).then((failed) => {
+        failedProfiles = failed
       })
-        .then((arr) => {
-          const list = Array.isArray(arr) ? arr : []
-          for (const p of list) {
-            if (!p || !p.address) continue
-            caches.profileCache[p.address] = {
-              address: p.address,
-              name: p.name,
-              avatar: typeof p.i === 'string' ? p.i : undefined,
-              reputation: typeof p.reputation === 'number' ? p.reputation : undefined,
-              profile: p,
-            }
-          }
-        })
-        .catch((e) => {
-          profilesFailed = true
-          console.warn('[notifications] enrich profiles failed', e)
-        })
-        .finally(() => {
-          for (const a of addrs) caches.pendingProfiles?.delete(a)
-        })
     )
   }
 
@@ -235,7 +267,7 @@ export async function enrichNotifications(
     if (
       (dependsPost && postsFailed) ||
       (dependsComment && commentsFailed) ||
-      (dependsProfile && profilesFailed)
+      (dependsProfile && failedProfiles.has(addr))
     ) {
       continue
     }
