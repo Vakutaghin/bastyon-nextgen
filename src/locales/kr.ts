@@ -482,7 +482,7 @@ export default {
     title: '설정',
     tabs: {
       general: '일반',
-      layout: '상단 바와 메뉴',
+      layout: '상단 바와 패널',
       notifications: '알림',
       system: '시스템',
       privateKey: '개인 키',
@@ -572,6 +572,17 @@ export default {
         '「일반」에서 켜 두었다면 오른쪽 아래 둥근 버튼으로도, 휴대폰에서는 하단 바로도 채팅을 열 수 있습니다.',
       itemTheme: '밝은 테마와 어두운 테마',
       itemPageWidth: '페이지 너비',
+      sidebarTitle: '왼쪽 패널',
+      sidebarHint:
+        '피드 왼쪽에 있는 섹션이며 이 순서대로 표시됩니다. 휴대폰에서는 사이드 메뉴의 “탐색”입니다. 고정한 서비스는 그 아래에 있으며 “서비스”의 별표로 고정을 해제합니다.',
+      blocksTitle: '섹션 아래',
+      blocksHint:
+        '왼쪽 패널의 섹션 아래에 표시되는 항목입니다. 휴대폰에서는 사이드 메뉴 맨 아래에 있습니다.',
+      blockFeedSettings: '“인기순”과 피드 언어',
+      noteFeed: '상단 바의 로고로도 피드로 이동합니다.',
+      noteFeedSettings: '숨기면 피드가 기본 순서와 인터페이스 언어로 돌아갑니다.',
+      noteCategories: '숨기면 선택한 카테고리가 초기화됩니다.',
+      noteTags: '숨기면 선택한 태그가 초기화됩니다.',
     },
     general: {
       theme: '테마',
@@ -585,7 +596,7 @@ export default {
       pageWidthFull: '전체 너비',
       pageWidthButton: '상단 바 버튼',
       pageWidthButtonHint:
-        '한 번의 클릭으로 너비를 바꿉니다. “상단 바와 메뉴”에서도 설정할 수 있습니다.',
+        '한 번의 클릭으로 너비를 바꿉니다. “상단 바와 패널”에서도 설정할 수 있습니다.',
     },
     ipfs: {
       title: 'IPFS 모듈',

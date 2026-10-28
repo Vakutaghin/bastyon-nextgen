@@ -30,7 +30,7 @@ On a wide screen the page can be shown in two ways. **“Settings”** → **“
 - **“Limited”** — the header, feed and pages form a column up to 1280 pixels in the middle of the screen, with empty space at the sides;
 - **“Full width”** — the whole window: the side panels move to the edges, the feed, profile posts and search take all the space between them, and the **“Video”** and **“Media studio”** sections fit more clips in a row.
 
-Full width is the default. To switch quickly, use the arrows button in the header, next to the theme. The **“Button in the header”** switch, also in **“General”**, or the **“Page width”** item in **“Header and menu”** hides it. The button shows when the window is wider than 1200 pixels: in a window narrower than the column there is nothing to switch. Phones and tablets have no such setting — the page always takes the whole screen there.
+Full width is the default. To switch quickly, use the arrows button in the header, next to the theme. The **“Button in the header”** switch, also in **“General”**, or the **“Page width”** item in **“Header and panels”** hides it. The button shows when the window is wider than 1200 pixels: in a window narrower than the column there is nothing to switch. Phones and tablets have no such setting — the page always takes the whole screen there.
 
 ## Scale
 

@@ -338,7 +338,7 @@ jobs:
 
       # Без tagName/releaseName action только собирает и ничего не заливает.
       # tauri.updater.conf.json включает файлы обновления (.app.tar.gz на macOS,
-      # подписи .sig рядом с .msi и .AppImage): их подписывает ключ из
+      # подписи .sig рядом с -setup.exe и .AppImage): их подписывает ключ из
       # TAURI_SIGNING_PRIVATE_KEY (scripts/updater-signing-key.sh), а приложение
       # проверяет открытым ключом из tauri.conf.json. Без ключа сборка падает.
       - name: Build the app
@@ -434,7 +434,8 @@ jobs:
 
       # Файл обновления для апдейтера в приложении: на macOS — .app.tar.gz
       # (служебный, с `_`: апдейтер Tauri на macOS ставит только его, не dmg),
-      # на Windows и Linux — сами .msi и .AppImage.
+      # на Windows и Linux — сами -setup.exe (NSIS для текущего пользователя,
+      # без UAC, вместо прежнего MSI) и .AppImage.
       # Его подпись (.sig рядом) и адрес в релизе уходят записью в
       # updater-<variant>.json, из записей джоба publish собирает latest.json.
       # `rw.*.dmg` — промежуточный образ упаковщика в bundle/macos/: если он
@@ -459,20 +460,21 @@ jobs:
             case "$f" in
               *.dmg)        asset="macOS-Bastyon-NextGen-${VERSION}-${VARIANT}.dmg" ;;
               *.app.tar.gz) asset="_update-macOS-Bastyon-NextGen-${VERSION}-${VARIANT}.app.tar.gz" ;;
-              *.msi)        asset="Windows-Bastyon-NextGen-${VERSION}-${VARIANT}.msi" ;;
+              *-setup.exe)  asset="Windows-Bastyon-NextGen-${VERSION}-${VARIANT}-setup.exe" ;;
               *.AppImage)   asset="Linux-Bastyon-NextGen-${VERSION}-${VARIANT}.AppImage" ;;
               *.deb)        asset="Linux-Bastyon-NextGen-${VERSION}-${VARIANT}.deb" ;;
             esac
             cp "$f" "$OUT/$asset"
             case "$f" in
-              *.app.tar.gz | *.msi | *.AppImage)
+              *.app.tar.gz | *-setup.exe | *.AppImage)
                 updater_asset="$asset"
                 updater_sig="$f.sig"
                 ;;
             esac
           done < <(find src-tauri/target -type f \
                      ! -name 'rw.*' \
-                     \( -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.msi' \
+                     \( -name '*.dmg' -o -name '*.app.tar.gz' \
+                        -o \( -path '*/bundle/nsis/*' -name '*-setup.exe' \) \
                         -o -name '*.AppImage' -o -name '*.deb' \))
 
           if [ -z "$(ls -A "$OUT")" ]; then

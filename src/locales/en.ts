@@ -482,7 +482,7 @@ export default {
     title: 'Settings',
     tabs: {
       general: 'General',
-      layout: 'Header and menu',
+      layout: 'Header and panels',
       notifications: 'Notifications',
       system: 'System',
       privateKey: 'Private key',
@@ -574,6 +574,18 @@ export default {
         'Chats also open with the round button in the bottom right corner, if it is on in “General”, and on the phone from the bottom bar.',
       itemTheme: 'Light and dark theme',
       itemPageWidth: 'Page width',
+      sidebarTitle: 'Left panel',
+      sidebarHint:
+        'Sections to the left of the feed, in this order; on a phone, “Navigation” in the side menu. Pinned services come below them — unpin them with the star in “Services”.',
+      blocksTitle: 'Below the sections',
+      blocksHint:
+        'What comes below the sections in the left panel; on a phone, at the bottom of the side menu.',
+      blockFeedSettings: '“Best first” and feed language',
+      noteFeed: 'The logo in the header also leads to the feed.',
+      noteFeedSettings:
+        'Hide it and the feed returns to the usual order and the interface language.',
+      noteCategories: 'Hide it and the selected categories are cleared.',
+      noteTags: 'Hide it and the selected tags are cleared.',
     },
     general: {
       theme: 'Theme',
@@ -586,7 +598,7 @@ export default {
       pageWidthLimited: 'Limited',
       pageWidthFull: 'Full width',
       pageWidthButton: 'Button in the header',
-      pageWidthButtonHint: 'Switch the width with one click. Also in “Header and menu”.',
+      pageWidthButtonHint: 'Switch the width with one click. Also in “Header and panels”.',
     },
     ipfs: {
       title: 'IPFS module',

@@ -10,7 +10,7 @@ How to tell the developers about a problem and what to include so it can be foun
 
 **“Report a bug”** is an item of the account menu: click your avatar in the header, and on a phone open the **“Account”** section of the side menu. It opens a [chat](messenger.md) with the Bastyon NextGen support account. Describe the problem there, like a regular message; you can attach a screenshot. The conversation is encrypted, like any private chat.
 
-If you report often, put the bug icon in the header: Settings → [“Header and menu”](settings.md#header-and-menu).
+If you report often, put the bug icon in the header: Settings → [“Header and panels”](settings.md#header-and-panels).
 
 The button works when you are signed in and the messenger is on.
 

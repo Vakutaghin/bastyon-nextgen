@@ -486,7 +486,7 @@ export default {
     title: 'Ajustes',
     tabs: {
       general: 'General',
-      layout: 'Barra superior y menú',
+      layout: 'Barra superior y paneles',
       notifications: 'Notificaciones',
       system: 'Sistema',
       privateKey: 'Clave privada',
@@ -581,6 +581,18 @@ export default {
         'Los chats también se abren con el botón redondo abajo a la derecha, si está activado en «General», y en el teléfono desde la barra inferior.',
       itemTheme: 'Tema claro y oscuro',
       itemPageWidth: 'Ancho de la página',
+      sidebarTitle: 'Panel izquierdo',
+      sidebarHint:
+        'Secciones a la izquierda del feed, en este orden; en el teléfono, «Navegación» en el menú lateral. Los servicios fijados van debajo: se quitan con la estrella en «Servicios».',
+      blocksTitle: 'Debajo de las secciones',
+      blocksHint:
+        'Lo que aparece en el panel izquierdo debajo de las secciones; en el teléfono, al final del menú lateral.',
+      blockFeedSettings: '«Lo mejor primero» e idioma del feed',
+      noteFeed: 'El logotipo de la barra superior también lleva al feed.',
+      noteFeedSettings:
+        'Si lo ocultas, el feed vuelve al orden habitual y al idioma de la interfaz.',
+      noteCategories: 'Si lo ocultas, se borra la selección de categorías.',
+      noteTags: 'Si lo ocultas, se borra la selección de etiquetas.',
     },
     general: {
       theme: 'Tema',
@@ -593,7 +605,7 @@ export default {
       pageWidthLimited: 'Limitado',
       pageWidthFull: 'Ancho completo',
       pageWidthButton: 'Botón en la barra superior',
-      pageWidthButtonHint: 'Cambia el ancho con un clic. También en «Barra superior y menú».',
+      pageWidthButtonHint: 'Cambia el ancho con un clic. También en «Barra superior y paneles».',
     },
     ipfs: {
       title: 'Módulo IPFS',

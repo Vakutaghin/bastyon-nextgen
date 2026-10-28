@@ -27,7 +27,7 @@ Besides conversations, the messenger lets you read authors’ posts — as chann
 
 ## Hiding the round button
 
-On a computer the chat opens with the round button in the bottom right corner and with the header icon. If the button is in the way: **“Settings”** → **“General”** tab → **“Floating chat button”**. The chat keeps working: the header icon opens it. The icon can be hidden too, on the **“Header and menu”** tab, but then nothing on the computer opens the chat. Phones and tablets have no round button — chats are in the bottom bar.
+On a computer the chat opens with the round button in the bottom right corner and with the header icon. If the button is in the way: **“Settings”** → **“General”** tab → **“Floating chat button”**. The chat keeps working: the header icon opens it. The icon can be hidden too, on the **“Header and panels”** tab, but then nothing on the computer opens the chat. Phones and tablets have no round button — chats are in the bottom bar.
 
 ## See also
 

@@ -14,7 +14,7 @@ All versions are on the [releases page](https://github.com/Vakutaghin/bastyon-ne
 |---|---|
 | macOS on Apple Silicon (M1 and newer) | `macOS-Bastyon-NextGen-…-Apple-Silicon.dmg` |
 | macOS 10.15 or newer on Intel | `macOS-Bastyon-NextGen-…-Intel.dmg` |
-| Windows 10 and 11 | `Windows-Bastyon-NextGen-…-x64.msi` |
+| Windows 10 and 11 | `Windows-Bastyon-NextGen-…-x64-setup.exe` |
 | Linux, any distribution | `Linux-Bastyon-NextGen-…-x86_64.AppImage` |
 | Linux based on Debian or Ubuntu | `Linux-Bastyon-NextGen-…-x86_64.deb` |
 | Android 7 and newer | `Android-Bastyon-NextGen-….apk` |
@@ -43,7 +43,9 @@ If a version from 0.9.0 to 0.9.4 quits right after launch on an Apple Silicon Ma
 
 ## Windows
 
-Run the .msi file. SmartScreen may warn about an unknown publisher: click "More info" → "Run anyway".
+Run the -setup.exe file. SmartScreen may warn about an unknown publisher: click "More info" → "Run anyway". No administrator rights are needed: the app is installed for your user account, so it also updates without questions from Windows.
+
+Earlier versions were installed from an .msi file, for the whole computer. The installer removes such a version itself and installs the new one for your user account; Windows asks once whether to allow it — answer "Yes". Accounts and settings are kept.
 
 If Windows says MSVCP140.dll was not found, install a version newer than 0.9.4. Before it, the app needed the Microsoft Visual C++ Redistributable package, which a clean Windows does not have.
 

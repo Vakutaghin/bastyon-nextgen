@@ -1,5 +1,5 @@
 ---
-keywords: [settings, preferences, content, modules, cache, diagnostics, what’s new, settings tabs, header and menu, header icons, account menu, menu order, page width, closing the window, menu bar]
+keywords: [settings, preferences, content, modules, cache, diagnostics, what’s new, settings tabs, header and panels, header and menu, header icons, account menu, menu order, left panel, left panel sections, hide categories, hide tags, page width, closing the window, menu bar]
 ---
 
 # Settings
@@ -19,12 +19,14 @@ Settings open from the account menu — **“Settings”** — or, on a phone, f
   - **“Comments order”** — the order a discussion opens in, see [Comments](comments.md);
   - **“Floating chat button”** — the round button in the bottom right corner, on a computer; without it the header icon opens the chat, see [Messenger](messenger.md).
 
-## Header and menu
+## Header and panels
 
-What stands in the header to the right of the search and what is in the avatar menu — and in what order.
+What stands in the header to the right of the search, what is in the avatar menu and what is in the left panel — and in what order.
 
 - **“Header icons”** — **“Services”**, **“Notifications”**, **“Chats”**, Tor, IPFS, the theme switch, **“Page width”** and **“Report a bug”**. The hourglass is not configurable: it appears on its own, next to the bell, when an action is waiting for the network. The avatar is always at the edge.
 - **“Account menu”** — the items of the avatar menu, and on a phone of the **“Account”** section of the side menu. **“Settings”** cannot be hidden: that is how hidden items are brought back. **“Switch account”** and **“Sign out”** are always at the bottom.
+- **“Left panel”** — the sections to the left of the feed, see [Finding your way around](interface.md#the-left-panel); on a phone this is **“Navigation”** in the side menu. If you hide **“Feed”**, the logo in the header still leads to the feed. Pinned mini apps come below the sections; unpin them with the star in the catalog, see [Services](mini-apps.md).
+- **“Below the sections”** — what comes below the sections in the left panel, and on a phone at the bottom of the side menu: the **“Best first”** switch with the **“Feed language”** field, **“Categories”** and **“Trending tags”**. A hidden block has no effect: whatever was selected in it is cleared. The feed goes in the usual order and in the interface language, without filtering by categories and tags.
 
 The switch on the right shows or hides an item. To change the order, drag a row by the handle on the left — with the mouse or a finger. From the keyboard: Tab to the handle, then the up and down arrow keys. Everything changes at once, there is nothing to save. **“Restore defaults”** under the list brings back the original set and order.
 

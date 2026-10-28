@@ -482,7 +482,7 @@ export default {
     title: 'Impostazioni',
     tabs: {
       general: 'Generali',
-      layout: 'Barra superiore e menu',
+      layout: 'Barra superiore e pannelli',
       notifications: 'Notifiche',
       system: 'Sistema',
       privateKey: 'Chiave privata',
@@ -577,6 +577,18 @@ export default {
         'Le chat si aprono anche con il pulsante rotondo in basso a destra, se è attivo in «Generali», e sul telefono dalla barra in basso.',
       itemTheme: 'Tema chiaro e scuro',
       itemPageWidth: 'Larghezza della pagina',
+      sidebarTitle: 'Pannello sinistro',
+      sidebarHint:
+        'Le sezioni a sinistra del feed, in quest’ordine; sul telefono, «Navigazione» nel menu laterale. I servizi fissati stanno sotto: si tolgono con la stella in «Servizi».',
+      blocksTitle: 'Sotto le sezioni',
+      blocksHint:
+        'Cosa c’è nel pannello sinistro sotto le sezioni; sul telefono, in fondo al menu laterale.',
+      blockFeedSettings: '«Prima i migliori» e lingua del feed',
+      noteFeed: 'Anche il logo nella barra superiore porta al feed.',
+      noteFeedSettings:
+        'Se lo nascondi, il feed torna all’ordine normale e alla lingua dell’interfaccia.',
+      noteCategories: 'Se lo nascondi, la selezione delle categorie viene azzerata.',
+      noteTags: 'Se lo nascondi, la selezione dei tag viene azzerata.',
     },
     general: {
       theme: 'Tema',
@@ -589,7 +601,8 @@ export default {
       pageWidthLimited: 'Limitata',
       pageWidthFull: 'Larghezza piena',
       pageWidthButton: 'Pulsante nella barra superiore',
-      pageWidthButtonHint: 'Cambia la larghezza con un clic. Anche in «Barra superiore e menu».',
+      pageWidthButtonHint:
+        'Cambia la larghezza con un clic. Anche in «Barra superiore e pannelli».',
     },
     ipfs: {
       title: 'Modulo IPFS',

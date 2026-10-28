@@ -1,10 +1,12 @@
 /**
- * Раскладка шапки и меню аккаунта (Настройки → «Шапка и меню»). Привязана к
- * устройству, как остальной интерфейс в `app-preferences-store`: на телефоне и
- * компьютере удобное разное.
+ * Раскладка шапки, меню аккаунта и левой панели (Настройки → «Шапка и
+ * панели»). Привязана к устройству, как остальной интерфейс в
+ * `app-preferences-store`: на телефоне и компьютере удобное разное.
  *
  * Пока человек раскладку не трогал, хранится не она, а «по умолчанию» (null):
  * так до него доходят и новые пункты, и улучшенный порядок из новых версий.
+ * Каждый список — сам по себе: переставили меню — шапка по-прежнему «по
+ * умолчанию».
  */
 
 import { defineStore } from 'pinia'
@@ -13,6 +15,8 @@ import { settingsAPI } from '@/db/apis/settings-api'
 import {
   DEFAULT_HEADER_LAYOUT,
   DEFAULT_MENU_LAYOUT,
+  DEFAULT_SIDEBAR_BLOCKS,
+  DEFAULT_SIDEBAR_LAYOUT,
   LOCKED_MENU_ITEMS,
   isDefaultLayout,
   mergeLayout,
@@ -20,18 +24,34 @@ import {
   type HeaderItemId,
   type LayoutEntry,
   type MenuItemId,
+  type SidebarBlockId,
+  type SidebarItemId,
 } from './header-layout'
 
 export const HEADER_LAYOUT_KEY = 'headerLayout'
 
-export type LayoutListName = 'header' | 'menu'
+/** `sidebar` — разделы левой панели, `blocks` — блоки под ними. */
+export type LayoutListName = 'header' | 'menu' | 'sidebar' | 'blocks'
 
-interface StoredHeaderLayout {
-  header?: unknown
-  menu?: unknown
+const LIST_NAMES: readonly LayoutListName[] = ['header', 'menu', 'sidebar', 'blocks']
+
+const DEFAULTS: Record<LayoutListName, readonly LayoutEntry[]> = {
+  header: DEFAULT_HEADER_LAYOUT,
+  menu: DEFAULT_MENU_LAYOUT,
+  sidebar: DEFAULT_SIDEBAR_LAYOUT,
+  blocks: DEFAULT_SIDEBAR_BLOCKS,
 }
 
-/** Чтение с устройства в пути: шапка и меню просят его одновременно. */
+const LOCKED: Record<LayoutListName, readonly string[]> = {
+  header: [],
+  menu: LOCKED_MENU_ITEMS,
+  sidebar: [],
+  blocks: [],
+}
+
+type StoredLayout = Partial<Record<LayoutListName, unknown>>
+
+/** Чтение с устройства в пути: шапка, меню и панель просят его одновременно. */
 let loading: Promise<void> | null = null
 
 export const useHeaderLayoutStore = defineStore('headerLayout', {
@@ -40,6 +60,10 @@ export const useHeaderLayoutStore = defineStore('headerLayout', {
     header: null as LayoutEntry<HeaderItemId>[] | null,
     /** Своя раскладка меню аккаунта; null — по умолчанию. */
     menu: null as LayoutEntry<MenuItemId>[] | null,
+    /** Свои разделы левой панели; null — по умолчанию. */
+    sidebar: null as LayoutEntry<SidebarItemId>[] | null,
+    /** Свои блоки под разделами; null — по умолчанию. */
+    blocks: null as LayoutEntry<SidebarBlockId>[] | null,
     loaded: false,
   }),
 
@@ -50,22 +74,34 @@ export const useHeaderLayoutStore = defineStore('headerLayout', {
     menuLayout(): LayoutEntry<MenuItemId>[] {
       return this.menu ?? DEFAULT_MENU_LAYOUT.map((e) => ({ ...e }))
     },
+    sidebarLayout(): LayoutEntry<SidebarItemId>[] {
+      return this.sidebar ?? DEFAULT_SIDEBAR_LAYOUT.map((e) => ({ ...e }))
+    },
+    blocksLayout(): LayoutEntry<SidebarBlockId>[] {
+      return this.blocks ?? DEFAULT_SIDEBAR_BLOCKS.map((e) => ({ ...e }))
+    },
     /** Есть ли своя раскладка — тогда есть что сбрасывать. */
     customized(): Record<LayoutListName, boolean> {
-      return { header: this.header !== null, menu: this.menu !== null }
+      return {
+        header: this.header !== null,
+        menu: this.menu !== null,
+        sidebar: this.sidebar !== null,
+        blocks: this.blocks !== null,
+      }
     },
   },
 
   actions: {
     /** Прочитать с устройства. Недоступная база оставляет раскладку по умолчанию (S61). */
     async load(): Promise<void> {
-      const raw = (await settingsAPI.get(HEADER_LAYOUT_KEY)) as StoredHeaderLayout | null
-      this.header =
-        raw && Array.isArray(raw.header) ? mergeLayout(raw.header, DEFAULT_HEADER_LAYOUT) : null
-      this.menu =
-        raw && Array.isArray(raw.menu)
-          ? mergeLayout(raw.menu, DEFAULT_MENU_LAYOUT, LOCKED_MENU_ITEMS)
-          : null
+      const raw = (await settingsAPI.get(HEADER_LAYOUT_KEY)) as StoredLayout | null
+      for (const list of LIST_NAMES) {
+        const saved = raw?.[list]
+        this.setList(
+          list,
+          Array.isArray(saved) ? mergeLayout(saved, DEFAULTS[list], LOCKED[list]) : null
+        )
+      }
       this.loaded = true
     },
 
@@ -80,7 +116,7 @@ export const useHeaderLayoutStore = defineStore('headerLayout', {
 
     /** Показать или скрыть пункт. Закреплённый пункт меню не скрывается. */
     async setVisible(list: LayoutListName, id: string, visible: boolean): Promise<void> {
-      if (list === 'menu' && !visible && LOCKED_MENU_ITEMS.includes(id as MenuItemId)) return
+      if (!visible && LOCKED[list].includes(id)) return
       const next = this.listOf(list).map((e) => (e.id === id ? { ...e, visible } : e))
       await this.apply(list, next)
     },
@@ -92,29 +128,53 @@ export const useHeaderLayoutStore = defineStore('headerLayout', {
 
     /** Вернуть раскладку по умолчанию. */
     async reset(list: LayoutListName): Promise<void> {
-      this[list] = null
+      this.setList(list, null)
       await this.persist()
     },
 
     listOf(list: LayoutListName): LayoutEntry[] {
-      return list === 'header' ? this.headerLayout : this.menuLayout
+      switch (list) {
+        case 'header':
+          return this.headerLayout
+        case 'menu':
+          return this.menuLayout
+        case 'sidebar':
+          return this.sidebarLayout
+        case 'blocks':
+          return this.blocksLayout
+      }
+    },
+
+    /** Своя раскладка списка; совпала с умолчанием — снова «по умолчанию». */
+    setList(list: LayoutListName, next: LayoutEntry[] | null): void {
+      const value = next && !isDefaultLayout(next, DEFAULTS[list]) ? next : null
+      switch (list) {
+        case 'header':
+          this.header = value as LayoutEntry<HeaderItemId>[] | null
+          break
+        case 'menu':
+          this.menu = value as LayoutEntry<MenuItemId>[] | null
+          break
+        case 'sidebar':
+          this.sidebar = value as LayoutEntry<SidebarItemId>[] | null
+          break
+        case 'blocks':
+          this.blocks = value as LayoutEntry<SidebarBlockId>[] | null
+          break
+      }
     },
 
     async apply(list: LayoutListName, next: LayoutEntry[]): Promise<void> {
-      if (list === 'header') {
-        const header = next as LayoutEntry<HeaderItemId>[]
-        this.header = isDefaultLayout(header, DEFAULT_HEADER_LAYOUT) ? null : header
-      } else {
-        const menu = next as LayoutEntry<MenuItemId>[]
-        this.menu = isDefaultLayout(menu, DEFAULT_MENU_LAYOUT) ? null : menu
-      }
+      this.setList(list, next)
       await this.persist()
     },
 
     async persist(): Promise<void> {
-      const value: StoredHeaderLayout = {}
-      if (this.header) value.header = this.header.map(({ id, visible }) => ({ id, visible }))
-      if (this.menu) value.menu = this.menu.map(({ id, visible }) => ({ id, visible }))
+      const value: StoredLayout = {}
+      for (const list of LIST_NAMES) {
+        const own = this[list]
+        if (own) value[list] = own.map(({ id, visible }) => ({ id, visible }))
+      }
       await settingsAPI.set(HEADER_LAYOUT_KEY, value)
     },
   },

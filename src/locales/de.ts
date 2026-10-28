@@ -487,7 +487,7 @@ export default {
     title: 'Einstellungen',
     tabs: {
       general: 'Allgemein',
-      layout: 'Kopfzeile und Menü',
+      layout: 'Kopfzeile und Leisten',
       notifications: 'Benachrichtigungen',
       system: 'System',
       privateKey: 'Privater Schlüssel',
@@ -583,6 +583,18 @@ export default {
         'Chats öffnen sich auch über die runde Schaltfläche unten rechts, wenn sie unter „Allgemein“ eingeschaltet ist, und auf dem Telefon über die untere Leiste.',
       itemTheme: 'Helles und dunkles Design',
       itemPageWidth: 'Seitenbreite',
+      sidebarTitle: 'Linke Leiste',
+      sidebarHint:
+        'Bereiche links vom Feed, in dieser Reihenfolge; auf dem Telefon „Navigation“ im Seitenmenü. Angeheftete Dienste stehen darunter — lösen Sie sie mit dem Stern unter „Dienste“.',
+      blocksTitle: 'Unter den Bereichen',
+      blocksHint:
+        'Was in der linken Leiste unter den Bereichen steht; auf dem Telefon unten im Seitenmenü.',
+      blockFeedSettings: '„Beste zuerst“ und Sprache des Feeds',
+      noteFeed: 'Auch das Logo in der Kopfzeile führt zum Feed.',
+      noteFeedSettings:
+        'Ausgeblendet zeigt der Feed die übliche Reihenfolge in der Sprache der Oberfläche.',
+      noteCategories: 'Ausgeblendet wird die Auswahl der Kategorien zurückgesetzt.',
+      noteTags: 'Ausgeblendet wird die Auswahl der Tags zurückgesetzt.',
     },
     general: {
       theme: 'Design',
@@ -595,7 +607,7 @@ export default {
       pageWidthLimited: 'Begrenzt',
       pageWidthFull: 'Volle Breite',
       pageWidthButton: 'Schaltfläche in der Kopfzeile',
-      pageWidthButtonHint: 'Breite mit einem Klick umschalten. Auch unter „Kopfzeile und Menü“.',
+      pageWidthButtonHint: 'Breite mit einem Klick umschalten. Auch unter „Kopfzeile und Leisten“.',
     },
     ipfs: {
       title: 'IPFS-Modul',

@@ -134,3 +134,52 @@ test('у пунктов меню аккаунта значки слева от �
   }
   if (process.env.E2E_SHOT) await menu.screenshot({ path: process.env.E2E_SHOT })
 })
+
+test('левая панель: разделы и блоки под ними — скрыть, переставить, сохранить, вернуть', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await signIn(page)
+  const sidebar = page.getByTestId('sidebar-left')
+  await expect(sidebar.getByRole('button', { name: 'Обсуждаемое' })).toBeVisible()
+  await expect(sidebar.getByText('Актуальные теги')).toBeVisible()
+  await expect(sidebar.getByRole('button').first()).toHaveText('Лента')
+
+  await page.goto('/settings?tab=layout')
+  const sections = page.getByTestId('layout-sidebar')
+  const blocks = page.getByTestId('layout-blocks')
+  await expect(sections.getByText('Топ аккаунтов')).toBeVisible({ timeout: 30_000 })
+
+  await sections.getByRole('switch', { name: 'Показывать: Обсуждаемое' }).click()
+  // «Справку» — наверх стрелками с клавиатуры.
+  const helpHandle = sections.getByRole('button', { name: 'Переместить: Справка' })
+  await helpHandle.focus()
+  for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowUp')
+  await expect(sections.getByRole('listitem').first()).toContainText('Справка')
+  // Теги убрали, категории — над «Сначала лучшее».
+  await blocks.getByRole('switch', { name: 'Показывать: Актуальные теги' }).click()
+  await blocks.getByRole('button', { name: 'Переместить: Категории' }).focus()
+  await page.keyboard.press('ArrowUp')
+  await expect(blocks.getByRole('listitem').first()).toContainText('Категории')
+
+  await page.goto('/')
+  await expect(sidebar.getByRole('button').first()).toHaveText('Справка', { timeout: 30_000 })
+  await expect(sidebar.getByRole('button', { name: 'Обсуждаемое' })).toHaveCount(0)
+  await expect(sidebar.getByText('Актуальные теги')).toHaveCount(0)
+  const categoriesY = (await sidebar.getByText('Категории').boundingBox())!.y
+  expect(categoriesY).toBeLessThan((await sidebar.getByText('Сначала лучшее').boundingBox())!.y)
+
+  // Переживает перезагрузку.
+  await page.reload()
+  await page.waitForSelector('#app > *', { timeout: 30_000 })
+  await expect(sidebar.getByRole('button').first()).toHaveText('Справка', { timeout: 30_000 })
+  await expect(sidebar.getByText('Актуальные теги')).toHaveCount(0)
+
+  await page.goto('/settings?tab=layout')
+  await sections.getByRole('button', { name: 'Вернуть по умолчанию' }).click()
+  await blocks.getByRole('button', { name: 'Вернуть по умолчанию' }).click()
+  await page.goto('/')
+  await expect(sidebar.getByRole('button').first()).toHaveText('Лента', { timeout: 30_000 })
+  await expect(sidebar.getByRole('button', { name: 'Обсуждаемое' })).toBeVisible()
+  await expect(sidebar.getByText('Актуальные теги')).toBeVisible()
+})

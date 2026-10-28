@@ -51,9 +51,8 @@
           </SC_Tabs>
         </SC_DrawerPanel>
 
-        <SC_DrawerPanel>
-          <SidebarCategories />
-          <SidebarTags />
+        <SC_DrawerPanel v-if="sidebarBlocks.length > 0">
+          <component :is="SIDEBAR_BLOCK_COMPONENTS[id]" v-for="id in sidebarBlocks" :key="id" />
         </SC_DrawerPanel>
       </template>
     </SC_Drawer>
@@ -78,8 +77,7 @@ import {
   useHeaderLayout,
 } from '@/b-components/header/header-layout/layout-items'
 import SidebarTabs from '@/b-components/sidebar/sidebar-tabs/sidebar-tabs.vue'
-import SidebarCategories from '@/b-components/sidebar/sidebar-categories/sidebar-categories.vue'
-import SidebarTags from '@/b-components/sidebar/sidebar-tags/sidebar-tags.vue'
+import { SIDEBAR_BLOCK_COMPONENTS } from '@/b-components/sidebar/sidebar-blocks'
 import AppVersionBadge from '@/b-components/app-update/app-version-badge.vue'
 import { SC_Tabs, SC_TabsItem, SC_TabsLabel } from '@/b-components/sidebar/sidebar-tabs/styled'
 import { CloseOutlined } from '@/components/icons'
@@ -117,7 +115,7 @@ const profileLink = computed<string>(() => {
 
 // Те же пункты и порядок, что в меню аккаунта на компьютере (Настройки →
 // «Шапка и меню»), без «Справки»: она уже есть в разделах выше.
-const { menuItems } = useHeaderLayout()
+const { menuItems, sidebarBlocks } = useHeaderLayout()
 const accountItems = computed(() =>
   menuItems.value
     .filter((id) => id !== 'help')

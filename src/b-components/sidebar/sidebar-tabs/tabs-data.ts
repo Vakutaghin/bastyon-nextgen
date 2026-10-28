@@ -1,7 +1,29 @@
-export const tabsData = [
-  { id: 1, labelKey: 'sidebarData.tabs.feed', icon: 'HomeOutlined', active: true, disabled: false },
+import type { SidebarItemId } from '@/stores/header-layout'
+
+/**
+ * Разделы левой панели в порядке по умолчанию. `key` — имя раздела в
+ * раскладке (Настройки → «Шапка и панели»), `id` — номер вкладки в
+ * filters-store и адресе.
+ */
+export const tabsData: {
+  id: number
+  key: SidebarItemId
+  labelKey: string
+  icon: string
+  active: boolean
+  disabled: boolean
+}[] = [
+  {
+    id: 1,
+    key: 'feed',
+    labelKey: 'sidebarData.tabs.feed',
+    icon: 'HomeOutlined',
+    active: true,
+    disabled: false,
+  },
   {
     id: 2,
+    key: 'subscriptions',
     labelKey: 'sidebarData.tabs.subscriptions',
     icon: 'TeamOutlined',
     active: false,
@@ -9,6 +31,7 @@ export const tabsData = [
   },
   {
     id: 3,
+    key: 'video',
     labelKey: 'sidebarData.tabs.video',
     icon: 'PlayCircleOutlined',
     active: false,
@@ -16,6 +39,7 @@ export const tabsData = [
   },
   {
     id: 4,
+    key: 'audio',
     labelKey: 'sidebarData.tabs.audio',
     icon: 'SoundOutlined',
     active: false,
@@ -23,6 +47,7 @@ export const tabsData = [
   },
   {
     id: 5,
+    key: 'articles',
     labelKey: 'sidebarData.tabs.articles',
     icon: 'FileTextOutlined',
     active: false,
@@ -30,6 +55,7 @@ export const tabsData = [
   },
   {
     id: 6,
+    key: 'favorites',
     labelKey: 'sidebarData.tabs.favorites',
     icon: 'BookOutlined',
     active: false,
@@ -37,6 +63,7 @@ export const tabsData = [
   },
   {
     id: 7,
+    key: 'discussed',
     labelKey: 'sidebarData.tabs.discussed',
     icon: 'StarOutlined',
     active: false,
@@ -44,6 +71,7 @@ export const tabsData = [
   },
   {
     id: 8,
+    key: 'miniApps',
     labelKey: 'sidebarData.tabs.miniApps',
     icon: 'AppstoreOutlined',
     active: false,
@@ -51,6 +79,7 @@ export const tabsData = [
   },
   {
     id: 11,
+    key: 'topAccounts',
     labelKey: 'sidebarData.tabs.topAccounts',
     icon: 'TrophyOutlined',
     active: false,
@@ -58,6 +87,7 @@ export const tabsData = [
   },
   {
     id: 9,
+    key: 'explorer',
     labelKey: 'sidebarData.tabs.explorer',
     icon: 'BlockOutlined',
     active: false,
@@ -65,6 +95,7 @@ export const tabsData = [
   },
   {
     id: 10,
+    key: 'help',
     labelKey: 'sidebarData.tabs.help',
     icon: 'HelpBookIcon',
     active: false,

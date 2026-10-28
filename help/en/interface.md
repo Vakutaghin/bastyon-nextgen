@@ -24,7 +24,7 @@ To the right of the search are the icons. This is how they stand until you rearr
 - **The sun or moon** switches between the light and dark theme.
 - **Your avatar** opens the account menu. Until you sign in, the **“Sign in”** and **“Sign up”** buttons are there instead; on a phone only **“Sign in”** — signing up is in the menu there.
 
-The bug icon — **“Report a bug”** — can be added to the header; by default it is an item of the account menu. Which icons to show and in what order is chosen in the settings, see [Header and menu](settings.md#header-and-menu).
+The bug icon — **“Report a bug”** — can be added to the header; by default it is an item of the account menu. Which icons to show and in what order is chosen in the settings, see [Header and panels](settings.md#header-and-panels).
 
 ## Above the feed
 
@@ -45,6 +45,8 @@ Feed and app sections:
 
 Under the sections are the **“Best first”** switch, the **“Feed language”**, **“Categories”** and **“Trending tags”**, which select the posts in the feed — see [Categories, tags and sorting](feed-filters.md).
 
+The sections and the blocks below them can be hidden and reordered — see [Header and panels](settings.md#header-and-panels).
+
 ## The right panel
 
 - **“Who to follow”** — authors worth following.
@@ -64,7 +66,7 @@ Click your avatar in the header. By default the menu has:
 - **“Help”**, **“Report a bug”** — see [Reporting a bug](report-bug.md) — and **“Settings”**;
 - **“Switch account”** and **“Sign out”** — see [Several accounts and signing out](accounts.md).
 
-Items can be hidden and reordered; only **“Settings”** cannot be hidden — see [Header and menu](settings.md#header-and-menu). **“Switch account”** and **“Sign out”** are always at the bottom. If the registration was interrupted, the menu gets a **“Finish registration”** item.
+Items can be hidden and reordered; only **“Settings”** cannot be hidden — see [Header and panels](settings.md#header-and-panels). **“Switch account”** and **“Sign out”** are always at the bottom. If the registration was interrupted, the menu gets a **“Finish registration”** item.
 
 ## The messenger
 

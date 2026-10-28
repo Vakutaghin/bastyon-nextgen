@@ -1002,6 +1002,7 @@ pub fn run() {
       asr::asr_cancel,
       asr::asr_open_mic_settings,
       system_info::system_info,
+      prepare_update_exit,
       mesh::mesh_module_status,
       mesh::mesh_module_install,
       mesh::mesh_module_cancel_install,
@@ -1138,6 +1139,21 @@ pub fn run() {
         log::warn!("tray: {e}");
       }
 
+      // Автозапуск на Windows — путь к exe в реестре. Обновление переносит
+      // приложение из Program Files (MSI) в папку пользователя (NSIS), и
+      // прежний путь ведёт в пустоту: включённый автозапуск переписываем на
+      // этот exe. Выключенный в «Диспетчере задач» не трогаем.
+      #[cfg(windows)]
+      {
+        use tauri_plugin_autostart::ManagerExt;
+        let autostart = app.autolaunch();
+        if autostart.is_enabled().unwrap_or(false) {
+          if let Err(e) = autostart.enable() {
+            log::warn!("autostart: {e}");
+          }
+        }
+      }
+
       // Подбираем осиротевшие temp-файлы транскодера в фоне, чтобы упавшие
       // транскоды не накапливали гигабайты между запусками. Второго экземпляра
       // нет (single-instance), так что чужих файлов здесь нет — берём все,
@@ -1168,10 +1184,26 @@ pub fn run() {
       // работать сиротой. Гасим дочерние процессы на любом из двух,
       // один раз.
       if matches!(event, RunEvent::ExitRequested { .. } | RunEvent::Exit) {
-        static SHUT_DOWN: std::sync::Once = std::sync::Once::new();
-        SHUT_DOWN.call_once(|| shutdown_children(app_handle));
+        shutdown_children_once(app_handle);
       }
     });
+}
+
+/// Перед установщиком обновления на Windows. Плагин updater запускает его и
+/// сразу завершает процесс (`std::process::exit`) — мимо `RunEvent::Exit`, и
+/// Kubo, модуль mesh и микрофон оставались бы работать без хозяина. На macOS
+/// и Linux установка процесс не завершает, выходит `relaunch` — обычным путём.
+#[tauri::command]
+fn prepare_update_exit(app: tauri::AppHandle) {
+  #[cfg(windows)]
+  shutdown_children_once(&app);
+  #[cfg(not(windows))]
+  let _ = app;
+}
+
+fn shutdown_children_once(app_handle: &tauri::AppHandle) {
+  static SHUT_DOWN: std::sync::Once = std::sync::Once::new();
+  SHUT_DOWN.call_once(|| shutdown_children(app_handle));
 }
 
 /// Best-effort синхронная остановка всего, что приложение запустило: в

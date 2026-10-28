@@ -67,6 +67,7 @@ permissions = [
   "allow-asr-cancel",
   "allow-asr-open-mic-settings",
   "allow-system-info",
+  "allow-prepare-update-exit",
   "allow-mesh-module-status",
   "allow-mesh-module-install",
   "allow-mesh-module-cancel-install",

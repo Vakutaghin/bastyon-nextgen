@@ -36,7 +36,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["appimage", "deb", "msi", "app", "dmg"],
+    "targets": ["appimage", "deb", "nsis", "app", "dmg"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -54,6 +54,23 @@
       "minimumSystemVersion": "10.15",
       "signingIdentity": "-",
       "entitlements": "./entitlements.plist"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "template": "windows/installer.nsi",
+        "languages": [
+          "English",
+          "Russian",
+          "German",
+          "Spanish",
+          "French",
+          "Italian",
+          "Korean",
+          "SimpChinese"
+        ],
+        "displayLanguageSelector": false
+      }
     },
     "linux": {
       "appimage": {

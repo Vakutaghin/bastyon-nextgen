@@ -66,6 +66,7 @@ const COMMANDS: &[&str] = &[
   "asr_cancel",
   "asr_open_mic_settings",
   "system_info",
+  "prepare_update_exit",
   "mesh_module_status",
   "mesh_module_install",
   "mesh_module_cancel_install",

@@ -454,7 +454,7 @@ export default {
     title: '设置',
     tabs: {
       general: '通用',
-      layout: '顶栏与菜单',
+      layout: '顶栏与面板',
       notifications: '通知',
       system: '系统',
       privateKey: '私钥',
@@ -539,6 +539,16 @@ export default {
         '如果在“通用”中开启了右下角的圆形按钮，也可以用它打开聊天；在手机上则从底部栏打开。',
       itemTheme: '浅色和深色主题',
       itemPageWidth: '页面宽度',
+      sidebarTitle: '左侧面板',
+      sidebarHint:
+        '信息流左侧的栏目，按此顺序显示；在手机上是侧边菜单中的“导航”。固定的服务显示在栏目下方，可在“服务”中点星标取消固定。',
+      blocksTitle: '栏目下方',
+      blocksHint: '左侧面板中栏目下方的内容；在手机上位于侧边菜单底部。',
+      blockFeedSettings: '“最佳优先”和信息流语言',
+      noteFeed: '顶栏的标志也会打开信息流。',
+      noteFeedSettings: '隐藏后，信息流恢复默认顺序和界面语言。',
+      noteCategories: '隐藏后，已选分类会被清除。',
+      noteTags: '隐藏后，已选标签会被清除。',
     },
     general: {
       theme: '主题',
@@ -551,7 +561,7 @@ export default {
       pageWidthLimited: '限制宽度',
       pageWidthFull: '全宽',
       pageWidthButton: '顶栏按钮',
-      pageWidthButtonHint: '一键切换宽度。“顶栏与菜单”中也可设置。',
+      pageWidthButtonHint: '一键切换宽度。“顶栏与面板”中也可设置。',
     },
     ipfs: {
       title: 'IPFS 模块',

@@ -7,7 +7,7 @@
 | --- | --- |
 | macOS на Apple Silicon (M1 и новее) | `macOS-Bastyon-NextGen-__VERSION__-Apple-Silicon.dmg` |
 | macOS 10.15 и новее на Intel | `macOS-Bastyon-NextGen-__VERSION__-Intel.dmg` |
-| Windows 10 и 11 | `Windows-Bastyon-NextGen-__VERSION__-x64.msi` |
+| Windows 10 и 11 | `Windows-Bastyon-NextGen-__VERSION__-x64-setup.exe` |
 | Linux, любой дистрибутив | `Linux-Bastyon-NextGen-__VERSION__-x86_64.AppImage` |
 | Linux на базе Debian или Ubuntu | `Linux-Bastyon-NextGen-__VERSION__-x86_64.deb` |
 | Android 7 и новее | `Android-Bastyon-NextGen-__VERSION__.apk` |
@@ -35,7 +35,7 @@ xattr -dr com.apple.quarantine "/Applications/Bastyon NextGen.app"
 <details>
 <summary>Windows</summary>
 
-Запустите .msi. SmartScreen предупредит о неизвестном издателе: «Подробнее» → «Выполнить в любом случае».
+Запустите -setup.exe. SmartScreen предупредит о неизвестном издателе: «Подробнее» → «Выполнить в любом случае». Права администратора не нужны: приложение ставится для вашей учётной записи. Версию, поставленную раньше из .msi, установщик удалит сам — Windows один раз спросит разрешение.
 
 </details>
 
@@ -86,7 +86,7 @@ sudo apt install ./Linux-Bastyon-NextGen-__VERSION__-x86_64.deb
 | --- | --- |
 | macOS on Apple Silicon (M1 and newer) | `macOS-Bastyon-NextGen-__VERSION__-Apple-Silicon.dmg` |
 | macOS 10.15 or newer on Intel | `macOS-Bastyon-NextGen-__VERSION__-Intel.dmg` |
-| Windows 10 and 11 | `Windows-Bastyon-NextGen-__VERSION__-x64.msi` |
+| Windows 10 and 11 | `Windows-Bastyon-NextGen-__VERSION__-x64-setup.exe` |
 | Linux, any distribution | `Linux-Bastyon-NextGen-__VERSION__-x86_64.AppImage` |
 | Linux based on Debian or Ubuntu | `Linux-Bastyon-NextGen-__VERSION__-x86_64.deb` |
 | Android 7 and newer | `Android-Bastyon-NextGen-__VERSION__.apk` |
@@ -114,7 +114,7 @@ xattr -dr com.apple.quarantine "/Applications/Bastyon NextGen.app"
 <details>
 <summary>Windows</summary>
 
-Run the .msi. SmartScreen will warn about an unknown publisher: "More info" → "Run anyway".
+Run the -setup.exe. SmartScreen will warn about an unknown publisher: "More info" → "Run anyway". No administrator rights are needed: the app is installed for your user account. A version installed earlier from the .msi is removed by the installer itself — Windows asks for permission once.
 
 </details>
 

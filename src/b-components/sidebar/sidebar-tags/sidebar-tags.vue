@@ -161,8 +161,7 @@ function isTagSelected(tagName: string): boolean {
 
 function clearSelection(e: Event): void {
   e.stopPropagation()
-  filtersStore.selectedTags = []
-  filtersStore.saveSettings()
+  filtersStore.clearTagSelection()
 }
 
 function formatCount(count: number): string {

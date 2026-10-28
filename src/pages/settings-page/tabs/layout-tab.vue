@@ -29,18 +29,56 @@
     @move="(from, to) => layout.move('menu', from, to)"
     @reset="layout.reset('menu')"
   />
+
+  <SC_SettingsSectionTitle>{{ t('settings.layout.sidebarTitle') }}</SC_SettingsSectionTitle>
+  <SC_LayoutHint>{{ t('settings.layout.sidebarHint') }}</SC_LayoutHint>
+  <LayoutEditor
+    :title="t('settings.layout.sidebarTitle')"
+    :entries="layout.sidebarLayout"
+    :items="SIDEBAR_ITEMS"
+    :reason-of="reasonOf"
+    :note-of="sidebarNote"
+    :customized="layout.customized.sidebar"
+    data-testid="layout-sidebar"
+    @toggle="(id, visible) => layout.setVisible('sidebar', id, visible)"
+    @move="(from, to) => layout.move('sidebar', from, to)"
+    @reset="layout.reset('sidebar')"
+  />
+
+  <SC_SettingsSectionTitle>{{ t('settings.layout.blocksTitle') }}</SC_SettingsSectionTitle>
+  <SC_LayoutHint>{{ t('settings.layout.blocksHint') }}</SC_LayoutHint>
+  <LayoutEditor
+    :title="t('settings.layout.blocksTitle')"
+    :entries="layout.blocksLayout"
+    :items="SIDEBAR_BLOCKS"
+    :reason-of="reasonOf"
+    :note-of="blockNote"
+    :customized="layout.customized.blocks"
+    data-testid="layout-blocks"
+    @toggle="toggleBlock"
+    @move="(from, to) => layout.move('blocks', from, to)"
+    @reset="layout.reset('blocks')"
+  />
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useHeaderLayoutStore } from '@/stores/header-layout-store'
-import type { HeaderItemId, MenuItemId } from '@/stores/header-layout'
+import type {
+  HeaderItemId,
+  MenuItemId,
+  SidebarBlockId,
+  SidebarItemId,
+} from '@/stores/header-layout'
 import {
   HEADER_ITEMS,
   MENU_ITEMS,
+  SIDEBAR_BLOCKS,
+  SIDEBAR_ITEMS,
   isLockedMenuItem,
   unavailableReason,
 } from '@/b-components/header/header-layout/layout-items'
+import { resetSidebarBlock } from '@/b-components/sidebar/sidebar-blocks'
 import LayoutEditor from './layout-editor.vue'
 import { SC_LayoutHint } from './layout-editor.styled'
 import { SC_SettingsSectionTitle } from '../settings-page.styled'
@@ -50,7 +88,7 @@ const layout = useHeaderLayoutStore()
 void layout.ensureLoaded()
 
 function reasonOf(id: string): string | null {
-  return unavailableReason(id as HeaderItemId | MenuItemId)
+  return unavailableReason(id as HeaderItemId | MenuItemId | SidebarItemId | SidebarBlockId)
 }
 
 /**
@@ -74,5 +112,29 @@ function headerNote(id: string): string | null {
 
 function menuNote(id: string): string | null {
   return isLockedMenuItem(id as MenuItemId) ? 'settings.layout.locked' : null
+}
+
+/** Без «Ленты» в панели на ленту ведёт логотип. */
+function sidebarNote(id: string): string | null {
+  return (id as SidebarItemId) === 'feed' ? 'settings.layout.noteFeed' : null
+}
+
+/** Что сбросится, если блок скрыть (sidebar-blocks). */
+function blockNote(id: string): string | null {
+  switch (id as SidebarBlockId) {
+    case 'feedSettings':
+      return 'settings.layout.noteFeedSettings'
+    case 'categories':
+      return 'settings.layout.noteCategories'
+    case 'tags':
+      return 'settings.layout.noteTags'
+    default:
+      return null
+  }
+}
+
+async function toggleBlock(id: string, visible: boolean): Promise<void> {
+  await layout.setVisible('blocks', id, visible)
+  if (!visible) resetSidebarBlock(id as SidebarBlockId)
 }
 </script>

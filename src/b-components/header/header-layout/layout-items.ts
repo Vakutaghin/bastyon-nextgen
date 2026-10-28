@@ -1,15 +1,23 @@
-// Что за пункты в раскладке шапки и меню: подпись, значок и есть ли пункт на
-// этой платформе. Порядок и видимость — в stores/header-layout*.
+// Что за пункты в раскладке шапки, меню и левой панели: подпись, значок и есть
+// ли пункт на этой платформе. Порядок и видимость — в stores/header-layout*.
 
 import { computed, type Component, type ComputedRef } from 'vue'
 
 import {
   AppstoreOutlined,
   BellOutlined,
+  BlockOutlined,
+  BookOutlined,
   BugOutlined,
+  CategoriesIcon,
   CrownOutlined,
+  FeedSettingsIcon,
   FileOutlined,
+  FileTextOutlined,
   GlobalOutlined,
+  HashtagIcon,
+  HelpBookIcon,
+  HomeOutlined,
   HourglassOutlined,
   MessageOutlined,
   PageWidthFullIcon,
@@ -18,7 +26,11 @@ import {
   RadioTowerIcon,
   SafetyOutlined,
   SettingOutlined,
+  SoundOutlined,
+  StarOutlined,
+  TeamOutlined,
   ThemeLightIcon,
+  TrophyOutlined,
   UserOutlined,
   WalletOutlined,
 } from '@/components/icons'
@@ -30,6 +42,8 @@ import {
   LOCKED_MENU_ITEMS,
   type HeaderItemId,
   type MenuItemId,
+  type SidebarBlockId,
+  type SidebarItemId,
 } from '@/stores/header-layout'
 
 export interface LayoutItemMeta {
@@ -63,6 +77,27 @@ export const MENU_ITEMS: Record<MenuItemId, LayoutItemMeta> = {
   settings: { labelKey: 'accountMsg.menuSettings', icon: SettingOutlined },
 }
 
+/** Значки — те же, что у разделов в самой панели (sidebar-tabs). */
+export const SIDEBAR_ITEMS: Record<SidebarItemId, LayoutItemMeta> = {
+  feed: { labelKey: 'sidebarData.tabs.feed', icon: HomeOutlined },
+  subscriptions: { labelKey: 'sidebarData.tabs.subscriptions', icon: TeamOutlined },
+  video: { labelKey: 'sidebarData.tabs.video', icon: PlayCircleOutlined },
+  audio: { labelKey: 'sidebarData.tabs.audio', icon: SoundOutlined },
+  articles: { labelKey: 'sidebarData.tabs.articles', icon: FileTextOutlined },
+  favorites: { labelKey: 'sidebarData.tabs.favorites', icon: BookOutlined },
+  discussed: { labelKey: 'sidebarData.tabs.discussed', icon: StarOutlined },
+  miniApps: { labelKey: 'sidebarData.tabs.miniApps', icon: AppstoreOutlined },
+  topAccounts: { labelKey: 'sidebarData.tabs.topAccounts', icon: TrophyOutlined },
+  explorer: { labelKey: 'sidebarData.tabs.explorer', icon: BlockOutlined },
+  help: { labelKey: 'sidebarData.tabs.help', icon: HelpBookIcon },
+}
+
+export const SIDEBAR_BLOCKS: Record<SidebarBlockId, LayoutItemMeta> = {
+  feedSettings: { labelKey: 'settings.layout.blockFeedSettings', icon: FeedSettingsIcon },
+  categories: { labelKey: 'sidebar.categories', icon: CategoriesIcon },
+  tags: { labelKey: 'sidebar.trendingTags', icon: HashtagIcon },
+}
+
 /** Куда ведут пункты меню; профиль — по имени, его адрес считает меню, «Сообщить об ошибке» — действие. */
 export const MENU_ITEM_PATHS: Partial<Record<MenuItemId, string>> = {
   wallets: '/wallets',
@@ -88,7 +123,9 @@ export const PHONE_HEADER_ITEMS: readonly HeaderItemId[] = ['notifications', 'th
  * и «Мои файлы» — своя нода, только в приложении для компьютера; радио mesh —
  * ещё и на Android.
  */
-export function unavailableReason(id: HeaderItemId | MenuItemId): string | null {
+export function unavailableReason(
+  id: HeaderItemId | MenuItemId | SidebarItemId | SidebarBlockId
+): string | null {
   switch (id) {
     case 'tor':
     case 'ipfs':
@@ -109,13 +146,18 @@ export function isLockedMenuItem(id: MenuItemId): boolean {
 export function useHeaderLayout(): {
   headerItems: ComputedRef<HeaderItemId[]>
   menuItems: ComputedRef<MenuItemId[]>
+  sidebarItems: ComputedRef<SidebarItemId[]>
+  sidebarBlocks: ComputedRef<SidebarBlockId[]>
 } {
   const layout = useHeaderLayoutStore()
   void layout.ensureLoaded()
-  const shown = <Id extends HeaderItemId | MenuItemId>(list: { id: Id; visible: boolean }[]) =>
-    list.filter((e) => e.visible && !unavailableReason(e.id)).map((e) => e.id)
+  const shown = <Id extends HeaderItemId | MenuItemId | SidebarItemId | SidebarBlockId>(
+    list: { id: Id; visible: boolean }[]
+  ) => list.filter((e) => e.visible && !unavailableReason(e.id)).map((e) => e.id)
   return {
     headerItems: computed(() => shown(layout.headerLayout)),
     menuItems: computed(() => shown(layout.menuLayout)),
+    sidebarItems: computed(() => shown(layout.sidebarLayout)),
+    sidebarBlocks: computed(() => shown(layout.blocksLayout)),
   }
 }

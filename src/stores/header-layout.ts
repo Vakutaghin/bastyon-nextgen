@@ -1,8 +1,9 @@
 /**
- * Раскладка шапки и меню аккаунта: какие значки справа от поиска и какие
- * пункты в меню аватара, в каком порядке. Здесь — чистая часть: пункты по
- * умолчанию и сведение сохранённого с ними. Подписи, значки и доступность на
- * этой платформе — в `b-components/header/header-layout`.
+ * Раскладка шапки, меню аккаунта и левой панели: какие значки справа от
+ * поиска, какие пункты в меню аватара, какие разделы и блоки слева от ленты, в
+ * каком порядке. Здесь — чистая часть: пункты по умолчанию и сведение
+ * сохранённого с ними. Подписи, значки и доступность на этой платформе — в
+ * `b-components/header/header-layout`.
  *
  * Порядок по умолчанию:
  * - шапка: «Сервисы» — сразу за поиском, это раздел, как ссылка; дальше то,
@@ -11,7 +12,9 @@
  *   (ширина — только на широком экране). «Сообщить об ошибке»
  *   по умолчанию в меню: нужна редко, а место в шапке — самое дорогое;
  * - меню: вы — деньги — ваше содержимое — лимиты на него — связь — помощь и
- *   настройки. «Настройки» не скрываются: через них скрытое и возвращают.
+ *   настройки. «Настройки» не скрываются: через них скрытое и возвращают;
+ * - левая панель: разделы ленты, затем приложения и справка — как было до
+ *   настройки; под разделами — порядок и язык ленты, категории, теги.
  */
 
 export type HeaderItemId =
@@ -35,6 +38,23 @@ export type MenuItemId =
   | 'help'
   | 'reportBug'
   | 'settings'
+
+/** Разделы левой панели — те же, что `sidebarData.tabs.*` в переводах. */
+export type SidebarItemId =
+  | 'feed'
+  | 'subscriptions'
+  | 'video'
+  | 'audio'
+  | 'articles'
+  | 'favorites'
+  | 'discussed'
+  | 'miniApps'
+  | 'topAccounts'
+  | 'explorer'
+  | 'help'
+
+/** Блоки под разделами: «Сначала лучшее» с языком ленты, категории, теги. */
+export type SidebarBlockId = 'feedSettings' | 'categories' | 'tags'
 
 export interface LayoutEntry<Id extends string = string> {
   id: Id
@@ -63,6 +83,26 @@ export const DEFAULT_MENU_LAYOUT: readonly LayoutEntry<MenuItemId>[] = [
   { id: 'help', visible: true },
   { id: 'reportBug', visible: true },
   { id: 'settings', visible: true },
+]
+
+export const DEFAULT_SIDEBAR_LAYOUT: readonly LayoutEntry<SidebarItemId>[] = [
+  { id: 'feed', visible: true },
+  { id: 'subscriptions', visible: true },
+  { id: 'video', visible: true },
+  { id: 'audio', visible: true },
+  { id: 'articles', visible: true },
+  { id: 'favorites', visible: true },
+  { id: 'discussed', visible: true },
+  { id: 'miniApps', visible: true },
+  { id: 'topAccounts', visible: true },
+  { id: 'explorer', visible: true },
+  { id: 'help', visible: true },
+]
+
+export const DEFAULT_SIDEBAR_BLOCKS: readonly LayoutEntry<SidebarBlockId>[] = [
+  { id: 'feedSettings', visible: true },
+  { id: 'categories', visible: true },
+  { id: 'tags', visible: true },
 ]
 
 /** Пункты меню, которые нельзя скрыть: без «Настроек» скрытое не вернуть. */

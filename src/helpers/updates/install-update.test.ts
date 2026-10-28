@@ -1,18 +1,26 @@
 // Обновление изнутри приложения: плагин берёт latest.json, качает сборку с
-// прогрессом, ставит и перезапускает приложение. Под Tor — через его SOCKS,
-// упавший Tor — ошибка, а не прямое соединение.
+// прогрессом, ставит и перезапускает приложение. Перед установкой дочерние
+// процессы гасятся (Windows выходит мимо RunEvent::Exit). Под Tor — через его
+// SOCKS, упавший Tor — ошибка, а не прямое соединение.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   check: vi.fn(),
-  relaunch: vi.fn(async () => {}),
+  calls: [] as string[],
+  relaunch: vi.fn(async () => {
+    mocks.calls.push('relaunch')
+  }),
+  invoke: vi.fn(async (cmd: string) => {
+    mocks.calls.push(cmd)
+  }),
   routing: 'direct' as string,
   socksPort: 9250,
 }))
 
 vi.mock('@tauri-apps/plugin-updater', () => ({ check: mocks.check }))
 vi.mock('@tauri-apps/plugin-process', () => ({ relaunch: mocks.relaunch }))
+vi.mock('@tauri-apps/api/core', () => ({ invoke: mocks.invoke }))
 vi.mock('@/helpers/tor/tor-gate', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/helpers/tor/tor-gate')>()
   return {
@@ -34,8 +42,11 @@ type DownloadEvent =
 function updateEmitting(events: DownloadEvent[]) {
   return {
     version: '0.9.4',
-    downloadAndInstall: vi.fn(async (onEvent: (e: DownloadEvent) => void) => {
+    download: vi.fn(async (onEvent: (e: DownloadEvent) => void) => {
       events.forEach(onEvent)
+    }),
+    install: vi.fn(async () => {
+      mocks.calls.push('install')
     }),
   }
 }
@@ -43,6 +54,7 @@ function updateEmitting(events: DownloadEvent[]) {
 describe('installUpdate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.calls = []
     mocks.routing = 'direct'
   })
 
@@ -64,7 +76,15 @@ describe('installUpdate', () => {
       ['download', 1],
       ['install', 1],
     ])
-    expect(mocks.relaunch).toHaveBeenCalledTimes(1)
+    expect(mocks.calls).toEqual(['prepare_update_exit', 'install', 'relaunch'])
+  })
+
+  it('не скачалось или не сошлась подпись — дочерние процессы не трогаются', async () => {
+    const update = updateEmitting([])
+    update.download.mockRejectedValue(new Error('signature verification failed'))
+    mocks.check.mockResolvedValue(update)
+    await expect(installUpdate(() => {})).rejects.toThrow(/signature/)
+    expect(mocks.calls).toEqual([])
   })
 
   it('сервер не назвал размер — прогресс без доли', async () => {
@@ -76,7 +96,9 @@ describe('installUpdate', () => {
     )
     const progress: InstallProgress[] = []
     await installUpdate((p) => progress.push(p))
-    expect(progress.every((p) => p.fraction === null)).toBe(true)
+    const downloading = progress.filter((p) => p.phase === 'download')
+    expect(downloading.length).toBeGreaterThan(1)
+    expect(downloading.every((p) => p.fraction === null)).toBe(true)
   })
 
   it('обновления для этой системы нет — без перезапуска', async () => {

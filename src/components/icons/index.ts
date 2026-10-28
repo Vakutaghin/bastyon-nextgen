@@ -148,6 +148,9 @@ import {
   BookmarkPlus,
   BookmarkCheck,
   Headphones,
+  SlidersHorizontal,
+  Shapes,
+  Hash,
 } from '@lucide/vue'
 
 /**
@@ -365,3 +368,8 @@ export const WatchLaterIcon = lucideIcon('WatchLaterIcon', ClockPlus)
 export const SaveIcon = lucideIcon('SaveIcon', BookmarkPlus)
 export const SavedIcon = lucideIcon('SavedIcon', BookmarkCheck)
 export const HeadphonesIcon = lucideIcon('HeadphonesIcon', Headphones)
+
+/** Блоки левой панели в «Шапке и панелях»: порядок и язык ленты, категории, теги. */
+export const FeedSettingsIcon = lucideIcon('FeedSettingsIcon', SlidersHorizontal)
+export const CategoriesIcon = lucideIcon('CategoriesIcon', Shapes)
+export const HashtagIcon = lucideIcon('HashtagIcon', Hash)

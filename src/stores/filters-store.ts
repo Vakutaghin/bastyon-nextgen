@@ -7,15 +7,10 @@ import {
 } from '@/b-components/sidebar/sidebar-categories/categories-data'
 import { useUIStore } from './ui-store'
 
-// Локальные типы, синхронизированные с формой tabsData / filtersData.
-// Когда сами *-data.ts получат свои интерфейсы — удалить отсюда.
-interface FeedTab {
-  id: number
-  labelKey: string
-  icon: string
-  active: boolean
-  disabled: boolean
-}
+type FeedTab = (typeof tabsData)[number]
+
+// Локальный тип, синхронизированный с формой filtersData.
+// Когда filters-data.ts получит свой интерфейс — удалить отсюда.
 interface FeedFilter {
   id: number
   labelKey: string
@@ -44,7 +39,7 @@ export const useFiltersStore = defineStore('filters', {
       fromUrl ?? (tabsData.find((tab: FeedTab) => tab.active)?.id || tabsData[0]?.id || 1)
 
     // Подготавливаем табы с правильным активным состоянием
-    const initialTabs = JSON.parse(JSON.stringify(tabsData))
+    const initialTabs: FeedTab[] = JSON.parse(JSON.stringify(tabsData))
     initialTabs.forEach((tab: FeedTab) => {
       tab.active = tab.id === initialTabId
     })
@@ -222,6 +217,14 @@ export const useFiltersStore = defineStore('filters', {
       } else {
         this.selectedTags.splice(index, 1)
       }
+      this.saveSettings()
+    },
+
+    /**
+     * Очищает выбор тегов
+     */
+    clearTagSelection(): void {
+      this.selectedTags = []
       this.saveSettings()
     },
 

@@ -44,7 +44,7 @@ describe('filters store', () => {
     window.history.replaceState({}, '', '/?feedMode=video')
     const store = useFiltersStore()
     expect(store.activeTab).toBe(3)
-    expect(store.tabs.find((t: { id: number }) => t.id === 3).active).toBe(true)
+    expect(store.tabs.find((t) => t.id === 3)!.active).toBe(true)
   })
 
   it('неизвестный feedMode — обычная лента', () => {
@@ -203,9 +203,9 @@ describe('filters store', () => {
 
     store.updateTabsAvailability(false)
     expect(store.activeTab).toBe(1)
-    expect(store.tabs.find((t: { id: number }) => t.id === 2).disabled).toBe(true)
+    expect(store.tabs.find((t) => t.id === 2)!.disabled).toBe(true)
 
     store.updateTabsAvailability(true)
-    expect(store.tabs.find((t: { id: number }) => t.id === 2).disabled).toBe(false)
+    expect(store.tabs.find((t) => t.id === 2)!.disabled).toBe(false)
   })
 })

@@ -1,8 +1,8 @@
 <template>
   <div>
     <SC_Tabs :class="{ collapsed }">
-      <template v-for="tab in tabsData" :key="tab.id">
-        <SC_TabsDivider v-if="SECTION_STARTS.has(tab.labelKey)" role="separator" />
+      <template v-for="(tab, index) in tabsData" :key="tab.id">
+        <SC_TabsDivider v-if="index > 0 && SECTION_STARTS.has(tab.key)" role="separator" />
         <SC_TabsItem
           :active="tab.active && onTabsRoute"
           :disabled="tab.disabled"
@@ -52,6 +52,8 @@ import {
 import { useFiltersStore } from '@/stores/filters-store'
 import { useAuthStore } from '@/blockchain'
 import { requireAuth } from '@/composables/use-auth-gate'
+import { useHeaderLayout } from '@/b-components/header/header-layout/layout-items'
+import type { SidebarItemId } from '@/stores/header-layout'
 import SidebarFavorites from './sidebar-favorites.vue'
 import { SC_Tabs, SC_TabsDivider, SC_TabsItem, SC_TabsLabel } from './styled'
 
@@ -64,10 +66,18 @@ const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-const tabsData = computed(() => filtersStore.tabs)
+const { sidebarItems } = useHeaderLayout()
 
-/** Перед «Сервисами» — разделитель: выше разделы ленты, ниже приложения и справка. */
-const SECTION_STARTS = new Set(['sidebarData.tabs.miniApps'])
+/** Разделы, что показаны, в порядке из «Шапки и панелей». */
+const tabsData = computed(() =>
+  sidebarItems.value.flatMap((key) => filtersStore.tabs.filter((tab) => tab.key === key))
+)
+
+/**
+ * Перед «Сервисами» — разделитель: выше разделы ленты, ниже приложения и
+ * справка. Сервисы первыми — черта над ними ничего не отделяет.
+ */
+const SECTION_STARTS = new Set<SidebarItemId>(['miniApps'])
 
 /** Раздел и его вкладки: `/video`, `/video/playlists`. */
 function isSectionPath(path: string, base: string): boolean {

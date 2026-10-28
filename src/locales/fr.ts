@@ -489,7 +489,7 @@ export default {
     title: 'Paramètres',
     tabs: {
       general: 'Général',
-      layout: 'En-tête et menu',
+      layout: 'En-tête et panneaux',
       notifications: 'Notifications',
       system: 'Système',
       privateKey: 'Clé privée',
@@ -584,6 +584,17 @@ export default {
         'Les discussions s’ouvrent aussi avec le bouton rond en bas à droite, s’il est activé dans « Général », et sur téléphone depuis la barre du bas.',
       itemTheme: 'Thème clair et sombre',
       itemPageWidth: 'Largeur de la page',
+      sidebarTitle: 'Panneau de gauche',
+      sidebarHint:
+        'Les sections à gauche du fil, dans cet ordre ; sur téléphone, « Navigation » dans le menu latéral. Les services épinglés viennent en dessous : on les retire avec l’étoile dans « Services ».',
+      blocksTitle: 'Sous les sections',
+      blocksHint:
+        'Ce qui figure sous les sections dans le panneau de gauche ; sur téléphone, en bas du menu latéral.',
+      blockFeedSettings: '« Les meilleurs d’abord » et langue du fil',
+      noteFeed: 'Le logo de l’en-tête mène aussi au fil.',
+      noteFeedSettings: 'Masqué, le fil reprend l’ordre habituel et la langue de l’interface.',
+      noteCategories: 'Masqué, la sélection de catégories est effacée.',
+      noteTags: 'Masqué, la sélection de tags est effacée.',
     },
     general: {
       theme: 'Thème',
@@ -596,7 +607,7 @@ export default {
       pageWidthLimited: 'Limitée',
       pageWidthFull: 'Pleine largeur',
       pageWidthButton: 'Bouton dans l’en-tête',
-      pageWidthButtonHint: 'Changer la largeur en un clic. Aussi dans « En-tête et menu ».',
+      pageWidthButtonHint: 'Changer la largeur en un clic. Aussi dans « En-tête et panneaux ».',
     },
     ipfs: {
       title: 'Module IPFS',

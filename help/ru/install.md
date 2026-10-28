@@ -16,7 +16,7 @@ code: [.github/release-body.md, src-tauri/tauri.conf.json, public/compat-check.j
 |---|---|
 | macOS на Apple Silicon (M1 и новее) | `macOS-Bastyon-NextGen-…-Apple-Silicon.dmg` |
 | macOS 10.15 и новее на Intel | `macOS-Bastyon-NextGen-…-Intel.dmg` |
-| Windows 10 и 11 | `Windows-Bastyon-NextGen-…-x64.msi` |
+| Windows 10 и 11 | `Windows-Bastyon-NextGen-…-x64-setup.exe` |
 | Linux, любой дистрибутив | `Linux-Bastyon-NextGen-…-x86_64.AppImage` |
 | Linux на базе Debian или Ubuntu | `Linux-Bastyon-NextGen-…-x86_64.deb` |
 | Android 7 и новее | `Android-Bastyon-NextGen-….apk` |
@@ -45,7 +45,9 @@ xattr -dr com.apple.quarantine "/Applications/Bastyon NextGen.app"
 
 ## Windows
 
-Запустите файл .msi. Фильтр SmartScreen может предупредить о неизвестном издателе: нажмите «Подробнее» → «Выполнить в любом случае».
+Запустите файл -setup.exe. Фильтр SmartScreen может предупредить о неизвестном издателе: нажмите «Подробнее» → «Выполнить в любом случае». Права администратора не нужны: приложение ставится для вашей учётной записи, поэтому и обновляется без вопросов Windows.
+
+Прежние версии ставились из файла .msi — на весь компьютер. Такую версию установщик удалит сам и поставит новую для вашей учётной записи; Windows один раз спросит, разрешить ли это, — ответьте «Да». Аккаунты и настройки сохранятся.
 
 Если Windows пишет, что не найден MSVCP140.dll, поставьте версию новее 0.9.4. До неё приложению был нужен пакет Microsoft Visual C++ Redistributable, а на чистой Windows его нет.
 
