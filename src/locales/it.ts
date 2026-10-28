@@ -3229,17 +3229,10 @@ export default {
   },
   topAccounts: {
     title: 'Account in classifica',
-    sortLabel: 'Ordine',
-    byReputation: 'Per reputazione',
-    byBalance: 'Per PKOIN',
-    noteReputation:
-      'I {n} account con la reputazione più alta. La rete non ha un elenco di tutti gli account, quindi la classifica è costruita dagli iscritti degli autori più popolari: li segue quasi tutta la parte attiva della rete.',
-    noteBalance:
-      'I più ricchi tra i {n} account con la reputazione più alta: la rete fornisce i saldi un indirizzo alla volta, non come elenco.',
+    note: 'I {n} account con la reputazione più alta. La rete non ha un elenco di tutti gli account, quindi la classifica è costruita dagli iscritti degli autori più popolari: li segue quasi tutta la parte attiva della rete.',
     loading: 'Costruisco la classifica: la prima volta può richiedere mezzo minuto.',
     failed: 'Impossibile costruire la classifica: i nodi non hanno risposto.',
     retry: 'Riprova',
-    balancesProgress: 'Recupero i saldi: {done} di {total}',
     reputation: 'Reputazione',
     you: 'Tu',
     since: 'dal {year}',

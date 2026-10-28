@@ -23,8 +23,6 @@ export interface MockProfile {
   blocking?: string[]
   /** Подписчики (`getusersubscribers`). */
   subscribers?: string[]
-  /** Баланс в PKOIN (`getaddressinfo`); по умолчанию 0. */
-  balance?: number
   /** Адреса для пожертвований (`b`). */
   donations?: Array<{ currency: string; address: string }>
   /** «О себе» (`a`) и сайт (`s`). */
@@ -264,10 +262,6 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
         }))
         .sort((a, b) => b.reputation - a.reputation)
         .slice(0, limit || 10)
-    }
-    case 'getaddressinfo': {
-      const balance = data.profiles.find((p) => p.address === params[0])?.balance ?? 0
-      return { lastChange: -1, balance }
     }
     case 'getuseraddress': {
       const name = String(params[0] ?? '').toLowerCase()

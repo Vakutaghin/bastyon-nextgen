@@ -1,6 +1,6 @@
 /**
  * Числа топа аккаунтов по правилам языка интерфейса (Intl): «152 337,1»,
- * «12 345,68», «1,2 тыс.».
+ * «1,2 тыс.».
  */
 
 import { dateLocale } from '@/helpers/common/date-formatter'
@@ -20,10 +20,6 @@ function numberFormat(options: Intl.NumberFormatOptions): Intl.NumberFormat {
 /** Репутация: целые с группами разрядов и один знак после запятой, если он есть. */
 export const formatTopReputation = (value: number): string =>
   numberFormat({ maximumFractionDigits: 1 }).format(value)
-
-/** Баланс: до двух знаков — копейки PKOIN в топе не важны. */
-export const formatTopBalance = (value: number): string =>
-  numberFormat({ maximumFractionDigits: 2 }).format(value)
 
 /** Подписчики и посты — коротко: «1,2 тыс.». */
 export const formatTopCount = (value: number): string =>

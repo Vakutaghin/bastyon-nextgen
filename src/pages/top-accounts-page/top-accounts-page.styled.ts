@@ -21,17 +21,8 @@ export const SC_TopPage = styled.main`
   }
 `
 
-export const SC_TopHeader = styled.header`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 16px;
-  margin-bottom: 8px;
-`
-
 export const SC_TopTitle = styled.h1`
-  margin: 0;
+  margin: 0 0 8px;
   font-size: 24px;
   font-weight: 600;
   letter-spacing: -0.5px;
@@ -52,30 +43,6 @@ export const SC_TopStatus = styled.div`
   gap: 12px;
   padding: 24px 0;
   color: var(--ui-text-muted);
-`
-
-/** Ход сбора балансов: «Узнаю балансы: 120 из 300» и полоса. */
-export const SC_Progress = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: var(--ui-text-muted);
-`
-
-export const SC_ProgressTrack = styled.div`
-  height: 4px;
-  border-radius: var(--ui-radius-full);
-  background: var(--ui-bg-elevated);
-  overflow: hidden;
-`
-
-export const SC_ProgressBar = styled('div', { done: Number })`
-  height: 100%;
-  width: ${(p) => `${Math.round((p.done ?? 0) * 100)}%`};
-  background: var(--ui-primary);
-  transition: width var(--transition-fast);
 `
 
 export const SC_TopList = styled.ol`
@@ -99,14 +66,10 @@ export const SC_TopItem = styled.li`
   }
 `
 
-/**
- * Строка — ссылка на профиль целиком: место, аватар, имя со сведениями,
- * репутация и PKOIN. На телефоне справа только то, по чему отсортировано;
- * второе — в строке сведений.
- */
+/** Строка — ссылка на профиль целиком: место, аватар, имя со сведениями, репутация. */
 const ROW = `
   display: grid;
-  grid-template-columns: 40px 40px minmax(0, 1fr) 120px 130px;
+  grid-template-columns: 40px 40px minmax(0, 1fr) 120px;
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
@@ -117,10 +80,6 @@ const ROW = `
     grid-template-columns: 28px 36px minmax(0, 1fr) auto;
     gap: 10px;
     padding: 10px 12px;
-
-    .secondary-metric {
-      display: none;
-    }
   }
 `
 
@@ -192,7 +151,7 @@ export const SC_Meta = styled.span`
   color: var(--ui-text-muted);
 `
 
-/** Число и подпись под ним; то, по чему отсортировано, — ярче. */
+/** Число и подпись под ним. */
 export const SC_Metric = styled.span`
   display: flex;
   flex-direction: column;
@@ -202,19 +161,15 @@ export const SC_Metric = styled.span`
 
   .metric-value {
     font-size: 14px;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
-    color: var(--ui-text-toned);
+    color: var(--ui-text-highlighted);
     white-space: nowrap;
   }
 
   .metric-label {
     font-size: 11px;
     color: var(--ui-text-dimmed);
-  }
-
-  &.primary .metric-value {
-    font-weight: 600;
-    color: var(--ui-text-highlighted);
   }
 `
 

@@ -3208,17 +3208,10 @@ export default {
   },
   topAccounts: {
     title: 'Top accounts',
-    sortLabel: 'Order',
-    byReputation: 'By reputation',
-    byBalance: 'By PKOIN',
-    noteReputation:
-      'The {n} accounts with the highest reputation. The network has no list of all accounts, so the top is built from the subscribers of the most popular authors — almost the whole active part of the network follows them.',
-    noteBalance:
-      'The richest of the {n} accounts with the highest reputation: the network gives out balances one address at a time, not as a list.',
+    note: 'The {n} accounts with the highest reputation. The network has no list of all accounts, so the top is built from the subscribers of the most popular authors — almost the whole active part of the network follows them.',
     loading: 'Building the top — the first time it can take half a minute.',
     failed: 'Could not build the top: the nodes did not answer.',
     retry: 'Retry',
-    balancesProgress: 'Getting balances: {done} of {total}',
     reputation: 'Reputation',
     you: 'You',
     since: 'since {year}',

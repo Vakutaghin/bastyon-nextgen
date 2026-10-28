@@ -12,7 +12,7 @@ Profiles, subscriptions and blocking: how to find interesting people and keep un
 - **Search** — type `@name` in the search bar or open the **“Users”** tab in the results — see [Search](search.md).
 - **The feed and comments** — click an author’s name or avatar to open their profile.
 - **Subscriber and subscription lists** in any profile are another way to find people with similar interests.
-- **“Top accounts”** in the left panel — the accounts with the highest reputation and the richest ones in the network, see [Top accounts](top-accounts.md).
+- **“Top accounts”** in the left panel — the accounts with the highest reputation in the network, see [Top accounts](top-accounts.md).
 
 ## What you can do
 

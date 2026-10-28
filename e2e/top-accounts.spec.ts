@@ -3,8 +3,8 @@ import { useMockNode, type MockNodeData, type MockProfile } from './support/mock
 
 /**
  * «Топ аккаунтов»: самые репутационные подписчики самых подписываемых
- * аккаунтов сети и сами они — по репутации или по PKOIN; строки — по 30, при
- * прокрутке ещё; порядок в адресе; строка ведёт в профиль. Нода подменная.
+ * аккаунтов сети и сами они, по репутации; строки — по 30, при прокрутке ещё;
+ * строка ведёт в профиль. Нода подменная.
  */
 
 // Те же «узлы», что в src/services/top-accounts.ts (TOP_HUBS).
@@ -21,8 +21,6 @@ const USERS: MockProfile[] = Array.from({ length: 40 }, (_, i) => ({
   address: `PUser${pad(i + 1)}`.padEnd(34, 'x'),
   name: `user_${pad(i + 1)}`,
   reputation: 5000 - i * 100,
-  // Самый богатый — с низкой репутацией.
-  balance: i === 35 ? 9999 : 10 + i,
 }))
 
 const DATA: MockNodeData = {
@@ -55,7 +53,7 @@ async function openTop(page: Page, path = '/top'): Promise<void> {
     .catch(() => {})
 }
 
-test('по репутации, подгрузка при прокрутке, по PKOIN и переход в профиль', async ({ page }) => {
+test('по репутации, подгрузка при прокрутке и переход в профиль', async ({ page }) => {
   test.setTimeout(120_000)
   await openTop(page)
   const list = page.getByTestId('top-accounts')
@@ -69,13 +67,9 @@ test('по репутации, подгрузка при прокрутке, п�
   // Узел — среди своих подписчиков по репутации: 2050 — между user_30 и user_31.
   await expect(rows.nth(30)).toContainText('founder_ng')
   await expect(rows.last()).toContainText('second_hub')
+  await expect(list.getByText('PKOIN')).toHaveCount(0)
 
-  await page.getByText('По PKOIN').click()
-  await expect(page).toHaveURL(/sort=pkoin/)
-  await expect(rows.first()).toContainText('user_36', { timeout: 30_000 })
-  await expect(rows.first()).toContainText('9 999')
-
-  await rows.first().click()
+  await rows.filter({ hasText: 'user_36' }).click()
   await expect(page).toHaveURL(/\/user_36$/)
 })
 

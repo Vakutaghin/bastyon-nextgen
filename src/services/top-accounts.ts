@@ -1,7 +1,7 @@
 /**
- * Топ аккаунтов по репутации и по PKOIN.
+ * Топ аккаунтов по репутации.
  *
- * Общего списка аккаунтов по репутации или по балансу у сети нет: среди
+ * Общего списка аккаунтов по репутации у сети нет: среди
  * методов ноды (pocketnet.core 0.22) такого нет, а `gettopaccounts` считает
  * оценённые посты за период и на нодах падает с ошибкой SQL (сверено
  * 28.10.2026). Зато `getusersubscribers(адрес, 'reputation', …, limit)`
@@ -10,9 +10,6 @@
  * это объединение самых репутационных подписчиков этих «узлов» и сами узлы.
  * Смещение и направление сортировки нода у этого метода не учитывает —
  * поэтому за один запрос берём сразу `TOP_SIZE`.
- *
- * Баланс нода отдаёт только по одному адресу (`getaddressinfo`), поэтому
- * «по PKOIN» — самые богатые из того же топа по репутации.
  */
 
 import { rpcCall } from '@/helpers/api/request'
@@ -132,16 +129,4 @@ export async function fetchTopByReputation(): Promise<{
     .filter((p) => p?.address && Number.isFinite(Number(p.reputation)))
     .map((p) => ({ address: p.address, reputation: Number(p.reputation) }))
   return { entries: mergeTop([...lists, hubs]), profiles: hubProfiles }
-}
-
-/** Баланс адреса в PKOIN. */
-export async function fetchBalance(address: string): Promise<number> {
-  const info = await rpcCall<{ balance?: number | string }>({
-    method: rpcEndpoints.getAddressInfo,
-    parameters: [address],
-    options: { auth: false },
-  })
-  const balance = Number(info?.balance)
-  if (!Number.isFinite(balance)) throw new Error('top accounts: no balance')
-  return balance
 }

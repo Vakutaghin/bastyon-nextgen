@@ -3058,16 +3058,10 @@ export default {
   },
   topAccounts: {
     title: '账户排行',
-    sortLabel: '排序',
-    byReputation: '按声誉',
-    byBalance: '按 PKOIN',
-    noteReputation:
-      '声誉最高的 {n} 个账户。网络没有全部账户的列表，因此排行由最受欢迎作者的订阅者构成——网络中几乎所有活跃用户都订阅了他们。',
-    noteBalance: '声誉最高的 {n} 个账户中余额最多的：网络只能逐个地址查询余额，无法一次列出。',
+    note: '声誉最高的 {n} 个账户。网络没有全部账户的列表，因此排行由最受欢迎作者的订阅者构成——网络中几乎所有活跃用户都订阅了他们。',
     loading: '正在生成排行，第一次可能需要半分钟。',
     failed: '无法生成排行：节点没有响应。',
     retry: '重试',
-    balancesProgress: '正在查询余额：{done} / {total}',
     reputation: '声誉',
     you: '我',
     since: '{year} 年起',

@@ -3266,17 +3266,10 @@ export default {
   },
   topAccounts: {
     title: 'Top-Konten',
-    sortLabel: 'Reihenfolge',
-    byReputation: 'Nach Reputation',
-    byBalance: 'Nach PKOIN',
-    noteReputation:
-      'Die {n} Konten mit der höchsten Reputation. Eine Liste aller Konten hat das Netzwerk nicht, daher stammt die Rangliste aus den Abonnenten der beliebtesten Autoren — ihnen folgt fast der gesamte aktive Teil des Netzwerks.',
-    noteBalance:
-      'Die reichsten der {n} Konten mit der höchsten Reputation: Guthaben gibt das Netzwerk nur einzeln pro Adresse heraus, nicht als Liste.',
+    note: 'Die {n} Konten mit der höchsten Reputation. Eine Liste aller Konten hat das Netzwerk nicht, daher stammt die Rangliste aus den Abonnenten der beliebtesten Autoren — ihnen folgt fast der gesamte aktive Teil des Netzwerks.',
     loading: 'Rangliste wird erstellt — beim ersten Mal kann das eine halbe Minute dauern.',
     failed: 'Die Rangliste konnte nicht erstellt werden: Die Knoten haben nicht geantwortet.',
     retry: 'Erneut versuchen',
-    balancesProgress: 'Guthaben werden abgefragt: {done} von {total}',
     reputation: 'Reputation',
     you: 'Sie',
     since: 'seit {year}',

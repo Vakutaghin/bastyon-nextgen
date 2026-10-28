@@ -3242,17 +3242,10 @@ export default {
   },
   topAccounts: {
     title: 'Cuentas destacadas',
-    sortLabel: 'Orden',
-    byReputation: 'Por reputación',
-    byBalance: 'Por PKOIN',
-    noteReputation:
-      'Las {n} cuentas con más reputación. La red no tiene una lista de todas las cuentas, así que la clasificación se arma con los suscriptores de los autores más populares: a ellos los sigue casi toda la parte activa de la red.',
-    noteBalance:
-      'Las más ricas de las {n} cuentas con más reputación: la red da los saldos de una dirección en una, no en lista.',
+    note: 'Las {n} cuentas con más reputación. La red no tiene una lista de todas las cuentas, así que la clasificación se arma con los suscriptores de los autores más populares: a ellos los sigue casi toda la parte activa de la red.',
     loading: 'Armando la clasificación: la primera vez puede tardar medio minuto.',
     failed: 'No se pudo armar la clasificación: los nodos no respondieron.',
     retry: 'Reintentar',
-    balancesProgress: 'Consultando saldos: {done} de {total}',
     reputation: 'Reputación',
     you: 'Tú',
     since: 'desde {year}',

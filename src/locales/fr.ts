@@ -3264,17 +3264,10 @@ export default {
   },
   topAccounts: {
     title: 'Top des comptes',
-    sortLabel: 'Ordre',
-    byReputation: 'Par réputation',
-    byBalance: 'Par PKOIN',
-    noteReputation:
-      'Les {n} comptes à la plus forte réputation. Le réseau n’a pas de liste de tous les comptes : le classement est donc construit à partir des abonnés des auteurs les plus populaires, que suit presque toute la partie active du réseau.',
-    noteBalance:
-      'Les plus riches des {n} comptes à la plus forte réputation : le réseau ne donne les soldes qu’adresse par adresse, pas sous forme de liste.',
+    note: 'Les {n} comptes à la plus forte réputation. Le réseau n’a pas de liste de tous les comptes : le classement est donc construit à partir des abonnés des auteurs les plus populaires, que suit presque toute la partie active du réseau.',
     loading: 'Construction du classement — la première fois, cela peut prendre une demi-minute.',
     failed: 'Impossible de construire le classement : les nœuds n’ont pas répondu.',
     retry: 'Réessayer',
-    balancesProgress: 'Récupération des soldes : {done} sur {total}',
     reputation: 'Réputation',
     you: 'Vous',
     since: 'depuis {year}',

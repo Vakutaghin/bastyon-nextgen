@@ -10,7 +10,6 @@ vi.mock('@/helpers/api/request', () => ({ rpcCall: mocks.rpcCall }))
 import {
   TOP_HUBS,
   TOP_SIZE,
-  fetchBalance,
   fetchTopByReputation,
   mergeTop,
   subscriberToEntry,
@@ -92,12 +91,5 @@ describe('fetchTopByReputation', () => {
       throw new Error('offline')
     })
     await expect(fetchTopByReputation()).rejects.toThrow('offline')
-  })
-
-  it('баланс — число из getaddressinfo, без числа — ошибка', async () => {
-    mocks.rpcCall.mockResolvedValueOnce({ balance: 5.77834863 })
-    await expect(fetchBalance('PA')).resolves.toBe(5.77834863)
-    mocks.rpcCall.mockResolvedValueOnce({})
-    await expect(fetchBalance('PB')).rejects.toThrow()
   })
 })
