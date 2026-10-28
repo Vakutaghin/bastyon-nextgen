@@ -26,7 +26,7 @@ A [trial account](glossary.md#trial-account) has no choice: **“Trial accounts 
 
 ## Language
 
-**“Language”** — the language the post is in. It decides which language's feed the post goes to: readers see the feed in the language of their interface. By default it is your interface language. Change it if you write in another language.
+**“Language”** — the language the post is in. It decides which language's feed the post goes to: readers choose the feed language, usually the language of their interface. By default it is your interface language. Change it if you write in another language.
 
 ## Scheduled publishing
 

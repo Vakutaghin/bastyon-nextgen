@@ -100,7 +100,7 @@ describe('filters store', () => {
     expect(lastSaved().selectedCategories).toEqual([])
   })
 
-  it('готовые категории — набор и порядок legacy, теги на языке интерфейса', () => {
+  it('готовые категории — набор и порядок legacy, теги на языке ленты', () => {
     const store = useFiltersStore()
     const ui = useUIStore()
     ui.language = 'ru'
@@ -137,6 +137,10 @@ describe('filters store', () => {
     // У legacy китайские теги под ключом cmn, а язык — zh: берутся английские.
     ui.language = 'zh'
     expect(tagsOf('c2')).toEqual(['funny', 'memes'])
+    // Свой язык у ленты: теги — на нём, язык интерфейса не важен.
+    ui.language = 'ru'
+    ui.setFeedLanguage('en')
+    expect(tagsOf('c8')).toEqual(['sports'])
   })
 
   it('выбранный раньше «Космос» становится своей категорией с тегом «космос»', async () => {

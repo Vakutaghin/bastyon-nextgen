@@ -1703,6 +1703,7 @@ export default {
   },
   sidebar: {
     topFirst: 'Les meilleurs d’abord',
+    feedLanguage: 'Langue du fil',
     categories: 'Catégories',
     addCategory: 'Ajouter une catégorie',
     resetFilter: 'Réinitialiser le filtre',

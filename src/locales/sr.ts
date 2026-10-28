@@ -1683,6 +1683,7 @@ export default {
   },
   sidebar: {
     topFirst: 'Прво најбоље',
+    feedLanguage: 'Језик фида',
     categories: 'Категорије',
     addCategory: 'Додај категорију',
     resetFilter: 'Ресетуј филтер',

@@ -100,6 +100,35 @@ describe('ui-store', () => {
     })
   })
 
+  describe('язык ленты', () => {
+    it('свой язык у ленты не меняет язык интерфейса и переживает перезапуск', () => {
+      store.language = 'ru'
+      store.setFeedLanguage('en')
+      expect(store.contentLanguage).toBe('en')
+      expect(store.language).toBe('ru')
+      expect(localStorage.getItem('bastyon_feed_locale')).toBe('en')
+      setActivePinia(createPinia())
+      expect(useUIStore().feedLanguage).toBe('en')
+    })
+
+    it('тот же язык, что у интерфейса, — «как у интерфейса»', () => {
+      store.language = 'ru'
+      store.setFeedLanguage('en')
+      store.setFeedLanguage('ru')
+      expect(store.feedLanguage).toBeNull()
+      expect(localStorage.getItem('bastyon_feed_locale')).toBeNull()
+    })
+
+    it('смена языка интерфейса переключает ленту на него же', async () => {
+      store.language = 'ru'
+      store.setFeedLanguage('de')
+      await store.setLanguage('en')
+      expect(store.feedLanguage).toBeNull()
+      expect(store.contentLanguage).toBe('en')
+      expect(localStorage.getItem('bastyon_feed_locale')).toBeNull()
+    })
+  })
+
   describe('sidebar', () => {
     it('defaults to not collapsed', () => {
       expect(store.sidebarCollapsed).toBe(false)

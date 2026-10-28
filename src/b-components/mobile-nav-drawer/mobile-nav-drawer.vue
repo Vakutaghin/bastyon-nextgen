@@ -1,7 +1,8 @@
 <template>
   <Teleport to="body">
     <SC_Backdrop :isOpen="isOpen" @click="close" />
-    <SC_Drawer :isOpen="isOpen" :aria-hidden="!isOpen" @click.stop>
+    <!-- data-popup-host: списки полей (язык ленты) открываются внутри меню, а не под ним. -->
+    <SC_Drawer :isOpen="isOpen" :aria-hidden="!isOpen" data-popup-host @click.stop>
       <SC_DrawerHeader>
         <!-- Под названием — номер версии с проверкой обновлений: левой панели
              компьютера, где он стоит внизу, на телефоне нет. -->
@@ -69,6 +70,7 @@ import { closePageOverlay, openPageOverlay } from '@/composables/use-page-overla
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { useFiltersStore } from '@/stores/filters-store'
+import { useUIStore } from '@/stores/ui-store'
 import type { MenuItemId } from '@/stores/header-layout'
 import {
   MENU_ITEMS,
@@ -102,6 +104,7 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const modalStore = useModalStore()
 const filtersStore = useFiltersStore()
+const uiStore = useUIStore()
 
 const isAuthenticated = computed(() => authStore.isUserAuthenticated)
 
@@ -175,12 +178,13 @@ watch(
   }
 )
 
-// Категории и теги фильтруют ленту: выбранные на другой странице, они ведут на неё.
+// Категории, теги и язык ленты фильтруют ленту: выбранные на другой странице, они ведут на неё.
 watch(
   () => [
     filtersStore.selectedCategories.join('|'),
     filtersStore.selectedTags.join('|'),
     filtersStore.topFirst,
+    uiStore.feedLanguage,
   ],
   () => {
     if (props.isOpen && route.path !== '/') void router.push('/')

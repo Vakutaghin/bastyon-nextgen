@@ -1607,6 +1607,7 @@ export default {
   },
   sidebar: {
     topFirst: 'Сначала лучшее',
+    feedLanguage: 'Язык ленты',
     categories: 'Категории',
     addCategory: 'Добавить категорию',
     resetFilter: 'Сбросить фильтр',

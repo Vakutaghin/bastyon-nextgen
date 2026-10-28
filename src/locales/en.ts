@@ -1683,6 +1683,7 @@ export default {
   },
   sidebar: {
     topFirst: 'Best first',
+    feedLanguage: 'Feed language',
     categories: 'Categories',
     addCategory: 'Add category',
     resetFilter: 'Reset filter',

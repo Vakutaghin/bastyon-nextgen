@@ -31,7 +31,7 @@ export function useRelatedVideos(
   const exclude = computed(() => resolve(excludeTxid) || '')
 
   const { data, isLoading, error } = useQuery<GetProfileFeedResponse>({
-    queryKey: computed(() => ['related-videos', address.value, uiStore.language]),
+    queryKey: computed(() => ['related-videos', address.value, uiStore.contentLanguage]),
     queryFn: () =>
       getByPRCWithAuth({
         method: rpcEndpoints.getProfileFeed,
@@ -43,7 +43,7 @@ export function useRelatedVideos(
           0, // height
           '', // txid
           limit + 6, // count — запас под исключение текущего поста
-          uiStore.language, // lang
+          uiStore.contentLanguage, // lang
           [], // tagsfilter
           VIDEO_TYPES, // type
           [], // _param6

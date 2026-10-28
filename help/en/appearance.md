@@ -10,7 +10,7 @@ How to change the interface and feed language, the theme, the scale and animatio
 
 Change the language in the header — with the flag button next to the logo — or in **“Settings”** → **“General”** → **“Language”**. On a phone and in a narrow window the header has no flag; the language is in the settings only. There are nine languages: Russian, English, German, French, Spanish, Italian, Serbian, Korean and Chinese.
 
-The interface language is also the feed language: the app passes it to the node, which picks posts, tags and recommendations in that language. To read posts in another language, switch the interface language. See [Feed](feed.md).
+The feed has its own language: the app passes it to the node, which picks posts, tags and recommendations in that language. Changing the interface language switches the feed to it too. To read the feed in another language without changing the interface, use the **“Feed language”** field under the **“Best first”** switch in the left panel; on a phone it is in the side menu. See [Feed](feed.md).
 
 The help exists in Russian and English. With any other interface language it opens in English.
 

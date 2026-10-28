@@ -1670,6 +1670,7 @@ export default {
   },
   sidebar: {
     topFirst: '인기순',
+    feedLanguage: '피드 언어',
     categories: '카테고리',
     addCategory: '카테고리 추가',
     resetFilter: '필터 초기화',

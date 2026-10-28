@@ -1621,6 +1621,7 @@ export default {
   },
   sidebar: {
     topFirst: '最佳优先',
+    feedLanguage: '信息流语言',
     categories: '分类',
     addCategory: '添加分类',
     resetFilter: '重置筛选',

@@ -10,7 +10,7 @@ The header, the side panels and the menus: where everything is on a computer and
 
 From left to right:
 
-- **The logo** takes you to the home page; the interface language is chosen next to it.
+- **The logo** takes you to the home page; the interface language is chosen next to it, and the feed switches to it too.
 - The **“Back”** and **“Forward”** arrows step through the pages you opened, like browser buttons. While there is nowhere to go, the arrow is pale. From the keyboard — Alt+← and Alt+→, on a Mac — Cmd+[ and Cmd+], see [Keyboard shortcuts](keyboard-shortcuts.md).
 - **Search** — people, posts and tags, see [Search](search.md).
 
@@ -43,7 +43,7 @@ Feed and app sections:
 - **“Explorer”** — the [block explorer](explorer.md);
 - **“Help”** — this help.
 
-Under the sections are the **“Best first”** switch, **“Categories”** and **“Trending tags”**, which select the posts in the feed — see [Categories, tags and sorting](feed-filters.md).
+Under the sections are the **“Best first”** switch, the **“Feed language”**, **“Categories”** and **“Trending tags”**, which select the posts in the feed — see [Categories, tags and sorting](feed-filters.md).
 
 ## The right panel
 

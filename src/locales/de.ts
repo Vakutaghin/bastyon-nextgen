@@ -1702,6 +1702,7 @@ export default {
   },
   sidebar: {
     topFirst: 'Beste zuerst',
+    feedLanguage: 'Sprache des Feeds',
     categories: 'Kategorien',
     addCategory: 'Kategorie hinzufügen',
     resetFilter: 'Filter zurücksetzen',

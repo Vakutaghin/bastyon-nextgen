@@ -71,10 +71,11 @@ export const useFiltersStore = defineStore('filters', {
     /**
      * Получает полный список категорий (статические + кастомные + временные)
      * Кастомные и временные выводятся сверху. Теги готовых категорий — на языке
-     * интерфейса, как в legacy.
+     * ленты (как в legacy, где он совпадал с языком интерфейса), названия — на
+     * языке интерфейса.
      */
     allCategories(): Category[] {
-      const builtIn = categoriesForLanguage(useUIStore().language)
+      const builtIn = categoriesForLanguage(useUIStore().contentLanguage)
       // Объединяем списки, исключая дубликаты по ID
       const all = [...this.temporaryCategories, ...this.customCategories, ...builtIn]
 

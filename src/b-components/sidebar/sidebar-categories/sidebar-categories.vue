@@ -1,9 +1,26 @@
 <template>
   <SC_Categories>
-    <SC_TopFirstWrapper>
-      <SC_TopFirstLabel>{{ t('sidebar.topFirst') }}</SC_TopFirstLabel>
-      <ASwitch :checked="topFirst" size="small" @change="toggleTopFirst" />
-    </SC_TopFirstWrapper>
+    <SC_FeedSettings>
+      <SC_TopFirstWrapper>
+        <SC_TopFirstLabel>{{ t('sidebar.topFirst') }}</SC_TopFirstLabel>
+        <ASwitch :checked="topFirst" size="small" @change="toggleTopFirst" />
+      </SC_TopFirstWrapper>
+      <!-- Язык ленты — свой; язык интерфейса (шапка, «Настройки») переключает и его. -->
+      <SC_TopFirstWrapper>
+        <SC_FeedLanguageLabel :for="feedLanguageId">
+          {{ t('sidebar.feedLanguage') }}
+        </SC_FeedLanguageLabel>
+        <SC_FeedLanguageSelect>
+          <Select
+            :id="feedLanguageId"
+            size="middle"
+            :value="uiStore.contentLanguage"
+            :options="FEED_LANGUAGE_OPTIONS"
+            @change="onFeedLanguageChange"
+          />
+        </SC_FeedLanguageSelect>
+      </SC_TopFirstWrapper>
+    </SC_FeedSettings>
 
     <SC_CategoriesHeader @click="toggleExpanded">
       <SC_CategoriesTitle>{{ t('sidebar.categories') }}</SC_CategoriesTitle>
@@ -99,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Switch as ASwitch, Modal as AModal, Input as AInput, message } from 'ant-design-vue'
 import {
@@ -110,7 +127,10 @@ import {
   CloseOutlined,
   ExclamationCircleOutlined,
 } from '@/components/icons'
+import Select, { type SelectOption } from '@/components/select'
+import { LOCALE_NAMES, SUPPORTED_LOCALES, type Locale } from '@/i18n'
 import { useFiltersStore } from '@/stores/filters-store'
+import { useUIStore } from '@/stores/ui-store'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from '@/composables/use-rpc-query'
 import type { GetTagsResponse } from '@/types/rpc-responses/get-tags'
@@ -127,6 +147,9 @@ import {
   SC_CategoriesItem,
   SC_CategoriesIcon,
   SC_CategoriesName,
+  SC_FeedSettings,
+  SC_FeedLanguageLabel,
+  SC_FeedLanguageSelect,
   SC_TopFirstWrapper,
   SC_TopFirstLabel,
   SC_CategoryRemoveBtn,
@@ -139,18 +162,26 @@ interface RawTag {
   name?: string
 }
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const filtersStore = useFiltersStore()
+const uiStore = useUIStore()
+// Панель бывает дважды (левая и меню телефона) — id подписи у каждой свой.
+const feedLanguageId = useId()
+
+const FEED_LANGUAGE_OPTIONS: SelectOption[] = SUPPORTED_LOCALES.map((value) => ({
+  value,
+  label: LOCALE_NAMES[value],
+}))
 const isExpanded = ref(false)
 const isModalVisible = ref(false)
 const newCategoryName = ref('')
 
 const { data: tagsResponse } = useRpcQuery<GetTagsResponse>(
-  // Язык интерфейса вместо жёсткого 'ru' (S62); лимит — в ключе, см. sidebar-tags.
-  () => ['tags', 'cloud', locale.value, '50'],
+  // Язык ленты вместо жёсткого 'ru' (S62); лимит — в ключе, см. sidebar-tags.
+  () => ['tags', 'cloud', uiStore.contentLanguage, '50'],
   () => ({
     method: rpcEndpoints.getTags,
-    parameters: ['', '50', '', locale.value],
+    parameters: ['', '50', '', uiStore.contentLanguage],
     options: { auth: false },
   }),
   {
@@ -193,6 +224,13 @@ function clearSelection(e: Event): void {
 
 function toggleTopFirst(): void {
   filtersStore.toggleTopFirst()
+}
+
+/** Только лента: язык интерфейса остаётся прежним. */
+function onFeedLanguageChange(value: unknown): void {
+  if ((SUPPORTED_LOCALES as readonly unknown[]).includes(value)) {
+    uiStore.setFeedLanguage(value as Locale)
+  }
 }
 
 function openModal(e: Event): void {

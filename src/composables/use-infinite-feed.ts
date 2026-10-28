@@ -30,7 +30,7 @@ export interface UseInfiniteFeedOptions {
   pageSize?: number
   /** Безопасное расстояние до конца в пикселях (по умолчанию 100vh) */
   threshold?: number
-  /** Язык контента. Если не задан — берётся реактивно из ui-store (язык приложения). */
+  /** Язык контента. Если не задан — берётся реактивно из ui-store (фильтр языка ленты). */
   lang?: string
   /** Включен ли запрос */
   enabled?: boolean
@@ -47,10 +47,10 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   const filtersStore = useFiltersStore()
   const uiStore = useUIStore()
 
-  // Язык контента: явно переданный (options.lang) приоритетнее, иначе — язык
-  // приложения из ui-store (legacy брал `app.localization.key`). Реактивен:
-  // смена языка интерфейса перезагружает ленту.
-  const lang = computed(() => options.lang ?? uiStore.language)
+  // Язык контента: явно переданный (options.lang) приоритетнее, иначе — фильтр
+  // языка ленты из ui-store, а без него — язык интерфейса (legacy брал
+  // `app.localization.key`). Реактивен: смена языка перезагружает ленту.
+  const lang = computed(() => options.lang ?? uiStore.contentLanguage)
 
   onMounted(() => {
     if (!filtersStore.isInitialized) {

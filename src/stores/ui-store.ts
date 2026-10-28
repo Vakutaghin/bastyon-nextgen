@@ -13,6 +13,19 @@ import {
 export type AppLanguage = Locale
 
 const SETTING_KEY_LANGUAGE = 'bastyonAppLanguage'
+/** Язык ленты, если он не как у интерфейса. В localStorage: первый запрос ленты — сразу на нём. */
+const FEED_LANGUAGE_STORAGE_KEY = 'bastyon_feed_locale'
+
+function readStoredFeedLanguage(): AppLanguage | null {
+  try {
+    const stored = localStorage.getItem(FEED_LANGUAGE_STORAGE_KEY)
+    return (SUPPORTED_LOCALES as readonly unknown[]).includes(stored)
+      ? (stored as AppLanguage)
+      : null
+  } catch {
+    return null
+  }
+}
 
 // Тема живёт в composables/use-theme (data-theme на <html>, localStorage) —
 // здесь её нет: поле `theme` в сторе никто не писал, и мини-аппы никогда не
@@ -25,6 +38,8 @@ export const useUIStore = defineStore('ui', {
     // Тот же детектор, что у vue-i18n на буте: стор и i18n стартуют с одного значения.
     language: detectInitialLocale() as AppLanguage,
     languageLoaded: false,
+    /** Фильтр языка ленты; null — как у интерфейса. */
+    feedLanguage: readStoredFeedLanguage(),
   }),
 
   getters: {
@@ -44,6 +59,14 @@ export const useUIStore = defineStore('ui', {
       return (key: string) => {
         return this.loadingStates.get(key) || false
       }
+    },
+
+    /**
+     * Язык контента: лента, продвигаемые посты, теги, «Кого читать». Свой
+     * фильтр у ленты, иначе — язык интерфейса.
+     */
+    contentLanguage(): AppLanguage {
+      return this.feedLanguage ?? this.language
     },
   },
 
@@ -156,7 +179,23 @@ export const useUIStore = defineStore('ui', {
     },
 
     /**
+     * Фильтр языка ленты — отдельно от языка интерфейса. Язык интерфейса или
+     * null — «как у интерфейса»: тогда лента идёт за ним и дальше.
+     */
+    setFeedLanguage(language: AppLanguage | null): void {
+      const next = language && language !== this.language ? language : null
+      this.feedLanguage = next
+      try {
+        if (next) localStorage.setItem(FEED_LANGUAGE_STORAGE_KEY, next)
+        else localStorage.removeItem(FEED_LANGUAGE_STORAGE_KEY)
+      } catch {
+        // Без localStorage фильтр живёт до перезапуска.
+      }
+    },
+
+    /**
      * Меняет язык и персистит в IndexedDB. Синхронизирует vue-i18n и <html lang>.
+     * Фильтр языка ленты сбрасывается на этот же язык.
      */
     async setLanguage(language: AppLanguage): Promise<void> {
       try {
@@ -169,6 +208,9 @@ export const useUIStore = defineStore('ui', {
       }
       this.language = language
       setI18nLocale(language)
+      // Сменили язык интерфейса — лента переключается на него же. Обратно
+      // не работает: фильтр ленты язык интерфейса не трогает.
+      this.setFeedLanguage(null)
       try {
         await settingsAPI.set(SETTING_KEY_LANGUAGE, language)
       } catch (err) {

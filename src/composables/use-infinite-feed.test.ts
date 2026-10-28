@@ -70,7 +70,9 @@ const filtersStore = reactive({
   init: vi.fn(),
 })
 vi.mock('@/stores/filters-store', () => ({ useFiltersStore: () => filtersStore }))
-vi.mock('@/stores/ui-store', () => ({ useUIStore: () => ({ language: 'ru' }) }))
+vi.mock('@/stores/ui-store', () => ({
+  useUIStore: () => ({ language: 'ru', contentLanguage: 'ru' }),
+}))
 
 import { useInfiniteFeed } from './use-infinite-feed'
 import { buildFeedQueryByTab } from './helpers/feed-queries'

@@ -1697,6 +1697,7 @@ export default {
   },
   sidebar: {
     topFirst: 'Lo mejor primero',
+    feedLanguage: 'Idioma del feed',
     categories: 'Categorías',
     addCategory: 'Añadir categoría',
     resetFilter: 'Restablecer filtro',

@@ -44,7 +44,7 @@ export function useRecommendedUsers(limit = 8) {
   const relations = useUserRelationsStore()
 
   const address = computed<string | null>(() => authStore.getUserAddress ?? null)
-  const lang = computed(() => uiStore.language)
+  const lang = computed(() => uiStore.contentLanguage)
   const fetchCount = limit + 12
 
   const { data, isLoading, error } = useQuery<RawAccount[]>({

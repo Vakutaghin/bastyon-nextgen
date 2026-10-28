@@ -37,7 +37,7 @@ function flagsSum(flags: Record<string, number> | undefined): number {
  */
 export function useBoostedFeed(limit = 3, enabled: () => boolean = () => true) {
   const uiStore = useUIStore()
-  const lang = computed(() => uiStore.language)
+  const lang = computed(() => uiStore.contentLanguage)
 
   const { data, isLoading, error } = useQuery<unknown[]>({
     queryKey: computed(() => ['boosted-feed', lang.value]),

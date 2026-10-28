@@ -48,6 +48,7 @@ import {
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from '@/composables/use-rpc-query'
 import { useFiltersStore } from '@/stores/filters-store'
+import { useUIStore } from '@/stores/ui-store'
 import type { GetTagsResponse } from '@/types/rpc-responses/get-tags'
 import Spin from '@/components/spin/spin.vue'
 import { ICON_PRIMARY_24 } from '@/styles/icon-styles'
@@ -78,8 +79,9 @@ interface RawTag {
   count?: number
 }
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const filtersStore = useFiltersStore()
+const uiStore = useUIStore()
 const isExpanded = ref(false)
 
 const {
@@ -87,12 +89,12 @@ const {
   isLoading,
   error,
 } = useRpcQuery<GetTagsResponse>(
-  // Тренды — на языке интерфейса (было жёстко 'ru', S62); count — в ключе:
+  // Тренды — на языке ленты (было жёстко 'ru', S62); count — в ключе:
   // у категорий тот же запрос с другим лимитом, и кэш путал бы ответы.
-  () => ['tags', 'cloud', locale.value, '100'],
+  () => ['tags', 'cloud', uiStore.contentLanguage, '100'],
   () => ({
     method: rpcEndpoints.getTags,
-    parameters: ['', '100', '', locale.value],
+    parameters: ['', '100', '', uiStore.contentLanguage],
     options: { auth: false },
   }),
   {
