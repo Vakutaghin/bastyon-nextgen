@@ -102,6 +102,7 @@
               :publishing="isPublishing(video)"
               :opening-txid="openingTxid"
               @details="(tab) => openDetails(video, tab)"
+              @play="playingVideo = video"
               @open-post="openPost"
               @create-post="createPost(video)"
               @remove="confirmRemove(video)"
@@ -119,9 +120,17 @@
       :publishing="isPublishing(detailsVideo)"
       @close="detailsVideo = null"
       @changed="onDetailsChanged"
+      @play="playingVideo = detailsVideo"
       @open-post="openPost"
       @create-post="createPost(detailsVideo!)"
       @remove="confirmRemove(detailsVideo!)"
+    />
+
+    <StudioPlayerModal
+      v-if="playingVideo"
+      :key="playingVideo.pointer"
+      :video="playingVideo"
+      @close="playingVideo = null"
     />
   </SC_MyVideosWork>
 </template>
@@ -158,6 +167,7 @@ import { formatCount } from './studio-format'
 import StudioVideoItem from './studio-video-item.vue'
 import type { ListChanges } from './use-video-details'
 import VideoDetailsModal, { type DetailsTab } from './video-details/video-details-modal.vue'
+import StudioPlayerModal from './studio-player-modal.vue'
 import {
   SC_MyVideosWork,
   SC_MyVideosPage,
@@ -250,6 +260,8 @@ const viewOptions = computed(() => [
 
 const detailsVideo = ref<ServerVideo | null>(null)
 const detailsTab = ref<DetailsTab>('details')
+/** Ролик в окне плеера — обложкой, пунктом «Смотреть» или из окна ролика. */
+const playingVideo = ref<ServerVideo | null>(null)
 
 function openDetails(video: ServerVideo, tab: DetailsTab): void {
   detailsTab.value = tab
@@ -276,6 +288,10 @@ async function openPost(txid: string): Promise<void> {
   try {
     const post = await fetchVideoPost(txid)
     if (!post) throw new Error('post_not_found')
+    // Окно ролика стоит выше обычных окон, и пост открывался под ним. Закрываем,
+    // как при «Создать пост»: поднять пост нельзя — окна из поста (репост,
+    // правка) открылись бы уже под ним.
+    detailsVideo.value = null
     // Окно поста типизировано под пост ленты; адаптер отдаёт тот же формат.
     modalStore.openPostModal(post as never)
   } catch {

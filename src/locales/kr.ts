@@ -503,8 +503,8 @@ export default {
       linkPreviewsHint: '링크 아래에 제목과 이미지가 있는 카드를 표시합니다.',
       commentsOrder: '댓글 순서',
       commentsOrderHint: '토론이 열릴 때의 순서입니다. 게시물 안에서도 바꿀 수 있습니다.',
-      messenger: '메신저',
-      messengerHint: '채팅을 완전히 끕니다. 위젯, 헤더 아이콘, 하단 바 항목이 모두 사라집니다.',
+      chatButton: '떠 있는 채팅 버튼',
+      chatButtonHint: '오른쪽 아래의 둥근 버튼입니다. 끄면 헤더 아이콘으로 채팅을 엽니다.',
     },
     system: {
       animations: '애니메이션',
@@ -564,13 +564,12 @@ export default {
       locked: '항상 메뉴에 있습니다: 숨긴 항목은 설정에서 되돌립니다.',
       desktopOnly: '데스크톱 앱에서만 사용할 수 있습니다.',
       radioOnly: '데스크톱 앱과 Android에서 사용할 수 있습니다.',
-      needsMessenger: '메신저가 켜져 있을 때 작동합니다: 「일반」 → 「메신저」.',
       noteNotifications:
         '아이콘만 숨깁니다. 팝업 알림은 계속 표시되며 「알림」 탭에서 끌 수 있습니다.',
       noteNodeControls:
         '이 아이콘에서만 켜고 끌 수 있습니다. 아이콘을 숨겨도 그대로 작동하지만 제어할 곳이 없어집니다.',
       noteMessenger:
-        '아이콘이 없어도 채팅을 열 수 있습니다. 오른쪽 아래의 둥근 버튼으로, 휴대폰에서는 하단 바에서 엽니다.',
+        '「일반」에서 켜 두었다면 오른쪽 아래 둥근 버튼으로도, 휴대폰에서는 하단 바로도 채팅을 열 수 있습니다.',
       itemTheme: '밝은 테마와 어두운 테마',
       itemPageWidth: '페이지 너비',
     },
@@ -1671,6 +1670,8 @@ export default {
     expandMenu: '메뉴 펼치기',
     collapseMenu: '메뉴 접기',
     feedTitle: '피드',
+    addToFavorites: '즐겨찾기에 추가',
+    removeFromFavorites: '즐겨찾기에서 제거',
     subscriptionsDividerCaption: '위는 구독한 사람들의 새 게시물, 아래는 전체 피드입니다.',
     subscriptionsDividerButton: '“구독”에서 계속 보기',
     refreshFeed: '피드 새로고침',
@@ -3263,6 +3264,10 @@ export default {
     noDescription: '설명 없음',
     more: '더보기',
     openDetails: '"{name}" 열기',
+    watch: '보기',
+    listen: '듣기',
+    watchNamed: '"{name}" 보기',
+    listenNamed: '"{name}" 듣기',
     deleteTitle: '동영상을 삭제할까요?',
     deletePosted:
       '동영상이 동영상 서버에서 삭제됩니다. 이 동영상이 있는 게시물에는 글만 남고 동영상은 재생되지 않습니다. 되돌릴 수 없습니다.',

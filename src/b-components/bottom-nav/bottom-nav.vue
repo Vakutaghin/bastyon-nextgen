@@ -29,7 +29,6 @@ import {
   MessageOutlined,
   WalletOutlined,
 } from '@/components/icons'
-import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { requireAuth } from '@/composables/use-auth-gate'
 import { SC_BottomNav, SC_NavItem, SC_NavIcon, SC_NavLabel, SC_NavBadge } from './bottom-nav.styled'
@@ -48,7 +47,6 @@ const router = useRouter()
 const { t } = useI18n()
 const messengerStore = useMessengerStore()
 const { isFullScreen, totalUnreadCount } = storeToRefs(messengerStore)
-const prefs = useAppPreferencesStore()
 
 /**
  * Любой пункт закрывает полноэкранные чаты: раньше «Главная» при открытых чатах
@@ -94,18 +92,14 @@ const items = computed<NavItem[]>(() => [
     active: route.path === '/search' && !isFullScreen.value,
     onClick: () => go('/search'),
   },
-  ...(prefs.messengerEnabled
-    ? [
-        {
-          key: 'messenger',
-          label: t('bottomNav.messenger'),
-          icon: MessageOutlined,
-          active: isFullScreen.value,
-          badge: totalUnreadCount.value,
-          onClick: toggleChats,
-        },
-      ]
-    : []),
+  {
+    key: 'messenger',
+    label: t('bottomNav.messenger'),
+    icon: MessageOutlined,
+    active: isFullScreen.value,
+    badge: totalUnreadCount.value,
+    onClick: toggleChats,
+  },
   {
     key: 'wallet',
     label: t('bottomNav.wallet'),

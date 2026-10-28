@@ -28,7 +28,7 @@ Each clip shows:
 
 The button under the clip is **“Create post”** if there is no post yet, or **“Open post”** if there is. If there are several posts, the button shows their number, for example “Posts: 2”, and opens a list: pick the post by date and title.
 
-The cover or the title opens the clip window; in the list, the whole row does. The **“More”** button with three dots opens the clip's **“Details”** and **“Statistics”**, **“Create post”** — one more post with a clip that is already in a post — and **“Delete”**.
+Click the cover to watch the clip or listen to the recording: it opens in a window with the same player as in the feed, even if there is no post with it yet. While the clip is being processed, the cover opens the clip window. The title opens the clip window; in the list, the whole row does. The **“More”** button with three dots holds **“Watch”** (for audio — **“Listen”**), the clip's **“Details”** and **“Statistics”**, **“Create post”** — one more post with a clip that is already in a post — and **“Delete”**.
 
 For a clip on a video server that has been retired, the app takes the cover from its archive. If a cover does not load — the server does not answer or its certificate has expired — the app looks the clip up the way the player does, and if that fails too, it shows a clip icon instead of an empty picture.
 
@@ -46,7 +46,7 @@ The title and description are stored on the video server: they show here and on 
 
 Edits add up until you click **“Save”** — the bottom of the window shows “Unsaved changes”. **“Undo changes”** puts everything back. If you close the window with unsaved edits, the app asks first.
 
-On the right is what is known about the clip: its type, whether it is ready, duration, upload time, qualities and file size, views and the video server. Below is **“Posts with this video”**: click a post to open it, or click **“Create post”**. At the very bottom is **“Delete video”**.
+At the top right is **“Watch”** (for audio — **“Listen”**): the player opens over the clip window. Below is what is known about the clip: its type, whether it is ready, duration, upload time, qualities and file size, views and the video server. Next is **“Posts with this video”**: click a post to open it — the clip window closes — or click **“Create post”**. At the very bottom is **“Delete video”**.
 
 ## Cover
 

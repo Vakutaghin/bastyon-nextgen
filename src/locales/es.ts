@@ -509,9 +509,9 @@ export default {
       commentsOrder: 'Orden de los comentarios',
       commentsOrderHint:
         'El orden en que se abre una conversación. Se puede cambiar dentro de la publicación.',
-      messenger: 'Mensajería',
-      messengerHint:
-        'Desactiva el chat por completo: el widget, el icono del encabezado y el elemento de la barra inferior.',
+      chatButton: 'Botón flotante del chat',
+      chatButtonHint:
+        'El botón redondo abajo a la derecha. Sin él, el icono de la cabecera abre los chats.',
     },
     system: {
       animations: 'Animaciones',
@@ -573,13 +573,12 @@ export default {
       locked: 'Siempre en el menú: desde los ajustes se recupera lo oculto.',
       desktopOnly: 'Solo en la aplicación de escritorio.',
       radioOnly: 'En la aplicación de escritorio y en Android.',
-      needsMessenger: 'Funciona con la mensajería activada: «General» → «Mensajería».',
       noteNotifications:
         'Solo quita el icono: las notificaciones emergentes siguen; se desactivan en la pestaña «Notificaciones».',
       noteNodeControls:
         'Se activa y desactiva solo desde este icono. Si lo ocultas, todo queda como estaba, pero no habrá desde dónde controlarlo.',
       noteMessenger:
-        'Los chats se abren también sin el icono: con el botón redondo de la esquina inferior derecha y, en el teléfono, desde la barra inferior.',
+        'Los chats también se abren con el botón redondo abajo a la derecha, si está activado en «General», y en el teléfono desde la barra inferior.',
       itemTheme: 'Tema claro y oscuro',
       itemPageWidth: 'Ancho de la página',
     },
@@ -1697,6 +1696,8 @@ export default {
     expandMenu: 'Desplegar el menú',
     collapseMenu: 'Contraer el menú',
     feedTitle: 'Feed',
+    addToFavorites: 'Añadir a favoritos',
+    removeFromFavorites: 'Quitar de favoritos',
     subscriptionsDividerCaption:
       'Arriba: lo nuevo de las personas que sigues. Abajo: el feed general.',
     subscriptionsDividerButton: 'Seguir en «Suscripciones»',
@@ -3327,6 +3328,10 @@ export default {
     noDescription: 'Sin descripción',
     more: 'Más',
     openDetails: 'Abrir «{name}»',
+    watch: 'Ver',
+    listen: 'Escuchar',
+    watchNamed: 'Ver «{name}»',
+    listenNamed: 'Escuchar «{name}»',
     deleteTitle: '¿Eliminar el vídeo?',
     deletePosted:
       'El vídeo se eliminará del servidor de vídeo. Las publicaciones con él conservarán solo su texto: el vídeo dejará de reproducirse. No se puede deshacer.',

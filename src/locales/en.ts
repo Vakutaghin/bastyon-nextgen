@@ -503,9 +503,9 @@ export default {
       linkPreviewsHint: 'A card with the title and image under a link.',
       commentsOrder: 'Comments order',
       commentsOrderHint: 'The order a discussion opens in. It can still be changed inside a post.',
-      messenger: 'Messenger',
-      messengerHint:
-        'Turns the chat off entirely: the widget, the header icon and the bottom bar item.',
+      chatButton: 'Floating chat button',
+      chatButtonHint:
+        'The round button in the bottom right corner. Without it, the header icon opens the chats.',
     },
     system: {
       animations: 'Animations',
@@ -566,13 +566,12 @@ export default {
       locked: 'Always in the menu: hidden items are brought back through the settings.',
       desktopOnly: 'Only in the desktop app.',
       radioOnly: 'In the desktop app and on Android.',
-      needsMessenger: 'Works when the messenger is on: “General” → “Messenger”.',
       noteNotifications:
         'Removes only the icon: pop-up notifications stay; turn them off on the “Notifications” tab.',
       noteNodeControls:
         'It is turned on and off only from this icon. Hide the icon and everything stays as it was, but there is nowhere to control it from.',
       noteMessenger:
-        'Chats open without the icon too: with the round button in the bottom right corner, on a phone — from the bottom bar.',
+        'Chats also open with the round button in the bottom right corner, if it is on in “General”, and on the phone from the bottom bar.',
       itemTheme: 'Light and dark theme',
       itemPageWidth: 'Page width',
     },
@@ -1683,6 +1682,8 @@ export default {
     expandMenu: 'Expand menu',
     collapseMenu: 'Collapse menu',
     feedTitle: 'Feed',
+    addToFavorites: 'Add to favorites',
+    removeFromFavorites: 'Remove from favorites',
     subscriptionsDividerCaption:
       'Above are new posts from people you follow. Below is the general feed.',
     subscriptionsDividerButton: 'Continue in “Subscriptions”',
@@ -3293,6 +3294,10 @@ export default {
     noDescription: 'No description',
     more: 'More',
     openDetails: 'Open “{name}”',
+    watch: 'Watch',
+    listen: 'Listen',
+    watchNamed: 'Watch “{name}”',
+    listenNamed: 'Listen to “{name}”',
     deleteTitle: 'Delete this video?',
     deletePosted:
       'The video will be deleted from the video server. Posts with it will keep only their text — the video will stop playing. This cannot be undone.',

@@ -24,7 +24,6 @@ import {
 } from '@/components/icons'
 import { isTauriEnv } from '@/helpers/api/request-tor'
 import { isRadioSupported } from '@/mesh/radio/platform'
-import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { useHeaderLayoutStore } from '@/stores/header-layout-store'
 import {
   DEFAULT_MENU_LAYOUT,
@@ -77,10 +76,8 @@ export const MENU_ITEM_PATHS: Partial<Record<MenuItemId, string>> = {
 }
 
 /** Меню по умолчанию на этой платформе — без своей раскладки и без Pinia. */
-export function defaultMenuItems(messengerEnabled = true): MenuItemId[] {
-  return DEFAULT_MENU_LAYOUT.filter(
-    (e) => e.visible && !unavailableReason(e.id, messengerEnabled)
-  ).map((e) => e.id)
+export function defaultMenuItems(): MenuItemId[] {
+  return DEFAULT_MENU_LAYOUT.filter((e) => e.visible && !unavailableReason(e.id)).map((e) => e.id)
 }
 
 /** Значки, которые помещаются в тесную шапку телефона; остальное там — в боковом меню. */
@@ -89,12 +86,9 @@ export const PHONE_HEADER_ITEMS: readonly HeaderItemId[] = ['notifications', 'th
 /**
  * Почему пункта здесь нет: i18n-ключ причины или null, если он есть. Tor, IPFS
  * и «Мои файлы» — своя нода, только в приложении для компьютера; радио mesh —
- * ещё и на Android; чаты и «Сообщить об ошибке» живут в мессенджере.
+ * ещё и на Android.
  */
-export function unavailableReason(
-  id: HeaderItemId | MenuItemId,
-  messengerEnabled: boolean
-): string | null {
+export function unavailableReason(id: HeaderItemId | MenuItemId): string | null {
   switch (id) {
     case 'tor':
     case 'ipfs':
@@ -102,9 +96,6 @@ export function unavailableReason(
       return isTauriEnv() ? null : 'settings.layout.desktopOnly'
     case 'mesh':
       return isRadioSupported() ? null : 'settings.layout.radioOnly'
-    case 'messenger':
-    case 'reportBug':
-      return messengerEnabled ? null : 'settings.layout.needsMessenger'
     default:
       return null
   }
@@ -121,11 +112,8 @@ export function useHeaderLayout(): {
 } {
   const layout = useHeaderLayoutStore()
   void layout.ensureLoaded()
-  const prefs = useAppPreferencesStore()
   const shown = <Id extends HeaderItemId | MenuItemId>(list: { id: Id; visible: boolean }[]) =>
-    list
-      .filter((e) => e.visible && !unavailableReason(e.id, prefs.messengerEnabled))
-      .map((e) => e.id)
+    list.filter((e) => e.visible && !unavailableReason(e.id)).map((e) => e.id)
   return {
     headerItems: computed(() => shown(layout.headerLayout)),
     menuItems: computed(() => shown(layout.menuLayout)),

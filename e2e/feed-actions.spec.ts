@@ -99,6 +99,29 @@ test('гость: просмотры под роликом, бусты на ме
   await expect(page.getByRole('dialog', { name: 'Вход в аккаунт' })).toBeVisible()
 })
 
+test('закладка «В избранное» видна и в тёмной теме', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.setViewportSize({ width: 1400, height: 900 })
+  await open(page, makeData())
+  const bookmark = page.getByTestId('post-bookmark').first()
+  await expect(bookmark).toBeVisible({ timeout: 30_000 })
+  /** Яркость цвета значка, 0 — чёрный, 1 — белый. */
+  const brightness = () =>
+    bookmark.evaluate((el) => {
+      const [r, g, b] = getComputedStyle(el)
+        .color.match(/[\d.]+/g)!
+        .map(Number)
+      return (0.2126 * r! + 0.7152 * g! + 0.0722 * b!) / 255
+    })
+  expect(await brightness()).toBeLessThan(0.6)
+
+  await page.getByRole('button', { name: 'Тёмная тема' }).click()
+  await expect.poll(brightness).toBeGreaterThan(0.5)
+
+  await bookmark.click()
+  await expect(bookmark).toHaveAttribute('aria-label', 'Убрать из избранного')
+})
+
 test('вошедший: сначала новое от подписок, плашка, общая лента без повторов', async ({ page }) => {
   test.setTimeout(120_000)
   await page.setViewportSize({ width: 1400, height: 900 })

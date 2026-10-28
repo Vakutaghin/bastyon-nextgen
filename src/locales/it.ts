@@ -505,9 +505,9 @@ export default {
       commentsOrder: 'Ordine dei commenti',
       commentsOrderHint:
         'L’ordine in cui si apre una discussione. Si può comunque cambiare all’interno del post.',
-      messenger: 'Messaggistica',
-      messengerHint:
-        'Disattiva completamente la chat: il widget, l’icona nell’intestazione e la voce nella barra inferiore.',
+      chatButton: 'Pulsante flottante della chat',
+      chatButtonHint:
+        'Il pulsante rotondo in basso a destra. Senza, le chat si aprono con l’icona nell’intestazione.',
     },
     system: {
       animations: 'Animazioni',
@@ -569,13 +569,12 @@ export default {
       locked: 'Sempre nel menu: dalle impostazioni si recupera ciò che è nascosto.',
       desktopOnly: 'Solo nell’app per computer.',
       radioOnly: 'Nell’app per computer e su Android.',
-      needsMessenger: 'Funziona con la messaggistica attiva: «Generali» → «Messaggistica».',
       noteNotifications:
         'Toglie solo l’icona: le notifiche a comparsa restano, si disattivano nella scheda «Notifiche».',
       noteNodeControls:
         'Si attiva e disattiva solo da questa icona. Se la nascondi tutto resta com’era, ma non ci sarà più da dove controllarlo.',
       noteMessenger:
-        'Le chat si aprono anche senza l’icona: con il pulsante rotondo in basso a destra e, sul telefono, dalla barra in basso.',
+        'Le chat si aprono anche con il pulsante rotondo in basso a destra, se è attivo in «Generali», e sul telefono dalla barra in basso.',
       itemTheme: 'Tema chiaro e scuro',
       itemPageWidth: 'Larghezza della pagina',
     },
@@ -1691,6 +1690,8 @@ export default {
     expandMenu: 'Espandi il menu',
     collapseMenu: 'Comprimi il menu',
     feedTitle: 'Feed',
+    addToFavorites: 'Aggiungi ai preferiti',
+    removeFromFavorites: 'Rimuovi dai preferiti',
     subscriptionsDividerCaption:
       'Sopra: le novità delle persone che segui. Sotto: il feed generale.',
     subscriptionsDividerButton: 'Continua in «Iscrizioni»',
@@ -3314,6 +3315,10 @@ export default {
     noDescription: 'Senza descrizione',
     more: 'Altro',
     openDetails: 'Apri «{name}»',
+    watch: 'Guarda',
+    listen: 'Ascolta',
+    watchNamed: 'Guarda «{name}»',
+    listenNamed: 'Ascolta «{name}»',
     deleteTitle: 'Eliminare il video?',
     deletePosted:
       'Il video verrà eliminato dal server video. I post che lo contengono manterranno solo il testo: il video non si riprodurrà più. L’operazione è irreversibile.',

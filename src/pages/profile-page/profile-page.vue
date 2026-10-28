@@ -49,25 +49,22 @@
               :kind="profileTab === 'collections' ? 'posts' : profileTab"
             />
 
-            <!-- Посты — колонкой читаемой ширины, как лента: во всю ширину
-                 окна пост не читается. Ролики во вкладках — на всю ширину. -->
-            <SC_ProfilePosts v-if="profileTab === 'posts'">
-              <SC_ProfileCreatePost v-if="isOwnProfile">
-                <Button type="primary" @click="openComposer">
-                  <template #icon>
-                    <PlusOutlined />
-                  </template>
-                  {{ t('postCard.createPost') }}
-                </Button>
-              </SC_ProfileCreatePost>
+            <SC_ProfileCreatePost v-if="isOwnProfile && profileTab === 'posts'">
+              <Button type="primary" @click="openComposer">
+                <template #icon>
+                  <PlusOutlined />
+                </template>
+                {{ t('postCard.createPost') }}
+              </Button>
+            </SC_ProfileCreatePost>
 
-              <ProfileFeed
-                :address="userAddress"
-                :profile="profile"
-                :lang="''"
-                @profile-loaded="onProfileLoaded"
-              />
-            </SC_ProfilePosts>
+            <ProfileFeed
+              v-if="profileTab === 'posts'"
+              :address="userAddress"
+              :profile="profile"
+              :lang="''"
+              @profile-loaded="onProfileLoaded"
+            />
           </div>
         </SC_ProfileMainContent>
       </SC_ProfileContentWrapper>
@@ -101,7 +98,6 @@ import { ICON_PRIMARY_40 } from '@/styles/icon-styles'
 import {
   SC_ProfileWork,
   SC_ProfileMainContent,
-  SC_ProfilePosts,
   SC_ProfilePage,
   SC_ProfileContentWrapper,
   SC_LoadingProfile,

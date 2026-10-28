@@ -69,7 +69,12 @@
       <ChatList v-else :dialogs="dialogs" @select="openChat" />
     </MessengerWindow>
 
-    <MessengerButton :unread-count="totalUnreadCount" :is-open="isOpen" @click="toggleMessenger">
+    <MessengerButton
+      v-if="prefs.chatButton"
+      :unread-count="totalUnreadCount"
+      :is-open="isOpen"
+      @click="toggleMessenger"
+    >
       <template #icon>
         <MessageOutlined v-if="!isOpen" />
         <CloseOutlined v-else />
@@ -136,9 +141,10 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const { isMobileOrTablet } = useViewport()
 
-// Выключенный в настройках мессенджер не показываем и не инициализируем.
+// Без входа чата нет. Круглую кнопку можно скрыть в настройках («Общие»):
+// окно чата тогда открывает значок в шапке.
 const prefs = useAppPreferencesStore()
-const isVisible = computed<boolean>(() => authStore.isUserAuthenticated && prefs.messengerEnabled)
+const isVisible = computed<boolean>(() => authStore.isUserAuthenticated)
 
 // На мобилке/планшете НЕ показываем плавающий floating-widget — мессенджер
 // открывается только в full-screen режиме, «Чатами» в нижней панели.

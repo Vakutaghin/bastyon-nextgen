@@ -82,7 +82,6 @@ import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
 import { useHeaderAutohide } from '@/composables/use-header-autohide'
-import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import type { HeaderItemId } from '@/stores/header-layout'
 import {
   PHONE_HEADER_ITEMS,
@@ -143,10 +142,7 @@ const rightItems = computed<HeaderItemId[]>(() =>
 /** Иконка чата в хедере — на компьютере, рядом с плавающей кнопкой. На телефоне
  *  и планшете чаты открывает пункт нижней панели, а в тесной шапке второй такой
  *  же вход только отнимал место. */
-const prefs = useAppPreferencesStore()
-const showMessengerIcon = computed<boolean>(
-  () => authStore.isUserAuthenticated && prefs.messengerEnabled && !mobile.value
-)
+const showMessengerIcon = computed<boolean>(() => authStore.isUserAuthenticated && !mobile.value)
 
 const unreadBadge = computed<string>(() => {
   const n = totalUnreadCount.value

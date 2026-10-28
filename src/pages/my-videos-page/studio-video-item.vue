@@ -1,13 +1,10 @@
 <template>
   <!-- Ролик в «Медиастудии»: плиткой или строкой списка, как «Контент» в
        творческой студии YouTube. Разметка одна, раскладку задаёт CSS. Обложка
-       и название открывают окно ролика; строка списка — тоже, целиком. -->
+       запускает ролик (пока он обрабатывается — открывает окно ролика),
+       название открывает окно ролика; строка списка — тоже, целиком. -->
   <SC_Item :class="layout" @click="onItemClick">
-    <SC_Thumb
-      type="button"
-      :aria-label="t('mediaStudio.openDetails', { name: video.name })"
-      @click="emit('details', 'details')"
-    >
+    <SC_Thumb type="button" :aria-label="thumbLabel" @click="onThumbClick">
       <img v-if="thumbSrc" :src="thumbSrc" alt="" loading="lazy" @error="onThumbError" />
       <SC_ThumbEmpty v-else aria-hidden="true">
         <MusicIcon v-if="video.isAudio" />
@@ -15,6 +12,7 @@
       </SC_ThumbEmpty>
       <SC_ThumbTag v-if="video.isAudio"><MusicIcon />{{ t('mediaStudio.audio') }}</SC_ThumbTag>
       <SC_Duration v-if="video.duration">{{ formatDuration(video.duration) }}</SC_Duration>
+      <SC_ThumbPlay v-if="playable" aria-hidden="true"><PlayCircleOutlined /></SC_ThumbPlay>
     </SC_Thumb>
 
     <SC_Main>
@@ -115,6 +113,7 @@ import {
   SC_Status,
   SC_Thumb,
   SC_ThumbEmpty,
+  SC_ThumbPlay,
   SC_ThumbTag,
   SC_Title,
 } from './studio-video-item.styled'
@@ -129,6 +128,8 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   (e: 'details', tab: DetailsTab): void
+  /** Посмотреть или послушать ролик. */
+  (e: 'play'): void
   (e: 'open-post', txid: string): void
   (e: 'create-post'): void
   (e: 'remove'): void
@@ -169,7 +170,31 @@ const postItems = computed(() =>
   }))
 )
 
+/** Ролик ещё обрабатывается — файлов на сервере нет, играть нечего. */
+const playable = computed(() => !props.video.processing)
+const thumbLabel = computed(() =>
+  playable.value
+    ? t(props.video.isAudio ? 'mediaStudio.listenNamed' : 'mediaStudio.watchNamed', {
+        name: props.video.name,
+      })
+    : t('mediaStudio.openDetails', { name: props.video.name })
+)
+
+function onThumbClick(): void {
+  if (playable.value) emit('play')
+  else emit('details', 'details')
+}
+
 const menuItems = computed(() => [
+  ...(playable.value
+    ? [
+        {
+          key: 'play',
+          label: t(props.video.isAudio ? 'mediaStudio.listen' : 'mediaStudio.watch'),
+          icon: () => h(PlayCircleOutlined),
+        },
+      ]
+    : []),
   { key: 'details', label: t('mediaStudio.tabDetails'), icon: () => h(EditOutlined) },
   { key: 'stats', label: t('mediaStudio.tabStats'), icon: () => h(StatsIcon) },
   // Пост уже есть — ещё один создаётся отсюда, а не главной кнопкой.
@@ -181,7 +206,8 @@ const menuItems = computed(() => [
 ])
 
 function onMenu({ key }: { key: string | number }): void {
-  if (key === 'details' || key === 'stats') emit('details', key)
+  if (key === 'play') emit('play')
+  else if (key === 'details' || key === 'stats') emit('details', key)
   else if (key === 'create-post') emit('create-post')
   else if (key === 'remove') emit('remove')
 }

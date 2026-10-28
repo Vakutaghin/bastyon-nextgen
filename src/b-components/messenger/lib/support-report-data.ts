@@ -62,7 +62,7 @@ export interface SupportReportData {
     theme: string
     uiScale: number
     animations: boolean
-    messenger: boolean
+    chatButton: boolean
     tor: string
   }
   network: {
@@ -268,7 +268,7 @@ export async function collectSupportReport(now: Date = new Date()): Promise<Supp
       theme: useTheme().mode.value,
       uiScale: prefs.uiScale,
       animations: prefs.animations,
-      messenger: prefs.messengerEnabled,
+      chatButton: prefs.chatButton,
       tor: tor.available ? (tor.enabled ? torSummary(tor) : 'off') : 'unavailable',
     },
     network: {

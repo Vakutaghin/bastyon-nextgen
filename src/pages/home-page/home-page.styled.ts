@@ -22,10 +22,6 @@ export const SC_HomeWork = styled.div`
 export const SC_HomeMainContent = styled.main`
   flex: 1;
   min-width: 0;
-  /* Во всю ширину боковые колонки уходят к краям окна, а лента остаётся
-     читаемой ширины посередине: пост в 1900 px шириной не читается. */
-  max-width: var(--feed-max-width);
-  margin: 0 auto;
   background: var(--color-bg-primary);
   padding: 20px 0;
   border-radius: var(--ui-radius-lg);

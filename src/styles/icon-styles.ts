@@ -63,9 +63,6 @@ export const ICON_WARNING_TRACK = { color: COLORS.WARNING_TRACK }
 // Акцент 16px (спиннер загрузки комментариев); 18px — ICON_PRIMARY_18
 export const ICON_PRIMARY_16 = { fontSize: '16px', color: COLORS.PRIMARY }
 
-// Полупрозрачный тёмный (книжная иконка в шапке поста)
-export const ICON_OVERLAY_45_18 = { fontSize: '18px', color: COLORS.OVERLAY_45 }
-
 // Белые иконки оверлеев видеоплеера / бейджей аватара
 export const ICON_WHITE_9 = { fontSize: '9px', color: COLORS.WHITE }
 export const ICON_WHITE_10 = { fontSize: '10px', color: COLORS.WHITE }

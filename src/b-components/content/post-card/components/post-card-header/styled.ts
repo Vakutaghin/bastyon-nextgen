@@ -142,10 +142,20 @@ export const SC_DonateBtn = styled.button`
   }
 `
 
+/** Закладка «В избранное»: цвет — от темы, как у кнопок рядом с именем. */
 export const SC_PostBookmark = styled.div`
   margin-left: auto;
   cursor: pointer;
   padding: 0 10px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+
+  &:hover,
+  &.bookmarked {
+    color: var(--ui-primary);
+  }
 `
 
 export const SC_AuthorLinkWrap = styled.div`

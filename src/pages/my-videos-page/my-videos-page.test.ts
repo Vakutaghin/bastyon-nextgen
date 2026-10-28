@@ -104,9 +104,24 @@ vi.mock('./video-details/video-details-modal.vue', () => ({
   default: defineComponent({
     name: 'VideoDetailsModal',
     props: ['video', 'initialTab', 'publishing'],
-    emits: ['close', 'changed', 'open-post', 'create-post', 'remove'],
-    setup: (props) => () =>
-      h('div', { class: 'details-stub' }, `${props.video.name}:${props.initialTab}`),
+    emits: ['close', 'changed', 'play', 'open-post', 'create-post', 'remove'],
+    setup:
+      (props, { emit }) =>
+      () =>
+        h('div', { class: 'details-stub' }, [
+          `${props.video.name}:${props.initialTab}`,
+          h('button', { class: 'details-play', onClick: () => emit('play') }, 'play'),
+          h('button', { class: 'details-post', onClick: () => emit('open-post', 'p1') }, 'post'),
+        ]),
+  }),
+}))
+// Плеер — свой компонент; здесь — какой ролик открылся.
+vi.mock('./studio-player-modal.vue', () => ({
+  default: defineComponent({
+    name: 'StudioPlayerModal',
+    props: ['video'],
+    emits: ['close'],
+    setup: (props) => () => h('div', { class: 'player-stub' }, props.video.name),
   }),
 }))
 
@@ -292,15 +307,48 @@ describe('MyVideosPage', () => {
     expect(card('Море').text()).not.toContain('Аудио')
   })
 
-  it('обложка и «⋯ → Статистика» открывают окно ролика на нужной вкладке', async () => {
+  it('название и «⋯ → Статистика» открывают окно ролика на нужной вкладке', async () => {
     await mountPage()
-    await card('Море').find('button[aria-label="Открыть ролик «Море»"]').trigger('click')
-    expect(wrapper!.find('.details-stub').text()).toBe('Море:details')
+    await card('Море').find('button[title="Море"]').trigger('click')
+    expect(wrapper!.find('.details-stub').text()).toContain('Море:details')
 
     const items = await openMenu('Горы')
     items.find((item) => item.textContent?.includes('Статистика'))!.click()
     await flushPromises()
-    expect(wrapper!.find('.details-stub').text()).toBe('Горы:stats')
+    expect(wrapper!.find('.details-stub').text()).toContain('Горы:stats')
+  })
+
+  it('обложка, «⋯ → Смотреть» и кнопка в окне ролика запускают плеер', async () => {
+    await mountPage()
+    await card('Море').find('button[aria-label="Смотреть «Море»"]').trigger('click')
+    expect(wrapper!.find('.player-stub').text()).toBe('Море')
+    expect(wrapper!.find('.details-stub').exists()).toBe(false)
+
+    // Ролик в обработке: файлов нет — смотреть нечего, обложка открывает окно ролика.
+    const busy = await openMenu('Горы')
+    expect(busy.some((item) => item.textContent?.includes('Смотреть'))).toBe(false)
+    document.body.click()
+
+    // Аудио — «Слушать».
+    const items = await openMenu('Лес')
+    items.find((item) => item.textContent?.includes('Слушать'))!.click()
+    await flushPromises()
+    expect(wrapper!.find('.player-stub').text()).toBe('Лес')
+
+    await card('Море').find('button[title="Море"]').trigger('click')
+    await wrapper!.find('.details-play').trigger('click')
+    expect(wrapper!.find('.player-stub').text()).toBe('Море')
+    // Окно ролика остаётся под плеером.
+    expect(wrapper!.find('.details-stub').exists()).toBe(true)
+  })
+
+  it('пост из окна ролика открывается не под ним: окно ролика закрывается', async () => {
+    await mountPage()
+    await card('Море').find('button[title="Море"]').trigger('click')
+    await wrapper!.find('.details-post').trigger('click')
+    await flushPromises()
+    expect(useModalStore().postModal.isOpen).toBe(true)
+    expect(wrapper!.find('.details-stub').exists()).toBe(false)
   })
 
   it('«⋯ → Удалить»: подтверждение называет, что станет с постом, и удаляет', async () => {

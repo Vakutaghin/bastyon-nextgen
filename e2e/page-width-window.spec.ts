@@ -95,6 +95,54 @@ test('ширина страницы: кнопка в шапке, «Общие»,
   await expect(page.getByTestId('header-page-width')).toBeHidden()
 })
 
+test('во всю ширину лента занимает всё место между панелями, колонкой — до 1280', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await page.setViewportSize({ width: 2200, height: 900 })
+  await open(page, '/')
+  const feedWidth = () =>
+    page.evaluate(() => document.querySelector('main')?.getBoundingClientRect().width ?? 0)
+
+  expect(await pageWidth(page)).toBe('full')
+  // Боковые панели вместе — меньше 700 px: остальное отдано ленте.
+  await expect.poll(feedWidth).toBeGreaterThan(1500)
+
+  await page.getByTestId('header-page-width').click()
+  expect(await pageWidth(page)).toBe('limited')
+  await expect.poll(feedWidth).toBeLessThan(1000)
+})
+
+test('«Плавающая кнопка чата» прячет только круглую кнопку, чат остаётся', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.setViewportSize({ width: 1400, height: 900 })
+  await page.route('**/_matrix/**', (route) => route.abort())
+  await open(page, '/')
+  await signIn(page)
+
+  const fab = page.getByRole('button', { name: 'Сообщения' })
+  const headerChats = page.locator('header').getByRole('button', { name: 'Чаты' })
+  await expect(fab).toBeVisible()
+  await expect(headerChats).toBeVisible()
+
+  await goTo(page, '/settings')
+  await page.getByRole('button', { name: 'Общие' }).click()
+  const toggle = page.getByRole('switch', { name: 'Плавающая кнопка чата' })
+  await expect(toggle).toBeChecked()
+  await toggle.click()
+  await expect(fab).toHaveCount(0)
+  // Чат работает: значок в шапке на месте и открывает окно чата.
+  await expect(headerChats).toBeVisible()
+  await headerChats.click()
+  // Окно чата открылось (сервер чатов в тесте закрыт — внутри сообщение об этом).
+  await expect(page.getByText('Сообщения', { exact: true })).toBeVisible()
+
+  // Переживает перезагрузку: вход восстановился — значок чата в шапке.
+  await page.reload()
+  await expect(headerChats).toBeVisible({ timeout: 30_000 })
+  await expect(fab).toHaveCount(0)
+})
+
 declare global {
   interface Window {
     __desktopPrefsCalls?: { cmd: string; args: unknown }[]

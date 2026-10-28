@@ -36,12 +36,6 @@ export const SC_ProfileMainContent = styled.main`
 `
 
 /** Панель с кнопкой «Создать пост» над лентой своего профиля (только для себя). */
-/** Посты профиля — колонкой ленты по центру. */
-export const SC_ProfilePosts = styled.div`
-  max-width: var(--feed-max-width);
-  margin: 0 auto;
-`
-
 export const SC_ProfileCreatePost = styled.div`
   display: flex;
   justify-content: flex-end;

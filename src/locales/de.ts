@@ -509,9 +509,9 @@ export default {
       commentsOrder: 'Reihenfolge der Kommentare',
       commentsOrderHint:
         'In welcher Reihenfolge eine Diskussion geöffnet wird. Im Beitrag lässt sie sich trotzdem ändern.',
-      messenger: 'Messenger',
-      messengerHint:
-        'Schaltet den Chat komplett aus: das Widget, das Symbol in der Kopfzeile und den Eintrag in der unteren Leiste.',
+      chatButton: 'Schwebende Chat-Schaltfläche',
+      chatButtonHint:
+        'Die runde Schaltfläche unten rechts. Ohne sie öffnet das Symbol in der Kopfzeile die Chats.',
     },
     system: {
       animations: 'Animationen',
@@ -575,13 +575,12 @@ export default {
       locked: 'Immer im Menü: Darüber holt man Ausgeblendetes zurück.',
       desktopOnly: 'Nur in der Desktop-App.',
       radioOnly: 'In der Desktop-App und unter Android.',
-      needsMessenger: 'Funktioniert bei eingeschaltetem Messenger: „Allgemein“ → „Messenger“.',
       noteNotifications:
         'Entfernt nur das Symbol: Pop-up-Benachrichtigungen bleiben, sie werden im Tab „Benachrichtigungen“ ausgeschaltet.',
       noteNodeControls:
         'Ein- und ausgeschaltet wird es nur über dieses Symbol. Blendet man das Symbol aus, bleibt alles wie es war, aber man kann es nirgends mehr steuern.',
       noteMessenger:
-        'Chats öffnen sich auch ohne das Symbol: über die runde Schaltfläche unten rechts, auf dem Handy über die untere Leiste.',
+        'Chats öffnen sich auch über die runde Schaltfläche unten rechts, wenn sie unter „Allgemein“ eingeschaltet ist, und auf dem Telefon über die untere Leiste.',
       itemTheme: 'Helles und dunkles Design',
       itemPageWidth: 'Seitenbreite',
     },
@@ -1703,6 +1702,8 @@ export default {
     expandMenu: 'Menü ausklappen',
     collapseMenu: 'Menü einklappen',
     feedTitle: 'Feed',
+    addToFavorites: 'Zu Favoriten hinzufügen',
+    removeFromFavorites: 'Aus Favoriten entfernen',
     subscriptionsDividerCaption:
       'Oben: Neues von Personen, denen Sie folgen. Darunter: der allgemeine Feed.',
     subscriptionsDividerButton: 'Weiter in „Abonnements“',
@@ -3352,6 +3353,10 @@ export default {
     noDescription: 'Keine Beschreibung',
     more: 'Mehr',
     openDetails: '„{name}“ öffnen',
+    watch: 'Ansehen',
+    listen: 'Anhören',
+    watchNamed: '„{name}“ ansehen',
+    listenNamed: '„{name}“ anhören',
     deleteTitle: 'Video löschen?',
     deletePosted:
       'Das Video wird vom Videoserver gelöscht. Beiträge damit behalten nur ihren Text – das Video spielt nicht mehr. Das lässt sich nicht rückgängig machen.',

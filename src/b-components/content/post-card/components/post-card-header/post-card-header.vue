@@ -87,9 +87,19 @@
       </SC_PostAuthorInfo>
     </SC_PostAuthor>
 
-    <SC_PostBookmark @click="toggleBookmark">
-      <BookFilled v-if="isBookmarked" :style="ICON_PRIMARY_18" />
-      <BookOutlined v-else :style="ICON_OVERLAY_45_18" />
+    <SC_PostBookmark
+      role="button"
+      tabindex="0"
+      :class="{ bookmarked: isBookmarked }"
+      :aria-label="isBookmarked ? t('postCard.removeFromFavorites') : t('postCard.addToFavorites')"
+      :title="isBookmarked ? t('postCard.removeFromFavorites') : t('postCard.addToFavorites')"
+      :aria-pressed="isBookmarked"
+      data-testid="post-bookmark"
+      @click="toggleBookmark"
+      @keydown.enter="toggleBookmark"
+    >
+      <BookFilled v-if="isBookmarked" />
+      <BookOutlined v-else />
     </SC_PostBookmark>
   </SC_PostHeader>
 </template>
@@ -117,7 +127,7 @@ import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
 import { userAvatar, userName } from '@/services/user-names'
 import { userMarkOf } from '@/services/user-marks'
 import type { UserMark } from '@/helpers/profile/user-mark'
-import { ICON_PRIMARY_18, ICON_SIZE_MD, ICON_OVERLAY_45_18 } from '@/styles/icon-styles'
+import { ICON_SIZE_MD } from '@/styles/icon-styles'
 import {
   SC_PostHeader,
   SC_PostAuthor,

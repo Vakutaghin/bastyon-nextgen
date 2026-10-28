@@ -34,7 +34,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useHeaderLayoutStore } from '@/stores/header-layout-store'
-import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import type { HeaderItemId, MenuItemId } from '@/stores/header-layout'
 import {
   HEADER_ITEMS,
@@ -49,10 +48,9 @@ import { SC_SettingsSectionTitle } from '../settings-page.styled'
 const { t } = useI18n()
 const layout = useHeaderLayoutStore()
 void layout.ensureLoaded()
-const prefs = useAppPreferencesStore()
 
 function reasonOf(id: string): string | null {
-  return unavailableReason(id as HeaderItemId | MenuItemId, prefs.messengerEnabled)
+  return unavailableReason(id as HeaderItemId | MenuItemId)
 }
 
 /**

@@ -18,7 +18,6 @@ import { useI18n } from 'vue-i18n'
 import { Tooltip } from 'ant-design-vue'
 import { BugOutlined } from '@/components/icons'
 import { useAuthStore } from '@/blockchain'
-import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { openSupportChat } from './open-support-chat'
 import { SC_ReportBugWrapper } from './styled'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
@@ -27,9 +26,8 @@ const { t } = useI18n()
 
 const authStore = useAuthStore()
 
-// Отчёт уходит в чат: с выключенным мессенджером кнопка молча ничего не делала.
-const prefs = useAppPreferencesStore()
-const isVisible = computed<boolean>(() => authStore.isUserAuthenticated && prefs.messengerEnabled)
+// Отчёт уходит в чат поддержки: без входа его некуда отправить.
+const isVisible = computed<boolean>(() => authStore.isUserAuthenticated)
 
 async function onClick(): Promise<void> {
   if (!authStore.isUserAuthenticated) return

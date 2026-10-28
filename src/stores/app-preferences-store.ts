@@ -33,8 +33,11 @@ export interface AppPreferencesState {
   linkPreviews: boolean
   /** Порядок комментариев, с которого открывается пост. */
   commentsOrder: CommentsOrderPreference
-  /** Мессенджер целиком: виджет, иконка в шапке и пункт нижней панели. */
-  messengerEnabled: boolean
+  /**
+   * Круглая кнопка чата в правом нижнем углу (компьютер). Сам чат работает
+   * всегда: его открывают и значком в шапке, и с нижней панели телефона.
+   */
+  chatButton: boolean
   /** Масштаб интерфейса в процентах (десктоп). */
   uiScale: number
   /** Запускать приложение при входе в систему (десктоп). */
@@ -52,7 +55,7 @@ export const DEFAULT_APP_PREFERENCES: AppPreferencesState = {
   videoAutoplay: false,
   linkPreviews: true,
   commentsOrder: 'newest',
-  messengerEnabled: true,
+  chatButton: true,
   uiScale: 100,
   autostart: false,
   storeDecryptedMessages: true,
@@ -68,11 +71,17 @@ function sanitize(raw: Partial<AppPreferencesState> | null): AppPreferencesState
     'embeddedVideo',
     'videoAutoplay',
     'linkPreviews',
-    'messengerEnabled',
+    'chatButton',
     'autostart',
     'storeDecryptedMessages',
   ] as const) {
     if (typeof raw[key] === 'boolean') next[key] = raw[key]
+  }
+  // Прежняя настройка «Мессенджер» выключала чат целиком. Кто её выключил,
+  // хотел убрать чат с глаз — остаётся без круглой кнопки, а сам чат работает.
+  const legacy = raw as { messengerEnabled?: unknown }
+  if (typeof raw.chatButton !== 'boolean' && legacy.messengerEnabled === false) {
+    next.chatButton = false
   }
   if (
     raw.commentsOrder === 'interesting' ||
@@ -124,7 +133,7 @@ export const useAppPreferencesStore = defineStore('appPreferences', {
         videoAutoplay,
         linkPreviews,
         commentsOrder,
-        messengerEnabled,
+        chatButton,
         uiScale,
         autostart,
         storeDecryptedMessages,
@@ -135,7 +144,7 @@ export const useAppPreferencesStore = defineStore('appPreferences', {
         videoAutoplay,
         linkPreviews,
         commentsOrder,
-        messengerEnabled,
+        chatButton,
         uiScale,
         autostart,
         storeDecryptedMessages,

@@ -37,7 +37,7 @@ test('окно ролика: название, описание и кадр с �
 }) => {
   test.setTimeout(120_000)
   const server = await openStudio(page)
-  await page.getByRole('button', { name: 'Открыть ролик «Закат на море»' }).click()
+  await page.getByRole('button', { name: 'Закат на море', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Закат на море' })
   await expect(dialog.getByRole('textbox', { name: 'Описание' })).toHaveValue(
     'Снимали с пирса в Анапе'
@@ -71,6 +71,34 @@ test('окно ролика: название, описание и кадр с �
   await renamed.getByRole('button', { name: 'Close' }).click()
   await expect(renamed).toBeHidden()
   await expect(page.getByRole('listitem').filter({ hasText: 'Закат над морем' })).toBeVisible()
+})
+
+test('просмотр: обложка и «Смотреть» в окне ролика открывают плеер поверх', async ({ page }) => {
+  test.setTimeout(120_000)
+  await openStudio(page)
+
+  await page.getByRole('button', { name: 'Смотреть «Закат на море»' }).click()
+  const player = page.getByTestId('studio-player')
+  await expect(player.locator('video')).toHaveCount(1, { timeout: 30_000 })
+  await expect
+    .poll(() => player.locator('video').evaluate((v: HTMLVideoElement) => v.readyState), {
+      timeout: 30_000,
+    })
+    .toBeGreaterThan(0)
+  await page.keyboard.press('Escape')
+  await expect(player).toHaveCount(0)
+
+  // Из окна ролика — плеер над ним, а не под ним.
+  await page.getByRole('button', { name: 'Закат на море', exact: true }).click()
+  const details = page.getByRole('dialog', { name: 'Закат на море' })
+  await details.getByRole('button', { name: 'Смотреть' }).click()
+  await expect(player.locator('video')).toHaveCount(1, { timeout: 30_000 })
+  const box = await player.boundingBox()
+  const onTop = await page.evaluate(
+    ({ x, y }) => !!document.elementFromPoint(x, y)?.closest('[data-testid="studio-player"]'),
+    { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 }
+  )
+  expect(onTop).toBe(true)
 })
 
 test('статистика: цифры, график таблицей, время просмотра и период', async ({ page }) => {

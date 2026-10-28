@@ -4,7 +4,6 @@ import { computed, watch, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { appToast } from '@/b-components/app-toast'
-import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useMessengerChannelsStore } from '@/b-components/messenger/store/messenger-channels-store'
 import { useStopChannel } from '@/b-components/messenger/components/channel-room/use-stop-channel'
@@ -12,7 +11,6 @@ import { useStopChannel } from '@/b-components/messenger/components/channel-room
 export function useProfileChannel(userAddress: Ref<string>, displayName: Ref<string>) {
   const { t } = useI18n()
   const authStore = useAuthStore()
-  const prefs = useAppPreferencesStore()
   const messenger = useMessengerStore()
   const channels = useMessengerChannelsStore()
   const stopChannel = useStopChannel()
@@ -26,12 +24,11 @@ export function useProfileChannel(userAddress: Ref<string>, displayName: Ref<str
     { immediate: true }
   )
 
-  /** Не себе и не при выключенном мессенджере. */
+  /** Не себе. */
   const canShowChannel = computed<boolean>(
     () =>
       !!userAddress.value &&
       authStore.isAuthenticated &&
-      prefs.messengerEnabled &&
       authStore.getUserAddress !== userAddress.value
   )
 

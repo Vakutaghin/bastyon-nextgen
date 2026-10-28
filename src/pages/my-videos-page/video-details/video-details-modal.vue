@@ -113,6 +113,11 @@
         </SC_Form>
 
         <SC_Aside>
+          <!-- Пока ролик обрабатывается, файлов на сервере нет — играть нечего. -->
+          <Button v-if="!facts.processing" type="primary" block @click="emit('play')">
+            <template #icon><PlayCircleOutlined /></template>
+            {{ t(facts.audio ? 'mediaStudio.listen' : 'mediaStudio.watch') }}
+          </Button>
           <SC_Facts>
             <div>
               <dt>{{ t('mediaStudio.facts.type') }}</dt>
@@ -207,7 +212,7 @@ import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button, Input, Modal, Spin } from 'ant-design-vue'
 
-import { DeleteOutlined, EditOutlined, StatsIcon } from '@/components/icons'
+import { DeleteOutlined, EditOutlined, PlayCircleOutlined, StatsIcon } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import VideoCoverPicker from '@/b-components/video-studio/video-cover-picker.vue'
 import { formatDuration } from '@/b-components/video-uploader/utils/video-formatter'
@@ -254,6 +259,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'changed', changes: ListChanges): void
+  /** Посмотреть ролик — окно плеера поверх этого. */
+  (e: 'play'): void
   (e: 'open-post', txid: string): void
   (e: 'create-post'): void
   (e: 'remove'): void

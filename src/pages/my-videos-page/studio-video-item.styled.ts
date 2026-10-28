@@ -109,6 +109,30 @@ export const SC_ThumbEmpty = styled.span`
   font-size: 28px;
 `
 
+/** Обложка запускает ролик: круглый «Играть» проступает при наведении и фокусе. */
+export const SC_ThumbPlay = styled.span`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-white);
+  font-size: 40px;
+  background: ${() => COLORS.OVERLAY_25};
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  pointer-events: none;
+
+  button:hover > &,
+  button:focus-visible > & {
+    opacity: 1;
+  }
+
+  .list & {
+    font-size: 28px;
+  }
+`
+
 /** «Аудио» поверх обложки: звук и видео в списке не перепутать. */
 export const SC_ThumbTag = styled.span`
   position: absolute;

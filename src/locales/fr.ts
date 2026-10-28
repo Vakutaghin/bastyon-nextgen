@@ -511,9 +511,9 @@ export default {
       commentsOrder: 'Ordre des commentaires',
       commentsOrderHint:
         'L’ordre dans lequel une discussion s’ouvre. Il reste modifiable dans la publication.',
-      messenger: 'Messagerie',
-      messengerHint:
-        'Désactive complètement le chat : le widget, l’icône de l’en-tête et l’élément de la barre inférieure.',
+      chatButton: 'Bouton de chat flottant',
+      chatButtonHint:
+        'Le bouton rond en bas à droite. Sans lui, l’icône de l’en-tête ouvre les discussions.',
     },
     system: {
       animations: 'Animations',
@@ -576,13 +576,12 @@ export default {
       locked: 'Toujours dans le menu : c’est par les réglages qu’on retrouve ce qui est masqué.',
       desktopOnly: 'Uniquement dans l’application de bureau.',
       radioOnly: 'Dans l’application de bureau et sur Android.',
-      needsMessenger: 'Fonctionne quand la messagerie est activée : « Général » → « Messagerie ».',
       noteNotifications:
         'Retire seulement l’icône : les notifications contextuelles restent, on les désactive dans l’onglet « Notifications ».',
       noteNodeControls:
         'Il ne s’active et ne se désactive que depuis cette icône. Masquez l’icône et tout reste comme avant, mais plus rien ne permet de le piloter.',
       noteMessenger:
-        'Les discussions s’ouvrent aussi sans l’icône : avec le bouton rond en bas à droite, et sur un téléphone depuis la barre du bas.',
+        'Les discussions s’ouvrent aussi avec le bouton rond en bas à droite, s’il est activé dans « Général », et sur téléphone depuis la barre du bas.',
       itemTheme: 'Thème clair et sombre',
       itemPageWidth: 'Largeur de la page',
     },
@@ -1702,6 +1701,8 @@ export default {
     expandMenu: 'Déplier le menu',
     collapseMenu: 'Replier le menu',
     feedTitle: 'Fil',
+    addToFavorites: 'Ajouter aux favoris',
+    removeFromFavorites: 'Retirer des favoris',
     subscriptionsDividerCaption:
       'Ci-dessus : les nouveautés des personnes que vous suivez. Ci-dessous : le fil général.',
     subscriptionsDividerButton: 'Continuer dans « Abonnements »',
@@ -3349,6 +3350,10 @@ export default {
     noDescription: 'Sans description',
     more: 'Plus',
     openDetails: 'Ouvrir « {name} »',
+    watch: 'Regarder',
+    listen: 'Écouter',
+    watchNamed: 'Regarder « {name} »',
+    listenNamed: 'Écouter « {name} »',
     deleteTitle: 'Supprimer la vidéo ?',
     deletePosted:
       'La vidéo sera supprimée du serveur vidéo. Les publications qui la contiennent ne garderont que leur texte : la vidéo ne sera plus lue. Action irréversible.',

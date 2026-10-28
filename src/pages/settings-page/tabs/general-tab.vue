@@ -105,12 +105,17 @@
       </SC_ScaleRow>
     </SC_SystemRow>
 
-    <SC_SystemRow>
+    <!-- Круглая кнопка чата есть только на компьютере: на телефоне чаты — в нижней панели. -->
+    <SC_SystemRow v-if="!mobile">
       <SC_SystemLabel>
-        <SC_SystemTitle>{{ t('settings.content.messenger') }}</SC_SystemTitle>
-        <SC_SystemHint>{{ t('settings.content.messengerHint') }}</SC_SystemHint>
+        <SC_SystemTitle>{{ t('settings.content.chatButton') }}</SC_SystemTitle>
+        <SC_SystemHint>{{ t('settings.content.chatButtonHint') }}</SC_SystemHint>
       </SC_SystemLabel>
-      <Switch :checked="prefs.messengerEnabled" @change="setFlag('messengerEnabled', $event)" />
+      <Switch
+        :checked="prefs.chatButton"
+        :aria-label="t('settings.content.chatButton')"
+        @change="setFlag('chatButton', $event)"
+      />
     </SC_SystemRow>
   </SC_SystemSection>
   <!-- Скачиваемые модули (IPFS, Tor, голосовой ввод, сжатие видео, mesh) — на
@@ -199,7 +204,7 @@ const COMMENTS_ORDER_OPTIONS: {
 type SwitchValue = string | number | boolean
 
 /** Настройки-тумблеры: перечислены явно, чтобы не приводить типы силой. */
-type BooleanPreferenceKey = 'embeddedVideo' | 'videoAutoplay' | 'linkPreviews' | 'messengerEnabled'
+type BooleanPreferenceKey = 'embeddedVideo' | 'videoAutoplay' | 'linkPreviews' | 'chatButton'
 
 function setFlag(key: BooleanPreferenceKey, checked: SwitchValue): void {
   void prefs.set(key, Boolean(checked))

@@ -17,7 +17,7 @@ Settings open from the account menu — **“Settings”** — or, on a phone, f
   - **“Autoplay videos”** — a video starts once it appears on screen;
   - **“Link previews”** — a card with the title and image under a link;
   - **“Comments order”** — the order a discussion opens in, see [Comments](comments.md);
-  - **“Messenger”** — turns the chat off entirely, see [Messenger](messenger.md).
+  - **“Floating chat button”** — the round button in the bottom right corner, on a computer; without it the header icon opens the chat, see [Messenger](messenger.md).
 
 ## Header and menu
 
@@ -28,7 +28,7 @@ What stands in the header to the right of the search and what is in the avatar m
 
 The switch on the right shows or hides an item. To change the order, drag a row by the handle on the left — with the mouse or a finger. From the keyboard: Tab to the handle, then the up and down arrow keys. Everything changes at once, there is nothing to save. **“Restore defaults”** under the list brings back the original set and order.
 
-Items that this version of the app does not have are shown with an explanation, and their switch does not turn on. Tor, IPFS and **“My files”** are only in the desktop app, **“Mesh networks”** — also on Android. Chats and **“Report a bug”** work when **“Messenger”** is on, on the **“General”** tab.
+Items that this version of the app does not have are shown with an explanation, and their switch does not turn on. Tor, IPFS and **“My files”** are only in the desktop app, **“Mesh networks”** — also on Android.
 
 What hiding an icon means:
 

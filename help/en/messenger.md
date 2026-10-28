@@ -25,9 +25,9 @@ If [Tor](tor.md) is on in the desktop app, the chat goes through Tor too.
 
 Besides conversations, the messenger lets you read authors’ posts — as channels next to your chats, see [Channels](channels.md).
 
-## Turning it off
+## Hiding the round button
 
-If you do not need the chat: **“Settings”** → **“General”** tab → **“Messenger”**. Turning it off removes the chat entirely: the round button, the header icon and the bottom bar item.
+On a computer the chat opens with the round button in the bottom right corner and with the header icon. If the button is in the way: **“Settings”** → **“General”** tab → **“Floating chat button”**. The chat keeps working: the header icon opens it. The icon can be hidden too, on the **“Header and menu”** tab, but then nothing on the computer opens the chat. Phones and tablets have no round button — chats are in the bottom bar.
 
 ## See also
 

@@ -50,6 +50,21 @@ describe('app-preferences-store', () => {
     expect(again.animations).toBe(false)
   })
 
+  it('выключенный прежде «Мессенджер» прячет только круглую кнопку чата', async () => {
+    store.set(APP_PREFERENCES_KEY, { messengerEnabled: false })
+    const prefs = useAppPreferencesStore()
+    await prefs.load()
+    expect(prefs.chatButton).toBe(false)
+
+    // Новая настройка главнее старой.
+    store.set(APP_PREFERENCES_KEY, { messengerEnabled: false, chatButton: true })
+    await prefs.load()
+    expect(prefs.chatButton).toBe(true)
+
+    await prefs.set('chatButton', false)
+    expect(store.get(APP_PREFERENCES_KEY)).not.toHaveProperty('messengerEnabled')
+  })
+
   it('чинит мусор в хранилище до дефолтов', async () => {
     store.set(APP_PREFERENCES_KEY, {
       animations: 'да',
