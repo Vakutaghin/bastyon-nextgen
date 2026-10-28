@@ -35,7 +35,7 @@ A [node](glossary.md#node) is a participant's computer running the Pocketnet Cor
 
 The app picks a live node from the list of public ones by itself and switches to another if the current one stops answering. More in [Network and nodes](network.md).
 
-Anyone can run their own node. You need a computer that is always online: at least 2 cores, 4 GB of memory and 150 GB of disk, better 4 cores, 16 GB and a 500 GB SSD, plus a public IP address. The software and instructions are in the [pocketnet.core](https://github.com/pocketnetteam/pocketnet.core) repository.
+Anyone can run their own node; all it takes is a computer or a server that is always online. Which one, how to install the node and how to earn block rewards — see the [Blockchain and your own node](blockchain.md) book.
 
 ## Videos and images
 

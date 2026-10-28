@@ -23,7 +23,7 @@ You can read Bastyon with no coins at all. To write, rate and comment, the coins
 
 ## Where new coins come from
 
-New PKOIN appear with every block — about once a minute. A block is produced by a node that keeps coins staked, and the node gets the block reward. If moderators voted in a jury in the previous block, they share 10% of the reward. Before September 2025, part of the reward also went to authors of well-rated posts and comments. More in [Earnings](earnings.md).
+New PKOIN appear with every block — about once a minute. A block is produced by a node that keeps coins staked, and the node gets the block reward. If moderators voted in a jury in the previous block, they share 10% of the reward. Before September 2025, part of the reward also went to authors of well-rated posts and comments. More in [Earnings](earnings.md) and [Staking and emission](staking.md).
 
 ## Addresses
 

@@ -74,6 +74,10 @@ Handing out part of the [block](#block) reward. Since September 2025, 10% of the
 
 An open messaging protocol. Chats run on the Bastyon network's Matrix servers, and messages are encrypted on the participants' devices.
 
+## Mempool
+
+The queue of [transactions](#transaction) on a [node](#node) that the network has accepted but not yet included in a [block](#block). Whoever produces the next block takes transactions from their mempool. See [How the blockchain works](blockchain-basics.md).
+
 ## Mini app
 
 A third-party app that opens inside Bastyon and knows about you only what you allowed it. They are gathered under “Services”, see [Services](mini-apps.md).
@@ -110,9 +114,13 @@ A secret number that signs every action of the account. It is derived from the [
 
 A number the network calculates from the ratings of your posts and comments by experienced members. It affects your limits and some features, such as low ratings.
 
+## Snapshot
+
+An archive of an already verified [blockchain](#blockchain) and social database that lets a new [node](#node) start in a few hours instead of several days. See [First sync and the snapshot](node-sync.md).
+
 ## Staking
 
-How new [blocks](#block) are produced on the network: nodes holding [PKOIN](#pkoin) in staking get the right to produce a block and its reward — the more coins, the more often. The transaction that pays the staker the reward is called coinstake, and it is always the first one in a block. The more coins are staked, the harder it is to attack the network.
+How new [blocks](#block) are produced on the network: nodes holding [PKOIN](#pkoin) in staking get the right to produce a block and its reward — the more coins, the more often. The transaction that pays the staker the reward is called coinstake; it is the second one in a block, right after an empty service transaction, the coinbase. The more coins are staked, the harder it is to attack the network.
 
 ## Tor
 

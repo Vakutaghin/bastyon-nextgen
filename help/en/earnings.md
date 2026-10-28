@@ -37,7 +37,7 @@ The lottery rules are written in the node code [pocketnet.core](https://github.c
 
 ## A node
 
-Nodes get the most: they produce blocks and take the main part of the reward. That requires your own node with staked coins — a separate program for a computer or a server; it is not part of this app. What a node is — see [Network and nodes](network.md).
+Nodes get the most: they produce blocks and take the main part of the reward. That requires your own node with staked coins — a separate program for a computer or a server; it is not part of this app. How much it earns — see [Staking and emission](staking.md); how to set one up — the [Blockchain and your own node](blockchain.md) book.
 
 ## See also
 

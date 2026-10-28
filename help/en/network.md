@@ -10,7 +10,7 @@ Which servers the app connects to, how it picks a node, and where to see the sta
 
 Everything you see and do in Bastyon — posts, profiles, ratings, the wallet — goes through the network’s [nodes](glossary.md#node). The app connects to the public nodes 1.pocketnet.app … 6.pocketnet.app. At startup it checks them all at once, takes the first live one in the list and works with it while it answers. If it stops answering, the app switches to another one by itself.
 
-You cannot set your own node for the whole app: a node can be chosen only for the [block explorer](explorer.md).
+You cannot set your own node for the whole app: a node can be chosen only for the [block explorer](explorer.md). You can, however, help the network with a node of your own — see [A public node for Bastyon](node-public.md).
 
 Besides the nodes, the app talks to the [Matrix](glossary.md#matrix) chat servers, to the PeerTube [video](video.md) servers and, in the desktop app, to GitHub for [updates](updates.md).
 
@@ -38,3 +38,4 @@ A new block comes out about once a minute. If the last block time lags far behin
 - [Tor](tor.md)
 - [Block explorer](explorer.md)
 - [No connection to the network](connection-problems.md)
+- [Blockchain and your own node](blockchain.md)
