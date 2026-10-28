@@ -12,7 +12,8 @@ The feed is put together by a [node](glossary.md#node) using an open algorithm �
 
 - **“Feed”** — fresh posts from the whole network. The node ranks them by the post's ratings, the author's reputation and age: a new well-rated post rises higher, an old one gradually sinks.
 - **“Subscriptions”** — posts from people you follow, newest first. The section is available once you sign in, see [Subscriptions](subscriptions.md).
-- **“Video”**, **“Audio”**, **“Articles”** — the same feed, but only posts of that type.
+- **“Articles”** — the same feed, but only articles.
+- **“Video”** and **“Audio”** — separate sections with subscriptions, playlists and search — see [The Video section](video-section.md) and [The Audio section](audio-section.md).
 - **“Favorites”** — posts you saved, see [Favorites](favorites.md).
 - **“Discussed”** — the most commented posts of the last 24 hours.
 

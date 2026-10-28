@@ -69,6 +69,11 @@ const tabsData = computed(() => filtersStore.tabs)
 /** Перед «Сервисами» — разделитель: выше разделы ленты, ниже приложения и справка. */
 const SECTION_STARTS = new Set(['sidebarData.tabs.miniApps'])
 
+/** Раздел и его вкладки: `/video`, `/video/playlists`. */
+function isSectionPath(path: string, base: string): boolean {
+  return path === base || path.startsWith(`${base}/`)
+}
+
 // Вкладка подсвечена, только пока открыт её раздел. Мобильное меню видно на
 // любой странице, и на кошельке в нём горела «Лента»; на десктопе — на поиске.
 const onTabsRoute = computed(() => {
@@ -81,7 +86,9 @@ const onTabsRoute = computed(() => {
     path.startsWith('/explorer/') ||
     path === '/help' ||
     path.startsWith('/help/') ||
-    path === '/top'
+    path === '/top' ||
+    isSectionPath(path, '/video') ||
+    isSectionPath(path, '/audio')
   )
 })
 
@@ -113,7 +120,7 @@ watch(
     // miniapp-таб (id=8), эксплорер (id=9) или справка (id=10). feedMode
     // через query сохраняется отдельно.
     if (path === '/') {
-      if ([8, 9, 10, 11].includes(Number(filtersStore.activeTab))) {
+      if ([3, 4, 8, 9, 10, 11].includes(Number(filtersStore.activeTab))) {
         filtersStore.selectTab(1)
       }
       return
@@ -135,6 +142,9 @@ watch(
     }
     // Топ аккаунтов.
     if (path === '/top') filtersStore.selectTab(11)
+    // Разделы «Видео» и «Аудио».
+    if (isSectionPath(path, '/video')) filtersStore.selectTab(3)
+    if (isSectionPath(path, '/audio')) filtersStore.selectTab(4)
   },
   { immediate: true }
 )
@@ -189,10 +199,16 @@ function selectTab(tabId: string | number): void {
     return
   }
 
+  // «Видео» и «Аудио» — разделы со своими вкладками, плейлистами и плеером, а
+  // не режимы ленты. Ссылки `?feedMode=video|audio` ведут туда же (router).
+  if (tabId === 3 || tabId === 4) {
+    const path = tabId === 3 ? '/video' : '/audio'
+    if (!isSectionPath(route.path, path)) void router.push(path)
+    return
+  }
+
   const TAB_URL_MAPPING: Record<number, string> = {
     2: 'subscriptions',
-    3: 'video',
-    4: 'audio',
     5: 'article',
     6: 'favorites',
     7: 'discussed',

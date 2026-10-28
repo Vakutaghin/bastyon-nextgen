@@ -406,7 +406,9 @@ export async function getVideosInfo(params: {
 }): Promise<Map<string, NodeVideoInfo>> {
   const info = new Map<string, NodeVideoInfo>()
   if (!params.urls.length) return info
-  const fetchNode: NodeFetch = params.fetchNode ?? ((path, data) => fetchHttp({ path, data }))
+  // Сведения о роликах публичны: подпись не нужна, и гостю раздела «Видео» нода их тоже отдаёт.
+  const fetchNode: NodeFetch =
+    params.fetchNode ?? ((path, data) => fetchHttp({ path, data, options: { auth: false } }))
   const payload = params.update ? { urls: params.urls, update: true } : { urls: params.urls }
   const raw = (await fetchNode('peertube/videos', payload)) as Record<string, unknown> | null
   for (const url of params.urls) {

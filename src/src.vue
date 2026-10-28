@@ -8,6 +8,8 @@ import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
 import DonateModal from '@/b-components/donate/donate-modal.vue'
 import PaidSubscriptionModal from '@/b-components/paid-subscription/paid-subscription-modal.vue'
 import BoostModal from '@/b-components/boost/boost-modal.vue'
+import AddToListModal from '@/b-components/media/add-to-list-modal/add-to-list-modal.vue'
+import CollectionEditorModal from '@/b-components/media/collection-editor/collection-editor-modal.vue'
 import ReportModal from '@/b-components/report/report-modal.vue'
 import ChainInfoModal from '@/b-components/chain-info/chain-info-modal.vue'
 import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
@@ -137,6 +139,9 @@ watch(themeConfig, setStaticApiTheme, { immediate: true })
       <PaidSubscriptionModal />
       <!-- Продвижение поста за PKOIN — singleton, открывается через useBoostStore -->
       <BoostModal />
+      <!-- «Добавить в…» и редактор коллекции — singleton, открываются useAddToListStore и useCollectionEditorStore -->
+      <AddToListModal />
+      <CollectionEditorModal />
       <!-- Жалоба на контент — singleton, открывается через useReportStore -->
       <ReportModal />
       <!-- «В блокчейне»: пост, комментарий, аккаунт, транзакция — singleton, открывается useChainInfoStore -->

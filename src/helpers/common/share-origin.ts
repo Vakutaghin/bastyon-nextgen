@@ -61,6 +61,18 @@ export function publicPostUrl(postId: string): string {
   return postPath(publicShareOrigin(), postId)
 }
 
+/**
+ * Ссылка на коллекцию или плейлист. Прежний веб-клиент на bastyon.com знает
+ * `collection?c=<txid>`; веб-сборка этого приложения — `/collection/<txid>`
+ * и принимает обе.
+ */
+export function publicCollectionUrl(txid: string): string {
+  const origin = publicShareOrigin()
+  return origin === PUBLIC_WEB_ORIGIN
+    ? `${origin}/collection?c=${txid}`
+    : `${origin}/collection/${txid}`
+}
+
 export type ExplorerEntity = 'block' | 'tx' | 'address'
 
 /**

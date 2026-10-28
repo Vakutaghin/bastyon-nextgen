@@ -22,6 +22,10 @@ export const rpcEndpoints = {
   getHierarchicalStrip: 'gethierarchicalstrip',
   getProfileFeed: 'getprofilefeed',
   getSubscribesFeed: 'getsubscribesfeed',
+  /** Коллекции и плейлисты профиля (транзакции 220). */
+  getProfileCollections: 'getprofilecollections',
+  /** Посты по точной ссылке `u` и типу — так находим аудио по ссылкам PeerTube. */
+  searchLinks: 'searchlinks',
   getMostCommentedFeed: 'getmostcommentedfeed',
 
   // Comment methods

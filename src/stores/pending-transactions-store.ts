@@ -90,6 +90,8 @@ export function pendingKindOf(operationType: string, meta: PendingMeta): Pending
       return 'commentEdit'
     case 'cScore':
       return 'commentScore'
+    case 'collection':
+      return 'collection'
     default:
       return 'other'
   }

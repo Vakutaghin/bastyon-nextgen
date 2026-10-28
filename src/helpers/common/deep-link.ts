@@ -10,6 +10,7 @@
  * остаток — обычный маршрут приложения), поэтому старые ссылки из постов,
  * чатов и рассылок продолжают работать:
  *   bastyon://post?s=<txid>[&c=<commentTxid>]   — пост (и комментарий)
+ *   bastyon://collection?c=<txid>               — коллекция или плейлист
  *   https://bastyon.com/post?s=<txid>&commentid=<c>[&parentid=<p>] — «Поделиться» комментарием
  *   bastyon://index?v=<txid>                    — видео-пост
  *   bastyon://application?id=<appId>[&p=<hex>]  — мини-приложение
@@ -91,6 +92,9 @@ export const DEEP_LINK_SECTIONS: ReadonlySet<string> = new Set([
   'mesh',
   'compose',
   'help',
+  'video',
+  'audio',
+  'library',
 ])
 
 /** Маршрут поста с опциональным якорем на комментарий (у ответа — и на ветку). */
@@ -142,6 +146,12 @@ export function resolveDeepLink(rawUrl: string): string | null {
     // а не «страницу поста» с мусорным id.
     const txid = params.get('s') || params.get('v') || ''
     return HEX64_RE.test(txid) ? postRoute(txid.toLowerCase()) : '/'
+  }
+
+  // Коллекция или плейлист: прежний клиент — `collection?c=<txid>`, этот — `/collection/<txid>`.
+  if (head === 'collection') {
+    const txid = params.get('c') || segments[1] || ''
+    return HEX64_RE.test(txid) ? `/collection/${txid.toLowerCase()}` : '/'
   }
 
   // Известные разделы приложения отдаём как есть.

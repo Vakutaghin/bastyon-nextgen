@@ -40,7 +40,16 @@
           </SC_PendingProfile>
 
           <div v-else-if="userAddress">
-            <SC_ProfileCreatePost v-if="isOwnProfile">
+            <ProfileTabs :active="profileTab" />
+
+            <ProfileMediaTab
+              v-if="profileTab !== 'posts'"
+              :key="`${userAddress}-${profileTab}`"
+              :address="userAddress"
+              :kind="profileTab === 'collections' ? 'posts' : profileTab"
+            />
+
+            <SC_ProfileCreatePost v-if="isOwnProfile && profileTab === 'posts'">
               <Button type="primary" @click="openComposer">
                 <template #icon>
                   <PlusOutlined />
@@ -50,6 +59,7 @@
             </SC_ProfileCreatePost>
 
             <ProfileFeed
+              v-if="profileTab === 'posts'"
               :address="userAddress"
               :profile="profile"
               :lang="''"
@@ -81,6 +91,8 @@ import ProfileCover from '@/b-components/profile/profile-cover/profile-cover.vue
 import ProfileSidebar from '@/b-components/profile/profile-sidebar/profile-sidebar.vue'
 import ProfileFeed from '@/b-components/profile/profile-feed/profile-feed.vue'
 import ProfileMobileHeader from '@/b-components/profile/profile-mobile-header/profile-mobile-header.vue'
+import ProfileTabs from '@/b-components/profile/profile-tabs/profile-tabs.vue'
+import ProfileMediaTab from '@/b-components/profile/profile-media-tab/profile-media-tab.vue'
 import Spin from '@/components/spin/spin.vue'
 import { ICON_PRIMARY_40 } from '@/styles/icon-styles'
 import {
@@ -110,6 +122,12 @@ const profile = ref<ProfileWithAccSet | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const isOwnPendingProfile = ref(false)
+
+// Вкладка профиля — в `?tab=`: публикации, видео, аудио, коллекции.
+const profileTab = computed<'posts' | 'video' | 'audio' | 'collections'>(() => {
+  const tab = route.query.tab
+  return tab === 'video' || tab === 'audio' || tab === 'collections' ? tab : 'posts'
+})
 
 // Своя страница профиля: резолвнутый адрес совпадает с адресом текущего аккаунта.
 const isOwnProfile = computed<boolean>(() => {

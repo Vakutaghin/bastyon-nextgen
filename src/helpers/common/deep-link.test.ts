@@ -5,6 +5,15 @@ const TXID = 'a'.repeat(64)
 const COMMENT = 'b'.repeat(64)
 
 describe('resolveDeepLink — посты', () => {
+  it('коллекция: bastyon://collection?c=<txid> и ссылка bastyon.com', () => {
+    expect(resolveDeepLink(`bastyon://collection?c=${TXID}`)).toBe(`/collection/${TXID}`)
+    expect(resolveDeepLink(`https://bastyon.com/collection?c=${TXID.toUpperCase()}`)).toBe(
+      `/collection/${TXID}`
+    )
+    expect(resolveDeepLink('bastyon://collection?c=bad')).toBe('/')
+    expect(resolveDeepLink('bastyon://video/playlists')).toBe('/video/playlists')
+  })
+
   it('bastyon://post?s=<txid>', () => {
     expect(resolveDeepLink(`bastyon://post?s=${TXID}`)).toBe(`/post/${TXID}`)
   })

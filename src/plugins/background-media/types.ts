@@ -15,6 +15,8 @@ export interface BackgroundMediaStartOptions {
   isPlaying?: boolean
   /** Playback rate (1.0 = normal). */
   playbackSpeed?: number
+  /** Мини-плеер с очередью: в уведомлении «предыдущий» и «следующий» вместо перемотки. */
+  hasQueue?: boolean
 }
 
 export type BackgroundMediaUpdateOptions = Partial<BackgroundMediaStartOptions>
@@ -25,6 +27,19 @@ export interface BackgroundMediaNativeOptions extends BackgroundMediaStartOption
   url: string
   /** 0…1; 0 — ролик был без звука. */
   volume?: number
+  /**
+   * Очередь мини-плеера, первым — текущий трек (его же `url`). Свёрнутое
+   * приложение следующий трек само не включит — ExoPlayer переключает их сам.
+   */
+  queue?: BackgroundMediaQueueItem[]
+}
+
+export interface BackgroundMediaQueueItem {
+  url: string
+  title: string
+  artist?: string
+  artworkUrl?: string
+  durationMs?: number
 }
 
 export interface BackgroundMediaNativeState {
@@ -33,6 +48,8 @@ export interface BackgroundMediaNativeState {
   /** Где остановился, секунды. */
   position?: number
   isPlaying?: boolean
+  /** Номер трека в переданной очереди, где ExoPlayer остановился. */
+  index?: number
 }
 
 export interface BackgroundMediaSeekEvent {
@@ -57,7 +74,10 @@ export interface BackgroundMediaPlugin {
   stopNative(): Promise<BackgroundMediaNativeState>
   isSupported(): Promise<{ supported: boolean }>
 
-  addListener(eventName: 'play' | 'pause' | 'stop', cb: () => void): Promise<PluginListenerHandle>
+  addListener(
+    eventName: 'play' | 'pause' | 'stop' | 'next' | 'previous',
+    cb: () => void
+  ): Promise<PluginListenerHandle>
   addListener(
     eventName: 'seekTo',
     cb: (event: BackgroundMediaSeekEvent) => void

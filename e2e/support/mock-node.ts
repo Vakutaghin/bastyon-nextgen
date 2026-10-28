@@ -67,8 +67,22 @@ export interface MockComment {
   answerid?: string
 }
 
+/** Коллекция или плейлист (транзакция 220). */
+export interface MockCollection {
+  txid: string
+  address: string
+  caption: string
+  contentIds: string[]
+  /** 201 — видеоплейлист, 210 — аудио; без поля — как у старого клиента. */
+  contentTypes?: number
+  image?: string
+  description?: string
+}
+
 export interface MockNodeData {
   profiles: MockProfile[]
+  /** Коллекции: `getprofilecollections` и `getrawtransactionwithmessagebyid`. */
+  collections?: MockCollection[]
   posts: MockPost[]
   comments: MockComment[]
   /** На кого подписан вошедший (`getusersubscribes`). */
@@ -197,8 +211,54 @@ function profileOf(address: string, data: MockNodeData) {
   return profile ? profileJson(profile) : undefined
 }
 
+/** Коллекция в раскладке `getprofilecollections`: элементы строкой JSON, настройки строкой. */
+function collectionListJson(c: MockCollection, index: number) {
+  return {
+    txid: c.txid,
+    id: 900 + index,
+    contentIds: JSON.stringify(c.contentIds),
+    address: c.address,
+    l: 'ru',
+    type: 'collection',
+    c: c.caption,
+    i: c.image ?? '',
+    s: c.description ? JSON.stringify({ m: c.description }) : '',
+    height: HEIGHT - 10,
+    ...(c.contentTypes ? { contentTypes: String(c.contentTypes) } : {}),
+  }
+}
+
+/** Одна коллекция — в раскладке поста, как отдаёт `getrawtransactionwithmessagebyid`. */
+function collectionShareJson(c: MockCollection, index: number, data: MockNodeData) {
+  return {
+    hash: c.txid,
+    txid: c.txid,
+    id: 900 + index,
+    repost: JSON.stringify(c.contentIds),
+    address: c.address,
+    time: NOW - 3600,
+    l: 'ru',
+    type: 'collection',
+    c: c.caption,
+    m: c.image ?? '',
+    t: c.description ? { m: c.description } : {},
+    versions: [],
+    userprofile: profileOf(c.address, data),
+  }
+}
+
 function rpcResult(method: string, params: unknown[], data: MockNodeData): unknown {
   switch (method) {
+    case 'getprofilecollections': {
+      const address = params[10] as string
+      return {
+        height: HEIGHT,
+        contents: (data.collections ?? [])
+          .map((c, i) => [c, i] as const)
+          .filter(([c]) => c.address === address)
+          .map(([c, i]) => collectionListJson(c, i)),
+      }
+    }
     case 'getprofilefeed': {
       // Лента автора, как у ноды: свежие первыми, страница — после поста `txid`.
       const [, fromTxid, count, , , , , , , , address] = params as [
@@ -232,6 +292,8 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
       // Как у настоящей ноды: на id комментария — null.
       const ids = (params[0] as string[]) ?? []
       return ids.map((id) => {
+        const ci = (data.collections ?? []).findIndex((c) => c.txid === id)
+        if (ci >= 0) return collectionShareJson(data.collections![ci]!, ci, data)
         const i = data.posts.findIndex((p) => p.txid === id)
         return i < 0 ? null : postJson(data.posts[i]!, data, i)
       })

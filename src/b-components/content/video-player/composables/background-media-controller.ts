@@ -20,6 +20,8 @@ export interface MediaSessionPayload {
   position?: number
   isPlaying?: boolean
   playbackSpeed?: number
+  /** Есть соседние треки: в уведомлении Android — «предыдущий» и «следующий». */
+  hasQueue?: boolean
 }
 
 export interface ActivePlayerHandle {
@@ -27,6 +29,9 @@ export interface ActivePlayerHandle {
   onPause: () => void
   onSeekTo: (positionMs: number) => void
   onStop: () => void
+  /** Очередь проигрывания (мини-плеер): кнопки «следующий» и «предыдущий». */
+  onNext?: () => void
+  onPrevious?: () => void
 }
 
 const platform = Capacitor.getPlatform()
@@ -62,14 +67,14 @@ let nativeListeners: PluginListenerHandle[] = []
 let listenersAttached = false
 let sessionPayload: MediaSessionPayload | null = null
 
-function route(fn: 'onPlay' | 'onPause' | 'onStop'): void
+function route(fn: 'onPlay' | 'onPause' | 'onStop' | 'onNext' | 'onPrevious'): void
 function route(fn: 'onSeekTo', positionMs: number): void
 function route(fn: keyof ActivePlayerHandle, positionMs?: number): void {
   if (!activeHandle) return
   if (fn === 'onSeekTo') {
     activeHandle.onSeekTo(positionMs ?? 0)
   } else {
-    activeHandle[fn]()
+    activeHandle[fn]?.()
   }
 }
 
@@ -83,7 +88,9 @@ const attachNativeListenersOnce = async () => {
       route('onSeekTo', e.positionMs)
     )
     const onStop = await BackgroundMedia.addListener('stop', () => route('onStop'))
-    nativeListeners = [onPlay, onPause, onSeekTo, onStop]
+    const onNext = await BackgroundMedia.addListener('next', () => route('onNext'))
+    const onPrevious = await BackgroundMedia.addListener('previous', () => route('onPrevious'))
+    nativeListeners = [onPlay, onPause, onSeekTo, onStop, onNext, onPrevious]
   } catch (err) {
     console.warn('BackgroundMedia listener attach failed:', err)
     listenersAttached = false
@@ -138,6 +145,9 @@ const setupMediaSessionApi = (payload: MediaSessionPayload, handle: ActivePlayer
     handle.onSeekTo(durationMs > 0 ? Math.min(next, durationMs) : next)
   })
   safeSet('stop', () => handle.onStop())
+  // Без очереди кнопок нет: иначе система рисует их и ничего не происходит.
+  safeSet('nexttrack', handle.onNext ? () => handle.onNext?.() : null)
+  safeSet('previoustrack', handle.onPrevious ? () => handle.onPrevious?.() : null)
 }
 
 const updateMediaSessionState = (payload: MediaSessionPayload) => {
@@ -158,7 +168,16 @@ const clearMediaSessionApi = () => {
   if (!('mediaSession' in navigator)) return
   navigator.mediaSession.metadata = null
   navigator.mediaSession.playbackState = 'none'
-  ;['play', 'pause', 'seekto', 'seekbackward', 'seekforward', 'stop'].forEach((a) => {
+  ;[
+    'play',
+    'pause',
+    'seekto',
+    'seekbackward',
+    'seekforward',
+    'stop',
+    'nexttrack',
+    'previoustrack',
+  ].forEach((a) => {
     try {
       navigator.mediaSession.setActionHandler(a as MediaSessionAction, null)
     } catch {

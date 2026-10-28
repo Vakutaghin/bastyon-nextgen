@@ -38,6 +38,8 @@ import { useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerProfileCache } from './messenger-profile-cache'
 import { useMessengerChatStore } from './messenger-chat-store'
 import { useMessengerChannelsStore } from './messenger-channels-store'
+import { useMediaLibraryStore } from '@/stores/media-library-store'
+import { MEDIA_LIBRARY_ACCOUNT_DATA } from '@/services/media-library/media-library-doc'
 import { CHANNELS_ACCOUNT_DATA, channelChatId, isChannelChatId } from '../lib/channels'
 import type { MessengerStoreContext } from './messenger-store/types'
 import { loadDialogsSnapshot, saveDialogsSnapshot } from './messenger-store/dialogs-snapshot'
@@ -53,6 +55,8 @@ export const useMessengerStore = defineStore('messenger', () => {
   const chatStore = useMessengerChatStore()
   // Каналы — посты авторов, которых читают в мессенджере; в списке рядом с чатами.
   const channels = useMessengerChannelsStore()
+  // Личные списки видео и аудио живут там же — в данных аккаунта Matrix.
+  const mediaLibrary = useMediaLibraryStore()
   // Mesh-диалоги (переписка через радио, src/mesh) идут в общем списке с
   // комнатами Matrix; их id начинаются с `mesh:`.
   const meshChat = useMeshChatStore()
@@ -306,7 +310,9 @@ export const useMessengerStore = defineStore('messenger', () => {
   watch(
     () => uiStore.syncState,
     (state) => {
-      if (state === 'PREPARED') channels.syncWithServer()
+      if (state !== 'PREPARED') return
+      channels.syncWithServer()
+      mediaLibrary.syncWithServer()
     }
   )
   if (typeof document !== 'undefined') {
@@ -400,6 +406,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (!authStore.isUserAuthenticated || !authStore.address || !authStore.keyPair) return
     // Каналы с прошлого запуска — сразу; серверная копия подтянется после синка.
     channels.attach(authStore.address)
+    mediaLibrary.attach(authStore.address)
     // Переписка через радио не зависит от Matrix: без интернета она нужнее всего.
     void meshChat.ensureLoaded()
     void useReticulumStore().autostart()
@@ -430,9 +437,11 @@ export const useMessengerStore = defineStore('messenger', () => {
             matrixService.on(
               'accountData',
               (event: { getType?: () => string; getContent?: () => unknown }) => {
-                if (event?.getType?.() === CHANNELS_ACCOUNT_DATA) {
-                  channels.applyRemote(event.getContent?.())
-                }
+                const type = event?.getType?.()
+                if (type === CHANNELS_ACCOUNT_DATA) channels.applyRemote(event.getContent?.())
+                // Личные списки видео и аудио поменяли на другом устройстве.
+                else if (type === MEDIA_LIBRARY_ACCOUNT_DATA)
+                  mediaLibrary.applyRemote(event.getContent?.())
               }
             )
             listenersRegistered = true
@@ -737,6 +746,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     chatStore.reset()
     profileCache.reset()
     channels.reset()
+    mediaLibrary.reset()
     // Радио отключается, переписка аккаунта уходит из памяти; при выходе —
     // и с диска, как расшифровки Matrix.
     void useMeshConnectionStore().reset()

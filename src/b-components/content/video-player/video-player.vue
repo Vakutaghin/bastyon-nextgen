@@ -447,12 +447,18 @@ const props = withDefaults(
   { autoplay: false, isAudio: false, chapters: () => [], title: '', artist: '' }
 )
 
+// Ролик доиграл — очередь проигрывания включает следующий (страница поста).
+const emit = defineEmits<{ ended: [] }>()
+
 const { t } = useI18n()
 
 const videoElement = ref<HTMLVideoElement | null>(null)
 const videoContainer = ref<HTMLElement | null>(null)
 const isPlaying = ref(false)
 const isEnded = ref(false)
+watch(isEnded, (ended) => {
+  if (ended) emit('ended')
+})
 const playerId = ref(`video-player-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`)
 
 const BEZEL_ICONS: Record<BezelIcon, Component> = {

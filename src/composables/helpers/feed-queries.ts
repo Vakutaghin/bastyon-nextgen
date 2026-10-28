@@ -11,7 +11,7 @@ import type {
 } from '@/types/rpc-responses/get-hierarchical-strip'
 
 /** Сырой пост из RPC getrawtransactionwithmessagebyid (минимум полей для сортировки). */
-type RawFavoritePost = Partial<GetHierarchicalStripPost> & {
+export type RawFavoritePost = Partial<GetHierarchicalStripPost> & {
   txid?: string
   id?: string | number
 }
@@ -186,7 +186,17 @@ export async function buildFavoritesFeedQuery(
 
 /** Тянет посты по списку id и возвращает их в порядке запроса (без пропавших). */
 async function fetchFavoritePostsByIds(ids: string[]): Promise<RawFavoritePost[]> {
-  if (ids.length === 0) return []
+  const postsMap = await fetchRawPostsByIds(ids)
+  return ids.map((id) => postsMap.get(id)).filter((p): p is RawFavoritePost => p !== undefined)
+}
+
+/**
+ * Посты по id одним запросом: карта от любого их идентификатора к посту.
+ * Удалённых и ненайденных в карте нет. Ею пользуются «Избранное» и коллекции.
+ */
+export async function fetchRawPostsByIds(ids: string[]): Promise<Map<string, RawFavoritePost>> {
+  const postsMap = new Map<string, RawFavoritePost>()
+  if (ids.length === 0) return postsMap
 
   const result = (await getByPRCWithAuth({
     method: rpcEndpoints.getRawTransactionWithMessageById,
@@ -207,23 +217,19 @@ async function fetchFavoritePostsByIds(ids: string[]): Promise<RawFavoritePost[]
 
   // Удалённый пост нода отдаёт null: остальное «Избранное» из-за него не пропадает.
   posts = posts.filter((p): p is RawFavoritePost => !!p && typeof p === 'object')
-  if (posts.length === 0) return []
 
-  // Сортируем посты в порядке запрошенных ID для корректной пагинации.
-  //
   // Индексируем по ВСЕМ идентификаторам поста, а не только по txid. В избранное
   // попадает тот id, что был у карточки в момент клика (адаптер берёт
   // `txid || hash`), а нода может вернуть тот же пост под другим: у
   // отредактированного поста txid и hash различаются. Раньше такой пост не
   // находился в карте и молча пропадал из «Избранного».
-  const postsMap = new Map<string, RawFavoritePost>()
   for (const post of posts) {
     const keys = [post.txid, post.hash, post.id != null ? String(post.id) : undefined]
     for (const key of keys) {
       if (key && !postsMap.has(key)) postsMap.set(key, post)
     }
   }
-  return ids.map((id) => postsMap.get(id)).filter((p): p is RawFavoritePost => p !== undefined)
+  return postsMap
 }
 
 /**

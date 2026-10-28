@@ -28,4 +28,14 @@ export const SC_Appcnt = styled.div`
        и бар не разъезжались. */
     padding-bottom: var(--bottom-nav-height-total);
   }
+
+  /* Мини-плеер: на компьютере карточка внизу слева, на телефоне — полоса над
+     нижней панелью. Последние строки страницы не должны оставаться под ним. */
+  .has-mini-player & {
+    padding-bottom: calc(var(--safe-bottom) + 88px);
+  }
+
+  .has-mini-player &.has-bottom-nav {
+    padding-bottom: calc(var(--bottom-nav-height-total) + 62px);
+  }
 `

@@ -10,6 +10,8 @@
 
     <BottomNav v-if="isMobileOrTablet" />
 
+    <MiniPlayer />
+
     <MessengerWrapper />
 
     <PostModal />
@@ -36,6 +38,7 @@ import UpdateModal from '@/b-components/app-update/update-modal.vue'
 import VoiceModelModal from '@/b-components/voice-input/voice-model-modal.vue'
 import { StarExplosion } from '@/b-components/effects/star-explosion'
 import BottomNav from '@/b-components/bottom-nav/bottom-nav.vue'
+import MiniPlayer from '@/b-components/media/mini-player/mini-player.vue'
 import { useUIStore } from '@/stores/ui-store'
 import { classifyContentLink } from '@/helpers/common/content-link'
 import { openExternal } from '@/helpers/common/open-external'

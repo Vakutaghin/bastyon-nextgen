@@ -21,6 +21,8 @@ export async function resetAccountScopedStores(address?: string | null): Promise
     { useSearchStore },
     { useNotificationSettingsStore },
     { usePaidSubscriptionsStore },
+    { useCollectionsStore },
+    { useMediaLibraryStore },
   ] = await Promise.all([
     import('@/stores/pending-ratings-store'),
     import('@/stores/notifications-store'),
@@ -31,6 +33,8 @@ export async function resetAccountScopedStores(address?: string | null): Promise
     import('@/stores/search-store'),
     import('@/stores/notification-settings-store'),
     import('@/stores/paid-subscriptions-store'),
+    import('@/stores/collections-store'),
+    import('@/stores/media-library-store'),
   ])
   usePendingRatingsStore().reset()
   useNotificationsStore().reset()
@@ -48,6 +52,11 @@ export async function resetAccountScopedStores(address?: string | null): Promise
   useNotificationSettingsStore().$reset()
   // Платежи за подписки и своя цена — данные аккаунта.
   usePaidSubscriptionsStore().reset()
+  // Коллекции, ждущие блока, и личные списки видео и аудио — свои у аккаунта.
+  useCollectionsStore().reset()
+  useCollectionsStore().attach(address ?? null)
+  useMediaLibraryStore().reset()
+  if (address) useMediaLibraryStore().attach(address)
   // Блок-лист и подписки нового аккаунта — сразу: карточки ленты, стоящие на
   // экране, их не перезапросят, и до смены страницы лента показывала посты
   // заблокированных, а кнопки — чужие подписки.

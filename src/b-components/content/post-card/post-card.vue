@@ -90,6 +90,7 @@
             :chapters="chapters"
             :title="decodedTitle || post.author?.name || 'Bastyon'"
             :artist="post.author?.name || ''"
+            @ended="emit('media-ended')"
           />
 
           <PostCardVideoPlaceholder v-else />
@@ -186,6 +187,17 @@
             <span>{{ t('postCard.repostAction') }}</span>
           </SC_PostActionBtn>
 
+          <SC_PostActionBtn
+            v-if="canAddToList"
+            type="button"
+            :aria-label="addToListLabel"
+            data-testid="post-add-to-list"
+            @click="openAddToList"
+          >
+            <AddToListIcon />
+            <span>{{ addToListLabel }}</span>
+          </SC_PostActionBtn>
+
           <Dropdown v-model:open="shareMenuOpen" :trigger="['click']" placement="bottomRight">
             <SC_PostActionBtn type="button" :aria-label="t('postCard.shareAction')">
               <ShareAltOutlined />
@@ -262,6 +274,7 @@ import {
   ShareAltOutlined,
   EditOutlined,
   RetweetOutlined,
+  AddToListIcon,
   RiseOutlined,
   ThunderboltOutlined,
   ClockCircleOutlined,
@@ -282,6 +295,7 @@ import { useBoostStore } from '@/stores/boost-store'
 import { useChainInfoStore } from '@/stores/chain-info-store'
 import { isTxid } from '@/b-components/chain-info/chain-link'
 import { requireAuth } from '@/composables/use-auth-gate'
+import { useAddToListStore } from '@/stores/add-to-list-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { publicEmbedCode, publicPostUrl } from '@/helpers/common/share-origin'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
@@ -373,6 +387,8 @@ const emit = defineEmits<{
   comment: [postId: string | number]
   share: [postId: string | number]
   deleted: [postId: string]
+  /** Ролик или трек доиграл (очередь проигрывания на странице поста). */
+  'media-ended': []
 }>()
 
 const { t } = useI18n()
@@ -460,6 +476,24 @@ const canRepost = computed<boolean>(() => !props.post.repostDeleted)
 
 function openRepost(): void {
   modalStore.openPostComposerModal({ mode: 'repost', source: props.post })
+}
+
+// ── «В коллекцию» / «В плейлист»: личные списки и свои коллекции ──────
+// Элемент коллекции — txid первой публикации; репост собирают как обычный пост.
+const canAddToList = computed<boolean>(() => !!props.post.txid)
+const addToListLabel = computed<string>(() =>
+  props.post.type === 'video' || props.post.type === 'audio'
+    ? t('collections.toPlaylistAction')
+    : t('collections.toCollectionAction')
+)
+function openAddToList(): void {
+  requireAuth(() =>
+    useAddToListStore().open({
+      postId: props.post.txid!,
+      type: props.post.type ?? '',
+      title: decodedTitle.value || boostPreview.value,
+    })
+  )
 }
 function openEdit(): void {
   modalStore.openPostComposerModal({ mode: 'edit', source: props.post })

@@ -10,7 +10,7 @@ Where video and audio in Bastyon come from, how to watch and listen to them, and
 
 Video and audio uploaded to Bastyon are stored on [PeerTube](glossary.md#peertube) video servers that work for the network. Only the post with a link to the clip goes to the blockchain — a link like `peertube://server/identifier`. The file itself is not stored on the blockchain. When the network shuts down an old server, its clips move to an archive, and the player finds them there by itself.
 
-Such clips play in the built-in player right in the feed — see [Watching videos](video-player.md). All posts with video are collected in the **“Video”** section of the left panel, posts with audio in the **“Audio”** section.
+Such clips play in the built-in player right in the feed — see [Watching videos](video-player.md). The **“Video”** section in the left panel gathers videos as a grid — with subscriptions, playlists and search — see [The Video section](video-section.md). The **“Audio”** section has tracks by category and a mini player that keeps playing while you move around the app — see [The Audio section](audio-section.md). Videos and tracks go into [playlists](collections.md) and [private lists](media-library.md).
 
 How to upload your own — see [Uploading video and audio](video-upload.md). In the desktop app a large video can be made smaller beforehand — see [Compressing a video](video-compression.md).
 

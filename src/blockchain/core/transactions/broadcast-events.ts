@@ -46,6 +46,9 @@ export type PendingKind =
   | 'block'
   | 'unblock'
   | 'complaint'
+  | 'collection'
+  | 'collectionEdit'
+  | 'collectionDelete'
   | 'other'
 
 export interface BroadcastedTransaction {

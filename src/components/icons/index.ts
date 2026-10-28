@@ -133,6 +133,19 @@ import {
   Music,
   Rows3,
   GripVertical,
+  SkipBack,
+  SkipForward,
+  Shuffle,
+  Repeat,
+  Repeat1,
+  ListMusic,
+  ListVideo,
+  ListPlus,
+  Library,
+  ClockPlus,
+  BookmarkPlus,
+  BookmarkCheck,
+  Headphones,
 } from '@lucide/vue'
 
 /**
@@ -332,3 +345,18 @@ export const ListViewIcon = lucideIcon('ListViewIcon', Rows3)
 export const DragHandleIcon = lucideIcon('DragHandleIcon', GripVertical)
 export const StatsIcon = lucideIcon('StatsIcon', ChartColumn)
 export const MusicIcon = lucideIcon('MusicIcon', Music)
+
+/** Разделы «Видео» и «Аудио», мини-плеер, плейлисты. */
+export const SkipBackIcon = lucideIcon('SkipBackIcon', SkipBack)
+export const SkipForwardIcon = lucideIcon('SkipForwardIcon', SkipForward)
+export const ShuffleIcon = lucideIcon('ShuffleIcon', Shuffle)
+export const RepeatIcon = lucideIcon('RepeatIcon', Repeat)
+export const RepeatOneIcon = lucideIcon('RepeatOneIcon', Repeat1)
+export const AudioPlaylistIcon = lucideIcon('AudioPlaylistIcon', ListMusic)
+export const VideoPlaylistIcon = lucideIcon('VideoPlaylistIcon', ListVideo)
+export const AddToListIcon = lucideIcon('AddToListIcon', ListPlus)
+export const CollectionIcon = lucideIcon('CollectionIcon', Library)
+export const WatchLaterIcon = lucideIcon('WatchLaterIcon', ClockPlus)
+export const SaveIcon = lucideIcon('SaveIcon', BookmarkPlus)
+export const SavedIcon = lucideIcon('SavedIcon', BookmarkCheck)
+export const HeadphonesIcon = lucideIcon('HeadphonesIcon', Headphones)

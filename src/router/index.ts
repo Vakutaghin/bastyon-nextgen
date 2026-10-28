@@ -31,6 +31,10 @@ const PostPage = () => import('@/pages/post-page/post-page.vue')
 const ComposePage = () => import('@/pages/compose-page/compose-page.vue')
 const HelpPage = () => import('@/pages/help-page/help-page.vue')
 const EmbedPostPage = () => import('@/pages/embed-post-page/embed-post-page.vue')
+const VideoPage = () => import('@/pages/video-page/video-page.vue')
+const AudioPage = () => import('@/pages/audio-page/audio-page.vue')
+const CollectionPage = () => import('@/pages/collection-page/collection-page.vue')
+const LibraryPage = () => import('@/pages/library-page/library-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
 const AUTH_REQUIRED_NAMES = new Set([
@@ -41,6 +45,7 @@ const AUTH_REQUIRED_NAMES = new Set([
   'paid-subscriptions',
   'my-files',
   'mesh',
+  'library',
 ])
 
 const router = createRouter({
@@ -51,6 +56,12 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomePage,
+      // Прежние режимы ленты «Видео» и «Аудио» стали разделами.
+      beforeEnter: (to) => {
+        const mode = to.query.feedMode
+        if (mode === 'video' || mode === 'audio') return { path: `/${mode}`, replace: true }
+        return true
+      },
       meta: { titleKey: 'routes.home', helpTopic: 'feed' },
     },
     {
@@ -158,6 +169,41 @@ const router = createRouter({
       component: MiniAppPage,
       props: true,
       meta: { titleKey: 'routes.mini-app', helpTopic: 'mini-apps' },
+    },
+    // Разделы «Видео» и «Аудио»: вкладка — в адресе (`/video/subscriptions`).
+    // ДО catch-all /:userName.
+    {
+      path: '/video/:tab?',
+      name: 'video',
+      component: VideoPage,
+      meta: { titleKey: 'routes.video', helpTopic: 'video-section' },
+    },
+    {
+      path: '/audio/:tab?',
+      name: 'audio',
+      component: AudioPage,
+      meta: { titleKey: 'routes.audio', helpTopic: 'audio-section' },
+    },
+    // Коллекция или плейлист. Прежний клиент ссылается на `collection?c=<txid>`.
+    {
+      path: '/collection/:txid',
+      name: 'collection',
+      component: CollectionPage,
+      meta: { titleKey: 'routes.collection', helpTopic: 'collections' },
+    },
+    {
+      path: '/collection',
+      redirect: (to) => {
+        const c = typeof to.query.c === 'string' ? to.query.c.toLowerCase() : ''
+        return /^[0-9a-f]{64}$/.test(c) ? { path: `/collection/${c}`, query: {} } : { path: '/' }
+      },
+    },
+    // Личный список: «Сохранённые», «Смотреть позже», «Моя музыка», личный плейлист.
+    {
+      path: '/library/:listId',
+      name: 'library',
+      component: LibraryPage,
+      meta: { titleKey: 'routes.library', helpTopic: 'media-library' },
     },
     // Отдельный пост (deep-link, в т.ч. на комментарий: /post/:txid?commentid=&parentid=).
     // ДО catch-all /:userName.

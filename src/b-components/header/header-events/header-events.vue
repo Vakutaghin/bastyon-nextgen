@@ -159,6 +159,7 @@ import {
   CheckCircleOutlined,
   CheckOutlined,
   FlagOutlined,
+  CollectionIcon,
 } from '@/components/icons'
 import { useRouter } from 'vue-router'
 import type { PendingKind } from '@/blockchain/core/transactions/broadcast-events'
@@ -264,6 +265,9 @@ const TX_ICONS: Record<PendingKind, unknown> = {
   block: StopOutlined,
   unblock: CheckCircleOutlined,
   complaint: FlagOutlined,
+  collection: CollectionIcon,
+  collectionEdit: EditOutlined,
+  collectionDelete: DeleteOutlined,
   other: ClockCircleOutlined,
 }
 

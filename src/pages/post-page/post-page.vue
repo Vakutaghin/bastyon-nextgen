@@ -16,7 +16,11 @@
           :target-comment-id="targetCommentId"
           :target-parent-id="targetParentId"
           :target-reply="targetReply"
+          :autoplay-video="autoplayFromQueue"
+          @media-ended="upNext?.onEnded()"
         />
+
+        <UpNext v-if="inQueue" ref="upNext" />
 
         <RelatedVideos
           v-if="isVideoPost && post.author?.address"
@@ -32,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { LoadingOutlined } from '@/components/icons'
@@ -40,6 +44,9 @@ import { ICON_PRIMARY_40 } from '@/styles/icon-styles'
 import Spin from '@/components/spin/spin.vue'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import RelatedVideos from './related-videos/related-videos.vue'
+import UpNext from './up-next/up-next.vue'
+import { usePlaybackQueueStore } from '@/stores/playback-queue-store'
+import { QUEUE_QUERY } from '@/composables/use-playback'
 import { usePostByTxid } from '@/b-components/messenger/components/post-embed/use-post-by-txid'
 import { SC_PostPage, SC_PostPageInner, SC_PostStatus } from './post-page.styled'
 
@@ -73,6 +80,15 @@ const targetReply = computed<boolean>(() => {
 })
 
 const { post, isLoading, isMissing, isError } = usePostByTxid(txid)
+
+// Ролик из очереди проигрывания (плейлист, «Сохранённые»): «Далее» и автопереход.
+const queue = usePlaybackQueueStore()
+const upNext = ref<InstanceType<typeof UpNext> | null>(null)
+const inQueue = computed<boolean>(
+  () => queue.current?.type === 'video' && queue.current.id === txid.value
+)
+/** Открыли из очереди — ролик запускается сам. */
+const autoplayFromQueue = computed<boolean>(() => inQueue.value && route.query[QUEUE_QUERY] === '1')
 
 const isVideoPost = computed<boolean>(
   () => post.value?.type === 'video' || post.value?.type === 'audio'
