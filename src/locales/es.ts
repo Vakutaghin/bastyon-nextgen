@@ -1649,6 +1649,11 @@ export default {
     sentToast: 'Denuncia enviada',
     authRequired: 'Inicia sesión para denunciar contenido',
     failed: 'No se pudo enviar la denuncia',
+    sharkOnly:
+      'Solo las cuentas con la insignia «Tiburón» pueden enviar denuncias a la red: con al menos un año de antigüedad y publicaciones y comentarios valorados por al menos 100 personas. Tu cuenta aún no la tiene, así que la red no aceptaría la denuncia.',
+    sharkOnlyHint:
+      'Si el autor te molesta, bloquéalo: sus publicaciones y comentarios desaparecerán de tus feeds.',
+    close: 'Cerrar',
   },
   postCard: {
     unknownAuthor: 'Autor desconocido',
@@ -1692,6 +1697,9 @@ export default {
     expandMenu: 'Desplegar el menú',
     collapseMenu: 'Contraer el menú',
     feedTitle: 'Feed',
+    subscriptionsDividerCaption:
+      'Arriba: lo nuevo de las personas que sigues. Abajo: el feed general.',
+    subscriptionsDividerButton: 'Seguir en «Suscripciones»',
     refreshFeed: 'Actualizar el feed',
     createPost: 'Crear publicación',
     hideSidebar: 'Ocultar la barra lateral',
@@ -3675,6 +3683,8 @@ export default {
     retry: 'Reintentar',
     empty: 'Aquí todavía no hay nada',
     views: '{n} visualización | {n} visualizaciones',
+    listens: '{n} reproducción | {n} reproducciones',
+    watching: '{n} viendo ahora | {n} viendo ahora',
   },
   library: {
     myLists: 'Mis listas',

@@ -250,6 +250,16 @@
             <DeleteOutlined />
             <span>{{ t('postCard.deleteAction') }}</span>
           </SC_PostActionBtn>
+
+          <SC_PostViews
+            v-if="viewsCount"
+            :title="viewsLabel"
+            :aria-label="viewsLabel"
+            data-testid="post-views"
+          >
+            <EyeOutlined />
+            {{ formatCompact(viewsCount) }}
+          </SC_PostViews>
         </SC_PostActions>
 
         <PostCardComments
@@ -281,6 +291,7 @@ import {
   ExclamationCircleOutlined,
   LockOutlined,
   PlayCircleOutlined,
+  EyeOutlined,
 } from '@/components/icons'
 import { Dropdown } from 'ant-design-vue'
 import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
@@ -334,7 +345,10 @@ import {
   SC_TxFailedDismiss,
   SC_VisibilityBadge,
   SC_RestrictedNotice,
+  SC_PostViews,
 } from './styled'
+import { formatCompact, formatCount } from '@/pages/my-videos-page/studio-format'
+import { usePostViews } from './use-post-views'
 import { userAvatar, userName } from '@/services/user-names'
 import { userMarkOf } from '@/services/user-marks'
 import PaidPostNotice from '@/b-components/paid-subscription/paid-post-notice.vue'
@@ -410,6 +424,23 @@ const youtubeEmbeddable = canEmbedYoutube(
 const { videoPlayerRef, chapters, videoEmbeds, linkPreviewUrl, handleSeekTimecode } = usePostMedia(
   () => props.post
 )
+
+// Просмотры ролика или прослушивания трека — с видеосервера, как в старом клиенте.
+const isPeerTubeMedia = computed<boolean>(
+  () => (props.post.type === 'video' || props.post.type === 'audio') && !!props.post.videoUrl
+)
+const { count: viewsCount, live: viewsLive } = usePostViews(() =>
+  isPeerTubeMedia.value ? props.post.videoUrl : undefined
+)
+const viewsLabel = computed<string>(() => {
+  const n = viewsCount.value ?? 0
+  const key = viewsLive.value
+    ? 'media.watching'
+    : props.post.type === 'audio'
+      ? 'media.listens'
+      : 'media.views'
+  return t(key, { n: formatCount(n) }, n)
+})
 
 onMounted(() => {
   // Pending-пост НЕ регистрируем: он лёг бы под ключом txid и после подтверждения

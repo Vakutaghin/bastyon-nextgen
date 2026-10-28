@@ -1626,6 +1626,10 @@ export default {
     sentToast: '신고를 보냈습니다',
     authRequired: '콘텐츠를 신고하려면 로그인하세요',
     failed: '신고를 보내지 못했습니다',
+    sharkOnly:
+      '네트워크에 신고를 보낼 수 있는 것은 “상어” 배지가 있는 계정뿐입니다. 가입 1년 이상, 게시물과 댓글을 100명 이상이 평가한 계정이어야 합니다. 계정에 아직 배지가 없어 네트워크가 신고를 받아들이지 않습니다.',
+    sharkOnlyHint: '작성자가 불편하다면 차단하세요. 그 사람의 게시물과 댓글이 피드에서 사라집니다.',
+    close: '닫기',
   },
   postCard: {
     unknownAuthor: '알 수 없는 작성자',
@@ -1667,6 +1671,8 @@ export default {
     expandMenu: '메뉴 펼치기',
     collapseMenu: '메뉴 접기',
     feedTitle: '피드',
+    subscriptionsDividerCaption: '위는 구독한 사람들의 새 게시물, 아래는 전체 피드입니다.',
+    subscriptionsDividerButton: '“구독”에서 계속 보기',
     refreshFeed: '피드 새로고침',
     createPost: '게시물 작성',
     hideSidebar: '사이드바 숨기기',
@@ -3603,6 +3609,8 @@ export default {
     retry: '다시 시도',
     empty: '아직 아무것도 없습니다',
     views: '조회수 {n}회',
+    listens: '재생 {n}회',
+    watching: '{n}명 시청 중',
   },
   library: {
     myLists: '내 목록',

@@ -29,6 +29,8 @@ export interface MockPeerTubeOptions {
   hls?: boolean
   /** Сколько кусков HLS отдать, прежде чем нода перестанет их отдавать. */
   hlsBreaksAfter?: number
+  /** Просмотры ролика в описании (`views`). */
+  views?: number
 }
 
 export interface MockPeerTube {
@@ -77,6 +79,7 @@ export async function useMockPeerTube(
     uuid: VIDEO_ID,
     name: 'Тестовый ролик',
     duration: 30,
+    views: options.views,
     thumbnailPath: `/static/thumbnails/${VIDEO_ID}.jpg`,
     streamingPlaylists: options.hls
       ? [

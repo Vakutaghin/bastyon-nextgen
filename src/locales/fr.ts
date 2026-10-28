@@ -1655,6 +1655,11 @@ export default {
     sentToast: 'Signalement envoyé',
     authRequired: 'Connectez-vous pour signaler un contenu',
     failed: 'Impossible d’envoyer le signalement',
+    sharkOnly:
+      "Seuls les comptes avec le badge « Requin » peuvent envoyer des signalements au réseau : au moins un an d'ancienneté, publications et commentaires notés par au moins 100 personnes. Votre compte ne l'a pas encore, le réseau refuserait donc le signalement.",
+    sharkOnlyHint:
+      "Si l'auteur vous dérange, bloquez-le : ses publications et commentaires disparaîtront de vos fils.",
+    close: 'Fermer',
   },
   postCard: {
     unknownAuthor: 'Auteur inconnu',
@@ -1697,6 +1702,9 @@ export default {
     expandMenu: 'Déplier le menu',
     collapseMenu: 'Replier le menu',
     feedTitle: 'Fil',
+    subscriptionsDividerCaption:
+      'Ci-dessus : les nouveautés des personnes que vous suivez. Ci-dessous : le fil général.',
+    subscriptionsDividerButton: 'Continuer dans « Abonnements »',
     refreshFeed: 'Actualiser le fil',
     createPost: 'Créer une publication',
     hideSidebar: 'Masquer la barre latérale',
@@ -3699,6 +3707,8 @@ export default {
     retry: 'Réessayer',
     empty: "Il n'y a encore rien ici",
     views: '{n} vue | {n} vues',
+    listens: '{n} écoute | {n} écoutes',
+    watching: '{n} spectateur en direct | {n} spectateurs en direct',
   },
   library: {
     myLists: 'Mes listes',

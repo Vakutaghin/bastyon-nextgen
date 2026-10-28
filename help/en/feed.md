@@ -30,9 +30,15 @@ The feed, tags and recommendations are in the feed language: the app passes it t
 - Older posts load by themselves as you scroll down.
 - **“To top”** at the bottom of the screen takes you back to the start of the feed — the button appears once you have scrolled.
 
+## New from your subscriptions
+
+If you are signed in and follow someone, the **“Feed”** section starts with your subscriptions’ posts you have not seen yet — up to 20, as in the previous Bastyon app. Below them is a bar saying “Above are new posts from people you follow. Below is the general feed.” with the **“Continue in “Subscriptions””** button: it opens the **“Subscriptions”** section. The general feed follows, without those posts.
+
+Once you have scrolled down to the bar, those posts count as seen: the next time the feed loads, only newer ones are at the top. With **“Best first”**, categories or tags turned on there is no such selection.
+
 ## Promoted posts
 
-In the **“Feed”** section, roughly after every ten posts, you may see a post labeled **“Promoted”**: its author or another participant paid PKOIN to lift the post — this is called a [boost](glossary.md#boost). You can promote your own or someone else’s post with the **“Promote”** button under it — see [Promoting a post](boost.md).
+In the **“Feed”** section, after the 5th, 14th and 28th post and then after every tenth, you may see a post labeled **“Promoted”**: its author or another participant paid PKOIN to lift the post — this is called a [boost](glossary.md#boost). Which promoted posts get these places, the app picks at random, but the bigger the boost, the more often the post comes up. You can promote your own or someone else’s post with the **“Promote”** button under it — see [Promoting a post](boost.md).
 
 ## See also
 

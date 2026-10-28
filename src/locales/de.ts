@@ -1655,6 +1655,11 @@ export default {
     sentToast: 'Meldung gesendet',
     authRequired: 'Melde dich an, um Inhalte zu melden',
     failed: 'Die Meldung konnte nicht gesendet werden',
+    sharkOnly:
+      'Meldungen ans Netzwerk können nur Konten mit dem Abzeichen „Hai“ senden: mindestens ein Jahr alt, deren Beiträge und Kommentare mindestens 100 Personen bewertet haben. Ihr Konto hat es noch nicht, daher würde das Netzwerk die Meldung nicht annehmen.',
+    sharkOnlyHint:
+      'Wenn Sie der Autor stört, blockieren Sie ihn: Seine Beiträge und Kommentare verschwinden aus Ihren Feeds.',
+    close: 'Schließen',
   },
   postCard: {
     unknownAuthor: 'Unbekannter Autor',
@@ -1698,6 +1703,9 @@ export default {
     expandMenu: 'Menü ausklappen',
     collapseMenu: 'Menü einklappen',
     feedTitle: 'Feed',
+    subscriptionsDividerCaption:
+      'Oben: Neues von Personen, denen Sie folgen. Darunter: der allgemeine Feed.',
+    subscriptionsDividerButton: 'Weiter in „Abonnements“',
     refreshFeed: 'Feed aktualisieren',
     createPost: 'Beitrag erstellen',
     hideSidebar: 'Seitenleiste ausblenden',
@@ -3705,6 +3713,8 @@ export default {
     retry: 'Erneut versuchen',
     empty: 'Hier ist noch nichts',
     views: '{n} Aufruf | {n} Aufrufe',
+    listens: '{n} Wiedergabe | {n} Wiedergaben',
+    watching: '{n} schaut gerade zu | {n} schauen gerade zu',
   },
   library: {
     myLists: 'Meine Listen',

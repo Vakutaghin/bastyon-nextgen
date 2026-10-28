@@ -11,9 +11,18 @@
   >
     <SC_ModalBody>
       <SC_ReportBody>
-        <SC_ReportIntro>{{ t('report.intro') }}</SC_ReportIntro>
+        <!-- Жалобу сеть примет только от «акулы»: остальным — сразу, почему,
+             и что можно сделать самому. -->
+        <template v-if="canFlag === false">
+          <SC_ReportIntro data-testid="report-shark-only">{{
+            t('report.sharkOnly')
+          }}</SC_ReportIntro>
+          <SC_ReportIntro>{{ t('report.sharkOnlyHint') }}</SC_ReportIntro>
+        </template>
 
-        <SC_ReasonList>
+        <SC_ReportIntro v-else>{{ t('report.intro') }}</SC_ReportIntro>
+
+        <SC_ReasonList v-if="canFlag !== false">
           <SC_ReasonItem
             v-for="gid in REASON_GIDS"
             :key="gid"
@@ -34,12 +43,26 @@
 
     <template #footer>
       <SC_ModalActions>
-        <Button type="default" :disabled="sending" @click="handleCancel">
-          {{ t('report.cancel') }}
-        </Button>
-        <Button type="primary" danger :loading="sending" :disabled="!canSend" @click="onSubmit">
-          {{ t('report.submit') }}
-        </Button>
+        <template v-if="canFlag === false">
+          <Button type="default" @click="handleCancel">{{ t('report.close') }}</Button>
+          <Button v-if="canBlockAuthor" type="primary" danger @click="onBlockAuthor">
+            {{ t('postCard.blockAuthor') }}
+          </Button>
+        </template>
+        <template v-else>
+          <Button type="default" :disabled="sending" @click="handleCancel">
+            {{ t('report.cancel') }}
+          </Button>
+          <Button
+            type="primary"
+            danger
+            :loading="sending || canFlag === undefined"
+            :disabled="!canSend"
+            @click="onSubmit"
+          >
+            {{ t('report.submit') }}
+          </Button>
+        </template>
       </SC_ModalActions>
     </template>
   </Modal>
@@ -50,7 +73,9 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Modal, Button } from 'ant-design-vue'
 import { appToast } from '@/b-components/app-toast'
-import { useReportStore } from '@/stores'
+import { useReportStore, useUserRelationsStore } from '@/stores'
+import { useAuthStore } from '@/blockchain'
+import { useRelationActions } from '@/composables/use-relation-actions'
 import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
 import {
   SC_ReportBody,
@@ -73,12 +98,26 @@ const reportStore = useReportStore()
 const selected = ref<number | null>(null)
 const sending = ref(false)
 const error = ref<string | null>(null)
+/**
+ * Есть ли у аккаунта право жаловаться (бейдж «shark»): undefined — ещё
+ * проверяем, null — не узнали (решит сеть при отправке).
+ */
+const canFlag = ref<boolean | null | undefined>(undefined)
+
+const authStore = useAuthStore()
+const relations = useUserRelationsStore()
+const { confirmBlock } = useRelationActions()
+const canBlockAuthor = computed<boolean>(
+  () => !!reportStore.authorAddress && !relations.isBlocked(reportStore.authorAddress)
+)
 
 const title = computed<string>(() =>
   reportStore.type === 'comment' ? t('report.titleComment') : t('report.titlePost')
 )
 
-const canSend = computed<boolean>(() => !sending.value && selected.value !== null)
+const canSend = computed<boolean>(
+  () => !sending.value && selected.value !== null && canFlag.value !== undefined
+)
 
 // Сбрасываем выбор при каждом открытии.
 watch(
@@ -88,9 +127,26 @@ watch(
       selected.value = null
       error.value = null
       sending.value = false
+      void checkFlagRight()
     }
   }
 )
+
+let check = 0
+async function checkFlagRight(): Promise<void> {
+  const mine = ++check
+  canFlag.value = undefined
+  const { accountCanFlag } = await import('@/blockchain/core/actions/complain-action')
+  const result = await accountCanFlag(authStore.getUserAddress ?? '')
+  if (mine === check) canFlag.value = result
+}
+
+/** Не «акуле» вместо жалобы — блокировка автора: его посты и комментарии пропадут. */
+function onBlockAuthor(): void {
+  const address = reportStore.authorAddress
+  reportStore.close()
+  confirmBlock(address)
+}
 
 function handleCancel(): void {
   if (sending.value) return

@@ -47,6 +47,7 @@ import { useDialogMapping } from './messenger-store/use-dialog-mapping'
 import { registerMatrixListeners } from './messenger-store/use-matrix-listeners'
 import { useMeshRoutes } from './messenger-store/use-mesh-routes'
 import { appToast } from '@/b-components/app-toast'
+import { requireAuth } from '@/composables/use-auth-gate'
 
 export const useMessengerStore = defineStore('messenger', () => {
   const authStore = useAuthStore()
@@ -661,7 +662,13 @@ export const useMessengerStore = defineStore('messenger', () => {
     address: string,
     preloadedProfile?: UserProfile | null
   ): Promise<void> => {
-    if (!address || !authStore.isUserAuthenticated) return
+    if (!address) return
+    // Гость нажал «Начать чат» у поста или в профиле: раньше ничего не
+    // происходило. Теперь — окно входа, после входа тот же чат.
+    if (!authStore.isUserAuthenticated) {
+      requireAuth(() => void openInviteWithAddress(address, preloadedProfile))
+      return
+    }
     if (preloadedProfile?.address === address) profileCache.userProfiles[address] = preloadedProfile
     try {
       await profileCache.fetchProfiles([address])

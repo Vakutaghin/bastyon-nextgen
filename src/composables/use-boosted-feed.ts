@@ -8,8 +8,12 @@
  * `getrawtransactionwithmessagebyid` (он отдаёт полный пост с inline-userprofile).
  *
  * Сверено с legacy `js/satolist.js` (`getboostfeed` → `shares.getbyid(txids)` →
- * `shares.users`): фильтр по сумме flags < 10, выбор N продвигаемых, затем добор
+ * `shares.users`): фильтр по сумме flags < 10, выбор N продвигаемых случайно, с
+ * шансом по сумме буста (`pickBoosted`, как `randomizerarray`), затем добор
  * контента. Сам запрос бустов — `fetchBoostFeed` (services/boost-feed.ts).
+ *
+ * Выбор держится, пока ленту не обновят (`refetch`): иначе при возврате на
+ * главную продвигаемые посты менялись бы под рукой у читающего.
  */
 
 import { computed } from 'vue'
@@ -17,6 +21,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { fetchBoostFeed } from '@/services/boost-feed'
+import { pickBoosted } from '@/helpers/content/boost'
 import { useUIStore } from '@/stores/ui-store'
 import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
 import { preloadLastCommentAuthors } from './helpers/feed-enrichment'
@@ -39,20 +44,18 @@ export function useBoostedFeed(limit = 3, enabled: () => boolean = () => true) {
   const uiStore = useUIStore()
   const lang = computed(() => uiStore.contentLanguage)
 
-  const { data, isLoading, error } = useQuery<unknown[]>({
+  const { data, isLoading, error, refetch } = useQuery<unknown[]>({
     queryKey: computed(() => ['boosted-feed', lang.value]),
     queryFn: async () => {
       // 1. Заглушки бустов.
       const boosts = await fetchBoostFeed(lang.value)
       if (boosts.length === 0) return []
 
-      // 2. Фильтр по flags + выбор самых продвигаемых, собираем txid'ы.
-      const txids = boosts
-        .filter((b) => flagsSum(b.flags) < 10)
-        .sort((a, b) => (b.boost ?? 0) - (a.boost ?? 0))
-        .map((b) => b.txid)
-        .filter((t): t is string => !!t)
-        .slice(0, limit)
+      // 2. Фильтр по flags, выбор по сумме буста; порядок выбора — порядок в ленте.
+      const txids = pickBoosted(
+        boosts.filter((b) => flagsSum(b.flags) < 10 && !!b.txid),
+        limit
+      ).map((b) => b.txid as string)
       if (txids.length === 0) return []
 
       // 3. Добор контента по txid (отдаёт полные посты с inline-userprofile).
@@ -62,14 +65,17 @@ export function useBoostedFeed(limit = 3, enabled: () => boolean = () => true) {
       })) as ContentResponse
 
       // Удалённый пост нода отдаёт null — без него, а не падение всей подборки.
+      const order = (p: unknown) => txids.indexOf(String((p as { txid?: string }).txid ?? ''))
       const contents = Array.isArray(contentResp?.data)
-        ? contentResp.data.filter((p) => !!p && typeof p === 'object')
+        ? contentResp.data
+            .filter((p) => !!p && typeof p === 'object')
+            .sort((a, b) => order(a) - order(b))
         : []
       await preloadLastCommentAuthors(contents)
       return contents
     },
     enabled: computed(() => enabled()),
-    staleTime: 3 * 60 * 1000,
+    staleTime: Infinity,
     gcTime: 10 * 60 * 1000,
   })
 
@@ -83,5 +89,5 @@ export function useBoostedFeed(limit = 3, enabled: () => boolean = () => true) {
     return adapted.slice(0, limit)
   })
 
-  return { posts, isLoading, error }
+  return { posts, isLoading, error, refetch }
 }

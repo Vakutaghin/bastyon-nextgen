@@ -2,8 +2,11 @@
  * Продвижение (буст) поста за PKOIN: сколько стоит и чего ждать.
  *
  * Нода собирает ленту бустов по языку поста за последние 1440 блоков (около
- * суток) и сортирует посты по сумме бустов (`getboostfeed`). Приложение
- * вставляет продвигаемый пост примерно после каждых десяти обычных.
+ * суток) и отдаёт сумму бустов каждого поста (`getboostfeed`). Приложение,
+ * как старый клиент (`randomizerarray` в satolist.js), выбирает продвигаемые
+ * посты случайно, с шансом по сумме буста (`pickBoosted`), и ставит их после
+ * 5-го, 14-го и 28-го поста ленты, дальше — после каждого десятого
+ * (`isBoostSlot`). Три места в первых 30 постах и дают формулу прогноза ниже.
  *
  * Прогноз — формула старого клиента (components/pkoin): вероятность попасть
  * в первые 30 постов ленты своего языка примерно на сутки равна
@@ -68,4 +71,44 @@ export function boostAmountFor(
   // Сотые доли PKOIN считаем в целых сатоши: в дробях PKOIN 2,3 × 100 даёт 230,000…03.
   const hundredth = AMOUNT_MULTIPLIER / 100
   return Math.ceil(Math.round(needed) / hundredth) / 100
+}
+
+/** После скольких обычных постов встают первые продвигаемые (старый клиент: 4, 13, 27 по индексу). */
+const FIRST_BOOST_SLOTS: readonly number[] = [5, 14, 28]
+const LAST_FIRST_SLOT = 28
+/** Дальше — по одному после каждых стольких постов. */
+const BOOST_SLOT_STEP = 10
+
+/** Встаёт ли продвигаемый пост после `postsBefore` обычных постов ленты. */
+export function isBoostSlot(postsBefore: number): boolean {
+  if (postsBefore <= LAST_FIRST_SLOT) return FIRST_BOOST_SLOTS.includes(postsBefore)
+  return (postsBefore - LAST_FIRST_SLOT) % BOOST_SLOT_STEP === 0
+}
+
+/**
+ * До `count` постов из ленты бустов — случайно, с шансом по сумме буста, без
+ * повторов: пост с вдвое большим бустом попадается вдвое чаще, но и малые
+ * бусты иногда показываются. Посты без суммы не берутся.
+ */
+export function pickBoosted<T extends { boost?: number }>(
+  items: readonly T[],
+  count: number,
+  random: () => number = Math.random
+): T[] {
+  const pool = items.filter((b) => Number.isFinite(b.boost) && (b.boost ?? 0) > 0)
+  const picked: T[] = []
+  while (picked.length < count && pool.length) {
+    const total = pool.reduce((sum, b) => sum + (b.boost ?? 0), 0)
+    let r = random() * total
+    let index = pool.length - 1
+    for (let i = 0; i < pool.length; i++) {
+      r -= pool[i]!.boost ?? 0
+      if (r < 0) {
+        index = i
+        break
+      }
+    }
+    picked.push(pool.splice(index, 1)[0]!)
+  }
+  return picked
 }

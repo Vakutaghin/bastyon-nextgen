@@ -1,5 +1,5 @@
 ---
-keywords: [post, post card, images, gallery, repost, post page, share, bookmark]
+keywords: [post, post card, images, gallery, repost, post page, share, bookmark, views]
 ---
 
 # A post in the feed
@@ -8,14 +8,14 @@ What a post in the feed consists of and what you can do with it: read it in full
 
 ## What it consists of
 
-- **The header:** the author's avatar and name; the number next to the name is their [reputation](reputation.md), and the publishing time is under the name: click it to open the post in a window over the feed. Next to them are buttons to start a chat with the author, follow them and send a tip (your own posts have none), and on the right a bookmark for [favorites](favorites.md).
+- **The header:** the author's avatar and name; the number next to the name is their [reputation](reputation.md), and the publishing time is under the name: click it to open the post in a window over the feed. Next to them are buttons to start a chat with the author (if you are not signed in, the sign-in window opens first), follow them and send a tip (your own posts have none), and on the right a bookmark for [favorites](favorites.md).
 - **The text.** Long text is collapsed — the **“Show full”** button opens the whole post in a window over the feed. For an article it is **“Read article”** instead. Links in the text are coloured and underlined.
 - **Images, video or audio.** Video and audio play right in the feed — see [Watching videos](video-player.md).
 - **A link card** — the site the post links to: a square image on the left, the site name, title and description on the right. Click the image to see it in full in the gallery, and anywhere else on the card to open the site in a new browser window.
 - **A poll**, if the author added one — see [Polls](polls.md).
 - **A note instead of the post**, if the author opened it only to some readers — for example, subscribers or registered users — see [Visibility, language and publishing time](post-settings.md).
 - **The category and tags.** Click a tag to filter the feed by it — see [Categories, tags and sorting](feed-filters.md).
-- **The rating and action buttons** at the bottom.
+- **The rating and action buttons** at the bottom. For a video, to the right of the buttons is the number of views from the video server, for audio — of listens, for a live stream — how many are watching now, as in the previous Bastyon app.
 
 **A repost** shows the original post inside, marked with whose it is. If the original post was deleted, it says **“Post deleted”** instead.
 

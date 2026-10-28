@@ -26,6 +26,26 @@ export const SC_NewPostsPill = styled.button`
   }
 `
 
+/** Плашка после постов подписок: «Продолжить в ленте подписок». */
+export const SC_SubscriptionsDivider = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 15px;
+  padding: 14px 16px;
+  border: 1px dashed var(--ui-border-accented);
+  border-radius: var(--ui-radius-lg);
+  color: var(--ui-text-muted);
+  font-size: 14px;
+  line-height: calc(1.4 * var(--leading-scale));
+
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
+    margin-bottom: 10px;
+  }
+`
+
 export const SC_FeedErrorColumn = styled.div`
   display: flex;
   flex-direction: column;

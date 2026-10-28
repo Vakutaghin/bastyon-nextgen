@@ -1636,6 +1636,11 @@ export default {
     sentToast: 'Report submitted',
     authRequired: 'Sign in to report content',
     failed: 'Failed to submit the report',
+    sharkOnly:
+      "Only accounts with the “Shark” badge can send reports to the network: at least a year old, with posts and comments rated by at least 100 people. Your account doesn't have it yet, so the network would not accept the report.",
+    sharkOnlyHint:
+      'If the author bothers you, block them: their posts and comments will disappear from your feeds.',
+    close: 'Close',
   },
   postCard: {
     unknownAuthor: 'Unknown author',
@@ -1678,6 +1683,9 @@ export default {
     expandMenu: 'Expand menu',
     collapseMenu: 'Collapse menu',
     feedTitle: 'Feed',
+    subscriptionsDividerCaption:
+      'Above are new posts from people you follow. Below is the general feed.',
+    subscriptionsDividerButton: 'Continue in “Subscriptions”',
     refreshFeed: 'Refresh feed',
     createPost: 'Create post',
     hideSidebar: 'Hide sidebar',
@@ -3618,6 +3626,8 @@ export default {
     retry: 'Retry',
     empty: 'Nothing here yet',
     views: '{n} view | {n} views',
+    listens: '{n} listen | {n} listens',
+    watching: '{n} watching now | {n} watching now',
   },
   library: {
     myLists: 'My lists',

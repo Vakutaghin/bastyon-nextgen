@@ -1643,6 +1643,11 @@ export default {
     sentToast: 'Segnalazione inviata',
     authRequired: 'Accedi per segnalare contenuti',
     failed: 'Impossibile inviare la segnalazione',
+    sharkOnly:
+      'Solo gli account con il badge «Squalo» possono inviare segnalazioni alla rete: almeno un anno di età, con post e commenti valutati da almeno 100 persone. Il tuo account non lo ha ancora, quindi la rete non accetterebbe la segnalazione.',
+    sharkOnlyHint:
+      "Se l'autore ti infastidisce, bloccalo: i suoi post e commenti spariranno dai tuoi feed.",
+    close: 'Chiudi',
   },
   postCard: {
     unknownAuthor: 'Autore sconosciuto',
@@ -1686,6 +1691,9 @@ export default {
     expandMenu: 'Espandi il menu',
     collapseMenu: 'Comprimi il menu',
     feedTitle: 'Feed',
+    subscriptionsDividerCaption:
+      'Sopra: le novità delle persone che segui. Sotto: il feed generale.',
+    subscriptionsDividerButton: 'Continua in «Iscrizioni»',
     refreshFeed: 'Aggiorna il feed',
     createPost: 'Crea un post',
     hideSidebar: 'Nascondi la barra laterale',
@@ -3658,6 +3666,8 @@ export default {
     retry: 'Riprova',
     empty: 'Qui non c’è ancora niente',
     views: '{n} visualizzazione | {n} visualizzazioni',
+    listens: '{n} ascolto | {n} ascolti',
+    watching: '{n} spettatore ora | {n} spettatori ora',
   },
   library: {
     myLists: 'Le mie liste',

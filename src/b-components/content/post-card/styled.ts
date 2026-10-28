@@ -255,6 +255,18 @@ export const SC_PostActions = styled.div`
   }
 `
 
+/** Просмотры ролика — справа в строке действий, подписью, а не кнопкой. */
+export const SC_PostViews = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 6px 0;
+  color: var(--ui-text-muted);
+  font-size: 14px;
+  white-space: nowrap;
+`
+
 export const SC_ChatBtn = styled.button`
   display: inline-flex;
   align-items: center;

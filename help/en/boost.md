@@ -16,9 +16,9 @@ If you are not signed in, the button opens the sign-in window first.
 
 ## What a boost gives
 
-In the **“Feed”** section, roughly after every ten regular posts, the app inserts a promoted one — labeled **“Promoted”**. Promoted posts are seen by those whose feed is in the post’s language: a Russian post in the Russian feed, an English one in the English feed.
+In the **“Feed”** section, the app inserts promoted posts after the 5th, 14th and 28th regular post and then after every tenth, labeled **“Promoted”**. Promoted posts are seen by those whose feed is in the post’s language: a Russian post in the Russian feed, an English one in the English feed.
 
-A boost lasts about a day: the network counts boosts from the last 1440 blocks. Boosts of one post — yours and other people’s — add up, and the larger the sum, the higher the post among the promoted ones.
+A boost lasts about a day: the network counts boosts from the last 1440 blocks. Boosts of one post — yours and other people’s — add up. Which posts get these places, the app decides at random each time the feed loads, with a chance proportional to the boost: a post with twice the boost comes up twice as often — the same way as the previous Bastyon app. So a small boost is sometimes shown too, and a large one is not shown on every load.
 
 The window shows a forecast — the chance that the post will be among the first 30 posts of its language’s feed for about a day. It is calculated the same way as in the previous Bastyon app: the post’s boost times three, divided by the sum of boosts of the other promoted posts in that language. If there are no other boosts, any amount gives 100%. Below the forecast is the amount needed for 100%: click it, and it goes into the field. The forecast is available for posts in the languages of the app’s interface.
 

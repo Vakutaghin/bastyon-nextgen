@@ -1577,6 +1577,10 @@ export default {
     sentToast: '举报已提交',
     authRequired: '登录后才能举报内容',
     failed: '举报提交失败',
+    sharkOnly:
+      '只有带有“鲨鱼”徽章的账户才能向网络提交举报：注册满一年，且帖子和评论获得至少 100 人评分。您的账户还没有该徽章，网络不会接受此举报。',
+    sharkOnlyHint: '如果作者让您不快，可以屏蔽他：他的帖子和评论将从您的动态中消失。',
+    close: '关闭',
   },
   postCard: {
     unknownAuthor: '未知作者',
@@ -1617,6 +1621,8 @@ export default {
     expandMenu: '展开菜单',
     collapseMenu: '收起菜单',
     feedTitle: '信息流',
+    subscriptionsDividerCaption: '上方是您关注的人的新帖子，下方是综合信息流。',
+    subscriptionsDividerButton: '在“关注”中继续',
     refreshFeed: '刷新信息流',
     createPost: '发布帖子',
     hideSidebar: '隐藏侧边栏',
@@ -3473,6 +3479,8 @@ export default {
     retry: '重试',
     empty: '这里还没有内容',
     views: '{n} 次观看',
+    listens: '{n} 次收听',
+    watching: '{n} 人正在观看',
   },
   library: {
     myLists: '我的列表',

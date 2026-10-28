@@ -21,7 +21,7 @@
             size="small"
             :title="t('postCard.refreshFeed')"
             :loading="isLoading && allPosts.length > 0"
-            @click="refetch"
+            @click="refreshFeed"
           >
             <template #icon>
               <ReloadOutlined :style="ICON_SIZE_SM" />
@@ -86,7 +86,27 @@
       </SC_FeedError>
       <template v-else-if="allPosts && allPosts.length > 0">
         <PostCard
-          v-for="(post, index) in renderedPosts"
+          v-for="post in renderedHead"
+          :key="`post-${post.id}`"
+          v-memo="[post.id, post.likes, post.comments, post.shares]"
+          :post="post"
+          @like="handleLike"
+          @comment="handleComment"
+          @share="handleShare"
+        />
+        <!-- Конец подборки «новое от подписок»: дальше общая лента. -->
+        <SC_SubscriptionsDivider
+          v-if="dividerRendered"
+          :ref="setDividerEl"
+          data-testid="feed-subscriptions-divider"
+        >
+          <span>{{ t('postCard.subscriptionsDividerCaption') }}</span>
+          <Button size="small" @click="openSubscriptions">
+            {{ t('postCard.subscriptionsDividerButton') }}
+          </Button>
+        </SC_SubscriptionsDivider>
+        <PostCard
+          v-for="(post, index) in renderedTail"
           :key="`${post.isBoosted ? 'boosted' : 'post'}-${post.id || index}`"
           v-memo="[post.id, post.likes, post.comments, post.shares, post.isBoosted]"
           :post="post"
@@ -144,7 +164,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   ICON_PRIMARY_24,
   ICON_PRIMARY_120,
@@ -166,6 +186,8 @@ import { useFiltersStore } from '@/stores/filters-store'
 import { useModalStore } from '@/stores'
 import { useInfiniteFeed } from '@/composables/use-infinite-feed'
 import { useBoostedFeed } from '@/composables/use-boosted-feed'
+import { isBoostSlot } from '@/helpers/content/boost'
+import { useSubscriptionHighlights } from '@/composables/use-subscription-highlights'
 import { useBlockedAuthors } from '@/composables/use-blocked-authors'
 import type { AdaptedPost } from '@/composables/use-feed'
 import { isMobile } from '@mobile/utils/platform'
@@ -192,6 +214,7 @@ import {
   SC_FeedErrorColumn,
   SC_RetryButton,
   SC_NewPostsPill,
+  SC_SubscriptionsDivider,
 } from './styled'
 
 withDefaults(
@@ -212,6 +235,7 @@ const postsStore = usePostsStore()
 const filtersStore = useFiltersStore()
 const modalStore = useModalStore()
 const router = useRouter()
+const route = useRoute()
 const { isMobileOrTablet } = useViewport()
 
 const {
@@ -236,24 +260,70 @@ const {
 })
 
 // Продвигаемые посты (getboostfeed) — только на главной вкладке «Лента» (id=1).
-// Не отдельный блок сверху, а вплетаются в ленту (как в оригинале): один буст
-// примерно на каждые BOOST_INTERVAL обычных постов. Пул берём с запасом.
+// Не отдельный блок сверху, а вплетаются в ленту (как в оригинале): после 5-го,
+// 14-го и 28-го поста, дальше через десять (isBoostSlot). Пул берём с запасом.
 const showBoosted = computed<boolean>(() => filtersStore.activeTab === 1)
-const { posts: boostedPosts } = useBoostedFeed(10, () => filtersStore.activeTab === 1)
+const { posts: boostedPosts, refetch: refetchBoosted } = useBoostedFeed(
+  10,
+  () => filtersStore.activeTab === 1
+)
 const { filterBlocked } = useBlockedAuthors()
 
-/** Как часто вплетать продвигаемый пост (1 на N обычных постов). */
-const BOOST_INTERVAL = 10
+// «Новое от подписок» — над общей лентой, как в старом клиенте: на главной
+// вкладке без «Сначала лучшее» и фильтра по категориям и тегам.
+const {
+  posts: subscriptionPosts,
+  refetch: refetchHighlights,
+  markSeen: markSubscriptionsSeen,
+} = useSubscriptionHighlights(
+  () =>
+    filtersStore.activeTab === 1 &&
+    !filtersStore.topFirst &&
+    filtersStore.selectedCategories.length === 0 &&
+    filtersStore.selectedTags.length === 0
+)
 
-type FeedItem = AdaptedPost & { isBoosted?: boolean }
+/** «Обновить» — заново и обычная лента, и продвигаемые, и посты подписок. */
+function refreshFeed(): void {
+  if (showBoosted.value) {
+    void refetchBoosted()
+    void refetchHighlights()
+  }
+  void refetch()
+}
+
+/** «Продолжить в ленте подписок» — вкладка «Подписки», как из меню. */
+function openSubscriptions(): void {
+  filtersStore.selectTab(2)
+  void router.replace({ path: '/', query: { ...route.query, feedMode: 'subscriptions' } })
+  scrollToTop()
+}
+
+// Плашку после подборки пролистали до экрана — подборка просмотрена.
+let dividerObserver: IntersectionObserver | null = null
+function setDividerEl(el: unknown): void {
+  dividerObserver?.disconnect()
+  dividerObserver = null
+  const node = el && typeof el === 'object' && '$el' in el ? (el as { $el: unknown }).$el : el
+  if (!(node instanceof Element) || typeof IntersectionObserver === 'undefined') return
+  dividerObserver = new IntersectionObserver((records) => {
+    if (records.some((r) => r.isIntersecting)) markSubscriptionsSeen()
+  })
+  dividerObserver.observe(node)
+}
+
+type FeedItem = AdaptedPost & { isBoosted?: boolean; isDivider?: boolean }
+
+/** Место плашки в общем списке: карточки отрисовываются по порядку, и она с ними. */
+const SUBSCRIPTIONS_DIVIDER = { id: 'subscriptions-divider', isDivider: true } as FeedItem
 
 /** Ключ для дедупа (txid → hash → id). */
 function postKey(p: { txid?: string; hash?: string; id?: string | number }): string {
   return String(p.txid ?? p.hash ?? p.id ?? '')
 }
 
-// Лента с вплетёнными бустами: после каждых BOOST_INTERVAL постов вставляем один
-// доступный буст (с пометкой isBoosted), пропуская те, что уже есть в ленте.
+// Лента с вплетёнными бустами: на местах isBoostSlot вставляем по одному
+// доступному бусту (с пометкой isBoosted), пропуская те, что уже есть в ленте.
 /** Пост, удалённый в этой сессии, из ленты убираем сразу (N12). */
 function isDeleted(post: FeedItem): boolean {
   return (
@@ -263,20 +333,30 @@ function isDeleted(post: FeedItem): boolean {
   )
 }
 
+/** Посты подписок сверху и плашка после них; пусто — подборки нет. */
+const subscriptionsHead = computed<FeedItem[]>(() => {
+  const head = filterBlocked((subscriptionPosts.value as FeedItem[]).filter((p) => !isDeleted(p)))
+  return head.length ? [...head, SUBSCRIPTIONS_DIVIDER] : []
+})
+
 const displayedPosts = computed<FeedItem[]>(() => {
+  const head = subscriptionsHead.value
+  const shown = new Set(head.map(postKey))
   // Блок-лист применяется и к ленте, и к продвигаемым (решение Р3 по S21).
-  const base = filterBlocked((allPosts.value as FeedItem[]).filter((p) => !isDeleted(p)))
-  if (!showBoosted.value || boostedPosts.value.length === 0) return base
+  const base = filterBlocked(
+    (allPosts.value as FeedItem[]).filter((p) => !isDeleted(p) && !shown.has(postKey(p)))
+  )
+  if (!showBoosted.value || boostedPosts.value.length === 0) return [...head, ...base]
 
-  const seen = new Set(base.map(postKey))
-  const pool = filterBlocked(boostedPosts.value.filter((b) => !seen.has(postKey(b))))
-  if (pool.length === 0) return base
+  for (const post of base) shown.add(postKey(post))
+  const pool = filterBlocked(boostedPosts.value.filter((b) => !shown.has(postKey(b))))
+  if (pool.length === 0) return [...head, ...base]
 
-  const result: FeedItem[] = []
+  const result: FeedItem[] = [...head]
   let bi = 0
   base.forEach((post, i) => {
     result.push(post)
-    if ((i + 1) % BOOST_INTERVAL === 0 && bi < pool.length) {
+    if (isBoostSlot(i + 1) && bi < pool.length) {
       result.push({ ...pool[bi++], isBoosted: true })
     }
   })
@@ -294,6 +374,18 @@ const renderLimit = ref<number>(FIRST_RENDER)
 let renderFrame: number | null = null
 
 const renderedPosts = computed<FeedItem[]>(() => displayedPosts.value.slice(0, renderLimit.value))
+
+// Подборка подписок и общая лента — два списка с плашкой между ними. Делим по
+// длине подборки, а не по уже отрисованной плашке: иначе карточки подписок
+// переезжали бы из списка в список и монтировались заново.
+const headCount = computed<number>(() => Math.max(subscriptionsHead.value.length - 1, 0))
+const renderedHead = computed<FeedItem[]>(() => renderedPosts.value.slice(0, headCount.value))
+const dividerRendered = computed<boolean>(
+  () => headCount.value > 0 && renderedPosts.value.length > headCount.value
+)
+const renderedTail = computed<FeedItem[]>(() =>
+  renderedPosts.value.slice(headCount.value > 0 ? headCount.value + 1 : 0)
+)
 
 function renderMore(): void {
   renderFrame = null
@@ -316,6 +408,7 @@ watch(
 
 onUnmounted(() => {
   if (renderFrame !== null) cancelAnimationFrame(renderFrame)
+  dividerObserver?.disconnect()
 })
 
 async function onShowNewPosts(): Promise<void> {
@@ -327,9 +420,9 @@ function registerPosts(): void {
   for (const post of allPosts.value) {
     postsStore.registerPost(post)
   }
-  // Продвигаемые посты тоже регистрируем — иначе like/comment/share по ним
-  // не находят пост в сторе.
-  for (const post of boostedPosts.value) {
+  // Продвигаемые посты и посты подписок тоже регистрируем — иначе
+  // like/comment/share по ним не находят пост в сторе.
+  for (const post of [...boostedPosts.value, ...subscriptionPosts.value]) {
     postsStore.registerPost(post)
   }
 }
@@ -339,7 +432,7 @@ onMounted(() => {
 })
 
 watch(
-  [allPosts, boostedPosts],
+  [allPosts, boostedPosts, subscriptionPosts],
   () => {
     nextTick(registerPosts)
   },

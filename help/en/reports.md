@@ -20,7 +20,9 @@ The item is there only when you are signed in and only on other people’s posts
 
 ## Who can report
 
-Only an experienced account can report: one that is at least a year old and whose posts and comments have been rated by at least 100 different people, at least 25 of them for comments. This way new or bought accounts cannot flood someone with reports. For everyone else the network replies **“Your reputation does not allow reports yet.”**
+Only an experienced account can report: one that is at least a year old and whose posts and comments have been rated by at least 100 different people, at least 25 of them for comments. This way new or bought accounts cannot flood someone with reports. In the network such an account has the “Shark” badge, see [Account badges](account-badges.md).
+
+If your account does not have the badge, the report window says so right away instead of the reasons and offers **“Block author”** — their posts and comments will disappear from your feeds. If the app could not check the badge because the node did not answer, the report is sent and the network replies **“Your reputation does not allow reports yet.”**
 
 Other restrictions:
 

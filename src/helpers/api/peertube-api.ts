@@ -37,6 +37,11 @@ export interface PeerTubeVideoInfo {
    * субтитры).
    */
   servedBy?: string
+  /** Просмотры за всё время (у прямого эфира — см. `viewers`). */
+  views?: number
+  isLive?: boolean
+  /** Сколько смотрят прямой эфир сейчас. */
+  viewers?: number
 }
 
 const PEERTUBE_FETCH_TIMEOUT_MS = 10_000

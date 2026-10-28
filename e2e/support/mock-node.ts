@@ -48,6 +48,8 @@ export interface MockPost {
   ago?: number
   /** id комментария, который нода покажет превью под постом (`lastComment`). */
   lastComment?: string
+  /** Только по txid (getrawtransactionwithmessagebyid): в общих лентах его нет — как продвигаемый пост. */
+  byIdOnly?: boolean
 }
 
 export interface MockComment {
@@ -96,6 +98,8 @@ export interface MockNodeData {
   settings?: Record<string, Record<string, unknown>>
   /** Облако популярных тегов (`gettags`): подсказки тегов в форме поста. */
   tags?: string[]
+  /** Лента бустов (`getboostfeed`): txid поста и сумма буста в сатоши. */
+  boosts?: { txid: string; boost: number }[]
 }
 
 const HEIGHT = 4_037_000
@@ -279,12 +283,31 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
         videos: {},
       }
     }
+    case 'getsubscribesfeed': {
+      // Лента подписок вошедшего (`subscribes`): свежие первыми, страница — после `txid`.
+      const [, fromTxid, count] = params as [unknown, string, number]
+      const followed = new Set(data.subscribes ?? [])
+      const feed = data.posts
+        .map((p, i) => postJson(p, data, i))
+        .filter((p) => followed.has(p.address))
+        .sort((a, b) => b.time - a.time)
+      const start = fromTxid ? feed.findIndex((p) => p.txid === fromTxid) + 1 : 0
+      return {
+        height: HEIGHT,
+        contents: feed.slice(start, start + (count || feed.length)),
+        users: [],
+        videos: {},
+      }
+    }
     case 'gethierarchicalstrip':
     case 'gethistoricalstrip':
     case 'gettopfeed':
       return {
         height: HEIGHT,
-        contents: data.posts.map((p, i) => postJson(p, data, i)),
+        contents: data.posts
+          .map((p, i) => [p, i] as const)
+          .filter(([p]) => !p.byIdOnly)
+          .map(([p, i]) => postJson(p, data, i)),
         users: [],
         videos: {},
       }
@@ -346,7 +369,7 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
     case 'gettags':
       return (data.tags ?? []).map((tag, i) => ({ tag, count: 100 - i }))
     case 'getboostfeed':
-      return { height: HEIGHT, boosts: [] }
+      return { height: HEIGHT, boosts: data.boosts ?? [] }
     case 'getnodeinfo':
       return { lastblock: { height: HEIGHT } }
     default:
