@@ -18,6 +18,7 @@
           <StarOutlined v-else-if="tab.icon === 'StarOutlined'" />
           <MessageOutlined v-else-if="tab.icon === 'MessageOutlined'" />
           <BlockOutlined v-else-if="tab.icon === 'BlockOutlined'" />
+          <TrophyOutlined v-else-if="tab.icon === 'TrophyOutlined'" />
           <HelpBookIcon v-else-if="tab.icon === 'HelpBookIcon'" />
           <AppstoreOutlined v-else />
           <SC_TabsLabel v-if="!collapsed">{{ t(tab.labelKey) }}</SC_TabsLabel>
@@ -46,6 +47,7 @@ import {
   AppstoreOutlined,
   BlockOutlined,
   HelpBookIcon,
+  TrophyOutlined,
 } from '@/components/icons'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useAuthStore } from '@/blockchain'
@@ -78,7 +80,8 @@ const onTabsRoute = computed(() => {
     path === '/explorer' ||
     path.startsWith('/explorer/') ||
     path === '/help' ||
-    path.startsWith('/help/')
+    path.startsWith('/help/') ||
+    path === '/top'
   )
 })
 
@@ -110,7 +113,7 @@ watch(
     // miniapp-таб (id=8), эксплорер (id=9) или справка (id=10). feedMode
     // через query сохраняется отдельно.
     if (path === '/') {
-      if ([8, 9, 10].includes(Number(filtersStore.activeTab))) {
+      if ([8, 9, 10, 11].includes(Number(filtersStore.activeTab))) {
         filtersStore.selectTab(1)
       }
       return
@@ -130,6 +133,8 @@ watch(
     if (path === '/help' || path.startsWith('/help/')) {
       filtersStore.selectTab(10)
     }
+    // Топ аккаунтов.
+    if (path === '/top') filtersStore.selectTab(11)
   },
   { immediate: true }
 )
@@ -175,6 +180,12 @@ function selectTab(tabId: string | number): void {
   // Справка — отдельный раздел, как эксплорер.
   if (tabId === 10) {
     if (route.path !== '/help' && !route.path.startsWith('/help/')) void router.push('/help')
+    return
+  }
+
+  // Топ аккаунтов — тоже отдельная страница.
+  if (tabId === 11) {
+    if (route.path !== '/top') void router.push('/top')
     return
   }
 

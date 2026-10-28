@@ -46,6 +46,7 @@
 - [Люди и профили](people.md)
   - [Профиль](profile.md)
   - [Отметки аккаунтов](account-badges.md)
+  - [Топ аккаунтов](top-accounts.md)
   - [Ваш профиль](edit-profile.md)
   - [Подписки](subscriptions.md)
   - [Платные подписки](paid-subscriptions.md)

@@ -39,6 +39,7 @@ Feed and app sections:
 
 - **“Feed”**, **“Subscriptions”** (once you are signed in), **“Video”**, **“Audio”**, **“Articles”**, **“Favorites”**, **“Discussed”** — see [Feed](feed.md);
 - **“Services”** — see [Services](mini-apps.md); pinned mini apps are listed below, under the line;
+- **“Top accounts”** — the accounts with the highest reputation and the richest ones, see [Top accounts](top-accounts.md);
 - **“Explorer”** — the [block explorer](explorer.md);
 - **“Help”** — this help.
 

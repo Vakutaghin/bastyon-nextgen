@@ -50,6 +50,13 @@ export const tabsData = [
     disabled: false,
   },
   {
+    id: 11,
+    labelKey: 'sidebarData.tabs.topAccounts',
+    icon: 'TrophyOutlined',
+    active: false,
+    disabled: false,
+  },
+  {
     id: 9,
     labelKey: 'sidebarData.tabs.explorer',
     icon: 'BlockOutlined',

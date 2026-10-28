@@ -23,6 +23,8 @@ export interface MockProfile {
   blocking?: string[]
   /** Подписчики (`getusersubscribers`). */
   subscribers?: string[]
+  /** Баланс в PKOIN (`getaddressinfo`); по умолчанию 0. */
+  balance?: number
   /** Адреса для пожертвований (`b`). */
   donations?: Array<{ currency: string; address: string }>
   /** «О себе» (`a`) и сайт (`s`). */
@@ -249,8 +251,23 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
         .map(([c, i]) => commentJson(c, i, data))
     }
     case 'getusersubscribers': {
-      const owner = data.profiles.find((p) => p.address === params[0])
-      return (owner?.subscribers ?? []).map((address) => ({ address, private: 'false' }))
+      // [адрес, порядок, по убыванию, смещение, сколько]. Как у настоящей
+      // ноды: по репутации — с репутацией ×10, смещение не учитывается.
+      const [owner, orderBy, , , limit] = params as [string, string?, boolean?, number?, number?]
+      const list = data.profiles.find((p) => p.address === owner)?.subscribers ?? []
+      if (orderBy !== 'reputation') return list.map((address) => ({ address, private: 'false' }))
+      return list
+        .map((address) => ({
+          address,
+          private: 0,
+          reputation: (data.profiles.find((p) => p.address === address)?.reputation ?? 120) * 10,
+        }))
+        .sort((a, b) => b.reputation - a.reputation)
+        .slice(0, limit || 10)
+    }
+    case 'getaddressinfo': {
+      const balance = data.profiles.find((p) => p.address === params[0])?.balance ?? 0
+      return { lastChange: -1, balance }
     }
     case 'getuseraddress': {
       const name = String(params[0] ?? '').toLowerCase()

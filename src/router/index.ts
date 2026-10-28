@@ -24,6 +24,7 @@ const ExplorerAddressPage = () =>
   import('@/pages/block-explorer-page/address-page/address-page.vue')
 const ExplorerPeersPage = () => import('@/pages/block-explorer-page/peers-page/peers-page.vue')
 const SearchPage = () => import('@/pages/search-page/search-page.vue')
+const TopAccountsPage = () => import('@/pages/top-accounts-page/top-accounts-page.vue')
 const MiniAppsPage = () => import('@/pages/mini-apps-page/mini-apps-page.vue')
 const MiniAppPage = () => import('@/pages/mini-app-page/mini-app-page.vue')
 const PostPage = () => import('@/pages/post-page/post-page.vue')
@@ -136,6 +137,13 @@ const router = createRouter({
       name: 'search',
       component: SearchPage,
       meta: { titleKey: 'routes.search', helpTopic: 'search' },
+    },
+    // Топ аккаунтов по репутации и по PKOIN. ДО catch-all /:userName.
+    {
+      path: '/top',
+      name: 'top-accounts',
+      component: TopAccountsPage,
+      meta: { titleKey: 'routes.top-accounts', helpTopic: 'top-accounts' },
     },
     // Мини-приложения — список и iframe. Также объявляем ДО catch-all /:userName.
     {
