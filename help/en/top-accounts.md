@@ -1,5 +1,5 @@
 ---
-keywords: [top accounts, account ranking, highest reputation, leaders, user ranking]
+keywords: [top accounts, account ranking, highest reputation, leaders, user ranking, subscribe from the top, search the top]
 ---
 
 # Top accounts
@@ -15,6 +15,14 @@ The accounts with the highest reputation in the network.
 Accounts go from the highest [reputation](reputation.md) down. Each one shows its place, the avatar with [badges](account-badges.md), the name, the year it joined, subscribers and posts, and the reputation on the right. Your account, if it is in the top, is highlighted and marked **“You”**. Click a row to open the profile.
 
 The page starts with 30 accounts, and the next ones appear when you scroll to the end. Names and avatars load as you scroll — until they arrive, grey bars stand in their place.
+
+## Subscribing
+
+When you are signed in, each row has a **“Subscribe”** button on the right. The subscription goes out at once, and the button turns into **“Subscribed”**. Unsubscribing asks first: every click is a record in the blockchain. On a phone the button is just an icon — a plus or a check mark. Your own account has no button, and a blocked one shows **“Unblock”** instead. More in [Subscriptions](subscriptions.md).
+
+## Searching the top
+
+The **“Find in the top by name or address”** field above the list keeps only matching accounts: by part of the name, with or without @, or by part of the address. Each account keeps its place in the top. From the first letter the app loads the names of all 300 accounts, not only the ones shown; while they load, the field says **“Loading the names of all accounts in the top…”**.
 
 ## Where the list comes from
 

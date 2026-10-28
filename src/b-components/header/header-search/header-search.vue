@@ -17,6 +17,7 @@
       autocapitalize="off"
       spellcheck="false"
       @search="onEnter"
+      @change="onChange"
     />
 
     <HeaderSearchDropdown v-if="isOpen" :query="debouncedQuery" @close="close" />
@@ -73,6 +74,12 @@ const searchQuery = computed<string>({
 
 const isFocused = ref(false)
 const debouncedQuery = ref(sanitizeSearchQuery(searchStore.query))
+/**
+ * Поле стёрли крестиком: выпадашка закрыта, пока не начнут печатать снова или
+ * не уйдут с поля. Иначе крестик (он сам ставит фокус в поле) открывал её —
+ * сначала с поиском по стёртому запросу, потом с «Недавними».
+ */
+const dismissed = ref(false)
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 let blurTimer: ReturnType<typeof setTimeout> | null = null
@@ -81,6 +88,13 @@ watch(
   () => searchStore.query,
   (value) => {
     if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = null
+    // Пустое поле — сразу: результаты стёртого запроса не висят ещё полсекунды.
+    if (!value.trim()) {
+      debouncedQuery.value = ''
+      return
+    }
+    dismissed.value = false
     debounceTimer = setTimeout(() => {
       debouncedQuery.value = sanitizeSearchQuery(value)
     }, DEBOUNCE_MS)
@@ -90,7 +104,7 @@ watch(
 // Dropdown открыт когда инпут в фокусе И (есть достаточно длинный запрос,
 // чтобы запустить поисковые RPC, ИЛИ есть история — тогда показываем Recent).
 const isOpen = computed(() => {
-  if (!isFocused.value) return false
+  if (!isFocused.value || dismissed.value) return false
   if (debouncedQuery.value.length >= MIN_QUERY_LENGTH) return true
   return searchStore.recentHistory.length > 0
 })
@@ -120,12 +134,18 @@ function onFocusOut(event: Event): void {
   // Slight delay so click on items inside dropdown can complete first.
   blurTimer = setTimeout(() => {
     isFocused.value = false
+    dismissed.value = false
     blurTimer = null
   }, 150)
 }
 
 function close(): void {
   isFocused.value = false
+}
+
+/** antd шлёт `change` с событием `click`, когда поле стёрли крестиком. */
+function onChange(e: Event): void {
+  if (e.type === 'click') dismissed.value = true
 }
 
 function onKeyUp(e: KeyboardEvent): void {

@@ -298,6 +298,8 @@ export default {
     reportBug: 'Informar de un error',
     themeLight: 'Tema claro',
     themeDark: 'Tema oscuro',
+    pageWidthFull: 'Ancho completo',
+    pageWidthLimited: 'Limitar el ancho',
     apply: 'Aplicar',
     cancel: 'Cancelar',
     torBridges: 'Puentes',
@@ -518,6 +520,16 @@ export default {
       uiScaleHint: 'El tamaño de toda la ventana. Ctrl y + o - cambian la misma escala.',
       autostart: 'Abrir al iniciar sesión',
       autostartHint: 'La aplicación se abrirá automáticamente al encender el ordenador.',
+      closeAction: 'Al cerrar la ventana',
+      closeActionHint:
+        'Minimizar a la bandeja oculta la ventana, y Tor, IPFS, las subidas y los mensajes siguen funcionando; vuelve con el icono de la bandeja. Salir cierra la aplicación por completo.',
+      closeToTray: 'Minimizar a la bandeja',
+      closeQuit: 'Cerrar la aplicación',
+      closeNoTray: 'Este sistema no tiene bandeja, así que la X cierra la aplicación.',
+      menuBarIcon: 'Icono en la barra de menús',
+      menuBarIconHint:
+        'Bastyon en la barra de menús, arriba en la pantalla: desde ahí abres la ventana o sales. La X no cierra la aplicación; para salir, Cmd+Q.',
+      windowPrefsFailed: 'No se pudo guardar el ajuste',
       autostartFailed: 'El sistema no permitió cambiar el inicio automático',
       storageTitle: 'Datos locales',
       clearCache: 'Borrar datos guardados',
@@ -569,12 +581,20 @@ export default {
       noteMessenger:
         'Los chats se abren también sin el icono: con el botón redondo de la esquina inferior derecha y, en el teléfono, desde la barra inferior.',
       itemTheme: 'Tema claro y oscuro',
+      itemPageWidth: 'Ancho de la página',
     },
     general: {
       theme: 'Tema',
       themeAuto: 'Automático',
       themeLight: 'Claro',
       themeDark: 'Oscuro',
+      pageWidth: 'Ancho de la página',
+      pageWidthHint:
+        'Limitado: una columna de hasta 1280 píxeles en el centro de la pantalla; ancho completo: toda la ventana. La diferencia se nota en pantallas anchas.',
+      pageWidthLimited: 'Limitado',
+      pageWidthFull: 'Ancho completo',
+      pageWidthButton: 'Botón en la barra superior',
+      pageWidthButtonHint: 'Cambia el ancho con un clic. También en «Barra superior y menú».',
     },
     ipfs: {
       title: 'Módulo IPFS',
@@ -3269,6 +3289,9 @@ export default {
     since: 'desde {year}',
     subscribers: '{n} suscriptor | {n} suscriptores',
     posts: '{n} publicación | {n} publicaciones',
+    filter: 'Buscar en la clasificación por nombre o dirección',
+    filterLoadingNames: 'Cargando los nombres de todas las cuentas de la clasificación…',
+    filterEmpty: 'Ninguna cuenta de la clasificación tiene este nombre o dirección.',
   },
   mediaStudio: {
     videosCount: '{n} vídeo | {n} vídeos',

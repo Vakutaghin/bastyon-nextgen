@@ -10,7 +10,8 @@
 #   - веб: фавикон, иконки PWA и значок iOS «На экран Домой» в public/img;
 #   - десктоп: src-tauri/icons — круг как есть, а для macOS знак на белом
 #     скруглённом квадрате по сетке Apple: круглую иконку macOS 26 сажает
-#     в серую подложку;
+#     в серую подложку; значок строки меню macOS — чёрный знак без круга
+#     (шаблон: цвет macOS берёт сам по теме строки);
 #   - Android: адаптивная иконка (знак на белом фоне), иконки для Android 7
 #     и заставки;
 #   - iOS: иконка и заставка.
@@ -114,6 +115,11 @@ for s in 16 32 128 256 512; do
     "$TMP/icon.iconset/icon_${s}x${s}@2x.png"
 done
 iconutil -c icns "$TMP/icon.iconset" -o "$ROOT/src-tauri/icons/icon.icns"
+
+# Значок в строке меню macOS (src-tauri/src/tray.rs): шаблон — только форма,
+# цвет macOS подставляет сам. tray-icon сжимает его до 18 pt, отсюда 36 px.
+magick -size 36x36 xc:none \( "$TMP/mark.png" -resize 32x32 -fill black -colorize 100 \) \
+  -gravity center -composite "${PNG_OPTS[@]}" "PNG32:$ROOT/src-tauri/icons/tray-macos.png"
 
 echo "Android"
 # Адаптивная иконка: холст 108 dp, лаунчер показывает середину 72 dp под своей

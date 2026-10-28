@@ -4,7 +4,7 @@ import { TRANSITIONS } from '@/styles/design-tokens'
 const langRowProps = { active: Boolean }
 
 export const SC_GeneralBlock = styled.div`
-  max-width: 480px;
+  max-width: 640px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -28,6 +28,20 @@ export const SC_GeneralLabel = styled.span`
   color: var(--ui-text-highlighted);
 `
 
+/** Подпись с пояснением под ней. */
+export const SC_GeneralText = styled.span`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+`
+
+export const SC_GeneralHint = styled.span`
+  font-size: 12px;
+  line-height: calc(1.4 * var(--leading-scale));
+  color: var(--ui-text-muted);
+`
+
 /** Переключатель как вкладки-pill у Nuxt UI (UTabs): подложка elevated с
  * отступом, активный вариант — заливка акцентом. */
 export const SC_LangSwitcher = styled.div`
@@ -40,6 +54,7 @@ export const SC_LangSwitcher = styled.div`
 
 export const SC_LangButton = styled('button', langRowProps)`
   padding: 4px 12px;
+  white-space: nowrap;
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;

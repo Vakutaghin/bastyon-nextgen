@@ -55,6 +55,7 @@ import {
   File,
   FileText,
   Flag,
+  FoldHorizontal,
   Folder,
   Gift,
   Globe,
@@ -116,6 +117,7 @@ import {
   TriangleAlert,
   Trophy,
   Undo2,
+  UnfoldHorizontal,
   Upload,
   Usb,
   User,
@@ -322,6 +324,9 @@ export const WifiIcon = lucideIcon('WifiIcon', Wifi)
 /** Переключатель темы — солнце и луна, как кнопка цветовой схемы у Nuxt UI. */
 export const ThemeLightIcon = lucideIcon('ThemeLightIcon', Sun)
 export const ThemeDarkIcon = lucideIcon('ThemeDarkIcon', Moon)
+/** Ширина страницы: растянуть на весь экран / собрать колонкой. */
+export const PageWidthFullIcon = lucideIcon('PageWidthFullIcon', UnfoldHorizontal)
+export const PageWidthLimitedIcon = lucideIcon('PageWidthLimitedIcon', FoldHorizontal)
 
 /** Шапка: «Назад» (ArrowLeftIcon) и «Вперёд» по страницам, как в браузере. */
 export const ArrowRightIcon = lucideIcon('ArrowRightIcon', ArrowRight)

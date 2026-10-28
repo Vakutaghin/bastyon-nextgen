@@ -8,8 +8,11 @@
       :aria-label="t('mediaStudio.openDetails', { name: video.name })"
       @click="emit('details', 'details')"
     >
-      <img v-if="video.thumbnailUrl" :src="video.thumbnailUrl" alt="" loading="lazy" />
-      <SC_ThumbEmpty v-else-if="video.isAudio" aria-hidden="true"><MusicIcon /></SC_ThumbEmpty>
+      <img v-if="thumbSrc" :src="thumbSrc" alt="" loading="lazy" @error="onThumbError" />
+      <SC_ThumbEmpty v-else aria-hidden="true">
+        <MusicIcon v-if="video.isAudio" />
+        <PlayCircleOutlined v-else />
+      </SC_ThumbEmpty>
       <SC_ThumbTag v-if="video.isAudio"><MusicIcon />{{ t('mediaStudio.audio') }}</SC_ThumbTag>
       <SC_Duration v-if="video.duration">{{ formatDuration(video.duration) }}</SC_Duration>
     </SC_Thumb>
@@ -87,11 +90,13 @@ import {
   EditOutlined,
   MoreOutlined,
   MusicIcon,
+  PlayCircleOutlined,
   PlusOutlined,
   StatsIcon,
 } from '@/components/icons'
 import { formatDuration } from '@/b-components/video-uploader/utils/video-formatter'
 import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
+import { useThumbnailFallback } from '@/composables/use-thumbnail-fallback'
 import type { StudioView } from './studio-list'
 import { formatCompact, formatCount, formatStudioDate } from './studio-format'
 import type { ServerVideo } from './use-server-videos'
@@ -132,6 +137,11 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const date = computed(() => formatStudioDate(props.video.time))
+// Превью не загрузилось (сервер выведен, сертификат просрочен) — ищем, как плеер.
+const { src: thumbSrc, onError: onThumbError } = useThumbnailFallback(
+  () => props.video.thumbnailUrl,
+  () => props.video.pointer
+)
 
 const metaLine = computed(() =>
   [

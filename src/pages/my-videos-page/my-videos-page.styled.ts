@@ -14,7 +14,7 @@ export const SC_MyVideosWork = styled.div`
 
 export const SC_MyVideosPage = styled.main`
   width: 100%;
-  max-width: 1600px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
   padding: 60px 20px 24px;
 

@@ -297,6 +297,8 @@ export default {
     reportBug: 'Fehler melden',
     themeLight: 'Helles Design',
     themeDark: 'Dunkles Design',
+    pageWidthFull: 'Volle Breite',
+    pageWidthLimited: 'Breite begrenzen',
     apply: 'Übernehmen',
     cancel: 'Abbrechen',
     torBridges: 'Bridges',
@@ -519,6 +521,17 @@ export default {
       uiScaleHint: 'Die Größe des ganzen Fensters. Strg und + oder - ändern dieselbe Skalierung.',
       autostart: 'Beim Anmelden starten',
       autostartHint: 'Die App öffnet sich automatisch nach dem Start des Computers.',
+      closeAction: 'Beim Schließen des Fensters',
+      closeActionHint:
+        'In den Infobereich minimieren: Das Fenster wird ausgeblendet, Tor, IPFS, Uploads und Nachrichten laufen weiter; zurück über das Symbol im Infobereich. App beenden schließt sie vollständig.',
+      closeToTray: 'In den Infobereich minimieren',
+      closeQuit: 'App beenden',
+      closeNoTray:
+        'Dieses System hat keinen Infobereich, daher beendet das Schließen-Kreuz die App.',
+      menuBarIcon: 'Symbol in der Menüleiste',
+      menuBarIconHint:
+        'Bastyon in der Menüleiste oben am Bildschirm: Fenster öffnen oder beenden. Das Schließen-Kreuz beendet die App nicht – beenden mit Cmd+Q.',
+      windowPrefsFailed: 'Einstellung konnte nicht gespeichert werden',
       autostartFailed: 'Das System hat die Änderung des Autostarts abgelehnt',
       storageTitle: 'Lokale Daten',
       clearCache: 'Gespeicherte Daten löschen',
@@ -570,12 +583,20 @@ export default {
       noteMessenger:
         'Chats öffnen sich auch ohne das Symbol: über die runde Schaltfläche unten rechts, auf dem Handy über die untere Leiste.',
       itemTheme: 'Helles und dunkles Design',
+      itemPageWidth: 'Seitenbreite',
     },
     general: {
       theme: 'Design',
       themeAuto: 'Automatisch',
       themeLight: 'Hell',
       themeDark: 'Dunkel',
+      pageWidth: 'Seitenbreite',
+      pageWidthHint:
+        'Begrenzt: eine Spalte bis 1280 Pixel in der Bildschirmmitte; volle Breite: das ganze Fenster. Der Unterschied zeigt sich auf breiten Bildschirmen.',
+      pageWidthLimited: 'Begrenzt',
+      pageWidthFull: 'Volle Breite',
+      pageWidthButton: 'Schaltfläche in der Kopfzeile',
+      pageWidthButtonHint: 'Breite mit einem Klick umschalten. Auch unter „Kopfzeile und Menü“.',
     },
     ipfs: {
       title: 'IPFS-Modul',
@@ -3293,6 +3314,9 @@ export default {
     since: 'seit {year}',
     subscribers: '{n} Abonnent | {n} Abonnenten',
     posts: '{n} Beitrag | {n} Beiträge',
+    filter: 'In den Top-Konten nach Name oder Adresse suchen',
+    filterLoadingNames: 'Namen aller Top-Konten werden geladen…',
+    filterEmpty: 'Kein Top-Konto hat diesen Namen oder diese Adresse.',
   },
   mediaStudio: {
     videosCount: '{n} Video | {n} Videos',

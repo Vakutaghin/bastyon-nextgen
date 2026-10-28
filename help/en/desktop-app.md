@@ -1,5 +1,5 @@
 ---
-keywords: [desktop app, tray, autostart, macOS, Windows, Linux, data folder]
+keywords: [desktop app, tray, autostart, macOS, Windows, Linux, data folder, closing the window, close button, menu bar, menu bar icon]
 ---
 
 # The desktop app
@@ -20,8 +20,8 @@ The app opens where you left it and at the same size.
 
 The window’s close button does not quit the app, it hides the window. Tor, the IPFS module, video uploads and the chat keep working, and new messages come with notifications.
 
-- **macOS.** The Dock icon brings the window back. To quit the app, press **Cmd+Q** or choose “Quit” in the Dock icon’s menu.
-- **Windows and Linux.** The window hides to the tray. Clicking the tray icon brings the window back, and the right-click menu has **“Open Bastyon”** and **“Quit”**. You can also quit with **Ctrl+Q**. If there is no tray — this happens on Linux without appindicator — the close button quits the app, as before.
+- **macOS.** The Dock icon brings the window back. To quit the app, press **Cmd+Q** or choose “Quit” in the Dock icon’s menu. Bastyon also has an icon in the menu bar at the top of the screen, with **“Open Bastyon”** and **“Quit”** in its menu. To remove it, turn off **“Settings”** → **“System”** → **“Icon in the menu bar”**; it disappears at once.
+- **Windows and Linux.** The window hides to the tray. Clicking the tray icon brings the window back, and the right-click menu has **“Open Bastyon”** and **“Quit”**. You can also quit with **Ctrl+Q**. To make the close button quit the app completely, choose **“Settings”** → **“System”** → **“When the window is closed”** → **“Quit the app”**; **“Minimize to tray”** brings back the old behaviour. If there is no tray — this happens on Linux without appindicator — the close button always quits the app, and the setting says so.
 
 When the app quits, Tor and the IPFS module stop — your files are no longer served — and so does the mesh networks module: radios disconnect and the Reticulum node saves the addresses it knows.
 

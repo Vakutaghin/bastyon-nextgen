@@ -44,6 +44,7 @@ describe('useHeaderLayoutStore', () => {
       'notifications',
       'tor',
       'ipfs',
+      'pageWidth',
     ])
     expect(mocks.set).toHaveBeenLastCalledWith('headerLayout', {
       header: expect.arrayContaining([{ id: 'theme', visible: false }]),

@@ -1,5 +1,5 @@
 ---
-keywords: [language, theme, dark theme, light theme, scale, animations, text size]
+keywords: [language, theme, dark theme, light theme, scale, animations, text size, page width, full width, limited width, wide screen]
 ---
 
 # Language and appearance
@@ -22,6 +22,15 @@ The help exists in Russian and English. With any other interface language it ope
 - **“Light”** or **“Dark”** — always that one.
 
 To switch quickly, use the sun or moon button in the header.
+
+## Page width
+
+On a wide screen the page can be shown in two ways. **“Settings”** → **“General”** → **“Page width”**:
+
+- **“Limited”** — the header, feed and pages form a column up to 1280 pixels in the middle of the screen, with empty space at the sides;
+- **“Full width”** — the whole window: the side panels move to the edges, and the **“Video”** and **“Media studio”** sections fit more clips in a row. Posts in the feed, profile and search still form a column of about 1000 pixels — wider lines are hard to read.
+
+Full width is the default. To switch quickly, use the arrows button in the header, next to the theme. The **“Button in the header”** switch, also in **“General”**, or the **“Page width”** item in **“Header and menu”** hides it. The button shows when the window is wider than 1200 pixels: in a window narrower than the column there is nothing to switch. Phones and tablets have no such setting — the page always takes the whole screen there.
 
 ## Scale
 

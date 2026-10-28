@@ -12,6 +12,7 @@ import {
   GlobalOutlined,
   HourglassOutlined,
   MessageOutlined,
+  PageWidthFullIcon,
   PlayCircleOutlined,
   QuestionCircleOutlined,
   RadioTowerIcon,
@@ -46,6 +47,7 @@ export const HEADER_ITEMS: Record<HeaderItemId, LayoutItemMeta> = {
   tor: { label: 'Tor', icon: SafetyOutlined },
   ipfs: { label: 'IPFS', icon: GlobalOutlined },
   theme: { labelKey: 'settings.layout.itemTheme', icon: ThemeLightIcon },
+  pageWidth: { labelKey: 'settings.layout.itemPageWidth', icon: PageWidthFullIcon },
   reportBug: { labelKey: 'header.reportBug', icon: BugOutlined },
 }
 

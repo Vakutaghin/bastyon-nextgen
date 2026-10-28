@@ -1,9 +1,10 @@
 // Строка поиска в шапке: вставленная ссылка IPFS (или голый CID) сразу
 // открывается — без Enter и раньше, чем поле обрежет длинную приватную
-// ссылку; набранная — по Enter. Обычный текст ищется как раньше.
+// ссылку; набранная — по Enter. Обычный текст ищется как раньше. Крестик
+// стирает поле и не открывает выпадашку.
 
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { reactive } from 'vue'
+import { nextTick, reactive } from 'vue'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n, setI18nLocale } from '@/i18n'
@@ -30,6 +31,16 @@ vi.mock('@/services/user-resolver', () => ({
   resolveNameLocal: () => null,
   resolveNameRemote: async () => null,
 }))
+
+vi.mock('./header-search-dropdown.vue', async () => {
+  const { defineComponent, h } = await import('vue')
+  return {
+    default: defineComponent({
+      props: { query: { type: String, default: '' } },
+      setup: (props) => () => h('div', { class: 'search-dropdown' }, props.query),
+    }),
+  }
+})
 
 import HeaderSearch from './header-search.vue'
 
@@ -61,6 +72,7 @@ describe('HeaderSearch', () => {
     wrapper = mount(HeaderSearch, { attachTo: document.body, global: { plugins: [i18n] } })
   })
   afterEach(() => {
+    vi.useRealTimers()
     wrapper?.unmount()
     wrapper = null
     document.body.innerHTML = ''
@@ -106,5 +118,35 @@ describe('HeaderSearch', () => {
     await Promise.resolve()
     expect(mocks.push).toHaveBeenCalledWith({ path: '/search', query: { q: 'котики' } })
     expect(mocks.openIpfsViewer).toHaveBeenCalledTimes(1)
+  })
+
+  it('стёрли крестиком — выпадашка не открывается, пока не начнут печатать снова', async () => {
+    vi.useFakeTimers()
+    mocks.store!.recentHistory = [{ kind: 'query', value: 'биткоин' }]
+    const input = wrapper!.find('input')
+    input.element.focus()
+    await input.setValue('эфир')
+    vi.advanceTimersByTime(500)
+    await nextTick()
+    expect(wrapper!.find('.search-dropdown').text()).toBe('эфир')
+
+    // Ушли с поля: выпадашка закрылась.
+    input.element.blur()
+    vi.advanceTimersByTime(200)
+    await nextTick()
+    expect(wrapper!.find('.search-dropdown').exists()).toBe(false)
+
+    // Крестик сам ставит фокус в поле — ни стёртый запрос, ни «Недавние» не всплывают.
+    await wrapper!.find('.ant-input-clear-icon').trigger('click')
+    await nextTick()
+    expect(mocks.store!.query).toBe('')
+    expect(document.activeElement).toBe(input.element)
+    vi.advanceTimersByTime(500)
+    await nextTick()
+    expect(wrapper!.find('.search-dropdown').exists()).toBe(false)
+
+    await input.setValue('б')
+    await nextTick()
+    expect(wrapper!.find('.search-dropdown').exists()).toBe(true)
   })
 })

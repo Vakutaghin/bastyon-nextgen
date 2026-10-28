@@ -295,6 +295,8 @@ export default {
     reportBug: 'Report a bug',
     themeLight: 'Light theme',
     themeDark: 'Dark theme',
+    pageWidthFull: 'Full width',
+    pageWidthLimited: 'Limit width',
     apply: 'Apply',
     cancel: 'Cancel',
     torBridges: 'Bridges',
@@ -512,6 +514,16 @@ export default {
       uiScaleHint: 'The size of the whole window. Ctrl and + or - change the same scale.',
       autostart: 'Launch at login',
       autostartHint: 'The app will open automatically after the computer starts.',
+      closeAction: 'When the window is closed',
+      closeActionHint:
+        'Minimize to tray hides the window while Tor, IPFS, uploads and messages keep running; bring it back from the tray icon. Quit closes the app completely.',
+      closeToTray: 'Minimize to tray',
+      closeQuit: 'Quit the app',
+      closeNoTray: 'This system has no tray, so the close button quits the app.',
+      menuBarIcon: 'Icon in the menu bar',
+      menuBarIconHint:
+        'Bastyon in the menu bar at the top of the screen: open the window or quit from it. The close button does not quit the app; quit with Cmd+Q.',
+      windowPrefsFailed: 'Could not save the setting',
       autostartFailed: 'The system refused to change the autostart setting',
       storageTitle: 'Local data',
       clearCache: 'Clear saved data',
@@ -562,12 +574,20 @@ export default {
       noteMessenger:
         'Chats open without the icon too: with the round button in the bottom right corner, on a phone — from the bottom bar.',
       itemTheme: 'Light and dark theme',
+      itemPageWidth: 'Page width',
     },
     general: {
       theme: 'Theme',
       themeAuto: 'Auto',
       themeLight: 'Light',
       themeDark: 'Dark',
+      pageWidth: 'Page width',
+      pageWidthHint:
+        'Limited is a column up to 1280 pixels in the middle of the screen; full width uses the whole window. The difference shows on a wide screen.',
+      pageWidthLimited: 'Limited',
+      pageWidthFull: 'Full width',
+      pageWidthButton: 'Button in the header',
+      pageWidthButtonHint: 'Switch the width with one click. Also in “Header and menu”.',
     },
     ipfs: {
       title: 'IPFS module',
@@ -3235,6 +3255,9 @@ export default {
     since: 'since {year}',
     subscribers: '{n} subscriber | {n} subscribers',
     posts: '{n} post | {n} posts',
+    filter: 'Find in the top by name or address',
+    filterLoadingNames: 'Loading the names of all accounts in the top…',
+    filterEmpty: 'No account in the top has this name or address.',
   },
   mediaStudio: {
     videosCount: '{n} video | {n} videos',

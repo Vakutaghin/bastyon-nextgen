@@ -45,6 +45,7 @@
             </SC_UnreadBadge>
           </SC_MessengerWrapper>
           <HeaderThemeToggle v-else-if="id === 'theme'" />
+          <HeaderWidthToggle v-else-if="id === 'pageWidth'" />
         </template>
 
         <HeaderUser />
@@ -75,6 +76,7 @@ import HeaderIpfs from '@/b-components/header/header-ipfs/header-ipfs.vue'
 import HeaderReportBug from '@/b-components/header/header-report-bug/header-report-bug.vue'
 import HeaderServices from '@/b-components/header/header-services/header-services.vue'
 import HeaderThemeToggle from '@/b-components/header/header-theme-toggle/header-theme-toggle.vue'
+import HeaderWidthToggle from '@/b-components/header/header-width-toggle/header-width-toggle.vue'
 import { MobileNavDrawer } from '@/b-components/mobile-nav-drawer'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain'

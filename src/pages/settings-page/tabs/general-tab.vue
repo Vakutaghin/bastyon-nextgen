@@ -30,6 +30,35 @@
         </SC_LangButton>
       </SC_LangSwitcher>
     </SC_GeneralRow>
+    <!-- Ширина — только на компьютере: на телефоне и планшете страница и так во всю ширину. -->
+    <SC_GeneralRow v-if="!mobile" data-testid="page-width-setting">
+      <SC_GeneralText>
+        <SC_GeneralLabel>{{ t('settings.general.pageWidth') }}</SC_GeneralLabel>
+        <SC_GeneralHint>{{ t('settings.general.pageWidthHint') }}</SC_GeneralHint>
+      </SC_GeneralText>
+      <SC_LangSwitcher>
+        <SC_LangButton
+          v-for="opt in pageWidthOptions"
+          :key="opt.value"
+          :active="pageWidth === opt.value"
+          type="button"
+          @click="setPageWidth(opt.value)"
+        >
+          {{ t(opt.labelKey) }}
+        </SC_LangButton>
+      </SC_LangSwitcher>
+    </SC_GeneralRow>
+    <SC_GeneralRow v-if="!mobile">
+      <SC_GeneralText>
+        <SC_GeneralLabel>{{ t('settings.general.pageWidthButton') }}</SC_GeneralLabel>
+        <SC_GeneralHint>{{ t('settings.general.pageWidthButtonHint') }}</SC_GeneralHint>
+      </SC_GeneralText>
+      <Switch
+        :checked="widthButtonShown"
+        :aria-label="t('settings.general.pageWidthButton')"
+        @change="onWidthButton"
+      />
+    </SC_GeneralRow>
   </SC_GeneralBlock>
 
   <SC_SettingsSectionTitle>{{ t('settings.content.title') }}</SC_SettingsSectionTitle>
@@ -106,11 +135,16 @@ import {
   SC_SystemTitle,
 } from './system-tab.styled'
 import { useTheme, type ThemeMode } from '@/composables/use-theme'
+import { usePageWidth, type PageWidth } from '@/composables/use-page-width'
+import { useViewport } from '@/composables/use-viewport'
+import { useHeaderLayoutStore } from '@/stores/header-layout-store'
 import {
   SC_SettingsSectionTitle,
   SC_GeneralBlock,
   SC_GeneralRow,
+  SC_GeneralHint,
   SC_GeneralLabel,
+  SC_GeneralText,
   SC_LangSwitcher,
   SC_LangButton,
 } from '../settings-page.styled'
@@ -134,6 +168,20 @@ const themeOptions: { value: ThemeMode; labelKey: string }[] = [
   { value: 'dark', labelKey: 'settings.general.themeDark' },
 ]
 
+// Ширина страницы и кнопка для неё в шапке. Кнопка — пункт раскладки шапки:
+// тот же, что в «Шапке и меню».
+const { width: pageWidth, setWidth: setPageWidth } = usePageWidth()
+const { isMobileOrTablet: mobile } = useViewport()
+const pageWidthOptions: { value: PageWidth; labelKey: string }[] = [
+  { value: 'limited', labelKey: 'settings.general.pageWidthLimited' },
+  { value: 'full', labelKey: 'settings.general.pageWidthFull' },
+]
+const headerLayout = useHeaderLayoutStore()
+void headerLayout.ensureLoaded()
+const widthButtonShown = computed(
+  () => headerLayout.headerLayout.find((e) => e.id === 'pageWidth')?.visible ?? true
+)
+
 // Настройки содержимого — те, что в старом клиенте жили в группах «посты»,
 // «видео» и «интерфейс».
 const prefs = useAppPreferencesStore()
@@ -155,6 +203,10 @@ type BooleanPreferenceKey = 'embeddedVideo' | 'videoAutoplay' | 'linkPreviews' |
 
 function setFlag(key: BooleanPreferenceKey, checked: SwitchValue): void {
   void prefs.set(key, Boolean(checked))
+}
+
+function onWidthButton(checked: SwitchValue): void {
+  void headerLayout.setVisible('header', 'pageWidth', Boolean(checked))
 }
 
 function setOrder(value: AppPreferencesState['commentsOrder']): void {

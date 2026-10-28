@@ -21,6 +21,22 @@ describe('migrateLegacyImageHost', () => {
     const url = 'https://example.com/image.jpg'
     expect(migrateLegacyImageHost(url)).toBe(url)
   })
+
+  it('moves a retired PeerTube node to its archive', () => {
+    expect(
+      migrateLegacyImageHost('https://peertube341.pocketnet.app/images/a24b/a24b-original.jpg')
+    ).toBe('https://peertube.archive.pocketnet.app/images/a24b/a24b-original.jpg')
+    expect(migrateLegacyImageHost('https://peertube700.pocketnet.app/images/2ea1/x.jpg')).toBe(
+      'https://peertube701.pocketnet.app/images/2ea1/x.jpg'
+    )
+  })
+
+  it('keeps a working PeerTube node and a lookalike host', () => {
+    const live = 'https://peertube800.pocketnet.app/images/eb5c/eb5c-original.jpg'
+    expect(migrateLegacyImageHost(live)).toBe(live)
+    const lookalike = 'https://evil.example/peertube341.pocketnet.app/x.jpg'
+    expect(migrateLegacyImageHost(lookalike)).toBe(lookalike)
+  })
 })
 
 describe('resolveImageUrl', () => {

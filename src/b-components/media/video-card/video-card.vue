@@ -2,13 +2,7 @@
   <SC_Card :class="{ current }" data-testid="video-card">
     <router-link v-slot="{ href, navigate }" :to="to" custom>
       <SC_ThumbLink :href="href" :aria-label="title" @click="onOpen($event, navigate)">
-        <img
-          v-if="cover && !coverFailed"
-          :src="cover"
-          alt=""
-          loading="lazy"
-          @error="coverFailed = true"
-        />
+        <img v-if="thumbSrc" :src="thumbSrc" alt="" loading="lazy" @error="onThumbError" />
         <SC_ThumbFallback v-else><PlayCircleOutlined /></SC_ThumbFallback>
         <SC_Duration v-if="duration">{{ duration }}</SC_Duration>
         <SC_Badge v-if="badge">{{ badge }}</SC_Badge>
@@ -38,7 +32,7 @@
 // длительность, название, автор, просмотры и дата. Нажатие открывает пост —
 // или, если задан `@play`, запускает очередь.
 
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PlayCircleOutlined } from '@/components/icons'
 import Avatar from '@/components/avatar/avatar.vue'
@@ -50,6 +44,7 @@ import {
   mediaTitle,
   postId,
 } from '@/services/media/media-post'
+import { useThumbnailFallback } from '@/composables/use-thumbnail-fallback'
 import type { MediaInfo } from '@/services/media/media-info'
 import type { AdaptedPost } from '@/types/adapted-post'
 import MediaItemMenu from '../media-item-menu/media-item-menu.vue'
@@ -79,16 +74,16 @@ const props = defineProps<{
 const emit = defineEmits<{ play: [] }>()
 
 const { t } = useI18n()
-const coverFailed = ref(false)
-watch(
-  () => props.info?.thumbnail,
-  () => (coverFailed.value = false)
-)
 
 const to = computed(() => `/post/${postId(props.post)}`)
 const title = computed(() => mediaTitle(props.post))
 const artist = computed(() => mediaArtist(props.post))
 const cover = computed(() => mediaCover(props.post, props.info))
+// Превью не загрузилось — ищем ролик, как плеер, потом заглушка.
+const { src: thumbSrc, onError: onThumbError } = useThumbnailFallback(
+  () => cover.value,
+  () => props.post.videoUrl
+)
 const duration = computed(() => formatDuration(props.info?.duration))
 const avatar = computed(() => props.post.author?.avatar || undefined)
 const authorPath = computed(() => `/${props.post.author?.name || props.post.author?.address || ''}`)

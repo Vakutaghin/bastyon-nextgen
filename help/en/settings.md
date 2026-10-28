@@ -1,5 +1,5 @@
 ---
-keywords: [settings, preferences, content, modules, cache, diagnostics, what’s new, settings tabs, header and menu, header icons, account menu, menu order]
+keywords: [settings, preferences, content, modules, cache, diagnostics, what’s new, settings tabs, header and menu, header icons, account menu, menu order, page width, closing the window, menu bar]
 ---
 
 # Settings
@@ -11,6 +11,7 @@ Settings open from the account menu — **“Settings”** — or, on a phone, f
 ## General
 
 - **“Language”** and **“Theme”** — see [Language and appearance](appearance.md).
+- **“Page width”** — **“Limited”** or **“Full width”**, and **“Button in the header”** to switch quickly; on a computer only, see [Language and appearance](appearance.md).
 - **“Content”**:
   - **“Show embedded videos”** — YouTube and Vimeo players right in the post; turned off, a link remains;
   - **“Autoplay videos”** — a video starts once it appears on screen;
@@ -22,7 +23,7 @@ Settings open from the account menu — **“Settings”** — or, on a phone, f
 
 What stands in the header to the right of the search and what is in the avatar menu — and in what order.
 
-- **“Header icons”** — **“Services”**, **“Notifications”**, **“Chats”**, Tor, IPFS, the theme switch and **“Report a bug”**. The hourglass is not configurable: it appears on its own, next to the bell, when an action is waiting for the network. The avatar is always at the edge.
+- **“Header icons”** — **“Services”**, **“Notifications”**, **“Chats”**, Tor, IPFS, the theme switch, **“Page width”** and **“Report a bug”**. The hourglass is not configurable: it appears on its own, next to the bell, when an action is waiting for the network. The avatar is always at the edge.
 - **“Account menu”** — the items of the avatar menu, and on a phone of the **“Account”** section of the side menu. **“Settings”** cannot be hidden: that is how hidden items are brought back. **“Switch account”** and **“Sign out”** are always at the bottom.
 
 The switch on the right shows or hides an item. To change the order, drag a row by the handle on the left — with the mouse or a finger. From the keyboard: Tab to the handle, then the up and down arrow keys. Everything changes at once, there is nothing to save. **“Restore defaults”** under the list brings back the original set and order.
@@ -45,6 +46,7 @@ Which events to show, sound and system notifications — see [Notifications](not
 
 - **“Animations”** — smooth transitions; turn them off if the app feels sluggish.
 - **“Interface scale”** and **“Launch at login”** — in the desktop app, see [Language and appearance](appearance.md) and [The desktop app](desktop-app.md).
+- **“When the window is closed”** (Windows and Linux) — **“Minimize to tray”** or **“Quit the app”**; **“Icon in the menu bar”** (macOS) — whether Bastyon shows at the top of the screen. See [The desktop app](desktop-app.md).
 - **“Local data”**: **“Web cache”** and **“IPFS cache”** with a limit and a **“Clear”** button (in the desktop app), **“Keep decrypted messages”** and **“Clear saved data”** — see [What is stored on your device](local-data.md).
 
 ## Modules

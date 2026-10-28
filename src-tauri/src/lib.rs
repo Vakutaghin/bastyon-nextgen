@@ -1,4 +1,5 @@
 mod asr;
+mod desktop_prefs;
 mod fetch;
 mod ffmpeg;
 mod ipfs;
@@ -990,6 +991,8 @@ pub fn run() {
       ipfs::sink::ipfs_sink_abort,
       ipfs::names::ipfs_name_put,
       tray::tray_set_labels,
+      desktop_prefs::desktop_prefs_get,
+      desktop_prefs::desktop_prefs_set,
       asr::asr_status,
       asr::asr_install,
       asr::asr_cancel_install,
@@ -1124,7 +1127,13 @@ pub fn run() {
       // пользователя, — запускается, когда mesh нужен.
       mesh::init(app.handle()).map_err(|e| e.to_string())?;
 
-      // Значок в трее (Windows, Linux). Не вышло — работаем без него.
+      // Крестик и значок в строке меню — настройки до трея: значок macOS по ним.
+      if let Err(e) = desktop_prefs::init(app.handle()) {
+        log::warn!("desktop prefs: {e}");
+      }
+
+      // Значок в трее (Windows, Linux) или в строке меню (macOS, по настройке).
+      // Не вышло — работаем без него.
       if let Err(e) = tray::init(app.handle()) {
         log::warn!("tray: {e}");
       }

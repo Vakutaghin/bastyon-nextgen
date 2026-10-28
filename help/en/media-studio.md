@@ -30,6 +30,8 @@ The button under the clip is **“Create post”** if there is no post yet, or *
 
 The cover or the title opens the clip window; in the list, the whole row does. The **“More”** button with three dots opens the clip's **“Details”** and **“Statistics”**, **“Create post”** — one more post with a clip that is already in a post — and **“Delete”**.
 
+For a clip on a video server that has been retired, the app takes the cover from its archive. If a cover does not load — the server does not answer or its certificate has expired — the app looks the clip up the way the player does, and if that fails too, it shows a clip icon instead of an empty picture.
+
 There are several video servers, and they answer at different speeds. Clips from each one appear as soon as it answers. If a server or the list of posts stays silent for more than 15 seconds, **“Not every video server sent its list — some videos may be missing.”** appears; when it answers later, its clips are added on their own.
 
 ## Clip details

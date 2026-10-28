@@ -10,6 +10,10 @@ import './silence-console'
 import { initTheme } from '@/composables/use-theme'
 initTheme()
 
+// Ширина страницы — тоже до монтирования: иначе страница прыгает по ширине.
+import { initPageWidth } from '@/composables/use-page-width'
+initPageWidth()
+
 // Инициализация локали — до монтирования, чтобы <html lang> и тексты
 // сразу соответствовали выбранному языку.
 import { i18n, initI18n } from '@/i18n'

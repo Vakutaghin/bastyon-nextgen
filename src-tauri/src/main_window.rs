@@ -1,6 +1,7 @@
 //! Главное окно. Крестик его прячет, а не завершает приложение: Tor, IPFS,
 //! загрузки видео и сообщения продолжают работать в фоне. Выход — явный:
-//! Cmd+Q на macOS, «Выйти» в трее или Ctrl+Q на Windows и Linux.
+//! Cmd+Q на macOS, «Выйти» в трее или Ctrl+Q на Windows и Linux. На Windows и
+//! Linux крестик можно сделать выходом (Настройки → «Система», `desktop_prefs`).
 
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{AppHandle, Manager, Runtime, Url, Window, WindowEvent};
@@ -21,20 +22,30 @@ pub fn show(app: &AppHandle) {
 
 /// Крестик главного окна прячет его, если окно есть чем вернуть: на macOS —
 /// значком в Dock, на Windows и Linux — значком в трее. Без трея (Linux без
-/// appindicator) окно закрывается, как раньше, и приложение выходит.
+/// appindicator) или если в настройках выбрано «Закрывать приложение» —
+/// выход: явный, через `exit`, чтобы приложение не осталось жить ради окна
+/// просмотрщика IPFS, а Tor и IPFS погасли (`RunEvent::ExitRequested`).
 pub fn on_window_event(window: &Window, event: &WindowEvent) {
   let WindowEvent::CloseRequested { api, .. } = event else {
     return;
   };
-  if window.label() != LABEL || !can_return(window.app_handle()) {
+  if window.label() != LABEL {
     return;
   }
   api.prevent_close();
-  hide(window);
+  let app = window.app_handle();
+  let macos = cfg!(target_os = "macos");
+  if hides_on_close(macos, crate::desktop_prefs::close_to_tray(), crate::tray::is_shown(app)) {
+    hide(window);
+  } else {
+    app.exit(0);
+  }
 }
 
-fn can_return(app: &AppHandle) -> bool {
-  cfg!(target_os = "macos") || crate::tray::is_shown(app)
+/// Прятать окно по крестику, а не выходить: на macOS — всегда (Dock), на
+/// Windows и Linux — если так выбрано и трей есть.
+fn hides_on_close(macos: bool, close_to_tray: bool, tray_shown: bool) -> bool {
+  macos || (close_to_tray && tray_shown)
 }
 
 fn hide(window: &Window) {
@@ -68,7 +79,15 @@ fn navigation_allowed(url: &Url) -> bool {
 
 #[cfg(test)]
 mod tests {
-  use super::navigation_allowed;
+  use super::{hides_on_close, navigation_allowed};
+
+  #[test]
+  fn close_button_hides_only_when_the_window_can_come_back() {
+    assert!(hides_on_close(true, false, false), "macOS: Dock returns the window");
+    assert!(hides_on_close(false, true, true), "tray chosen and shown");
+    assert!(!hides_on_close(false, false, true), "«close the app» chosen");
+    assert!(!hides_on_close(false, true, false), "Linux without appindicator");
+  }
 
   #[test]
   fn a_dropped_file_does_not_replace_the_page() {

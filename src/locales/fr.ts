@@ -299,6 +299,8 @@ export default {
     reportBug: 'Signaler un bug',
     themeLight: 'Thème clair',
     themeDark: 'Thème sombre',
+    pageWidthFull: 'Pleine largeur',
+    pageWidthLimited: 'Limiter la largeur',
     apply: 'Appliquer',
     cancel: 'Annuler',
     torBridges: 'Ponts',
@@ -521,6 +523,16 @@ export default {
       uiScaleHint: 'La taille de toute la fenêtre. Ctrl et + ou - modifient la même échelle.',
       autostart: 'Lancer à l’ouverture de session',
       autostartHint: 'L’application s’ouvrira automatiquement au démarrage de l’ordinateur.',
+      closeAction: 'À la fermeture de la fenêtre',
+      closeActionHint:
+        'Réduire dans la zone de notification masque la fenêtre : Tor, IPFS, les envois et les messages continuent ; l’icône la fait revenir. Quitter ferme complètement l’application.',
+      closeToTray: 'Réduire dans la zone de notification',
+      closeQuit: 'Quitter l’application',
+      closeNoTray: 'Ce système n’a pas de zone de notification : la croix ferme l’application.',
+      menuBarIcon: 'Icône dans la barre des menus',
+      menuBarIconHint:
+        'Bastyon dans la barre des menus en haut de l’écran : ouvrir la fenêtre ou quitter. La croix ne ferme pas l’application ; quitter avec Cmd+Q.',
+      windowPrefsFailed: 'Impossible d’enregistrer le réglage',
       autostartFailed: 'Le système a refusé de modifier le lancement automatique',
       storageTitle: 'Données locales',
       clearCache: 'Effacer les données enregistrées',
@@ -572,12 +584,20 @@ export default {
       noteMessenger:
         'Les discussions s’ouvrent aussi sans l’icône : avec le bouton rond en bas à droite, et sur un téléphone depuis la barre du bas.',
       itemTheme: 'Thème clair et sombre',
+      itemPageWidth: 'Largeur de la page',
     },
     general: {
       theme: 'Thème',
       themeAuto: 'Auto',
       themeLight: 'Clair',
       themeDark: 'Sombre',
+      pageWidth: 'Largeur de la page',
+      pageWidthHint:
+        'Limitée : une colonne de 1280 pixels au plus au milieu de l’écran ; pleine largeur : toute la fenêtre. La différence se voit sur un écran large.',
+      pageWidthLimited: 'Limitée',
+      pageWidthFull: 'Pleine largeur',
+      pageWidthButton: 'Bouton dans l’en-tête',
+      pageWidthButtonHint: 'Changer la largeur en un clic. Aussi dans « En-tête et menu ».',
     },
     ipfs: {
       title: 'Module IPFS',
@@ -3291,6 +3311,9 @@ export default {
     since: 'depuis {year}',
     subscribers: '{n} abonné | {n} abonnés',
     posts: '{n} publication | {n} publications',
+    filter: 'Chercher dans le top par nom ou adresse',
+    filterLoadingNames: 'Chargement des noms de tous les comptes du top…',
+    filterEmpty: 'Aucun compte du top n’a ce nom ou cette adresse.',
   },
   mediaStudio: {
     videosCount: '{n} vidéo | {n} vidéos',

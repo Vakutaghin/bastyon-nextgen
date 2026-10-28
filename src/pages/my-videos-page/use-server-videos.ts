@@ -22,6 +22,7 @@ import { computed, getCurrentScope, onScopeDispose, ref, watch } from 'vue'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { composePeerTubeUrl, parsePeerTubeUrl } from '@/helpers/api/peertube-parser'
 import { resolvePeertubeHosts } from '@/services/peertube/peertube-host'
+import { thumbnailOf } from '@/services/media/media-info'
 import {
   deleteInstanceVideo,
   findPostedVideos,
@@ -112,7 +113,8 @@ function fromPost(posted: PostedVideo, info: NodeVideoInfo | undefined): ServerV
     name: info?.name || posted.post.caption || uuid,
     description: info?.description ?? '',
     pointer: posted.pointer,
-    thumbnailUrl: info?.thumbnailPath ? `https://${host}${info.thumbnailPath}` : null,
+    // Ролик с выведенного сервера — превью из его архива.
+    thumbnailUrl: info ? thumbnailOf(posted.pointer, info) : null,
     duration: typeof info?.duration === 'number' ? info.duration : null,
     views: viewsOf(info?.views),
     isAudio: info?.isAudio ?? parsed?.type === 'audio',

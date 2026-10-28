@@ -14,7 +14,7 @@ export const SC_WalletWork = styled.div`
 
 export const SC_WalletPage = styled.main`
   width: 100%;
-  max-width: 1600px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
   /* От шапки вместе со строкой состояния: с 60px заголовок на телефоне
      уходил под шапку. */

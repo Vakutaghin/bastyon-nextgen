@@ -14,7 +14,7 @@ export const SC_SectionWork = styled.div`
 
 export const SC_SectionPage = styled.main`
   width: 100%;
-  max-width: 1280px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
   padding: calc(var(--header-height-total) + 24px) 24px 64px;
 

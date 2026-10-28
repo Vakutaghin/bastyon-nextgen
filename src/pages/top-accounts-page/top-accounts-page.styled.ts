@@ -54,11 +54,33 @@ export const SC_TopList = styled.ol`
   overflow: hidden;
 `
 
+/** Поиск по топу над списком. */
+export const SC_TopFilter = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 420px;
+  margin-bottom: 16px;
+`
+
+export const SC_FilterHint = styled.span`
+  font-size: 12px;
+  color: var(--ui-text-muted);
+`
+
+/** Строка: ссылка на профиль и рядом кнопка подписки. */
 export const SC_TopItem = styled.li`
+  display: flex;
+  align-items: center;
   border-bottom: 1px solid var(--ui-border);
+  transition: background-color var(--transition-fast);
 
   &:last-child {
     border-bottom: 0;
+  }
+
+  &:hover {
+    background: var(--ui-bg-elevated);
   }
 
   &.me {
@@ -85,11 +107,8 @@ const ROW = `
 
 export const SC_TopRow = styled.a`
   ${() => ROW}
-  transition: background-color var(--transition-fast);
-
-  &:hover {
-    background: var(--ui-bg-elevated);
-  }
+  flex: 1;
+  min-width: 0;
 `
 
 /** Та же сетка без ссылки — строки-заготовки, пока топ собирается. */
@@ -170,6 +189,67 @@ export const SC_Metric = styled.span`
   .metric-label {
     font-size: 11px;
     color: var(--ui-text-dimmed);
+  }
+`
+
+export const SC_FollowCell = styled.span`
+  flex-shrink: 0;
+  padding-right: 16px;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    padding-right: 12px;
+  }
+`
+
+/** «Подписаться» / «Вы подписаны»; на телефоне — только значок. */
+export const SC_FollowButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 132px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ui-primary);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-primary);
+  color: var(--ui-text-inverted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    background: var(--ui-primary-strong);
+    border-color: var(--ui-primary-strong);
+  }
+
+  &:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+  }
+
+  &.subscribed {
+    border-color: var(--ui-border-accented);
+    background: var(--ui-bg);
+    color: var(--ui-text);
+  }
+
+  &.subscribed:hover:not(:disabled) {
+    background: var(--ui-bg-muted);
+    border-color: var(--ui-border-accented);
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    min-width: 0;
+    width: 32px;
+    padding: 0;
+
+    .label {
+      display: none;
+    }
   }
 `
 

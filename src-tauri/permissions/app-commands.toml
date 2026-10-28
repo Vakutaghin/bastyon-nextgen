@@ -56,6 +56,8 @@ permissions = [
   "allow-ipfs-sink-abort",
   "allow-ipfs-name-put",
   "allow-tray-set-labels",
+  "allow-desktop-prefs-get",
+  "allow-desktop-prefs-set",
   "allow-asr-status",
   "allow-asr-install",
   "allow-asr-cancel-install",

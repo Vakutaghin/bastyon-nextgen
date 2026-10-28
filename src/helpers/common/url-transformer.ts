@@ -1,5 +1,7 @@
 // Трансформация URL изображений между доменами Bastyon
 
+import { peertubeArchiveFor } from '@/helpers/api/peertube-archive'
+
 /** Базовый URL сервиса изображений */
 const IMAGE_SERVICE_URL = 'https://pocketnet.app:8092'
 
@@ -8,7 +10,10 @@ const IMAGE_PATH_PREFIX = '/i/'
 
 /**
  * Заменяет устаревший домен сервиса изображений на актуальный
- * (`bastyon.com:8092` → `pocketnet.app:8092`).
+ * (`bastyon.com:8092` → `pocketnet.app:8092`), а выведенную из работы
+ * PeerTube-ноду — на её архив. Картинки (аватары, картинки постов) грузились и
+ * на видеосерверы (`peertube341…/images/…`); сервера нет, а его архив отдаёт
+ * их по тому же пути. Так же делает старый клиент (`replaceArchiveInImage`).
  *
  * @param url - URL изображения (может содержать старый домен)
  * @returns URL с актуальным доменом или исходное значение
@@ -16,7 +21,11 @@ const IMAGE_PATH_PREFIX = '/i/'
 export function migrateLegacyImageHost(url: string): string {
   if (!url) return url
 
-  return url.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
+  const migrated = url.replace('://bastyon.com:8092/', '://pocketnet.app:8092/')
+  const host = /^https?:\/\/([^/:?#]+)/i.exec(migrated)?.[1]
+  if (!host) return migrated
+  const archive = peertubeArchiveFor(host)
+  return archive ? migrated.replace(host, archive) : migrated
 }
 
 /**

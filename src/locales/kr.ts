@@ -295,6 +295,8 @@ export default {
     reportBug: '버그 신고',
     themeLight: '밝은 테마',
     themeDark: '어두운 테마',
+    pageWidthFull: '전체 너비',
+    pageWidthLimited: '너비 제한',
     apply: '적용',
     cancel: '취소',
     torBridges: '브리지',
@@ -511,6 +513,16 @@ export default {
       uiScaleHint: '전체 창의 크기입니다. Ctrl과 + 또는 -로도 같은 크기를 바꿀 수 있습니다.',
       autostart: '로그인 시 실행',
       autostartHint: '컴퓨터를 켜면 앱이 자동으로 열립니다.',
+      closeAction: '창을 닫을 때',
+      closeActionHint:
+        '트레이로 최소화: 창은 숨겨지고 Tor, IPFS, 업로드와 메시지는 계속 작동합니다. 트레이 아이콘으로 창을 다시 엽니다. 앱 종료: 완전히 닫습니다.',
+      closeToTray: '트레이로 최소화',
+      closeQuit: '앱 종료',
+      closeNoTray: '이 시스템에는 트레이가 없어 닫기 버튼이 앱을 종료합니다.',
+      menuBarIcon: '메뉴 막대 아이콘',
+      menuBarIconHint:
+        '화면 위 메뉴 막대의 Bastyon: 창을 열거나 종료할 수 있습니다. 닫기 버튼은 앱을 종료하지 않으며, 종료는 Cmd+Q입니다.',
+      windowPrefsFailed: '설정을 저장하지 못했습니다',
       autostartFailed: '시스템에서 자동 실행 설정 변경을 거부했습니다',
       storageTitle: '로컬 데이터',
       clearCache: '저장된 데이터 지우기',
@@ -560,12 +572,21 @@ export default {
       noteMessenger:
         '아이콘이 없어도 채팅을 열 수 있습니다. 오른쪽 아래의 둥근 버튼으로, 휴대폰에서는 하단 바에서 엽니다.',
       itemTheme: '밝은 테마와 어두운 테마',
+      itemPageWidth: '페이지 너비',
     },
     general: {
       theme: '테마',
       themeAuto: '자동',
       themeLight: '밝게',
       themeDark: '어둡게',
+      pageWidth: '페이지 너비',
+      pageWidthHint:
+        '제한: 화면 가운데 최대 1280픽셀 너비의 열, 전체 너비: 창 전체. 넓은 화면에서 차이가 보입니다.',
+      pageWidthLimited: '제한',
+      pageWidthFull: '전체 너비',
+      pageWidthButton: '상단 바 버튼',
+      pageWidthButtonHint:
+        '한 번의 클릭으로 너비를 바꿉니다. “상단 바와 메뉴”에서도 설정할 수 있습니다.',
     },
     ipfs: {
       title: 'IPFS 모듈',
@@ -3206,6 +3227,9 @@ export default {
     since: '{year}년부터',
     subscribers: '구독자 {n}명',
     posts: '게시물 {n}개',
+    filter: '이름이나 주소로 순위에서 찾기',
+    filterLoadingNames: '순위의 모든 계정 이름을 불러오는 중…',
+    filterEmpty: '이 이름이나 주소의 계정이 순위에 없습니다.',
   },
   mediaStudio: {
     videosCount: '동영상 {n}개',

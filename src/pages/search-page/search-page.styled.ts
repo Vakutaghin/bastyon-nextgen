@@ -41,8 +41,11 @@ export const SC_SearchMainContent = styled.main`
   }
 `
 
+/** Выдача — колонкой ленты: во всю ширину окна посты и строки не читаются. */
 export const SC_SearchPage = styled.div`
   width: 100%;
+  max-width: var(--feed-max-width);
+  margin: 0 auto;
 `
 
 export const SC_MobileSearch = styled.div`

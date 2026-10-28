@@ -36,6 +36,46 @@
       </SC_SystemLabel>
       <Switch :checked="prefs.autostart" :loading="autostartBusy" @change="onAutostart" />
     </SC_SystemRow>
+
+    <!-- Крестик окна на Windows и Linux: в трей или выход. -->
+    <SC_SystemRow v-if="windowPrefs && windowPrefs.platform !== 'macos'" data-testid="close-action">
+      <SC_SystemLabel>
+        <SC_SystemTitle>{{ t('settings.system.closeAction') }}</SC_SystemTitle>
+        <SC_SystemHint>
+          {{
+            windowPrefs.trayAvailable
+              ? t('settings.system.closeActionHint')
+              : t('settings.system.closeNoTray')
+          }}
+        </SC_SystemHint>
+      </SC_SystemLabel>
+      <SC_ScaleRow v-if="windowPrefs.trayAvailable">
+        <SC_ScaleButton
+          v-for="opt in CLOSE_OPTIONS"
+          :key="String(opt.toTray)"
+          :active="windowPrefs.closeToTray === opt.toTray"
+          type="button"
+          :disabled="windowPrefsBusy"
+          @click="saveWindowPrefs({ closeToTray: opt.toTray })"
+        >
+          {{ t(opt.labelKey) }}
+        </SC_ScaleButton>
+      </SC_ScaleRow>
+    </SC_SystemRow>
+
+    <!-- macOS: крестик и так только прячет окно; значок в строке меню — по желанию. -->
+    <SC_SystemRow v-if="windowPrefs?.platform === 'macos'" data-testid="menu-bar-icon">
+      <SC_SystemLabel>
+        <SC_SystemTitle>{{ t('settings.system.menuBarIcon') }}</SC_SystemTitle>
+        <SC_SystemHint>{{ t('settings.system.menuBarIconHint') }}</SC_SystemHint>
+      </SC_SystemLabel>
+      <Switch
+        :checked="windowPrefs.menuBarIcon"
+        :loading="windowPrefsBusy"
+        :aria-label="t('settings.system.menuBarIcon')"
+        @change="saveWindowPrefs({ menuBarIcon: Boolean($event) })"
+      />
+    </SC_SystemRow>
   </SC_SystemSection>
 
   <SC_SettingsSectionTitle>{{ t('settings.system.storageTitle') }}</SC_SettingsSectionTitle>
@@ -117,6 +157,12 @@ import { clearAllDecrypted } from '@/db/apis/decrypted-messages-api'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { isAutostartEnabled, setAutostart } from '@/composables/use-autostart'
+import {
+  getDesktopPrefs,
+  setDesktopPrefs,
+  type DesktopPrefs,
+  type DesktopPrefsView,
+} from '@/composables/use-desktop-prefs'
 import { UI_SCALES, useAppPreferencesStore } from '@/stores/app-preferences-store'
 import {
   IPFS_CACHE_LIMITS,
@@ -149,6 +195,30 @@ const isDesktop = isTauri()
 
 const clearing = ref(false)
 const autostartBusy = ref(false)
+
+// Крестик окна и значок в строке меню — у Rust; до ответа строк нет.
+const windowPrefs = ref<DesktopPrefsView | null>(null)
+const windowPrefsBusy = ref(false)
+const CLOSE_OPTIONS = [
+  { toTray: true, labelKey: 'settings.system.closeToTray' },
+  { toTray: false, labelKey: 'settings.system.closeQuit' },
+] as const
+
+async function saveWindowPrefs(change: Partial<DesktopPrefs>): Promise<void> {
+  const current = windowPrefs.value
+  if (!current || windowPrefsBusy.value) return
+  windowPrefsBusy.value = true
+  try {
+    const saved = await setDesktopPrefs({
+      closeToTray: change.closeToTray ?? current.closeToTray,
+      menuBarIcon: change.menuBarIcon ?? current.menuBarIcon,
+    })
+    if (saved) windowPrefs.value = saved
+    else message.error(t('settings.system.windowPrefsFailed'))
+  } finally {
+    windowPrefsBusy.value = false
+  }
+}
 
 const storage = useStorageStore()
 const usage = computed(() => storage.usage)
@@ -226,6 +296,7 @@ function onAutostart(checked: SwitchValue): void {
 onMounted(async () => {
   if (!isDesktop) return
   void storage.refresh()
+  void getDesktopPrefs().then((view) => (windowPrefs.value = view))
   const actual = await isAutostartEnabled()
   if (actual !== prefs.autostart) await prefs.set('autostart', actual)
 })

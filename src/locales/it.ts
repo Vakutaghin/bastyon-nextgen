@@ -296,6 +296,8 @@ export default {
     reportBug: 'Segnala un bug',
     themeLight: 'Tema chiaro',
     themeDark: 'Tema scuro',
+    pageWidthFull: 'Larghezza piena',
+    pageWidthLimited: 'Limita la larghezza',
     apply: 'Applica',
     cancel: 'Annulla',
     torBridges: 'Bridge',
@@ -514,6 +516,16 @@ export default {
       uiScaleHint: 'La dimensione dell’intera finestra. Ctrl e + o - cambiano la stessa scala.',
       autostart: 'Avvia all’accesso',
       autostartHint: 'L’app si aprirà automaticamente all’avvio del computer.',
+      closeAction: 'Alla chiusura della finestra',
+      closeActionHint:
+        'Riduci nell’area di notifica nasconde la finestra, mentre Tor, IPFS, caricamenti e messaggi continuano; la riporti dall’icona. Esci chiude del tutto l’app.',
+      closeToTray: 'Riduci nell’area di notifica',
+      closeQuit: 'Chiudi l’app',
+      closeNoTray: 'Questo sistema non ha un’area di notifica: la X chiude l’app.',
+      menuBarIcon: 'Icona nella barra dei menu',
+      menuBarIconHint:
+        'Bastyon nella barra dei menu in alto: da lì apri la finestra o esci. La X non chiude l’app; per uscire, Cmd+Q.',
+      windowPrefsFailed: 'Impossibile salvare l’impostazione',
       autostartFailed: 'Il sistema ha rifiutato di modificare l’avvio automatico',
       storageTitle: 'Dati locali',
       clearCache: 'Cancella i dati salvati',
@@ -565,12 +577,20 @@ export default {
       noteMessenger:
         'Le chat si aprono anche senza l’icona: con il pulsante rotondo in basso a destra e, sul telefono, dalla barra in basso.',
       itemTheme: 'Tema chiaro e scuro',
+      itemPageWidth: 'Larghezza della pagina',
     },
     general: {
       theme: 'Tema',
       themeAuto: 'Automatico',
       themeLight: 'Chiaro',
       themeDark: 'Scuro',
+      pageWidth: 'Larghezza della pagina',
+      pageWidthHint:
+        'Limitata: una colonna fino a 1280 pixel al centro dello schermo; larghezza piena: tutta la finestra. La differenza si vede su uno schermo largo.',
+      pageWidthLimited: 'Limitata',
+      pageWidthFull: 'Larghezza piena',
+      pageWidthButton: 'Pulsante nella barra superiore',
+      pageWidthButtonHint: 'Cambia la larghezza con un clic. Anche in «Barra superiore e menu».',
     },
     ipfs: {
       title: 'Modulo IPFS',
@@ -3256,6 +3276,9 @@ export default {
     since: 'dal {year}',
     subscribers: '{n} iscritto | {n} iscritti',
     posts: '{n} post | {n} post',
+    filter: 'Cerca nella classifica per nome o indirizzo',
+    filterLoadingNames: 'Caricamento dei nomi di tutti gli account in classifica…',
+    filterEmpty: 'Nessun account in classifica ha questo nome o indirizzo.',
   },
   mediaStudio: {
     videosCount: '{n} video | {n} video',

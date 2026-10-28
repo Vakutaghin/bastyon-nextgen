@@ -375,7 +375,11 @@
   /* Тело окна (modal.ts): 90 % высоты; у телефона боком — вся высота окна
      под заголовком (правила rail ниже). */
   --modal-body-max-height: 90vh;
-  --content-max-width: 1600px;
+  /* Ширина шапки, ленты и страниц: колонкой по центру (как во ВКонтакте) или
+     во весь экран — use-page-width.ts, атрибут data-page-width ниже. */
+  --content-max-width: 100%;
+  /* Колонка ленты: та же ширина, что была при прежнем пределе страницы 1600 px. */
+  --feed-max-width: 1000px;
   --content-gap: 20px;
   --content-padding-x: 20px;
 
@@ -571,6 +575,11 @@
 
 :root[data-shell='desktop'] {
   --bottom-nav-height: 0px;
+}
+
+/* Ширина страницы «колонкой»: шапка, лента и страницы — по центру. */
+:root[data-page-width='limited'] {
+  --content-max-width: 1280px;
 }
 
 /* Экранная клавиатура открыта (use-soft-keyboard): она закрывает полосу
