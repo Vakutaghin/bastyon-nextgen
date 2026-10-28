@@ -14,6 +14,7 @@ import { h, type Component, type FunctionalComponent } from 'vue'
 import {
   ArrowDown,
   ArrowLeft,
+  ArrowLeftRight,
   ArrowRight,
   ArrowUp,
   AudioLines,
@@ -262,6 +263,7 @@ export const SoundOutlined = lucideIcon('SoundOutlined', Volume2)
 export const StarFilled = lucideIcon('StarFilled', Star, 'solid')
 export const StarOutlined = lucideIcon('StarOutlined', Star)
 export const StopOutlined = lucideIcon('StopOutlined', Ban)
+export const SwapOutlined = lucideIcon('SwapOutlined', ArrowLeftRight)
 export const SyncOutlined = lucideIcon('SyncOutlined', RefreshCw)
 export const TeamOutlined = lucideIcon('TeamOutlined', Users)
 export const ThunderboltOutlined = lucideIcon('ThunderboltOutlined', Zap)

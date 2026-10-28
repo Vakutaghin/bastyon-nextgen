@@ -14,6 +14,7 @@ vi.mock('../header-report-bug/open-support-chat', () => ({
 
 import { useAccountMenu, type AccountMenuOptions } from './use-account-menu'
 import type { MenuItemId } from '@/stores/header-layout'
+import { MENU_ITEMS } from '@/b-components/header/header-layout/layout-items'
 
 function setup(overrides: { registrationUnfinished?: boolean; items?: MenuItemId[] } = {}) {
   const authStore = reactive({
@@ -98,6 +99,17 @@ describe('useAccountMenu', () => {
       'switchAccount',
       'signout',
     ])
+  })
+
+  it('у каждого пункта значок слева; у раздела — тот же, что в «Шапке и меню»', () => {
+    mocks.tauri = true
+    const { menu } = setup({ registrationUnfinished: true })
+    const items = menu.menuItems.value.filter((i) => i.type !== 'divider')
+    expect(items.length).toBeGreaterThan(5)
+    for (const item of items) expect(item.icon, item.key).toBeTypeOf('function')
+
+    const wallets = items.find((i) => i.key === '/wallets')
+    expect(wallets?.icon?.().type).toBe(MENU_ITEMS.wallets.icon)
   })
 
   it('ссылка на профиль — по имени в нижнем регистре, иначе по адресу, иначе на главную', () => {

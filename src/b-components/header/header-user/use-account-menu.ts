@@ -5,11 +5,21 @@
  *
  * См. CODE_AUDIT.md §1.
  */
-import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
+import {
+  computed,
+  h,
+  ref,
+  watch,
+  type Component,
+  type ComputedRef,
+  type Ref,
+  type VNode,
+} from 'vue'
 import type { Router } from 'vue-router'
 import type { useAuthStore } from '@/blockchain'
 import type { useModalStore } from '@/stores/modal-store'
 import { t } from '@/i18n'
+import { LogoutOutlined, SwapOutlined, UserAddOutlined } from '@/components/icons'
 import type { MenuItemId } from '@/stores/header-layout'
 import {
   MENU_ITEMS,
@@ -24,7 +34,9 @@ export interface AccountMenu {
   signInModalOpen: Ref<boolean>
   accountSwitcherOpen: Ref<boolean>
   confirmSignOutOpen: Ref<boolean>
-  menuItems: ComputedRef<Array<{ key?: string; label?: string; type?: string; danger?: boolean }>>
+  menuItems: ComputedRef<
+    Array<{ key?: string; label?: string; type?: string; danger?: boolean; icon?: () => VNode }>
+  >
   openSignInModal: () => void
   handleSignInSuccess: () => void
   handleSignInCancel: () => void
@@ -78,19 +90,35 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
     return MENU_ITEM_PATHS[id] ?? id
   }
 
+  /** Значок слева от подписи — тот же, что у пункта в «Шапке и меню» и в меню телефона. */
+  const iconOf = (icon: Component) => () => h(icon)
+
   // Середина — из раскладки; «Завершить регистрацию» сверху и «Сменить
   // аккаунт» / «Выйти» снизу не настраиваются.
   const menuItems = computed(() => [
     ...(registrationUnfinished.value
       ? [
-          { key: 'finishRegistration', label: t('accountMsg.menuFinishRegistration') },
+          {
+            key: 'finishRegistration',
+            label: t('accountMsg.menuFinishRegistration'),
+            icon: iconOf(UserAddOutlined),
+          },
           { type: 'divider' },
         ]
       : []),
-    ...items.value.map((id) => ({ key: keyOf(id), label: t(MENU_ITEMS[id].labelKey!) })),
+    ...items.value.map((id) => ({
+      key: keyOf(id),
+      label: t(MENU_ITEMS[id].labelKey!),
+      icon: iconOf(MENU_ITEMS[id].icon),
+    })),
     { type: 'divider' },
-    { key: 'switchAccount', label: t('accountMsg.menuSwitchAccount') },
-    { key: 'signout', label: t('accountMsg.menuSignOut'), danger: true },
+    { key: 'switchAccount', label: t('accountMsg.menuSwitchAccount'), icon: iconOf(SwapOutlined) },
+    {
+      key: 'signout',
+      label: t('accountMsg.menuSignOut'),
+      danger: true,
+      icon: iconOf(LogoutOutlined),
+    },
   ])
 
   function openSignInModal(): void {

@@ -1152,6 +1152,14 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   z-index: 3005 !important;
 }
 
+/* Значки пунктов — 16px, как в боковом меню телефона: у antd они 12px при
+   тексте 14px и терялись рядом с подписью. Селектор длиннее, чем у antd
+   (.ant-dropdown .ant-dropdown-menu .ant-dropdown-menu-item-icon). */
+.header-user-dropdown .ant-dropdown-menu .ant-dropdown-menu-item .ant-dropdown-menu-item-icon {
+  font-size: 16px;
+  min-width: 16px;
+}
+
 /* Badge задаёт `color` из палитры antd, и иконка-потомок (колокольчик/часы в
    хедере) красилась им, а не цветом своей обёртки. Возвращаем наследование от
    обёртки (SC_*Wrapper). Счётчик

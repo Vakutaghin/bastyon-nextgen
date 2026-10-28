@@ -110,3 +110,27 @@ test('значки шапки и меню аккаунта: скрыть, пер
   await expect(header.getByRole('button', { name: 'Уведомления' })).toBeVisible()
   expect((await accountMenu(page))[0]).toBe('Профиль')
 })
+
+test('у пунктов меню аккаунта значки слева от подписи', async ({ page }) => {
+  test.setTimeout(90_000)
+  await signIn(page)
+  await page.locator('[data-header-avatar]').click()
+  const menu = page.locator('.header-user-dropdown')
+  await expect(menu).toBeVisible()
+  // Меню выезжает с масштабом: размеры — после анимации.
+  await expect(menu).not.toHaveClass(/slide-up-enter/)
+
+  const items = menu.getByRole('menuitem')
+  const count = await items.count()
+  expect(count).toBeGreaterThan(5)
+  for (let i = 0; i < count; i++) {
+    const item = items.nth(i)
+    const icon = item.locator('.ant-dropdown-menu-item-icon svg')
+    await expect(icon, await item.innerText()).toBeVisible()
+    const iconBox = (await icon.boundingBox())!
+    const labelBox = (await item.locator('.ant-dropdown-menu-title-content').boundingBox())!
+    expect(iconBox.width).toBe(16)
+    expect(iconBox.x + iconBox.width).toBeLessThanOrEqual(labelBox.x)
+  }
+  if (process.env.E2E_SHOT) await menu.screenshot({ path: process.env.E2E_SHOT })
+})
