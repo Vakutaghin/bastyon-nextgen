@@ -58,8 +58,29 @@ export function useChangelog() {
 }
 
 /**
- * Управление окном «Что нового». Хранит решение пользователя в IndexedDB,
- * чтобы модалка не всплывала снова на этой же версии после перезапуска.
+ * Копия в localStorage: без базы (не открылась, приватное окно) окно иначе
+ * всплывало на каждом запуске.
+ */
+function readLocalLastSeen(): string | null {
+  try {
+    return localStorage.getItem(SETTING_KEY_LAST_SEEN)
+  } catch {
+    return null
+  }
+}
+
+function writeLocalLastSeen(version: string): void {
+  try {
+    localStorage.setItem(SETTING_KEY_LAST_SEEN, version)
+  } catch {
+    /* хранилище недоступно — останется только база */
+  }
+}
+
+/**
+ * Управление окном «Что нового». Хранит решение пользователя в IndexedDB
+ * (и копию в localStorage), чтобы модалка не всплывала снова на этой же
+ * версии после перезапуска.
  */
 export function useWhatsNewGate() {
   const lastSeenVersion = ref<string | null>(null)
@@ -69,7 +90,7 @@ export function useWhatsNewGate() {
   async function load(): Promise<void> {
     try {
       const stored = await settingsAPI.get(SETTING_KEY_LAST_SEEN)
-      lastSeenVersion.value = typeof stored === 'string' ? stored : null
+      lastSeenVersion.value = typeof stored === 'string' ? stored : readLocalLastSeen()
     } catch (e) {
       console.error('Failed to load last-seen changelog version:', e)
     } finally {
@@ -86,6 +107,7 @@ export function useWhatsNewGate() {
     const latest = getChangelogEntryForVersion()
     if (!latest) return
     lastSeenVersion.value = latest.version
+    writeLocalLastSeen(latest.version)
     try {
       await settingsAPI.set(SETTING_KEY_LAST_SEEN, latest.version)
     } catch (e) {

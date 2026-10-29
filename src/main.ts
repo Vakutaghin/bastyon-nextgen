@@ -58,6 +58,11 @@ import { notifyNewNotifications } from '@/composables/use-browser-notifications'
 import { queryClient } from './query-client'
 import './style.css'
 
+// База открывается первой: сторы ниже читают её сразу (язык, уведомления), и
+// без этого Dexie открывала её сама — мимо проверки старой схемы в
+// initDatabase. Обращения через withDb ждут открытия.
+const dbReady = initDatabase()
+
 const app = createApp(App)
 const pinia = createPinia()
 
@@ -186,7 +191,7 @@ function doMount() {
   }
 }
 
-initDatabase()
+dbReady
   .then(() => doMount())
   .catch((error) => {
     console.error('[main] initDatabase failed:', error)
