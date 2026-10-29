@@ -60,6 +60,7 @@ import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import Modal from '@/components/modal/modal.vue'
 import { isPageOverlaid } from '@/composables/use-page-overlay'
+import { useCloseOnBack } from '@/composables/use-back-button'
 import { Z_INDEX } from '@/styles/design-tokens'
 import { ExpandOutlined } from '@/components/icons'
 import { getPostShareId } from '@/b-components/content/post-card/helpers'
@@ -111,6 +112,9 @@ function closeModal(): void {
   modalStore.closePostModal()
   emit('close')
 }
+
+// «Назад» на Android закрывает окно, как Esc, а не листает страницы под ним.
+useCloseOnBack(isModalOpen, closeModal)
 
 /** Обычный клик — страница поста в этом окне приложения; с Ctrl/Cmd — как у ссылки. */
 function openAsPage(event: MouseEvent): void {

@@ -54,9 +54,15 @@ Your own video cannot share a post with images, and video cannot be added to an 
 
 ## Limits
 
-- The file is no larger than 4 GB.
-- The video server has a daily quota: how much can be uploaded per day. If the file does not fit, the app tells you how much is left for today.
-- The server can also refuse by itself: **“The video server did not accept the file: it is too large or your quota is used up.”**
+All the limits are in the **“Upload limits”** window — the **“Limits”** button next to **“Upload”** in the “Media studio”, like the daily limits block of the old app.
+
+- **“You can upload today”** — how much of the daily limit is left on the video server the upload goes to. The limit covers the last 24 hours: an upload stops counting a day later. If a file does not fit in what is left, the app says so during the upload.
+- **“What the limit depends on”** — 250 MB a day for any account, 500 MB with reputation 100 or more or at least 5 PKOIN in the balance, 2 GB for a full account, 5 GB with at least 50 PKOIN in the balance. Your tier is marked. The video server recalculates the limit when the app signs in to it again, so a new limit does not show up right away.
+- **“Files the video server accepts”** — a file up to 4 GB, the video and audio formats, and the quality the server stores videos at, for example up to 480p: a better file only takes longer to upload and uses up the limit faster.
+
+How many video posts you can publish per day is a different limit, it is in [“My limits”](limits.md).
+
+The server can also refuse by itself: **“The video server did not accept the file: it is too large or your quota is used up.”**
 
 ## If the upload was interrupted
 
@@ -71,7 +77,6 @@ The upload runs while the app is open. If you close it, start the upload again.
 
 ## What is not there yet
 
-- The “Media studio” does not show the video server quota yet — only during an upload, when a file does not fit.
 - You cannot import a video by link or replace the file of an uploaded clip.
 
 The post with the video can be deleted like any other — see [Editing or deleting a post](edit-delete-post.md).

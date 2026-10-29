@@ -50,11 +50,14 @@
         <SC_ListTick
           v-if="lastMark"
           data-testid="last-mark"
+          role="img"
           :class="{ done: lastMark.done }"
           :title="lastMark.title"
           :aria-label="lastMark.title"
-          >{{ lastMark.mark }}</SC_ListTick
+          :data-mark="lastMark.mark"
         >
+          <DeliveryTicks :mark="lastMark.mark" />
+        </SC_ListTick>
         <SC_ListFailed
           v-else-if="lastFailed"
           data-testid="last-mark"
@@ -175,6 +178,7 @@ import { chatUserName } from '../../helpers'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../../store/consts'
 import { lastMessageMark } from './last-message-mark'
 import GroupAvatar from '../group-avatar/group-avatar.vue'
+import DeliveryTicks from '../message-item/delivery-ticks.vue'
 import {
   SC_AvatarSlot,
   SC_GroupMark,

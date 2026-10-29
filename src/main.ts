@@ -33,6 +33,7 @@ import App from '@/src.vue'
 import router from '@/router'
 import { initCapacitor } from '@mobile/bootstrap'
 import { setupDeepLinks } from '@/composables/use-deep-links'
+import { setupBackButton } from '@/composables/use-back-button'
 import { setupAppPreferences } from '@/composables/use-app-preferences-effects'
 import { setupQuitShortcut } from '@/helpers/desktop/quit-shortcut'
 import { installDropGuard } from '@/helpers/common/drop-guard'
@@ -104,6 +105,8 @@ configureUnlockUi({
 // запускался в том числе на публичной embed-странице. Ждём готовности роутера.
 // Системные ссылки `bastyon://…` (deep links) — Tauri, Android/iOS, PWA.
 void router.isReady().then(() => setupDeepLinks(router))
+// «Назад» на Android сначала закрывает открытое поверх — чат, картинку, окно поста.
+void setupBackButton()
 // Настройки устройства (анимации, масштаб) применяем до первой отрисовки ленты.
 void setupAppPreferences()
 // Ctrl+Q на Windows и Linux: крестик окно только прячет в трей.

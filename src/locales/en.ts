@@ -3281,6 +3281,38 @@ export default {
     filterEmpty: 'No account in the top has this name or address.',
   },
   mediaStudio: {
+    limits: {
+      button: 'Limits',
+      title: 'Upload limits',
+      today: 'You can upload today',
+      signIn: 'Sign in to see your limit.',
+      left: '{left} of {total} left',
+      unlimited: 'No limit',
+      window: 'The limit covers the last 24 hours: an upload stops counting a day later.',
+      failed: 'The video server did not answer, so the limit is unknown.',
+      retry: 'Retry',
+      tiersTitle: 'What the limit depends on',
+      tier: {
+        everyone: 'any account',
+        reputation: 'reputation 100 or more, or at least 5 PKOIN in the balance',
+        full: 'full account',
+        coins: 'at least 50 PKOIN in the balance',
+      },
+      yours: 'yours',
+      tiersNote:
+        'The video server recalculates the limit when the app signs in to it again, so a new limit does not show up right away.',
+      filesTitle: 'Files the video server accepts',
+      maxSize: 'A file can be up to {max}.',
+      videoFormats: 'Video: {list}.',
+      audioFormats: 'Audio: {list}.',
+      quality:
+        'The video server stores videos at up to {resolution}p: a better file only takes longer to upload and uses up the limit faster.',
+      compress:
+        'On a computer you can make the file smaller before uploading: the “{option}” checkbox in the upload window.',
+      posts: 'How many video posts you can publish per day is shown in “{page}”.',
+      postsLink: 'Open',
+      server: 'Video server: {host}',
+    },
     videosCount: '{n} video | {n} videos',
     viewsCount: '{n} view | {n} views',
     search: 'Search titles and descriptions',

@@ -109,6 +109,7 @@ import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
 import { closePageOverlay, openPageOverlay } from '@/composables/use-page-overlay'
+import { pushBackHandler } from '@/composables/use-back-button'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { useModalStore } from '@/stores/modal-store'
 import {
@@ -241,52 +242,63 @@ watch(
   }
 )
 
+/**
+ * Закрыть верхнее, что открыто в мессенджере: Esc на компьютере и «Назад» на
+ * Android. Сначала окно поверх чата, потом диалог, потом сам чат. false —
+ * мессенджер закрыт, закрывать нечего.
+ */
+function closeTopmost(): boolean {
+  // Открытый поверх пост (из канала или ссылки в чате) закрывается первым:
+  // фокус остаётся в ленте, и раньше Escape закрывал чат под постом.
+  if (modalStore.postModal.isOpen) {
+    modalStore.closePostModal()
+    return true
+  }
+  // Окно группы закрывается первым (обычно его Escape сюда и не доходит).
+  if (store.groupInfoChatId) {
+    store.closeGroupInfo()
+    return true
+  }
+  if (!store.isFullScreen && !store.isOpen) return false
+  if (store.activeChatId) {
+    store.activeChatId = null
+    return true
+  }
+  // Переписка с тем, с кем чата ещё нет, — как стрелка «назад» над ней.
+  if (store.lastTargetAddress && store.inviteViewActive) {
+    store.clearInviteTarget()
+    return true
+  }
+  if (store.isFullScreen) closeFullScreen()
+  else store.closeWidget()
+  return true
+}
+
 function handleKeydown(e: KeyboardEvent): void {
   if (e.key !== 'Escape') return
   // Просмотрщик картинок (пост в канале) закрывается сам — чат под ним остаётся.
   if (modalStore.imageGallery.isOpen) return
-  // Открытый поверх пост (из канала или ссылки в чате) закрывается первым:
-  // фокус остаётся в ленте, и раньше Escape закрывал чат под постом.
-  if (modalStore.postModal.isOpen) {
-    e.preventDefault()
-    modalStore.closePostModal()
-    return
-  }
-  // Окно группы закрывается первым (обычно его Escape сюда и не доходит).
-  if (store.groupInfoChatId) {
-    e.preventDefault()
-    store.closeGroupInfo()
-    return
-  }
-  if (store.isFullScreen) {
-    e.preventDefault()
-    e.stopPropagation()
-    if (store.activeChatId) {
-      store.activeChatId = null
-      return
-    }
-    closeFullScreen()
-    return
-  }
-  if (!store.isOpen) return
+  if (!closeTopmost()) return
   e.preventDefault()
   e.stopPropagation()
-  if (store.activeChatId) {
-    store.activeChatId = null
-    return
-  }
-  store.closeWidget()
 }
 
+// Обработчик с монтирования — ниже всего, что открывается поверх чата и
+// добавляет свой (картинка, пост, меню вложений): те закрываются раньше.
+let releaseBack: (() => void) | null = null
+
 onMounted(async () => {
+  // До входа в Matrix: пока он идёт, чат уже открывают, и Esc с «Назад» нужны.
+  window.addEventListener('keydown', handleKeydown)
+  releaseBack = pushBackHandler(closeTopmost)
   if (authStore.isUserAuthenticated) {
     await store.initMatrix()
   }
-  window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  releaseBack?.()
   if (store.isFullScreen) closePageOverlay()
 })
 

@@ -204,11 +204,19 @@ export const SC_ReactionPickerEmoji = styled.button`
 
 /** «…» и «✓» — приглушённо, «✓✓» (прочитано, подтверждено радио) — цветом. */
 export const SC_SeenTick = styled.span`
+  display: inline-flex;
+  align-items: center;
   margin-left: 4px;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1;
+  vertical-align: -1px;
   color: var(--ui-text-muted);
-  letter-spacing: -2px;
+
+  svg {
+    display: block;
+    width: auto;
+    height: 0.9em;
+  }
 
   &.done {
     color: var(--color-primary);

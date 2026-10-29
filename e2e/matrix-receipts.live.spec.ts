@@ -52,21 +52,21 @@ test('собеседник прочитал — у отправителя «✓�
   await expect(aliceMark).toHaveAttribute('title', 'Отправлено, ещё не прочитано', {
     timeout: 60_000,
   })
-  await expect(aliceMark).toHaveText('✓')
+  await expect(aliceMark).toHaveAttribute('data-mark', '✓')
 
   // Боб открывает чат сразу после перезагрузки страницы: приглашение
   // принимается, сообщение прочитано, кэш синка поднялся.
   await openChatWith(b, alice!, false)
   await expect(b.getByText('Привет, Боб')).toBeVisible({ timeout: 90_000 })
   await expect(aliceMark).toHaveAttribute('title', 'Прочитано', { timeout: 60_000 })
-  await expect(aliceMark).toHaveText('✓✓')
+  await expect(aliceMark).toHaveAttribute('data-mark', '✓✓')
 
   // Ответ: чат у Алисы открыт — она прочитала сразу.
   await send(b, 'Привет, Алиса')
   await expect(a.getByText('Привет, Алиса')).toBeVisible({ timeout: 60_000 })
   const bobMark = b.getByTitle(/^(Прочитано|Отправлено, ещё не прочитано)$/).last()
   await expect(bobMark).toHaveAttribute('title', 'Прочитано', { timeout: 60_000 })
-  await expect(aliceMark).toHaveText('✓✓')
+  await expect(aliceMark).toHaveAttribute('data-mark', '✓✓')
 
   // Мессенджер Боба закрыт — «прочитано» не уходит, пока он его не откроет.
   await b.getByRole('button', { name: 'Сообщения', exact: true }).click()
@@ -77,16 +77,16 @@ test('собеседник прочитал — у отправителя «✓�
     timeout: 30_000,
   })
   await a.waitForTimeout(5_000)
-  await expect(lastAliceMark).toHaveText('✓')
+  await expect(lastAliceMark).toHaveAttribute('data-mark', '✓')
 
   // Открылся список чатов: «Ты тут?» видно в превью, но чат не открыт — не прочитано.
   await b.getByRole('button', { name: 'Сообщения', exact: true }).click()
   await b.waitForTimeout(3_000)
-  await expect(lastAliceMark).toHaveText('✓')
+  await expect(lastAliceMark).toHaveAttribute('data-mark', '✓')
   await b.getByText('alice_e2e').last().click()
   await expect(b.getByPlaceholder('Введите сообщение...')).toBeVisible({ timeout: 30_000 })
   await expect(lastAliceMark).toHaveAttribute('title', 'Прочитано', { timeout: 60_000 })
-  await expect(lastAliceMark).toHaveText('✓✓')
+  await expect(lastAliceMark).toHaveAttribute('data-mark', '✓✓')
 
   // Та же галочка — в списке чатов, у последнего сообщения.
   await a.keyboard.press('Escape')
@@ -95,7 +95,7 @@ test('собеседник прочитал — у отправителя «✓�
     .filter({ hasText: 'bob_e2e' })
     .getByTestId('last-mark')
   await expect(aliceRowMark).toHaveAttribute('title', 'Прочитано', { timeout: 30_000 })
-  await expect(aliceRowMark).toHaveText('✓✓')
+  await expect(aliceRowMark).toHaveAttribute('data-mark', '✓✓')
   // У Боба последнее — чужое сообщение: галочки нет.
   await b.keyboard.press('Escape')
   await expect(

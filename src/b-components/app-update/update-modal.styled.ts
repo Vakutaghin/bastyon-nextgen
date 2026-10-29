@@ -17,12 +17,22 @@ export const SC_Meta = styled.div`
   font-size: 12px;
 `
 
+/** Галка «Пропустить эту версию» слева, кнопки справа; на узком экране — друг под другом. */
 export const SC_Footer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+`
+
+export const SC_Buttons = styled.div`
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 16px;
+  margin-left: auto;
 `
 
 export const SC_PrimaryButton = styled.button`

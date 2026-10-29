@@ -20,6 +20,10 @@
           >
             <template #icon><ReloadOutlined /></template>
           </Button>
+          <Button @click="limitsOpen = true">
+            <template #icon><InfoCircleOutlined /></template>
+            {{ t('mediaStudio.limits.button') }}
+          </Button>
           <Button type="primary" @click="uploads.openDialog()">
             <template #icon><UploadOutlined /></template>
             {{ t('videoStudio.upload') }}
@@ -126,6 +130,8 @@
       @remove="confirmRemove(detailsVideo!)"
     />
 
+    <UploadLimitsModal v-if="limitsOpen" @close="limitsOpen = false" />
+
     <StudioPlayerModal
       v-if="playingVideo"
       :key="playingVideo.pointer"
@@ -142,6 +148,7 @@ import { Button, Input, Modal, Select, Spin } from 'ant-design-vue'
 
 import {
   AppstoreOutlined,
+  InfoCircleOutlined,
   ListViewIcon,
   ReloadOutlined,
   SearchOutlined,
@@ -168,6 +175,7 @@ import StudioVideoItem from './studio-video-item.vue'
 import type { ListChanges } from './use-video-details'
 import VideoDetailsModal, { type DetailsTab } from './video-details/video-details-modal.vue'
 import StudioPlayerModal from './studio-player-modal.vue'
+import UploadLimitsModal from './upload-limits-modal.vue'
 import {
   SC_MyVideosWork,
   SC_MyVideosPage,
@@ -262,6 +270,8 @@ const detailsVideo = ref<ServerVideo | null>(null)
 const detailsTab = ref<DetailsTab>('details')
 /** Ролик в окне плеера — обложкой, пунктом «Смотреть» или из окна ролика. */
 const playingVideo = ref<ServerVideo | null>(null)
+/** Окно «Лимиты загрузки» — кнопкой рядом с «Загрузить». */
+const limitsOpen = ref(false)
 
 function openDetails(video: ServerVideo, tab: DetailsTab): void {
   detailsTab.value = tab

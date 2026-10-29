@@ -1,4 +1,5 @@
-// «Перейти к загрузке»: окно закрывается и открывает страницу релиза в
+// Окно появляется при каждом запуске; галка «Пропустить эту версию» действует,
+// когда его закрывают. «Перейти к загрузке»: окно закрывается и открывает страницу релиза в
 // браузере; не открылось — ссылка в буфере и на экране. На компьютере и на
 // Android вместо неё «Обновить»: обновление ставится само, с прогрессом; не
 // вышло — страница. На Android ставит системный установщик: его можно закрыть
@@ -13,7 +14,8 @@ const URL = 'https://github.com/Vakutaghin/bastyon-nextgen/releases/tag/v0.9.3'
 
 const mocks = vi.hoisted(() => ({
   openReleasePage: vi.fn(),
-  dismiss: vi.fn(),
+  close: vi.fn(),
+  skipped: false,
   copyText: vi.fn(),
   toastError: vi.fn(),
   install: vi.fn(),
@@ -40,8 +42,8 @@ vi.mock('@/composables/use-app-update', async () => {
       shouldPrompt: ref(true),
       currentVersion: '0.9.2',
       maybeCheck: vi.fn(),
-      dismiss: mocks.dismiss,
-      skip: vi.fn(),
+      close: mocks.close,
+      skipped: ref(mocks.skipped),
       openReleasePage: mocks.openReleasePage,
       canInstall: ref(mocks.canInstall),
       installsWithConfirmation: mocks.withConfirmation,
@@ -82,6 +84,7 @@ describe('UpdateModal — «Перейти к загрузке»', () => {
     vi.clearAllMocks()
     mocks.canInstall = false
     mocks.withConfirmation = false
+    mocks.skipped = false
     mocks.state!.installNotice.value = null
     mocks.state!.installing.value = false
     mocks.state!.installProgress.value = null
@@ -96,7 +99,7 @@ describe('UpdateModal — «Перейти к загрузке»', () => {
   it('браузер открылся — окно закрыто, больше ничего', async () => {
     mocks.openReleasePage.mockResolvedValue(true)
     await download()
-    expect(mocks.dismiss).toHaveBeenCalled()
+    expect(mocks.close).toHaveBeenCalledWith(false)
     expect(mocks.copyText).not.toHaveBeenCalled()
     expect(mocks.toastError).not.toHaveBeenCalled()
   })
@@ -118,6 +121,44 @@ describe('UpdateModal — «Перейти к загрузке»', () => {
     const { message } = mocks.toastError.mock.lastCall![0] as { message: string }
     expect(message).toContain('вручную')
     expect(message).toContain(URL)
+  })
+
+  describe('«Пропустить эту версию» — галкой', () => {
+    const checkbox = (): HTMLInputElement =>
+      document.body.querySelector<HTMLInputElement>('input[type="checkbox"]')!
+
+    it('без галки «Позже» напомнит при следующем запуске', async () => {
+      await open()
+      expect(checkbox().checked).toBe(false)
+      button('Позже')!.click()
+      await flushPromises()
+      expect(mocks.close).toHaveBeenCalledWith(false)
+    })
+
+    it('с галкой кнопка — «Закрыть», и версию больше не предлагают', async () => {
+      await open()
+      checkbox().click()
+      await flushPromises()
+      expect(button('Позже')).toBeUndefined()
+      button('Закрыть')!.click()
+      await flushPromises()
+      expect(mocks.close).toHaveBeenCalledWith(true)
+    })
+
+    it('крестик тоже закрывает по галке', async () => {
+      await open()
+      checkbox().click()
+      await flushPromises()
+      document.body.querySelector<HTMLButtonElement>('.ant-modal-close')!.click()
+      await flushPromises()
+      expect(mocks.close).toHaveBeenCalledWith(true)
+    })
+
+    it('версию уже пропускали (открыли кнопкой у номера) — галка стоит', async () => {
+      mocks.skipped = true
+      await open()
+      expect(checkbox().checked).toBe(true)
+    })
   })
 
   describe('на компьютере обновление ставится само', () => {

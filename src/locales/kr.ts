@@ -3250,6 +3250,38 @@ export default {
     filterEmpty: '이 이름이나 주소의 계정이 순위에 없습니다.',
   },
   mediaStudio: {
+    limits: {
+      button: '한도',
+      title: '업로드 한도',
+      today: '오늘 업로드할 수 있는 양',
+      signIn: '로그인하면 내 한도를 볼 수 있습니다.',
+      left: '{total} 중 {left} 남음',
+      unlimited: '제한 없음',
+      window: '한도는 최근 24시간 기준입니다. 업로드한 양은 하루가 지나면 빠집니다.',
+      failed: '동영상 서버가 응답하지 않아 한도를 알 수 없습니다.',
+      retry: '다시 시도',
+      tiersTitle: '한도를 정하는 조건',
+      tier: {
+        everyone: '모든 계정',
+        reputation: '평판 100 이상 또는 잔액 5 PKOIN 이상',
+        full: '정식 계정',
+        coins: '잔액 50 PKOIN 이상',
+      },
+      yours: '내 한도',
+      tiersNote:
+        '동영상 서버는 앱이 다시 로그인할 때 한도를 다시 계산하므로 새 한도는 바로 나타나지 않습니다.',
+      filesTitle: '동영상 서버가 받는 파일',
+      maxSize: '파일은 최대 {max}입니다.',
+      videoFormats: '동영상: {list}.',
+      audioFormats: '오디오: {list}.',
+      quality:
+        '동영상 서버는 최대 {resolution}p로 저장합니다. 이보다 좋은 파일은 업로드만 오래 걸리고 한도를 더 빨리 씁니다.',
+      compress:
+        '컴퓨터에서는 업로드 전에 파일을 줄일 수 있습니다: 업로드 창의 「{option}」 체크박스.',
+      posts: '하루에 올릴 수 있는 동영상 게시물 수는 「{page}」에서 볼 수 있습니다.',
+      postsLink: '열기',
+      server: '동영상 서버: {host}',
+    },
     videosCount: '동영상 {n}개',
     viewsCount: '조회수 {n}회',
     search: '제목과 설명에서 검색',

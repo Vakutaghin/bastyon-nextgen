@@ -8,12 +8,12 @@ How the app tells you about a new version, how to update on each system, and whe
 
 ## Checking
 
-Once a day the app looks at the releases page on GitHub. If a new version is out, an **“Update available”** window appears — which version came out, which one you have and when the new one was published:
+Every time the app starts, it looks at the releases page on GitHub. If a new version is out, an **“Update available”** window appears — which version came out, which one you have and when the new one was published. On a phone, bringing a minimized app back is not a start: the window appears when the app is opened anew.
 
 - **“Update”** — the app downloads the new version, showing the progress in the window, and installs it over this one. Accounts and settings are kept. A computer then restarts the app, and on Android you confirm the installation — see [How to update](#how-to-update). If it cannot install by itself, “Go to download” appears instead;
 - **“Go to download”** — the release page opens in the browser, with installers for every system. If the browser does not open, the link is copied and shown in a message;
 - **“Later”** — reminds you on the next launch;
-- **“Skip this version”** — no more reminders about this version; the next one will be offered.
+- the **“Skip this version”** checkbox — the button then reads **“Close”**, and the app no longer reminds you about this version; the next one will be offered. The checkbox also applies when you close the window with the cross.
 
 The update is checked by its signature: only a build from a Bastyon NextGen release can be installed this way. On Android the file is also checked against the checksum GitHub shows for the release. With Tor on, a computer downloads the update over Tor.
 
@@ -21,7 +21,7 @@ The update is checked by its signature: only a build from a Bastyon NextGen rele
 
 The installed version is always in sight: on a computer at the bottom of the left panel, on a phone in the menu under the app name. The arrows button next to it checks for a new version:
 
-- a new one is out — the **“Update available”** window opens, even if you skipped that version before; until you skip it, the new version number shows in place of yours;
+- a new one is out — the **“Update available”** window opens, even if you skipped that version before: then the **“Skip this version”** checkbox in it is already ticked, and if you untick it, the app reminds you again. Until you skip the version, the new version number shows in place of yours;
 - no new version — **“Up to date”** shows for a few seconds;
 - GitHub did not answer — **“Check failed”**.
 

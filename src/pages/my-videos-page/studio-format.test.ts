@@ -3,7 +3,13 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { setI18nLocale } from '@/i18n'
-import { formatCompact, formatCount, formatSize, formatWatchTime } from './studio-format'
+import {
+  formatCompact,
+  formatCount,
+  formatQuota,
+  formatSize,
+  formatWatchTime,
+} from './studio-format'
 
 // Intl разделяет разряды неразрывным пробелом — сравниваем с обычным.
 const plain = (text: string): string => text.replace(/[\u00a0\u202f]/g, ' ')
@@ -25,6 +31,13 @@ describe('studio-format (ru)', () => {
     expect(plain(formatSize(31_457_280))).toBe('30 МБ')
     expect(plain(formatSize(1_288_490_189))).toBe('1,2 ГБ')
     expect(plain(formatSize(512))).toBe('512 Б')
+  })
+
+  it('лимит загрузки — десятичными МБ и ГБ, как его считает видеосервер', () => {
+    expect(plain(formatQuota(250_000_000))).toBe('250 МБ')
+    expect(plain(formatQuota(2_000_000_000))).toBe('2 ГБ')
+    expect(plain(formatQuota(1_500_000_000))).toBe('1,5 ГБ')
+    expect(plain(formatQuota(-5))).toBe('0 Б')
   })
 
   it('числа: целиком с разрядами и коротко', () => {

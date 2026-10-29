@@ -3303,6 +3303,39 @@ export default {
     filterEmpty: 'Nessun account in classifica ha questo nome o indirizzo.',
   },
   mediaStudio: {
+    limits: {
+      button: 'Limiti',
+      title: 'Limiti di caricamento',
+      today: 'Oggi puoi caricare',
+      signIn: 'Accedi per vedere il tuo limite.',
+      left: 'Restano {left} su {total}',
+      unlimited: 'Senza limiti',
+      window:
+        'Il limite riguarda le ultime 24 ore: un caricamento smette di contare dopo un giorno.',
+      failed: 'Il server video non ha risposto, il limite non è noto.',
+      retry: 'Riprova',
+      tiersTitle: 'Da cosa dipende il limite',
+      tier: {
+        everyone: 'qualsiasi account',
+        reputation: 'reputazione da 100 o almeno 5 PKOIN di saldo',
+        full: 'account completo',
+        coins: 'almeno 50 PKOIN di saldo',
+      },
+      yours: 'il tuo',
+      tiersNote:
+        'Il server video ricalcola il limite quando l’app vi accede di nuovo, quindi un nuovo limite non compare subito.',
+      filesTitle: 'File accettati dal server video',
+      maxSize: 'Un file può arrivare a {max}.',
+      videoFormats: 'Video: {list}.',
+      audioFormats: 'Audio: {list}.',
+      quality:
+        'Il server video conserva i video fino a {resolution}p: un file migliore richiede solo più tempo per il caricamento e consuma prima il limite.',
+      compress:
+        'Sul computer puoi ridurre il file prima di caricarlo: la casella «{option}» nella finestra di caricamento.',
+      posts: 'Quanti post con video puoi pubblicare al giorno è indicato in «{page}».',
+      postsLink: 'Apri',
+      server: 'Server video: {host}',
+    },
     videosCount: '{n} video | {n} video',
     viewsCount: '{n} visualizzazione | {n} visualizzazioni',
     search: 'Cerca in titoli e descrizioni',

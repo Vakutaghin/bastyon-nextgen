@@ -18,6 +18,9 @@ vi.mock('@/db/apis/settings-api', () => ({
       settingsStore.set(key, value)
       return key
     },
+    remove: async (key: string) => {
+      settingsStore.delete(key)
+    },
   },
 }))
 vi.mock('@/helpers/changelog/changelog-loader', () => ({ CURRENT_APP_VERSION: '0.2.0' }))
@@ -30,7 +33,6 @@ vi.mock('@/helpers/updates/android-update', () => ({
 }))
 
 import {
-  AUTO_CHECK_INTERVAL_MS,
   checkForUpdate,
   checkForUpdateNow,
   maybeCheckForUpdate,
@@ -185,38 +187,75 @@ describe('use-app-update', () => {
     expect(appFetch).not.toHaveBeenCalled()
   })
 
-  it('автопроверка в упакованной сборке не чаще раза в сутки', async () => {
+  it('проверка — при каждом запуске упакованной сборки, но раз за запуск', async () => {
     vi.stubEnv('DEV', false)
     env.tauri = true
     respondWith(RELEASE)
 
     await maybeCheckForUpdate()
     expect(appFetch).toHaveBeenCalledTimes(1)
+    expect(useAppUpdate().shouldPrompt.value).toBe(true)
 
-    resetAppUpdateForTests()
+    // Окно смонтировали заново — тот же запуск, второй раз не спрашиваем.
     await maybeCheckForUpdate()
     expect(appFetch).toHaveBeenCalledTimes(1)
 
-    // Сутки спустя — снова можно.
-    settingsStore.set('bastyonUpdateLastCheckedAt', Date.now() - AUTO_CHECK_INTERVAL_MS - 1)
+    // Следующий запуск — снова, хоть через минуту.
     resetAppUpdateForTests()
     await maybeCheckForUpdate()
     expect(appFetch).toHaveBeenCalledTimes(2)
+    expect(useAppUpdate().shouldPrompt.value).toBe(true)
   })
 
-  it('неудачная проверка не переводит часы троттлинга', async () => {
+  it('пропущенную версию проверка при запуске не предлагает', async () => {
+    vi.stubEnv('DEV', false)
+    env.capacitor = true
+    settingsStore.set('bastyonUpdateSkippedVersion', '0.3.0')
+    respondWith(RELEASE)
+    await maybeCheckForUpdate()
+    expect(appFetch).toHaveBeenCalledTimes(1)
+    expect(useAppUpdate().shouldPrompt.value).toBe(false)
+  })
+
+  it('ручная проверка — и после проверки при запуске', async () => {
     vi.stubEnv('DEV', false)
     env.tauri = true
-    appFetch.mockRejectedValue(new Error('offline'))
+    respondWith(RELEASE)
     await maybeCheckForUpdate()
-    expect(settingsStore.has('bastyonUpdateLastCheckedAt')).toBe(false)
+    await checkForUpdateNow()
+    expect(appFetch).toHaveBeenCalledTimes(2)
   })
 
-  it('ручная проверка игнорирует троттлинг', async () => {
-    settingsStore.set('bastyonUpdateLastCheckedAt', Date.now())
-    respondWith(RELEASE)
-    await checkForUpdateNow()
-    expect(appFetch).toHaveBeenCalledTimes(1)
+  describe('закрыть окно с галкой «Пропустить эту версию» и без', () => {
+    it('с галкой — версия пропущена и после перезапуска', async () => {
+      respondWith(RELEASE)
+      await checkForUpdate()
+      await useAppUpdate().close(true)
+      expect(useAppUpdate().shouldPrompt.value).toBe(false)
+      expect(settingsStore.get('bastyonUpdateSkippedVersion')).toBe('0.3.0')
+    })
+
+    it('без галки — до следующего запуска, пропуска нет', async () => {
+      respondWith(RELEASE)
+      await checkForUpdate()
+      await useAppUpdate().close(false)
+      expect(useAppUpdate().shouldPrompt.value).toBe(false)
+      expect(useAppUpdate().hasUpdate.value).toBe(true)
+      expect(settingsStore.has('bastyonUpdateSkippedVersion')).toBe(false)
+    })
+
+    it('галку сняли у пропущенной раньше версии — снова напоминать', async () => {
+      respondWith(RELEASE)
+      await checkForUpdate()
+      await useAppUpdate().skip()
+      await checkForUpdateNow({ offerSkipped: true })
+      expect(useAppUpdate().skipped.value).toBe(true)
+
+      await useAppUpdate().close(false)
+      expect(useAppUpdate().skipped.value).toBe(false)
+      expect(settingsStore.has('bastyonUpdateSkippedVersion')).toBe(false)
+      expect(useAppUpdate().hasUpdate.value).toBe(true)
+    })
   })
 
   it('«скачать» открывает страницу релиза наружу', async () => {

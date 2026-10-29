@@ -97,7 +97,7 @@ test('галочки у своего последнего сообщения в 
   await signedInWithDialogs(page)
 
   const sent = row(page, 'Отправленное')
-  await expect(sent.getByTestId('last-mark')).toHaveText('✓', { timeout: 30_000 })
+  await expect(sent.getByTestId('last-mark')).toHaveAttribute('data-mark', '✓', { timeout: 30_000 })
   await expect(sent.getByTestId('last-mark')).toHaveAttribute(
     'title',
     'Отправлено, ещё не прочитано'
@@ -112,6 +112,6 @@ test('галочки у своего последнего сообщения в 
   await expect(row(page, 'Чужое').getByTestId('last-mark')).toHaveCount(0)
 
   const group = row(page, 'Группа')
-  await expect(group.getByTestId('last-mark')).toHaveText('✓')
+  await expect(group.getByTestId('last-mark')).toHaveAttribute('data-mark', '✓')
   await expect(group).toContainText('Вы: всем привет')
 })

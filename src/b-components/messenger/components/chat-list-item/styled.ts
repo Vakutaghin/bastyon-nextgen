@@ -97,10 +97,19 @@ export const SC_LastMessage = styled.div`
 
 /** «…», «✓», «✓✓» у своего последнего сообщения — как у времени в переписке. */
 export const SC_ListTick = styled.span`
+  display: inline-flex;
+  align-items: center;
   margin-right: 4px;
   font-size: 12px;
-  letter-spacing: -2px;
+  line-height: 1;
+  vertical-align: -1px;
   color: var(--ui-text-muted);
+
+  svg {
+    display: block;
+    width: auto;
+    height: 0.9em;
+  }
 
   &.done {
     color: var(--color-primary);

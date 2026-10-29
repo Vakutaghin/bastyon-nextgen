@@ -3315,6 +3315,38 @@ export default {
     filterEmpty: 'Ninguna cuenta de la clasificación tiene este nombre o dirección.',
   },
   mediaStudio: {
+    limits: {
+      button: 'Límites',
+      title: 'Límites de subida',
+      today: 'Hoy puedes subir',
+      signIn: 'Inicia sesión para ver tu límite.',
+      left: 'Quedan {left} de {total}',
+      unlimited: 'Sin límite',
+      window: 'El límite cuenta las últimas 24 horas: lo subido deja de contar al cabo de un día.',
+      failed: 'El servidor de vídeo no respondió y no se pudo saber el límite.',
+      retry: 'Reintentar',
+      tiersTitle: 'De qué depende el límite',
+      tier: {
+        everyone: 'cualquier cuenta',
+        reputation: 'reputación de 100 o más, o al menos 5 PKOIN en el saldo',
+        full: 'cuenta completa',
+        coins: 'al menos 50 PKOIN en el saldo',
+      },
+      yours: 'el tuyo',
+      tiersNote:
+        'El servidor de vídeo recalcula el límite cuando la aplicación vuelve a iniciar sesión en él, así que un límite nuevo no aparece enseguida.',
+      filesTitle: 'Qué archivos acepta el servidor de vídeo',
+      maxSize: 'Un archivo puede tener hasta {max}.',
+      videoFormats: 'Vídeo: {list}.',
+      audioFormats: 'Audio: {list}.',
+      quality:
+        'El servidor de vídeo guarda los vídeos hasta {resolution}p: un archivo mejor solo tarda más en subir y gasta antes el límite.',
+      compress:
+        'En el ordenador puedes reducir el archivo antes de subirlo: la casilla «{option}» en la ventana de subida.',
+      posts: 'Cuántas publicaciones con vídeo puedes publicar al día se ve en «{page}».',
+      postsLink: 'Abrir',
+      server: 'Servidor de vídeo: {host}',
+    },
     videosCount: '{n} vídeo | {n} vídeos',
     viewsCount: '{n} visualización | {n} visualizaciones',
     search: 'Buscar en títulos y descripciones',

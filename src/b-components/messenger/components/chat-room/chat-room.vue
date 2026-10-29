@@ -284,6 +284,7 @@ import SupportReportBar from '../support-report/support-report-bar.vue'
 import { useSupportChat } from '../support-report/use-support-chat'
 import { supportReportPreview } from '../../lib/support-report-preview'
 import { tooLargeForChat } from './too-large-for-chat'
+import { useCloseOnBack } from '@/composables/use-back-button'
 import {
   SC_ChatRoomContainer,
   SC_PartnerStats,
@@ -604,6 +605,10 @@ function listenWhilePickerOpen(open: boolean): void {
 }
 watch(showEmojiPicker, listenWhilePickerOpen)
 onBeforeUnmount(() => listenWhilePickerOpen(false))
+// «Назад» на Android закрывает пикер, а не чат — как Esc.
+useCloseOnBack(showEmojiPicker, () => {
+  showEmojiPicker.value = false
+})
 
 // === PKOIN-донат (только для личных чатов). ===
 const activeChatIdForPkoin = computed<string>(() => store.activeChatId || '')

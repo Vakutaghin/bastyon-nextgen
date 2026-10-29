@@ -40,6 +40,7 @@ import { useI18n } from 'vue-i18n'
 import type { Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { useTorMedia } from '@/composables/use-tor-media'
+import { useCloseOnBack } from '@/composables/use-back-button'
 import MediaDownloadButton from '@/components/media-download-button/media-download-button.vue'
 import {
   SC_ImageMessage,
@@ -171,6 +172,8 @@ watch(lightboxOpen, (open) => {
   if (open) window.addEventListener('keydown', onEsc, true)
   else window.removeEventListener('keydown', onEsc, true)
 })
+// «Назад» на Android — тоже только картинку.
+useCloseOnBack(lightboxOpen, closeLightbox)
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onEsc, true)

@@ -101,8 +101,15 @@
         <span v-if="viaMesh" :title="viaMesh">📡</span>
         <!-- Коротко: сегодня — «14:30», раньше — с датой; полная дата — в подсказке. -->
         <time :datetime="timeIso" :title="formatTime(message.timestamp)">{{ timeShort }}</time>
-        <SC_SeenTick v-if="mark" :class="{ done: mark.done }" :title="mark.title">
-          {{ mark.mark }}
+        <SC_SeenTick
+          v-if="mark"
+          role="img"
+          :class="{ done: mark.done }"
+          :title="mark.title"
+          :aria-label="mark.title"
+          :data-mark="mark.mark"
+        >
+          <DeliveryTicks :mark="mark.mark" />
         </SC_SeenTick>
         <SC_ReactionButton
           v-if="canReact"
@@ -180,6 +187,7 @@ import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import { appToast } from '@/b-components/app-toast'
 import { isMeshTransport, type Message } from '../../types'
 import { deliveryMark } from './delivery-mark'
+import DeliveryTicks from './delivery-ticks.vue'
 import { useMessengerStore } from '../../store'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../../store/consts'
 import { chatUserName, getAddressFromMatrixId } from '../../helpers'

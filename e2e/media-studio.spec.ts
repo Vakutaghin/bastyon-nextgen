@@ -73,6 +73,45 @@ test('окно ролика: название, описание и кадр с �
   await expect(page.getByRole('listitem').filter({ hasText: 'Закат над морем' })).toBeVisible()
 })
 
+test('«Лимиты»: остаток на сегодня, ступень аккаунта, форматы и качество сервера', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await openStudio(page)
+  // Поверх подменного сервера: последний подходящий маршрут побеждает.
+  const api = (path: string) => `**/api/peertube/video.e2e.test/api/v1/${path}`
+  await page.route(api('users/me'), (route) =>
+    route.fulfill({
+      json: { videoChannels: [{ id: 7 }], videoQuotaDaily: 500_000_000, videoQuota: -1 },
+    })
+  )
+  await page.route(api('users/me/video-quota-used'), (route) =>
+    route.fulfill({ json: { videoQuotaUsedDaily: 120_000_000, videoQuotaUsed: 1 } })
+  )
+  await page.route(api('config'), (route) =>
+    route.fulfill({
+      json: {
+        video: { file: { extensions: ['.mp4', '.mkv', '.mp3'] } },
+        transcoding: { enabledResolutions: [144, 480] },
+      },
+    })
+  )
+
+  await page.getByRole('button', { name: 'Лимиты' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Лимиты загрузки' })
+  await expect(dialog).toContainText(/Осталось 380\sМБ из 500\sМБ/, { timeout: 30_000 })
+  await expect(dialog.locator('li.current')).toContainText('репутация от 100')
+  await expect(dialog.locator('li.current')).toContainText('ваш')
+  await expect(dialog).toContainText('Видео: MP4, MKV.')
+  await expect(dialog).toContainText('Звук: MP3.')
+  await expect(dialog).toContainText('до 480p')
+  await expect(dialog).toContainText('Видеосервер: video.e2e.test')
+
+  await dialog.getByRole('button', { name: 'Открыть' }).click()
+  await expect(page).toHaveURL(/\/limits$/)
+  await expect(dialog).toBeHidden()
+})
+
 test('просмотр: обложка и «Смотреть» в окне ролика открывают плеер поверх', async ({ page }) => {
   test.setTimeout(120_000)
   await openStudio(page)

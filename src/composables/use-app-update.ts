@@ -7,6 +7,10 @@
  * SHA-256 и подпись, ставит системный установщик). Где не вышло — страница
  * релиза с установщиками.
  *
+ * Проверка — при каждом запуске приложения, а не при возврате из фона: окно
+ * про новую версию появляется, пока её не поставят или не отметят «Пропустить
+ * эту версию».
+ *
  * Состояние модульное, а не на вызов: одно и то же нужно модалке и кнопке
  * «Проверить обновления» в диагностике — иначе они проверяли бы по отдельности.
  *
@@ -36,11 +40,7 @@ import { logger } from '@/services/logger'
 
 const log = logger.scope('[update]')
 
-const SETTING_KEY_LAST_CHECKED = 'bastyonUpdateLastCheckedAt'
 const SETTING_KEY_SKIPPED_VERSION = 'bastyonUpdateSkippedVersion'
-
-/** Чаще раза в сутки дёргать GitHub незачем: у него ещё и лимит на анонимные запросы. */
-export const AUTO_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
 
 /** Проверка не должна висеть вечно, если сеть молчит. */
 const REQUEST_TIMEOUT_MS = 10_000
@@ -57,6 +57,8 @@ const dismissedForSession = ref(false)
 const offerSkipped = ref(false)
 
 let inflight: Promise<LatestRelease | null> | null = null
+/** Проверка при запуске уже была: модалку монтируют заново — второй раз не спрашиваем. */
+let launchChecked = false
 
 /**
  * Автопроверка — только в упакованной сборке. В браузере «скачайте новую
@@ -73,16 +75,6 @@ async function readSkippedVersion(): Promise<string | null> {
   } catch (e) {
     log.debug('failed to read skipped version', e)
     return null
-  }
-}
-
-async function readLastCheckedAt(): Promise<number> {
-  try {
-    const stored = await settingsAPI.get(SETTING_KEY_LAST_CHECKED)
-    return typeof stored === 'number' && Number.isFinite(stored) ? stored : 0
-  } catch (e) {
-    log.debug('failed to read last check time', e)
-    return 0
   }
 }
 
@@ -125,7 +117,6 @@ export async function checkForUpdate(): Promise<LatestRelease | null> {
         return null
       }
       available.value = isUpdateAvailable(release, CURRENT_APP_VERSION) ? release : null
-      await settingsAPI.set(SETTING_KEY_LAST_CHECKED, Date.now())
       return available.value
     } catch (e) {
       failed.value = true
@@ -142,17 +133,16 @@ export async function checkForUpdate(): Promise<LatestRelease | null> {
 }
 
 /**
- * Фоновая проверка при старте: не в браузере, не в dev и не чаще, чем раз в сутки.
+ * Проверка при запуске: раз за запуск, не в браузере и не в dev. Возврат из
+ * фона на телефоне — не запуск: страница та же, и сюда он не приходит.
  */
 export async function maybeCheckForUpdate(): Promise<void> {
   if (!supportsUpdateCheck()) return
   if (import.meta.env.DEV) return
+  if (launchChecked) return
+  launchChecked = true
 
   skippedVersion.value = await readSkippedVersion()
-
-  const lastCheckedAt = await readLastCheckedAt()
-  if (Date.now() - lastCheckedAt < AUTO_CHECK_INTERVAL_MS) return
-
   await checkForUpdate()
 }
 
@@ -188,6 +178,25 @@ export async function skipAvailableVersion(): Promise<void> {
     await settingsAPI.set(SETTING_KEY_SKIPPED_VERSION, version)
   } catch (e) {
     log.debug('failed to persist skipped version', e)
+  }
+}
+
+/**
+ * Закрыть окно: с галкой «Пропустить эту версию» — больше о ней не напоминать,
+ * без неё — напомнить при следующем запуске. Галку сняли у версии, которую
+ * пропускали раньше (окно открыли кнопкой у номера версии), — снова напоминать.
+ */
+export async function closeUpdatePrompt(skip: boolean): Promise<void> {
+  if (skip) return skipAvailableVersion()
+  dismissUpdate()
+  const version = available.value?.version
+  if (!version || version !== skippedVersion.value) return
+  skippedVersion.value = null
+  offerSkipped.value = false
+  try {
+    await settingsAPI.remove(SETTING_KEY_SKIPPED_VERSION)
+  } catch (e) {
+    log.debug('failed to clear skipped version', e)
   }
 }
 
@@ -273,6 +282,7 @@ export function resetAppUpdateForTests(): void {
   installFailed.value = false
   installNotice.value = null
   inflight = null
+  launchChecked = false
 }
 
 export function useAppUpdate() {
@@ -296,6 +306,9 @@ export function useAppUpdate() {
     maybeCheck: maybeCheckForUpdate,
     dismiss: dismissUpdate,
     skip: skipAvailableVersion,
+    close: closeUpdatePrompt,
+    /** Эту версию уже пропускали — галка «Пропустить» в окне сразу стоит. */
+    skipped: computed(() => !!available.value && available.value.version === skippedVersion.value),
     openReleasePage,
     /** Ставит само: компьютер — и Android, если в релизе есть APK с хешем. */
     canInstall: computed(() => supportsInAppInstall()),

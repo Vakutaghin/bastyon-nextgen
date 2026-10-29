@@ -14,8 +14,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useModalStore } from '@/stores/modal-store'
+import { useCloseOnBack } from '@/composables/use-back-button'
 import ImageGallery from './image-gallery.vue'
 
 const modalStore = useModalStore()
 const gallery = computed(() => modalStore.imageGallery)
+
+// «Назад» на Android закрывает картинку, а не страницу под ней.
+useCloseOnBack(
+  () => gallery.value.isOpen,
+  () => modalStore.closeImageGallery()
+)
 </script>

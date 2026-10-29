@@ -10,7 +10,7 @@ The “Media studio” is the section for your video and audio, like YouTube Stu
 
 The section is in the account menu: **“Media studio”**. Under the title you see how many clips you have and how many views they have together.
 
-The list has all your clips: those from your posts — whichever video server they are on — and the unpublished ones on the servers that take uploads now. The button with arrows next to **“Upload”** is **“Refresh”**.
+The list has all your clips: those from your posts — whichever video server they are on — and the unpublished ones on the servers that take uploads now. The button with arrows next to **“Upload”** is **“Refresh”**, and **“Limits”** shows how much more you can upload today and which files the video server accepts — see [Uploading video and audio](video-upload.md#limits).
 
 Above the list:
 
@@ -86,7 +86,6 @@ The post itself can be deleted like any other — see [Editing or deleting a pos
 
 ## What is not there yet
 
-- The video server quota is not shown — only during an upload, when a file does not fit.
 - You cannot replace the file of an uploaded clip, or add subtitles or chapters.
 - The clip's tags on the video server are not edited here: Bastyon does not show them anywhere, and post tags are set in the post.
 

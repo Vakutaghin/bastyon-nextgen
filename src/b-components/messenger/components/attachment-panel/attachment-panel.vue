@@ -44,6 +44,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PaperClipOutlined } from '@/components/icons'
+import { useCloseOnBack } from '@/composables/use-back-button'
 import { SC_AttachmentRoot, SC_AttachButton, SC_Menu, SC_MenuItem, SC_HiddenInput } from './styled'
 
 const props = defineProps<{
@@ -146,6 +147,9 @@ const onKeydown = (e: KeyboardEvent) => {
   e.stopPropagation()
   closeMenu()
 }
+
+// «Назад» на Android — тоже меню, а не чат.
+useCloseOnBack(menuOpen, closeMenu)
 
 onMounted(() => {
   document.addEventListener('click', onClickOutside, true)

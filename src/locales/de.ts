@@ -3340,6 +3340,40 @@ export default {
     filterEmpty: 'Kein Top-Konto hat diesen Namen oder diese Adresse.',
   },
   mediaStudio: {
+    limits: {
+      button: 'Limits',
+      title: 'Upload-Limits',
+      today: 'Heute kannst du hochladen',
+      signIn: 'Melde dich an, um dein Limit zu sehen.',
+      left: '{left} von {total} übrig',
+      unlimited: 'Unbegrenzt',
+      window:
+        'Das Limit gilt für die letzten 24 Stunden: Ein Upload zählt nach einem Tag nicht mehr.',
+      failed: 'Der Videoserver hat nicht geantwortet, das Limit ist unbekannt.',
+      retry: 'Erneut versuchen',
+      tiersTitle: 'Wovon das Limit abhängt',
+      tier: {
+        everyone: 'jedes Konto',
+        reputation: 'Reputation ab 100 oder mindestens 5 PKOIN Guthaben',
+        full: 'vollwertiges Konto',
+        coins: 'mindestens 50 PKOIN Guthaben',
+      },
+      yours: 'deins',
+      tiersNote:
+        'Der Videoserver berechnet das Limit neu, wenn sich die App erneut bei ihm anmeldet. Ein neues Limit erscheint daher nicht sofort.',
+      filesTitle: 'Welche Dateien der Videoserver annimmt',
+      maxSize: 'Eine Datei darf höchstens {max} groß sein.',
+      videoFormats: 'Video: {list}.',
+      audioFormats: 'Audio: {list}.',
+      quality:
+        'Der Videoserver speichert Videos in bis zu {resolution}p: Eine bessere Datei lädt nur länger hoch und verbraucht das Limit schneller.',
+      compress:
+        'Am Computer lässt sich die Datei vor dem Hochladen verkleinern: Häkchen „{option}“ im Upload-Fenster.',
+      posts:
+        'Wie viele Beiträge mit Video du pro Tag veröffentlichen kannst, steht unter „{page}“.',
+      postsLink: 'Öffnen',
+      server: 'Videoserver: {host}',
+    },
     videosCount: '{n} Video | {n} Videos',
     viewsCount: '{n} Aufruf | {n} Aufrufe',
     search: 'Titel und Beschreibungen durchsuchen',

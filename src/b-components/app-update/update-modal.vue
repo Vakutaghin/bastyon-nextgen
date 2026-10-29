@@ -31,34 +31,37 @@
       </template>
       <SC_Meta v-else>{{ hint }}</SC_Meta>
 
+      <!-- Галка действует, когда окно закрывают: «Обновить» ставит версию и с ней. -->
       <SC_Footer>
-        <SC_GhostButton type="button" :disabled="installing" @click="onSkip">
+        <Checkbox v-model:checked="skipThis" :disabled="installing">
           {{ t('update.skip') }}
-        </SC_GhostButton>
-        <SC_GhostButton type="button" :disabled="installing" @click="onLater">
-          {{ t('update.later') }}
-        </SC_GhostButton>
-        <SC_PrimaryButton
-          v-if="installsItself"
-          type="button"
-          :disabled="installing"
-          @click="onInstall"
-        >
-          {{ t('update.install') }}
-        </SC_PrimaryButton>
-        <SC_PrimaryButton v-else type="button" @click="onDownload">
-          {{ t('update.download') }}
-        </SC_PrimaryButton>
+        </Checkbox>
+        <SC_Buttons>
+          <SC_GhostButton type="button" :disabled="installing" @click="onLater">
+            {{ skipThis ? t('common.close') : t('update.later') }}
+          </SC_GhostButton>
+          <SC_PrimaryButton
+            v-if="installsItself"
+            type="button"
+            :disabled="installing"
+            @click="onInstall"
+          >
+            {{ t('update.install') }}
+          </SC_PrimaryButton>
+          <SC_PrimaryButton v-else type="button" @click="onDownload">
+            {{ t('update.download') }}
+          </SC_PrimaryButton>
+        </SC_Buttons>
       </SC_Footer>
     </SC_Wrap>
   </Modal>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { bcp47 } from '@/i18n'
-import { Modal, Progress } from 'ant-design-vue'
+import { Checkbox, Modal, Progress } from 'ant-design-vue'
 import { appToast } from '@/b-components/app-toast'
 import { useAppUpdate } from '@/composables/use-app-update'
 import { copyText } from '@/helpers/common/clipboard'
@@ -67,6 +70,7 @@ import {
   SC_Headline,
   SC_Meta,
   SC_Footer,
+  SC_Buttons,
   SC_GhostButton,
   SC_PrimaryButton,
 } from './update-modal.styled'
@@ -77,8 +81,8 @@ const {
   shouldPrompt,
   currentVersion,
   maybeCheck,
-  dismiss,
-  skip,
+  close,
+  skipped,
   openReleasePage,
   canInstall,
   installsWithConfirmation,
@@ -88,6 +92,16 @@ const {
   installNotice,
   install,
 } = useAppUpdate()
+
+/** «Пропустить эту версию»: окно открыли кнопкой у номера, а версию уже пропускали, — стоит. */
+const skipThis = ref(false)
+watch(
+  shouldPrompt,
+  (open) => {
+    if (open) skipThis.value = skipped.value
+  },
+  { immediate: true }
+)
 
 /** Компьютер и Android ставят обновление сами; не вышло — как раньше, страница релиза. */
 const installsItself = computed<boolean>(() => canInstall.value && !installFailed.value)
@@ -125,7 +139,7 @@ const publishedLabel = computed<string>(() => {
 })
 
 function onLater(): void {
-  dismiss()
+  void close(skipThis.value)
 }
 
 function onOpenChange(value: boolean): void {
@@ -137,15 +151,11 @@ async function onInstall(): Promise<void> {
   await install()
 }
 
-async function onSkip(): Promise<void> {
-  await skip()
-}
-
 async function onDownload(): Promise<void> {
   // Закрываем сразу: страница релиза открывается снаружи, и возвращаться
   // пользователю в висящую модалку незачем.
   const url = available.value?.pageUrl
-  dismiss()
+  void close(skipThis.value)
   if ((await openReleasePage()) || !url) return
   // Браузер не открылся (на компьютере до 0.9.3 — всегда): ссылка в буфер и
   // на экран, а не молча закрытое окно.

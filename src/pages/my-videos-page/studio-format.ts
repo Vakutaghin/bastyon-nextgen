@@ -47,13 +47,12 @@ export function formatStudioDateTime(ms: number): string {
   })
 }
 
-/** Размер файла: «850 КБ», «16 МБ», «1,2 ГБ». */
-export function formatSize(bytes: number): string {
+function formatBytes(bytes: number, base: 1000 | 1024): string {
   const units = ['byte', 'kilobyte', 'megabyte', 'gigabyte'] as const
   let value = bytes
   let unit = 0
   while (value >= 1000 && unit < units.length - 1) {
-    value /= 1024
+    value /= base
     unit++
   }
   return numberFormat({
@@ -63,6 +62,15 @@ export function formatSize(bytes: number): string {
     maximumFractionDigits: value < 10 && unit > 0 ? 1 : 0,
   }).format(value)
 }
+
+/** Размер файла: «850 КБ», «16 МБ», «1,2 ГБ». */
+export const formatSize = (bytes: number): string => formatBytes(bytes, 1024)
+
+/**
+ * Лимит загрузки: «250 МБ», «2 ГБ». Видеосервер считает его в десятичных
+ * байтах (250 000 000), и по 1024 ступень «250 МБ» вышла бы «238 МБ».
+ */
+export const formatQuota = (bytes: number): string => formatBytes(Math.max(0, bytes), 1000)
 
 const unitFormat = (unit: 'hour' | 'minute' | 'second', value: number): string =>
   numberFormat({ style: 'unit', unit, unitDisplay: 'short' }).format(value)

@@ -3336,6 +3336,39 @@ export default {
     filterEmpty: 'Aucun compte du top n’a ce nom ou cette adresse.',
   },
   mediaStudio: {
+    limits: {
+      button: 'Limites',
+      title: "Limites d'envoi",
+      today: "Aujourd'hui, vous pouvez envoyer",
+      signIn: 'Connectez-vous pour voir votre limite.',
+      left: 'Reste {left} sur {total}',
+      unlimited: 'Sans limite',
+      window:
+        'La limite porte sur les dernières 24 heures : un envoi cesse de compter au bout d’un jour.',
+      failed: 'Le serveur vidéo n’a pas répondu, la limite est inconnue.',
+      retry: 'Réessayer',
+      tiersTitle: 'De quoi dépend la limite',
+      tier: {
+        everyone: 'tout compte',
+        reputation: 'réputation d’au moins 100 ou au moins 5 PKOIN de solde',
+        full: 'compte complet',
+        coins: 'au moins 50 PKOIN de solde',
+      },
+      yours: 'la vôtre',
+      tiersNote:
+        'Le serveur vidéo recalcule la limite quand l’application s’y reconnecte : une nouvelle limite n’apparaît donc pas tout de suite.',
+      filesTitle: 'Fichiers acceptés par le serveur vidéo',
+      maxSize: 'Un fichier peut faire jusqu’à {max}.',
+      videoFormats: 'Vidéo : {list}.',
+      audioFormats: 'Audio : {list}.',
+      quality:
+        'Le serveur vidéo conserve les vidéos jusqu’en {resolution}p : un fichier de meilleure qualité est seulement plus long à envoyer et use la limite plus vite.',
+      compress:
+        'Sur ordinateur, vous pouvez réduire le fichier avant l’envoi : case « {option} » dans la fenêtre d’envoi.',
+      posts: 'Le nombre de publications vidéo autorisées par jour est indiqué dans « {page} ».',
+      postsLink: 'Ouvrir',
+      server: 'Serveur vidéo : {host}',
+    },
     videosCount: '{n} vidéo | {n} vidéos',
     viewsCount: '{n} vue | {n} vues',
     search: 'Rechercher dans les titres et descriptions',
