@@ -118,7 +118,9 @@ export class MatrixService {
     })
 
     if (accessToken) {
-      await this.client.startClient({ initialSyncLimit: 1 })
+      // Присутствие («в сети») не объявляем — как и прежний чат Bastyon: синк
+      // идёт с set_presence=offline, а чужое присутствие приложение не показывает.
+      await this.client.startClient({ initialSyncLimit: 1, disablePresence: true })
       this.startKeepAlive()
     }
     return true

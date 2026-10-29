@@ -258,7 +258,7 @@ describe('reportVideoView', () => {
         report: { currentTime: 15, viewEvent: 'seek' },
         fetchInstance: ok.fetchInstance,
       })
-    ).toBe(true)
+    ).toBe('accepted')
     expect(ok.calls[0]!.path).toBe('api/v1/videos/u/views')
     expect(ok.calls[0]!.init.method).toBe('POST')
     expect(JSON.parse(ok.calls[0]!.init.body as string)).toEqual({
@@ -275,14 +275,20 @@ describe('reportVideoView', () => {
         report: { currentTime: 20 },
         fetchInstance: seen,
       })
-    ).toBe(true)
-    expect(
-      await reportVideoView({
+    ).toBe('accepted')
+  })
+
+  it('ролика нет — rejected; перегрузка и сбой сервера — failed', async () => {
+    const status = (code: number) =>
+      reportVideoView({
         host: 'h',
         id: 'u',
         report: { currentTime: 20 },
-        fetchInstance: fakeFetch(jsonRes({}, 404)).fetchInstance,
+        fetchInstance: fakeFetch(jsonRes({}, code)).fetchInstance,
       })
-    ).toBe(false)
+    expect(await status(404)).toBe('rejected')
+    expect(await status(400)).toBe('rejected')
+    expect(await status(429)).toBe('failed')
+    expect(await status(502)).toBe('failed')
   })
 })

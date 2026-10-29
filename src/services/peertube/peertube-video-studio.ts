@@ -8,10 +8,10 @@
  *    знаков или null (пустая строка не проходит проверку, поэтому JSON, а не
  *    multipart: в форме null не передать);
  *  - videos/:id/stats/{overall,timeseries/:metric,retention} — от автора;
- *  - POST videos/:id/views {currentTime, viewEvent?} — от плеера раз в 5 с,
- *    как у встроенного плеера PeerTube в прежнем Bastyon. Просмотр сервер
- *    засчитывает один раз на IP, а из отметок собирает зрителей, время
- *    просмотра, удержание и страны.
+ *  - POST videos/:id/views {currentTime, viewEvent?} — от плеера раз в 30 с,
+ *    как у встроенного плеера в прежнем Bastyon (USER_VIEW_VIDEO_INTERVAL).
+ *    Просмотр сервер засчитывает один раз на IP, а из отметок собирает
+ *    зрителей, время просмотра, удержание и страны.
  */
 
 import { peertubeInstanceFetch, type InstanceFetch } from './peertube-instance'
@@ -294,21 +294,28 @@ export interface VideoViewReport {
 }
 
 /**
+ * Что стало с отметкой: `accepted` — учтена; `rejected` — ролика нет или
+ * время не то, дальше отмечать незачем; `failed` — сервер перегружен или
+ * сбоит, следующую отметку стоит отправить.
+ */
+export type ViewReportResult = 'accepted' | 'rejected' | 'failed'
+
+/**
  * POST videos/:id/views. 409 — просмотр с этого адреса уже засчитан: отметку
- * сервер всё равно учёл, это не ошибка. false — сервер отметку не принял
- * (ролика нет, сервер не отвечает): дальше отмечать незачем.
+ * сервер всё равно учёл, это не ошибка.
  */
 export async function reportVideoView(params: {
   host: string
   id: string
   report: VideoViewReport
   fetchInstance?: InstanceFetch
-}): Promise<boolean> {
+}): Promise<ViewReportResult> {
   const fetchInstance = instanceFetchFor(params.host, params.fetchInstance)
   const res = await fetchInstance(videoPath(params.id, '/views'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params.report),
   })
-  return res.ok || res.status === 409
+  if (res.ok || res.status === 409) return 'accepted'
+  return res.status === 429 || res.status >= 500 ? 'failed' : 'rejected'
 }

@@ -76,9 +76,9 @@ In the Android app a clip or audio keeps playing when you minimise the app or tu
 
 ## Views
 
-While a clip plays, the player tells the video server every 5 seconds how far you have watched — as the player of the earlier Bastyon app did. From these reports the server counts views, viewers, watch time, retention and countries, and the author sees them in the [“Media studio”](media-studio.md#statistics). The server counts a view from one address once.
+While a clip plays, the player tells the video server every 30 seconds how far you have watched — as the player of the earlier Bastyon app did. From these reports the server counts views, viewers, watch time, retention and countries, and the author sees them in the [“Media studio”](media-studio.md#statistics). The server counts a view from one address once.
 
-The first report goes after 5 seconds of playback: a clip that flashed by while you scrolled the feed does not count as a view. Nothing is reported while paused. With Tor, the reports go through Tor.
+The first report goes after 5 seconds of playback: a clip that flashed by while you scrolled the feed does not count as a view. Nothing is reported while paused. If the server is overloaded or the connection drops, the player tries again with the next report. With Tor, the reports go through Tor.
 
 ## With Tor
 
