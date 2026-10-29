@@ -78,11 +78,18 @@
           </SC_ViewSwitch>
         </SC_Toolbar>
 
-        <SC_Note v-if="failedHosts.length" class="warning" role="alert">
-          {{ t('videoStudio.loadFailed') }}
-        </SC_Note>
+        <!-- Видеосерверы отвечают кто за секунду, кто за минуту: что пришло, уже
+             в списке, а пока ждём остальных — строка загрузки. -->
+        <SC_Loading v-if="loading && videos.length" role="status" data-testid="studio-loading">
+          <Spin size="small" />
+          {{ t('videoStudio.loadingMore') }}
+        </SC_Loading>
         <Spin v-if="loading && !videos.length" />
-        <SC_Note v-else-if="loaded && !videos.length && !failedHosts.length">
+        <SC_Note v-else-if="loaded && !videos.length && failedHosts.length" role="alert">
+          {{ t('videoStudio.listFailed') }}
+          <Button type="link" @click="load">{{ t('videoStudio.retry') }}</Button>
+        </SC_Note>
+        <SC_Note v-else-if="loaded && !videos.length">
           {{ t('videoStudio.empty') }}
         </SC_Note>
         <SC_Note v-else-if="videos.length && !shown.length">
@@ -186,6 +193,7 @@ import {
   SC_Summary,
   SC_Section,
   SC_Note,
+  SC_Loading,
   SC_Toolbar,
   SC_Search,
   SC_ViewSwitch,

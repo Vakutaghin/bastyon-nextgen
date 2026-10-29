@@ -104,6 +104,19 @@ describe('collections-store', () => {
     expect(store.ofKind(ADDRESS, 'video').map((c) => c.txid)).toEqual([tx(1)])
   })
 
+  it('смена аккаунта после входа не стирает уже загруженный список: открытая страница его не перезапросит', async () => {
+    api.fetchProfileCollections.mockResolvedValue([row(tx(1), [tx(11)], { contentTypes: '201' })])
+    api.fetchCollectionItems.mockResolvedValue([])
+    const store = useCollectionsStore()
+    store.attach(ADDRESS)
+    await store.loadAuthor(ADDRESS)
+    // Так сбрасывает resetAccountScopedStores — асинхронно, уже после входа.
+    store.reset()
+    store.attach(ADDRESS)
+    expect(store.statusOf(ADDRESS)).toBe('ready')
+    expect(store.ofKind(ADDRESS, 'video').map((c) => c.txid)).toEqual([tx(1)])
+  })
+
   it('новая коллекция видна сразу, а правка, пока она не в блоке, ждёт и уходит сама', async () => {
     api.fetchProfileCollections.mockResolvedValue([])
     api.fetchCollectionItems.mockResolvedValue([video(tx(11))])

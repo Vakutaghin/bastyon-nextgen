@@ -3,10 +3,15 @@
     <SC_Block>
       <SC_BlockHead>
         <SC_BlockTitle>{{ t(`collections.mine.${kind}`) }}</SC_BlockTitle>
-        <Button @click="createPublic">
-          <template #icon><PlusOutlined /></template>
-          {{ t('collections.newPlaylist') }}
-        </Button>
+        <SC_HeadActions>
+          <router-link to="/collections" class="manage" data-testid="shelf-link">
+            {{ t('shelf.manage') }}
+          </router-link>
+          <Button @click="createPublic">
+            <template #icon><PlusOutlined /></template>
+            {{ t('collections.newPlaylist') }}
+          </Button>
+        </SC_HeadActions>
       </SC_BlockHead>
       <SC_Note>{{ t('collections.publicNote') }}</SC_Note>
       <SC_CardsGrid v-if="own.length" :class="{ square: kind === 'audio' }">
@@ -79,6 +84,7 @@ import {
   SC_BlockTitle,
   SC_CardsGrid,
   SC_Empty,
+  SC_HeadActions,
   SC_ListRows,
   SC_Note,
 } from '@/pages/media-section/media-section.styled'

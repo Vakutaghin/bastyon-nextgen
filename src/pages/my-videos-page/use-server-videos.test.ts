@@ -34,7 +34,7 @@ vi.mock('@/services/peertube/peertube-videos', () => ({
 }))
 
 import { PENDING_POST_TTL_MS, usePendingPostsStore } from '@/stores/pending-posts-store'
-import { HOST_SLOW_MS, POSTS_SOURCE, useServerVideos } from './use-server-videos'
+import { HOST_WAIT_MS, POSTS_SOURCE, useServerVideos } from './use-server-videos'
 
 const posts = (entries: Record<string, string[]>) =>
   new Map(
@@ -99,7 +99,7 @@ describe('useServerVideos', () => {
     expect(api.loaded.value).toBe(true)
   })
 
-  it('один сервер не ответил — остальные показаны, сбой виден', async () => {
+  it('один сервер не ответил — остальные показаны, сбой отмечен', async () => {
     mocks.list.mockImplementation(async ({ host }: { host: string }) => {
       if (host === 'b.host') throw new Error('peertube_my_videos_502')
       return { total: 1, data: [{ id: 1, uuid: 'u1', name: 'Море' }] }
@@ -110,7 +110,7 @@ describe('useServerVideos', () => {
     expect(api.failedHosts.value).toEqual(['b.host'])
   })
 
-  it('медленный сервер не держит список: быстрые видны сразу, его ролики добавятся, когда ответит', async () => {
+  it('медленный сервер не держит список: быстрые видны сразу, пока он молчит — загрузка, его ролики добавятся', async () => {
     vi.useFakeTimers()
     try {
       const slow = deferred<{ total: number; data: unknown[] }>()
@@ -127,10 +127,15 @@ describe('useServerVideos', () => {
       )
       expect(api.loading.value).toBe(true)
 
-      await vi.advanceTimersByTimeAsync(HOST_SLOW_MS)
+      // Минута — как у перегруженного сервера: загрузка ещё идёт, без «сбоя».
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(api.loading.value).toBe(true)
+      expect(api.failedHosts.value).toEqual([])
+
+      await vi.advanceTimersByTimeAsync(HOST_WAIT_MS - 60_000)
       expect(api.loading.value).toBe(false)
       expect(api.loaded.value).toBe(true)
-      expect(api.failedHosts.value).toEqual(['a.host'])
+      expect(api.failedHosts.value).toEqual([])
 
       slow.resolve({ total: 1, data: [{ id: 1, uuid: 'u1', name: 'Море', state: { id: 1 } }] })
       await loading
@@ -144,6 +149,30 @@ describe('useServerVideos', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('новая загрузка во время медленной: ролик, загруженный только что, виден, не дожидаясь сервера', async () => {
+    const slow = deferred<{ total: number; data: unknown[] }>()
+    mocks.list.mockImplementation(() => slow.promise)
+    const api = useServerVideos()
+    const first = api.load()
+    await vi.waitFor(() => expect(mocks.list).toHaveBeenCalledTimes(2))
+
+    mocks.list.mockImplementation(async ({ host }: { host: string }) =>
+      host === 'a.host' ? { total: 1, data: [{ id: 5, uuid: 'u5', name: 'Новое' }] } : slow.promise
+    )
+    const second = api.load()
+    await vi.waitFor(() =>
+      expect(api.videos.value.map((v) => v.pointer)).toEqual(['peertube://a.host/u5'])
+    )
+    // Ответ прежней загрузки уже не в счёт.
+    slow.resolve({ total: 1, data: [{ id: 9, uuid: 'u9', name: 'Старое' }] })
+    await Promise.all([first, second])
+    expect(api.videos.value.map((v) => v.pointer)).toEqual([
+      'peertube://a.host/u5',
+      'peertube://b.host/u9',
+    ])
+    expect(api.loading.value).toBe(false)
   })
 
   it('«Обновить» не прячет прежний список, пока серверы отвечают', async () => {
@@ -243,7 +272,7 @@ describe('useServerVideos', () => {
     })
   })
 
-  it('посты не пришли — ролики с серверов видны, сбой виден', async () => {
+  it('посты не пришли — ролики с серверов видны, сбой отмечен', async () => {
     mocks.postsPage.mockRejectedValue(new Error('rpc'))
     const api = useServerVideos()
     await api.load()

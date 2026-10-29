@@ -114,11 +114,12 @@ const profileLink = computed<string>(() => {
 })
 
 // Те же пункты и порядок, что в меню аккаунта на компьютере (Настройки →
-// «Шапка и меню»), без «Справки»: она уже есть в разделах выше.
+// «Шапка и меню»), без «Справки» и «Коллекций»: они уже есть в разделах выше.
+const IN_SECTIONS: readonly MenuItemId[] = ['help', 'collections']
 const { menuItems, sidebarBlocks } = useHeaderLayout()
 const accountItems = computed(() =>
   menuItems.value
-    .filter((id) => id !== 'help')
+    .filter((id) => !IN_SECTIONS.includes(id))
     .map((id) => ({
       id,
       path: id === 'profile' ? profileLink.value : MENU_ITEM_PATHS[id],

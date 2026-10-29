@@ -36,6 +36,7 @@ const VideoPage = () => import('@/pages/video-page/video-page.vue')
 const AudioPage = () => import('@/pages/audio-page/audio-page.vue')
 const CollectionPage = () => import('@/pages/collection-page/collection-page.vue')
 const LibraryPage = () => import('@/pages/library-page/library-page.vue')
+const MyCollectionsPage = () => import('@/pages/my-collections-page/my-collections-page.vue')
 
 /** Маршруты, для которых нужна авторизация (перед проверкой вызываем restoreSession). */
 const AUTH_REQUIRED_NAMES = new Set([
@@ -200,6 +201,13 @@ const router = createRouter({
         const c = typeof to.query.c === 'string' ? to.query.c.toLowerCase() : ''
         return /^[0-9a-f]{64}$/.test(c) ? { path: `/collection/${c}`, query: {} } : { path: '/' }
       },
+    },
+    // Свои коллекции, плейлисты и личные списки — все в одном месте.
+    {
+      path: '/collections',
+      name: 'my-collections',
+      component: MyCollectionsPage,
+      meta: { titleKey: 'routes.myCollections', helpTopic: 'collections' },
     },
     // Личный список: «Сохранённые», «Смотреть позже», «Моя музыка», личный плейлист.
     {

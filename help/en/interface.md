@@ -38,6 +38,7 @@ The bug icon — **“Report a bug”** — can be added to the header; by defau
 Feed and app sections:
 
 - **“Feed”**, **“Subscriptions”** (once you are signed in), **“Video”**, **“Audio”**, **“Articles”**, **“Favorites”**, **“Discussed”** — see [Feed](feed.md);
+- **“Collections”** — your collections, playlists and private lists, see [Collections and playlists](collections.md#all-of-yours-on-one-page);
 - **“Services”** — see [Services](mini-apps.md); pinned mini apps are listed below, under the line;
 - **“Top accounts”** — the accounts with the highest reputation in the network, see [Top accounts](top-accounts.md);
 - **“Blockchain explorer”** — [blocks, transactions, addresses and the node network map](explorer.md);
@@ -60,6 +61,7 @@ Click your avatar in the header. By default the menu has:
 - **“Wallets”** — see [Wallet and PKOIN](wallet.md);
 - **“Paid subscriptions”** — see [Paid subscriptions](paid-subscriptions.md);
 - **“Media studio”** — uploading video and audio, your clips, their covers and statistics, see [Media studio](media-studio.md);
+- **“Collections and playlists”** — everything you have put together, see [Collections and playlists](collections.md#all-of-yours-on-one-page);
 - **“My files”** — only in the desktop app, see [My files](my-files.md);
 - **“Limits”** — see [Account status and limits](limits.md);
 - **“Mesh networks”** — in the desktop app and on Android, see [Mesh networks](mesh.md);

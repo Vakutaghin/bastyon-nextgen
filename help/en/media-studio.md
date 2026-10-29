@@ -32,7 +32,7 @@ Click the cover to watch the clip or listen to the recording: it opens in a wind
 
 For a clip on a video server that has been retired, the app takes the cover from its archive. If a cover does not load — the server does not answer or its certificate has expired — the app looks the clip up the way the player does, and if that fails too, it shows a clip icon instead of an empty picture.
 
-There are several video servers, and they answer at different speeds. Clips from each one appear as soon as it answers. If a server or the list of posts stays silent for more than 15 seconds, **“Not every video server sent its list — some videos may be missing.”** appears; when it answers later, its clips are added on their own.
+There are several video servers, and they answer at different speeds: one in a second, a busy one in a minute. Clips from each one appear as soon as it answers, and while some are still silent, **“Loading videos from the video servers…”** shows above the list. If nothing arrives at all, **“Couldn’t load the list of videos.”** appears with a **“Retry”** button.
 
 ## Clip details
 

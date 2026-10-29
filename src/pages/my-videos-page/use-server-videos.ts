@@ -9,9 +9,10 @@
  *
  * Ролики из источника видны, как только он ответил: серверы отвечают от долей
  * секунды до минуты (у перегруженного каждый запрос к базе — 40–60 с), и
- * раньше список ждал самого медленного. Кто молчит дольше HOST_SLOW_MS,
- * попадает в «не со всех пришёл список»; ответит позже — его ролики
- * добавятся, а предупреждение уйдёт.
+ * раньше список ждал самого медленного. Пока кто-то молчит, идёт загрузка;
+ * после HOST_WAIT_MS она заканчивается, а ответит сервер позже — его ролики
+ * добавятся. Не ответивший сервер не предупреждает: в failedHosts он только
+ * для случая, когда не пришло ничего.
  *
  * Пост с роликом отправлен, но ещё не в блоке — «Публикуется» (pending-posts);
  * попал в блок — ролик сам становится «В посте», без перезагрузки.
@@ -46,8 +47,8 @@ export const SERVER_PAGE_SIZE = 30
 export const POSTS_PAGE_SIZE = 50
 export const POSTS_MAX_PAGES = 20
 
-/** Сколько ждать источник, прежде чем показать, что список пришёл не со всех. */
-export const HOST_SLOW_MS = 15_000
+/** Сколько показывать загрузку, пока молчат последние источники. */
+export const HOST_WAIT_MS = 120_000
 
 /** Пост попал в блок, а нода ещё не нашла его по ссылке — спросить снова через… */
 export const POSTED_RECHECK_MS = [0, 5_000, 20_000]
@@ -260,8 +261,9 @@ export function useServerVideos() {
     }
   }
 
+  /** Новая загрузка заменяет идущую: ролик, загруженный только что, не ждёт медленный сервер. */
   async function load(): Promise<void> {
-    if (!signedIn.value || loading.value) return
+    if (!signedIn.value) return
     const gen = ++generation
     loading.value = true
     failedHosts.value = []
@@ -290,16 +292,8 @@ export function useServerVideos() {
     bySource = new Map(sources.map((source) => [source, before.get(source) ?? []]))
     publish()
 
-    const waiting = new Set(sources)
-    const slow = setTimeout(() => {
-      markFailed([...waiting])
-      done()
-    }, HOST_SLOW_MS)
-    const settle = (source: string) => () => waiting.delete(source)
-    await Promise.all([
-      ...hosts.map((host) => loadHost(host, gen).finally(settle(host))),
-      loadPosts(gen).finally(settle(POSTS_SOURCE)),
-    ])
+    const slow = setTimeout(done, HOST_WAIT_MS)
+    await Promise.all([...hosts.map((host) => loadHost(host, gen)), loadPosts(gen)])
     clearTimeout(slow)
     done()
   }

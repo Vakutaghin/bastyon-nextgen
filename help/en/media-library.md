@@ -16,6 +16,8 @@ Entries are added from a video's or track's menu and from the **“Add to…”*
 
 Any list plays in a row: **“Play all”** or **“Shuffle”**.
 
+All private lists, together with public playlists and collections, are on the **“Collections”** page in the left panel, where you also create, rename and delete them — see [All of yours on one page](collections.md#all-of-yours-on-one-page).
+
 ## Where they are kept
 
 Not in the blockchain but in your account data on the chat server — next to the list of [messenger channels](channels.md). That means:

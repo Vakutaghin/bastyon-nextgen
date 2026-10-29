@@ -66,11 +66,16 @@ export const SC_Note = styled.div`
   padding: 24px 0;
   font-size: 14px;
   color: var(--ui-text-muted);
+`
 
-  &.warning {
-    padding: 8px 0;
-    color: var(--ui-error);
-  }
+/** Часть роликов уже в списке, остальные серверы ещё отвечают. */
+export const SC_Loading = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${() => SPACING.SM};
+  margin-bottom: ${() => SPACING.MD};
+  font-size: 14px;
+  color: var(--ui-text-muted);
 `
 
 /** Поиск, фильтр, порядок и вид — одной строкой над списком. */

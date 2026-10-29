@@ -10,6 +10,15 @@ A **collection** is a selection of posts with a name, cover and description. A *
 
 Collections and playlists are public: they are kept in the blockchain, like posts, and everyone sees them. The previous Bastyon shows them too — playlists as ordinary collections. Put what only you should see into [private lists](media-library.md).
 
+## All of yours on one page
+
+**“Collections”** in the left panel or **“Collections and playlists”** in the account menu opens everything you have put together: collections of posts, video playlists, audio playlists and albums, and below them your private lists — **“Saved videos”**, **“Watch later”**, **“My music”** and private playlists. On a phone it is **“Collections”** in the side menu. The **“All collections and playlists”** link is also on the **“Playlists”** tab of the Video and Audio sections and on your own profile.
+
+- The buttons at the top choose what to show: **“All”**, **“Collections”**, **“Video”**, **“Audio”**, **“Private”**. When there are many entries, a search by name appears.
+- **“Create”** — a video playlist, an audio playlist or album, a private video or audio playlist. A collection of posts is put together from posts: the network won’t accept an empty one, so tap **“To collection”** under a post and choose **“New collection”**.
+- The three-dot button on a row: for a public one — **“Edit”** (opens the editor), how many edits are left this month, **“Share”** (copies the link) and **“Delete”**; for a private playlist — **“Rename”** and **“Delete”**. The app asks before deleting. Built-in lists have no menu: they can’t be renamed or deleted.
+- Until a change is in a block, the row is marked **“Publishing”** or **“Deleting”**, and it can’t be edited until the network confirms it. **“Not in a block”** means the transaction wasn’t confirmed within an hour: **“Dismiss”** in the menu hides the row.
+
 ## Adding an entry
 
 - Under a post — the **“To collection”** button, for video and audio **“To playlist”**.

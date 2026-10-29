@@ -62,6 +62,14 @@ export const tabsData: {
     disabled: false,
   },
   {
+    id: 12,
+    key: 'collections',
+    labelKey: 'sidebarData.tabs.collections',
+    icon: 'CollectionIcon',
+    active: false,
+    disabled: false,
+  },
+  {
     id: 7,
     key: 'discussed',
     labelKey: 'sidebarData.tabs.discussed',

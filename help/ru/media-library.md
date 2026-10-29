@@ -1,6 +1,6 @@
 ---
 keywords: [личные списки, сохранённые, смотреть позже, моя музыка, личный плейлист, синхронизация]
-code: [src/services/media-library, src/stores/media-library-store.ts, src/pages/library-page, src/b-components/media/library-list]
+code: [src/services/media-library, src/stores/media-library-store.ts, src/pages/library-page, src/b-components/media/library-list, src/pages/my-collections-page]
 ---
 
 # Личные списки
@@ -16,6 +16,8 @@ code: [src/services/media-library, src/stores/media-library-store.ts, src/pages/
 Добавляют записи меню ролика или трека и окно **«Добавить в…»**, см. [Коллекции и плейлисты](collections.md). Личный плейлист создаёт **«Новый личный плейлист»** — на вкладке «Плейлисты» или прямо в этом окне. На странице личного плейлиста есть **«Переименовать»** и **«Удалить»**; удаление убирает только плейлист, записи остаются.
 
 Любой список проигрывается подряд: **«Воспроизвести все»** или **«Перемешать»**.
+
+Все личные списки вместе с публичными плейлистами и коллекциями — на странице **«Коллекции»** в левой панели, там же их создают, переименовывают и удаляют, см. [Все свои — на одной странице](collections.md#все-свои--на-одной-странице).
 
 ## Где хранятся
 

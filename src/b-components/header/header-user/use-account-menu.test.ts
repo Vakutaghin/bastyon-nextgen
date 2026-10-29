@@ -69,6 +69,7 @@ describe('useAccountMenu', () => {
       '/wallets',
       '/paid-subscriptions',
       '/my-videos',
+      '/collections',
       '/limits',
       '/help',
       'reportBug',

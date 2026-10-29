@@ -3,10 +3,15 @@
     <SC_Block v-if="list.length || isOwn">
       <SC_BlockHead>
         <SC_BlockTitle>{{ t(`collections.profileTitle.${kind}`) }}</SC_BlockTitle>
-        <Button v-if="isOwn && kind !== 'posts'" size="small" @click="create">
-          <template #icon><PlusOutlined /></template>
-          {{ t('collections.newPlaylist') }}
-        </Button>
+        <SC_HeadActions v-if="isOwn">
+          <router-link to="/collections" class="manage" data-testid="shelf-link">
+            {{ t('shelf.manage') }}
+          </router-link>
+          <Button v-if="kind !== 'posts'" size="small" @click="create">
+            <template #icon><PlusOutlined /></template>
+            {{ t('collections.newPlaylist') }}
+          </Button>
+        </SC_HeadActions>
       </SC_BlockHead>
       <SC_CardsGrid v-if="list.length" :class="{ square: kind === 'audio' }">
         <CollectionCard v-for="c in list" :key="c.txid" :collection="c" />
@@ -68,6 +73,7 @@ import {
   SC_BlockHead,
   SC_BlockTitle,
   SC_CardsGrid,
+  SC_HeadActions,
   SC_Note,
 } from '@/pages/media-section/media-section.styled'
 

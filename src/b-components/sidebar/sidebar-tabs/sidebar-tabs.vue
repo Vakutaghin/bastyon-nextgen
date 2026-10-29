@@ -15,6 +15,7 @@
           <SoundOutlined v-else-if="tab.icon === 'SoundOutlined'" />
           <FileTextOutlined v-else-if="tab.icon === 'FileTextOutlined'" />
           <BookOutlined v-else-if="tab.icon === 'BookOutlined'" />
+          <CollectionIcon v-else-if="tab.icon === 'CollectionIcon'" />
           <StarOutlined v-else-if="tab.icon === 'StarOutlined'" />
           <MessageOutlined v-else-if="tab.icon === 'MessageOutlined'" />
           <BlockOutlined v-else-if="tab.icon === 'BlockOutlined'" />
@@ -42,6 +43,7 @@ import {
   SoundOutlined,
   FileTextOutlined,
   BookOutlined,
+  CollectionIcon,
   StarOutlined,
   MessageOutlined,
   AppstoreOutlined,
@@ -97,6 +99,7 @@ const onTabsRoute = computed(() => {
     path === '/help' ||
     path.startsWith('/help/') ||
     path === '/top' ||
+    path === '/collections' ||
     isSectionPath(path, '/video') ||
     isSectionPath(path, '/audio')
   )
@@ -130,7 +133,7 @@ watch(
     // miniapp-таб (id=8), эксплорер (id=9) или справка (id=10). feedMode
     // через query сохраняется отдельно.
     if (path === '/') {
-      if ([3, 4, 8, 9, 10, 11].includes(Number(filtersStore.activeTab))) {
+      if ([3, 4, 8, 9, 10, 11, 12].includes(Number(filtersStore.activeTab))) {
         filtersStore.selectTab(1)
       }
       return
@@ -152,6 +155,8 @@ watch(
     }
     // Топ аккаунтов.
     if (path === '/top') filtersStore.selectTab(11)
+    // Коллекции и плейлисты.
+    if (path === '/collections') filtersStore.selectTab(12)
     // Разделы «Видео» и «Аудио».
     if (isSectionPath(path, '/video')) filtersStore.selectTab(3)
     if (isSectionPath(path, '/audio')) filtersStore.selectTab(4)
@@ -206,6 +211,12 @@ function selectTab(tabId: string | number): void {
   // Топ аккаунтов — тоже отдельная страница.
   if (tabId === 11) {
     if (route.path !== '/top') void router.push('/top')
+    return
+  }
+
+  // Свои коллекции и плейлисты — страница, а не режим ленты.
+  if (tabId === 12) {
+    if (route.path !== '/collections') void router.push('/collections')
     return
   }
 

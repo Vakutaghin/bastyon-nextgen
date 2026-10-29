@@ -32,6 +32,7 @@ export type MenuItemId =
   | 'wallets'
   | 'paidSubscriptions'
   | 'mediaStudio'
+  | 'collections'
   | 'myFiles'
   | 'limits'
   | 'mesh'
@@ -47,6 +48,7 @@ export type SidebarItemId =
   | 'audio'
   | 'articles'
   | 'favorites'
+  | 'collections'
   | 'discussed'
   | 'miniApps'
   | 'topAccounts'
@@ -77,6 +79,7 @@ export const DEFAULT_MENU_LAYOUT: readonly LayoutEntry<MenuItemId>[] = [
   { id: 'wallets', visible: true },
   { id: 'paidSubscriptions', visible: true },
   { id: 'mediaStudio', visible: true },
+  { id: 'collections', visible: true },
   { id: 'myFiles', visible: true },
   { id: 'limits', visible: true },
   { id: 'mesh', visible: true },
@@ -92,6 +95,7 @@ export const DEFAULT_SIDEBAR_LAYOUT: readonly LayoutEntry<SidebarItemId>[] = [
   { id: 'audio', visible: true },
   { id: 'articles', visible: true },
   { id: 'favorites', visible: true },
+  { id: 'collections', visible: true },
   { id: 'discussed', visible: true },
   { id: 'miniApps', visible: true },
   { id: 'topAccounts', visible: true },

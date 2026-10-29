@@ -154,7 +154,7 @@ test('левая панель: разделы и блоки под ними — 
   // «Справку» — наверх стрелками с клавиатуры.
   const helpHandle = sections.getByRole('button', { name: 'Переместить: Справка' })
   await helpHandle.focus()
-  for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowUp')
+  for (let i = 0; i < 11; i++) await page.keyboard.press('ArrowUp')
   await expect(sections.getByRole('listitem').first()).toContainText('Справка')
   // Теги убрали, категории — над «Сначала лучшее».
   await blocks.getByRole('switch', { name: 'Показывать: Актуальные теги' }).click()

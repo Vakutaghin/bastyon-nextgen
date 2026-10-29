@@ -158,6 +158,26 @@ export const SC_BlockHead = styled.div`
   margin-bottom: 12px;
 `
 
+/** Справа в заголовке блока: ссылка «Все коллекции и плейлисты» и кнопка. */
+export const SC_HeadActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 16px;
+
+  .manage {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ui-primary);
+    text-decoration: none;
+  }
+
+  .manage:hover {
+    text-decoration: underline;
+  }
+`
+
 export const SC_BlockTitle = styled.h2`
   margin: 0;
   font-size: 18px;

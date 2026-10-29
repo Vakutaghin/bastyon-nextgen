@@ -16,6 +16,10 @@ import { i18n, setI18nLocale } from '@/i18n'
 const mocks = vi.hoisted(() => ({
   desktop: false,
   signedIn: true,
+  /** Серверы ещё отвечают; ничего не пришло; от кого не пришло. */
+  loading: false,
+  empty: false,
+  failed: [] as string[],
   load: vi.fn(),
   remove: vi.fn(async () => {}),
   patch: vi.fn(),
@@ -29,62 +33,66 @@ vi.mock('@/b-components/video-uploader/utils/environment', () => ({
 }))
 vi.mock('./use-server-videos', () => ({
   useServerVideos: () => ({
-    videos: ref([
-      {
-        host: 'pt.host',
-        id: 1,
-        uuid: 'u1',
-        name: 'Море',
-        description: 'Летом на побережье',
-        views: 120,
-        isAudio: false,
-        time: 3_000,
-        pointer: 'peertube://pt.host/u1',
-        thumbnailUrl: null,
-        duration: 75,
-        processing: false,
-        posted: true,
-        posts: [{ txid: 'p1', caption: 'Море', time: 1_700_000_000_000 }],
-      },
-      {
-        host: 'pt.host',
-        id: 2,
-        uuid: 'u2',
-        name: 'Горы',
-        description: '',
-        views: null,
-        isAudio: false,
-        time: 2_000,
-        pointer: 'peertube://pt.host/u2',
-        thumbnailUrl: null,
-        duration: null,
-        processing: true,
-        posted: false,
-        posts: [],
-      },
-      {
-        host: 'pt.host',
-        id: 3,
-        uuid: 'u3',
-        name: 'Лес',
-        description: 'Тихий лес',
-        views: 5,
-        isAudio: true,
-        time: 1_000,
-        pointer: 'peertube://pt.host/u3',
-        thumbnailUrl: null,
-        duration: 30,
-        processing: false,
-        posted: true,
-        posts: [
-          { txid: 'p3new', caption: 'Лес весной', time: 1_700_000_100_000 },
-          { txid: 'p3old', caption: 'Лес зимой', time: 1_700_000_000_000 },
-        ],
-      },
-    ]),
-    loading: ref(false),
-    loaded: ref(true),
-    failedHosts: ref<string[]>([]),
+    videos: ref(
+      mocks.empty
+        ? []
+        : [
+            {
+              host: 'pt.host',
+              id: 1,
+              uuid: 'u1',
+              name: 'Море',
+              description: 'Летом на побережье',
+              views: 120,
+              isAudio: false,
+              time: 3_000,
+              pointer: 'peertube://pt.host/u1',
+              thumbnailUrl: null,
+              duration: 75,
+              processing: false,
+              posted: true,
+              posts: [{ txid: 'p1', caption: 'Море', time: 1_700_000_000_000 }],
+            },
+            {
+              host: 'pt.host',
+              id: 2,
+              uuid: 'u2',
+              name: 'Горы',
+              description: '',
+              views: null,
+              isAudio: false,
+              time: 2_000,
+              pointer: 'peertube://pt.host/u2',
+              thumbnailUrl: null,
+              duration: null,
+              processing: true,
+              posted: false,
+              posts: [],
+            },
+            {
+              host: 'pt.host',
+              id: 3,
+              uuid: 'u3',
+              name: 'Лес',
+              description: 'Тихий лес',
+              views: 5,
+              isAudio: true,
+              time: 1_000,
+              pointer: 'peertube://pt.host/u3',
+              thumbnailUrl: null,
+              duration: 30,
+              processing: false,
+              posted: true,
+              posts: [
+                { txid: 'p3new', caption: 'Лес весной', time: 1_700_000_100_000 },
+                { txid: 'p3old', caption: 'Лес зимой', time: 1_700_000_000_000 },
+              ],
+            },
+          ]
+    ),
+    loading: ref(mocks.loading),
+    loaded: ref(!mocks.loading),
+    failedHosts: ref<string[]>(mocks.failed),
     signedIn: ref(mocks.signedIn),
     load: mocks.load,
     remove: mocks.remove,
@@ -160,6 +168,9 @@ describe('MyVideosPage', () => {
     mocks.desktop = false
     mocks.signedIn = true
     mocks.publishing = new Set()
+    mocks.loading = false
+    mocks.empty = false
+    mocks.failed = []
   })
   afterEach(() => {
     wrapper?.unmount()
@@ -195,6 +206,40 @@ describe('MyVideosPage', () => {
       pointer: 'peertube://pt.host/u2',
       title: 'Горы',
     })
+  })
+
+  it('часть серверов ещё отвечает — что пришло, видно, над списком строка загрузки, без предупреждений', async () => {
+    mocks.loading = true
+    await mountPage()
+    expect(wrapper!.find('[data-testid="studio-loading"]').text()).toContain(
+      'Загружаем ролики с видеосерверов'
+    )
+    expect(wrapper!.text()).toContain('Море')
+    expect(wrapper!.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('сервер не ответил, а ролики есть — просто список', async () => {
+    mocks.failed = ['b.host']
+    await mountPage()
+    expect(wrapper!.text()).toContain('Море')
+    expect(wrapper!.find('[data-testid="studio-loading"]').exists()).toBe(false)
+    expect(wrapper!.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('не пришло ничего — «Не удалось загрузить» и «Повторить»; пусто без сбоев — «Здесь появятся»', async () => {
+    mocks.empty = true
+    mocks.failed = ['posts']
+    await mountPage()
+    expect(wrapper!.find('[role="alert"]').text()).toContain('Не удалось загрузить список роликов')
+    mocks.load.mockClear()
+    await button('Повторить')!.trigger('click')
+    expect(mocks.load).toHaveBeenCalledTimes(1)
+    wrapper!.unmount()
+
+    mocks.failed = []
+    await mountPage()
+    expect(wrapper!.text()).toContain('Здесь появятся видео и аудио')
+    expect(wrapper!.find('[role="alert"]').exists()).toBe(false)
   })
 
   it('«Загрузить видео» открывает окно загрузки', async () => {

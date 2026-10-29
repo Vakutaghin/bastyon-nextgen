@@ -215,12 +215,16 @@ export const useCollectionsStore = defineStore('collections', () => {
     stopSettled ??= onTransactionSettled(onSettled)
   }
 
+  /**
+   * Смена аккаунта: своё ожидающее — у каждого аккаунта своё. Коллекции
+   * авторов и найденный тип — публичные данные, их не стираем: сброс идёт
+   * уже после входа, и список нового аккаунта, загруженный открытой
+   * страницей, пропадал — она висела на «Загружаем…».
+   */
   function reset(): void {
     owner.value = null
-    authors.value = {}
     pending.value = []
     queued.value = []
-    classified.clear()
   }
 
   // --- Список профиля ---

@@ -101,7 +101,7 @@ describe('useHeaderLayoutStore', () => {
     }
     const store = useHeaderLayoutStore()
     await store.ensureLoaded()
-    await store.move('sidebar', 10, 0)
+    await store.move('sidebar', 11, 0)
     await store.setVisible('sidebar', 'discussed', false)
     await store.setVisible('blocks', 'tags', false)
     await store.move('blocks', 1, 0)
@@ -113,6 +113,7 @@ describe('useHeaderLayoutStore', () => {
       'audio',
       'articles',
       'favorites',
+      'collections',
       'miniApps',
       'topAccounts',
       'explorer',
