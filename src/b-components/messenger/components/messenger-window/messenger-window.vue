@@ -20,6 +20,8 @@
       <slot name="title">
         <SC_Title :title="title">{{ title }}</SC_Title>
       </slot>
+      <!-- Что догружается: рядом с заголовком, у открытого чата — перед крестиком. -->
+      <slot name="status" />
       <SC_CloseButton type="button" :aria-label="t('chat.close')" @click="emit('close')">
         <CloseOutlined />
       </SC_CloseButton>

@@ -24,8 +24,8 @@ const DATA: MockNodeData = {
   comments: [],
 }
 
-async function open(page: Page) {
-  await useMockNode(page, DATA)
+async function open(page: Page, data: MockNodeData = DATA) {
+  await useMockNode(page, data)
   await useMockPeerTube(page)
   await page.goto('/')
   await page.waitForSelector('#app > *', { timeout: 30_000 })
@@ -174,5 +174,66 @@ test.describe('Просмотры', () => {
     const sent = reports.length
     await page.waitForTimeout(6_000)
     expect(reports).toHaveLength(sent)
+  })
+})
+
+test.describe('Во весь экран', () => {
+  // Ролик в середине ленты: длинные посты сверху и снизу.
+  const FEED: MockNodeData = {
+    profiles: [ALICE],
+    posts: Array.from({ length: 14 }, (_, i) =>
+      i === 7
+        ? DATA.posts[0]!
+        : {
+            txid: String(i).padStart(2, '0').repeat(32),
+            address: ALICE.address,
+            message: `Пост ${i}\n` + 'Длинный текст поста. '.repeat(30),
+          }
+    ),
+    comments: [],
+  }
+  const scrollY = (page: Page) => page.evaluate(() => window.scrollY)
+  // Где ролик на экране: посты выше могут догрузиться и поменять высоту, пока
+  // ролик во весь экран, — важно, что он остаётся на том же месте экрана.
+  const playerTop = (page: Page) =>
+    container(page).evaluate((el) => Math.round(el.getBoundingClientRect().top))
+
+  test('после полного экрана лента остаётся на ролике — доиграл он или из него вышли', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000)
+    await open(page, FEED)
+    await start(page)
+    expect(await scrollY(page)).toBeGreaterThan(1000)
+
+    // Доиграл во весь экран — плеер выходит сам. Замер — после наведения:
+    // Playwright сам докручивает до элемента.
+    await container(page).hover()
+    let before = await playerTop(page)
+    await container(page).getByRole('button', { name: 'Полноэкранный режим' }).click()
+    await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true)
+    await video(page).evaluate((v: HTMLVideoElement) => {
+      v.currentTime = v.duration - 1
+    })
+    await expect
+      .poll(() => page.evaluate(() => !!document.fullscreenElement), {
+        timeout: 15_000,
+      })
+      .toBe(false)
+    await expect.poll(() => playerTop(page)).toBeCloseTo(before, -1)
+
+    // Вышли кнопкой.
+    await video(page).evaluate((v: HTMLVideoElement) => {
+      v.currentTime = 2
+      void v.play()
+    })
+    await container(page).hover()
+    before = await playerTop(page)
+    await container(page).getByRole('button', { name: 'Полноэкранный режим' }).click()
+    await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true)
+    await page.mouse.move(300, 300)
+    await page.getByRole('button', { name: 'Выход из полноэкранного режима' }).click()
+    await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(false)
+    await expect.poll(() => playerTop(page)).toBeCloseTo(before, -1)
   })
 })

@@ -74,6 +74,26 @@ describe('resetAccountScopedStores', () => {
     expect(init).toHaveBeenCalledTimes(1)
   })
 
+  it('уведомления: чужие сбрасываются и грузятся заново, свои уже загруженные остаются', async () => {
+    const notifications = useNotificationsStore()
+    const init = vi.spyOn(notifications, 'init').mockResolvedValue()
+
+    // Сменили аккаунт: в сторе уведомления прежнего.
+    notifications.inited = true
+    notifications.initedForAddress = 'PA'
+    notifications.items = [{ id: 'old' } as never]
+    await resetAccountScopedStores('PB')
+    expect(notifications.items).toEqual([])
+    expect(init).toHaveBeenCalledTimes(1)
+
+    // Наблюдатель адреса успел загрузить уведомления нового — их не стираем.
+    notifications.inited = true
+    notifications.initedForAddress = 'PB'
+    notifications.items = [{ id: 'fresh' } as never]
+    await resetAccountScopedStores('PB')
+    expect(notifications.items.map((n) => n.id)).toEqual(['fresh'])
+  })
+
   it('посты нового аккаунта, ждущие блока, — с прошлого запуска, чужие — нет', async () => {
     localStorage.clear()
     const saved = (id: string, address: string) => ({

@@ -67,13 +67,12 @@ export const SC_SidebarHeader = styled.div`
   justify-content: space-between;
 `
 
-/** Красная плашка с ошибкой синка messenger. */
-/** Синяя плашка со статусом синка messenger. */
-export const SC_SyncStatusBanner = styled.div`
-  padding: 8px;
-  background: rgb(var(--ui-primary-rgb) / 10%);
-  color: var(--color-primary-dark);
-  font-size: 12px;
+/** «Сообщения» и значок «догружается» рядом. */
+export const SC_SidebarTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 `
 
 /** Верхняя панель в активном чате (back-button + имя собеседника). */
@@ -82,6 +81,7 @@ export const SC_ChatTopBar = styled.div`
   border-bottom: 1px solid var(--ui-border);
   display: flex;
   align-items: center;
+  gap: 8px;
   padding: 0 16px;
 `
 

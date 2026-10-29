@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const muted = vi.hoisted(() => new Set<string>())
+const rooms = vi.hoisted(() => new Map<string, unknown>())
 
 vi.mock('@/i18n', () => ({
   t: (k: string, p?: Record<string, unknown>) => (p ? `${k} ${JSON.stringify(p)}` : k),
@@ -11,6 +12,7 @@ vi.mock('../../services/matrix-service', () => ({
     getBaseUrl: () => 'https://mx.host',
     hexToAddress: (hex: string) => `P${hex.toUpperCase()}ADDRESS0000`,
     isRoomMuted: (roomId: string) => muted.has(roomId),
+    getRoom: (roomId: string) => rooms.get(roomId) ?? null,
   },
 }))
 
@@ -362,5 +364,31 @@ describe('useDialogMapping — mapRoomToDialog', () => {
       const d = await useDialogMapping(c).mapRoomToDialog(invitedRoom({ getMember: () => null }))
       expect(d.createdAt).toBeUndefined()
     })
+  })
+})
+
+describe('useDialogMapping — refreshUnreadCounts', () => {
+  it('счётчики — по свежим числам сервера; открытый чат — ноль, чужие id не трогаются', () => {
+    const counts: Record<string, number> = { '!a:host': 0, '!b:host': 5, '!open:host': 2 }
+    rooms.clear()
+    for (const id of Object.keys(counts)) {
+      rooms.set(id, { roomId: id, getUnreadNotificationCount: () => counts[id] })
+    }
+    const dialogs = [
+      { id: '!a:host', unreadCount: 3 },
+      { id: '!b:host', unreadCount: 1 },
+      { id: '!open:host', unreadCount: 4 },
+      { id: 'channel:PAuthor', unreadCount: 7 },
+    ]
+    const uiStore = { activeChatId: '!open:host', dialogs }
+    const { refreshUnreadCounts } = useDialogMapping({
+      uiStore,
+      chatStore: {},
+      profileCache: {},
+    } as never)
+
+    refreshUnreadCounts()
+
+    expect(dialogs.map((d) => d.unreadCount)).toEqual([0, 5, 0, 7])
   })
 })

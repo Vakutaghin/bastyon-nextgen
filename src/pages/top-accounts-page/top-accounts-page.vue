@@ -94,14 +94,18 @@
               <SC_FollowButton
                 v-else
                 type="button"
-                :class="{ subscribed: relations.isSubscribed(entry.address) }"
-                :disabled="relations.isSubscribePending(entry.address)"
+                :class="{
+                  subscribed:
+                    relations.isSubscribed(entry.address) ||
+                    !relations.isSubscriptionKnown(entry.address),
+                }"
+                :disabled="followBusy(entry.address)"
                 :aria-label="followLabel(entry.address)"
                 :title="followLabel(entry.address)"
                 data-testid="top-follow"
                 @click="toggleFollow(entry.address)"
               >
-                <LoadingOutlined v-if="relations.isSubscribePending(entry.address)" spin />
+                <LoadingOutlined v-if="followBusy(entry.address)" spin />
                 <CheckOutlined v-else-if="relations.isSubscribed(entry.address)" />
                 <PlusOutlined v-else />
                 <span class="label">{{ followLabel(entry.address) }}</span>
@@ -232,7 +236,13 @@ function canFollow(address: string): boolean {
   return authStore.isAuthenticated && address !== myAddress.value
 }
 
+/** Транзакция идёт или подписки ещё не пришли с ноды. */
+function followBusy(address: string): boolean {
+  return relations.isSubscribePending(address) || !relations.isSubscriptionKnown(address)
+}
+
 function followLabel(address: string): string {
+  if (!relations.isSubscriptionKnown(address)) return t('relations.loading')
   return relations.isSubscribed(address)
     ? t('subscriptions.subscribed')
     : t('subscriptions.subscribe')

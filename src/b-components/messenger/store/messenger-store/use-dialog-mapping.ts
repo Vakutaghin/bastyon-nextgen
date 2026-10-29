@@ -51,6 +51,28 @@ type LooseRoom = any
 export function useDialogMapping(ctx: MessengerStoreContext) {
   const { uiStore, chatStore, profileCache } = ctx
 
+  /** Непрочитанные по счётчику сервера; у открытого чата — ноль. */
+  const unreadCountOf = (room: LooseRoom): number =>
+    uiStore.activeChatId === room.roomId
+      ? 0
+      : room.getUnreadNotificationCount('total') || room.getUnreadNotificationCount('ns.total') || 0
+
+  /**
+   * Счётчики списка — по свежим числам сервера, без пересборки списка. Число
+   * меняется и без новых сообщений: переписку прочитали на другом устройстве,
+   * а после смены аккаунта список сначала встаёт из кэша прошлого раза. Список
+   * пересобирался только по новому сообщению, и значки на кнопке чата и в
+   * шапке оставались прежними.
+   */
+  const refreshUnreadCounts = (): void => {
+    for (const dialog of uiStore.dialogs) {
+      const room = matrixService.getRoom(dialog.id)
+      if (!room) continue
+      const count = unreadCountOf(room)
+      if (dialog.unreadCount !== count) dialog.unreadCount = count
+    }
+  }
+
   /** Собеседник личного чата: комната → участник → кэш профилей → matrix-профиль. */
   const directPartner = async (
     room: LooseRoom,
@@ -241,12 +263,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
     // Кто пригласил — в списке «Приглашение в чат» вместо пустой строки.
     const invitedBy = invited ? myMemberEvent?.getSender?.() || partner.id : ''
 
-    const unreadCount =
-      uiStore.activeChatId === room.roomId
-        ? 0
-        : room.getUnreadNotificationCount('total') ||
-          room.getUnreadNotificationCount('ns.total') ||
-          0
+    const unreadCount = unreadCountOf(room)
 
     const muted = matrixService.isRoomMuted(room.roomId)
     // Без звука сервер непрочитанные не считает: новое видно по отметке прочтения.
@@ -274,7 +291,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
     }
   }
 
-  return { mapRoomToDialog }
+  return { mapRoomToDialog, refreshUnreadCounts }
 }
 
 export type DialogMapping = ReturnType<typeof useDialogMapping>

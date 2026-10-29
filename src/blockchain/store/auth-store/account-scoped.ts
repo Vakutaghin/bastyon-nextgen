@@ -37,7 +37,12 @@ export async function resetAccountScopedStores(address?: string | null): Promise
     import('@/stores/media-library-store'),
   ])
   usePendingRatingsStore().reset()
-  useNotificationsStore().reset()
+  // Уведомления нового аккаунта наблюдатель адреса в main.ts начинает грузить
+  // раньше этого сброса, а импорты выше в сборке для разработки идут по сети.
+  // Сброс стирал готовый список: значок колокольчика пропадал до следующего
+  // опроса, до 30 секунд. Чистим только чужие — прежнего аккаунта.
+  const notifications = useNotificationsStore()
+  if (!address || notifications.initedForAddress !== address) notifications.reset()
   useUserRelationsStore().reset()
   usePendingPostsStore().reset()
   // Посты нового аккаунта, ждущие блока, — с прошлого запуска (localStorage).
@@ -61,4 +66,7 @@ export async function resetAccountScopedStores(address?: string | null): Promise
   // экране, их не перезапросят, и до смены страницы лента показывала посты
   // заблокированных, а кнопки — чужие подписки.
   if (address) void useUserRelationsStore().init()
+  // Уведомления нового аккаунта — тоже сразу, если наблюдатель адреса ещё не
+  // начал: после сброса он их сам не перезапросит.
+  if (address) void notifications.init()
 }

@@ -36,19 +36,25 @@
 
       <SC_SubscribeRow v-if="canShowSubscribe">
         <SC_SubscribeButton
-          :class="{ subscribed: isSubscribed }"
-          :disabled="isSubscribePending"
+          :class="{ subscribed: isSubscribed || isSubscriptionUnknown }"
+          :disabled="isSubscribePending || isSubscriptionUnknown"
           @click="onPrimaryClick"
         >
-          <LoadingOutlined v-if="isSubscribePending" spin />
+          <LoadingOutlined v-if="isSubscribePending || isSubscriptionUnknown" spin />
           <CheckOutlined v-else-if="isSubscribed" />
           <PlusOutlined v-else />
-          {{ isSubscribed ? t('subscriptions.subscribed') : t('subscriptions.subscribe') }}
+          {{
+            isSubscriptionUnknown
+              ? t('relations.loading')
+              : isSubscribed
+                ? t('subscriptions.subscribed')
+                : t('subscriptions.subscribe')
+          }}
         </SC_SubscribeButton>
 
         <SC_BellButton
           :class="{ active: isSubscribedPrivate }"
-          :disabled="isSubscribePending"
+          :disabled="isSubscribePending || isSubscriptionUnknown"
           :title="
             isSubscribedPrivate
               ? t('subscriptions.disableNotifications')
@@ -223,6 +229,7 @@ const {
   isSubscribed,
   isSubscribedPrivate,
   isSubscribePending,
+  isSubscriptionUnknown,
   isBlocked,
   isBlockPending,
   canShowSubscribe,

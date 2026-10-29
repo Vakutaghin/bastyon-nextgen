@@ -185,7 +185,7 @@ export function useMessageLoading(
     }
   }
 
-  return { history, loadMessages, loadMoreMessages }
+  return { history, isLoadingMore, loadMessages, loadMoreMessages }
 }
 
 export type MessageLoading = ReturnType<typeof useMessageLoading>

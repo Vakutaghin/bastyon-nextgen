@@ -21,6 +21,10 @@ export function useProfileRelationsActions(userAddress: Ref<string>) {
   const isSubscribePending = computed<boolean>(() =>
     relations.isSubscribePending(userAddress.value)
   )
+  /** Подписки ещё не пришли с ноды — кнопка ждёт, а не зовёт «Подписаться». */
+  const isSubscriptionUnknown = computed<boolean>(
+    () => !relations.isSubscriptionKnown(userAddress.value)
+  )
 
   // ── Блокировка пользователя ─────────────────────────────────────────
   const isBlocked = computed<boolean>(() => relations.isBlocked(userAddress.value))
@@ -52,7 +56,7 @@ export function useProfileRelationsActions(userAddress: Ref<string>) {
 
   async function onBellClick(): Promise<void> {
     const address = userAddress.value
-    if (!address || isSubscribePending.value) return
+    if (!address || isSubscribePending.value || isSubscriptionUnknown.value) return
     try {
       if (isSubscribedPrivate.value) {
         // Выключить уведомления, оставшись подписанным (публичная подписка).
@@ -81,6 +85,7 @@ export function useProfileRelationsActions(userAddress: Ref<string>) {
     isSubscribed,
     isSubscribedPrivate,
     isSubscribePending,
+    isSubscriptionUnknown,
     isBlocked,
     isBlockPending,
     canShowSubscribe,

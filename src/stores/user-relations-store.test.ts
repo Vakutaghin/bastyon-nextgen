@@ -159,6 +159,53 @@ describe('userRelations store', () => {
     expect(store.subscriptionsLoaded).toBe(false)
   })
 
+  it('подписки не пришли — кнопке рано говорить «Подписаться», загрузка повторяется сама', async () => {
+    vi.useFakeTimers()
+    try {
+      let online = false
+      mocks.rpcCall.mockImplementation(async (req: { method: string }) => {
+        if (req.method !== 'getusersubscribes') return [{ address: 'PMe' }]
+        if (!online) throw new Error('offline')
+        return [{ adddress: 'PFriend' }]
+      })
+      const store = useUserRelationsStore()
+      await store.init()
+      expect(store.isSubscriptionKnown('PFriend')).toBe(false)
+      expect(store.isSubscriptionKnown('PStranger')).toBe(false)
+
+      // Первый повтор через 3 с — сеть ещё лежит; второй через 6 с.
+      await vi.advanceTimersByTimeAsync(3_000)
+      expect(store.subscriptionsLoaded).toBe(false)
+      online = true
+      await vi.advanceTimersByTimeAsync(6_000)
+      expect(store.subscriptionsLoaded).toBe(true)
+      expect(store.isSubscriptionKnown('PStranger')).toBe(true)
+      expect(store.isSubscribed('PFriend')).toBe(true)
+
+      // Загрузились — больше не повторяем.
+      const calls = mocks.rpcCall.mock.calls.length
+      await vi.advanceTimersByTimeAsync(120_000)
+      expect(mocks.rpcCall.mock.calls.length).toBe(calls)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('повтор не идёт после выхода из аккаунта', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.rpcCall.mockRejectedValue(new Error('offline'))
+      const store = useUserRelationsStore()
+      await store.refreshSubscriptions()
+      store.reset()
+      mocks.rpcCall.mockClear()
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(mocks.rpcCall).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   describe('блокировка', () => {
     it('сразу в интерфейсе, пока транзакция идёт — кнопка занята; потом глушится и чат', async () => {
       let finish!: (tx: string) => void

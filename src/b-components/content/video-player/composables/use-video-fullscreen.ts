@@ -1,4 +1,4 @@
-import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, type Ref } from 'vue'
 
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import { resolveVideoElement } from './utils'
@@ -36,11 +36,45 @@ function getVendorFullscreenElement(): Element | null {
   )
 }
 
+/** Сколько после выхода ловить перестройку страницы — телефон поворачивается обратно. */
+const RESTORE_WINDOW_MS = 1000
+
+/**
+ * Во весь экран Chromium (и WebView на Android) сбрасывает прокрутку страницы
+ * в ноль, а при выходе не возвращает: лента после ролика оказывалась в
+ * начале. Запоминаем, где плеер был на экране, и после выхода ставим страницу
+ * так, чтобы он оказался там же. Пиксели прокрутки не годятся: на телефоне
+ * ролик смотрят горизонтально, и пока экран поворачивается обратно, высота
+ * постов меняется.
+ */
+function keepOnScreen(el: HTMLElement): () => void {
+  const top = el.getBoundingClientRect().top
+  return () => {
+    const apply = () => {
+      if (!el.isConnected) return
+      const delta = el.getBoundingClientRect().top - top
+      if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: 'instant' })
+    }
+    apply()
+    requestAnimationFrame(apply)
+    window.addEventListener('resize', apply)
+    setTimeout(() => window.removeEventListener('resize', apply), RESTORE_WINDOW_MS)
+  }
+}
+
 export function useVideoFullscreen(
   videoElement: VideoRef,
   containerRef?: Ref<HTMLElement | null | { $el?: HTMLElement }>
 ) {
   const isFullscreen = ref(false)
+  let restoreScroll: (() => void) | null = null
+
+  watch(isFullscreen, (now, was) => {
+    if (now || !was || !restoreScroll) return
+    const restore = restoreScroll
+    restoreScroll = null
+    restore()
+  })
 
   /** Обработка изменения полноэкранного режима. */
   const handleFullscreenChange = () => {
@@ -96,17 +130,6 @@ export function useVideoFullscreen(
     } else {
       // --- ENTER ---
 
-      // 1. Tauri Window Fullscreen
-      if (isTauri()) {
-        try {
-          const { getCurrentWindow } = await import('@tauri-apps/api/window')
-          await getCurrentWindow().setFullscreen(true)
-        } catch (e) {
-          console.error('Failed to set Tauri fullscreen window:', e)
-        }
-      }
-
-      // 2. Element Enter
       const video = resolveVideoElement(videoElement)
       if (!video) return
 
@@ -136,7 +159,20 @@ export function useVideoFullscreen(
       }
 
       if (!container) return
+      // До окна во весь экран: оно само уже меняет раскладку.
+      restoreScroll = keepOnScreen(container)
 
+      // 1. Tauri Window Fullscreen
+      if (isTauri()) {
+        try {
+          const { getCurrentWindow } = await import('@tauri-apps/api/window')
+          await getCurrentWindow().setFullscreen(true)
+        } catch (e) {
+          console.error('Failed to set Tauri fullscreen window:', e)
+        }
+      }
+
+      // 2. Element Enter
       const el = container as VendorElement
       const requestFullscreen =
         el.requestFullscreen ||

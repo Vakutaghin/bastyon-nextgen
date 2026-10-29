@@ -76,6 +76,8 @@
       />
       <SC_PartnerTitleName>{{ partner.name }}</SC_PartnerTitleName>
     </ProfileLink>
+    <!-- Значок «догружается» — тоже сразу за именем. -->
+    <slot />
   </SC_PartnerTitle>
 </template>
 

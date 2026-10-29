@@ -104,6 +104,8 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     messages,
     /** Что известно об истории чатов (lib/chat-history): начало, чистка сервером, ошибка. */
     history: loading.history,
+    /** Листается история выше — для значка в шапке чата. */
+    isLoadingMore: loading.isLoadingMore,
     drafts,
     receiptsVersion,
     noteReceipt,

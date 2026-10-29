@@ -936,10 +936,13 @@ export default {
     keyChangedAccept: 'Aceptar las nuevas claves',
     loadingMessages: 'Cargando mensajes...',
     loadingDialogs: 'Cargando conversaciones...',
-    syncConnecting: 'Conectando con el chat…',
-    syncCatchup: 'Cargando mensajes…',
-    syncReconnecting: 'Sin conexión con el servidor del chat. Reconectando…',
-    syncOffline: 'Sin conexión con el servidor del chat.',
+    /** Что догружается — подпись у значка в шапке мессенджера. */
+    activity: {
+      connecting: 'Conectando…',
+      updating: 'Actualizando…',
+      reconnecting: 'Sin conexión, reconectando…',
+      messages: 'Cargando mensajes…',
+    },
     selectChatHint: 'Elige un chat para empezar a escribir',
     firstMessageHint: 'Escribe el primer mensaje: {name} verá el chat cuando se envíe.',
     startChatFailed: 'No se pudo crear el chat. Comprueba la conexión e inténtalo de nuevo.',

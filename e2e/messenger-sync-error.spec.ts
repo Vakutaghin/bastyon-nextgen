@@ -22,10 +22,12 @@ interface FakeMatrix {
   pushrules: 'ok' | 'fail'
   /** Токен, который сервер «забыл»: синк с ним — M_UNKNOWN_TOKEN. */
   revoked: string | null
+  /** Вход отвечает, только когда этот промис выполнится. */
+  loginGate: Promise<void> | null
 }
 
 async function fakeMatrix(page: Page): Promise<FakeMatrix> {
-  const state: FakeMatrix = { logins: 0, pushrules: 'ok', revoked: null }
+  const state: FakeMatrix = { logins: 0, pushrules: 'ok', revoked: null, loginGate: null }
   const json = (route: Route, status: number, body: unknown) =>
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
   await page.route('**/_matrix/**', async (route) => {
@@ -34,6 +36,7 @@ async function fakeMatrix(page: Page): Promise<FakeMatrix> {
     if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204 })
     if (path.endsWith('/versions')) return json(route, 200, { versions: ['v1.11'] })
     if (path.endsWith('/login')) {
+      if (state.loginGate) await state.loginGate
       state.logins++
       return json(route, 200, {
         access_token: `token-${state.logins}`,
@@ -125,4 +128,23 @@ test('сервер отверг токен — мессенджер входит
   await expect.poll(() => matrix.logins, { timeout: 60_000 }).toBe(2)
   await expect(page.getByTestId('sync-error')).toBeHidden({ timeout: 60_000 })
   await expect(page.getByText('Загрузка диалогов')).toHaveCount(0, { timeout: 30_000 })
+})
+
+test('пока сервер чатов не ответил — в шапке «Подключаюсь…», ответил — значок гаснет', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  const matrix = await fakeMatrix(page)
+  let answer!: () => void
+  matrix.loginGate = new Promise((resolve) => (answer = resolve))
+  await signIn(page)
+  await openMessenger(page)
+
+  const activity = page.getByTestId('messenger-activity')
+  await expect(activity).toHaveAttribute('data-activity', 'connecting', { timeout: 30_000 })
+  await expect(activity).toContainText('Подключаюсь…')
+
+  answer()
+  await expect(activity).toBeHidden({ timeout: 30_000 })
+  await expect(page.getByTestId('sync-error')).toBeHidden()
 })

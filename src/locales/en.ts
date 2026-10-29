@@ -928,10 +928,13 @@ export default {
     keyChangedAccept: 'Accept new keys',
     loadingMessages: 'Loading messages...',
     loadingDialogs: 'Loading dialogs...',
-    syncConnecting: 'Connecting to the chat…',
-    syncCatchup: 'Catching up on messages…',
-    syncReconnecting: 'No connection to the chat server. Reconnecting…',
-    syncOffline: 'No connection to the chat server.',
+    /** Что догружается — подпись у значка в шапке мессенджера. */
+    activity: {
+      connecting: 'Connecting…',
+      updating: 'Updating…',
+      reconnecting: 'No connection, reconnecting…',
+      messages: 'Loading messages…',
+    },
     selectChatHint: 'Select a chat to start messaging',
     firstMessageHint: 'Write the first message — {name} will see the chat once it is sent.',
     startChatFailed: 'Could not create the chat. Check the connection and try again.',

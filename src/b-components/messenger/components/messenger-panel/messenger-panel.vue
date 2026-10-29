@@ -2,15 +2,13 @@
   <SC_MessengerContainer>
     <SC_SidebarColumn :is-hidden="!!activeChatId || !!(lastTargetAddress && inviteViewActive)">
       <SC_SidebarHeader>
-        <span>{{ t('messenger.messages') }}</span>
+        <SC_SidebarTitle>
+          <span>{{ t('messenger.messages') }}</span>
+          <MessengerActivity scope="list" />
+        </SC_SidebarTitle>
         <slot name="header-actions" />
       </SC_SidebarHeader>
       <SyncErrorBanner />
-      <SC_SyncStatusBanner
-        v-if="!store.syncError && store.syncState !== 'PREPARED' && store.syncState !== 'SYNCING'"
-      >
-        {{ syncStatusText(store.syncState) }}
-      </SC_SyncStatusBanner>
       <SC_MessengerDialogsLoader v-if="store.isDialogsLoading">
         <SC_MessengerDialogsSpinner />
         <SC_MessengerDialogsLoaderText>{{
@@ -29,7 +27,9 @@
           >
             <ArrowLeftIcon />
           </SC_MobileBackButton>
-          <ChatPartnerTitle v-if="shownPartner" :partner="shownPartner" />
+          <ChatPartnerTitle v-if="shownPartner" :partner="shownPartner">
+            <MessengerActivity v-if="isMatrixChat" scope="chat" />
+          </ChatPartnerTitle>
         </SC_ChatTopBar>
         <ChannelRoom
           v-if="channelAddressOf(activeChatId)"
@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useMessengerStore } from '../../store'
@@ -81,6 +81,7 @@ import ChannelRoom from '../channel-room/channel-room.vue'
 import SyncErrorBanner from '../sync-error-banner/sync-error-banner.vue'
 import { channelAddressOf } from '../../lib/channels'
 import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
+import MessengerActivity from '../messenger-activity/messenger-activity.vue'
 import { useShownPartner } from '../chat-partner-title/use-shown-partner'
 import { isMeshDialogId } from '@/mesh/ids'
 import {
@@ -94,7 +95,7 @@ import {
   SC_MessengerDialogsLoaderText,
   SC_MessengerDialogsSpinner,
   SC_SidebarHeader,
-  SC_SyncStatusBanner,
+  SC_SidebarTitle,
 } from './styled'
 import { ArrowLeftIcon, MessagesIcon } from '@/components/icons'
 
@@ -103,16 +104,11 @@ const { activeChatId, lastTargetAddress, inviteViewActive } = storeToRefs(store)
 const authStore = useAuthStore()
 const { t } = useI18n()
 
-/**
- * Состояние синхронизации Matrix словами. Раньше баннер показывал сырое
- * «Status: RECONNECTING» по-английски на любом языке интерфейса.
- */
-function syncStatusText(state: string): string {
-  if (state === 'CATCHUP') return t('messenger.syncCatchup')
-  if (state === 'RECONNECTING') return t('messenger.syncReconnecting')
-  if (state === 'ERROR') return t('messenger.syncOffline')
-  return t('messenger.syncConnecting')
-}
+/** Значок «догружается» в шапке чата — у чатов Matrix: каналу и радио сервер чатов не нужен. */
+const isMatrixChat = computed<boolean>(() => {
+  const id = activeChatId.value
+  return !!id && !channelAddressOf(id) && !isMeshDialogId(id)
+})
 
 /** Собеседник в шапке чата: аватар и имя ведут в его профиль. */
 const shownPartner = useShownPartner()

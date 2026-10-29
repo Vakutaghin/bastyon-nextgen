@@ -44,6 +44,12 @@ export class MatrixService {
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null
   private keepAliveIntervalMs = 60000
   private store: InstanceType<typeof sdk.IndexedDBStore> | null = null
+  /**
+   * Растёт на каждом stop(). Вход, начатый до смены аккаунта, заканчивался уже
+   * после неё и ставил клиента прежнего аккаунта: новый видел его чаты и
+   * непрочитанные. Такой вход сверяется с номером и клиента не ставит.
+   */
+  private session = 0
 
   public configure(baseUrl: string) {
     this.baseUrl = baseUrl
@@ -63,8 +69,14 @@ export class MatrixService {
     return hexToAddress(hex)
   }
 
-  public async init(userId?: string, accessToken?: string, deviceId?: string) {
-    if (this.client) return
+  /** `true` — клиент поставлен; `false` — пока поднималось хранилище, был stop(). */
+  public async init(
+    userId?: string,
+    accessToken?: string,
+    deviceId?: string,
+    session = this.session
+  ): Promise<boolean> {
+    if (this.client) return true
 
     const opts: ICreateClientOpts = {
       baseUrl: this.baseUrl,
@@ -90,6 +102,11 @@ export class MatrixService {
       store = null
       client = sdk.createClient(opts)
     }
+    if (session !== this.session || this.client) {
+      // Хранилище прежнего аккаунта: закрываем, данные на диске остаются.
+      void store?.destroy().catch(() => {})
+      return false
+    }
     this.store = store
     this.client = client
 
@@ -103,9 +120,11 @@ export class MatrixService {
       await this.client.startClient({ initialSyncLimit: 1 })
       this.startKeepAlive()
     }
+    return true
   }
 
   public async login(address: string, passwordOrKeyPair?: string | KeyPair, loginToken?: string) {
+    const session = this.session
     try {
       const loginOpts: ICreateClientOpts = { baseUrl: this.baseUrl }
       loginOpts.fetchFn = (input: RequestInfo | URL, init?: RequestInit) => matrixFetch(input, init)
@@ -135,14 +154,20 @@ export class MatrixService {
         loginToken,
       })
 
+      if (session !== this.session) {
+        // Пока шёл вход, аккаунт сменили или вышли. Сессию на сервере
+        // отзываем, иначе на нём копятся устройства с токенами.
+        if (response?.access_token) void MatrixService.revokeSession(tempClient)
+        return false
+      }
+
       if (response && response.access_token) {
         if (this.client) {
           this.client.stopClient()
           this.client = null
         }
 
-        await this.init(response.user_id, response.access_token, response.device_id)
-        return true
+        return await this.init(response.user_id, response.access_token, response.device_id, session)
       }
 
       return false
@@ -562,6 +587,7 @@ export class MatrixService {
 
   /** `revoke` — отозвать серверную сессию (в фоне) после локальной остановки. */
   public stop(opts: { revoke?: boolean } = {}) {
+    this.session++
     const client = this.client
     if (this.client) {
       this.client.stopClient()

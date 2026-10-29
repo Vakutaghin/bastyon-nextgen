@@ -99,6 +99,8 @@ export function useRelationActions() {
   /** Не подписан — подписаться сразу; подписан — переспросить и отписаться. */
   async function toggleFollow(address: string): Promise<void> {
     if (!address || relations.isSubscribePending(address)) return
+    // Подписки ещё не пришли с ноды: «подписаться» может оказаться повтором.
+    if (!relations.isSubscriptionKnown(address)) return
     if (!relations.isSubscribed(address)) {
       await run(
         () => relations.subscribe(address),

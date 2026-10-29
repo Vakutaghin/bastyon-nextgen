@@ -886,10 +886,13 @@ export default {
     keyChangedAccept: '接受新密钥',
     loadingMessages: '正在加载消息...',
     loadingDialogs: '正在加载对话...',
-    syncConnecting: '正在连接聊天…',
-    syncCatchup: '正在同步消息…',
-    syncReconnecting: '无法连接聊天服务器，正在重新连接…',
-    syncOffline: '无法连接聊天服务器。',
+    /** Что догружается — подпись у значка в шапке мессенджера. */
+    activity: {
+      connecting: '正在连接…',
+      updating: '正在更新…',
+      reconnecting: '无连接，正在重新连接…',
+      messages: '正在加载消息…',
+    },
     selectChatHint: '选择一个聊天开始发消息',
     firstMessageHint: '发送第一条消息后，{name} 才会看到这个聊天。',
     startChatFailed: '无法创建聊天。请检查网络后重试。',

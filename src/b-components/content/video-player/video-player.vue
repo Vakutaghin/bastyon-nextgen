@@ -624,6 +624,9 @@ const videoElementEvents = useVideoElementEvents({
   updateBuffered,
   handleVideoMetadata,
   syncTime,
+  exitFullscreen: () => {
+    if (isFullscreen.value) void toggleFullscreen()
+  },
 })
 setupVideoEventListeners = videoElementEvents.setupVideoEventListeners
 setupIntersectionObserver = videoElementEvents.setupIntersectionObserver

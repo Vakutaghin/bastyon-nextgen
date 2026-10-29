@@ -16,6 +16,8 @@ You can subscribe:
 
 The button changes to **“Subscribed”**. Click it again to unsubscribe: the app asks **“Unsubscribe from this user?”**, then **“Unsubscribed”** appears.
 
+Right after you sign in, the list of your subscriptions is still coming from the node. Until it arrives, the button reads **“Loading…”**, and posts show no button with a person icon: otherwise the app would offer to subscribe to people you already follow. If the node does not answer, the app asks again by itself.
+
 Posts of the people you follow are collected in the **“Subscriptions”** section of the left panel, newest first — see [Feed](feed.md).
 
 ## Notifications about new posts

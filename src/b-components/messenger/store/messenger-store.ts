@@ -41,6 +41,7 @@ import { useMessengerChannelsStore } from './messenger-channels-store'
 import { useMediaLibraryStore } from '@/stores/media-library-store'
 import { MEDIA_LIBRARY_ACCOUNT_DATA } from '@/services/media-library/media-library-doc'
 import { CHANNELS_ACCOUNT_DATA, channelChatId, isChannelChatId } from '../lib/channels'
+import { chatActivityOf, listActivityOf } from '../lib/messenger-activity'
 import type { MessengerStoreContext } from './messenger-store/types'
 import { loadDialogsSnapshot, saveDialogsSnapshot } from './messenger-store/dialogs-snapshot'
 import { useDialogMapping } from './messenger-store/use-dialog-mapping'
@@ -69,7 +70,7 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   // Маппинг комнаты в диалог и подписки на Matrix — в messenger-store/*.
   const ctx: MessengerStoreContext = { uiStore, chatStore, profileCache }
-  const { mapRoomToDialog } = useDialogMapping(ctx)
+  const { mapRoomToDialog, refreshUnreadCounts } = useDialogMapping(ctx)
 
   // --- Загрузка диалогов ---
 
@@ -117,6 +118,13 @@ export const useMessengerStore = defineStore('messenger', () => {
    * или синхронизируется. Сменится свежим после первого синка.
    */
   let showingSnapshot = false
+
+  /**
+   * Растёт на каждом выходе и смене аккаунта. Вход и загрузка списка, начатые
+   * до смены, кончались после неё и писали в список нового аккаунта чаты и
+   * непрочитанные прежнего.
+   */
+  let session = 0
 
   /**
    * Список с прошлого запуска — пока нет клиента: вход, первый синк и
@@ -168,6 +176,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (showingSnapshot && !complete) return
     // Адрес — на момент начала: аккаунт могли сменить, пока шла загрузка.
     const address = authStore.address
+    const run = session
     if (!silent) uiStore.isLoading = true
     try {
       const rooms = matrixService.getRooms()
@@ -190,6 +199,7 @@ export const useMessengerStore = defineStore('messenger', () => {
       }
 
       let dialogsList = await Promise.all(rooms.map(mapRoomToDialog))
+      if (run !== session) return
 
       // Сохраняем имя/аватар если из Matrix пришло «Empty Room»
       const prevDialogs = uiStore.dialogs
@@ -243,9 +253,11 @@ export const useMessengerStore = defineStore('messenger', () => {
     } catch (e) {
       log.error('Ошибка загрузки диалогов:', e)
     } finally {
-      if (!silent) uiStore.isLoading = false
-      if (uiStore.syncState === 'PREPARED' || uiStore.syncState === 'SYNCING')
-        uiStore.dialogsLoadedOnce = true
+      if (run === session) {
+        if (!silent) uiStore.isLoading = false
+        if (uiStore.syncState === 'PREPARED' || uiStore.syncState === 'SYNCING')
+          uiStore.dialogsLoadedOnce = true
+      }
     }
   }
 
@@ -413,6 +425,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     void useReticulumStore().autostart()
     if (uiStore.isInitInProgress) return
     uiStore.isInitInProgress = true
+    const run = session
     if (!matrixService.getClient()) showDialogsSnapshot(authStore.address)
 
     // Был ли клиент уже инициализирован к моменту входа в эту функцию.
@@ -432,6 +445,7 @@ export const useMessengerStore = defineStore('messenger', () => {
               loadDialogs,
               scheduleLoadDialogs,
               markRoomRead,
+              refreshUnreadCounts,
               onTokenRejected: recoverFromRejectedToken,
             })
             // Список каналов поменяли на другом устройстве.
@@ -449,11 +463,14 @@ export const useMessengerStore = defineStore('messenger', () => {
           }
 
           const success = await matrixService.login(authStore.address, authStore.keyPair)
+          // Пока шёл вход, аккаунт сменили: этот вход уже чужой.
+          if (run !== session) return
           if (!success) throw new Error('Matrix login failed')
           cancelLoginRetry()
           uiStore.syncError = null
           await syncCurrentUser()
         } catch (e) {
+          if (run !== session) return
           log.error('Ошибка инициализации Matrix:', e)
           // Провал логина был виден только в консоли — пользователь смотрел на
           // вечную «Загрузку диалогов» (S37).
@@ -462,10 +479,11 @@ export const useMessengerStore = defineStore('messenger', () => {
           uiStore.dialogsLoadedOnce = true
           if (!matrixService.getClient()) scheduleLoginRetry()
         } finally {
-          uiStore.isLoading = false
+          if (run === session) uiStore.isLoading = false
         }
       }
 
+      if (run !== session) return
       await syncCurrentUser()
       chatStore.ensurePcryptoInitialized()
       // Для свежей сессии (client только что создан) — ждём 'PREPARED', он сам поднимет диалоги.
@@ -479,7 +497,7 @@ export const useMessengerStore = defineStore('messenger', () => {
         await loadDialogs()
       }
     } finally {
-      uiStore.isInitInProgress = false
+      if (run === session) uiStore.isInitInProgress = false
     }
   }
 
@@ -739,6 +757,7 @@ export const useMessengerStore = defineStore('messenger', () => {
   const logout = (opts: { purge?: boolean } = {}) => {
     // auth-store к этому моменту уже обнулил address — берём id из matrix-клиента.
     const userId = matrixService.getClient()?.getUserId() || undefined
+    session++
     // Серверную сессию отзываем всегда (N21): следующий вход всё равно делает
     // новый login, а без отзыва на homeserver'е копятся device'ы с токенами.
     // Остановка синхронная (initMatrix сразу после должен увидеть «клиента нет»),
@@ -870,6 +889,23 @@ export const useMessengerStore = defineStore('messenger', () => {
     return 'sent'
   }
 
+  // Значок «догружается» в шапке списка и открытого чата (lib/messenger-activity).
+  const listActivity = computed(() =>
+    listActivityOf({
+      authenticated: authStore.isUserAuthenticated,
+      syncError: uiStore.syncError,
+      syncState: uiStore.syncState,
+      dialogsLoading: uiStore.isLoading,
+    })
+  )
+  const chatActivity = computed(() =>
+    chatActivityOf(
+      listActivity.value,
+      (uiStore.isMessagesLoading && !meshRoutes.offlineRouted(uiStore.activeChatId)) ||
+        chatStore.isLoadingMore
+    )
+  )
+
   return {
     // UI (делегируем в uiStore)
     isOpen: uiRefs.isOpen,
@@ -901,6 +937,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     isMessagesLoading: computed(
       () => uiStore.isMessagesLoading && !meshRoutes.offlineRouted(uiStore.activeChatId)
     ),
+    /** Что догружается — значок в шапке списка чатов. */
+    listActivity,
+    /** То же для шапки открытого чата: ещё и его сообщения. */
+    chatActivity,
     activeMeshRoute: meshRoutes.active,
     toggleMeshRoute: meshRoutes.toggleForced,
     shareMeshBinding,

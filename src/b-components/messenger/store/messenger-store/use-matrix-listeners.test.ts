@@ -81,13 +81,22 @@ function setup(activeChatId: string | null, options: { onScreen?: boolean } = {}
   const loadDialogs = vi.fn(async () => {})
   const scheduleLoadDialogs = vi.fn()
   const onTokenRejected = vi.fn()
+  const refreshUnreadCounts = vi.fn()
   registerMatrixListeners({ uiStore, chatStore, profileCache: {} } as never, {
     loadDialogs,
     scheduleLoadDialogs,
     markRoomRead,
     onTokenRejected,
+    refreshUnreadCounts,
   })
-  return { chatStore, uiStore, loadDialogs, scheduleLoadDialogs, onTokenRejected }
+  return {
+    chatStore,
+    uiStore,
+    loadDialogs,
+    scheduleLoadDialogs,
+    onTokenRejected,
+    refreshUnreadCounts,
+  }
 }
 
 beforeEach(() => {
@@ -242,6 +251,17 @@ describe('registerMatrixListeners — sync', () => {
     await Promise.resolve()
     await Promise.resolve()
     expect(uiStore.dialogsLoadedOnce).toBe(true)
+  })
+
+  it('каждый ответ синка пересчитывает непрочитанные: прочитали на другом устройстве', () => {
+    const { refreshUnreadCounts } = setup(null)
+    handlers['sync']!('PREPARED', null)
+    expect(refreshUnreadCounts).not.toHaveBeenCalled()
+    handlers['sync']!('SYNCING', 'PREPARED')
+    handlers['sync']!('SYNCING', 'SYNCING')
+    expect(refreshUnreadCounts).toHaveBeenCalledTimes(2)
+    handlers['sync']!('ERROR', 'SYNCING')
+    expect(refreshUnreadCounts).toHaveBeenCalledTimes(2)
   })
 })
 

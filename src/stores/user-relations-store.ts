@@ -110,6 +110,43 @@ const channelsByStore = new WeakMap<object, RelationChannels>()
 /** Идущая загрузка init(): второй вызов ждёт её, а не получает «готово» до ответа ноды. */
 const initByStore = new WeakMap<object, Promise<void>>()
 
+/**
+ * Список подписок не пришёл — повтор через 3 с, дальше вдвое, до минуты. Без
+ * него один сбой сети оставлял кнопки «Подписаться» у подписанных до
+ * перезапуска.
+ */
+const SUBSCRIPTIONS_RETRY_MS = 3_000
+const SUBSCRIPTIONS_RETRY_MAX_MS = 60_000
+const subscriptionsRetryByStore = new WeakMap<
+  object,
+  { timer: ReturnType<typeof setTimeout> | null; delay: number }
+>()
+
+function stopSubscriptionsRetry(store: object): void {
+  const retry = subscriptionsRetryByStore.get(store)
+  if (retry?.timer) clearTimeout(retry.timer)
+  subscriptionsRetryByStore.delete(store)
+}
+
+function scheduleSubscriptionsRetry(
+  store: RelationsState & { subscriptionsLoaded: boolean },
+  address: string
+): void {
+  const retry = subscriptionsRetryByStore.get(store) ?? { timer: null, delay: 0 }
+  if (retry.timer) return
+  retry.delay = Math.min(
+    retry.delay ? retry.delay * 2 : SUBSCRIPTIONS_RETRY_MS,
+    SUBSCRIPTIONS_RETRY_MAX_MS
+  )
+  retry.timer = setTimeout(() => {
+    retry.timer = null
+    // Вышли или сменили аккаунт — повторять уже нечего.
+    if (store.subscriptionsLoaded || useAuthStore().getUserAddress !== address) return
+    void store.refreshSubscriptions()
+  }, retry.delay)
+  subscriptionsRetryByStore.set(store, retry)
+}
+
 function createChannels(store: RelationsState): RelationChannels {
   const persistQueue = (): void => {
     const me = useAuthStore().getUserAddress
@@ -256,6 +293,16 @@ export const useUserRelationsStore = defineStore('userRelations', {
     isSubscribePending(): (address: string) => boolean {
       return (address: string) => this.subscribePending.has(address)
     },
+    /**
+     * Известно ли, подписан ли текущий пользователь на адрес. Пока список
+     * подписок не пришёл с ноды, кнопке рано говорить «Подписаться».
+     */
+    isSubscriptionKnown(): (address: string) => boolean {
+      return (address: string) =>
+        this.subscriptionsLoaded ||
+        this.subscribed.has(address) ||
+        this.subscribePending.has(address)
+    },
   },
 
   actions: {
@@ -318,12 +365,14 @@ export const useUserRelationsStore = defineStore('userRelations', {
         this.subscribed = new Set(subscribed)
         this.subscribedPrivate = new Set(subscribedPrivate)
         this.subscriptionsLoaded = true
+        stopSubscriptionsRetry(this)
         // Поверх цепочки — подписки, ждущие блока.
         channelsOf(this).subscriptions.reconcile((a) =>
           subscribed.has(a) ? (subscribedPrivate.has(a) ? 'private' : 'public') : 'none'
         )
       } catch (e) {
         console.warn('[userRelations] refreshSubscriptions failed', e)
+        if (!this.subscriptionsLoaded) scheduleSubscriptionsRetry(this, address)
       }
     },
 
@@ -401,6 +450,7 @@ export const useUserRelationsStore = defineStore('userRelations', {
         channelsByStore.delete(this)
       }
       initByStore.delete(this)
+      stopSubscriptionsRetry(this)
       this.blocked = new Set()
       this.pending = new Set()
       this.bannedBy = new Set()

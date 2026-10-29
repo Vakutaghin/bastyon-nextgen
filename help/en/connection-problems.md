@@ -22,11 +22,10 @@ While Tor is connecting, the app does not go online — nothing loads. If the co
 
 ## The chat does not connect
 
-A line above the chat list says what is going on:
+In the messenger header, next to **“Messages”**, a spinner turns and a note says what is going on:
 
-- **“Connecting to the chat…”** and **“Catching up on messages…”** — all is well, wait;
-- **“No connection to the chat server. Reconnecting…”** — the connection dropped; the app reconnects by itself as soon as it is back;
-- **“No connection to the chat server.”** — the app cannot connect yet but keeps trying. Check your internet; if it works and the chat still does not connect, restart the app.
+- **“Connecting…”** and **“Updating…”** — all is well, wait. “Updating…” means the list is already on screen, but it is from last time, and fresh messages and counters are still coming from the server;
+- **“No connection, reconnecting…”** — the connection dropped; the app reconnects by itself as soon as it is back. If your internet works and the spinner keeps turning, restart the app.
 - **“Sync error”** on a red bar — the reason follows the colon: “no connection to the chat server”, “the chat server did not answer in time”, “the chat server returned error” with its code, “Tor is not ready yet”. If the server dropped the sign-in (for example, you signed out on all devices), the app signs in again by itself. Below, in small print, is a technical note: send it to support if the error does not go away. **“Retry”** tries right away instead of waiting for the next attempt.
 
 The chat list and the messages loaded before are visible even without a connection: they are kept on the device.

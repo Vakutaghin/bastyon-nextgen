@@ -26,6 +26,8 @@ interface VideoElementEventsOptions {
   handleVideoMetadata: () => void
   /** Сверить счётчик и полосу с роликом (перемотка на паузе). */
   syncTime?: () => void
+  /** Ролик доиграл во весь экран — выйти, вместе с окном приложения. */
+  exitFullscreen: () => void
 }
 
 export function useVideoElementEvents(opts: VideoElementEventsOptions) {
@@ -42,6 +44,7 @@ export function useVideoElementEvents(opts: VideoElementEventsOptions) {
     updateBuffered,
     handleVideoMetadata,
     syncTime,
+    exitFullscreen,
   } = opts
 
   let intersectionObserver: IntersectionObserver | null = null
@@ -80,7 +83,7 @@ export function useVideoElementEvents(opts: VideoElementEventsOptions) {
           isPlaying.value = false
           isEnded.value = true
           stopProgressAnimation()
-          if (document.fullscreenElement) document.exitFullscreen()
+          exitFullscreen()
         },
       ],
       [

@@ -934,10 +934,13 @@ export default {
     keyChangedAccept: 'Accetta le nuove chiavi',
     loadingMessages: 'Caricamento dei messaggi...',
     loadingDialogs: 'Caricamento delle conversazioni...',
-    syncConnecting: 'Connessione alla chat…',
-    syncCatchup: 'Caricamento dei messaggi…',
-    syncReconnecting: 'Nessuna connessione al server della chat. Riconnessione…',
-    syncOffline: 'Nessuna connessione al server della chat.',
+    /** Что догружается — подпись у значка в шапке мессенджера. */
+    activity: {
+      connecting: 'Connessione…',
+      updating: 'Aggiornamento…',
+      reconnecting: 'Nessuna connessione, riconnessione…',
+      messages: 'Caricamento dei messaggi…',
+    },
     selectChatHint: 'Scegli una chat per iniziare a scrivere',
     firstMessageHint: 'Scrivi il primo messaggio: {name} vedrà la chat quando sarà inviato.',
     startChatFailed: 'Impossibile creare la chat. Controlla la connessione e riprova.',

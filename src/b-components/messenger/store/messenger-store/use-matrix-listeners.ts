@@ -35,6 +35,8 @@ export interface MatrixListenerCallbacks {
   scheduleLoadDialogs: () => void
   /** Отметить чат прочитанным, если он на экране (read-marker). */
   markRoomRead: (roomId: string) => Promise<void>
+  /** Счётчики непрочитанных — по свежим числам сервера, после каждого синка. */
+  refreshUnreadCounts?: () => void
   /**
    * Сервер отверг токен (M_UNKNOWN_TOKEN): SDK остановил синк и сам больше не
    * пробует — нужен новый вход.
@@ -61,7 +63,8 @@ export function registerMatrixListeners(
   callbacks: MatrixListenerCallbacks
 ): void {
   const { uiStore, chatStore } = ctx
-  const { loadDialogs, scheduleLoadDialogs, markRoomRead, onTokenRejected } = callbacks
+  const { loadDialogs, scheduleLoadDialogs, markRoomRead, onTokenRejected, refreshUnreadCounts } =
+    callbacks
 
   matrixService.on(
     'Room.timeline',
@@ -240,6 +243,9 @@ export function registerMatrixListeners(
         uiStore.syncError = null
         uiStore.syncErrorDetail = null
       }
+      // Ответ синка принёс числа непрочитанных: прочитали на другом устройстве
+      // или список встал из кэша — событий ленты при этом нет.
+      if (state === 'SYNCING') refreshUnreadCounts?.()
       if (state === 'PREPARED') {
         loadDialogs(true).then(() => {
           uiStore.dialogsLoadedOnce = true

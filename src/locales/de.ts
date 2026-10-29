@@ -939,10 +939,13 @@ export default {
     keyChangedAccept: 'Neue Schlüssel akzeptieren',
     loadingMessages: 'Nachrichten werden geladen...',
     loadingDialogs: 'Dialoge werden geladen...',
-    syncConnecting: 'Verbindung zum Chat wird hergestellt…',
-    syncCatchup: 'Nachrichten werden nachgeladen…',
-    syncReconnecting: 'Keine Verbindung zum Chat-Server. Neuer Versuch…',
-    syncOffline: 'Keine Verbindung zum Chat-Server.',
+    /** Что догружается — подпись у значка в шапке мессенджера. */
+    activity: {
+      connecting: 'Verbinde…',
+      updating: 'Aktualisiere…',
+      reconnecting: 'Keine Verbindung, verbinde neu…',
+      messages: 'Lade Nachrichten…',
+    },
     selectChatHint: 'Wähle einen Chat, um zu schreiben',
     firstMessageHint:
       'Schreib die erste Nachricht — {name} sieht den Chat, sobald sie gesendet ist.',

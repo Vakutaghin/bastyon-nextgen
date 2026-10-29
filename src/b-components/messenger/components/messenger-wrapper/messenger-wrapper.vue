@@ -21,7 +21,15 @@
         </SC_BackButton>
       </template>
       <template v-if="shownPartner" #title>
-        <ChatPartnerTitle :partner="shownPartner" />
+        <ChatPartnerTitle :partner="shownPartner">
+          <MessengerActivity v-if="activityScope === 'chat'" scope="chat" />
+        </ChatPartnerTitle>
+      </template>
+      <template #status>
+        <MessengerActivity
+          v-if="activityScope === 'list' || (activityScope === 'chat' && !shownPartner)"
+          :scope="activityScope"
+        />
       </template>
 
       <!-- Без него окошко при сбое синка показывало только вечную «Загрузку диалогов». -->
@@ -103,6 +111,7 @@ import { isMeshDialogId } from '@/mesh/ids'
 import MessengerPanel from '../messenger-panel/messenger-panel.vue'
 import SyncErrorBanner from '../sync-error-banner/sync-error-banner.vue'
 import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
+import MessengerActivity from '../messenger-activity/messenger-activity.vue'
 import GroupInfoModal from '../group-info/group-info-modal.vue'
 import { useShownPartner } from '../chat-partner-title/use-shown-partner'
 import { useMessengerStore } from '../../store'
@@ -183,6 +192,13 @@ watch(isMobileOrTablet, (mobile) => {
 
 const shownPartner = useShownPartner()
 const widgetTitle = computed<string>(() => shownPartner.value?.name ?? t('messenger.messages'))
+
+/** Значок «догружается»: у списка и у чата Matrix — каналу и радио сервер чатов не нужен. */
+const activityScope = computed<'list' | 'chat' | null>(() => {
+  const id = activeChatId.value
+  if (!id) return lastTargetAddress.value && inviteViewActive.value ? null : 'list'
+  return channelAddressOf(id) || isMeshDialogId(id) ? null : 'chat'
+})
 
 function onWidgetBack(): void {
   if (activeChatId.value) {

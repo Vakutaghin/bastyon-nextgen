@@ -940,10 +940,13 @@ export default {
     keyChangedAccept: 'Accepter les nouvelles clés',
     loadingMessages: 'Chargement des messages...',
     loadingDialogs: 'Chargement des discussions...',
-    syncConnecting: 'Connexion au chat…',
-    syncCatchup: 'Chargement des messages…',
-    syncReconnecting: 'Pas de connexion au serveur de chat. Reconnexion…',
-    syncOffline: 'Pas de connexion au serveur de chat.',
+    /** Что догружается — подпись у значка в шапке мессенджера. */
+    activity: {
+      connecting: 'Connexion…',
+      updating: 'Mise à jour…',
+      reconnecting: 'Pas de connexion, reconnexion…',
+      messages: 'Chargement des messages…',
+    },
     selectChatHint: 'Choisissez une discussion pour écrire',
     firstMessageHint:
       'Écrivez le premier message : {name} verra la discussion une fois qu’il sera envoyé.',

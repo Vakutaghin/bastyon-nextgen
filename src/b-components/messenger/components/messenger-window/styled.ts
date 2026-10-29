@@ -121,7 +121,7 @@ export const SC_Header = styled.div`
 
 /** Длинное имя собеседника — в одну строку с многоточием, целиком в подсказке. */
 export const SC_Title = styled.div`
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -152,6 +152,8 @@ export const SC_CloseButton = styled.button`
   border-radius: var(--ui-radius-md);
   color: var(--ui-text-muted);
   font-size: 16px;
+  /* Заголовок «Сообщения» короткий: крестик всё равно у правого края. */
+  margin-left: auto;
 
   &:hover {
     background: var(--ui-bg-elevated);

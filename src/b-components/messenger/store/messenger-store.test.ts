@@ -243,6 +243,50 @@ describe('messenger-store: список диалогов до первого о�
   })
 })
 
+describe('messenger-store: смена аккаунта посреди входа и загрузки', () => {
+  it('вход прежнего аккаунта кончился после смены — новый его не видит', async () => {
+    let aliceLogin!: (ok: boolean) => void
+    h.matrix.login.mockImplementationOnce(() => new Promise((resolve) => (aliceLogin = resolve)))
+    h.matrix.login.mockImplementationOnce(() => new Promise(() => {}))
+    saveSnapshot('PBob', [dialog('!bob:host')])
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    const alice = store.initMatrix()
+
+    // Сменили аккаунт: resetMessenger → logout + initMatrix.
+    store.logout()
+    h.auth.address = 'PBob'
+    void store.initMatrix()
+    expect(ui.isInitInProgress).toBe(true)
+
+    // Вход Алисы вернулся (сервис отдаёт false: клиента он не поставил).
+    aliceLogin(false)
+    await alice
+    expect(store.syncError).toBeNull()
+    expect(ui.syncState).not.toBe('ERROR')
+    // Вход Боба ещё идёт — его флаг не сброшен чужим входом.
+    expect(ui.isInitInProgress).toBe(true)
+    expect(store.dialogs.map((d) => d.id)).toEqual(['!bob:host'])
+    store.logout()
+  })
+
+  it('список прежнего аккаунта, собранный после смены, не попадает в новый', async () => {
+    const store = useMessengerStore()
+    await store.initMatrix()
+    const ui = useMessengerUiStore()
+    ui.syncState = 'PREPARED'
+    h.matrix.rooms = [{ dialog: dialog('!alice:host') }]
+    h.onMapRoom.fn = () => {
+      store.logout()
+      h.auth.address = 'PBob'
+    }
+
+    await store.loadDialogs()
+
+    expect(store.dialogs).toEqual([])
+  })
+})
+
 describe('messenger-store: свой matrix-id', () => {
   it('компоненты видят свой id и после сброса при входе в аккаунт', async () => {
     const store = useMessengerStore()

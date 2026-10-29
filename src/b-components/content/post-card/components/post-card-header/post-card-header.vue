@@ -32,7 +32,7 @@
           </SC_ChatBtn>
 
           <SC_FollowBtn
-            v-if="canShowFollow"
+            v-if="canShowFollow && isFollowKnown"
             type="button"
             :class="{ following: isFollowing }"
             :disabled="isFollowPending"
@@ -279,6 +279,8 @@ async function checkBookmarkStatus(): Promise<void> {
 const authorAddress = computed<string>(() => displayAuthor.value?.address || '')
 const isFollowing = computed<boolean>(() => relations.isSubscribed(authorAddress.value))
 const isFollowPending = computed<boolean>(() => relations.isSubscribePending(authorAddress.value))
+// Пока подписки не пришли с ноды, значок «подписаться» у подписанных врал бы.
+const isFollowKnown = computed<boolean>(() => relations.isSubscriptionKnown(authorAddress.value))
 
 // Кнопка видна только авторизованному и не на собственных постах.
 const canShowFollow = computed<boolean>(

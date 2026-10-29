@@ -42,6 +42,14 @@
             {{ t('comments.unblock') }}
           </SC_FollowBtn>
           <SC_FollowBtn
+            v-else-if="canFollow(row.address) && !relations.isSubscriptionKnown(row.address)"
+            class="subscribed"
+            disabled
+          >
+            <LoadingOutlined spin />
+            {{ t('relations.loading') }}
+          </SC_FollowBtn>
+          <SC_FollowBtn
             v-else-if="canFollow(row.address)"
             :class="{ subscribed: relations.isSubscribed(row.address) }"
             :disabled="relations.isSubscribePending(row.address)"

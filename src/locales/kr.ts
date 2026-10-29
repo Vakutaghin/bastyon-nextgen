@@ -925,10 +925,13 @@ export default {
     keyChangedAccept: '새 키 수락',
     loadingMessages: '메시지를 불러오는 중...',
     loadingDialogs: '대화를 불러오는 중...',
-    syncConnecting: '채팅에 연결하는 중…',
-    syncCatchup: '메시지를 불러오는 중…',
-    syncReconnecting: '채팅 서버에 연결할 수 없습니다. 다시 연결하는 중…',
-    syncOffline: '채팅 서버에 연결할 수 없습니다.',
+    /** Что догружается — подпись у значка в шапке мессенджера. */
+    activity: {
+      connecting: '연결하는 중…',
+      updating: '업데이트하는 중…',
+      reconnecting: '연결 없음, 다시 연결하는 중…',
+      messages: '메시지를 불러오는 중…',
+    },
     selectChatHint: '대화를 시작하려면 채팅을 선택하세요',
     firstMessageHint: '첫 메시지를 보내면 {name} 님에게 채팅이 표시됩니다.',
     startChatFailed: '채팅을 만들 수 없습니다. 연결을 확인하고 다시 시도하세요.',
