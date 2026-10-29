@@ -1505,6 +1505,7 @@ export default {
     layout: {
       rings: 'Кольца',
       free: 'Свободно',
+      map: 'Карта',
     },
     zoomIn: 'Крупнее',
     zoomOut: 'Мельче',
@@ -1519,8 +1520,12 @@ export default {
     legendRequest: 'запрос приложения',
     legendOther: 'Другие',
     legendUnknown: 'Неизвестно',
+    legendLabel: 'Что показывать',
+    mapCitiesLoading: 'Скачивается таблица городов (~4 МБ), пока ноды стоят по странам',
+    mapCitiesFailed: 'Таблицу городов скачать не удалось — ноды стоят по странам',
+    mapUnplaced: 'Не на карте: {n} — IPv6 или страна неизвестна',
     hintMouse:
-      'Тащите мышью — сдвиг, Ctrl + колесо или кнопки — масштаб, щелчок по точке — подробности.',
+      'Тащите мышью — сдвиг; щипок на тачпаде, Ctrl + колесо или кнопки — масштаб; щелчок по точке — подробности.',
     hintTouch: 'Двумя пальцами — сдвиг и масштаб, касание точки — подробности.',
     close: 'Закрыть',
     countryUnknown: 'Страна неизвестна',
@@ -1699,7 +1704,7 @@ export default {
       more: 'Показать ещё',
     },
     sources:
-      'Страны — по данным региональных регистраторов IP-адресов (NRO, nro.net, CC BY 4.0) на {date}. Суша на карте — Natural Earth.',
+      'Страны — по данным региональных регистраторов IP-адресов (NRO, nro.net, CC BY 4.0) на {date}. Суша на карте — Natural Earth. Города на карте — DB-IP (db-ip.com, CC BY 4.0), подложка — OpenFreeMap, © OpenMapTiles, © OpenStreetMap.',
   },
   videoPlayer: {
     hotkeysTitle: 'Горячие клавиши',

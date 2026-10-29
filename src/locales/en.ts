@@ -1503,6 +1503,7 @@ export default {
     layout: {
       rings: 'Rings',
       free: 'Free',
+      map: 'Map',
     },
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
@@ -1517,7 +1518,12 @@ export default {
     legendRequest: 'app request',
     legendOther: 'Other',
     legendUnknown: 'Unknown',
-    hintMouse: 'Drag to pan, Ctrl + wheel or the buttons to zoom, click a dot for details.',
+    legendLabel: 'What to show',
+    mapCitiesLoading: 'Downloading the city table (~4 MB); until then nodes sit in their countries',
+    mapCitiesFailed: 'Could not download the city table — nodes sit in their countries',
+    mapUnplaced: 'Not on the map: {n} — IPv6 or unknown country',
+    hintMouse:
+      'Drag to pan; pinch on the trackpad, Ctrl + wheel or the buttons to zoom; click a dot for details.',
     hintTouch: 'Two fingers to pan and zoom, tap a dot for details.',
     close: 'Close',
     countryUnknown: 'Country unknown',
@@ -1698,7 +1704,7 @@ export default {
       more: 'Show more',
     },
     sources:
-      'Countries: regional IP address registries (NRO, nro.net, CC BY 4.0) as of {date}. Land on the map: Natural Earth.',
+      'Countries: regional IP address registries (NRO, nro.net, CC BY 4.0) as of {date}. Land on the map: Natural Earth. Cities on the map: DB-IP (db-ip.com, CC BY 4.0); base map: OpenFreeMap, © OpenMapTiles, © OpenStreetMap.',
   },
   videoPlayer: {
     hotkeysTitle: 'Keyboard shortcuts',

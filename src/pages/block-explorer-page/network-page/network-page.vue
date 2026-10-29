@@ -80,7 +80,10 @@
               :tip="totals.tip"
               :highlight="highlight"
               :country-name="countryName"
+              :locate="locateNode"
+              :cities-status="store.citiesStatus"
               @select="selectedIp = $event"
+              @map="void store.resolveCities()"
             >
               <SC_NetEmpty v-if="!hasMap && !store.crawling">
                 <h3>{{ t('explorerNetwork.empty.title') }}</h3>
@@ -156,13 +159,15 @@ import { useI18n } from 'vue-i18n'
 import { ReloadOutlined, StopOutlined } from '@/components/icons'
 import { bcp47 } from '@/i18n'
 import { formatDateTimeExact } from '@/helpers/common/date-formatter'
+import { COUNTRY_POINTS } from '@/services/network-map/data/country-points'
 import {
   buildNodeRows,
   countryShares,
   networkTotals,
   versionShares,
+  type NodeRow,
 } from '@/services/network-map/network-stats'
-import { useNetworkMapStore } from '@/stores/network-map-store'
+import { cityOf, useNetworkMapStore } from '@/stores/network-map-store'
 import ExplorerHeader from '../components/explorer-header/explorer-header.vue'
 import InfoTooltip from '../components/shared/info-tooltip.vue'
 import { formatExplorerNumber } from '../components/shared/format-explorer'
@@ -178,6 +183,7 @@ import {
   SC_SectionTitle,
 } from '../block-explorer-page.styled'
 import NetworkTopology from './network-topology/network-topology.vue'
+import type { NodePlace } from './network-topology/geo-map'
 import NetworkConnection from './network-connection.vue'
 import NetworkBreakdown from './network-breakdown.vue'
 import NetworkCountries from './network-countries.vue'
@@ -222,6 +228,14 @@ const highlight = computed(() =>
 )
 const countryByIp = computed(() => new Map(rows.value.map((r) => [r.ip, r.country])))
 const countryOf = (ip: string) => countryByIp.value.get(ip)
+
+/** Место ноды на карте: город по таблице DB-IP, без неё — середина страны. */
+function locateNode(row: NodeRow): NodePlace | null {
+  const city = cityOf(row.ip)
+  if (city) return { lat: city[0], lon: city[1] }
+  const point = row.country ? COUNTRY_POINTS[row.country] : undefined
+  return point ? { lat: point[1], lon: point[0] } : null
+}
 
 const percentFormat = computed(
   () => new Intl.NumberFormat(bcp47(locale.value), { style: 'percent', maximumFractionDigits: 0 })

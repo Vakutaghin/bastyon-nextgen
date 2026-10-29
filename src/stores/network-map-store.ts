@@ -8,6 +8,7 @@ import servers from '@/servers.json'
 import type { GetNodeInfoResponse } from '@/types/rpc-responses/get-node-info'
 import type { GetPeerInfoResponse } from '@/types/rpc-responses/get-peer-info'
 import { loadCountryTable, type CountryTable } from '@/services/network-map/ip-country'
+import { loadGeoTable, type GeoTable, type LatLon } from '@/services/network-map/ip-geo'
 import {
   crawlNetwork,
   type CrawlProgress,
@@ -98,6 +99,12 @@ const transport: CrawlTransport = {
 
 let abort: AbortController | null = null
 let countries: CountryTable | null = null
+let cities: GeoTable | null = null
+
+/** Город ноды по таблице DB-IP; null — таблицы ещё нет или адрес неизвестен. */
+export function cityOf(ip: string): LatLon | null {
+  return cities?.lookup(ip) ?? null
+}
 
 export const useNetworkMapStore = defineStore('network-map', {
   state: () => ({
@@ -110,6 +117,10 @@ export const useNetworkMapStore = defineStore('network-map', {
     failed: false,
     /** На какой день таблица стран; пусто — ещё не загружена. */
     countriesDate: '',
+    /** Таблица городов для раскладки «Карта»: качается, только когда карту открыли. */
+    citiesStatus: 'idle' as 'idle' | 'loading' | 'ready' | 'failed',
+    /** На какой день таблица городов. */
+    citiesDate: '',
   }),
 
   getters: {
@@ -133,6 +144,20 @@ export const useNetworkMapStore = defineStore('network-map', {
         changed = true
       }
       if (changed) this.revision++
+    },
+
+    /** Скачать (или взять с устройства) таблицу городов; ноды встают по местам. */
+    async resolveCities(): Promise<void> {
+      if (this.citiesStatus === 'loading' || this.citiesStatus === 'ready') return
+      this.citiesStatus = 'loading'
+      try {
+        cities ??= await loadGeoTable()
+        this.citiesDate = cities.date
+        this.citiesStatus = 'ready'
+        this.revision++
+      } catch {
+        this.citiesStatus = 'failed'
+      }
     },
 
     canCrawlIn(now: number): number {

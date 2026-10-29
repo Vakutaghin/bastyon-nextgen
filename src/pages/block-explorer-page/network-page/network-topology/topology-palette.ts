@@ -52,6 +52,8 @@ export type ColorMode = 'sync' | 'kind' | 'version' | 'country' | 'access'
 export const COLOR_MODES: readonly ColorMode[] = ['sync', 'kind', 'version', 'country', 'access']
 
 export interface LegendEntry {
+  /** Группа нод: по нему легенда прячет и показывает их. */
+  key: string
   /** Ключ i18n или готовая подпись (страна, версия). */
   labelKey?: string
   label?: string
@@ -64,6 +66,8 @@ const TOP_GROUPS = 6
 
 export interface Coloring {
   colorOf(row: NodeRow): string
+  /** Ключ группы ноды — тот же, что у её строки легенды. */
+  groupOf(row: NodeRow): string
   legend: LegendEntry[]
 }
 
@@ -102,8 +106,10 @@ export function buildColoring(
     const counts = countBy(rows, stateOf)
     return {
       colorOf: (row) => colors[stateOf(row)],
+      groupOf: (row) => `sync:${stateOf(row)}`,
       legend: (['synced', 'behind', 'forked', 'unknown'] as const)
         .map((s) => ({
+          key: `sync:${s}`,
           labelKey: `explorerNetwork.sync.${s}`,
           color: colors[s],
           count: counts.get(s) ?? 0,
@@ -117,8 +123,10 @@ export function buildColoring(
     const counts = countBy(rows, (row) => row.kind)
     return {
       colorOf: (row) => colors[row.kind],
+      groupOf: (row) => `kind:${row.kind}`,
       legend: (['full', 'pruned', 'unknown'] as const)
         .map((k) => ({
+          key: `kind:${k}`,
           labelKey: `explorerNetwork.kind.${k}`,
           color: colors[k],
           count: counts.get(k) ?? 0,
@@ -131,13 +139,16 @@ export function buildColoring(
     const counts = countBy(rows, (r) => (r.listening ? 'open' : 'nat'))
     return {
       colorOf: (row) => (row.listening ? palette.info : palette.textDimmed),
+      groupOf: (row) => (row.listening ? 'access:open' : 'access:nat'),
       legend: [
         {
+          key: 'access:open',
           labelKey: 'explorerNetwork.access.open',
           color: palette.info,
           count: counts.get('open') ?? 0,
         },
         {
+          key: 'access:nat',
           labelKey: 'explorerNetwork.access.nat',
           color: palette.textDimmed,
           count: counts.get('nat') ?? 0,
@@ -156,14 +167,22 @@ export function buildColoring(
   const rest = ordered.slice(TOP_GROUPS).reduce((sum, [, n]) => sum + n, 0)
   const unknown = rows.length - ordered.reduce((sum, [, n]) => sum + n, 0)
   const legend: LegendEntry[] = ordered.slice(0, TOP_GROUPS).map(([k, n]) => ({
+    key: `${mode}:${k}`,
     label: mode === 'version' ? k : countryName(k),
     color: top.get(k)!,
     count: n,
   }))
-  if (rest)
-    legend.push({ labelKey: 'explorerNetwork.legendOther', color: palette.textMuted, count: rest })
+  if (rest) {
+    legend.push({
+      key: `${mode}:~other`,
+      labelKey: 'explorerNetwork.legendOther',
+      color: palette.textMuted,
+      count: rest,
+    })
+  }
   if (unknown) {
     legend.push({
+      key: `${mode}:~unknown`,
       labelKey: 'explorerNetwork.legendUnknown',
       color: palette.textDimmed,
       count: unknown,
@@ -173,6 +192,10 @@ export function buildColoring(
     colorOf: (row) => {
       const k = keyOf(row)
       return k ? (top.get(k) ?? palette.textMuted) : palette.textDimmed
+    },
+    groupOf: (row) => {
+      const k = keyOf(row)
+      return `${mode}:${k ? (top.has(k) ? k : '~other') : '~unknown'}`
     },
     legend,
   }

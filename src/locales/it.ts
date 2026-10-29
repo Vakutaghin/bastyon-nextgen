@@ -1514,6 +1514,7 @@ export default {
     layout: {
       rings: 'Anelli',
       free: 'Libera',
+      map: 'Mappa',
     },
     zoomIn: 'Ingrandisci',
     zoomOut: 'Riduci',
@@ -1528,8 +1529,13 @@ export default {
     legendRequest: 'richiesta dell’app',
     legendOther: 'Altri',
     legendUnknown: 'Sconosciuto',
+    legendLabel: 'Cosa mostrare',
+    mapCitiesLoading:
+      'Download della tabella delle città (~4 MB); intanto i nodi sono nel loro paese',
+    mapCitiesFailed: 'Impossibile scaricare la tabella delle città: i nodi sono nel loro paese',
+    mapUnplaced: 'Fuori mappa: {n} — IPv6 o paese sconosciuto',
     hintMouse:
-      'Trascina per spostarti, Ctrl + rotellina o i pulsanti per lo zoom, clicca su un punto per i dettagli.',
+      'Trascina per spostarti; pizzica sul trackpad, Ctrl + rotellina o i pulsanti per lo zoom; clicca su un punto per i dettagli.',
     hintTouch: 'Due dita per spostarti e fare zoom, tocca un punto per i dettagli.',
     close: 'Chiudi',
     countryUnknown: 'Paese sconosciuto',
@@ -1710,7 +1716,7 @@ export default {
       more: 'Mostra altro',
     },
     sources:
-      'Paesi: registri regionali degli indirizzi IP (NRO, nro.net, CC BY 4.0) al {date}. Terre emerse sulla mappa: Natural Earth.',
+      'Paesi: registri regionali degli indirizzi IP (NRO, nro.net, CC BY 4.0) al {date}. Terre emerse sulla mappa: Natural Earth. Città sulla mappa: DB-IP (db-ip.com, CC BY 4.0); mappa di base: OpenFreeMap, © OpenMapTiles, © OpenStreetMap.',
   },
   videoPlayer: {
     hotkeysTitle: 'Scorciatoie da tastiera',

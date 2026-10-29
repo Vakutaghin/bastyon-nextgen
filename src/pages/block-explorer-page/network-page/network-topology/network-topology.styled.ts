@@ -104,7 +104,20 @@ export const SC_TopoStage = styled.div`
   }
 `
 
+/** Подложка «Карты» (MapLibre): под холстом, жестов не ловит. */
+export const SC_TopoBaseMap = styled.div`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  & > div {
+    width: 100%;
+    height: 100%;
+  }
+`
+
 export const SC_TopoCanvas = styled.canvas`
+  position: relative;
   display: block;
   width: 100%;
   height: 100%;
@@ -159,23 +172,70 @@ export const SC_TopoEvent = styled.div`
 export const SC_TopoLegend = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 16px;
+  gap: 4px 6px;
   font-size: 12px;
   color: var(--ui-text-muted);
 `
 
-export const SC_TopoLegendItem = styled.span`
+/** Строка легенды — флажок: снятый прячет группу нод на схеме и карте. */
+export const SC_TopoLegendItem = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 3px 8px 3px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-md);
+  background: transparent;
+  color: var(--ui-text-highlighted);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color ${() => TRANSITIONS.QUICK},
+    color ${() => TRANSITIONS.QUICK};
+
+  &:hover {
+    background: var(--ui-bg-elevated);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 1px;
+  }
+
+  &.off {
+    color: var(--ui-text-dimmed);
+  }
+
+  &.off > span:first-child {
+    background: transparent;
+  }
+
+  &.off > span:first-child::after {
+    display: none;
+  }
 `
 
-export const SC_TopoSwatch = styled('span', { color: String })`
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+/** Квадратик флажка цвета группы, с галочкой. */
+export const SC_TopoCheck = styled('span', { color: String })`
+  position: relative;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid ${(p) => p.color ?? ''};
+  border-radius: var(--ui-radius-sm);
   background: ${(p) => p.color ?? ''};
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 3.5px;
+    width: 3px;
+    height: 7px;
+    border: solid var(--ui-bg);
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
 `
 
 export const SC_TopoLegendCount = styled.span`
@@ -200,6 +260,37 @@ export const SC_TopoPulse = styled.span`
   height: 6px;
   border-radius: 50%;
   background: var(--ui-primary);
+`
+
+export const SC_TopoMapNote = styled.div`
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  max-width: calc(100% - 20px);
+  padding: 4px 10px;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-bg);
+  box-shadow: var(--ui-shadow-sm);
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  pointer-events: none;
+`
+
+/** Подпись источников карты — обязательна по условиям OSM и CARTO. */
+export const SC_TopoAttribution = styled.div`
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 2px 8px;
+  border-top-left-radius: var(--ui-radius-sm);
+  background: var(--ui-bg);
+  color: var(--ui-text-muted);
+  font-size: 11px;
+
+  & a {
+    color: inherit;
+    text-decoration: underline;
+  }
 `
 
 export const SC_TopoHint = styled.div`

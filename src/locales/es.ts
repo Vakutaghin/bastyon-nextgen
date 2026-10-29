@@ -1517,6 +1517,7 @@ export default {
     layout: {
       rings: 'Anillos',
       free: 'Libre',
+      map: 'Mapa',
     },
     zoomIn: 'Acercar',
     zoomOut: 'Alejar',
@@ -1531,8 +1532,13 @@ export default {
     legendRequest: 'solicitud de la aplicación',
     legendOther: 'Otros',
     legendUnknown: 'Desconocido',
+    legendLabel: 'Qué mostrar',
+    mapCitiesLoading:
+      'Descargando la tabla de ciudades (~4 MB); mientras tanto, los nodos están en su país',
+    mapCitiesFailed: 'No se pudo descargar la tabla de ciudades: los nodos están en su país',
+    mapUnplaced: 'Fuera del mapa: {n} (IPv6 o país desconocido)',
     hintMouse:
-      'Arrastra para desplazarte, usa Ctrl + rueda o los botones para hacer zoom y haz clic en un punto para ver los detalles.',
+      'Arrastra para desplazarte; pellizca en el trackpad, usa Ctrl + rueda o los botones para hacer zoom; haz clic en un punto para ver los detalles.',
     hintTouch:
       'Usa dos dedos para desplazarte y hacer zoom, y toca un punto para ver los detalles.',
     close: 'Cerrar',
@@ -1713,7 +1719,7 @@ export default {
       more: 'Mostrar más',
     },
     sources:
-      'Países: registros regionales de direcciones IP (NRO, nro.net, CC BY 4.0) a fecha de {date}. Tierra firme en el mapa: Natural Earth.',
+      'Países: registros regionales de direcciones IP (NRO, nro.net, CC BY 4.0) a fecha de {date}. Tierra firme en el mapa: Natural Earth. Ciudades en el mapa: DB-IP (db-ip.com, CC BY 4.0); mapa base: OpenFreeMap, © OpenMapTiles, © OpenStreetMap.',
   },
   videoPlayer: {
     hotkeysTitle: 'Atajos de teclado',

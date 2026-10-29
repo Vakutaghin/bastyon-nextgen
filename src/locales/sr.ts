@@ -1503,6 +1503,7 @@ export default {
     layout: {
       rings: 'Прстенови',
       free: 'Слободно',
+      map: 'Мапа',
     },
     zoomIn: 'Увећај',
     zoomOut: 'Умањи',
@@ -1517,8 +1518,12 @@ export default {
     legendRequest: 'захтев апликације',
     legendOther: 'Остали',
     legendUnknown: 'Непознато',
+    legendLabel: 'Шта приказати',
+    mapCitiesLoading: 'Преузима се табела градова (~4 MB); дотад су чворови у својим земљама',
+    mapCitiesFailed: 'Табела градова није преузета — чворови су у својим земљама',
+    mapUnplaced: 'Није на мапи: {n} — IPv6 или непозната земља',
     hintMouse:
-      'Превуците за померање, Ctrl + точкић или дугмад за зумирање, кликните на тачку за детаље.',
+      'Превуците за померање; штипање на тачпеду, Ctrl + точкић или дугмад за зумирање; кликните на тачку за детаље.',
     hintTouch: 'Два прста за померање и зумирање, додирните тачку за детаље.',
     close: 'Затвори',
     countryUnknown: 'Земља непозната',
@@ -1697,7 +1702,7 @@ export default {
       more: 'Прикажи још',
     },
     sources:
-      'Земље: регионални регистри IP адреса (NRO, nro.net, CC BY 4.0) на дан {date}. Копно на мапи: Natural Earth.',
+      'Земље: регионални регистри IP адреса (NRO, nro.net, CC BY 4.0) на дан {date}. Копно на мапи: Natural Earth. Градови на мапи: DB-IP (db-ip.com, CC BY 4.0); подлога: OpenFreeMap, © OpenMapTiles, © OpenStreetMap.',
   },
   videoPlayer: {
     hotkeysTitle: 'Пречице на тастатури',

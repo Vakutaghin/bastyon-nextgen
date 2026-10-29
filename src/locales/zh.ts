@@ -1444,6 +1444,7 @@ export default {
     layout: {
       rings: '环形',
       free: '自由',
+      map: '地图',
     },
     zoomIn: '放大',
     zoomOut: '缩小',
@@ -1457,7 +1458,11 @@ export default {
     legendRequest: '应用请求',
     legendOther: '其他',
     legendUnknown: '未知',
-    hintMouse: '拖动可平移，Ctrl + 滚轮或按钮可缩放，点击圆点查看详情。',
+    legendLabel: '显示内容',
+    mapCitiesLoading: '正在下载城市表（约 4 MB），在此之前节点按国家显示',
+    mapCitiesFailed: '未能下载城市表，节点按国家显示',
+    mapUnplaced: '不在地图上：{n} — IPv6 或国家未知',
+    hintMouse: '拖动可平移；在触控板上双指捏合、Ctrl + 滚轮或按钮可缩放；点击圆点查看详情。',
     hintTouch: '双指可平移和缩放，轻点圆点查看详情。',
     close: '关闭',
     countryUnknown: '国家/地区未知',
@@ -1631,7 +1636,7 @@ export default {
       more: '显示更多',
     },
     sources:
-      '国家/地区：区域 IP 地址注册机构（NRO，nro.net，CC BY 4.0），截至 {date}。地图陆地：Natural Earth。',
+      '国家/地区：区域 IP 地址注册机构（NRO，nro.net，CC BY 4.0），截至 {date}。地图陆地：Natural Earth。地图城市：DB-IP（db-ip.com，CC BY 4.0）；底图：OpenFreeMap、© OpenMapTiles、© OpenStreetMap。',
   },
   videoPlayer: {
     hotkeysTitle: '键盘快捷键',

@@ -1523,6 +1523,7 @@ export default {
     layout: {
       rings: 'Ringe',
       free: 'Frei',
+      map: 'Karte',
     },
     zoomIn: 'Vergrößern',
     zoomOut: 'Verkleinern',
@@ -1537,8 +1538,14 @@ export default {
     legendRequest: 'Anfrage der App',
     legendOther: 'Sonstige',
     legendUnknown: 'Unbekannt',
+    legendLabel: 'Was anzeigen',
+    mapCitiesLoading:
+      'Städtetabelle wird geladen (~4 MB); bis dahin stehen die Nodes in ihren Ländern',
+    mapCitiesFailed:
+      'Städtetabelle konnte nicht geladen werden – die Nodes stehen in ihren Ländern',
+    mapUnplaced: 'Nicht auf der Karte: {n} – IPv6 oder Land unbekannt',
     hintMouse:
-      'Ziehen zum Verschieben, Ctrl + Mausrad oder die Schaltflächen zum Zoomen, Klick auf einen Punkt für Details.',
+      'Ziehen zum Verschieben; Zwei-Finger-Zoom auf dem Trackpad, Ctrl + Mausrad oder die Schaltflächen zum Zoomen; Klick auf einen Punkt für Details.',
     hintTouch: 'Mit zwei Fingern verschieben und zoomen, auf einen Punkt tippen für Details.',
     close: 'Schließen',
     countryUnknown: 'Land unbekannt',
@@ -1720,7 +1727,7 @@ export default {
       more: 'Mehr anzeigen',
     },
     sources:
-      'Länder: regionale IP-Adressregister (NRO, nro.net, CC BY 4.0), Stand {date}. Landflächen auf der Karte: Natural Earth.',
+      'Länder: regionale IP-Adressregister (NRO, nro.net, CC BY 4.0), Stand {date}. Landflächen auf der Karte: Natural Earth. Städte auf der Karte: DB-IP (db-ip.com, CC BY 4.0); Kartengrundlage: OpenFreeMap, © OpenMapTiles, © OpenStreetMap.',
   },
   videoPlayer: {
     hotkeysTitle: 'Tastenkürzel',

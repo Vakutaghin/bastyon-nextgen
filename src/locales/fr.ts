@@ -1525,6 +1525,7 @@ export default {
     layout: {
       rings: 'Anneaux',
       free: 'Libre',
+      map: 'Carte',
     },
     zoomIn: 'Zoom avant',
     zoomOut: 'Zoom arrière',
@@ -1539,8 +1540,14 @@ export default {
     legendRequest: 'requête de l’application',
     legendOther: 'Autres',
     legendUnknown: 'Inconnu',
+    legendLabel: 'Quoi afficher',
+    mapCitiesLoading:
+      'Téléchargement de la table des villes (~4 Mo) ; en attendant, les nœuds sont placés par pays',
+    mapCitiesFailed:
+      'Impossible de télécharger la table des villes : les nœuds sont placés par pays',
+    mapUnplaced: 'Hors carte : {n} — IPv6 ou pays inconnu',
     hintMouse:
-      'Faites glisser pour vous déplacer, Ctrl + molette ou les boutons pour zoomer, cliquez sur un point pour voir les détails.',
+      'Faites glisser pour vous déplacer ; pincez sur le pavé tactile, Ctrl + molette ou les boutons pour zoomer ; cliquez sur un point pour voir les détails.',
     hintTouch: 'Deux doigts pour vous déplacer et zoomer, touchez un point pour voir les détails.',
     close: 'Fermer',
     countryUnknown: 'Pays inconnu',
@@ -1721,7 +1728,7 @@ export default {
       more: 'Afficher plus',
     },
     sources:
-      'Pays : registres régionaux d’adresses IP (NRO, nro.net, CC BY 4.0) au {date}. Terres sur la carte : Natural Earth.',
+      'Pays : registres régionaux d’adresses IP (NRO, nro.net, CC BY 4.0) au {date}. Terres sur la carte : Natural Earth. Villes sur la carte : DB-IP (db-ip.com, CC BY 4.0) ; fond de carte : OpenFreeMap, © OpenMapTiles, © OpenStreetMap.',
   },
   videoPlayer: {
     hotkeysTitle: 'Raccourcis clavier',

@@ -1494,6 +1494,7 @@ export default {
     layout: {
       rings: '동심원',
       free: '자유',
+      map: '지도',
     },
     zoomIn: '확대',
     zoomOut: '축소',
@@ -1508,8 +1509,12 @@ export default {
     legendRequest: '앱 요청',
     legendOther: '기타',
     legendUnknown: '알 수 없음',
+    legendLabel: '표시할 항목',
+    mapCitiesLoading: '도시 표(약 4MB)를 내려받는 중입니다. 그동안 노드는 국가 위치에 표시됩니다',
+    mapCitiesFailed: '도시 표를 내려받지 못했습니다. 노드는 국가 위치에 표시됩니다',
+    mapUnplaced: '지도에 없음: {n} — IPv6 또는 국가 알 수 없음',
     hintMouse:
-      '드래그해서 이동하고, Ctrl + 휠이나 버튼으로 확대·축소하세요. 점을 클릭하면 자세한 정보가 나옵니다.',
+      '드래그해서 이동하고, 트랙패드 핀치, Ctrl + 휠이나 버튼으로 확대·축소하세요. 점을 클릭하면 자세한 정보가 나옵니다.',
     hintTouch: '두 손가락으로 이동하고 확대·축소하세요. 점을 탭하면 자세한 정보가 나옵니다.',
     close: '닫기',
     countryUnknown: '국가 알 수 없음',
@@ -1688,7 +1693,7 @@ export default {
       more: '더 보기',
     },
     sources:
-      '국가: 지역 IP 주소 등록 기관(NRO, nro.net, CC BY 4.0), {date} 기준. 지도의 육지: Natural Earth.',
+      '국가: 지역 IP 주소 등록 기관(NRO, nro.net, CC BY 4.0), {date} 기준. 지도의 육지: Natural Earth. 지도의 도시: DB-IP(db-ip.com, CC BY 4.0), 바탕 지도: OpenFreeMap, © OpenMapTiles, © OpenStreetMap.',
   },
   videoPlayer: {
     hotkeysTitle: '키보드 단축키',

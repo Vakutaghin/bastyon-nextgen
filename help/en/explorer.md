@@ -63,10 +63,13 @@ At the top are the key numbers: **“Nodes in the network”**, **“Accept conn
 
 Each dot is a node. In the **“Rings”** layout you are in the center, around you are the Bastyon proxies (gray ones don't respond), then the nodes that accept connections, and outside are the nodes behind a router: they connect to the network themselves, but nobody can connect to them. A dashed line from a proxy leads to the nodes in its pool: the proxy answers apps through them. **“Free”** lays the nodes out by their connections: you can see the core of nodes almost everyone is connected to.
 
-- Coloring: **“State”** — whether a node is in sync or behind, **“Type”**, **“Version”**, **“Country”** and **“Access”**. The legend under the diagram says how many nodes have each color.
+**“Map”** puts the nodes on an OpenStreetMap world map — light or dark to match the app theme — each in its city, with lines for the connections between them. The app finds the city on the device using the DB-IP table: the first time it downloads the whole table (about 4 MB) and then reads it from the device, so node addresses never leave it. Until the table is there, or if the download fails, nodes sit in the middle of their country. Nodes with an IPv6 address don't go on the map — their number is shown at the bottom of the map. The base map comes from OpenFreeMap; with Tor, both it and the table go through Tor.
+
+- Coloring: **“State”** — whether a node is in sync or behind, **“Type”**, **“Version”**, **“Country”** and **“Access”**. The legend above the diagram says how many nodes have each color.
+- The legend is also a filter: untick a box and that group of nodes disappears from the diagram and the map, together with its connections. The same works for node connections, proxy pools and the running request dots.
 - Dots running along the lines are the app’s requests right now: from you to a proxy and to the node that answered. When a new block comes out, the network’s nodes flash for a moment and its number appears at the top.
 - Clicking a dot opens a card: the state, version, height, type, access, how many connections, since when the node has been online, whether its clock differs from its neighbors, which proxies have it in their pool and how many apps work through it.
-- Drag the diagram with the mouse; zoom with Ctrl + wheel or the **“Zoom in”**, **“Zoom out”** and **“Fit to view”** buttons. On a phone, use two fingers: one finger scrolls the page. **“Full screen”** expands the diagram.
+- Drag the diagram and the map with the mouse; zoom with a pinch on the trackpad, Ctrl + wheel or the **“Zoom in”**, **“Zoom out”** and **“Fit to view”** buttons. On a phone, use two fingers: one finger scrolls the page. **“Full screen”** expands the diagram.
 
 ## Thick and thin clients
 
