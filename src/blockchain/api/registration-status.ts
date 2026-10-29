@@ -29,7 +29,7 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
     return 'not_in_progress_no_processing'
   }
 
-  let skipRpcCheck = false
+  const skipRpcCheck = false
 
   // OPTIMIZATION: If we are currently fetching the user state (which includes profile), wait for it
   // This prevents duplicate getuserprofile calls (one from here with auth: false, one from store with auth: true)
@@ -49,7 +49,11 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
 
   // OPTIMIZATION: Check if profile is already loaded in store with a real ID
   // This avoids duplicate getuserprofile calls when profile is already loaded
-  if (authStore.userProfile && authStore.userProfile.address === address && authStore.userProfile.id) {
+  if (
+    authStore.userProfile &&
+    authStore.userProfile.address === address &&
+    authStore.userProfile.id
+  ) {
     return 'registered'
   }
   // Для id=0 (stub после регистрации) — всегда делаем RPC проверку
@@ -64,7 +68,9 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
       // Для незарегистрированного аккаунта сервер может вернуть пустой массив data
       // rpcCall unwraps { result, data } and throws on error,
       // so we receive the inner data directly.
-      const profiles = await rpcCall<Array<{ address?: string; id?: number; name?: string; hash?: string }>>({
+      const profiles = await rpcCall<
+        Array<{ address?: string; id?: number; name?: string; hash?: string }>
+      >({
         method: rpcEndpoints.getUserProfile,
         parameters: [[address]], // getuserprofile принимает массив адресов в массиве параметров
         options: { auth: false },
@@ -79,9 +85,7 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
 
       // Упрощенная проверка: если есть хотя бы один элемент,
       // значит аккаунт уже в блокчейне (даже если у элемента нет name)
-      const hasAccountInBlockchain =
-        Array.isArray(profiles) &&
-        profiles.length > 0
+      const hasAccountInBlockchain = Array.isArray(profiles) && profiles.length > 0
 
       if (hasAccountInBlockchain) {
         // Аккаунт уже в блокчейне - зарегистрирован
@@ -93,10 +97,11 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
       // в unspents-проверку и мог классифицировать уже ЗАРЕГИСТРИРОВАННОГО как
       // «регистрация в процессе» (ложные часики + возобновление фоновой tx).
       // Пустой профиль (аккаунт не найден) сюда НЕ попадает — rpcCall отдаёт []
-      // без throw и мы штатно уходим в unspents ниже. А сетевую ошибку не
-      // понижаем: отдаём not_in_progress, проверка повторится на след. цикле.
+      // без throw и мы штатно уходим в unspents ниже. Сетевую ошибку отдаём
+      // вызывающему: «завершено» по ней сняло бы часы до того, как аккаунт в
+      // блокчейне, — наблюдатель и проверка при запуске спросят ещё раз.
       console.error('Failed to get registration status:', error)
-      return 'not_in_progress'
+      throw error
     }
   }
 
@@ -104,7 +109,8 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
     // Проверяем наличие userInfo транзакций
     // В оригинальном приложении это делается через getActions('userInfo')
     // Здесь мы проверяем наличие unspents и транзакций
-    const { getUnspents, filterAvailableUnspents } = await import('@/blockchain/core/transactions/unspents-manager')
+    const { getUnspents, filterAvailableUnspents } =
+      await import('@/blockchain/core/transactions/unspents-manager')
     const unspents = await getUnspents(address, 1, 9999999)
     const availableUnspents = filterAvailableUnspents(unspents, false)
 

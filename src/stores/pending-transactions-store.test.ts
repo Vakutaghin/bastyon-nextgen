@@ -26,6 +26,7 @@ import {
   onTransactionSettled,
 } from '@/blockchain/core/transactions/broadcast-events'
 import {
+  isConfirmed,
   PENDING_TX_TTL_MS,
   pendingDeadline,
   pendingKindOf,
@@ -126,7 +127,7 @@ describe('pending-transactions-store', () => {
     notifyTransactionBroadcast({ txid: TX(4), operationType: 'modFlag', meta: {} })
     h.getByPRC.mockImplementation(async ({ parameters }: { parameters: unknown[] }) =>
       parameters[0] === TX(3)
-        ? { data: { txid: TX(3), blockhash: 'b', confirmations: 2 } }
+        ? { data: { txid: TX(3), type: 1, height: 4084009, blockHash: 'b', nTime: 1, vin: [] } }
         : { data: { txid: TX(4) } }
     )
     await store.checkWithNode()
@@ -135,6 +136,32 @@ describe('pending-transactions-store', () => {
       method: 'getrawtransaction',
       parameters: [TX(3), 1],
     })
+  })
+
+  // Новый аккаунт: часы у аватара гасли, а «Регистрация» висела в списке —
+  // ответ ноды Pocketnet без `confirmations` и с `blockHash` не узнавали.
+  it('регистрация в блоке — снимается по ответу ноды Pocketnet', async () => {
+    const store = usePendingTransactionsStore()
+    store.init('PAlice')
+    const settled: Array<[string, boolean]> = []
+    const stop = onTransactionSettled((txid, ok) => settled.push([txid, ok]))
+    notifyTransactionBroadcast({
+      txid: TX(6),
+      operationType: 'userInfo',
+      meta: { kind: 'registration', title: 'nick' },
+    })
+    h.getByPRC.mockRejectedValueOnce(new Error('Transaction::List reconstruct failed'))
+    await store.checkWithNode()
+    expect(store.items.map((i) => i.txid)).toEqual([TX(6)])
+
+    h.getByPRC.mockResolvedValue({
+      result: 'success',
+      data: { txid: TX(6), type: 100, height: 4084009, blockHash: '69c6f51f', nTime: 1, vin: [] },
+    })
+    await store.checkWithNode()
+    expect(store.items).toHaveLength(0)
+    expect(settled).toEqual([[TX(6), true]])
+    stop()
   })
 
   it('не подтвердилась за час — убирается', () => {
@@ -205,7 +232,7 @@ describe('pending-transactions-store', () => {
     h.ws.get('open')?.({})
     await vi.waitFor(() => expect(h.getByPRC).toHaveBeenCalledTimes(2))
 
-    h.getByPRC.mockResolvedValue({ data: { txid: TX(1), blockhash: 'b' } })
+    h.getByPRC.mockResolvedValue({ data: { txid: TX(1), height: 4084009, blockHash: 'b' } })
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
     document.dispatchEvent(new Event('visibilitychange'))
     await vi.waitFor(() => expect(store.items).toHaveLength(0))
@@ -217,7 +244,7 @@ describe('pending-transactions-store', () => {
     notifyTransactionBroadcast({ txid: TX(1), operationType: 'share', meta: { kind: 'post' } })
     let release!: (v: unknown) => void
     h.getByPRC.mockImplementationOnce(() => new Promise((resolve) => (release = resolve)))
-    h.getByPRC.mockResolvedValue({ data: { txid: TX(1), blockhash: 'b' } })
+    h.getByPRC.mockResolvedValue({ data: { txid: TX(1), height: 4084009, blockHash: 'b' } })
     const first = store.checkWithNode()
     h.ws.get('block')?.({})
     release({ data: { txid: TX(1) } })
@@ -243,5 +270,21 @@ describe('pending-transactions-store', () => {
     expect(pendingDeadline(store.items[0]!)).toBe(at + PENDING_TX_TTL_MS)
     store.cleanupExpired(at + PENDING_TX_TTL_MS)
     expect(store.items).toHaveLength(0)
+  })
+})
+
+describe('isConfirmed', () => {
+  it('Pocketnet: blockHash или height; Bitcoin: blockhash или confirmations', () => {
+    expect(isConfirmed({ txid: 'a', height: 5, blockHash: 'h' }, 'a')).toBe(true)
+    expect(isConfirmed({ height: 5 })).toBe(true)
+    expect(isConfirmed({ blockhash: 'h' })).toBe(true)
+    expect(isConfirmed({ confirmations: 1 })).toBe(true)
+  })
+
+  it('в мемпуле и чужая транзакция — нет', () => {
+    expect(isConfirmed({ txid: 'a' }, 'a')).toBe(false)
+    expect(isConfirmed({ txid: 'a', height: 0, blockHash: '' })).toBe(false)
+    expect(isConfirmed({ txid: 'b', height: 5, blockHash: 'h' }, 'a')).toBe(false)
+    expect(isConfirmed(null)).toBe(false)
   })
 })

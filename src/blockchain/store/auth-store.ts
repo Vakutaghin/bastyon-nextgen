@@ -314,7 +314,9 @@ export const useAuthStore = defineStore('auth', {
         }
 
         this.invalidateAllQueries().catch(() => {})
-        wsService.connect()
+        // Второй аккаунт регистрируют при открытом сокете прежнего: connect()
+        // ничего бы не сделал, и события нового адреса не приходили бы.
+        wsService.switchAccount(this.address)
         this.setLoading(false)
 
         return { mnemonic, address, keyPair }

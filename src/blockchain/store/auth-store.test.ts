@@ -722,6 +722,9 @@ describe('auth-store', () => {
       expect(store.isAuthenticated).toBe(true)
       expect(store.authState).toBe('authenticated')
       expect(store.isLoading).toBe(false)
+      // Сокет прежнего аккаунта переоткрывается под новый адрес.
+      const { wsService } = await import('../ws')
+      expect(wsService.switchAccount).toHaveBeenCalledWith(store.address)
     })
 
     it('should transition through authenticating state', async () => {

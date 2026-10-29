@@ -57,4 +57,27 @@ describe('createRegistrationStatusWatcher', () => {
     await vi.advanceTimersByTimeAsync(20_000)
     expect(onTimeout).not.toHaveBeenCalled()
   })
+
+  // Сбой сети — не «регистрация завершена»: часы у аватара не гаснут раньше
+  // времени, проверка идёт дальше.
+  it('ошибка проверки: onError, наблюдение продолжается', async () => {
+    const onComplete = vi.fn()
+    const onError = vi.fn()
+    mocks.getRegistrationStatus
+      .mockRejectedValueOnce(new Error('network fail'))
+      .mockResolvedValueOnce('registered')
+    const w = createRegistrationStatusWatcher({
+      onStatusUpdate: vi.fn(),
+      onComplete,
+      onError,
+      intervalMs: 1000,
+      maxDurationMs: 10_000,
+    })
+    await w.start()
+    expect(onError).toHaveBeenCalledTimes(1)
+    expect(onComplete).not.toHaveBeenCalled()
+    expect(w.isActive()).toBe(true)
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(onComplete).toHaveBeenCalledWith('registered')
+  })
 })

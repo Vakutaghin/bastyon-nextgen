@@ -8,7 +8,11 @@ import { getRegistrationStatus, isRegistrationInProgress } from './registration-
 // ---------------------------------------------------------------------------
 
 const { mockAuth, _rpcCall, _getUnspents, _filterAvailableUnspents } = vi.hoisted(() => ({
-  mockAuth: { getUserAddress: '' as string | null, isFetchingUserState: false, userProfile: null as unknown },
+  mockAuth: {
+    getUserAddress: '' as string | null,
+    isFetchingUserState: false,
+    userProfile: null as unknown,
+  },
   _rpcCall: vi.fn(),
   _getUnspents: vi.fn(),
   _filterAvailableUnspents: vi.fn(),
@@ -18,7 +22,9 @@ const auth = reactive(mockAuth)
 
 vi.mock('@/blockchain/store/auth-store', () => ({ useAuthStore: () => auth }))
 vi.mock('@/helpers/api/request', () => ({ rpcCall: _rpcCall }))
-vi.mock('@/helpers/api/rpc-endpoints', () => ({ rpcEndpoints: { getUserProfile: 'getuserprofile' } }))
+vi.mock('@/helpers/api/rpc-endpoints', () => ({
+  rpcEndpoints: { getUserProfile: 'getuserprofile' },
+}))
 vi.mock('@/blockchain/core/transactions/unspents-manager', () => ({
   getUnspents: _getUnspents,
   filterAvailableUnspents: _filterAvailableUnspents,
@@ -87,20 +93,21 @@ describe('getRegistrationStatus', () => {
     expect(await getRegistrationStatus()).toBe('in_progress_wait_unspents')
   })
 
-  // P2-10: сетевой сбой getuserprofile больше НЕ понижает статус до in_progress —
-  // иначе зарегистрированному показывали бы ложные часики регистрации. Отдаём
-  // not_in_progress и не проваливаемся в unspents-проверку.
-  it('ошибка getuserprofile → not_in_progress (не in_progress по unspents)', async () => {
+  // P2-10: сетевой сбой getuserprofile НЕ понижает статус до in_progress по
+  // unspents — иначе зарегистрированному показывали бы ложные часики. И не
+  // означает «завершено»: часы снялись бы раньше, чем аккаунт в блокчейне.
+  // Ошибка уходит вызывающему — он спросит ещё раз.
+  it('ошибка getuserprofile → ошибка, а не in_progress по unspents', async () => {
     _rpcCall.mockRejectedValueOnce(new Error('network fail'))
     _filterAvailableUnspents.mockReturnValue([{ txid: 't', vout: 0, amount: 1 }])
 
-    expect(await getRegistrationStatus()).toBe('not_in_progress')
+    await expect(getRegistrationStatus()).rejects.toThrow('network fail')
   })
 
-  it('ошибка getuserprofile → not_in_progress даже без unspents-инфо', async () => {
+  it('ошибка getuserprofile → unspents не спрашиваем', async () => {
     _rpcCall.mockRejectedValueOnce(new Error('rpc fail'))
 
-    expect(await getRegistrationStatus()).toBe('not_in_progress')
+    await expect(getRegistrationStatus()).rejects.toThrow('rpc fail')
     // unspents-проверка не должна вызываться при сбое профиля.
     expect(_getUnspents).not.toHaveBeenCalled()
   })

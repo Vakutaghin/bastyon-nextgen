@@ -97,12 +97,25 @@ export function pendingKindOf(operationType: string, meta: PendingMeta): Pending
   }
 }
 
-/** Транзакция в блоке: у подробного getrawtransaction есть blockhash или подтверждения. */
-function isConfirmed(data: unknown): boolean {
+/**
+ * Транзакция в блоке. Нода Pocketnet отдаёт в подробном getrawtransaction
+ * `blockHash` и `height`, а `confirmations` — нет; `blockhash` и
+ * `confirmations` — формат Bitcoin, на случай другой ноды.
+ */
+export function isConfirmed(data: unknown, txid?: string): boolean {
   if (!data || typeof data !== 'object') return false
-  const tx = data as { blockhash?: unknown; confirmations?: unknown }
+  const tx = data as {
+    txid?: unknown
+    blockHash?: unknown
+    blockhash?: unknown
+    height?: unknown
+    confirmations?: unknown
+  }
+  if (txid && typeof tx.txid === 'string' && tx.txid !== txid) return false
+  const hash = tx.blockHash ?? tx.blockhash
   return (
-    (typeof tx.blockhash === 'string' && tx.blockhash.length > 0) ||
+    (typeof hash === 'string' && hash.length > 0) ||
+    (typeof tx.height === 'number' && tx.height > 0) ||
     (typeof tx.confirmations === 'number' && tx.confirmations > 0)
   )
 }
@@ -213,7 +226,7 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
           })
           const data =
             res && typeof res === 'object' && 'data' in res ? (res as { data?: unknown }).data : res
-          if (isConfirmed(data)) confirm(item.txid)
+          if (isConfirmed(data, item.txid)) confirm(item.txid)
         } catch {
           // Нода не знает или не ответила — спросим в следующий раз.
         }
