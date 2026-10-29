@@ -1,3 +1,4 @@
+import Dexie from 'dexie'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   isDbUnavailable,
@@ -15,10 +16,20 @@ afterEach(() => {
 // превращал каждый промах кэша в unhandled rejection и тост раз в 30 секунд.
 describe('isFatalDbError', () => {
   it('узнаёт ошибки, после которых база бесполезна', () => {
-    expect(isFatalDbError(Object.assign(new Error('x'), { name: 'VersionError' }))).toBe(true)
-    expect(isFatalDbError(Object.assign(new Error('x'), { name: 'InvalidStateError' }))).toBe(true)
-    expect(isFatalDbError(Object.assign(new Error('x'), { name: 'DatabaseClosedError' }))).toBe(
-      true
+    expect(isFatalDbError(new Dexie.VersionError('x'))).toBe(true)
+    expect(isFatalDbError(new Dexie.InvalidStateError('x'))).toBe(true)
+    expect(isFatalDbError(new Dexie.DatabaseClosedError())).toBe(true)
+  })
+
+  // Повторный stop() у MediaRecorder, закрытая база Matrix: имя то же, база не наша.
+  it('то же имя от другого API — не ошибка базы', () => {
+    const recorder = new DOMException(
+      "The MediaRecorder's state is 'inactive'.",
+      'InvalidStateError'
+    )
+    expect(isFatalDbError(recorder)).toBe(false)
+    expect(isFatalDbError(Object.assign(new Error('x'), { name: 'QuotaExceededError' }))).toBe(
+      false
     )
   })
 
@@ -35,7 +46,7 @@ describe('withDb', () => {
 
   it('фатальная ошибка выключает базу и отдаёт fallback', async () => {
     const fail = vi.fn(async () => {
-      throw Object.assign(new Error('schema'), { name: 'VersionError' })
+      throw new Dexie.VersionError('schema')
     })
 
     await expect(withDb([], fail)).resolves.toEqual([])

@@ -2,7 +2,9 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 
 const h = vi.hoisted(() => ({ android: false, open: vi.fn(), toast: vi.fn() }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
@@ -15,7 +17,12 @@ vi.mock('@/helpers/voice-input/voice-backend', () => ({
   },
 }))
 
-import { micErrorMessage, showMicError } from './use-voice-recording'
+import {
+  micErrorMessage,
+  showMicError,
+  useVoiceRecording,
+  type VoiceRecording,
+} from './use-voice-recording'
 
 const named = (name: string) => Object.assign(new Error(name), { name })
 
@@ -62,6 +69,100 @@ describe('showMicError', () => {
     h.android = true
     showMicError(named('NotReadableError'))
     expect(h.toast).toHaveBeenLastCalledWith({ message: 'voiceInput.errors.micBusy' })
+  })
+})
+
+/** Как настоящий: `state` гаснет сразу, `onstop` — позже, повторный stop() бросает. */
+class FakeRecorder {
+  static created = 0
+  state: RecordingState = 'inactive'
+  ondataavailable: ((e: BlobEvent) => void) | null = null
+  onstop: (() => void) | null = null
+  constructor() {
+    FakeRecorder.created++
+  }
+  static isTypeSupported(): boolean {
+    return true
+  }
+  start(): void {
+    this.state = 'recording'
+  }
+  stop(): void {
+    if (this.state === 'inactive') {
+      throw new DOMException("The MediaRecorder's state is 'inactive'.", 'InvalidStateError')
+    }
+    this.state = 'inactive'
+    setTimeout(() => this.onstop?.(), 0)
+  }
+}
+
+describe('useVoiceRecording', () => {
+  const track = { stop: vi.fn() }
+  const stream = { getTracks: () => [track] }
+  let grant: () => void = () => {}
+  const onAudioRecorded = vi.fn()
+
+  function setup(): VoiceRecording {
+    let rec!: VoiceRecording
+    mount(
+      defineComponent({
+        setup() {
+          rec = useVoiceRecording({ onAudioRecorded })
+          return () => null
+        },
+      })
+    )
+    return rec
+  }
+
+  beforeEach(() => {
+    FakeRecorder.created = 0
+    track.stop.mockReset()
+    onAudioRecorded.mockReset()
+    vi.stubGlobal('MediaRecorder', FakeRecorder)
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: {
+        getUserMedia: () => new Promise((resolve) => (grant = () => resolve(stream))),
+      },
+      configurable: true,
+    })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Повторный stop() бросал InvalidStateError, а общий обработчик принимал его
+  // за поломку базы: «Локальное хранилище недоступно».
+  it('свайп отмены и отпускание кнопки не останавливают запись дважды', async () => {
+    const rec = setup()
+    const started = rec.startRecording()
+    grant()
+    await started
+    expect(rec.isRecording.value).toBe(true)
+
+    // onstop ещё не пришёл, isRecording всё ещё true.
+    expect(() => {
+      rec.cancelRecording()
+      rec.cancelRecording()
+      rec.handleTouchEnd()
+      rec.stopRecording()
+    }).not.toThrow()
+
+    await vi.waitFor(() => expect(rec.isRecording.value).toBe(false))
+    expect(onAudioRecorded).not.toHaveBeenCalled()
+    expect(track.stop).toHaveBeenCalled()
+  })
+
+  // На Android при первом нажатии система спрашивает разрешение и забирает касание.
+  it('отпустили раньше, чем ответил микрофон, — запись не начинается', async () => {
+    const rec = setup()
+    const started = rec.startRecording()
+    rec.handleTouchEnd()
+    grant()
+    await started
+    await flushPromises()
+
+    expect(rec.isRecording.value).toBe(false)
+    expect(FakeRecorder.created).toBe(0)
+    expect(track.stop).toHaveBeenCalled()
   })
 })
 

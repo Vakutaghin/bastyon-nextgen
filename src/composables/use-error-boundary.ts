@@ -12,7 +12,7 @@
 
 import type { App } from 'vue'
 import { appToast } from '@/b-components/app-toast'
-import { isDbUnavailable, isFatalDbError, markDbUnavailable } from '@/db/database'
+import { isDbUnavailable, isFatalDbError, isOwnDbError, markDbUnavailable } from '@/db/database'
 import { t } from '@/i18n'
 
 type LoggableError = unknown
@@ -51,6 +51,19 @@ function isDatabaseError(err: LoggableError): boolean {
   return msg.includes('indexeddb') || msg.includes('dexie') || msg.includes('database')
 }
 
+/** Как браузеры называют IndexedDB в тексте ошибки: `IDBDatabase`, «Indexed Database server lost». */
+const INDEXED_DB_MESSAGE = /\bIDB[A-Z]\w+|Indexed ?Database/
+
+/**
+ * IndexedDB, но не наша база — хранилище Matrix. При смене аккаунта и выходе
+ * оно закрывается, и запоздавший запрос остановленного клиента падает «The
+ * database connection is closing». Кэш приложения тут ни при чём, чат
+ * работает: пишем в журнал, без тоста.
+ */
+function isForeignIndexedDbError(err: LoggableError): boolean {
+  return !isOwnDbError(err) && INDEXED_DB_MESSAGE.test(messageOf(err))
+}
+
 function messageOf(err: LoggableError): string {
   if (err instanceof Error) return err.message || err.name || 'Unknown error'
   if (typeof err === 'string') return err
@@ -67,9 +80,15 @@ let dbWarningShown = false
 function reportError(err: LoggableError, context: string): void {
   const msg = messageOf(err)
 
+  if (isForeignIndexedDbError(err)) {
+    console.error(`[error-boundary:${context}] foreign IndexedDB:`, err)
+    return
+  }
+
   if (isDatabaseError(err)) {
     markDbUnavailable(err)
-    console.warn(`[error-boundary:${context}] local database unavailable:`, err)
+    // error, а не warn: причина попадает в сведения для поддержки (recent-errors).
+    console.error(`[error-boundary:${context}] local database unavailable:`, err)
     if (!dbWarningShown) {
       dbWarningShown = true
       appToast.warning({

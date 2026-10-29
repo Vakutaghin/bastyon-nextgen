@@ -107,10 +107,18 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
   const recordingChatId = ref<string | null>(null)
   const touchStartX = ref(0)
   const touchStartY = ref(0)
+  /**
+   * Кнопку всё ещё держат. Микрофон отвечает не сразу, а на Android при первом
+   * нажатии ещё и спрашивает разрешение — системное окно забирает касание.
+   * Отпустили раньше, чем запись началась, — не записываем: иначе запись шла
+   * без пальца и уходила при следующем нажатии.
+   */
+  let pressed = false
 
   async function startRecording(e?: MouseEvent | TouchEvent): Promise<void> {
     if (isRecording.value) return
 
+    pressed = true
     isLocked.value = false
     isCancelling.value = false
     // Чат фиксируем на старте: `onstop` срабатывает позже, и читать активный
@@ -126,6 +134,10 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (!pressed) {
+        stream.getTracks().forEach((t) => t.stop())
+        return
+      }
       activeStream.value = stream
       const type = pickSupportedType()
       const options: MediaRecorderOptions | undefined = type ? { mimeType: type } : undefined
@@ -177,14 +189,29 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
     }
   }
 
+  /**
+   * Запись ещё идёт. `isRecording` гаснет только в `onstop`, а он приходит
+   * позже: свайп отмены за это время успевал позвать `stop()` ещё раз, а
+   * повторный `stop()` бросает InvalidStateError.
+   */
+  function recorderActive(): MediaRecorder | null {
+    const mr = mediaRecorder.value
+    return mr && mr.state !== 'inactive' ? mr : null
+  }
+
   function cancelRecording(): void {
-    isCancelling.value = true
-    mediaRecorder.value?.stop()
+    pressed = false
+    const mr = recorderActive()
+    if (mr) {
+      isCancelling.value = true
+      mr.stop()
+    }
     isLocked.value = false
   }
 
   function stopRecording(): void {
-    if (isRecording.value) mediaRecorder.value?.stop()
+    pressed = false
+    recorderActive()?.stop()
     isLocked.value = false
   }
 
@@ -212,6 +239,7 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
   // глушим таймер и останавливаем MediaRecorder. Без этого трек висит
   // (индикатор «микрофон занят» горит), запись продолжается, setInterval течёт.
   onBeforeUnmount(() => {
+    pressed = false
     if (recordingTimer.value) {
       clearInterval(recordingTimer.value)
       recordingTimer.value = null

@@ -213,6 +213,7 @@
         @mouseup.prevent="stopRecording"
         @touchstart.prevent="startRecording"
         @touchend.prevent="handleTouchEnd"
+        @touchcancel.prevent="handleTouchEnd"
         @touchmove.prevent="handleTouchMove"
         :aria-label="
           isRecording ? t('messenger.recordingInProgress') : t('messenger.recordVoiceMessage')

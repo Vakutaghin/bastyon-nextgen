@@ -24,7 +24,7 @@ A voice message has a **“Play”** button and a progress bar: tap the bar to j
 The app says what is in the way:
 
 - **“No access to the microphone. Allow it for the app in the system settings: Privacy → Microphone.”** — you or the system denied access. Allow it and try again;
-- **“No access to the microphone. Allow it for the app in the phone settings.”** — on Android. Usually the phone asks for permission at the first recording. If you denied it for good, it no longer asks: tap the message to open the app’s page in the phone settings and turn the microphone on there;
+- **“No access to the microphone. Allow it for the app in the phone settings.”** — on Android. Usually the phone asks for permission at the first recording. After “Allow”, press and hold the button again: recording goes on only while the button is held. If you denied it for good, it no longer asks: tap the message to open the app’s page in the phone settings and turn the microphone on there;
 - **“No microphone found.”** or **“The microphone is busy with another app.”**;
 - **“Voice messages cannot be recorded here: the built-in browser gives no access to the microphone.”** — the app’s built-in browser on this system does not give the page a microphone. Record the voice message on a phone or in the previous Bastyon app.
 

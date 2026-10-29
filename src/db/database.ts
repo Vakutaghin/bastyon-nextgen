@@ -195,10 +195,19 @@ const FATAL_DB_ERROR_NAMES = new Set([
   'QuotaExceededError',
 ])
 
+/**
+ * Только ошибки Dexie: те же имена бросают и другие API — повторный
+ * `MediaRecorder.stop()` (InvalidStateError), закрытая база Matrix, полный
+ * localStorage. Раньше любая такая ошибка выключала кэш и показывала
+ * «Локальное хранилище недоступно».
+ */
 export function isFatalDbError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false
-  const name = (error as { name?: unknown }).name
-  return typeof name === 'string' && FATAL_DB_ERROR_NAMES.has(name)
+  return error instanceof Dexie.DexieError && FATAL_DB_ERROR_NAMES.has(error.name)
+}
+
+/** Ошибка пришла от нашей базы (Dexie оборачивает в свои классы всё, что бросает IndexedDB). */
+export function isOwnDbError(error: unknown): boolean {
+  return error instanceof Dexie.DexieError
 }
 
 /**
