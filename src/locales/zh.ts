@@ -1044,6 +1044,8 @@ export default {
     filterChatsEmpty: '还没有对话',
     filterDirectEmpty: '还没有私聊',
     filterGroupsEmpty: '还没有群组',
+    chatsEmptyTitle: '还没有聊天',
+    chatsEmptyText: '要开始对话，请打开对方的个人资料并点击“开始聊天”。群组和频道也会显示在这里。',
     group: {
       kind: '群组',
       kindPublic: '公开群组',

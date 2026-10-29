@@ -1090,6 +1090,9 @@ export default {
     filterChatsEmpty: 'Још нема преписки',
     filterDirectEmpty: 'Још нема личних преписки',
     filterGroupsEmpty: 'Још нема група',
+    chatsEmptyTitle: 'Још нема ћаскања',
+    chatsEmptyText:
+      'Да бисте започели преписку, отворите нечији профил и додирните „Започни ћаскање“. Овде ће бити и групе и канали.',
     group: {
       kind: 'Група',
       kindPublic: 'Отворена група',

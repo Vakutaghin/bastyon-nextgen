@@ -1109,6 +1109,9 @@ export default {
     filterChatsEmpty: 'Aucune discussion pour le moment',
     filterDirectEmpty: 'Aucune discussion personnelle pour le moment',
     filterGroupsEmpty: 'Aucun groupe pour le moment',
+    chatsEmptyTitle: 'Pas encore de discussions',
+    chatsEmptyText:
+      'Pour commencer, ouvrez le profil d’une personne et touchez « Démarrer une discussion ». Les groupes et les chaînes apparaîtront aussi ici.',
     group: {
       kind: 'Groupe',
       kindPublic: 'Groupe ouvert',

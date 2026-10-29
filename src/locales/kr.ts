@@ -1086,6 +1086,9 @@ export default {
     filterChatsEmpty: '아직 대화가 없습니다',
     filterDirectEmpty: '아직 개인 대화가 없습니다',
     filterGroupsEmpty: '아직 그룹이 없습니다',
+    chatsEmptyTitle: '아직 채팅이 없습니다',
+    chatsEmptyText:
+      '대화를 시작하려면 상대의 프로필을 열고 「채팅 시작」을 누르세요. 그룹과 채널도 여기에 표시됩니다.',
     group: {
       kind: '그룹',
       kindPublic: '공개 그룹',

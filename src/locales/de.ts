@@ -1107,6 +1107,9 @@ export default {
     filterChatsEmpty: 'Noch keine Chats',
     filterDirectEmpty: 'Noch keine persönlichen Chats',
     filterGroupsEmpty: 'Noch keine Gruppen',
+    chatsEmptyTitle: 'Noch keine Chats',
+    chatsEmptyText:
+      'Um eine Unterhaltung zu beginnen, öffnen Sie ein Profil und tippen Sie auf „Chat starten“. Gruppen und Kanäle erscheinen ebenfalls hier.',
     group: {
       kind: 'Gruppe',
       kindPublic: 'Offene Gruppe',

@@ -1101,6 +1101,9 @@ export default {
     filterChatsEmpty: 'Aún no hay chats',
     filterDirectEmpty: 'Aún no hay chats personales',
     filterGroupsEmpty: 'Aún no hay grupos',
+    chatsEmptyTitle: 'Aún no hay chats',
+    chatsEmptyText:
+      'Para empezar una conversación, abre el perfil de alguien y toca «Iniciar chat». Aquí también aparecerán grupos y canales.',
     group: {
       kind: 'Grupo',
       kindPublic: 'Grupo abierto',

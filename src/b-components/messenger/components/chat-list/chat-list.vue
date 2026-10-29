@@ -51,6 +51,15 @@
       <SC_EmptyHint v-else-if="shown.length === 0 && emptyText && !chatsLoading">
         <span>{{ t(emptyText) }}</span>
       </SC_EmptyHint>
+      <!-- Пустой список без подписи выглядел как сбой. Ошибку синка показывает свой баннер. -->
+      <SC_EmptyHint
+        v-else-if="shown.length === 0 && !chatsLoading && !store.syncError"
+        data-testid="chats-empty"
+      >
+        <MessageOutlined />
+        <strong>{{ t('messenger.chatsEmptyTitle') }}</strong>
+        <span>{{ t('messenger.chatsEmptyText') }}</span>
+      </SC_EmptyHint>
     </SC_ChatList>
   </SC_ChatListRoot>
 </template>
@@ -58,7 +67,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { MegaphoneIcon, TeamOutlined } from '@/components/icons'
+import { MegaphoneIcon, MessageOutlined, TeamOutlined } from '@/components/icons'
 import { isGroupDialog, type Dialog } from '../../types'
 import { useMessengerStore } from '../../store'
 import { useMessengerChannelsStore } from '../../store/messenger-channels-store'

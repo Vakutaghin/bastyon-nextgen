@@ -1094,6 +1094,9 @@ export default {
     filterChatsEmpty: 'Переписок пока нет',
     filterDirectEmpty: 'Личных переписок пока нет',
     filterGroupsEmpty: 'Групп пока нет',
+    chatsEmptyTitle: 'Чатов пока нет',
+    chatsEmptyText:
+      'Чтобы начать переписку, откройте профиль человека и нажмите «Начать чат». Здесь же будут группы и каналы.',
     group: {
       kind: 'Группа',
       kindPublic: 'Открытая группа',
