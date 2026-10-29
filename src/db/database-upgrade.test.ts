@@ -1,5 +1,6 @@
 // v6: сжатые копии видео больше не храним — таблица уходит вместе с
 // содержимым (у кого-то до 500 МБ), остальные данные остаются.
+// v7: таблицы сохранённой на устройстве переписки.
 
 import 'fake-indexeddb/auto'
 import Dexie from 'dexie'
@@ -8,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { AppDatabase } from './database'
 
 describe('обновление базы', () => {
-  it('v6 удаляет сжатые копии видео и не трогает остальное', async () => {
+  it('v6 удаляет сжатые копии видео, v7 добавляет переписку, остальное на месте', async () => {
     const old = new Dexie('BastyonDB')
     old.version(5).stores({
       transcodedVideos: 'id, originalFileName, resolution, createdAt',
@@ -27,8 +28,10 @@ describe('обновление базы', () => {
 
     const db = new AppDatabase()
     await db.open()
-    expect(db.verno).toBe(6)
-    expect(Array.from(db.backendDB().objectStoreNames)).not.toContain('transcodedVideos')
+    expect(db.verno).toBe(7)
+    const stores = Array.from(db.backendDB().objectStoreNames)
+    expect(stores).not.toContain('transcodedVideos')
+    expect(stores).toEqual(expect.arrayContaining(['chatArchive', 'chatArchiveChats']))
     expect(await db.settings.get('theme')).toMatchObject({ value: 'dark' })
     db.close()
   })

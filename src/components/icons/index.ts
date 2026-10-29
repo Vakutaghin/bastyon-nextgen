@@ -152,6 +152,7 @@ import {
   BookmarkCheck,
   Headphones,
   Newspaper,
+  HardDrive,
   SlidersHorizontal,
   Shapes,
   Hash,
@@ -378,6 +379,8 @@ export const SavedIcon = lucideIcon('SavedIcon', BookmarkCheck)
 export const HeadphonesIcon = lucideIcon('HeadphonesIcon', Headphones)
 /** Вид ленты раздела «постами», как главная лента. */
 export const PostsViewIcon = lucideIcon('PostsViewIcon', Newspaper)
+/** Переписка, сохранённая на устройстве: сообщение есть только здесь. */
+export const DeviceCopyIcon = lucideIcon('DeviceCopyIcon', HardDrive)
 
 /** Блоки левой панели в «Шапке и панелях»: порядок и язык ленты, категории, теги. */
 export const FeedSettingsIcon = lucideIcon('FeedSettingsIcon', SlidersHorizontal)

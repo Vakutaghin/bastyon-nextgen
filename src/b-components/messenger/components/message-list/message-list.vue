@@ -3,11 +3,23 @@
     <!-- Лента долистана до начала (или не загрузилась): откуда у чата такая история.
          У пустого чата пометку показывает сама комната. -->
     <ChatHistoryNote
-      v-if="history && messages.length > 0 && (history.reachedStart || history.error)"
+      v-if="
+        history &&
+        messages.length > 0 &&
+        ((history.reachedStart && !history.archiveMore) || history.error)
+      "
       :history="history"
       @retry="emit('retry')"
     />
     <template v-for="row in rows" :key="row.kind === 'message' ? row.message.id : row.id">
+      <!-- Граница: выше — то, что сервер уже стёр, а устройство сохранило. -->
+      <SC_ArchiveDivider
+        v-if="(row.kind === 'message' ? row.message.id : row.id) === archiveBoundary"
+        role="separator"
+        data-testid="archive-divider"
+      >
+        <span>{{ t('messenger.archive.divider') }}</span>
+      </SC_ArchiveDivider>
       <MessageItem
         v-if="row.kind === 'message'"
         :message="row.message"
@@ -22,6 +34,13 @@
         <time :datetime="new Date(row.at).toISOString()">{{ formatMessageTime(row.at) }}</time>
       </SC_DeletedMark>
     </template>
+    <SC_ArchiveDivider
+      v-if="archiveBoundary === ARCHIVE_TAIL"
+      role="separator"
+      data-testid="archive-divider"
+    >
+      <span>{{ t('messenger.archive.dividerAll') }}</span>
+    </SC_ArchiveDivider>
   </SC_MessageList>
 </template>
 
@@ -36,7 +55,7 @@ import { useMessengerStore } from '../../store'
 import MessageItem from '../message-item/message-item.vue'
 import ChatHistoryNote from '../chat-history-note/chat-history-note.vue'
 import { SC_DeletedMark } from '../chat-history-note/styled'
-import { SC_MessageList } from './styled'
+import { SC_ArchiveDivider, SC_MessageList } from './styled'
 
 const props = withDefaults(
   defineProps<{
@@ -63,6 +82,21 @@ const { t } = useI18n()
 const store = useMessengerStore()
 
 const rows = computed<HistoryRow[]>(() => historyRows(props.messages))
+
+/** Граница стёртого сервером стоит после всех сообщений: на сервере их нет совсем. */
+const ARCHIVE_TAIL = 'archive-tail'
+
+/**
+ * Перед каким сообщением граница сохранённого: выше — только на устройстве,
+ * ниже — с сервера. Сервер стирает с начала, так что граница одна.
+ */
+const archiveBoundary = computed<string | null>(() => {
+  const list = props.messages
+  for (let i = 1; i < list.length; i++) {
+    if (list[i - 1]!.localOnly && !list[i]!.localOnly) return list[i]!.id
+  }
+  return list.length && list[list.length - 1]!.localOnly ? ARCHIVE_TAIL : null
+})
 
 function deletedText(row: Extract<HistoryRow, { kind: 'deleted' }>): string {
   if (row.by === store.currentUser.id) {

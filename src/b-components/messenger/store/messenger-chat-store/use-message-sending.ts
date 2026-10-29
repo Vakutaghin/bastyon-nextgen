@@ -358,15 +358,32 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     }
   }
 
-  /** Удаление своего сообщения (redaction): в ленте остаётся отметка «Вы удалили». */
+  /**
+   * Удаление у всех (redaction) — своего или, если права в комнате позволяют,
+   * чужого: в ленте остаётся отметка «Вы удалили». Сообщение, которого на
+   * сервере уже нет, стирается с устройства, а собеседникам уходит событие
+   * lib/archive-redact — у кого есть копия, сотрётся и у них.
+   */
   const deleteMessage = async (chatId: string, eventId: string) => {
+    const localOnly = !!messages[chatId]?.find((m) => m.id === eventId)?.localOnly
     try {
       await matrixService.redactEvent(chatId, eventId, 'deleted')
-      markDeleted(messages[chatId], eventId, { by: ctx.currentUser.value.id, at: Date.now() })
     } catch (e) {
-      console.error('[ChatStore] Ошибка удаления сообщения:', e)
-      throw e
+      if (!localOnly) {
+        console.error('[ChatStore] Ошибка удаления сообщения:', e)
+        throw e
+      }
+      // Сервер не знает этого события и не принял удаление — копии на устройстве это не мешает.
+      console.warn('[ChatStore] Удаление сохранённого сообщения не дошло до сервера:', e)
     }
+    if (localOnly) {
+      // Удаление стёртого сервер собеседнику не отдаёт — для его копии своё событие.
+      await matrixService.sendArchiveRedact(chatId, [eventId]).catch((e: unknown) => {
+        console.warn('[ChatStore] Удаление не ушло в копии собеседников:', e)
+      })
+    }
+    markDeleted(messages[chatId], eventId, { by: ctx.currentUser.value.id, at: Date.now() })
+    await ctx.archive.remove(chatId, [eventId])
   }
 
   const sendReaction = async (chatId: string, eventId: string, key: string) => {

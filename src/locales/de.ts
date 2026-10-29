@@ -489,6 +489,7 @@ export default {
       general: 'Allgemein',
       layout: 'Kopfzeile und Leisten',
       notifications: 'Benachrichtigungen',
+      chats: 'Chats',
       system: 'System',
       privateKey: 'Privater Schlüssel',
       blacklist: 'Blockierte Benutzer',
@@ -510,6 +511,48 @@ export default {
       chatButton: 'Schwebende Chat-Schaltfläche',
       chatButtonHint:
         'Die runde Schaltfläche unten rechts. Ohne sie öffnet das Symbol in der Kopfzeile die Chats.',
+    },
+    chats: {
+      signIn: 'Melde dich an: Jedes Konto speichert seine Chats separat.',
+      archive: 'Chats auf dem Gerät speichern',
+      archiveHint:
+        'Der Chat-Server bewahrt Nachrichten drei Monate auf und löscht sie dann. Mit dieser Einstellung werden Chats auf dieses Gerät kopiert: Alte Nachrichten bleiben im Chat, markiert als nicht mehr auf dem Server. Die Kopie ist mit dem Kontoschlüssel verschlüsselt und wird nirgendwohin gesendet.',
+      mode: 'Welche Chats speichern',
+      modeAll: 'Alle',
+      modeSelected: 'Ausgewählte',
+      modeAllHint: 'Alle Chats außer den unten ausgeschalteten.',
+      modeSelectedHint: 'Nur die unten oder im „⋯“-Menü des Chats eingeschalteten.',
+      list: 'Gespeicherte Chats',
+      total: '{n} Nachricht · Chats: {chats} | {n} Nachrichten · Chats: {chats}',
+      totalNone: 'Noch nichts gespeichert',
+      search: 'Chat suchen',
+      loading: 'Wird geladen…',
+      noChats: 'Noch keine Chats.',
+      unnamed: 'Chat ohne Namen',
+      messages: '{n} Nachricht | {n} Nachrichten',
+      since: 'seit {date}',
+      left: 'nicht mehr in der Chatliste',
+      nothingYet: 'Wird gespeichert, noch leer',
+      notSaving: 'Wird nicht gespeichert',
+      saveChat: '„{name}“ speichern',
+      deleteCopy: 'Kopie löschen',
+      deleteCopyOf: 'Gespeicherte Kopie von „{name}“ löschen',
+      deleteCopyTitle: 'Gespeicherte Kopie von „{name}“ löschen?',
+      deleteCopyText:
+        '{n} Nachricht wird von diesem Gerät gelöscht. Was der Server noch hat, bleibt im Chat, der Rest ist endgültig weg. | {n} Nachrichten werden von diesem Gerät gelöscht. Was der Server noch hat, bleibt im Chat, der Rest ist endgültig weg.',
+      stillSaving:
+        'Solange das Speichern an ist, wird erneut gespeichert, was der Server noch aufbewahrt.',
+      deleted: 'Kopie gelöscht',
+      deleteAll: 'Alle gespeicherten Chats löschen',
+      deleteAllTitle: 'Alle gespeicherten Chats löschen?',
+      deleteAllText:
+        '{n} Nachricht wird von diesem Gerät gelöscht (Chats: {chats}). | {n} Nachrichten werden von diesem Gerät gelöscht (Chats: {chats}).',
+      deleteAllOk: 'Löschen',
+      deleteAllSureTitle: 'Wirklich alles löschen?',
+      deleteAllSureText:
+        'Nachrichten, die der Server bereits gelöscht hat, gibt es nur in dieser Kopie. Nach dem Löschen sind sie nicht wiederherstellbar.',
+      deleteAllSureOk: 'Endgültig löschen',
+      deletedAll: 'Gespeicherte Chats gelöscht',
     },
     system: {
       animations: 'Animationen',
@@ -923,6 +966,30 @@ export default {
       'Schreib die erste Nachricht — {name} sieht den Chat, sobald sie gesendet ist.',
     startChatFailed:
       'Der Chat konnte nicht erstellt werden. Prüfe die Verbindung und versuche es erneut.',
+    archive: {
+      localOnly: 'Auf diesem Gerät gespeichert: Auf dem Server gibt es die Nachricht nicht mehr',
+      deleteLocalOnly:
+        'Auf dem Server gibt es die Nachricht nicht mehr. Sie wird von diesem Gerät gelöscht – und beim Gegenüber, falls er den Chat ebenfalls speichert.',
+      divider:
+        'Oben: Nachrichten, die der Server bereits gelöscht hat. Es gibt sie nur auf diesem Gerät',
+      dividerAll:
+        'Der Server hat diese Nachrichten bereits gelöscht. Es gibt sie nur auf diesem Gerät',
+      noteSaving: 'Dieser Chat wird auf diesem Gerät gespeichert.',
+      noteCopy: 'Auf diesem Gerät liegt eine gespeicherte Kopie des Chats.',
+      menuStart: 'Auf dem Gerät speichern',
+      menuStop: 'Nicht mehr auf dem Gerät speichern',
+      startTitle: '„{name}“ auf diesem Gerät speichern?',
+      startText:
+        'Neue Nachrichten und alles, was der Server noch aufbewahrt, werden hierher kopiert. Wenn der Server alte Nachrichten löscht (er bewahrt sie drei Monate auf), bleiben sie im Chat.',
+      startOnlyThis: 'Andere Chats werden nicht gespeichert.',
+      startOk: 'Speichern',
+      stopTitle: '„{name}“ nicht mehr speichern?',
+      stopText: 'Neue Nachrichten dieses Chats werden nicht mehr auf dem Gerät gespeichert.',
+      stopTextSaved:
+        'Neue Nachrichten werden nicht mehr gespeichert. Bereits gespeicherte ({n}) bleiben auf dem Gerät – löschen lassen sie sich in den Einstellungen unter „Chats“.',
+      stopOk: 'Nicht speichern',
+      deleteWithChat: 'Die auf diesem Gerät gespeicherte Kopie wird ebenfalls gelöscht.',
+    },
     history: {
       createdByYou: 'Du hast den Chat erstellt',
       createdBy: '{name} hat den Chat erstellt',
@@ -969,6 +1036,7 @@ export default {
     deleteMessage: 'Löschen',
     deleteConfirmTitle: 'Nachricht löschen?',
     deleteConfirmText: 'Die Nachricht wird für alle Chatteilnehmer entfernt.',
+    deleteOthersConfirmText: 'Die Nachricht von {name} wird für alle Teilnehmer gelöscht.',
     replyingTo: 'Antwort an',
     cancel: 'Abbrechen',
     send: 'Senden',

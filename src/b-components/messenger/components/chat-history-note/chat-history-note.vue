@@ -19,6 +19,7 @@ import { formatLongDate } from '@/helpers/common/date-formatter'
 import { chatUserName } from '../../helpers'
 import type { ChatHistory } from '../../lib/chat-history'
 import { useMessengerStore } from '../../store'
+import { useMessengerArchiveStore } from '../../store/messenger-archive-store'
 import { SC_HistoryDetails, SC_HistoryLine, SC_HistoryNote, SC_HistoryRetry } from './styled'
 
 /**
@@ -39,6 +40,7 @@ const emit = defineEmits<{ retry: [] }>()
 
 const { t } = useI18n()
 const store = useMessengerStore()
+const archive = useMessengerArchiveStore()
 
 const DAY_MS = 86_400_000
 
@@ -92,6 +94,10 @@ const lines = computed<string[]>(() => {
       })
     )
   }
+  // Копия на устройстве: то, что сервер стирает, остаётся здесь.
+  const chatId = store.activeChatId
+  if (chatId && archive.isArchived(chatId)) out.push(t('messenger.archive.noteSaving'))
+  else if (chatId && archive.hasCopy(chatId)) out.push(t('messenger.archive.noteCopy'))
   if (props.empty && !h.invitedBy) out.push(t('messenger.history.empty'))
   return out
 })

@@ -1,6 +1,8 @@
 import Dexie, { Table } from 'dexie'
 import type {
   AppSettings,
+  ChatArchiveChat,
+  ChatArchiveRecord,
   DecryptedMessage,
   FavoritePost,
   MeshDialogRecord,
@@ -23,6 +25,8 @@ export class AppDatabase extends Dexie {
   videoProgress!: Table<VideoProgress, string>
   meshDialogs!: Table<MeshDialogRecord, string>
   meshMessages!: Table<MeshMessageRecord, string>
+  chatArchive!: Table<ChatArchiveRecord, [string, string, string]>
+  chatArchiveChats!: Table<ChatArchiveChat, [string, string]>
 
   constructor() {
     super('BastyonDB')
@@ -109,6 +113,22 @@ export class AppDatabase extends Dexie {
       videoProgress: 'id, updatedAt',
       meshDialogs: 'id, account',
       meshMessages: 'id, &dedupKey, [dialogId+ts], account',
+    })
+
+    // v7: переписка, сохранённая на устройстве (сервер чатов стирает её через
+    // три месяца). Время и id событий — открыто, как их видит и сервер; само
+    // сообщение — шифротекстом (messenger/lib/archive-crypto).
+    this.version(7).stores({
+      postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
+      settings: 'key, createdAt',
+      favorites: '[address+id], address, addedAt',
+      notifications: '[address+id], address, nblock',
+      decryptedMessages: '[userId+eventId], userId, createdAt',
+      videoProgress: 'id, updatedAt',
+      meshDialogs: 'id, account',
+      meshMessages: 'id, &dedupKey, [dialogId+ts], account',
+      chatArchive: '[account+chatId+id], [account+chatId+ts], account',
+      chatArchiveChats: '[account+chatId], account',
     })
   }
 }

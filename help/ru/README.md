@@ -72,6 +72,7 @@
   - [Чаты](chats.md)
   - [Каналы](channels.md)
   - [Сообщения](messages.md)
+  - [Переписка на устройстве](chat-archive.md)
   - [Фото, видео и файлы в чате](chat-attachments.md)
   - [Голосовые сообщения](voice-messages.md)
   - [Перевод PKOIN в чате](pkoin-in-chat.md)

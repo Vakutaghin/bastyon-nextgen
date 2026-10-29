@@ -114,6 +114,14 @@
                 <BellOffOutlined v-else />
                 {{ dialog.muted ? t('messenger.notifyOn') : t('messenger.notifyOff') }}
               </SC_DropdownItem>
+              <SC_DropdownItem
+                v-if="canArchive"
+                data-testid="archive-toggle"
+                @click.stop="onToggleArchive"
+              >
+                <DeviceCopyIcon />
+                {{ archived ? t('messenger.archive.menuStop') : t('messenger.archive.menuStart') }}
+              </SC_DropdownItem>
               <SC_DropdownItem class="danger" @click.stop="onDelete">
                 <LogoutOutlined v-if="dialog.group" />
                 <DeleteOutlined v-else />
@@ -140,6 +148,9 @@
               {{ t('chat.deleteDialogConfirmText', { name: dialog.partner.name }) }}
             </SC_ConfirmText>
           </template>
+          <SC_ConfirmText v-if="archive.hasCopy(dialog.id)">
+            {{ t('messenger.archive.deleteWithChat') }}
+          </SC_ConfirmText>
           <SC_ConfirmButtons>
             <SC_CancelBtn @click="showConfirm = false">{{ t('chat.cancel') }}</SC_CancelBtn>
             <SC_ConfirmDeleteBtn @click="confirmDelete">
@@ -158,11 +169,14 @@ import { parseIpfsFileLink, parseIpfsNameLink } from '@/helpers/ipfs/ipfs-link'
 import { supportReportPreview } from '../../lib/support-report-preview'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Modal } from 'ant-design-vue'
 import Avatar from '@/components/avatar/avatar.vue'
+import { Z_INDEX } from '@/styles/design-tokens'
 import {
   BellOffOutlined,
   BellOutlined,
   DeleteOutlined,
+  DeviceCopyIcon,
   EllipsisOutlined,
   LogoutOutlined,
   RadioTowerIcon,
@@ -172,6 +186,8 @@ import { isMeshDialogId } from '@/mesh/ids'
 import { isGroupDialog, isMeshTransport, type Dialog, type Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { useMessengerChatStore } from '../../store/messenger-chat-store'
+import { useMessengerArchiveStore } from '../../store/messenger-archive-store'
+import { archivableChatId } from '../../lib/archive-prefs'
 import { seenMessageIds, type ReceiptRoom } from '../../store/messenger-chat-store/read-receipts'
 import { matrixService } from '../../services/matrix-service'
 import { chatUserName } from '../../helpers'
@@ -241,6 +257,38 @@ const groupTitle = computed<string>(() => {
 
 /** «Без звука» — правило Matrix; у mesh-диалогов его нет. */
 const canMute = computed<boolean>(() => !isMeshDialogId(props.dialog.id))
+
+/** Сохранение переписки на устройстве — у комнат Matrix, в которые вступили. */
+const archive = useMessengerArchiveStore()
+const canArchive = computed<boolean>(
+  () => archive.ready && archivableChatId(props.dialog.id) && !props.dialog.invite
+)
+const archived = computed<boolean>(() => archive.isArchived(props.dialog.id))
+
+/** Сохранять ли этот чат — с подтверждением: это про то, что останется на устройстве. */
+function onToggleArchive(): void {
+  menuOpen.value = false
+  const on = !archived.value
+  const name = props.dialog.partner.name
+  const count = archive.stats[props.dialog.id]?.count ?? 0
+  Modal.confirm({
+    title: on
+      ? t('messenger.archive.startTitle', { name })
+      : t('messenger.archive.stopTitle', { name }),
+    content: on
+      ? archive.prefs.enabled
+        ? t('messenger.archive.startText')
+        : `${t('messenger.archive.startText')} ${t('messenger.archive.startOnlyThis')}`
+      : count
+        ? t('messenger.archive.stopTextSaved', { n: count })
+        : t('messenger.archive.stopText'),
+    okText: on ? t('messenger.archive.startOk') : t('messenger.archive.stopOk'),
+    cancelText: t('messenger.cancel'),
+    centered: true,
+    zIndex: Z_INDEX.CONFIRM,
+    onOk: () => archive.setChat(props.dialog.id, on),
+  })
+}
 
 /** В группе видно, кто написал последним: «Анна: привет». */
 const senderPrefix = computed<string>(() => {

@@ -30,7 +30,7 @@ In an empty chat and at the start of a conversation the app says what it knows:
 
 - who created the chat and when;
 - **“There are no messages in this chat.”** — for example, the other person opened a chat with you in an earlier version of the app and never wrote anything;
-- “Messages before such-and-such date were deleted from the server” — the chat server does not keep conversations forever and erased the old ones. The app learns this from read receipts: they are still there, while the messages they point to are gone from the server;
+- “Messages before such-and-such date were deleted from the server” — the chat server does not keep conversations forever and erased the old ones. The app learns this from read receipts: they are still there, while the messages they point to are gone from the server. To keep old messages, save the chat on the device — see [Chats saved on this device](chat-archive.md);
 - how long messages are kept, if the chat has such a setting;
 - **“Could not load the chat history.”** with details and a **“Retry”** button — a connection or server failure, not a deletion.
 
@@ -47,8 +47,9 @@ Above the list there are **“All”**, **“Personal”**, **“Groups”** and
 The three-dot button on a chat:
 
 - **“Members”** — groups only: opens the group window, see [below](#group-chats).
+- **“Save on this device”** — keep this chat on the device so it stays when the server deletes it. The app asks again. **“Stop saving on this device”** turns it back off, see [Chats saved on this device](chat-archive.md).
 - **“Mute notifications”** — the chat stops making sounds and sending notifications. A crossed-out bell appears next to the name, the unread count turns grey, and if the server sent no count, a grey dot takes its place. **“Unmute notifications”** puts it back. The setting is kept on the chat server, so it applies on all your devices and in the previous Bastyon app.
-- **“Delete dialog”** — the app asks again: **“Delete dialog?”** You leave the conversation, and it disappears from your list. The other person keeps it, and if either of you starts a chat again, it will be a new conversation.
+- **“Delete dialog”** — the app asks again: **“Delete dialog?”** You leave the conversation, and it disappears from your list. The other person keeps it, and if either of you starts a chat again, it will be a new conversation. The copy of the chat saved on this device, if any, is deleted with it.
 - **“Leave group”** — what groups have instead of deleting. You leave the group and stop receiving its messages. You can return to a private group only with a new invitation.
 
 ## The other person’s profile

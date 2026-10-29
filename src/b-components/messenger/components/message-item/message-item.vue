@@ -101,6 +101,16 @@
         <span v-if="viaMesh" :title="viaMesh">📡</span>
         <!-- Коротко: сегодня — «14:30», раньше — с датой; полная дата — в подсказке. -->
         <time :datetime="timeIso" :title="formatTime(message.timestamp)">{{ timeShort }}</time>
+        <!-- Сервер это сообщение уже стёр: оно есть только в копии на устройстве. -->
+        <SC_LocalOnlyMark
+          v-if="message.localOnly"
+          role="img"
+          data-testid="local-only-mark"
+          :title="t('messenger.archive.localOnly')"
+          :aria-label="t('messenger.archive.localOnly')"
+        >
+          <DeviceCopyIcon />
+        </SC_LocalOnlyMark>
         <SC_SeenTick
           v-if="mark"
           role="img"
@@ -127,6 +137,7 @@
           trigger="click"
           placement="topRight"
           :overlay-class-name="'message-actions-popover'"
+          :overlay-style="ACTIONS_OVERLAY_STYLE"
         >
           <template #content>
             <SC_ActionsMenu @click.stop>
@@ -140,7 +151,13 @@
               </SC_ActionsItem>
             </SC_ActionsMenu>
           </template>
-          <SC_ActionsButton type="button" :title="t('messenger.actions')" @click.stop>
+          <SC_ActionsButton
+            type="button"
+            data-testid="message-actions"
+            :title="t('messenger.actions')"
+            :aria-label="t('messenger.actions')"
+            @click.stop
+          >
             <MoreOutlined />
           </SC_ActionsButton>
         </APopover>
@@ -179,7 +196,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Popover, Modal } from 'ant-design-vue'
-import { MoreOutlined, DeleteOutlined, RollbackOutlined } from '@/components/icons'
+import { MoreOutlined, DeleteOutlined, RollbackOutlined, DeviceCopyIcon } from '@/components/icons'
+import { Z_INDEX } from '@/styles/design-tokens'
 import { parseMeshDialogId } from '@/mesh/ids'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshRoutesStore } from '@/mesh/store/mesh-routes-store'
@@ -240,9 +258,13 @@ import {
   SC_MeshRouteButton,
   SC_MeshBindingNote,
   SC_UndecryptableNote,
+  SC_LocalOnlyMark,
 } from './styled'
 
 const APopover = Popover
+
+/** Меню сообщения — над полноэкранным мессенджером, иначе оно открывалось под ним. */
+const ACTIONS_OVERLAY_STYLE = { zIndex: Z_INDEX.POPOVER_OVER_MESSENGER }
 
 const props = withDefaults(
   defineProps<{
@@ -467,9 +489,19 @@ const isRealMessage = computed<boolean>(
 )
 /** Ответить можно на любое реальное сообщение (и на сообщение Meshtastic с id пакета). */
 const canReply = computed<boolean>(() => isRealMessage.value || isMeshReplyable.value)
-/** Удалить можно только своё реальное сообщение. */
-const canDelete = computed<boolean>(() => isRealMessage.value && isMine.value)
-const canShowActions = computed<boolean>(() => canReply.value || canDelete.value)
+/**
+ * Удалить у всех: своё, а чужое — если права в комнате позволяют (в личном
+ * чате у обоих есть, в группе — у админов и модераторов). Спрашиваем при
+ * открытии меню: права меняются, а сообщений на экране много.
+ */
+const canDelete = computed<boolean>(() => {
+  if (!isRealMessage.value || isMesh.value) return false
+  if (isMine.value) return true
+  return actionsOpen.value && store.canDeleteOthers(props.message.chatId)
+})
+const canShowActions = computed<boolean>(
+  () => canReply.value || (isRealMessage.value && !isMesh.value)
+)
 
 /** Превью цитируемого сообщения (на которое отвечает текущее). Резолвится по
  *  загруженным сообщениям диалога; если оригинал не в списке — общий плейсхолдер. */
@@ -517,13 +549,21 @@ function onDelete(): void {
   actionsOpen.value = false
   const chatId = props.message.chatId
   if (!chatId) return
+  // Сообщения нет на сервере — удаляется с устройства; чужое — у всех, с именем автора.
+  const content = props.message.localOnly
+    ? t('messenger.archive.deleteLocalOnly')
+    : isMine.value
+      ? t('messenger.deleteConfirmText')
+      : t('messenger.deleteOthersConfirmText', { name: displayName.value })
   Modal.confirm({
     title: t('messenger.deleteConfirmTitle'),
-    content: t('messenger.deleteConfirmText'),
+    content,
     okText: t('messenger.deleteMessage'),
     okType: 'danger',
     cancelText: t('messenger.cancel'),
     centered: true,
+    // Над полноэкранным мессенджером: на своих 1000 вопрос уходил под него.
+    zIndex: Z_INDEX.CONFIRM,
     onOk: async () => {
       try {
         await store.deleteMessage(chatId, props.message.id)

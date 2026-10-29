@@ -5,6 +5,7 @@ import { reactive, ref } from 'vue'
 
 import { matrixService } from '../../services/matrix-service'
 import { getRoomTimelineEvents, isMessageEvent } from '../../helpers'
+import { earliestServerTs, isNotFoundError } from '../../lib/archive-merge'
 import {
   reachedHistoryStart,
   readHistory,
@@ -26,7 +27,7 @@ export function useMessageLoading(
   chatCrypto: ChatCrypto,
   mapping: MessageMapping
 ) {
-  const { messages, uiStore } = ctx
+  const { messages, uiStore, archive } = ctx
   const { ensurePcryptoInitialized, pcryptoService, waitForPcrypto } = chatCrypto
   const { mapEventToMessage, enrichMessagesWithReactions } = mapping
 
@@ -34,7 +35,12 @@ export function useMessageLoading(
   /** Что известно об истории чатов: начало, создатель, чистка сервером, ошибка. */
   const history = reactive<Record<string, ChatHistory>>({})
 
-  const noteHistory = (chatId: string, room: MxRoom | null, error?: unknown) => {
+  const noteHistory = (
+    chatId: string,
+    room: MxRoom | null,
+    error?: unknown,
+    archiveMore?: boolean
+  ) => {
     const myUserId = matrixService.getClient()?.getUserId() || ''
     const state: ChatHistory = room
       ? readHistory(room as unknown as HistoryRoom, myUserId)
@@ -42,7 +48,45 @@ export function useMessageLoading(
     if (error !== undefined) {
       state.error = error instanceof Error ? error.message : String(error || 'unknown')
     }
+    if (archiveMore) state.archiveMore = true
     history[chatId] = state
+  }
+
+  /** Чаты, где уже спрашивали сервер, что из сохранённого он стёр (раз за запуск). */
+  const probed = new Set<string>()
+
+  /**
+   * Сервер больше не листает, а начала ленты не видно — что из показанного
+   * сохранённого он стёр, узнаём точечно (lib/archive-merge, findGoneBoundary).
+   */
+  const markGone = async (chatId: string, server: Message[]) => {
+    if (probed.has(chatId) || !archive.hasCopy(chatId)) return
+    probed.add(chatId)
+    const client = matrixService.getClient()
+    if (!client?.fetchRoomEvent) return
+    const moved = await archive.probeGone(chatId, earliestServerTs(server), async (id) => {
+      try {
+        const event = await client.fetchRoomEvent(chatId, id)
+        // Удалили, пока копия не знала, — стираем и здесь.
+        if (event?.unsigned?.redacted_because) void archive.remove(chatId, [id])
+        return false
+      } catch (e) {
+        return isNotFoundError(e) ? true : null
+      }
+    })
+    if (!moved) return
+    const gone = archive.goneBefore[chatId] ?? 0
+    for (const m of messages[chatId] ?? [])
+      if (m.archived && m.timestamp <= gone) m.localOnly = true
+  }
+
+  /** То, что ещё не дошло до сервера (отправляется, не ушло), при пересборке ленты не теряем. */
+  const keepPending = (list: Message[], current: Message[] | undefined): Message[] => {
+    const ids = new Set(list.map((m) => m.id))
+    const pending = (current ?? []).filter(
+      (m) => !m.archived && !ids.has(m.id) && !m.id.startsWith('$') && m.status !== 'sent'
+    )
+    return pending.length ? [...list, ...pending] : list
   }
   /**
    * Флаг загрузки общий на все чаты: гасит его только последний вызов. Иначе
@@ -55,21 +99,23 @@ export function useMessageLoading(
    * история. Раньше — одну страницу: если в конце ленты были только служебные
    * события (вступления, роли, реакции), чат открывался пустым.
    */
-  const paginateRoomHistory = async (room: MxRoom) => {
+  /** true — сервер старше ничего не отдаст: дошли до начала или он перестал листать. */
+  const paginateRoomHistory = async (room: MxRoom): Promise<boolean> => {
     const client = matrixService.getClient()
-    if (!client || !room || typeof room.getLiveTimeline !== 'function') return
+    if (!client || !room || typeof room.getLiveTimeline !== 'function') return false
     const liveTimeline = room.getLiveTimeline()
     for (let page = 0; page < MAX_HISTORY_PAGES; page++) {
       const events = liveTimeline.getEvents()
       const messageCount = events.filter(isMessageEvent).length
-      if (events.length >= MESSAGES_PER_PAGE && messageCount >= MIN_SHOWN_MESSAGES) return
-      if (reachedHistoryStart(room as unknown as HistoryRoom)) return
+      if (events.length >= MESSAGES_PER_PAGE && messageCount >= MIN_SHOWN_MESSAGES) return false
+      if (reachedHistoryStart(room as unknown as HistoryRoom)) return true
       const more = await client.paginateEventTimeline(liveTimeline, {
         backwards: true,
         limit: MESSAGES_PER_PAGE,
       })
-      if (!more) return
+      if (!more) return true
     }
+    return false
   }
 
   /**
@@ -105,7 +151,7 @@ export function useMessageLoading(
         // комнаты (участники/история) подгружается не полностью.
         await matrixService.joinIfInvited(chatId)
         await room.loadMembersIfNeeded?.()
-        await paginateRoomHistory(room)
+        const exhausted = await paginateRoomHistory(room)
         // Local-echo события matrix-js-sdk (id вида `~…`) попадают в
         // IndexedDB-стор и возвращаются при следующем запуске: сообщение висит
         // навсегда без ответа/удаления, потому что действия требуют `$`-id.
@@ -135,10 +181,15 @@ export function useMessageLoading(
           list.push(...extra)
           list.sort((a, b) => a.timestamp - b.timestamp)
         }
-        messages[chatId] = list
         const client = matrixService.getClient()
         if (client) enrichMessagesWithReactions(room, list, client.getUserId() || '')
-        noteHistory(chatId, room)
+        // Что сервер уже стёр, а на устройстве сохранено, — над его лентой.
+        const reachedStart = reachedHistoryStart(room as unknown as HistoryRoom)
+        const merged = await archive.mergeInto(chatId, list, { exhausted, reachedStart })
+        messages[chatId] = merged.messages
+        void archive.save(chatId, list)
+        noteHistory(chatId, room, undefined, merged.more)
+        if (merged.messages.length > list.length && !reachedStart) void markGone(chatId, list)
       } else if (uiStore.activeChatId === chatId) {
         // Синк прошёл, а комнаты нет: сервер её не знает или нас в ней нет.
         noteHistory(chatId, null, 'room_not_found')
@@ -162,21 +213,46 @@ export function useMessageLoading(
       const client = matrixService.getClient()
       const liveTimeline = room.getLiveTimeline()
       const initialCount = liveTimeline.getEvents().length
+      const historyRoom = room as unknown as HistoryRoom
 
-      await client.paginateEventTimeline(liveTimeline, {
-        backwards: true,
-        limit: MESSAGES_PER_PAGE,
-      })
-      const finalCount = liveTimeline.getEvents().length
-
-      if (finalCount > initialCount) {
-        const timelineEvents = getRoomTimelineEvents(room)
-        const mapped = await Promise.all(timelineEvents.map((e) => mapEventToMessage(e)))
-        const list = mapped.filter((m): m is Message => Boolean(m))
-        messages[chatId] = list
-        if (client) enrichMessagesWithReactions(room, list, client.getUserId() || '')
+      // Сервер дошёл до начала или перестал листать — дальше только сохранённое на устройстве.
+      let exhausted = reachedHistoryStart(historyRoom)
+      if (!exhausted) {
+        const more = await client.paginateEventTimeline(liveTimeline, {
+          backwards: true,
+          limit: MESSAGES_PER_PAGE,
+        })
+        exhausted = !more || reachedHistoryStart(historyRoom)
       }
-      noteHistory(chatId, room)
+      const finalCount = liveTimeline.getEvents().length
+      const added = finalCount > initialCount
+      let archiveMore = false
+
+      if (added || (exhausted && history[chatId]?.archiveMore)) {
+        const timelineEvents = getRoomTimelineEvents(room).filter((e) => {
+          const id = typeof e?.getId === 'function' ? e.getId() : e?.event_id
+          return typeof id !== 'string' || !id.startsWith('~')
+        })
+        const mapped = await Promise.all(timelineEvents.map((e) => mapEventToMessage(e)))
+        const list = keepPending(
+          mapped.filter((m): m is Message => Boolean(m)),
+          messages[chatId]
+        )
+        if (client) enrichMessagesWithReactions(room, list, client.getUserId() || '')
+        const reachedStart = reachedHistoryStart(historyRoom)
+        const merged = await archive.mergeInto(chatId, list, {
+          exhausted,
+          reachedStart,
+          older: !added,
+        })
+        messages[chatId] = merged.messages
+        archiveMore = merged.more
+        void archive.save(chatId, list)
+        if (merged.messages.length > list.length && !reachedStart) void markGone(chatId, list)
+      } else {
+        archiveMore = !!history[chatId]?.archiveMore
+      }
+      noteHistory(chatId, room, undefined, archiveMore)
     } catch (e) {
       console.error('[ChatStore] Ошибка подгрузки истории:', e)
       noteHistory(chatId, room, e)

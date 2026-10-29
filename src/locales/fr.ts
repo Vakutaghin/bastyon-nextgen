@@ -491,6 +491,7 @@ export default {
       general: 'Général',
       layout: 'En-tête et panneaux',
       notifications: 'Notifications',
+      chats: 'Conversations',
       system: 'Système',
       privateKey: 'Clé privée',
       blacklist: 'Utilisateurs bloqués',
@@ -512,6 +513,49 @@ export default {
       chatButton: 'Bouton de chat flottant',
       chatButtonHint:
         'Le bouton rond en bas à droite. Sans lui, l’icône de l’en-tête ouvre les discussions.',
+    },
+    chats: {
+      signIn: 'Connectez-vous : chaque compte enregistre ses conversations séparément.',
+      archive: 'Enregistrer les conversations sur l’appareil',
+      archiveHint:
+        'Le serveur de discussion garde les messages trois mois, puis les supprime. Avec cette option, les conversations sont copiées sur cet appareil : les anciens messages restent visibles, marqués comme absents du serveur. La copie est chiffrée avec la clé de votre compte et n’est envoyée nulle part.',
+      mode: 'Quelles conversations enregistrer',
+      modeAll: 'Toutes',
+      modeSelected: 'Choisies',
+      modeAllHint: 'Toutes les conversations, sauf celles désactivées ci-dessous.',
+      modeSelectedHint:
+        'Seulement celles activées ci-dessous ou dans le menu « ⋯ » de la conversation.',
+      list: 'Conversations enregistrées',
+      total: '{n} message · conversations : {chats} | {n} messages · conversations : {chats}',
+      totalNone: 'Rien d’enregistré pour l’instant',
+      search: 'Trouver une conversation',
+      loading: 'Chargement…',
+      noChats: 'Pas encore de conversations.',
+      unnamed: 'Conversation sans nom',
+      messages: '{n} message | {n} messages',
+      since: 'depuis le {date}',
+      left: 'n’est plus dans la liste',
+      nothingYet: 'Enregistrée, encore vide',
+      notSaving: 'Non enregistrée',
+      saveChat: 'Enregistrer « {name} »',
+      deleteCopy: 'Supprimer la copie',
+      deleteCopyOf: 'Supprimer la copie enregistrée de « {name} »',
+      deleteCopyTitle: 'Supprimer la copie enregistrée de « {name} » ?',
+      deleteCopyText:
+        '{n} message sera supprimé de cet appareil. Ce que le serveur a encore reste dans la conversation ; le reste sera perdu définitivement. | {n} messages seront supprimés de cet appareil. Ce que le serveur a encore reste dans la conversation ; le reste sera perdu définitivement.',
+      stillSaving:
+        'Tant que l’enregistrement est activé, ce que le serveur conserve encore sera enregistré à nouveau.',
+      deleted: 'Copie supprimée',
+      deleteAll: 'Supprimer toutes les conversations enregistrées',
+      deleteAllTitle: 'Supprimer toutes les conversations enregistrées ?',
+      deleteAllText:
+        '{n} message sera supprimé de cet appareil (conversations : {chats}). | {n} messages seront supprimés de cet appareil (conversations : {chats}).',
+      deleteAllOk: 'Supprimer',
+      deleteAllSureTitle: 'Vraiment tout supprimer ?',
+      deleteAllSureText:
+        'Les messages que le serveur a déjà supprimés n’existent que dans cette copie. Une fois supprimés, ils ne pourront pas être récupérés.',
+      deleteAllSureOk: 'Supprimer définitivement',
+      deletedAll: 'Conversations enregistrées supprimées',
     },
     system: {
       animations: 'Animations',
@@ -923,6 +967,30 @@ export default {
     firstMessageHint:
       'Écrivez le premier message : {name} verra la discussion une fois qu’il sera envoyé.',
     startChatFailed: 'Impossible de créer la discussion. Vérifiez la connexion et réessayez.',
+    archive: {
+      localOnly: 'Enregistré sur cet appareil : le serveur n’a plus ce message',
+      deleteLocalOnly:
+        'Le serveur n’a plus ce message. Il sera supprimé de cet appareil, et de celui de votre interlocuteur s’il enregistre aussi la conversation.',
+      divider:
+        'Au-dessus, les messages que le serveur a déjà supprimés. Ils n’existent que sur cet appareil',
+      dividerAll: 'Le serveur a déjà supprimé ces messages. Ils n’existent que sur cet appareil',
+      noteSaving: 'Cette conversation est enregistrée sur cet appareil.',
+      noteCopy: 'Une copie enregistrée de la conversation se trouve sur cet appareil.',
+      menuStart: 'Enregistrer sur l’appareil',
+      menuStop: 'Ne plus enregistrer sur l’appareil',
+      startTitle: 'Enregistrer « {name} » sur cet appareil ?',
+      startText:
+        'Les nouveaux messages et tout ce que le serveur conserve encore seront copiés ici. Quand le serveur supprimera les anciens messages (il les garde trois mois), ils resteront dans la conversation.',
+      startOnlyThis: 'Les autres conversations ne seront pas enregistrées.',
+      startOk: 'Enregistrer',
+      stopTitle: 'Ne plus enregistrer « {name} » ?',
+      stopText:
+        'Les nouveaux messages de cette conversation ne seront plus enregistrés sur l’appareil.',
+      stopTextSaved:
+        'Les nouveaux messages ne seront plus enregistrés. Ceux déjà enregistrés ({n}) restent sur l’appareil ; vous pouvez les supprimer dans Paramètres, rubrique « Conversations ».',
+      stopOk: 'Ne plus enregistrer',
+      deleteWithChat: 'La copie enregistrée sur cet appareil sera aussi supprimée.',
+    },
     history: {
       createdByYou: 'Vous avez créé la discussion',
       createdBy: '{name} a créé la discussion',
@@ -969,6 +1037,7 @@ export default {
     deleteMessage: 'Supprimer',
     deleteConfirmTitle: 'Supprimer le message ?',
     deleteConfirmText: 'Le message sera supprimé pour tous les participants de la discussion.',
+    deleteOthersConfirmText: 'Le message de {name} sera supprimé pour tous les participants.',
     replyingTo: 'En réponse à',
     cancel: 'Annuler',
     send: 'Envoyer',

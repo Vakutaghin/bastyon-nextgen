@@ -12,6 +12,7 @@ import type { useAuthStore } from '@/blockchain'
 import type { Message, User } from '../../types'
 import type { useMessengerUiStore } from '../messenger-ui-store'
 import type { useMessengerProfileCache } from '../messenger-profile-cache'
+import type { useMessengerArchiveStore } from '../messenger-archive-store'
 
 /** Минимальное подмножество RoomMember, используемое стором. */
 export interface MxRoomMember {
@@ -103,4 +104,6 @@ export interface ChatContext {
   authStore: ReturnType<typeof useAuthStore>
   uiStore: ReturnType<typeof useMessengerUiStore>
   profileCache: ReturnType<typeof useMessengerProfileCache>
+  /** Копия переписки на устройстве. */
+  archive: ReturnType<typeof useMessengerArchiveStore>
 }

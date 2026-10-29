@@ -23,6 +23,7 @@ import {
 import { notificationPreviewFor, senderDisplayName } from './notification-preview'
 import { syncErrorReason, type SyncErrorKind } from '../../lib/sync-error'
 import { markDeleted } from '../../lib/chat-history'
+import { archiveRedactIds } from '../../lib/archive-redact'
 import { SOUND_MAX_AGE } from '../consts'
 import type { MessengerStoreContext } from './types'
 
@@ -42,6 +43,23 @@ export interface MatrixListenerCallbacks {
    * пробует — нужен новый вход.
    */
   onTokenRejected?: () => void
+  /** Копия переписки на устройстве (use-archive-sync, messenger-archive-store). */
+  archive?: ArchiveListenerHooks
+}
+
+export interface ArchiveListenerHooks {
+  /** В комнате новое: сохранить; `reactionTarget` — у него поменялись реакции. */
+  noteRoom: (roomId: string, reactionTarget?: string) => void
+  /** Сообщения удалены у всех — и из копии. */
+  remove: (roomId: string, ids: string[]) => void
+  /** Участник удалил то, что сервер уже стёр (lib/archive-redact): проверить права и стереть. */
+  removeAuthored: (roomId: string, ids: string[], sender: string, at: number) => void
+  /** Лента комнаты началась заново (синк с разрывом) — проверить пропуск. */
+  scheduleWalk: (roomId: string) => void
+  /** Все сохраняемые чаты — после входа и восстановления связи. */
+  scheduleAll: () => void
+  /** Синк идёт — продолжить отложенное. */
+  kick: () => void
 }
 
 /** Подпись к «Ошибке синхронизации»: почему синк не идёт. */
@@ -63,8 +81,14 @@ export function registerMatrixListeners(
   callbacks: MatrixListenerCallbacks
 ): void {
   const { uiStore, chatStore } = ctx
-  const { loadDialogs, scheduleLoadDialogs, markRoomRead, onTokenRejected, refreshUnreadCounts } =
-    callbacks
+  const {
+    loadDialogs,
+    scheduleLoadDialogs,
+    markRoomRead,
+    onTokenRejected,
+    refreshUnreadCounts,
+    archive,
+  } = callbacks
 
   matrixService.on(
     'Room.timeline',
@@ -74,6 +98,8 @@ export function registerMatrixListeners(
       const evType = getEventType(event)
       if (evType === 'm.reaction') {
         const roomId = getEventRoomId(event)
+        const target = getEventContent(event)['m.relates_to']?.event_id
+        archive?.noteRoom(roomId, typeof target === 'string' ? target : undefined)
         if (uiStore.activeChatId === roomId) {
           const client = matrixService.getClient()
           const list = chatStore.messages[roomId]
@@ -91,7 +117,21 @@ export function registerMatrixListeners(
         if (roomId) {
           chatStore.retryUndecrypted(roomId)
           scheduleLoadDialogs()
+          // Что не расшифровалось и потому не сохранено — теперь может.
+          archive?.noteRoom(roomId)
         }
+        return
+      }
+
+      // Удалили то, что сервер уже стёр: есть только в копиях на устройствах.
+      const archiveRedacts = archiveRedactIds(evType, getEventContent(event))
+      if (archiveRedacts.length) {
+        archive?.removeAuthored(
+          getEventRoomId(event),
+          archiveRedacts,
+          getEventSender(event),
+          getEventTs(event)
+        )
         return
       }
 
@@ -108,6 +148,8 @@ export function registerMatrixListeners(
             by: getEventSender(event),
             at: getEventTs(event),
           })
+          // Удалили у всех — значит, и с этого устройства.
+          archive?.remove(roomId, [redactedId])
         }
         return
       }
@@ -180,6 +222,7 @@ export function registerMatrixListeners(
             if (onScreen) await markRoomRead(roomId)
           }
 
+          archive?.noteRoom(roomId)
           scheduleLoadDialogs()
         }
       } catch (e) {
@@ -194,6 +237,8 @@ export function registerMatrixListeners(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MatrixEvent передаётся в приватный MxEvent-тип chat-store, как в Room.timeline выше
     (event: any, _room: unknown, oldEventId?: string) => {
       void chatStore.adoptLocalEcho(event, oldEventId)
+      // Своё сообщение получило настоящий id — теперь его можно сохранить.
+      archive?.noteRoom(getEventRoomId(event))
       // В списке у последнего сообщения «…» сменится на «✓»: новых событий
       // ленты при этом нет, сам список о подтверждении не узнал бы.
       scheduleLoadDialogs()
@@ -207,6 +252,12 @@ export function registerMatrixListeners(
   matrixService.on('Room', reloadDialogs)
   matrixService.on('Room.myMembership', reloadDialogs)
   matrixService.on('Room.name', reloadDialogs)
+
+  // Синк пришёл с разрывом: SDK начал ленту комнаты заново, пропущенное —
+  // только на сервере, копия догрузит его сама.
+  matrixService.on('Room.timelineReset', (room?: { roomId?: string }) => {
+    if (room?.roomId) archive?.scheduleWalk(room.roomId)
+  })
 
   // Квитанции о прочтении: по ним пересчитываются галочки «✓✓» (use-read-receipts).
   matrixService.on('Room.receipt', (_event: unknown, room?: { roomId?: string }) => {
@@ -235,6 +286,7 @@ export function registerMatrixListeners(
       if (state === 'SYNCING' && (prevState === 'ERROR' || prevState === 'RECONNECTING')) {
         chatStore.retryUndecrypted()
         scheduleLoadDialogs()
+        archive?.scheduleAll()
       }
       // Баннер «Ошибка синхронизации» раньше гас только на 'PREPARED', а он
       // бывает раз за жизнь клиента — после восстановления связи (SYNCING)
@@ -245,10 +297,14 @@ export function registerMatrixListeners(
       }
       // Ответ синка принёс числа непрочитанных: прочитали на другом устройстве
       // или список встал из кэша — событий ленты при этом нет.
-      if (state === 'SYNCING') refreshUnreadCounts?.()
+      if (state === 'SYNCING') {
+        refreshUnreadCounts?.()
+        archive?.kick()
+      }
       if (state === 'PREPARED') {
         loadDialogs(true).then(() => {
           uiStore.dialogsLoadedOnce = true
+          archive?.scheduleAll()
         })
       }
     }

@@ -72,6 +72,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Chats](chats.md)
   - [Channels](channels.md)
   - [Messages](messages.md)
+  - [Chats saved on this device](chat-archive.md)
   - [Photos, videos and files in chat](chat-attachments.md)
   - [Voice messages](voice-messages.md)
   - [Sending PKOIN in a chat](pkoin-in-chat.md)

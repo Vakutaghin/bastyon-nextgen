@@ -16,6 +16,7 @@ import { t } from '@/i18n'
 import type { Dialog, Message, User } from '../types'
 import { useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerProfileCache } from './messenger-profile-cache'
+import { useMessengerArchiveStore } from './messenger-archive-store'
 
 import type { ChatContext, MxRoom } from './messenger-chat-store/types'
 import { useChatCrypto } from './messenger-chat-store/use-chat-crypto'
@@ -54,6 +55,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     authStore: useAuthStore(),
     uiStore: useMessengerUiStore(),
     profileCache: useMessengerProfileCache(),
+    archive: useMessengerArchiveStore(),
   }
 
   // --- Доменные модули (порядок = граф зависимостей) ---
@@ -66,6 +68,14 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   const mediaTransfer = useMediaTransfer(chatCrypto)
   const localEcho = useLocalEcho(ctx, chatCrypto, mapping)
   const redecrypt = useRedecrypt(ctx, mapping)
+
+  // Копию чата стёрли (настройки, удаление чата) — из ленты уходит то, что было только в ней.
+  ctx.archive.onChatRemoved((chatId) => {
+    const list = messages[chatId]
+    if (list?.some((m) => m.archived)) messages[chatId] = list.filter((m) => !m.archived)
+    const state = loading.history[chatId]
+    if (state) state.archiveMore = false
+  })
 
   // История, разобранная до готовности шифрования, — сплошные заглушки.
   watch(chatCrypto.pcryptoService, (service) => {

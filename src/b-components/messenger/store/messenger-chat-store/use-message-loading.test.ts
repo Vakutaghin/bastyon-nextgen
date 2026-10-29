@@ -53,12 +53,21 @@ function setup() {
     mapEventToMessage: vi.fn(async (e: Ev) => ({ id: e.id, timestamp: e.ts })),
     enrichMessagesWithReactions: vi.fn(),
   }
+  // Копия на устройстве: по умолчанию пуста — лента как есть.
+  const archive = {
+    mergeInto: vi.fn(async (_chatId: string, server: unknown[]) => ({
+      messages: server,
+      more: false,
+    })),
+    save: vi.fn(async () => 0),
+    hasCopy: vi.fn(() => false),
+  }
   const api = useMessageLoading(
-    { messages, uiStore } as never,
+    { messages, uiStore, archive } as never,
     chatCrypto as never,
     mapping as never
   )
-  return { api, messages, uiStore }
+  return { api, messages, uiStore, archive }
 }
 
 /** Matrix вошёл и прошёл первый синк: комнаты известны. */
@@ -155,5 +164,29 @@ describe('useMessageLoading: чат открыт до конца входа в M
     await vi.advanceTimersByTimeAsync(1_400)
     await done
     expect(uiStore.isMessagesLoading).toBe(false)
+  })
+})
+
+describe('useMessageLoading: копия переписки на устройстве', () => {
+  it('сервер больше не листает — над его лентой сохранённое, и оно же уходит в копию', async () => {
+    const { api, messages, uiStore, archive } = setup()
+    matrixReady(uiStore, [fakeRoom('!a:host', [{ id: '$2', ts: 20 }])])
+    client.paginateEventTimeline.mockResolvedValueOnce(false as never)
+    archive.mergeInto.mockImplementationOnce(async (_chatId: string, server: unknown[]) => ({
+      messages: [{ id: '$1', timestamp: 10, archived: true, localOnly: true }, ...server],
+      more: true,
+    }))
+
+    await api.loadMessages('!a:host')
+
+    expect(archive.mergeInto).toHaveBeenCalledWith(
+      '!a:host',
+      [expect.objectContaining({ id: '$2' })],
+      { exhausted: true, reachedStart: false }
+    )
+    expect(messages['!a:host']?.map((m) => m.id)).toEqual(['$1', '$2'])
+    expect(archive.save).toHaveBeenCalledWith('!a:host', [expect.objectContaining({ id: '$2' })])
+    // В копии есть ещё раньше: «начало чата» показывать рано.
+    expect(api.history['!a:host']?.archiveMore).toBe(true)
   })
 })

@@ -16,6 +16,7 @@ Everything published is stored on the network. On the device the app keeps only 
 - **Favorites** — saved posts, see [Favorites](favorites.md).
 - **Search history.**
 - **Decrypted messages** — so that conversations are not decrypted again every time you open them. This can be turned off, see below.
+- **Saved chats** — if you turned saving on: encrypted with the account key, see [Chats saved on this device](chat-archive.md).
 - **Notifications** that have already arrived.
 - **The places where you stopped watching** videos.
 - **Web cache** — pictures, videos and pages the app has already downloaded.
@@ -42,9 +43,10 @@ If the browser does not let websites store data — for example, in a private wi
 
 ## Removing everything
 
-1. Sign out of all accounts — see [Several accounts and signing out](accounts.md). This removes the keys from the device.
-2. Uninstall the app.
-3. In the desktop app, also delete the data folder — Tor, IPFS, the voice input models and the web cache stay there:
+1. If you saved chats on the device, delete them: **“Settings”** → **“Chats”** → **“Delete all saved chats”**. After signing out they stay on the device encrypted, so they open again when you sign back in.
+2. Sign out of all accounts — see [Several accounts and signing out](accounts.md). This removes the keys from the device.
+3. Uninstall the app.
+4. In the desktop app, also delete the data folder — Tor, IPFS, the voice input models and the web cache stay there:
    - macOS: `~/Library/Application Support/com.bastyon.app` and `~/Library/Caches/com.bastyon.app`
    - Windows: `%APPDATA%\com.bastyon.app` and `%LOCALAPPDATA%\com.bastyon.app`
    - Linux: `~/.local/share/com.bastyon.app`

@@ -39,7 +39,7 @@ function message(text: string, senderId = '@alice:host'): Message {
   }
 }
 
-function render(text: string, senderId?: string) {
+function render(text: string, senderId?: string, over: Partial<Message> = {}) {
   const page = { render: () => null }
   const router = createRouter({
     history: createMemoryHistory(),
@@ -49,7 +49,8 @@ function render(text: string, senderId?: string) {
     ],
   })
   return mount(MessageItem, {
-    props: { message: message(text, senderId) },
+    props: { message: { ...message(text, senderId), ...over } },
+    attachTo: document.body,
     global: { plugins: [i18n, router], provide: { theme: {} }, stubs: { LinkPreview: true } },
   })
 }
@@ -65,7 +66,9 @@ beforeEach(() => {
     activeChatId: '!support:host',
     isFullScreen: true,
     fetchProfiles: vi.fn(),
+    canDeleteOthers: vi.fn(() => false),
   })
+  document.body.innerHTML = ''
 })
 
 describe('сведения для поддержки в переписке', () => {
@@ -103,5 +106,39 @@ describe('аватар отправителя', () => {
 
   it('не из Bastyon — аватар без ссылки', () => {
     expect(render('Привет').find('a[aria-label^="Открыть профиль"]').exists()).toBe(false)
+  })
+})
+
+describe('меню «⋯» у сообщения', () => {
+  async function openMenu(w: ReturnType<typeof render>): Promise<HTMLElement> {
+    await w.get('[data-testid="message-actions"]').trigger('click')
+    await vi.waitFor(() => {
+      if (!document.querySelector('.message-actions-popover')) throw new Error('no popover')
+    })
+    return document.querySelector('.message-actions-popover') as HTMLElement
+  }
+
+  it('открывается над полноэкранным мессенджером', async () => {
+    const popover = await openMenu(render('Привет'))
+    // Полноэкранный мессенджер — на 2500, а antd ставит меню на 1030.
+    expect(Number(popover.style.zIndex)).toBeGreaterThan(2500)
+  })
+
+  it('чужое сообщение — «Удалить», если права в комнате позволяют', async () => {
+    const popover = await openMenu(render('Привет'))
+    expect(popover.textContent).toContain('Ответить')
+    expect(popover.textContent).not.toContain('Удалить')
+
+    document.body.innerHTML = ''
+    ;(mocks.store.canDeleteOthers as ReturnType<typeof vi.fn>).mockReturnValue(true)
+    const allowed = await openMenu(render('Привет'))
+    expect(allowed.textContent).toContain('Удалить')
+    expect(mocks.store.canDeleteOthers).toHaveBeenCalledWith('!support:host')
+  })
+
+  it('сообщение есть только на устройстве — значок с объяснением', () => {
+    const w = render('Старое', undefined, { archived: true, localOnly: true })
+    const mark = w.get('[data-testid="local-only-mark"]')
+    expect(mark.attributes('title')).toContain('на сервере сообщения уже нет')
   })
 })

@@ -25,6 +25,10 @@ To send a photo, a file or a voice message, see [Photos, videos and files in cha
 
 In the **“Actions”** menu of your own message — **“Delete”**. The app asks again: **“Delete message?”** The message is deleted for everyone in the chat, and in its place a **“You deleted a message”** mark with the time stays — for the other person, with your name.
 
+Someone else’s message is deleted the same way — for everyone — if the chat server allows it: in a private chat both people have that right, in a group admins and moderators do. Where you don’t have it, other people’s messages have no **“Delete”** item.
+
+If the chat is saved on the device, a deleted message is erased from the copy too — yours, and the other person’s if they save the chat as well. A message the server no longer has is removed from the device. See [Chats saved on this device](chat-archive.md#deleting-messages).
+
 A sent message cannot be edited.
 
 ## Was it delivered

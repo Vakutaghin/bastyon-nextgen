@@ -195,3 +195,42 @@ export interface MeshMessageRecord {
   /** LXMF: вложения (картинка, файлы, голос). */
   attachments?: MeshAttachment[]
 }
+
+/**
+ * Сообщение чата, сохранённое на устройстве: сервер чатов стирает переписку
+ * через три месяца. Открыто — только то, что видит и сервер (чат, id события,
+ * время); остальное — `data`, AES-GCM ключом от ключа аккаунта.
+ */
+export interface ChatArchiveRecord {
+  /** Адрес аккаунта Bastyon. */
+  account: string
+  chatId: string
+  /** Id события Matrix (`$…`). */
+  id: string
+  /** Время события по серверу, мс. */
+  ts: number
+  iv: Uint8Array
+  data: Uint8Array
+}
+
+/** Сохранённый на устройстве чат: подпись для настроек и ход догрузки истории. */
+export interface ChatArchiveChat {
+  account: string
+  chatId: string
+  /** Название и картинка чата шифротекстом: комнаты может уже не быть. */
+  iv?: Uint8Array
+  data?: Uint8Array
+  /** Сообщения с этим временем и раньше сервер уже стёр, мс; 0 — не знаем. */
+  goneBefore: number
+  /** Догрузка истории с сервера: откуда продолжать и до чего. */
+  walks: ChatArchiveWalk[]
+  /** История догружена до начала, что есть на сервере. */
+  backfilled: boolean
+  updatedAt: number
+}
+
+/** Проход истории назад: до уже сохранённого (`overlap`) или до начала (`start`). */
+export interface ChatArchiveWalk {
+  token: string
+  until: 'overlap' | 'start'
+}

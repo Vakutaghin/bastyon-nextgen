@@ -1,5 +1,5 @@
 ---
-keywords: [settings, preferences, content, modules, cache, diagnostics, what’s new, settings tabs, header and panels, header and menu, header icons, account menu, menu order, left panel, left panel sections, hide categories, hide tags, page width, closing the window, menu bar]
+keywords: [settings, preferences, content, modules, cache, diagnostics, what’s new, settings tabs, header and panels, header and menu, header icons, account menu, menu order, left panel, left panel sections, hide categories, hide tags, page width, closing the window, menu bar, saving chats]
 ---
 
 # Settings
@@ -43,6 +43,10 @@ On a phone only the bell and the theme fit in the header, in the order set here.
 ## Notifications
 
 Which events to show, sound and system notifications — see [Notifications](notifications.md).
+
+## Chats
+
+Whether to save chats on this device — the chat server deletes them after three months — for all chats or selected ones, how much is saved and how to erase it. See [Chats saved on this device](chat-archive.md).
 
 ## System
 

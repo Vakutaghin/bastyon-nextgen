@@ -14,6 +14,8 @@ const { matrix, encryptKey, isTetatetchat } = vi.hoisted(() => ({
     sendEncryptedDirectMessage: vi.fn(async () => ({ event_id: '$real' })),
     sendEncryptedTextMessage: vi.fn(async () => ({ event_id: '$group' })),
     sendStateEvent: vi.fn(async () => ({})),
+    redactEvent: vi.fn(async () => ({})),
+    sendArchiveRedact: vi.fn(async () => ({})),
   },
   encryptKey: vi.fn(async () => ({ keys: 'CIPHER', block: 10 })),
   isTetatetchat: vi.fn(() => true),
@@ -58,6 +60,7 @@ function setup() {
     authStore: { isUserAuthenticated: true },
     uiStore: { isInitInProgress: false },
     profileCache: { userProfiles: {} },
+    archive: { remove: vi.fn(async () => {}) },
   }
   const crypto = {
     ensurePcryptoInitialized: vi.fn(),
@@ -68,7 +71,13 @@ function setup() {
     pickRoomBlock: vi.fn(async () => 10),
     decryptionCache,
   }
-  return { api: useMessageSending(ctx as never, crypto as never), messages, cache, decryptionCache }
+  return {
+    api: useMessageSending(ctx as never, crypto as never),
+    messages,
+    cache,
+    decryptionCache,
+    archive: ctx.archive,
+  }
 }
 
 beforeEach(() => {
@@ -163,5 +172,55 @@ describe('sendMessage — эхо и копия события SDK', () => {
     expect(matrix.sendEncryptedDirectMessage).toHaveBeenCalledTimes(1)
     expect(matrix.makeTxnId).toHaveBeenCalledTimes(1)
     expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$real', 'sent']])
+  })
+})
+
+describe('deleteMessage — у всех и с устройства', () => {
+  const saved = (over: Partial<Message> = {}): Message => ({
+    id: '$old',
+    chatId: ROOM,
+    senderId: '@peer:host',
+    text: 'привет',
+    timestamp: 1,
+    read: true,
+    status: 'sent',
+    ...over,
+  })
+
+  it('удалено на сервере — отметка в ленте и стирается из копии', async () => {
+    const { api, messages, archive } = setup()
+    messages[ROOM] = [saved()]
+    await api.deleteMessage(ROOM, '$old')
+    expect(matrix.redactEvent).toHaveBeenCalledWith(ROOM, '$old', 'deleted')
+    expect(messages[ROOM]![0]).toMatchObject({ deleted: { by: '@me:host' }, text: '' })
+    expect(archive.remove).toHaveBeenCalledWith(ROOM, ['$old'])
+  })
+
+  it('сервер не принял удаление — сообщение остаётся, ошибка наверх', async () => {
+    const { api, messages, archive } = setup()
+    messages[ROOM] = [saved()]
+    matrix.redactEvent.mockRejectedValueOnce(new Error('HTTP 502'))
+    await expect(api.deleteMessage(ROOM, '$old')).rejects.toThrow('HTTP 502')
+    expect(messages[ROOM]![0]!.deleted).toBeUndefined()
+    expect(archive.remove).not.toHaveBeenCalled()
+  })
+
+  it('сообщение есть только на устройстве — сервер его не знает, а с устройства оно стирается', async () => {
+    const { api, messages, archive } = setup()
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    messages[ROOM] = [saved({ archived: true, localOnly: true })]
+    matrix.redactEvent.mockRejectedValueOnce({ errcode: 'M_NOT_FOUND', httpStatus: 404 })
+    await api.deleteMessage(ROOM, '$old')
+    expect(messages[ROOM]![0]!.deleted).toBeTruthy()
+    expect(archive.remove).toHaveBeenCalledWith(ROOM, ['$old'])
+    // Удаление стёртого сервер собеседнику не отдаёт — для его копии своё событие.
+    expect(matrix.sendArchiveRedact).toHaveBeenCalledWith(ROOM, ['$old'])
+  })
+
+  it('удаление того, что есть на сервере, своего события для копий не шлёт', async () => {
+    const { api, messages } = setup()
+    messages[ROOM] = [saved()]
+    await api.deleteMessage(ROOM, '$old')
+    expect(matrix.sendArchiveRedact).not.toHaveBeenCalled()
   })
 })

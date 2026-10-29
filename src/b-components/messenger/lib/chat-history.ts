@@ -102,6 +102,8 @@ export interface ChatHistory {
   retentionMs?: number
   /** История не загрузилась. */
   error?: string
+  /** На устройстве сохранено ещё раньше показанного: долистать до начала ещё нельзя. */
+  archiveMore?: boolean
 }
 
 const UNIT_MS: Record<string, number> = {

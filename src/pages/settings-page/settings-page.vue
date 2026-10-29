@@ -20,6 +20,7 @@
           <LayoutTab v-else-if="activeTab === 'layout'" />
           <WhatsNewTab v-else-if="activeTab === 'whatsNew'" />
           <NotificationsTab v-else-if="activeTab === 'notifications'" />
+          <ChatsTab v-else-if="activeTab === 'chats'" />
           <PrivateKeyTab v-else-if="activeTab === 'privateKey'" />
           <BlacklistTab v-else-if="activeTab === 'blacklist'" />
           <AppPermissionsTab v-else-if="activeTab === 'appPermissions'" />
@@ -41,6 +42,7 @@ import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import GeneralTab from './tabs/general-tab.vue'
 import LayoutTab from './tabs/layout-tab.vue'
 import NotificationsTab from './tabs/notifications-tab.vue'
+import ChatsTab from './tabs/chats-tab.vue'
 import PrivateKeyTab from './tabs/private-key-tab.vue'
 import BlacklistTab from './tabs/blacklist-tab.vue'
 import AppPermissionsTab from './tabs/app-permissions-tab.vue'
@@ -62,6 +64,7 @@ export type T_SettingsTabKey =
   | 'general'
   | 'layout'
   | 'notifications'
+  | 'chats'
   | 'system'
   | 'modules'
   | 'privateKey'
@@ -75,6 +78,7 @@ const SETTINGS_TABS: { key: T_SettingsTabKey; labelKey: string }[] = [
   { key: 'general', labelKey: 'settings.tabs.general' },
   { key: 'layout', labelKey: 'settings.tabs.layout' },
   { key: 'notifications', labelKey: 'settings.tabs.notifications' },
+  { key: 'chats', labelKey: 'settings.tabs.chats' },
   { key: 'system', labelKey: 'settings.tabs.system' },
   ...(isTauri() ? [{ key: 'modules' as const, labelKey: 'settings.tabs.modules' }] : []),
   { key: 'privateKey', labelKey: 'settings.tabs.privateKey' },

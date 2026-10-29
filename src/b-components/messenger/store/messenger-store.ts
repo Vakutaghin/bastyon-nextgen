@@ -38,9 +38,15 @@ import { useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerProfileCache } from './messenger-profile-cache'
 import { useMessengerChatStore } from './messenger-chat-store'
 import { useMessengerChannelsStore } from './messenger-channels-store'
+import { ARCHIVE_PREFS_KEY, useMessengerArchiveStore } from './messenger-archive-store'
+import { useArchiveSync } from './messenger-store/use-archive-sync'
+import { chatArchiveAPI } from '@/db/apis/chat-archive-api'
+import { settingsAPI } from '@/db/apis/settings-api'
 import { useMediaLibraryStore } from '@/stores/media-library-store'
 import { MEDIA_LIBRARY_ACCOUNT_DATA } from '@/services/media-library/media-library-doc'
 import { CHANNELS_ACCOUNT_DATA, channelChatId, isChannelChatId } from '../lib/channels'
+import { canRedactOthers } from '../lib/redaction-rights'
+import { markDeleted } from '../lib/chat-history'
 import { chatActivityOf, listActivityOf } from '../lib/messenger-activity'
 import type { MessengerStoreContext } from './messenger-store/types'
 import { loadDialogsSnapshot, saveDialogsSnapshot } from './messenger-store/dialogs-snapshot'
@@ -63,6 +69,31 @@ export const useMessengerStore = defineStore('messenger', () => {
   // комнатами Matrix; их id начинаются с `mesh:`.
   const meshChat = useMeshChatStore()
   const meshRoutes = useMeshRoutes({ uiStore, meshChat })
+  // Переписка, сохранённая на устройстве: сервер стирает её через три месяца.
+  const archive = useMessengerArchiveStore()
+  const archiveSync = useArchiveSync({
+    archive,
+    mapEvent: (event) => chatStore.mapEventToMessage(event as MatrixEvent),
+    enrich: (room, list) => {
+      const me = matrixService.getClient()?.getUserId()
+      if (me) chatStore.enrichMessagesWithReactions(room as never, list, me)
+    },
+    info: (chatId) => {
+      const dialog = uiStore.dialogs.find((d) => d.id === chatId)
+      return dialog
+        ? { name: dialog.partner.name, avatar: dialog.partner.avatar, group: !!dialog.group }
+        : null
+    },
+    canRun: () =>
+      (uiStore.syncState === 'PREPARED' || uiStore.syncState === 'SYNCING') &&
+      !!chatStore.pcryptoService,
+  })
+  // Включили сохранение (весь мессенджер или чат) — догрузить то, что сервер ещё хранит.
+  watch(
+    () => archive.prefs,
+    () => archiveSync.scheduleAll(),
+    { deep: true }
+  )
 
   // Writable refs из uiStore — нужны для внешних присваиваний
   // (store.isOpen = false, store.isFullScreen = true, store.activeChatId = null).
@@ -420,6 +451,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     // Каналы с прошлого запуска — сразу; серверная копия подтянется после синка.
     channels.attach(authStore.address)
     mediaLibrary.attach(authStore.address)
+    void archive.attach(authStore.address, authStore.keyPair.privateKey)
     // Переписка через радио не зависит от Matrix: без интернета она нужнее всего.
     void meshChat.ensureLoaded()
     void useReticulumStore().autostart()
@@ -447,6 +479,21 @@ export const useMessengerStore = defineStore('messenger', () => {
               markRoomRead,
               refreshUnreadCounts,
               onTokenRejected: recoverFromRejectedToken,
+              archive: {
+                noteRoom: archiveSync.noteRoom,
+                remove: (roomId, ids) => void archive.remove(roomId, ids),
+                removeAuthored: (roomId, ids, sender, at) => {
+                  const privileged = canRedactOthers(matrixService.getRoom(roomId), sender)
+                  void archive.removeAuthored(roomId, ids, sender, privileged).then((removed) => {
+                    for (const id of removed) {
+                      markDeleted(chatStore.messages[roomId], id, { by: sender, at })
+                    }
+                  })
+                },
+                scheduleWalk: archiveSync.scheduleWalk,
+                scheduleAll: archiveSync.scheduleAll,
+                kick: archiveSync.kick,
+              },
             })
             // Список каналов поменяли на другом устройстве.
             matrixService.on(
@@ -721,6 +768,8 @@ export const useMessengerStore = defineStore('messenger', () => {
       .leaveAndForgetRoom(chatId)
       // Иначе удалённый чат мелькнёт в списке при следующем запуске.
       .then(() => persistDialogs())
+      // Удалили чат — и его копию на устройстве.
+      .then(() => archive.removeChat(chatId))
       .catch((e) => {
         log.error('Ошибка удаления, восстанавливаем:', e)
         if (removedDialog) uiStore.restoreDialog(removedDialog, removedIndex)
@@ -773,6 +822,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     profileCache.reset()
     channels.reset()
     mediaLibrary.reset()
+    // Копия переписки остаётся на устройстве: она зашифрована ключом аккаунта
+    // и снова откроется при входе в него. Стирается с удалением аккаунта.
+    archiveSync.stop()
+    archive.reset()
     // Радио отключается, переписка аккаунта уходит из памяти; при выходе —
     // и с диска, как расшифровки Matrix.
     void useMeshConnectionStore().reset()
@@ -789,7 +842,12 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   /** Стереть локальные данные мессенджера удалённого (не текущего) аккаунта. */
   const purgeAccountData = async (address: string): Promise<void> => {
-    await Promise.all([matrixService.purgeLocalData({ address }), meshChat.purgeAccount(address)])
+    await Promise.all([
+      matrixService.purgeLocalData({ address }),
+      meshChat.purgeAccount(address),
+      chatArchiveAPI.removeAccount(address),
+      settingsAPI.remove(`${ARCHIVE_PREFS_KEY}:${address}`),
+    ])
   }
 
   // Обновление диалогов при обновлении профилей
@@ -1014,6 +1072,9 @@ export const useMessengerStore = defineStore('messenger', () => {
     initMatrix,
     retrySync,
     deleteDialog,
+    /** Можно удалять у всех и чужие сообщения: уровень прав в комнате (lib/redaction-rights). */
+    canDeleteOthers: (chatId: string): boolean =>
+      canRedactOthers(matrixService.getRoom(chatId), matrixService.getClient()?.getUserId() ?? ''),
     setDialogMuted,
     setChatFilter: uiStore.setChatFilter,
     toggleChatKind: uiStore.toggleChatKind,

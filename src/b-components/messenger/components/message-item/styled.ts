@@ -223,6 +223,17 @@ export const SC_SeenTick = styled.span`
   }
 `
 
+/** Сообщение есть только в копии на устройстве: сервер его уже стёр. */
+export const SC_LocalOnlyMark = styled.span`
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--ui-text-dimmed);
+  cursor: help;
+`
+
 /** Цитата сообщения, на которое отвечают (показывается над текстом). */
 export const SC_ReplyQuote = styled.div`
   display: block;

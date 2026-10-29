@@ -40,7 +40,7 @@ export function useRedecrypt(ctx: ChatContext, mapping: MessageMapping) {
   const pass = async (chatId: string): Promise<void> => {
     const room = matrixService.getRoom(chatId) as RedecryptRoom | null
     if (!room?.findEventById) return
-    let changed = false
+    const fixed: Message[] = []
     for (const stale of undecrypted(chatId).slice(-MAX_PER_PASS)) {
       const event = room.findEventById(stale.id)
       if (!event) continue
@@ -50,13 +50,15 @@ export function useRedecrypt(ctx: ChatContext, mapping: MessageMapping) {
       const at = list ? list.findIndex((m) => m.id === stale.id) : -1
       if (!list || at === -1) continue
       list.splice(at, 1, { ...fresh, status: list[at]!.status })
-      changed = true
+      fixed.push(list[at]!)
     }
     const list = messages[chatId]
     const client = matrixService.getClient()
-    if (changed && list && client) {
+    if (fixed.length && list && client) {
       mapping.enrichMessagesWithReactions(room, list, client.getUserId() || '')
     }
+    // Заглушку в копию не пишут — расшифровалось, теперь можно.
+    if (fixed.length) void ctx.archive?.save(chatId, fixed)
   }
 
   const schedule = (chatId: string, delay: number) => {

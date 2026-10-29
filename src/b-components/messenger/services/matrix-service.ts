@@ -31,6 +31,7 @@ import {
   sendReaction as sendReactionImpl,
 } from './matrix-service/messaging'
 import { tetatetid, getMatrixId, resolveMatrixHost } from '../helpers'
+import { ARCHIVE_REDACT_EVENT } from '../lib/archive-redact'
 import type { MatrixClient, MatrixEventContent } from './matrix-service/types'
 import type { MatrixClient as SdkMatrixClient, ICreateClientOpts } from 'matrix-js-sdk'
 import { Preset, PushRuleActionName, Visibility } from 'matrix-js-sdk'
@@ -366,6 +367,23 @@ export class MatrixService {
   public async redactEvent(roomId: string, eventId: string, reason?: string) {
     if (!this.client) throw new Error('Client not initialized')
     return redactEventImpl(this.client as MatrixClient, roomId, eventId, reason)
+  }
+
+  /**
+   * Удалить сообщения из копий переписки на устройствах участников
+   * (lib/archive-redact): удаления того, что сервер уже стёр, он собеседнику
+   * не отдаёт. В событии только id — содержимого там нет.
+   */
+  public async sendArchiveRedact(roomId: string, ids: string[]) {
+    if (!this.client) throw new Error('Client not initialized')
+    const client = this.client as unknown as {
+      sendEvent: (
+        roomId: string,
+        type: string,
+        content: Record<string, unknown>
+      ) => Promise<unknown>
+    }
+    return client.sendEvent(roomId, ARCHIVE_REDACT_EVENT, { redacts: ids })
   }
 
   /**
