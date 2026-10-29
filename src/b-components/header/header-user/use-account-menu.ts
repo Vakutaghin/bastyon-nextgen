@@ -44,6 +44,7 @@ export interface AccountMenu {
   handleOpenRegister: () => void
   handleMenuClick: (event: { key: string }) => Promise<void>
   handleAccountSwitcherClose: () => void
+  handleAccountSwitcherRegister: () => void
   handleConfirmSignOut: () => void
   handleCancelSignOut: () => void
 }
@@ -164,6 +165,16 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
     accountSwitcherOpen.value = false
   }
 
+  /**
+   * «Зарегистрироваться» в окне входа, открытом из «Сменить аккаунт» → «Добавить
+   * аккаунт». Окно регистрации живёт здесь, в шапке: раньше вход просто
+   * закрывался, и человек возвращался к списку аккаунтов.
+   */
+  function handleAccountSwitcherRegister(): void {
+    accountSwitcherOpen.value = false
+    openRegister()
+  }
+
   async function handleSignOut(): Promise<void> {
     try {
       // Выходим только из текущего аккаунта, а не из всех.
@@ -253,6 +264,7 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
     handleOpenRegister,
     handleMenuClick,
     handleAccountSwitcherClose,
+    handleAccountSwitcherRegister,
     handleConfirmSignOut,
     handleCancelSignOut,
   }

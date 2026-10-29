@@ -86,6 +86,7 @@
       v-model:open="signInModalOpen"
       @success="handleSignInSuccess"
       @cancel="handleSignInCancel"
+      @open-register="handleOpenRegister"
     />
 
     <ConfirmDeleteModal
@@ -152,6 +153,8 @@ const props = withDefaults(defineProps<{ open?: boolean }>(), { open: false })
 const emit = defineEmits<{
   'update:open': [value: boolean]
   close: []
+  /** «Зарегистрироваться» в окне входа: окно регистрации открывает шапка. */
+  openRegister: []
 }>()
 
 const { t } = useI18n()
@@ -230,6 +233,12 @@ function handleSignInSuccess(): void {
 
 function handleSignInCancel(): void {
   signInModalOpen.value = false
+}
+
+function handleOpenRegister(): void {
+  signInModalOpen.value = false
+  emit('openRegister')
+  handleCancel()
 }
 
 function handleCancel(): void {

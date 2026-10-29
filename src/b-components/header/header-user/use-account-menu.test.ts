@@ -225,6 +225,17 @@ describe('useAccountMenu', () => {
     expect(menu.signInModalOpen.value).toBe(false)
   })
 
+  // «Сменить аккаунт» → «Добавить аккаунт» → «Зарегистрироваться» возвращало к списку аккаунтов.
+  it('регистрация из окна аккаунтов закрывает его и открывает регистрацию', async () => {
+    const { menu, openRegister } = setup()
+    await menu.handleMenuClick({ key: 'switchAccount' })
+    expect(menu.accountSwitcherOpen.value).toBe(true)
+
+    menu.handleAccountSwitcherRegister()
+    expect(menu.accountSwitcherOpen.value).toBe(false)
+    expect(openRegister).toHaveBeenCalledTimes(1)
+  })
+
   it('смена адреса подгружает состояние, если профиль чужой или его нет', async () => {
     const { authStore } = setup()
 

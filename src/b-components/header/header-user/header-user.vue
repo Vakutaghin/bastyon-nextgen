@@ -87,7 +87,11 @@
     @close="handleWelcomeClose"
   />
 
-  <AccountSwitcher v-model:open="accountSwitcherOpen" @close="handleAccountSwitcherClose" />
+  <AccountSwitcher
+    v-model:open="accountSwitcherOpen"
+    @close="handleAccountSwitcherClose"
+    @open-register="handleAccountSwitcherRegister"
+  />
 
   <ConfirmSignOutModal
     v-model:open="confirmSignOutOpen"
@@ -176,6 +180,7 @@ const {
   handleOpenRegister,
   handleMenuClick,
   handleAccountSwitcherClose,
+  handleAccountSwitcherRegister,
   handleConfirmSignOut,
   handleCancelSignOut,
 } = useAccountMenu({
