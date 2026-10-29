@@ -112,6 +112,39 @@ function isVideoInfo(value: unknown): value is PeerTubeVideoInfo & { from?: unkn
   )
 }
 
+/**
+ * Заготовка архива. На ролик, которого нет в его базе, архив Bastyon (форк
+ * PeerTube, ветка `archive-build`) отвечает не 404, а 200: `status: 404`,
+ * `videoBrief: true` и пути `/static/redundancy/hls/<id>/…` — на случай, если
+ * файлы ролика вернули на диск без записи в базе. Прокси такую заготовку
+ * отдаёт как ролик.
+ */
+function isVideoBrief(value: unknown): boolean {
+  const brief = value as { status?: unknown; videoBrief?: unknown } | null
+  return brief?.status === 404 && brief.videoBrief === true
+}
+
+/**
+ * Заготовка — ролик, только если плейлист по её пути на месте. Файлы в ней
+ * одни на все ролики и ведут на давно выключенную ноду — их убираем.
+ */
+async function confirmBrief(info: PeerTubeVideoInfo): Promise<PeerTubeVideoInfo> {
+  const playlists = info.streamingPlaylists ?? []
+  const playlist = playlists[0]?.playlistUrl
+  if (playlist) {
+    const response = await fetchWithTimeout(
+      playlist,
+      { method: 'GET' },
+      PEERTUBE_FETCH_TIMEOUT_MS
+    ).catch(() => null)
+    const text = response?.ok ? await response.text().catch(() => '') : ''
+    if (text.startsWith('#EXTM3U')) {
+      return { ...info, files: [], streamingPlaylists: playlists.map((p) => ({ ...p, files: [] })) }
+    }
+  }
+  throw new PeerTubeFetchError(`Video not found: ${info.uuid}`, 'not-found')
+}
+
 /** Есть ли что играть: у ролика в обработке ещё нет ни HLS, ни файлов. */
 function hasSources(info: PeerTubeVideoInfo): boolean {
   return !!(info.streamingPlaylists?.length || info.files?.length)
@@ -163,6 +196,7 @@ async function fetchVideoInfoFrom(host: string, videoId: string): Promise<PeerTu
         )
       }
       const data = await response.json()
+      if (isVideoBrief(data)) return await confirmBrief(data as PeerTubeVideoInfo)
       return data as PeerTubeVideoInfo
     } catch (error) {
       const err =
@@ -211,7 +245,8 @@ async function fetchVideoInfoViaProxy(host: string, videoId: string): Promise<Pe
   if (!isVideoInfo(info)) throw new Error('Proxy does not know the video')
   const { from, ...rest } = info
   const servedBy = typeof from === 'string' && HOST_RE.test(from) ? from.toLowerCase() : host
-  return { ...rest, servedBy }
+  const found = isVideoBrief(rest) ? await confirmBrief(rest) : rest
+  return { ...found, servedBy }
 }
 
 /** Ищет описание ролика: в архиве выведенной ноды, на ноде из ссылки, через прокси. */
@@ -224,8 +259,10 @@ async function resolveVideoInfo(host: string, videoId: string): Promise<PeerTube
     try {
       return { ...(await fetchVideoInfoFrom(candidate, videoId)), servedBy: candidate }
     } catch (error) {
-      // Интерфейс говорит о ноде из ссылки — её ошибку и отдаём наружу.
-      if (candidate === host || !failure) {
+      // Интерфейс говорит о ноде из ссылки — её ошибку и отдаём наружу. Кроме
+      // ответа архива «такого ролика нет»: выведенная нода молчит, и её
+      // сетевая ошибка его бы только заслонила.
+      if (!failure || (candidate === host && failure.code !== 'not-found')) {
         failure =
           error instanceof PeerTubeFetchError
             ? error
@@ -233,7 +270,7 @@ async function resolveVideoInfo(host: string, videoId: string): Promise<PeerTube
       }
     }
   }
-  // Нода ответила «такого ролика нет» — он удалён, прокси спрашивать незачем.
+  // Нода или архив ответили «такого ролика нет» — он удалён, прокси спрашивать незачем.
   // Иначе нода могла уйти в архив позже нашего списка — спросим прокси.
   if (failure?.code !== 'not-found') {
     try {

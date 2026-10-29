@@ -2,7 +2,8 @@
 // 404 — сразу «нет видео», остальные сбои — три попытки с паузами 0,5 и 1 с,
 // причина для интерфейса: таймаут, CORS/сеть в проде, ошибка сервера.
 // Выведенная из работы нода — сначала её архив; нода, которая не ответила, —
-// ещё и прокси Bastyon. Описание ролика запоминается на минуту.
+// ещё и прокси Bastyon. Заготовка архива («ролика нет в базе») — ролик, только
+// если её плейлист на месте. Описание ролика запоминается на минуту.
 // Субтитры — необязательны: любая ошибка даёт пустой список.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -26,8 +27,31 @@ const json = (body: unknown, status = 200) => ({
   json: async () => body,
 })
 
+const text = (body: string, status = 200) => ({
+  ok: status >= 200 && status < 300,
+  status,
+  text: async () => body,
+})
+
 /** Описание, в котором есть что играть. */
 const video = (uuid: string) => ({ uuid, name: 'Видео', files: [{ fileUrl: 'https://h/v.mp4' }] })
+
+const ARCHIVE_HLS = 'https://peertube.archive.pocketnet.app/static/redundancy/hls'
+
+/** Заготовка архива на ролик, которого нет в его базе (HTTP 200, `status: 404`). */
+const brief = (uuid: string) => ({
+  status: 404,
+  videoBrief: true,
+  uuid,
+  name: 'Restored Video',
+  streamingPlaylists: [
+    {
+      id: 1,
+      playlistUrl: `${ARCHIVE_HLS}/${uuid}/${uuid}-master.m3u8`,
+      files: [{ fileUrl: 'https://peertube17.pocketnet.app/hls/x/y-720-fragmented.mp4' }],
+    },
+  ],
+})
 
 const PROXY_VIDEO = 'https://1.pocketnet.app:8899/peertube/video?url='
 
@@ -156,6 +180,44 @@ describe('getPeerTubeVideoInfo', () => {
       const info = await getPeerTubeVideoInfo('peertube33.pocketnet.app', 'a3')
       expect(info.servedBy).toBe('peertube33.pocketnet.app')
       expect(calledUrls()[1]).toBe('/api/peertube/peertube33.pocketnet.app/api/v1/videos/a3')
+    })
+
+    it('архив ответил заготовкой, а плейлиста по её пути нет — «видео нет», прокси не спрашиваем', async () => {
+      mocks.appFetch.mockImplementation(async (url: string) => {
+        if (url.includes('peertube.archive.pocketnet.app/api/v1/videos/')) return json(brief('b1'))
+        if (url.startsWith(ARCHIVE_HLS)) return text('Not found', 404)
+        throw new TypeError('Failed to fetch')
+      })
+      const pending = failure(getPeerTubeVideoInfo('peertube3501.pocketnet.app', 'b1'))
+      await vi.advanceTimersByTimeAsync(1500)
+      expect((await pending).code).toBe('not-found')
+      expect(calledUrls().some((url) => url.startsWith(PROXY_VIDEO))).toBe(false)
+    })
+
+    it('плейлист заготовки на месте — ролик из архива, чужие файлы заготовки убраны', async () => {
+      mocks.appFetch.mockImplementation(async (url: string) =>
+        url.startsWith(ARCHIVE_HLS) ? text('#EXTM3U\n#EXT-X-VERSION:3\n') : json(brief('b2'))
+      )
+      const info = await getPeerTubeVideoInfo('peertube3501.pocketnet.app', 'b2')
+      expect(info.servedBy).toBe('peertube.archive.pocketnet.app')
+      expect(info.streamingPlaylists?.[0]?.playlistUrl).toBe(`${ARCHIVE_HLS}/b2/b2-master.m3u8`)
+      expect(info.streamingPlaylists?.[0]?.files).toEqual([])
+      expect(info.files).toEqual([])
+    })
+
+    it('прокси принёс заготовку архива без плейлиста — остаётся ошибка ноды', async () => {
+      vi.stubEnv('DEV', false)
+      mocks.appFetch.mockImplementation(async (url: string) => {
+        if (url.startsWith(PROXY_VIDEO)) {
+          const data = { ...brief('b3'), from: 'peertube.archive.pocketnet.app' }
+          return json({ result: 'success', data: { data } })
+        }
+        if (url.startsWith(ARCHIVE_HLS)) return text('Not found', 404)
+        throw new TypeError('Failed to fetch')
+      })
+      const pending = failure(getPeerTubeVideoInfo('gone.example', 'b3'))
+      await vi.advanceTimersByTimeAsync(1500)
+      expect((await pending).code).toBe('cors-or-network')
     })
 
     it('ноды нет в списке архивов — ролик находит прокси, нода берётся из его `from`', async () => {
