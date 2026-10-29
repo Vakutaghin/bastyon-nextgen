@@ -29,7 +29,6 @@ import type {
 } from '@/types/rpc-responses/get-transactions'
 import type { GetAddressInfoResponse } from '@/types/rpc-responses/get-address-info'
 import type { GetStatisticResponse } from '@/types/rpc-responses/get-statistic'
-import type { GetPeerInfoResponse } from '@/types/rpc-responses/get-peer-info'
 
 const STALE_TIP = 10_000
 const STALE_FRESH = 30_000
@@ -230,28 +229,6 @@ export function useStatsByDays(days: MaybeRef<number> = 30) {
         getExplorerRpcConfig()
       ) as Promise<GetStatisticResponse>,
     staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-  })
-}
-
-/**
- * Список пиров текущей ноды. Refetch каждые 30 с — peer-set меняется,
- * pingtime обновляется, banscore тоже.
- */
-export function usePeerInfo() {
-  return useQuery<GetPeerInfoResponse>({
-    queryKey: ['explorer', 'peer-info'] as const,
-    queryFn: () =>
-      getByPRC(
-        {
-          method: rpcEndpoints.getPeerInfo,
-          parameters: [],
-          options: { auth: false },
-        },
-        getExplorerRpcConfig()
-      ) as Promise<GetPeerInfoResponse>,
-    staleTime: STALE_FRESH,
-    refetchInterval: 30_000,
     refetchOnWindowFocus: false,
   })
 }

@@ -41,7 +41,7 @@ vi.mock('@/pages/block-explorer-page/block-explorer-page.vue', () => page)
 vi.mock('@/pages/block-explorer-page/block-page/block-page.vue', () => page)
 vi.mock('@/pages/block-explorer-page/tx-page/tx-page.vue', () => page)
 vi.mock('@/pages/block-explorer-page/address-page/address-page.vue', () => page)
-vi.mock('@/pages/block-explorer-page/peers-page/peers-page.vue', () => page)
+vi.mock('@/pages/block-explorer-page/network-page/network-page.vue', () => page)
 vi.mock('@/pages/search-page/search-page.vue', () => page)
 vi.mock('@/pages/mini-apps-page/mini-apps-page.vue', () => page)
 vi.mock('@/pages/mini-app-page/mini-app-page.vue', () => page)
@@ -59,7 +59,7 @@ describe('router: сопоставление путей', () => {
     ['/explorer/block/3000000', 'explorer-block'],
     ['/explorer/tx/abc123', 'explorer-tx'],
     ['/explorer/address/PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM', 'explorer-address'],
-    ['/explorer/peers', 'explorer-peers'],
+    ['/explorer/network', 'explorer-network'],
     ['/search', 'search'],
     ['/miniapps', 'miniapps'],
     ['/post/abc123', 'post'],
@@ -71,6 +71,11 @@ describe('router: сопоставление путей', () => {
     ['/PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM', 'profile'],
   ])('%s → %s', (path, name) => {
     expect(router.resolve(path).name).toBe(name)
+  })
+
+  it('прежняя страница пиров открывает вкладку «Сеть»', async () => {
+    await router.push('/explorer/peers')
+    expect(router.currentRoute.value.name).toBe('explorer-network')
   })
 
   it('параметры: блок, мини-приложение с вложенным путём, тема справки', () => {

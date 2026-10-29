@@ -100,6 +100,87 @@ export interface MockNodeData {
   tags?: string[]
   /** Лента бустов (`getboostfeed`): txid поста и сумма буста в сатоши. */
   boosts?: { txid: string; boost: number }[]
+  /** Сеть нод для вкладки «Сеть» «Блокчейн-обозревателя». */
+  network?: MockNetwork
+}
+
+/** Сеть нод: кто с кем соединён и кто в пуле прокси. */
+export interface MockNetwork {
+  /** Соседи ноды по её адресу: `ip:порт`, inbound — подключилась к ней сама. */
+  peers: Record<
+    string,
+    Array<{ addr: string; inbound?: boolean; version?: string; services?: string }>
+  >
+  /** Ноды пула прокси — с них начинается обход. */
+  pool: string[]
+  /** Приложений онлайн на прокси. */
+  clients?: number
+}
+
+/** Ответы прокси о сети (`/info`) и нод о себе и соседях (`options.node`). */
+function networkAnswer(
+  network: MockNetwork,
+  path: string,
+  method: string,
+  node: string | undefined
+): { data: unknown; node?: string } | null {
+  if (path === '/info') {
+    const nodes = Object.fromEntries(
+      network.pool.map((ip) => [
+        `${ip}:38081`,
+        {
+          node: { version: '0.22.21' },
+          users: 3,
+          statistic: { percent: 99, time: 120 },
+          status: { fork: false, difference: 0 },
+        },
+      ])
+    )
+    return {
+      data: {
+        info: {
+          nodeManager: { count: network.pool.length, nodes },
+          wss: { clients: network.clients ?? 0, users: Math.round((network.clients ?? 0) / 2) },
+          server: { startedDate: '2026-10-29T00:00:00.000Z', middle: { rate: 1.5 } },
+        },
+      },
+    }
+  }
+  const target = node ?? `${network.pool[0]}:38081`
+  const ip = target.replace(/:\d+$/, '')
+  if (method === 'getpeerinfo') {
+    const peers = network.peers[ip]
+    if (!peers) return null
+    return {
+      node: target,
+      data: peers.map((p) => ({
+        addr: p.addr,
+        services: p.services ?? '0000000000000409',
+        relaytxes: true,
+        lastsend: NOW,
+        lastrecv: NOW,
+        conntime: NOW - 86_400,
+        timeoffset: 0,
+        pingtime: 0.04,
+        protocol: 70016,
+        version: `/Satoshi:${p.version ?? '0.22.21'}/`,
+        inbound: !!p.inbound,
+        whitelisted: false,
+        banscore: 0,
+        startingheight: HEIGHT - 100,
+        synced_headers: HEIGHT,
+        synced_blocks: HEIGHT,
+      })),
+    }
+  }
+  if (method === 'getnodeinfo' && node) {
+    if (!network.peers[ip]) return null
+    return {
+      node: target,
+      data: { version: '0.22.21', chain: 'main', lastblock: { height: HEIGHT, hash: 'mockhash' } },
+    }
+  }
+  return null
 }
 
 const HEIGHT = 4_037_000
@@ -399,6 +480,21 @@ async function answerNode(route: Route, data: MockNodeData): Promise<void> {
     return
   }
   const method = path.split('/').pop() ?? ''
+  if (data.network && (path === '/info' || method === 'getpeerinfo' || method === 'getnodeinfo')) {
+    let node: string | undefined
+    try {
+      node = (request.postDataJSON() as { options?: { node?: string } })?.options?.node
+    } catch {
+      node = undefined
+    }
+    const answer = networkAnswer(data.network, path, method, node)
+    if (answer) {
+      await route.fulfill({ status: 200, headers: CORS, json: { result: 'success', ...answer } })
+    } else {
+      await route.fulfill({ status: 408, headers: CORS, json: { error: 'timeout' } })
+    }
+    return
+  }
   if (method === 'urlPreview') {
     let link = ''
     try {

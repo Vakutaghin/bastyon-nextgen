@@ -136,4 +136,4 @@ The status of a new account, with smaller daily limits. An account becomes full 
 
 ## TXID
 
-A [transaction](#transaction) number — its [hash](#hash), 64 characters long. It is used to find the transaction in the [block explorer](explorer.md).
+A [transaction](#transaction) number — its [hash](#hash), 64 characters long. It is used to find the transaction in the [blockchain explorer](explorer.md).

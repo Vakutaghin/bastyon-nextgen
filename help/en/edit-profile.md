@@ -33,7 +33,7 @@ This app does not change the profile cover yet, but it keeps the one you set in 
 
 ## Everything is public
 
-A profile is a blockchain record. Each change is a new transaction, and earlier versions of the name, description and avatar stay in the history: they can be found in the [block explorer](explorer.md). Do not put in your profile what you may later want to hide — see [Privacy: what others can see](privacy.md).
+A profile is a blockchain record. Each change is a new transaction, and earlier versions of the name, description and avatar stay in the history: they can be found in the [blockchain explorer](explorer.md). Do not put in your profile what you may later want to hide — see [Privacy: what others can see](privacy.md).
 
 ## See also
 

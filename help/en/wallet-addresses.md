@@ -8,7 +8,7 @@ The main and additional wallets, the total balance and how to receive PKOIN at y
 
 ## The “Balances” tab
 
-At the top there are three numbers: **“Main wallet balance”**, **“Total balance across all additional wallet addresses”** and **“Total balance of all wallets”**. Below are tables of wallets with addresses and balances. The icon next to an address is **“Open in block explorer”**: all transactions of that address, see [Block explorer](explorer.md).
+At the top there are three numbers: **“Main wallet balance”**, **“Total balance across all additional wallet addresses”** and **“Total balance of all wallets”**. Below are tables of wallets with addresses and balances. The icon next to an address is **“Open in the blockchain explorer”**: all transactions of that address, see [Blockchain explorer](explorer.md).
 
 ## The main wallet
 
@@ -36,4 +36,4 @@ The address is not a secret: all anyone can do with it is send you coins. But ne
 
 - [Transfers and fees](send-pkoin.md)
 - [How to get PKOIN](how-to-buy-pkoin.md)
-- [Block explorer](explorer.md)
+- [Blockchain explorer](explorer.md)

@@ -28,7 +28,7 @@ keywords: [блокчейн, Pocketnet, нода, Pocketnet Core, pocketcoind, �
 - [Советы и опыт операторов](node-tips.md) — что выясняется только на практике.
 
 > [!NOTE]
-> Цифры в этих статьях — высота блоков, размер блокчейна, вес стейкинга — сняты в конце октября 2026 года. Сеть растёт, поэтому сверяйте их с [блок-эксплорером](explorer.md) и страницей релизов [pocketnet.core](https://github.com/pocketnetteam/pocketnet.core/releases).
+> Цифры в этих статьях — высота блоков, размер блокчейна, вес стейкинга — сняты в конце октября 2026 года. Сеть растёт, поэтому сверяйте их с [блокчейн-обозревателем](explorer.md) и страницей релизов [pocketnet.core](https://github.com/pocketnetteam/pocketnet.core/releases).
 
 ## Официальная документация
 
@@ -38,4 +38,4 @@ keywords: [блокчейн, Pocketnet, нода, Pocketnet Core, pocketcoind, �
 
 - [Как устроена сеть](how-bastyon-works.md)
 - [Сеть и ноды](network.md)
-- [Блок-эксплорер](explorer.md)
+- [Блокчейн-обозреватель](explorer.md)

@@ -40,7 +40,7 @@ Feed and app sections:
 - **“Feed”**, **“Subscriptions”** (once you are signed in), **“Video”**, **“Audio”**, **“Articles”**, **“Favorites”**, **“Discussed”** — see [Feed](feed.md);
 - **“Services”** — see [Services](mini-apps.md); pinned mini apps are listed below, under the line;
 - **“Top accounts”** — the accounts with the highest reputation in the network, see [Top accounts](top-accounts.md);
-- **“Explorer”** — the [block explorer](explorer.md);
+- **“Blockchain explorer”** — [blocks, transactions, addresses and the node network map](explorer.md);
 - **“Help”** — this help.
 
 Under the sections are the **“Best first”** switch, the **“Feed language”**, **“Categories”** and **“Trending tags”**, which select the posts in the feed — see [Categories, tags and sorting](feed-filters.md).
@@ -78,7 +78,7 @@ When the screen is narrow — on a phone or in a shrunk window on a computer —
 
 The header slides away as you scroll down and comes back as soon as you scroll up a little. While the on-screen keyboard is open, the bottom bar is hidden to leave room for the text.
 
-The menu behind the three-line button in the header, right of the logo, is the same left panel as on a computer: the feed sections, **“Services”**, **“Explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: the same items as in the account menu on a computer, in the same order, except **“Help”**, which is already above. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
+The menu behind the three-line button in the header, right of the logo, is the same left panel as on a computer: the feed sections, **“Services”**, **“Blockchain explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: the same items as in the account menu on a computer, in the same order, except **“Help”**, which is already above. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
 
 Of the icons, only the bell and the theme switch fit in the phone header; if you hide them in the settings, they are gone here too.
 

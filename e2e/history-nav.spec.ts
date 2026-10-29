@@ -32,7 +32,7 @@ test('стрелки шапки листают открытые страницы
   await expect(back).toHaveAttribute('aria-disabled', 'true')
   await expect(forward).toHaveAttribute('aria-disabled', 'true')
 
-  await page.getByRole('button', { name: 'Эксплорер', exact: true }).first().click()
+  await page.getByRole('button', { name: 'Блокчейн-обозреватель', exact: true }).first().click()
   await expect(page).toHaveURL(/\/explorer/)
   await expect(back).toHaveAttribute('aria-disabled', 'false')
 

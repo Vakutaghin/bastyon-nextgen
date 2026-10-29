@@ -20,7 +20,7 @@ A guest without an account sees ratings and comments, but to rate, comment and d
 
 A rating, a comment, a repost and a report are [transactions](glossary.md#transaction). The app signs them with your account’s key, and they stay on the blockchain forever. It follows that:
 
-- They are public: anyone can see who rated and commented on what, for example in the [block explorer](explorer.md).
+- They are public: anyone can see who rated and commented on what, for example in the [blockchain explorer](explorer.md).
 - The network takes a minute or two to confirm them — see [Confirming actions](transactions.md).
 - Each kind of action has its own daily limit, lower for a new account than for a full one — see [Account status and limits](limits.md).
 - A rating cannot be taken back, and a deleted comment stays in the blockchain’s history.

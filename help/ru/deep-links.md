@@ -20,7 +20,7 @@ code:
 | `bastyon://index?v=…` | видео |
 | `bastyon://имя` или `bastyon://profile?address=…` | профиль |
 | `bastyon://application?id=…` | [мини-приложение](mini-apps.md) |
-| `bastyon://i?stx=…` | перевод в [блок-эксплорере](explorer.md) — так прежний Bastyon отмечает переводы в чате |
+| `bastyon://i?stx=…` | перевод в [блокчейн-обозревателе](explorer.md) — так прежний Bastyon отмечает переводы в чате |
 | `bastyon://wallets`, `bastyon://settings`, `bastyon://help` и другие разделы | этот раздел приложения |
 
 Ссылки на посты и профили на bastyon.com — `https://bastyon.com/post?s=…` — приложение понимает так же.

@@ -34,7 +34,14 @@ test.describe('Навигация на телефоне', () => {
   test('меню повторяет левую панель компьютера', async ({ page }) => {
     await open(page, '/')
     await page.getByRole('button', { name: 'Меню' }).click()
-    for (const item of ['Лента', 'Подписки', 'Видео', 'Статьи', 'Эксплорер', 'Справка']) {
+    for (const item of [
+      'Лента',
+      'Подписки',
+      'Видео',
+      'Статьи',
+      'Блокчейн-обозреватель',
+      'Справка',
+    ]) {
       await expect(menu(page).getByRole('button', { name: item, exact: true })).toBeVisible()
     }
     await expect(menu(page).getByText('Категории')).toBeVisible()

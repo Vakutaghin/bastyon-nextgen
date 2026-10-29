@@ -22,7 +22,8 @@ const ExplorerBlockPage = () => import('@/pages/block-explorer-page/block-page/b
 const ExplorerTxPage = () => import('@/pages/block-explorer-page/tx-page/tx-page.vue')
 const ExplorerAddressPage = () =>
   import('@/pages/block-explorer-page/address-page/address-page.vue')
-const ExplorerPeersPage = () => import('@/pages/block-explorer-page/peers-page/peers-page.vue')
+const ExplorerNetworkPage = () =>
+  import('@/pages/block-explorer-page/network-page/network-page.vue')
 const SearchPage = () => import('@/pages/search-page/search-page.vue')
 const TopAccountsPage = () => import('@/pages/top-accounts-page/top-accounts-page.vue')
 const MiniAppsPage = () => import('@/pages/mini-apps-page/mini-apps-page.vue')
@@ -136,11 +137,13 @@ const router = createRouter({
       meta: { titleKey: 'routes.explorer-address', helpTopic: 'explorer' },
     },
     {
-      path: '/explorer/peers',
-      name: 'explorer-peers',
-      component: ExplorerPeersPage,
-      meta: { titleKey: 'routes.explorer-peers', helpTopic: 'explorer' },
+      path: '/explorer/network',
+      name: 'explorer-network',
+      component: ExplorerNetworkPage,
+      meta: { titleKey: 'routes.explorer-network', helpTopic: 'explorer' },
     },
+    // Прежняя страница «Пиры сети» — теперь вкладка «Сеть».
+    { path: '/explorer/peers', redirect: { name: 'explorer-network' } },
     // /search must be declared BEFORE the catch-all /:userName so the
     // profile route doesn't greedily match it.
     {

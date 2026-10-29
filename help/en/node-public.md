@@ -51,7 +51,7 @@ From another computer, not from the server itself, query the public API:
 curl -X POST http://<your IP>:38081/public/ -H 'Content-Type: application/json' -d '{"method":"getnodeinfo","params":[]}'
 ```
 
-The reply contains the node version and the last block (`lastblock`). The height should match the [block explorer](explorer.md) or lag by a block or two. Check the WebSocket port with `nc -zv <your IP> 8087`.
+The reply contains the node version and the last block (`lastblock`). The height should match the [blockchain explorer](explorer.md) or lag by a block or two. Check the WebSocket port with `nc -zv <your IP> 8087`.
 
 No reply — check the server's and the provider's firewall, port forwarding on the router and that the node runs with `api=1`.
 

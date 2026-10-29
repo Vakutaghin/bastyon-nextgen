@@ -32,7 +32,7 @@ In the chat the details look like a small scrollable box with a copy button. If 
 
 - what you did, step by step;
 - what you expected to see and what actually happened, with the exact error text;
-- the app details — with the button in the chat with support; without the chat, **“App version”**, **“Build”** and **“Platform”** from **“Settings”** → **“Diagnostics”**;
+- the app details — with the button in the chat with support; without the chat, the app version and where it is installed — they are at the top of **“Settings”** → **“What's new”**;
 - a screenshot, if the error is visible.
 
 The more precise the steps, the faster the bug is found and fixed.

@@ -14,7 +14,7 @@ How a new node gets the whole blockchain: from the snapshot in a few hours to a 
 <details>
 <summary>How far the snapshot can be trusted</summary>
 
-The team prepares the snapshot, and it contains history already checked by someone else. Your node will check the blocks that come after the snapshot by itself, but not the past. Faking a snapshot unnoticed is hard: the height and hash of the last block are easy to compare with the [block explorer](explorer.md) and any other nodes, and a faked chain would part ways with the network at the very first new block. But mistakes happen: in 2023 one snapshot turned out to hold a chain on a wrong branch. So after starting, compare the hash of the last block, and if you need full independence, sync from scratch.
+The team prepares the snapshot, and it contains history already checked by someone else. Your node will check the blocks that come after the snapshot by itself, but not the past. Faking a snapshot unnoticed is hard: the height and hash of the last block are easy to compare with the [blockchain explorer](explorer.md) and any other nodes, and a faked chain would part ways with the network at the very first new block. But mistakes happen: in 2023 one snapshot turned out to hold a chain on a wrong branch. So after starting, compare the hash of the last block, and if you need full independence, sync from scratch.
 
 </details>
 
@@ -56,7 +56,7 @@ The server keeps the five latest snapshots, and a new one appears every 7–11 d
 
 7. Check the owner of the files: it must be the user the node runs as. For the package — `sudo chown -R pocketcoin:pocketcoin /home/pocketcoin/.pocketcoin`, for Docker — `sudo chown -R 1000:1000 <data folder>`.
 8. Start the node. The first start is slow: the node builds the social database indexes, which aren't in the archive, and then catches up with the blocks produced after the snapshot. It can take several hours — meanwhile the log shows database messages; it isn't hanging.
-9. Once the node has caught up with the network, compare the hash of the last block with the [block explorer](explorer.md) and delete the archive.
+9. Once the node has caught up with the network, compare the hash of the last block with the [blockchain explorer](explorer.md) and delete the archive.
 
 On Windows the data folder is `%APPDATA%\Pocketcoin`, and any archiver that understands `.tgz`, for example 7-Zip, will unpack the archive.
 
@@ -84,7 +84,7 @@ pocketcoin-cli getblockchaininfo
 
 - `initialblockdownload: false` — the first sync is over;
 - `blocks` equals `headers` — the node has caught up with everything it knows about the network;
-- the height matches the [block explorer](explorer.md).
+- the height matches the [blockchain explorer](explorer.md).
 
 While the sync is running, the node doesn't stake, and the Bastyon proxies don't use it.
 

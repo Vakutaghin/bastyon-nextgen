@@ -28,15 +28,15 @@ Posts, ratings and comments without coins are not shown in the history: the coin
 
 ## Transaction details
 
-Click an entry — it opens in an **“On blockchain”** window over the history: the block it is recorded in, the inputs and outputs, the fee and the message, if there is one. Close the window, and the list stays where it was. More in [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed).
+Click an entry — it opens in an **“On blockchain”** window over the history: the block it is recorded in, the inputs and outputs, the fee and the message, if there is one. Close the window, and the list stays where it was. More in [Blockchain explorer](explorer.md#on-blockchain-without-leaving-the-feed).
 
 ## What is not here
 
-- Transactions of additional wallets — you can see them in the block explorer via the button next to the address in the **“Balances”** tab, see [Balances and addresses](wallet-addresses.md).
+- Transactions of additional wallets — you can see them in the blockchain explorer via the button next to the address in the **“Balances”** tab, see [Balances and addresses](wallet-addresses.md).
 - Transfers not yet confirmed by the network: they appear after confirmation.
 
 ## See also
 
-- [Block explorer](explorer.md)
+- [Blockchain explorer](explorer.md)
 - [Transfers and fees](send-pkoin.md)
 - [Earnings](earnings.md)

@@ -25,7 +25,7 @@ The installed version is always in sight: on a computer at the bottom of the lef
 - no new version — **“Up to date”** shows for a few seconds;
 - GitHub did not answer — **“Check failed”**.
 
-You can also check in **“Settings”** → **“Diagnostics”** → the **“Updates”** line → **“Check”**.
+You can also check in **“Settings”** → **“What's new”** → **“Check”**: the app version is there too.
 
 ## How to update
 

@@ -89,7 +89,7 @@
   - [Своё мини-приложение](mini-apps-dev.md)
 - [Сеть и ноды](network.md)
   - [Tor](tor.md)
-  - [Блок-эксплорер](explorer.md)
+  - [Блокчейн-обозреватель](explorer.md)
 - [Блокчейн и своя нода](blockchain.md)
   - [Как работает блокчейн](blockchain-basics.md)
   - [Правила сети и обновления](blockchain-rules.md)

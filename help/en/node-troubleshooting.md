@@ -17,7 +17,7 @@ What to do if the node can't find peers, is stuck at one block, crashes or doesn
 `pocketcoin-cli getconnectioncount` shows 0 or 1–2, and the height doesn't grow or grows in jerks. Normal is 10–12 peers or more.
 
 - Check that the server can reach the internet and that outbound connections to port 37070 aren't blocked by a firewall.
-- Add a few live nodes to `pocketcoin.conf`: `addnode=<address>`. Three addresses are in the official sample [pocketcoin.conf.example](https://snapshot.pocketnet.app/pocketcoin.conf.example); more can be taken from the Bastyon app: [block explorer](explorer.md) → **“All nodes and peers →”** → **“Peers of the connected node”**. Restart the node.
+- Add a few live nodes to `pocketcoin.conf`: `addnode=<address>`. Three addresses are in the official sample [pocketcoin.conf.example](https://snapshot.pocketnet.app/pocketcoin.conf.example); more can be taken from the Bastyon app: [blockchain explorer](explorer.md) → the **“Network”** tab → **“Build the network map”**, then the **“Accept connections”** filter in the **“All nodes”** table. Restart the node.
 - If the node works over Tor (`onlynet=onion`), it'll have few peers: make sure Tor is running.
 
 ## The height doesn't grow
@@ -25,7 +25,7 @@ What to do if the node can't find peers, is stuck at one block, crashes or doesn
 There are peers, but the block stays the same.
 
 - **An old version after a rule change.** If the network has passed the activation height of a new PIP, an old node gets stuck or drifts onto its own branch. Upgrade, see [Network rules and upgrades](blockchain-rules.md).
-- **The node is on a wrong branch.** `pocketcoin-cli getchaintips` shows the branches the node knows; the main one has the status `active`. If the active branch is lower than the network and the log shows block validation errors, find the block hash at that height in the [block explorer](explorer.md) and compare. If they differ, `pocketcoin-cli invalidateblock <your block's hash>` rolls the node back off the wrong branch, then run `reconsiderblock` with the same hash. Another way to roll back is to start the node once with `-disconnectlast=<height>`: it rolls the chain back to that height and then goes through the blocks above it again. A log with `-debug=consensus` shows the details of validation. If that doesn't help — the snapshot.
+- **The node is on a wrong branch.** `pocketcoin-cli getchaintips` shows the branches the node knows; the main one has the status `active`. If the active branch is lower than the network and the log shows block validation errors, find the block hash at that height in the [blockchain explorer](explorer.md) and compare. If they differ, `pocketcoin-cli invalidateblock <your block's hash>` rolls the node back off the wrong branch, then run `reconsiderblock` with the same hash. Another way to roll back is to start the node once with `-disconnectlast=<height>`: it rolls the chain back to that height and then goes through the blocks above it again. A log with `-debug=consensus` shows the details of validation. If that doesn't help — the snapshot.
 - **Old-version peers confuse the node.** Turn on `disconnectold=1`: the node will disconnect from nodes stuck on an old branch.
 - **A bug in the node at a specific block.** That's what happened on 28 April 2026, when all nodes of one version crashed. Only a fixed version helps then: watch the releases.
 

@@ -28,7 +28,7 @@ The transfer itself — amount, addresses and time — is visible on the blockch
 
 ## The transfer card
 
-After sending, a card appears in the conversation: **“PKOIN transfer”** on your side, **“PKOIN received”** on theirs. It shows the amount, the message, the start of the transaction number and an **“On blockchain”** button, which opens the transfer in a window over the chat, see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed).
+After sending, a card appears in the conversation: **“PKOIN transfer”** on your side, **“PKOIN received”** on theirs. It shows the amount, the message, the start of the transaction number and an **“On blockchain”** button, which opens the transfer in a window over the chat, see [Blockchain explorer](explorer.md#on-blockchain-without-leaving-the-feed).
 
 The card is sent by the sender, and it can be faked. Before, say, handing over goods, make sure the coins arrived: press **“On blockchain”** or look at the wallet’s [transaction history](wallet-history.md).
 

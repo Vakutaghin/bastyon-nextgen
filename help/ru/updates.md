@@ -7,7 +7,7 @@ code:
   - android/app/src/main/java/com/bastyon/app/plugins/AppUpdaterPlugin.java
   - src/b-components/app-update
   - src/b-components/changelog
-  - src/pages/settings-page/tabs/diagnostics-tab.vue
+  - src/pages/settings-page/tabs/whats-new-tab.vue
   - src/b-components/sidebar/sidebar-left
   - src/b-components/mobile-nav-drawer
   - changelogs
@@ -37,7 +37,7 @@ code:
 - новой нет — на несколько секунд появится **«Последняя версия»**;
 - GitHub не ответил — **«Проверить не удалось»**.
 
-Проверить можно и в **«Настройки»** → **«Диагностика»** → строка **«Обновления»** → **«Проверить»**.
+Проверить можно и в **«Настройки»** → **«Что нового»** → **«Проверить»**: там же версия приложения.
 
 ## Как обновиться
 

@@ -23,7 +23,7 @@ The avatar and the name in a notification lead to the profile of whoever did it.
 
 The list starts with the last 20 notifications; **“Show more”** at the bottom adds the next ones.
 
-The three-dot button on a notification has **“Open”**, the same as clicking the notification itself, **“On blockchain”**, the event’s transaction in a window over the page (see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed)), and **“Hide notification”**. **“Clear all”** at the top hides the whole list, and with the **“Comments”** filter — only the comments. Hidden notifications do not come back.
+The three-dot button on a notification has **“Open”**, the same as clicking the notification itself, **“On blockchain”**, the event’s transaction in a window over the page (see [Blockchain explorer](explorer.md#on-blockchain-without-leaving-the-feed)), and **“Hide notification”**. **“Clear all”** at the top hides the whole list, and with the **“Comments”** filter — only the comments. Hidden notifications do not come back.
 
 ## Comments
 

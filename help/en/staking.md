@@ -51,7 +51,7 @@ Until block 3,480,000 (21 September 2025) part of the block reward went to autho
 
 ## How much you can earn
 
-Your chance to produce a block equals your share of all coins being staked. The node shows the total stake of the network as `netstakeweight`, and the [block explorer](explorer.md) as Net stake weight. At the end of October 2026 it was about 4.6 million PKOIN — roughly a quarter of all coins issued.
+Your chance to produce a block equals your share of all coins being staked. The node shows the total stake of the network as `netstakeweight`, and the [blockchain explorer](explorer.md) as Net stake weight. At the end of October 2026 it was about 4.6 million PKOIN — roughly a quarter of all coins issued.
 
 The node itself estimates when it will produce a block: the `expectedtime` field of `getstakinginfo`, in seconds. The formula is simple: one minute times the network weight divided by your weight.
 
@@ -72,7 +72,7 @@ Per year that is about 28%; operators reported about 30% in 2026. These are aver
 
 [Emission](glossary.md#emission) is how many PKOIN have been issued in total. New coins appear only as block rewards. At block 4,081,938 (28 October 2026) there were 18,829,845 of them. Emission is now growing by about 3,700 PKOIN a day; after the halving in January 2027 it will grow by about 1,900.
 
-The current emission is shown in the [block explorer](explorer.md): the **“Emission”** field on the home page.
+The current emission is shown in the [blockchain explorer](explorer.md): the **“Emission”** field on the home page.
 
 <details>
 <summary>Technical details</summary>

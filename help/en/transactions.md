@@ -23,7 +23,7 @@ The list has:
 - edits and deletions of posts and comments, comment ratings;
 - profile and registration, subscriptions and unsubscriptions, blocks, complaints.
 
-An action with a post has **“Open post”**, with a person — **“Profile”**, and any action has **“In the explorer”**: the transaction in the [block explorer](explorer.md).
+An action with a post has **“Open post”**, with a person — **“Profile”**, and any action has **“In the explorer”**: the transaction in the [blockchain explorer](explorer.md).
 
 - **A post** is visible to you at once in your profile feed, marked **“Not yet published to the blockchain”**. It cannot be rated or commented on yet. The **“Open post”** button in the list shows how it will look.
 - **A comment** appears under the post marked **“Pending”**.
@@ -47,7 +47,7 @@ What each reason means and what to do about it is covered in [The network reject
 
 ## If the node did not answer in time
 
-If the connection dropped or the node did not answer, the app does not know whether the transaction got through. It may have reached the network. Before you retry — especially a transfer — wait a couple of minutes and check the history in your [wallet](wallet-history.md) or in the [block explorer](explorer.md). Otherwise the action may happen twice.
+If the connection dropped or the node did not answer, the app does not know whether the transaction got through. It may have reached the network. Before you retry — especially a transfer — wait a couple of minutes and check the history in your [wallet](wallet-history.md) or in the [blockchain explorer](explorer.md). Otherwise the action may happen twice.
 
 ## Fees and balance
 
@@ -62,4 +62,4 @@ Transfers have the same fee; you just choose who pays it when you send — see [
 
 - [The network rejected an action](action-rejected.md)
 - [Account status and limits](limits.md)
-- [Block explorer](explorer.md)
+- [Blockchain explorer](explorer.md)

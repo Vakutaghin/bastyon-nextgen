@@ -34,6 +34,7 @@ import {
   rpcCallArray,
   rpcCallWithAuth,
 } from './request'
+import { onRpcTraffic, type RpcTrafficEvent } from './rpc-traffic'
 
 const NODE = { host: 'n1.pocketnet.app', port: 8899 }
 const NODE2 = { host: 'n2.pocketnet.app', port: 8899 }
@@ -163,6 +164,44 @@ describe('request', () => {
       mocks.appFetch.mockResolvedValue(response({ result: 'success' }))
       await getByPRCWithAuth({ method: 'getuserstate', parameters: ['PMe'] }, NODE)
       expect(JSON.parse(mocks.appFetch.mock.calls[0]![1].body)).toMatchObject({ signature: 'sig' })
+    })
+  })
+
+  describe('схема сети (rpc-traffic)', () => {
+    it('пока её смотрят, каждый ответ сообщает, какая нода его готовила', async () => {
+      mocks.appFetch.mockResolvedValue(
+        response({ result: 'success', data: [], node: '1.2.3.4:38081' })
+      )
+      const events: RpcTrafficEvent[] = []
+      const stop = onRpcTraffic((event) => events.push(event))
+      await getByPRC(
+        { method: 'getpeerinfo', parameters: [], options: { node: '1.2.3.4:38081' } },
+        NODE
+      )
+      stop()
+      await getByPRC({ method: 'getnodeinfo', parameters: [] }, NODE)
+
+      expect(events).toEqual([
+        {
+          proxy: 'n1.pocketnet.app',
+          node: '1.2.3.4:38081',
+          method: 'getpeerinfo',
+          pinned: true,
+          ok: true,
+          ms: expect.any(Number),
+        },
+      ])
+    })
+
+    it('упавший запрос — тоже событие, без ноды; ошибка доходит до вызывающего', async () => {
+      mocks.appFetch.mockRejectedValue(new Error('offline'))
+      const events: RpcTrafficEvent[] = []
+      const stop = onRpcTraffic((event) => events.push(event))
+      await expect(getByPRC({ method: 'getnodeinfo', parameters: [] }, NODE)).rejects.toThrow(
+        'offline'
+      )
+      stop()
+      expect(events).toMatchObject([{ node: null, ok: false, pinned: false }])
     })
   })
 

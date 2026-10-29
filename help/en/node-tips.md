@@ -39,7 +39,7 @@ The node takes several minutes to close its databases, and not for nothing: kill
 ## The snapshot
 
 - **Check the checksum.** There's a `sha256sum.txt` next to the archives — 96 GB over the network sometimes arrive with an error.
-- **Compare the block hash after starting.** Once, in 2023, a snapshot turned out to hold a chain on a wrong branch. After syncing, compare the hash of the last block with the [block explorer](explorer.md).
+- **Compare the block hash after starting.** Once, in 2023, a snapshot turned out to hold a chain on a wrong branch. After syncing, compare the hash of the last block with the [blockchain explorer](explorer.md).
 - **The first start is slow.** According to the developers, the database indexes aren't in the archive, and the node builds them itself — that can take hours. It isn't hanging.
 
 ## The network

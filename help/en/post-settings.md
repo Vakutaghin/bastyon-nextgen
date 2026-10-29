@@ -20,7 +20,7 @@ In the **“Visibility”** field, choose who the post is open to:
 Everyone else sees a note instead of the post, for example: "The author opened this post to subscribers only". You see a label over such a post — **“For subscribers”** and the like.
 
 > [!IMPORTANT]
-> Visibility is not encryption. The post's text sits on the blockchain in the open, and the apps are what hide it. Anyone who looks at the record in the [block explorer](explorer.md) or in an app that does not check visibility will read the post. Do not publish anything this way that must stay secret.
+> Visibility is not encryption. The post's text sits on the blockchain in the open, and the apps are what hide it. Anyone who looks at the record in the [blockchain explorer](explorer.md) or in an app that does not check visibility will read the post. Do not publish anything this way that must stay secret.
 
 A [trial account](glossary.md#trial-account) has no choice: **“Trial accounts can only post for everyone”**.
 

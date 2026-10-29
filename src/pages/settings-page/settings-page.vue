@@ -21,12 +21,10 @@
           <WhatsNewTab v-else-if="activeTab === 'whatsNew'" />
           <NotificationsTab v-else-if="activeTab === 'notifications'" />
           <PrivateKeyTab v-else-if="activeTab === 'privateKey'" />
-          <BlockExplorerTab v-else-if="activeTab === 'blockExplorer'" />
           <BlacklistTab v-else-if="activeTab === 'blacklist'" />
           <AppPermissionsTab v-else-if="activeTab === 'appPermissions'" />
           <SystemTab v-else-if="activeTab === 'system'" />
           <ModulesTab v-else-if="activeTab === 'modules'" />
-          <DiagnosticsTab v-else-if="activeTab === 'diagnostics'" />
         </SC_SettingsMain>
       </SC_SettingsContentWrapper>
     </SC_SettingsPage>
@@ -36,7 +34,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useNotificationSettingsStore } from '@/stores'
 import { useUIStore } from '@/stores/ui-store'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
@@ -44,12 +42,10 @@ import GeneralTab from './tabs/general-tab.vue'
 import LayoutTab from './tabs/layout-tab.vue'
 import NotificationsTab from './tabs/notifications-tab.vue'
 import PrivateKeyTab from './tabs/private-key-tab.vue'
-import BlockExplorerTab from './tabs/block-explorer-tab.vue'
 import BlacklistTab from './tabs/blacklist-tab.vue'
 import AppPermissionsTab from './tabs/app-permissions-tab.vue'
 import SystemTab from './tabs/system-tab.vue'
 import ModulesTab from './tabs/modules-tab.vue'
-import DiagnosticsTab from './tabs/diagnostics-tab.vue'
 import WhatsNewTab from './tabs/whats-new-tab.vue'
 import {
   SC_SettingsWork,
@@ -69,10 +65,8 @@ export type T_SettingsTabKey =
   | 'system'
   | 'modules'
   | 'privateKey'
-  | 'blockExplorer'
   | 'blacklist'
   | 'appPermissions'
-  | 'diagnostics'
   | 'whatsNew'
 
 // labelKey — ключ i18n; рендерим через t(), чтобы метки реактивно следовали за локалью.
@@ -84,16 +78,19 @@ const SETTINGS_TABS: { key: T_SettingsTabKey; labelKey: string }[] = [
   { key: 'system', labelKey: 'settings.tabs.system' },
   ...(isTauri() ? [{ key: 'modules' as const, labelKey: 'settings.tabs.modules' }] : []),
   { key: 'privateKey', labelKey: 'settings.tabs.privateKey' },
-  { key: 'blockExplorer', labelKey: 'settings.tabs.blockExplorer' },
   { key: 'blacklist', labelKey: 'settings.tabs.blacklist' },
   { key: 'appPermissions', labelKey: 'settings.tabs.appPermissions' },
-  { key: 'diagnostics', labelKey: 'settings.tabs.diagnostics' },
   { key: 'whatsNew', labelKey: 'settings.tabs.whatsNew' },
 ]
 
 const { t } = useI18n()
 // Глубокая ссылка `?tab=privateKey` (напоминание о бэкапе и т.п.).
 const route = useRoute()
+const router = useRouter()
+// Ноды и сеть переехали из настроек в «Блокчейн-обозреватель».
+if (route.query.tab === 'blockExplorer' || route.query.tab === 'diagnostics') {
+  void router.replace({ name: 'explorer-network' })
+}
 const tabFromQuery = SETTINGS_TABS.find((tab) => tab.key === route.query.tab)?.key
 const activeTab = ref<T_SettingsTabKey>(tabFromQuery ?? 'notifications')
 

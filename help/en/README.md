@@ -89,7 +89,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Your own mini app](mini-apps-dev.md)
 - [Network and nodes](network.md)
   - [Tor](tor.md)
-  - [Block explorer](explorer.md)
+  - [Blockchain explorer](explorer.md)
 - [Blockchain and your own node](blockchain.md)
   - [How the blockchain works](blockchain-basics.md)
   - [Network rules and upgrades](blockchain-rules.md)

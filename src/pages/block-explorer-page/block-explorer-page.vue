@@ -1,30 +1,7 @@
 <template>
   <SC_ExplorerWork>
     <SC_ExplorerPage>
-      <SC_ExplorerHeader>
-        <SC_ExplorerTitleRow>
-          <SC_ExplorerTitle>{{ t('explorerPage.mainTitle') }}</SC_ExplorerTitle>
-          <SC_LiveBadge
-            :class="{ active: wsConnected }"
-            :title="
-              wsConnected ? t('explorerPage.liveTooltipOn') : t('explorerPage.liveTooltipOff')
-            "
-          >
-            <SC_LiveDot :class="{ active: wsConnected }" />
-            {{ wsConnected ? t('explorerPage.live') : t('explorerPage.offline') }}
-          </SC_LiveBadge>
-        </SC_ExplorerTitleRow>
-        <SC_ExplorerSubtitle>
-          {{
-            t('explorerPage.mainSubtitle', {
-              chain: chainLabel,
-              height: tipHeightLabel,
-              age: tipAgeLabel,
-            })
-          }}
-        </SC_ExplorerSubtitle>
-        <ExplorerSearch />
-      </SC_ExplorerHeader>
+      <ExplorerHeader />
 
       <SC_ExplorerStatsRow>
         <SC_StatCard>
@@ -120,7 +97,7 @@
         <SC_SectionCard>
           <SC_SectionHeader>
             <SC_SectionTitle>{{ t('explorerPage.sectionNetworkInfo') }}</SC_SectionTitle>
-            <RouterLink v-slot="{ navigate, href }" custom :to="{ name: 'explorer-peers' }">
+            <RouterLink v-slot="{ navigate, href }" custom :to="{ name: 'explorer-network' }">
               <SC_SectionLink :href="href" @click="navigate">
                 {{ t('explorerPage.linkPeers') }}
               </SC_SectionLink>
@@ -166,8 +143,7 @@ import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { useNodeInfo, useCoinInfo, useLastBlocks } from '@/composables/use-block-explorer-queries'
-import { useExplorerWsUpdates } from '@/composables/use-explorer-ws-updates'
-import ExplorerSearch from './components/explorer-search/explorer-search.vue'
+import ExplorerHeader from './components/explorer-header/explorer-header.vue'
 import NetworkStatsChart from './components/network-stats-chart/network-stats-chart.vue'
 import TopAddressesCard from './components/top-addresses/top-addresses-card.vue'
 import HashLink from './components/shared/hash-link.vue'
@@ -182,12 +158,6 @@ import {
 import {
   SC_ExplorerWork,
   SC_ExplorerPage,
-  SC_ExplorerHeader,
-  SC_ExplorerTitleRow,
-  SC_ExplorerTitle,
-  SC_LiveBadge,
-  SC_LiveDot,
-  SC_ExplorerSubtitle,
   SC_ExplorerGrid,
   SC_ExplorerStatsRow,
   SC_StatCard,
@@ -213,8 +183,6 @@ const { t } = useI18n()
 
 // Технический placeholder (em-dash) — не локализуется.
 const EM_DASH = '—'
-
-const { isConnected: wsConnected } = useExplorerWsUpdates()
 
 const { data: nodeInfo, isLoading: nodeInfoLoading, error: nodeInfoError } = useNodeInfo()
 const { data: coinInfo } = useCoinInfo()
@@ -249,11 +217,6 @@ const tipTime = computed(() => nodeInfoData.value?.lastblock?.time ?? 0)
 const tipNtxLabel = computed(() => {
   const n = nodeInfoData.value?.lastblock?.ntx
   return n !== undefined ? t('explorerPage.txCount', { n }) : EM_DASH
-})
-
-const tipAgeLabel = computed(() => {
-  const tm = tipTime.value
-  return tm > 0 ? formatRelTime(tm, now.value) : EM_DASH
 })
 
 const chainLabel = computed(() => {

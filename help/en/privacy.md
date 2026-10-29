@@ -8,7 +8,7 @@ What on Bastyon is public forever, what is encrypted, what stays on your device,
 
 ## Public and permanent
 
-Everything recorded on the [blockchain](glossary.md#blockchain) is visible to everyone, including in the [block explorer](explorer.md):
+Everything recorded on the [blockchain](glossary.md#blockchain) is visible to everyone, including in the [blockchain explorer](explorer.md):
 
 - posts, articles, comments and their earlier versions;
 - ratings of posts and comments — who rated what and how;

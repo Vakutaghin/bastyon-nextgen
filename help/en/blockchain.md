@@ -28,7 +28,7 @@ The Bastyon app works without a node of your own: it connects to the network's n
 - [Tips from node operators](node-tips.md) — what you only learn in practice.
 
 > [!NOTE]
-> The figures in these articles — block height, blockchain size, stake weight — were taken at the end of October 2026. The network grows, so check them against the [block explorer](explorer.md) and the [pocketnet.core releases page](https://github.com/pocketnetteam/pocketnet.core/releases).
+> The figures in these articles — block height, blockchain size, stake weight — were taken at the end of October 2026. The network grows, so check them against the [blockchain explorer](explorer.md) and the [pocketnet.core releases page](https://github.com/pocketnetteam/pocketnet.core/releases).
 
 ## Official documentation
 
@@ -38,4 +38,4 @@ The Bastyon team has its own node guide — the [Full Node Guide](https://docs.b
 
 - [How the network works](how-bastyon-works.md)
 - [Network and nodes](network.md)
-- [Block explorer](explorer.md)
+- [Blockchain explorer](explorer.md)

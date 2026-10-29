@@ -32,17 +32,17 @@ The chat list and the messages loaded before are visible even without a connecti
 
 ## The explorer
 
-If a node is pinned in the [block explorer](explorer.md) and it does not answer, you see **“Node unavailable”**. Press **“Reset node and retry”** — the explorer goes back to the same node as the rest of the app.
+If a proxy is pinned in the [blockchain explorer](explorer.md) and it does not answer, you see **“Node unavailable”**. Press **“Reset node and retry”** — the explorer goes back to the same proxy as the rest of the app.
 
-## What to check in Diagnostics
+## What to check in the explorer
 
-**“Settings”** → **“Diagnostics”**:
+**“Blockchain explorer”** → the **“Network”** tab → **“Connection and proxies”**:
 
-- **“Online”** — “No” means the device has no internet at all;
-- **“Handling node”** — which node the app is connected to; a dash means none;
-- **“Last block time”** — if it lags far behind, the node has fallen behind the network, and fresh posts and transfers will show up late.
+- **“Device”** — **“No internet”** means the device has no connection at all;
+- **“Proxy”** and **“Node”** — which proxy and node the last answer came through, and how long it took; a dash means no answers yet;
+- below — which Bastyon proxies respond: the **“Build the network map”** button checks them.
 
-These lines come in handy if you write to the developers — see [Reporting a bug](report-bug.md).
+The height of the last block and when it came out are in the explorer header. If the block is old, the node has fallen behind the network, and fresh posts and transfers will show up late. These details come in handy if you write to the developers — see [Reporting a bug](report-bug.md).
 
 ## See also
 

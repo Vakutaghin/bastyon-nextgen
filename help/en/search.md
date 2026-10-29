@@ -25,7 +25,7 @@ Search covers the whole network, in any language. If nothing is found, try anoth
 
 ## Blockchain
 
-If you type a block number, a block hash, a transaction ID or a wallet address, the suggestions get a **“Block explorer”** section: **“Open block”**, **“Open transaction”** or **“Open address”**. More in [Block explorer](explorer.md).
+If you type a block number, a block hash, a transaction ID or a wallet address, the suggestions get a **“Blockchain explorer”** section: **“Open block”**, **“Open transaction”** or **“Open address”**. More in [Blockchain explorer](explorer.md).
 
 ## History
 
@@ -37,4 +37,4 @@ The history is stored only on this device, separately for each account, and is r
 
 - [Categories, tags and sorting](feed-filters.md)
 - [Profile](profile.md)
-- [Block explorer](explorer.md)
+- [Blockchain explorer](explorer.md)

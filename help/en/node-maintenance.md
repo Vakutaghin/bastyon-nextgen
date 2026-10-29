@@ -75,7 +75,7 @@ Check the path to `pocketcoind` with `which pocketcoind`. Then run `sudo systemc
 
 A node that has quietly crashed or got stuck brings no rewards for weeks, and you find out last. Check at least once a day — better with a scheduled script:
 
-- **Height.** `pocketcoin-cli getblockcount` should match the [block explorer](explorer.md) or lag by a block or two.
+- **Height.** `pocketcoin-cli getblockcount` should match the [blockchain explorer](explorer.md) or lag by a block or two.
 - **Staking.** `pocketcoin-cli getstakinginfo` — `staking: true`.
 - **Peers.** `pocketcoin-cli getconnectioncount` — above zero, ideally ten or more.
 - **Disk.** `df -h` — the blockchain grows, and space runs out unnoticed.

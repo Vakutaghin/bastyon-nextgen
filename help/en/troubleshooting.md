@@ -12,7 +12,7 @@ What to do when something does not work: the connection, actions on the network,
 2. If [Tor](tor.md) is on, try turning it off: it is often the cause.
 3. Restart the app.
 4. Check for a new version — the bug may already be fixed, see [Updates](updates.md).
-5. Look at **“Settings”** → **“Diagnostics”**: it shows whether there is a connection and which node the app is connected to — see [Network and nodes](network.md).
+5. Look at **“Blockchain explorer”** → the **“Network”** tab → **“Connection and proxies”**: it shows whether there is a connection and which proxy and node your requests go through — see [Network and nodes](network.md).
 
 ## What happened
 

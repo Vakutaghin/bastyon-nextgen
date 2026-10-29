@@ -188,7 +188,7 @@ test('продвижение поста: прогноз, сумма до 100 % �
   await expect(pending).toContainText('Пост для продвижения')
   await expect(pending).toContainText('10 PKOIN')
   await expect(pending.getByRole('button', { name: 'Перейти к посту' })).toBeVisible()
-  await expect(pending.getByRole('button', { name: 'В эксплорере' })).toBeVisible()
+  await expect(pending.getByRole('button', { name: 'В обозревателе' })).toBeVisible()
 
   // Транзакция в блоке: часы открыли снова — нода подтвердила, ожидание снято.
   await hourglass.click()

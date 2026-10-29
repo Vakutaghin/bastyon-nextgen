@@ -18,6 +18,7 @@ import { appFetch } from './fetch-strategies'
 import { retryWithBackoff, type ServerEndpoint } from './rpc-retry'
 import { orderedProxies } from './node-selector'
 import { signRpcParamsIfNeeded, signHttpDataIfNeeded } from './request-signing'
+import { hasRpcTrafficListeners, reportRpcTraffic, respondingNode } from './rpc-traffic'
 import type { T_RpcRequestParams, RpcRequestConfig, HttpRequestParams } from './types/request'
 
 // Re-exports — внешние модули продолжают импортировать всё из @/helpers/api/request.
@@ -33,9 +34,36 @@ export type {
 export { appFetch, matrixFetch, getTauriFetch } from './fetch-strategies'
 
 /**
- * Выполняет RPC запрос к одному конкретному серверу.
+ * Выполняет RPC запрос к одному конкретному серверу. Пока открыта схема сети,
+ * сообщает ей, какая нода ответила (rpc-traffic).
  */
 async function tryRpcRequest(
+  params: T_RpcRequestParams,
+  host: string,
+  port: number
+): Promise<unknown> {
+  if (!hasRpcTrafficListeners()) return requestRpc(params, host, port)
+  const startedAt = Date.now()
+  const report = (ok: boolean, response?: unknown) =>
+    reportRpcTraffic({
+      proxy: host,
+      node: respondingNode(response),
+      method: params.method,
+      pinned: !!params.options?.node,
+      ok,
+      ms: Date.now() - startedAt,
+    })
+  try {
+    const response = await requestRpc(params, host, port)
+    report(true, response)
+    return response
+  } catch (error) {
+    report(false)
+    throw error
+  }
+}
+
+async function requestRpc(
   params: T_RpcRequestParams,
   host: string,
   port: number

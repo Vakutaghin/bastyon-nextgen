@@ -52,7 +52,7 @@ The author of a post can delete other people’s comments under it — that is h
 > [!NOTE]
 > A deletion is also a blockchain record: it asks apps not to show the comment. The text itself stays in the blockchain’s history — see [Privacy: what others can see](privacy.md).
 
-The menu of any published comment, yours or someone else’s, has **“On blockchain”**: its transaction, when it was written and edited, coins to the post author, votes — see [Block explorer](explorer.md#on-blockchain-without-leaving-the-feed).
+The menu of any published comment, yours or someone else’s, has **“On blockchain”**: its transaction, when it was written and edited, coins to the post author, votes — see [Blockchain explorer](explorer.md#on-blockchain-without-leaving-the-feed).
 
 ## Rating a comment
 

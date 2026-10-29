@@ -265,7 +265,7 @@ test('модалка не отбрасывает ленту наверх (окн
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore)
 })
 
-test('«Открыть в блок-эксплорере» уводит на страницу транзакции и закрывает окно', async ({
+test('«Открыть в блокчейн-обозревателе» уводит на страницу транзакции и закрывает окно', async ({
   page,
 }) => {
   test.setTimeout(90_000)
@@ -277,7 +277,7 @@ test('«Открыть в блок-эксплорере» уводит на ст
 
   const dialog = page.getByRole('dialog', { name: /В блокчейне/ })
   await expect(dialog).toContainText('Правок: 2')
-  await dialog.getByRole('link', { name: 'Открыть в блок-эксплорере' }).click()
+  await dialog.getByRole('link', { name: 'Открыть в блокчейн-обозревателе' }).click()
   await expect(page).toHaveURL(new RegExp(`/explorer/tx/${TARGET}$`))
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })

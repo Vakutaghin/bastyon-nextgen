@@ -67,22 +67,18 @@ Under each module you can see how much space it takes and its version. Modules u
 
 The recovery phrase and account key, checking that the phrase is written down, and protection on this device — see [Recovery phrase and private key](recovery-phrase.md) and [Protection on this device](device-protection.md).
 
-## Block Explorer
-
-Which node the explorer asks — see [Block explorer](explorer.md).
-
 ## Blocked users and permissions
 
 - **“Blocked users”** — whom you have blocked, see [Blocking](blocking.md).
 - **“App permissions”** — what you allowed mini apps, see [Mini app permissions](mini-app-permissions.md).
 
-## Diagnostics
-
-The app version and build, the update check, the connection and the node the app is connected to — see [Network and nodes](network.md). If you are reporting a problem, include these lines: they make it easier to see what happened — see [Reporting a bug](report-bug.md).
-
 ## What’s new
 
-The changes in every version of the app, newest first. They are also in the help — see [Version history](releases.md).
+At the top are the app version, where it is installed, and the **“Check”** button: whether there is a new version, see [Updates](updates.md). Below are the changes in every version of the app, newest first. They are also in the help — see [Version history](releases.md).
+
+## Network and connection
+
+Proxies, nodes and the path of your requests are not in the settings but in the **“Blockchain explorer”**, on the **“Network”** tab. The proxy for the explorer is chosen there too — see [Blockchain explorer](explorer.md#network-the-node-map).
 
 ## See also
 

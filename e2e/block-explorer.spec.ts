@@ -1,14 +1,14 @@
 import { test, expect, type Page } from '@playwright/test'
 
 /**
- * Smoke-тесты блок-эксплорера.
+ * Smoke-тесты блокчейн-обозревателя.
  *
  * Стратегия: тесты используют реальные ноды Pocketnet (см. servers.json), как и
  * приложение в проде. Никаких моков сети — это «golden path» проверка, чтобы
  * убедиться, что 4 базовых маршрута действительно открываются и рендерятся.
  *
  * Если конкретная нода/RPC-метод упадёт, тест ожидаемо упадёт, и это правильно —
- * нам нужно знать, что эксплорер сломан.
+ * нам нужно знать, что обозреватель сломан.
  *
  * Все таймауты длинные: первая загрузка тянет код-сплит, потом ходит к ноде.
  */
@@ -28,8 +28,10 @@ test.describe('Block explorer routes', () => {
     await page.goto('/explorer')
     await waitForAppMount(page)
 
-    // Заголовок эксплорера.
-    await expect(page.getByText('Блок-эксплорер Pocketnet')).toBeVisible({ timeout: 15_000 })
+    // Заголовок обозревателя.
+    await expect(page.getByRole('heading', { name: 'Блокчейн-обозреватель' })).toBeVisible({
+      timeout: 15_000,
+    })
     // Поле поиска.
     const search = page.getByPlaceholder('Хеш блока, txid, адрес или высота')
     await expect(search).toBeVisible()
@@ -50,8 +52,8 @@ test.describe('Block explorer routes', () => {
     await page.getByRole('button', { name: 'Открыть' }).click()
 
     await page.waitForURL(/\/explorer\/block\/1$/, { timeout: 15_000 })
-    // Breadcrumb «Эксплорер / Блок».
-    await expect(page.getByText('Эксплорер').first()).toBeVisible()
+    // Хлебные крошки «Блокчейн-обозреватель / Блок».
+    await expect(page.getByText('Блокчейн-обозреватель').first()).toBeVisible()
     // Заголовок «Блок #1» (genesis-блок Pocketnet) — ждём загрузки данных.
     await expect(page.getByText('#1', { exact: false })).toBeVisible({ timeout: 30_000 })
   })
@@ -75,7 +77,7 @@ test.describe('Block explorer routes', () => {
     await waitForAppMount(page)
 
     // Breadcrumb всегда виден.
-    await expect(page.getByText('Эксплорер').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Блокчейн-обозреватель').first()).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('Транзакция').first()).toBeVisible()
   })
 
@@ -88,7 +90,7 @@ test.describe('Block explorer routes', () => {
     await page.goto(`/explorer/address/${sampleAddress}`)
     await waitForAppMount(page)
 
-    await expect(page.getByText('Эксплорер').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Блокчейн-обозреватель').first()).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('Баланс').first()).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText('Транзакции', { exact: true }).first()).toBeVisible()
     // Список транзакций адреса не пуст: до 22.10.2026 запрос `[адрес, -1, N]`

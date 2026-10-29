@@ -89,7 +89,7 @@ A subscription doesn’t renew itself and never charges your wallet: when the te
 ## Good to know
 
 > [!IMPORTANT]
-> A paid subscription is not encryption. The text of the post sits in the blockchain in the open; apps hide it. Anyone who looks at the record in the [block explorer](explorer.md) or in an app that doesn’t check subscriptions can read the post.
+> A paid subscription is not encryption. The text of the post sits in the blockchain in the open; apps hide it. Anyone who looks at the record in the [blockchain explorer](explorer.md) or in an app that doesn’t check subscriptions can read the post.
 
 - If the author turned paid subscriptions off, their posts for paid subscribers are open to all their followers.
 - If the author never set a price, you can’t subscribe to them, and their posts for paid subscribers stay closed.

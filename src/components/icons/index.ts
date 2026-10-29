@@ -84,6 +84,7 @@ import {
   MessagesSquare,
   Mic,
   Minimize,
+  Network,
   Minus,
   Monitor,
   Moon,
@@ -131,6 +132,8 @@ import {
   X,
   Zap,
   ZoomIn,
+  ZoomOut,
+  Scan,
   ChartColumn,
   Music,
   Rows3,
@@ -197,6 +200,7 @@ function lucideIcon(
   return Wrapped
 }
 
+export const ApartmentOutlined = lucideIcon('ApartmentOutlined', Network)
 export const AppstoreOutlined = lucideIcon('AppstoreOutlined', LayoutGrid)
 export const ArrowDownOutlined = lucideIcon('ArrowDownOutlined', ArrowDown)
 export const ArrowUpOutlined = lucideIcon('ArrowUpOutlined', ArrowUp)
@@ -298,6 +302,9 @@ export const WalletOutlined = lucideIcon('WalletOutlined', Wallet)
 export const WarningFilled = lucideIcon('WarningFilled', TriangleAlert, 'soft')
 export const WarningOutlined = lucideIcon('WarningOutlined', TriangleAlert)
 export const ZoomInOutlined = lucideIcon('ZoomInOutlined', ZoomIn)
+export const ZoomOutOutlined = lucideIcon('ZoomOutOutlined', ZoomOut)
+/** Вписать в окно — схема сети целиком. */
+export const FitViewIcon = lucideIcon('FitViewIcon', Scan)
 
 /** Мессенджер: раньше — svg-картинки, чёрные и в тёмной теме. */
 export const ArrowLeftIcon = lucideIcon('ArrowLeftIcon', ArrowLeft)

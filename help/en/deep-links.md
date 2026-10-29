@@ -16,7 +16,7 @@ Links starting with `bastyon://` lead straight into the app. The old `pocketnet:
 | `bastyon://index?v=…` | a video |
 | `bastyon://name` or `bastyon://profile?address=…` | a profile |
 | `bastyon://application?id=…` | a [mini app](mini-apps.md) |
-| `bastyon://i?stx=…` | a transfer in the [block explorer](explorer.md) — the previous Bastyon app marks transfers in a chat this way |
+| `bastyon://i?stx=…` | a transfer in the [blockchain explorer](explorer.md) — the previous Bastyon app marks transfers in a chat this way |
 | `bastyon://wallets`, `bastyon://settings`, `bastyon://help` and other sections | that section of the app |
 
 Links to posts and profiles on bastyon.com — `https://bastyon.com/post?s=…` — are understood the same way.
