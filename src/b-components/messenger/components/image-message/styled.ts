@@ -9,8 +9,9 @@ export const SC_ImageMessage = styled.div`
 
 export const SC_ImageFrame = styled('div', { aspect: String, isLocal: Boolean })`
   position: relative;
-  width: 100%;
-  max-width: min(280px, 100%);
+  /* Ширина, а не 100%: пузырь сжимается по содержимому (см. frameStyle). */
+  width: 280px;
+  max-width: 100%;
   aspect-ratio: ${(p) => p.aspect || '4 / 3'};
   background: var(--color-bg-secondary);
   border-radius: var(--ui-radius-lg);

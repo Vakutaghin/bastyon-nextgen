@@ -11,6 +11,7 @@
         :src="resolvedSrc"
         :alt="alt"
         loading="lazy"
+        @load="onImageLoad"
         @error="onImageError"
       />
       <SC_Spinner v-else-if="isLoading" />
@@ -70,23 +71,27 @@ const uploadProgress = computed(() => {
   return typeof p === 'number' ? p : null
 })
 
-const w = computed(() => Number(props.message.info?.w) || 0)
-const h = computed(() => Number(props.message.info?.h) || 0)
+const MAX_WIDTH = 280
 
-const aspectRatio = computed(() => {
-  if (w.value > 0 && h.value > 0) return `${w.value} / ${h.value}`
-  return '4 / 3'
+/** Размер у загруженной картинки — когда его нет в сообщении (старые клиенты не шлют). */
+const loadedSize = ref<{ w: number; h: number } | null>(null)
+
+const size = computed<{ w: number; h: number } | null>(() => {
+  const w = Number(props.message.info?.w) || 0
+  const h = Number(props.message.info?.h) || 0
+  if (w > 0 && h > 0) return { w, h }
+  return loadedSize.value
 })
 
-const frameStyle = computed(() => {
-  if (w.value > 0 && h.value > 0) {
-    // max-width (а не width): даём картинке расти до собственной ширины оригинала,
-    // но клампим до 280px и не позволяем вылезать за bubble (max-width: 100% в styled).
-    const maxW = Math.min(w.value, 280)
-    return { maxWidth: `${maxW}px` }
-  }
-  return {}
-})
+const aspectRatio = computed(() => (size.value ? `${size.value.w} / ${size.value.h}` : '4 / 3'))
+
+// Ширина рамки задана сразу, до загрузки: пузырь сообщения сжимается по
+// содержимому, и с одной лишь max-width рамка, пока картинка качается и
+// расшифровывается, была шириной со спиннер, а потом вырастала. За пузырь
+// не вылезает — max-width: 100% в styled.
+const frameStyle = computed(() =>
+  size.value ? { width: `${Math.min(size.value.w, MAX_WIDTH)}px` } : {}
+)
 
 const alt = computed(() => props.message.info?.name || 'image')
 
@@ -130,6 +135,14 @@ const ensureSrc = async () => {
   }
 }
 
+const onImageLoad = (e: Event) => {
+  if (size.value) return
+  const img = e.target as HTMLImageElement
+  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+    loadedSize.value = { w: img.naturalWidth, h: img.naturalHeight }
+  }
+}
+
 const onImageError = () => {
   decryptFailed.value = true
 }
@@ -162,6 +175,7 @@ watch(
   () => props.message.id,
   () => {
     resolvedSrc.value = null
+    loadedSize.value = null
     decryptFailed.value = false
     ensureSrc()
   },

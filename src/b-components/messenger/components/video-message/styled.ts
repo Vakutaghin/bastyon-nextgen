@@ -9,8 +9,10 @@ export const SC_VideoMessage = styled.div`
 
 export const SC_VideoFrame = styled('div', { aspect: String, isLocal: Boolean })`
   position: relative;
-  width: 100%;
-  max-width: min(320px, 100%);
+  /* Ширина, а не 100%: пузырь сжимается по содержимому, и без размера в
+     сообщении рамка была шириной с кнопку, пока не придёт обложка. */
+  width: 320px;
+  max-width: 100%;
   aspect-ratio: ${(p) => p.aspect || '16 / 9'};
   background: var(--color-black);
   border-radius: var(--ui-radius-lg);
