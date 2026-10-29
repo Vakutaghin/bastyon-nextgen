@@ -1,7 +1,7 @@
 <template>
   <SC_Card :class="{ current }" data-testid="video-card">
-    <router-link v-slot="{ href, navigate }" :to="to" custom>
-      <SC_ThumbLink :href="href" :aria-label="title" @click="onOpen($event, navigate)">
+    <router-link v-slot="{ href }" :to="to" custom>
+      <SC_ThumbLink :href="href" :aria-label="title" @click="onOpen">
         <img v-if="thumbSrc" :src="thumbSrc" alt="" loading="lazy" @error="onThumbError" />
         <SC_ThumbFallback v-else><PlayCircleOutlined /></SC_ThumbFallback>
         <SC_Duration v-if="duration">{{ duration }}</SC_Duration>
@@ -14,8 +14,8 @@
         <Avatar :src="avatar" :alt="artist" :fallback-text="artist" :size="32" />
       </router-link>
       <SC_Text>
-        <router-link v-slot="{ href, navigate }" :to="to" custom>
-          <SC_Title :href="href" :title="title" @click="onOpen($event, navigate)">
+        <router-link v-slot="{ href }" :to="to" custom>
+          <SC_Title :href="href" :title="title" @click="onOpen">
             {{ title || t('media.untitled') }}
           </SC_Title>
         </router-link>
@@ -29,8 +29,8 @@
 
 <script setup lang="ts">
 // Карточка ролика в сетке раздела «Видео», профиля и плейлиста: превью,
-// длительность, название, автор, просмотры и дата. Нажатие открывает пост —
-// или, если задан `@play`, запускает очередь.
+// длительность, название, автор, просмотры и дата. Нажатие открывает окно
+// поста, где ролик сразу играет, — или, если задан `@play`, запускает очередь.
 
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -45,6 +45,7 @@ import {
   postId,
 } from '@/services/media/media-post'
 import { useThumbnailFallback } from '@/composables/use-thumbnail-fallback'
+import { useModalStore } from '@/stores/modal-store'
 import type { MediaInfo } from '@/services/media/media-info'
 import type { AdaptedPost } from '@/types/adapted-post'
 import MediaItemMenu from '../media-item-menu/media-item-menu.vue'
@@ -74,6 +75,7 @@ const props = defineProps<{
 const emit = defineEmits<{ play: [] }>()
 
 const { t } = useI18n()
+const modalStore = useModalStore()
 
 const to = computed(() => `/post/${postId(props.post)}`)
 const title = computed(() => mediaTitle(props.post))
@@ -97,12 +99,21 @@ const meta = computed(() => {
   return parts.join(' · ')
 })
 
-/** Модификаторы — как у ссылки (новая вкладка); обычный клик — очередь, если её ждут. */
-function onOpen(e: MouseEvent, navigate: (e?: MouseEvent) => unknown): void {
+/**
+ * Модификаторы — как у ссылки (новая вкладка); обычный клик — очередь, если её
+ * ждут, иначе окно поста: ролик играет сразу, под ним текст и комментарии.
+ */
+function onOpen(e: MouseEvent): void {
   if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
   e.preventDefault()
   // Родитель запустит очередь и сам откроет пост.
   if (props.playable) emit('play')
-  else void navigate(e)
+  else {
+    // Окно поста принимает и адаптированный пост ленты (как post-embed), тип у него сырой.
+    modalStore.openPostModal(
+      props.post as unknown as Parameters<typeof modalStore.openPostModal>[0],
+      { autoplay: true }
+    )
+  }
 }
 </script>

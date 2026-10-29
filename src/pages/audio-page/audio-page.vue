@@ -27,43 +27,49 @@
         </router-link>
       </SC_Tabs>
 
-      <template v-if="query">
-        <SC_Note>{{ t('audioSection.searchNote') }}</SC_Note>
-        <TrackList :posts="feed.posts.value" :info="feed.info.value" :source="searchSource" />
-        <MediaFeedStatus
+      <template v-if="feedVisible">
+        <SC_FeedBar>
+          <SC_Note v-if="query">{{ t('audioSection.searchNote') }}</SC_Note>
+          <SC_Chips v-else-if="tab === 'home'">
+            <SC_Chip
+              v-for="option in AUDIO_RUBRICS"
+              :key="option"
+              type="button"
+              :class="{ active: rubric === option }"
+              :aria-pressed="rubric === option"
+              @click="rubric = option"
+            >
+              {{ t(`audioSection.rubrics.${option}`) }}
+            </SC_Chip>
+          </SC_Chips>
+          <MediaViewSwitch v-model="view" kind="audio" class="view" />
+        </SC_FeedBar>
+        <MediaPostList
+          v-if="view === 'posts'"
+          :posts="feed.posts.value"
           :loading="feed.loading.value"
           :error="feed.error.value"
           :has-more="feed.hasMore.value"
-          :empty="!feed.loading.value && !feed.error.value && !feed.posts.value.length"
-          :empty-text="t('audioSection.nothingFound')"
+          :empty-text="emptyText"
           @more="feed.loadMore"
           @retry="feed.reload"
         />
-      </template>
-
-      <template v-else-if="tab === 'home' || tab === 'subscriptions'">
-        <SC_Chips v-if="tab === 'home'">
-          <SC_Chip
-            v-for="option in AUDIO_RUBRICS"
-            :key="option"
-            type="button"
-            :class="{ active: rubric === option }"
-            :aria-pressed="rubric === option"
-            @click="rubric = option"
-          >
-            {{ t(`audioSection.rubrics.${option}`) }}
-          </SC_Chip>
-        </SC_Chips>
-        <TrackList :posts="feed.posts.value" :info="feed.info.value" :source="feedSource" />
-        <MediaFeedStatus
-          :loading="feed.loading.value"
-          :error="feed.error.value"
-          :has-more="feed.hasMore.value"
-          :empty="!feed.loading.value && !feed.error.value && !feed.posts.value.length"
-          :empty-text="tab === 'subscriptions' ? t('audioSection.noSubscriptions') : undefined"
-          @more="feed.loadMore"
-          @retry="feed.reload"
-        />
+        <template v-else>
+          <TrackList
+            :posts="feed.posts.value"
+            :info="feed.info.value"
+            :source="query ? searchSource : feedSource"
+          />
+          <MediaFeedStatus
+            :loading="feed.loading.value"
+            :error="feed.error.value"
+            :has-more="feed.hasMore.value"
+            :empty="!feed.loading.value && !feed.error.value && !feed.posts.value.length"
+            :empty-text="emptyText"
+            @more="feed.loadMore"
+            @retry="feed.reload"
+          />
+        </template>
       </template>
 
       <LibraryListView v-else-if="tab === 'music'" :list-id="MY_MUSIC" kind="audio" />
@@ -75,7 +81,8 @@
 <script setup lang="ts">
 // Раздел «Аудио», как музыка в ВК: рубрики по тегам, подписки, «Моя музыка»
 // (личный список), плейлисты и альбомы, поиск. Треки играет мини-плеер внизу
-// экрана — подряд, пока человек ходит по приложению.
+// экрана — подряд, пока человек ходит по приложению. Ленту можно смотреть
+// списком треков или постами, как главную; вид запоминается.
 
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -84,6 +91,8 @@ import { HeadphonesIcon } from '@/components/icons'
 import InputSearch from '@/components/input-search/input-search.vue'
 import TrackList from '@/b-components/media/track-list/track-list.vue'
 import MediaFeedStatus from '@/b-components/media/media-feed-status/media-feed-status.vue'
+import MediaPostList from '@/b-components/media/media-post-list/media-post-list.vue'
+import MediaViewSwitch from '@/b-components/media/media-view-switch/media-view-switch.vue'
 import LibraryListView from '@/b-components/media/library-list/library-list-view.vue'
 import MediaPlaylistsTab from '@/b-components/media/media-playlists-tab/media-playlists-tab.vue'
 import { useMediaFeed, type MediaFeedSource } from '@/composables/use-media-feed'
@@ -91,9 +100,11 @@ import { requireAuth } from '@/composables/use-auth-gate'
 import { useAuthStore } from '@/blockchain'
 import { MY_MUSIC } from '@/services/media-library/media-library-doc'
 import { AUDIO_RUBRICS, AUDIO_RUBRIC_TAGS, type AudioRubric } from '@/services/media/audio-rubrics'
+import { loadSectionView, saveSectionView } from '@/services/media/media-section-view'
 import {
   SC_Chip,
   SC_Chips,
+  SC_FeedBar,
   SC_Note,
   SC_SectionHead,
   SC_SectionPage,
@@ -151,6 +162,14 @@ const feedVisible = computed(
   () => !!query.value || tab.value === 'home' || tab.value === 'subscriptions'
 )
 const feed = useMediaFeed({ type: 'audio', source, query, tags, enabled: feedVisible })
+
+const view = ref(loadSectionView('audio'))
+watch(view, (v) => saveSectionView('audio', v))
+
+const emptyText = computed<string | undefined>(() => {
+  if (query.value) return t('audioSection.nothingFound')
+  return tab.value === 'subscriptions' ? t('audioSection.noSubscriptions') : undefined
+})
 
 const feedSource = computed(() => ({
   title:

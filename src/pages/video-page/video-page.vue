@@ -27,40 +27,41 @@
         </router-link>
       </SC_Tabs>
 
-      <template v-if="query">
-        <SC_Note>{{ t('videoSection.searchResults', { q: query }) }}</SC_Note>
-        <VideoGrid
+      <template v-if="feedVisible">
+        <SC_FeedBar>
+          <SC_Note v-if="query">{{ t('videoSection.searchResults', { q: query }) }}</SC_Note>
+          <SC_Chips v-else-if="tab === 'home'">
+            <SC_Chip
+              v-for="option in SORTS"
+              :key="option"
+              type="button"
+              :class="{ active: sort === option }"
+              :aria-pressed="sort === option"
+              @click="sort = option"
+            >
+              {{ t(`videoSection.sort.${option}`) }}
+            </SC_Chip>
+          </SC_Chips>
+          <MediaViewSwitch v-model="view" kind="video" class="view" />
+        </SC_FeedBar>
+        <MediaPostList
+          v-if="view === 'posts'"
           :posts="feed.posts.value"
-          :info="feed.info.value"
           :loading="feed.loading.value"
           :error="feed.error.value"
           :has-more="feed.hasMore.value"
-          :empty-text="t('videoSection.nothingFound')"
+          :empty-text="emptyText"
           @more="feed.loadMore"
           @retry="feed.reload"
         />
-      </template>
-
-      <template v-else-if="tab === 'home' || tab === 'subscriptions'">
-        <SC_Chips v-if="tab === 'home'">
-          <SC_Chip
-            v-for="option in SORTS"
-            :key="option"
-            type="button"
-            :class="{ active: sort === option }"
-            :aria-pressed="sort === option"
-            @click="sort = option"
-          >
-            {{ t(`videoSection.sort.${option}`) }}
-          </SC_Chip>
-        </SC_Chips>
         <VideoGrid
+          v-else
           :posts="feed.posts.value"
           :info="feed.info.value"
           :loading="feed.loading.value"
           :error="feed.error.value"
           :has-more="feed.hasMore.value"
-          :empty-text="tab === 'subscriptions' ? t('videoSection.noSubscriptions') : undefined"
+          :empty-text="emptyText"
           @more="feed.loadMore"
           @retry="feed.reload"
         />
@@ -77,7 +78,8 @@
 <script setup lang="ts">
 // Раздел «Видео», как в ВК: свежее и лучшее, подписки, плейлисты, сохранённое,
 // «Смотреть позже», загруженные (кабинет «Мои видео») и поиск по роликам.
-// Вкладка — в адресе (`/video/subscriptions`), поиск — в `?q=`.
+// Вкладка — в адресе (`/video/subscriptions`), поиск — в `?q=`. Ленту можно
+// смотреть сеткой или постами, как главную; вид запоминается.
 
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -85,15 +87,19 @@ import { useRoute, useRouter } from 'vue-router'
 import { PlayCircleOutlined } from '@/components/icons'
 import InputSearch from '@/components/input-search/input-search.vue'
 import VideoGrid from '@/b-components/media/video-grid/video-grid.vue'
+import MediaPostList from '@/b-components/media/media-post-list/media-post-list.vue'
+import MediaViewSwitch from '@/b-components/media/media-view-switch/media-view-switch.vue'
 import LibraryListView from '@/b-components/media/library-list/library-list-view.vue'
 import MediaPlaylistsTab from '@/b-components/media/media-playlists-tab/media-playlists-tab.vue'
 import { useMediaFeed, type MediaFeedSource } from '@/composables/use-media-feed'
 import { requireAuth } from '@/composables/use-auth-gate'
 import { useAuthStore } from '@/blockchain'
 import { SAVED_VIDEOS, WATCH_LATER } from '@/services/media-library/media-library-doc'
+import { loadSectionView, saveSectionView } from '@/services/media/media-section-view'
 import {
   SC_Chip,
   SC_Chips,
+  SC_FeedBar,
   SC_Note,
   SC_SectionHead,
   SC_SectionPage,
@@ -154,4 +160,12 @@ const feedVisible = computed(
   () => !!query.value || tab.value === 'home' || tab.value === 'subscriptions'
 )
 const feed = useMediaFeed({ type: 'video', source, query, enabled: feedVisible })
+
+const view = ref(loadSectionView('video'))
+watch(view, (v) => saveSectionView('video', v))
+
+const emptyText = computed<string | undefined>(() => {
+  if (query.value) return t('videoSection.nothingFound')
+  return tab.value === 'subscriptions' ? t('videoSection.noSubscriptions') : undefined
+})
 </script>

@@ -99,11 +99,29 @@ export const SC_Tabs = styled.nav`
   }
 `
 
+/** Над лентой раздела: сортировка, рубрики или подпись поиска — и вид справа. */
+export const SC_FeedBar = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  > :not(.view) {
+    flex: 1 1 auto;
+    min-width: 0;
+    align-self: center;
+    margin: 0;
+  }
+
+  .view {
+    margin-left: auto;
+  }
+`
+
 export const SC_Chips = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 20px;
 `
 
 export const SC_Chip = styled.button`

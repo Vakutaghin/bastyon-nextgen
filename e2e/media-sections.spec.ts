@@ -1,10 +1,12 @@
 import { createHash } from 'node:crypto'
 import { test, expect, type Page, type Route } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
 
 /**
  * Разделы «Видео» и «Аудио», мини-плеер и коллекции на подменной ноде: сетка
- * роликов, треки подряд в мини-плеере, плейлист старого клиента (без
+ * роликов и окно поста с играющим роликом, вид «Постами», треки подряд в
+ * мини-плеере, плейлист старого клиента (без
  * `contentTypes`) по своим элементам, ссылка `collection?c=` и новый плейлист
  * от кнопки «В плейлист» до транзакции `collection`. В сеть ничего не уходит.
  */
@@ -149,6 +151,60 @@ test('раздел «Видео»: только ролики, сеткой', asy
   // Прежняя ссылка на режим ленты ведёт в раздел.
   await page.goto('/?feedMode=audio')
   await expect(page).toHaveURL(/\/audio$/)
+})
+
+test('раздел «Видео»: ролик играет в окне поста с текстом', async ({ page }) => {
+  test.setTimeout(60_000)
+  await useMockNode(page, {
+    ...DATA,
+    posts: DATA.posts.map((p) =>
+      p.txid === VIDEO_1 ? { ...p, url: VIDEO_URL, message: 'Описание ролика' } : p
+    ),
+  })
+  await useMockPeerTube(page)
+  await open(page, '/video')
+  const card = page.getByTestId('video-card').filter({ hasText: 'Первый ролик' })
+  await card.getByRole('link', { name: 'Первый ролик' }).first().click()
+
+  const modal = page.locator('.ant-modal-content')
+  await expect(modal).toContainText('Описание ролика')
+  const video = modal.locator('video').first()
+  await expect
+    .poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime).catch(() => 0), {
+      timeout: 20_000,
+    })
+    .toBeGreaterThan(0.5)
+  // Окно поверх раздела: адрес и сетка на месте.
+  await expect(page).toHaveURL(/\/video$/)
+  await page.keyboard.press('Escape')
+  await expect(modal).toBeHidden()
+  await expect(page.getByTestId('video-grid')).toBeVisible()
+})
+
+test('вид «Постами»: у «Видео» и «Аудио» свой, запоминается', async ({ page }) => {
+  await useMockNode(page, DATA)
+  await open(page, '/video')
+  await expect(page.getByTestId('video-card')).toHaveCount(2)
+  await page.getByTestId('media-view-switch').getByRole('button', { name: 'Постами' }).click()
+  const posts = page.getByTestId('media-post-list').getByTestId('post-media')
+  await expect(posts).toHaveCount(2)
+  await expect(page.getByTestId('video-grid')).toHaveCount(0)
+  await expect(page.getByTestId('media-post-list')).not.toContainText('Первая песня')
+
+  await page.reload()
+  await expect(page.getByTestId('media-post-list').getByTestId('post-media')).toHaveCount(2)
+
+  // У «Аудио» вид свой: там по-прежнему список треков.
+  await page.goto('/audio')
+  await expect(page.getByTestId('track-row')).toHaveCount(2)
+  await page.getByTestId('media-view-switch').getByRole('button', { name: 'Постами' }).click()
+  await expect(page.getByTestId('media-post-list')).toContainText('Вторая песня')
+  await expect(page.getByTestId('track-row')).toHaveCount(0)
+  await page
+    .getByTestId('media-view-switch')
+    .getByRole('button', { name: 'Списком треков' })
+    .click()
+  await expect(page.getByTestId('track-row')).toHaveCount(2)
 })
 
 test('раздел «Аудио»: трек в мини-плеере, следующий, плеер живёт при переходах', async ({

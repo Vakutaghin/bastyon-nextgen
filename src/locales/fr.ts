@@ -3929,6 +3929,10 @@ export default {
     views: '{n} vue | {n} vues',
     listens: '{n} écoute | {n} écoutes',
     watching: '{n} spectateur en direct | {n} spectateurs en direct',
+    viewLabel: 'Affichage',
+    viewGrid: 'Grille',
+    viewTracks: 'Liste des pistes',
+    viewPosts: 'Publications',
   },
   library: {
     myLists: 'Mes listes',

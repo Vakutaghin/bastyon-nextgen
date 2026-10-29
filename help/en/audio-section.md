@@ -1,12 +1,12 @@
 ---
-keywords: [audio, music, audiobooks, podcasts, player, mini player, my music, album, queue, track search]
+keywords: [audio, music, audiobooks, podcasts, player, mini player, my music, album, queue, track search, posts, feed view]
 ---
 
 # The Audio section
 
 Bastyon music, audiobooks and podcasts: categories, My music, playlists and a player that keeps playing while you move around the app.
 
-The section opens with **“Audio”** in the left panel, on a phone — in the side menu. Tracks come as a list: cover, title, author and length.
+The section opens with **“Audio”** in the left panel, on a phone — in the side menu. Tracks come as a list: cover, title, author and length. The buttons on the right above the feed switch the view: **“Track list”** or **“Posts”** — whole posts, as in the main feed, with the player, text and comments. The view is remembered on this device.
 
 ## Tabs and categories
 

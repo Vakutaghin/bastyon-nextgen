@@ -151,6 +151,7 @@ import {
   BookmarkPlus,
   BookmarkCheck,
   Headphones,
+  Newspaper,
   SlidersHorizontal,
   Shapes,
   Hash,
@@ -375,6 +376,8 @@ export const WatchLaterIcon = lucideIcon('WatchLaterIcon', ClockPlus)
 export const SaveIcon = lucideIcon('SaveIcon', BookmarkPlus)
 export const SavedIcon = lucideIcon('SavedIcon', BookmarkCheck)
 export const HeadphonesIcon = lucideIcon('HeadphonesIcon', Headphones)
+/** Вид ленты раздела «постами», как главная лента. */
+export const PostsViewIcon = lucideIcon('PostsViewIcon', Newspaper)
 
 /** Блоки левой панели в «Шапке и панелях»: порядок и язык ленты, категории, теги. */
 export const FeedSettingsIcon = lucideIcon('FeedSettingsIcon', SlidersHorizontal)

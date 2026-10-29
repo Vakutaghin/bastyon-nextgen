@@ -3938,6 +3938,10 @@ export default {
     views: '{n} Aufruf | {n} Aufrufe',
     listens: '{n} Wiedergabe | {n} Wiedergaben',
     watching: '{n} schaut gerade zu | {n} schauen gerade zu',
+    viewLabel: 'Ansicht',
+    viewGrid: 'Kacheln',
+    viewTracks: 'Titelliste',
+    viewPosts: 'Beiträge',
   },
   library: {
     myLists: 'Meine Listen',

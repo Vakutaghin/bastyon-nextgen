@@ -3688,6 +3688,10 @@ export default {
     views: '{n} 次观看',
     listens: '{n} 次收听',
     watching: '{n} 人正在观看',
+    viewLabel: '视图',
+    viewGrid: '网格',
+    viewTracks: '曲目列表',
+    viewPosts: '帖子',
   },
   library: {
     myLists: '我的列表',

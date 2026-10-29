@@ -3905,6 +3905,10 @@ export default {
     views: '{n} visualización | {n} visualizaciones',
     listens: '{n} reproducción | {n} reproducciones',
     watching: '{n} viendo ahora | {n} viendo ahora',
+    viewLabel: 'Vista',
+    viewGrid: 'Cuadrícula',
+    viewTracks: 'Lista de pistas',
+    viewPosts: 'Publicaciones',
   },
   library: {
     myLists: 'Mis listas',

@@ -3828,6 +3828,10 @@ export default {
     views: '조회수 {n}회',
     listens: '재생 {n}회',
     watching: '{n}명 시청 중',
+    viewLabel: '보기',
+    viewGrid: '바둑판',
+    viewTracks: '트랙 목록',
+    viewPosts: '게시물',
   },
   library: {
     myLists: '내 목록',

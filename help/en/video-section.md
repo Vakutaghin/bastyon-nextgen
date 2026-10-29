@@ -1,12 +1,16 @@
 ---
-keywords: [video, video section, clips, playlists, watch later, saved, video search, subscriptions, up next]
+keywords: [video, video section, clips, playlists, watch later, saved, video search, subscriptions, up next, grid, posts, feed view]
 ---
 
 # The Video section
 
 Where to watch Bastyon videos: new and best, subscriptions, playlists, saved videos and search.
 
-The section opens with **“Video”** in the left panel, on a phone — in the side menu. Videos come as a grid: preview, length, title, author, number of views and date. Tap a video to open its post with the player — see [Watching videos](video-player.md).
+The section opens with **“Video”** in the left panel, on a phone — in the side menu. Videos come as a grid: preview, length, title, author, number of views and date. Tap a video to open its post in a window: the video starts right away, with the text, ratings and comments below. **“Open as a page”** in the window title opens the post as a page, with an address you can share. About the player — see [Watching videos](video-player.md).
+
+## Grid or posts
+
+The buttons on the right above the feed switch the view: **“Grid”** shows videos as tiles, **“Posts”** shows whole posts, as in the main feed, with the player, text and comments. The view is remembered on this device, separately for the Video and Audio sections.
 
 ## Tabs
 

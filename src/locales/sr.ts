@@ -3860,6 +3860,10 @@ export default {
     views: '{n} преглед | {n} прегледа | {n} прегледа',
     listens: '{n} слушање | {n} слушања | {n} слушања',
     watching: '{n} гледа сада | {n} гледају сада | {n} гледа сада',
+    viewLabel: 'Приказ',
+    viewGrid: 'Мрежа',
+    viewTracks: 'Списак нумера',
+    viewPosts: 'Објаве',
   },
   library: {
     myLists: 'Моје листе',

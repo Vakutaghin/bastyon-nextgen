@@ -3890,6 +3890,10 @@ export default {
     views: '{n} visualizzazione | {n} visualizzazioni',
     listens: '{n} ascolto | {n} ascolti',
     watching: '{n} spettatore ora | {n} spettatori ora',
+    viewLabel: 'Vista',
+    viewGrid: 'Griglia',
+    viewTracks: 'Elenco brani',
+    viewPosts: 'Post',
   },
   library: {
     myLists: 'Le mie liste',

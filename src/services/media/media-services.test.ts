@@ -1,4 +1,5 @@
-// Сведения о роликах, вид поста для разделов, места в аудиокнигах, поиск аудио.
+// Сведения о роликах, вид поста для разделов, вид ленты раздела, места в
+// аудиокнигах, поиск аудио.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -22,6 +23,7 @@ vi.mock('@/services/user-names', () => ({
 import { clearMediaInfoCache, fetchMediaInfo, thumbnailOf } from './media-info'
 import { formatDuration, mediaTitle, mediaTypeOf, toQueueItem } from './media-post'
 import { rememberPosition, savedPosition } from './audio-positions'
+import { loadSectionView, saveSectionView, SECTION_VIEW_KEYS } from './media-section-view'
 import { searchAudio } from './audio-search'
 import type { AdaptedPost } from '@/types/adapted-post'
 
@@ -104,6 +106,17 @@ describe('media-post', () => {
     expect(formatDuration(65)).toBe('1:05')
     expect(formatDuration(3723)).toBe('1:02:03')
     expect(formatDuration(0)).toBe('')
+  })
+})
+
+describe('media-section-view', () => {
+  it('у каждого раздела свой вид; чужое значение — сетка', () => {
+    expect(loadSectionView('video')).toBe('media')
+    saveSectionView('video', 'posts')
+    expect(loadSectionView('video')).toBe('posts')
+    expect(loadSectionView('audio')).toBe('media')
+    localStorage.setItem(SECTION_VIEW_KEYS.audio, 'table')
+    expect(loadSectionView('audio')).toBe('media')
   })
 })
 

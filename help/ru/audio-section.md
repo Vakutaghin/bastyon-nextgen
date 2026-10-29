@@ -1,13 +1,13 @@
 ---
-keywords: [аудио, музыка, аудиокниги, подкасты, плеер, мини-плеер, моя музыка, альбом, очередь, поиск треков]
-code: [src/pages/audio-page, src/b-components/media/mini-player, src/b-components/media/track-list, src/services/media/audio-engine.ts, src/services/media/audio-search.ts, src/services/media/audio-rubrics.ts]
+keywords: [аудио, музыка, аудиокниги, подкасты, плеер, мини-плеер, моя музыка, альбом, очередь, поиск треков, постами, вид ленты]
+code: [src/pages/audio-page, src/b-components/media/mini-player, src/b-components/media/track-list, src/b-components/media/media-view-switch, src/b-components/media/media-post-list, src/services/media/audio-engine.ts, src/services/media/audio-search.ts, src/services/media/audio-rubrics.ts]
 ---
 
 # Раздел «Аудио»
 
 Музыка, аудиокниги и подкасты Bastyon: рубрики, «Моя музыка», плейлисты и плеер, который играет, пока вы ходите по приложению.
 
-Раздел открывается пунктом **«Аудио»** в левой панели, на телефоне — в боковом меню. Треки идут списком: обложка, название, автор и длительность.
+Раздел открывается пунктом **«Аудио»** в левой панели, на телефоне — в боковом меню. Треки идут списком: обложка, название, автор и длительность. Кнопки справа над лентой переключают вид: **«Списком треков»** или **«Постами»** — посты целиком, как в главной ленте, с плеером, текстом и комментариями. Вид запоминается на этом устройстве.
 
 ## Вкладки и рубрики
 

@@ -3847,6 +3847,10 @@ export default {
     views: '{n} view | {n} views',
     listens: '{n} listen | {n} listens',
     watching: '{n} watching now | {n} watching now',
+    viewLabel: 'Feed view',
+    viewGrid: 'Grid',
+    viewTracks: 'Track list',
+    viewPosts: 'Posts',
   },
   library: {
     myLists: 'My lists',
