@@ -22,6 +22,7 @@ const h = vi.hoisted(() => {
     getRoom: vi.fn(() => null),
     getBaseUrl: () => '',
     addressToHex: (a: string) => Buffer.from(a).toString('hex'),
+    hexToAddress: (hex: string) => Buffer.from(hex, 'hex').toString(),
     stop: vi.fn(() => {
       matrix.client = null
     }),
@@ -30,7 +31,12 @@ const h = vi.hoisted(() => {
     on: vi.fn(),
     getAccountData: vi.fn((): unknown => undefined),
     setAccountData: vi.fn(async () => {}),
+    createDirectRoom: vi.fn(async (): Promise<string | null> => '!new:host'),
+    joinIfInvited: vi.fn(async () => {}),
   }
+  /** Синк принёс собеседника в новую комнату (MatrixService.waitForMember). */
+  const service = { waitForMember: vi.fn(async () => true) }
+  const toast = { error: vi.fn() }
   const auth = {
     isUserAuthenticated: true,
     address: 'PAlice' as string | null,
@@ -45,13 +51,14 @@ const h = vi.hoisted(() => {
   }
   /** Колбэк маппинга комнаты — тест может вклиниться в середину загрузки. */
   const onMapRoom = { fn: null as null | (() => void) }
-  return { matrix, auth, chat, profiles, onMapRoom }
+  return { matrix, service, toast, auth, chat, profiles, onMapRoom }
 })
 
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
 vi.mock('@/services/logger', () => ({ logger: { scope: () => ({ error: vi.fn() }) } }))
 vi.mock('@/blockchain', () => ({ useAuthStore: () => h.auth }))
-vi.mock('../services/matrix-service', () => ({ matrixService: h.matrix }))
+vi.mock('../services/matrix-service', () => ({ matrixService: h.matrix, MatrixService: h.service }))
+vi.mock('@/b-components/app-toast', () => ({ appToast: h.toast }))
 vi.mock('../room-helpers', () => ({
   findExistingRoomByAddress: vi.fn(() => null),
   getPartnerMatrixId: () => null,
@@ -86,6 +93,7 @@ function makeChat() {
     ensurePcryptoInitialized: vi.fn(),
     hydrateDecryptedCache: vi.fn(async () => {}),
     loadMessages: vi.fn(async () => {}),
+    sendMessage: vi.fn(async () => {}),
     // Как настоящий стор: при сбросе объект пользователя заменяется новым.
     reset: vi.fn(() => {
       h.chat.currentUser = { id: 'me', name: 'me', avatar: '' }
@@ -412,6 +420,49 @@ describe('messenger-store: «Начать чат» сразу после зап�
     vi.mocked(findExistingRoomByAddress).mockReturnValue(null)
     await store.openInviteWithAddress('PBob')
     expect(ui.inviteViewActive).toBe(true)
+  })
+})
+
+describe('messenger-store: первое сообщение новому собеседнику', () => {
+  const KEYS = Array.from({ length: 12 }, (_, i) => `key${i}`).join(',')
+
+  beforeEach(() => {
+    h.matrix.login.mockImplementation(async () => {
+      h.matrix.client = { getUserId: () => '@50416c696365:matrix.pocketnet.app' }
+      return true
+    })
+    h.profiles.userProfiles = { PBob: { name: 'Bob', k: KEYS } }
+    vi.mocked(findExistingRoomByAddress).mockReturnValue(null)
+  })
+
+  function startInvite() {
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    ui.syncState = 'SYNCING'
+    ui.showInvite('PBob')
+    return { store, ui }
+  }
+
+  it('сообщение уходит, когда собеседник уже в комнате', async () => {
+    const { store, ui } = startInvite()
+    await expect(store.sendToNewChat('Привет')).resolves.toBe(true)
+    expect(h.matrix.createDirectRoom).toHaveBeenCalledWith(
+      `@${Buffer.from('PBob').toString('hex')}:matrix.pocketnet.app`
+    )
+    expect(h.service.waitForMember).toHaveBeenCalledWith(
+      expect.any(Function),
+      `@${Buffer.from('PBob').toString('hex')}:matrix.pocketnet.app`
+    )
+    expect(h.chat.sendMessage).toHaveBeenCalledWith('!new:host', 'Привет')
+    expect(ui.activeChatId).toBe('!new:host')
+  })
+
+  it('собеседник так и не появился в комнате — не отправляем: ключ был бы только для себя', async () => {
+    h.service.waitForMember.mockResolvedValueOnce(false)
+    const { store } = startInvite()
+    await expect(store.sendToNewChat('Привет')).resolves.toBe(false)
+    expect(h.chat.sendMessage).not.toHaveBeenCalled()
+    expect(h.toast.error).toHaveBeenCalledWith({ message: 'messenger.startChatFailed' })
   })
 })
 

@@ -18,7 +18,7 @@ How to start a conversation, find a chat or a message, see a group’s members, 
 
 ## Starting a chat
 
-You start a conversation with someone from their profile — the **“Start chat”** button — or with the chat button next to their name in a post header. A card with the person opens: name, reputation, followers and following, and a field for the first message. The other person gets the chat only once you send it: a single press of the button used to leave them an empty chat. If they have not published their encryption keys yet, the app says so and the text stays in the field.
+You start a conversation with someone from their profile — the **“Start chat”** button — or with the chat button next to their name in a post header. A card with the person opens: name, reputation, followers and following, and a field for the first message. The other person gets the chat only once you send it: a single press of the button used to leave them an empty chat. If they have not published their encryption keys yet, the app says so and the text stays in the field. You can also write to someone who has never opened chats: the message waits for them. The first message goes out once the chat server confirms the other person is invited, usually within a second. If the server does not answer, the app says it could not create the chat, the text stays in the field, and you can send it again.
 
 The messenger has no people search of its own: find the person by name with [search](search.md).
 

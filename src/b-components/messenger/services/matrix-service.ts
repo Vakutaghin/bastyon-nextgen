@@ -283,8 +283,39 @@ export class MatrixService {
   }
 
   /**
+   * Ждёт, пока синк принесёт в комнату и наше вступление, и собеседника
+   * (приглашён или вступил); не дождался — false.
+   */
+  static async waitForMember(
+    getRoom: () =>
+      | {
+          getMyMembership?: () => string
+          getMember?: (userId: string) => { membership?: string } | null
+        }
+      | null
+      | undefined,
+    userId: string,
+    timeoutMs = 15_000,
+    stepMs = 100
+  ): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs
+    while (Date.now() < deadline) {
+      const room = getRoom()
+      const membership = room?.getMember?.(userId)?.membership
+      if (
+        room?.getMyMembership?.() === 'join' &&
+        (membership === 'invite' || membership === 'join')
+      )
+        return true
+      await new Promise((resolve) => setTimeout(resolve, stepMs))
+    }
+    return false
+  }
+
+  /**
    * Создаёт личный чат (запрос _matrix/client/v3/createRoom), как в старом bastyon-chat.
    * Комната появляется в списке чатов после синка; в store добавляется оптимистичный диалог сразу.
+   * id отдаётся, когда синк принёс приглашение собеседника (или через 15 с без него).
    */
   public async createDirectRoom(inviteeId: string): Promise<string | null> {
     if (!this.client) throw new Error('Client not initialized')
@@ -307,7 +338,13 @@ export class MatrixService {
       })
 
       const roomId = (res && (res.room_id || (res as { roomId?: string }).roomId)) || null
-      return typeof roomId === 'string' ? roomId : null
+      if (typeof roomId !== 'string') return null
+      // Синк может принести комнату посреди создания: имя и алиас уже есть,
+      // а приглашения собеседника ещё нет. Сообщение, отправленное в такую
+      // комнату, считалось групповым и шифровалось ключом для одного
+      // отправителя — собеседник первое сообщение не расшифровывал.
+      await MatrixService.waitForMember(() => this.client?.getRoom?.(roomId), inviteeId)
+      return roomId
     } catch (e) {
       // Алиас занят — значит комната с этим собеседником уже есть (её мог
       // создать legacy-клиент). Берём её вместо создания второй.

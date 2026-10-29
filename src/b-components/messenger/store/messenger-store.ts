@@ -626,6 +626,9 @@ export const useMessengerStore = defineStore('messenger', () => {
     return run
   }
 
+  const partnerMatrixId = (address: string): string =>
+    `@${matrixService.addressToHex(address).toLowerCase()}:${resolveMatrixHost()}`
+
   const startChatWithAddressInner = async (address: string): Promise<string | null> => {
     uiStore.lastTargetAddress = address
     try {
@@ -637,9 +640,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     await initMatrix()
     await waitForFirstSync()
 
-    const hex = matrixService.addressToHex(address).toLowerCase()
-    const host = resolveMatrixHost()
-    const partnerId = `@${hex}:${host}`
+    const partnerId = partnerMatrixId(address)
 
     let roomId = findExistingRoomByAddress(address)
     if (!roomId) {
@@ -699,8 +700,19 @@ export const useMessengerStore = defineStore('messenger', () => {
       appToast.error({ message: t('messenger.startChatFailed') })
       return false
     }
-    // Шифровать можно, когда синк принёс комнату с участниками.
-    await MatrixService.waitForJoin(() => matrixService.getRoom(roomId))
+    // Шифровать можно, когда синк принёс комнату с обоими участниками. Без
+    // собеседника в комнате сообщение ушло бы групповым, ключом для одного
+    // себя, и собеседник его не расшифровал бы. Не дождались — текст остаётся
+    // в поле, повтор найдёт уже созданную комнату.
+    await matrixService.joinIfInvited(roomId)
+    const partnerInRoom = await MatrixService.waitForMember(
+      () => matrixService.getRoom(roomId),
+      partnerMatrixId(address)
+    )
+    if (!partnerInRoom) {
+      appToast.error({ message: t('messenger.startChatFailed') })
+      return false
+    }
     switchToChatAndLoad(roomId)
     await sendMessage(roomId, text)
     return true

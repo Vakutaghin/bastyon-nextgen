@@ -153,11 +153,7 @@ test('копия у обоих, удаление чужого, стёртое с
   await enableArchive(a)
   await enableArchive(b)
 
-  // Первое сообщение нового чата у получателя сейчас не расшифровывается (ошибка
-  // не про копию, есть и в matrix-receipts.live) — проверяем на следующих.
   await openChatWith(a, bob!, true)
-  await send(a, 'Начало')
-  await expect(a.getByText('Начало')).toBeVisible({ timeout: 60_000 })
   await send(a, 'Раз')
   await expect(a.getByText('Раз')).toBeVisible({ timeout: 60_000 })
   await send(a, 'Два')
@@ -220,8 +216,8 @@ test('копия у обоих, удаление чужого, стёртое с
   const kept = a.locator('[class*="mine"]').filter({ hasText: 'Два' }).last()
   await expect(kept).toBeVisible({ timeout: 60_000 })
   await expect(kept.getByTestId('local-only-mark')).toBeVisible({ timeout: 60_000 })
-  // «Начало», «Два», «Три»: «Раз» Боб удалил ещё до чистки.
-  await expect(a.getByTestId('local-only-mark')).toHaveCount(3)
+  // «Два» и «Три»: «Раз» Боб удалил ещё до чистки.
+  await expect(a.getByTestId('local-only-mark')).toHaveCount(2)
   await expect(a.getByText('Раз')).toHaveCount(0)
   await expect(a.getByTestId('archive-divider')).toBeVisible()
 
