@@ -1256,6 +1256,9 @@ export default {
     qrHint: 'Téléversez une image de QR code ou scannez-le avec la caméra.',
     qrDecodeError: 'Impossible de lire un QR code dans l’image.',
     qrCameraError: 'Impossible d’accéder à la caméra.',
+    qrCameraDenied:
+      'Pas d’accès à la caméra. Autorisez-le pour l’application dans les réglages du téléphone.',
+    qrOpenSettings: 'Ouvrir les réglages',
     qrCameraUnavailable: 'Aucune caméra disponible sur cet appareil.',
     signInTitle: 'Connexion au compte',
     mnemonicOrKeyLabel: 'Phrase mnémonique ou clé privée',

@@ -30,6 +30,10 @@
     <SC_QrHint v-else>{{ t('auth.qrHint') }}</SC_QrHint>
 
     <SC_QrError v-if="errorMessage">{{ errorMessage }}</SC_QrError>
+    <!-- Отказ насовсем: системный диалог Android больше не появится. -->
+    <Button v-if="cameraDenied" size="small" @click="openAppSettings">
+      {{ t('auth.qrOpenSettings') }}
+    </Button>
   </SC_QrScanner>
 </template>
 
@@ -38,6 +42,7 @@ import { ref, onBeforeUnmount, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CameraOutlined, PictureOutlined } from '@/components/icons'
 import Button from '@/components/button/button.vue'
+import { canOpenAppSettings, isAccessDenied, openAppSettings } from '@/helpers/common/app-settings'
 import { readQRCode, decodeQRFromImageData } from '@/blockchain/utils/qr-code'
 import {
   SC_QrScanner,
@@ -66,6 +71,7 @@ const videoRef = ref<HTMLVideoElement | ComponentPublicInstance | null>(null)
 const cameraActive = ref(false)
 const busy = ref(false)
 const errorMessage = ref<string | null>(null)
+const cameraDenied = ref(false)
 
 function getVideoEl(): HTMLVideoElement | null {
   const v = videoRef.value
@@ -105,6 +111,7 @@ async function handleFileChange(event: Event): Promise<void> {
 
 async function startCamera(): Promise<void> {
   errorMessage.value = null
+  cameraDenied.value = false
   if (!navigator?.mediaDevices?.getUserMedia) {
     errorMessage.value = t('auth.qrCameraUnavailable')
     return
@@ -125,8 +132,9 @@ async function startCamera(): Promise<void> {
     await video.play()
     scanCanvas = document.createElement('canvas')
     rafId = requestAnimationFrame(scanFrame)
-  } catch {
-    errorMessage.value = t('auth.qrCameraError')
+  } catch (err) {
+    cameraDenied.value = isAccessDenied(err) && canOpenAppSettings()
+    errorMessage.value = t(cameraDenied.value ? 'auth.qrCameraDenied' : 'auth.qrCameraError')
     stopCamera()
   } finally {
     busy.value = false

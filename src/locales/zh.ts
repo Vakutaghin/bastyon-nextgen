@@ -1184,6 +1184,8 @@ export default {
     qrHint: '上传二维码图片，或用相机扫描。',
     qrDecodeError: '无法从图片中识别二维码。',
     qrCameraError: '无法访问相机。',
+    qrCameraDenied: '无法访问相机。请在手机设置中允许本应用使用相机。',
+    qrOpenSettings: '打开设置',
     qrCameraUnavailable: '此设备没有可用的相机。',
     signInTitle: '登录账户',
     mnemonicOrKeyLabel: '助记词或私钥',

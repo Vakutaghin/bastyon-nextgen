@@ -10,6 +10,7 @@
 import { onBeforeUnmount, ref, type Ref } from 'vue'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
+import { canOpenAppSettings, isAccessDenied, openAppSettings } from '@/helpers/common/app-settings'
 import { formatDuration } from '../../helpers'
 
 /**
@@ -19,15 +20,31 @@ import { formatDuration } from '../../helpers'
  */
 export function micErrorMessage(err: unknown, hasMediaDevices: boolean): string {
   if (!hasMediaDevices) return t('messenger.micUnsupported')
+  if (isAccessDenied(err)) return t('voiceInput.errors.micDenied')
   const name = err instanceof Error || err instanceof DOMException ? err.name : ''
-  if (name === 'NotAllowedError' || name === 'SecurityError') {
-    return t('voiceInput.errors.micDenied')
-  }
   if (name === 'NotFoundError' || name === 'OverconstrainedError') {
     return t('voiceInput.errors.noMicrophone')
   }
   if (name === 'NotReadableError' || name === 'AbortError') return t('voiceInput.errors.micBusy')
   return t('messenger.micFailed')
+}
+
+/**
+ * Микрофон не включился — уведомление. На Android отказ насовсем системный
+ * диалог больше не вызывает: нажатие на уведомление открывает страницу
+ * приложения в настройках телефона, где доступ включают.
+ */
+export function showMicError(err: unknown): void {
+  if (isAccessDenied(err) && canOpenAppSettings()) {
+    appToast.error({
+      message: t('voiceInput.errors.micDeniedAndroid'),
+      description: t('voiceInput.errors.openSettings'),
+      duration: 15,
+      onClick: openAppSettings,
+    })
+    return
+  }
+  appToast.error({ message: micErrorMessage(err, !!navigator.mediaDevices?.getUserMedia) })
 }
 
 const PREFERRED_TYPES = [
@@ -156,7 +173,7 @@ export function useVoiceRecording(opts: VoiceRecordingOptions): VoiceRecording {
       mr.start()
     } catch (err) {
       console.error('[ChatRoom] Failed to start recording:', err)
-      appToast.error({ message: micErrorMessage(err, !!navigator.mediaDevices?.getUserMedia) })
+      showMicError(err)
     }
   }
 

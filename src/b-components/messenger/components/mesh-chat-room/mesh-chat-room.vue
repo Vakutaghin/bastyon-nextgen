@@ -138,7 +138,7 @@ import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
 import PaperMessageDialog from './paper-message-dialog.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import { useChatInput } from '../chat-room/use-chat-input'
-import { micErrorMessage } from '../chat-room/use-voice-recording'
+import { showMicError } from '../chat-room/use-voice-recording'
 import { MAX_SECONDS, useMeshVoice, type MeshVoiceError } from './use-mesh-voice'
 import type { MeshAttachment } from '@/db/types'
 import { useMessengerUiStore } from '../../store/messenger-ui-store'
@@ -337,12 +337,8 @@ async function sendVoice(recorded: MeshAttachment): Promise<void> {
 }
 
 function voiceError(e: MeshVoiceError): void {
-  appToast.error({
-    message:
-      typeof e === 'object'
-        ? micErrorMessage(e.mic, !!navigator.mediaDevices?.getUserMedia)
-        : t('mesh.chat.voiceUnsupported'),
-  })
+  if (typeof e === 'object') showMicError(e.mic)
+  else appToast.error({ message: t('mesh.chat.voiceUnsupported') })
 }
 
 const {

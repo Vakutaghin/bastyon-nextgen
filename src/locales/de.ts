@@ -1255,6 +1255,8 @@ export default {
     qrHint: 'Lade ein Bild mit QR-Code hoch oder scanne ihn mit der Kamera.',
     qrDecodeError: 'Aus dem Bild konnte kein QR-Code gelesen werden.',
     qrCameraError: 'Kein Zugriff auf die Kamera.',
+    qrCameraDenied: 'Kein Zugriff auf die Kamera. Erlaube ihn der App in den Telefoneinstellungen.',
+    qrOpenSettings: 'Einstellungen öffnen',
     qrCameraUnavailable: 'Auf diesem Gerät ist keine Kamera verfügbar.',
     signInTitle: 'Beim Konto anmelden',
     mnemonicOrKeyLabel: 'Mnemonische Phrase oder privater Schlüssel',

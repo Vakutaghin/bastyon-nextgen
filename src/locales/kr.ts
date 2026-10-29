@@ -1231,6 +1231,8 @@ export default {
     qrHint: 'QR 코드 이미지를 업로드하거나 카메라로 스캔하세요.',
     qrDecodeError: '이미지에서 QR 코드를 읽지 못했습니다.',
     qrCameraError: '카메라에 접근하지 못했습니다.',
+    qrCameraDenied: '카메라에 접근할 수 없습니다. 휴대폰 설정에서 앱에 권한을 허용하세요.',
+    qrOpenSettings: '설정 열기',
     qrCameraUnavailable: '이 기기에서는 카메라를 사용할 수 없습니다.',
     signInTitle: '계정에 로그인',
     mnemonicOrKeyLabel: '니모닉 문구 또는 개인 키',
