@@ -3141,6 +3141,16 @@ export default {
     negativeScoreReputation: 'Deine Reputation erlaubt noch keine negativen Bewertungen.',
     accountLocked:
       'Dein Konto wurde aufgrund von Nutzerbeschwerden oder einer Jury-Entscheidung gesperrt.',
+    feeTooLow:
+      'Das Netzwerk hat die Überweisung abgelehnt: die Gebühr liegt unter dem Minimum. Versuchen Sie es erneut — die Gebühr wird anhand der Transaktionsgröße neu berechnet.',
+    feeTooHigh:
+      'Die Gebühr fiel unglaubwürdig hoch aus, deshalb hat das Netzwerk die Überweisung abgelehnt.',
+    dustOutput:
+      'Der Betrag ist zu klein: das Netzwerk behandelt eine solche Überweisung als Staub. Erhöhen Sie den Betrag.',
+    notFinal:
+      'Das Netzwerk kann diese Transaktion noch nicht annehmen. Warten Sie eine Minute und versuchen Sie es erneut.',
+    rejectedNoReason:
+      'Das Netzwerk hat die Transaktion ohne Angabe eines Grundes abgelehnt (Code {code}). Meist ist die Gebühr zu niedrig — versuchen Sie es erneut.',
     unknownCode: 'Das Netzwerk hat die Aktion abgelehnt (Code {code}).',
     rejected: 'Das Netzwerk hat die Transaktion abgelehnt: {reason}',
   },

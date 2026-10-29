@@ -460,17 +460,20 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         { getUnspents, filterAvailableUnspents, selectAndLockUnspents },
         { buildTransferTransaction },
         { sendTransactionWithMessage },
-        { DEFAULT_TX_FEE },
+        { transferFee },
       ] = await Promise.all([
         import('@/blockchain/core/transactions/unspents-manager'),
         import('@/blockchain/core/transactions/transaction-builder'),
         import('@/blockchain/core/transactions/transaction-sender'),
-        import('@/blockchain/constants/transactions'),
+        import('@/blockchain/core/transactions/transfer-fee'),
       ])
 
       const rawUnspents = await getUnspents(fromAddress, 1, 9999999)
       const unspents = filterAvailableUnspents(rawUnspents, false)
-      const requiredAmount = amount + DEFAULT_TX_FEE
+      // Комиссия перевода считается от размера: с одним сатоши сеть отвечает
+      // -26. Сообщение в OP_RETURN не кладём, поэтому messageBytes нет.
+      const estimatedFee = transferFee({ inputs: 1, outputs: 1 })
+      const requiredAmount = amount + estimatedFee
       const selected = selectAndLockUnspents(unspents, requiredAmount) // лок входов (S6)
       if (!selected.length) throw new Error(t('appMsg.messenger.insufficientFunds'))
 
@@ -480,7 +483,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         sourceAddresses: [fromAddress],
         keyPair,
         outputs: [{ address: toAddress, amount }],
-        fee: DEFAULT_TX_FEE,
+        fee: transferFee({ inputs: selected.length, outputs: 1 }),
         // Заметка к переводу уходит собеседнику только в зашифрованном
         // сообщении чата ниже. В транзакцию её не кладём: сообщение перевода
         // пишется в OP_RETURN и стало бы публичным в блокчейне.

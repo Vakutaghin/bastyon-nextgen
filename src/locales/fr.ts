@@ -3141,6 +3141,16 @@ export default {
     negativeScoreReputation: 'Votre réputation ne permet pas encore de donner des notes négatives.',
     accountLocked:
       'Votre compte a été bloqué suite à des plaintes d’utilisateurs ou à une décision du jury.',
+    feeTooLow:
+      'Le réseau a refusé le transfert : les frais sont inférieurs au minimum. Réessayez — les frais sont recalculés selon la taille de la transaction.',
+    feeTooHigh:
+      'Les frais se sont révélés anormalement élevés, le réseau a donc refusé le transfert.',
+    dustOutput:
+      'Le montant est trop faible : le réseau considère un tel transfert comme de la poussière. Augmentez le montant.',
+    notFinal:
+      'Le réseau ne peut pas encore accepter cette transaction. Attendez une minute et réessayez.',
+    rejectedNoReason:
+      'Le réseau a refusé la transaction sans en indiquer la raison (code {code}). Le plus souvent, les frais sont trop bas — réessayez.',
     unknownCode: 'Le réseau a refusé l’action (code {code}).',
     rejected: 'Le réseau a refusé la transaction : {reason}',
   },

@@ -3,11 +3,13 @@
 // wallet-transfer.vue, чтобы tx-путь был юнит-тестируемым: адрес и ключи
 // приходят аргументами, а не из стора; i18n остаётся в компоненте.
 import type { KeyPair } from '@/blockchain/types/keys'
-import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
+import { transferFee } from '@/blockchain/core/transactions/transfer-fee'
+import { utf8Length } from '@/helpers/common/op-return'
 import {
   getUnspents,
   filterAvailableUnspents,
   selectAndLockUnspents,
+  unlockUTXOs,
 } from '@/blockchain/core/transactions/unspents-manager'
 import { buildTransferTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import { sendTransactionWithMessage } from '@/blockchain/core/transactions/transaction-sender'
@@ -41,7 +43,7 @@ export interface SendTransferParams {
 export function computeTransferAmounts(
   amount: number,
   feemode: FeeMode,
-  fee: number = DEFAULT_TX_FEE
+  fee: number
 ): { receiverAmount: number; requiredAmount: number } {
   return {
     receiverAmount: feemode === 'include' ? Math.max(0, amount - fee) : amount,
@@ -54,6 +56,7 @@ export interface SendTransferDeps {
   getUnspents: typeof getUnspents
   filterAvailableUnspents: typeof filterAvailableUnspents
   selectAndLockUnspents: typeof selectAndLockUnspents
+  unlockUTXOs: typeof unlockUTXOs
   buildTransferTransaction: typeof buildTransferTransaction
   sendTransactionWithMessage: typeof sendTransactionWithMessage
 }
@@ -62,6 +65,7 @@ const defaultDeps: SendTransferDeps = {
   getUnspents,
   filterAvailableUnspents,
   selectAndLockUnspents,
+  unlockUTXOs,
   buildTransferTransaction,
   sendTransactionWithMessage,
 }
@@ -81,16 +85,35 @@ export async function sendTransfer(
   params: SendTransferParams,
   deps: SendTransferDeps = defaultDeps
 ): Promise<SendTransferResult> {
-  const fee = params.fee ?? DEFAULT_TX_FEE
+  const messageBytes = utf8Length((params.message || '').trim())
   let unspents = await deps.getUnspents(params.fromAddress, 1, 9999999)
   unspents = deps.filterAvailableUnspents(unspents, false)
-  const { receiverAmount, requiredAmount } = computeTransferAmounts(
-    params.amount,
-    params.feemode,
-    fee
-  )
-  const selected = deps.selectAndLockUnspents(unspents, requiredAmount) // лок входов (P2-5/S6)
+
+  // Комиссия зависит от размера, размер — от числа входов, а число входов —
+  // от суммы с комиссией. Поэтому входы берём по оценке на один вход, затем
+  // пересчитываем комиссию по тому, сколько входов набралось, и если их
+  // перестало хватать — набираем заново уже под новую сумму. Прежний набор
+  // при этом отпускаем: иначе его входы минуту не видел бы следующий перевод.
+  let fee = params.fee ?? transferFee({ inputs: 1, outputs: 1, messageBytes })
+  let selected = deps.selectAndLockUnspents(
+    unspents,
+    computeTransferAmounts(params.amount, params.feemode, fee).requiredAmount
+  ) // лок входов (P2-5/S6)
   if (!selected.length) throw new InsufficientFundsError()
+
+  for (let pass = 0; params.fee === undefined && pass < 3; pass++) {
+    const byShape = transferFee({ inputs: selected.length, outputs: 1, messageBytes })
+    if (byShape <= fee) break
+    fee = byShape
+    const required = computeTransferAmounts(params.amount, params.feemode, fee).requiredAmount
+    const total = selected.reduce((sum, u) => sum + u.amount, 0)
+    if (total + 1e-9 >= required) break
+    deps.unlockUTXOs(selected)
+    selected = deps.selectAndLockUnspents(unspents, required)
+    if (!selected.length) throw new InsufficientFundsError()
+  }
+
+  const { receiverAmount } = computeTransferAmounts(params.amount, params.feemode, fee)
 
   const built = await deps.buildTransferTransaction({
     unspents: selected,

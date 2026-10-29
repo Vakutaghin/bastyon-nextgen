@@ -83,7 +83,7 @@ import { appToast } from '@/b-components/app-toast'
 import { useDonateStore } from '@/stores'
 import { useEffectsStore } from '@/stores/effects-store'
 import { useAuthStore } from '@/blockchain/store/auth-store'
-import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
+import { transferFee } from '@/blockchain/core/transactions/transfer-fee'
 import {
   getUnspents,
   filterAvailableUnspents,
@@ -159,11 +159,16 @@ const formattedBalance = computed<string>(() =>
 
 const numericAmount = computed<number>(() => Number(amount.value))
 
+// Донат меньше комиссии бессмыслен: получателю не достанется ничего.
+// Комиссия считается от размера, а не фиксированным сатоши — с ним сеть
+// отклоняет денежный перевод (-26).
+const minDonate = transferFee({ inputs: 1, outputs: 1, messageBytes: 'a:donate'.length })
+
 const validationError = computed<string | null>(() => {
   if (!amount.value) return null
   const n = numericAmount.value
   if (!Number.isFinite(n) || n <= 0) return t('donate.errAmount')
-  if (n <= DEFAULT_TX_FEE) return t('donate.errAmountTooSmall')
+  if (n <= minDonate) return t('donate.errAmountTooSmall')
   if (balance.value !== null && n > balance.value) return t('donate.errInsufficient')
   return null
 })
@@ -172,7 +177,7 @@ const canSend = computed<boolean>(
   () =>
     !sending.value &&
     !!donateStore.address &&
-    numericAmount.value > DEFAULT_TX_FEE &&
+    numericAmount.value > minDonate &&
     !validationError.value
 )
 

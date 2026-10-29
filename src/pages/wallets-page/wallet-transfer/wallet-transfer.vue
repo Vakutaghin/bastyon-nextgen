@@ -147,7 +147,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/blockchain'
 import Select, { type SelectOption } from '@/components/select'
-import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
+import { transferFee } from '@/blockchain/core/transactions/transfer-fee'
+import { utf8Length } from '@/helpers/common/op-return'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import { fitOpReturnText } from '@/helpers/common/op-return'
 import { playSound } from '@/services/app-sounds'
@@ -232,6 +233,15 @@ const {
   onReceiverBlur,
 } = useReceiverSearch()
 
+/**
+ * Комиссия, ниже которой перевод «комиссия из суммы» лишён смысла. Считается
+ * от размера транзакции: денежный перевод с одним сатоши сеть не принимает и
+ * отвечает -26.
+ */
+const minAmountForInclude = computed(() =>
+  transferFee({ inputs: 1, outputs: 1, messageBytes: utf8Length((message.value || '').trim()) })
+)
+
 const canSend = computed<boolean>(() => {
   const addr = (receiverAddress.value || '').trim()
   const num = Number(amount.value)
@@ -239,7 +249,7 @@ const canSend = computed<boolean>(() => {
     return false
   }
   if (receiverAddressValidationError.value) return false
-  if (feemode.value === 'include' && num <= DEFAULT_TX_FEE) return false
+  if (feemode.value === 'include' && num <= minAmountForInclude.value) return false
   return true
 })
 
@@ -248,7 +258,7 @@ async function doSend(): Promise<void> {
   const addr = (receiverAddress.value || '').trim()
   const num = Number(amount.value)
   if (!addr || num <= 0) return
-  if (feemode.value === 'include' && num <= DEFAULT_TX_FEE) {
+  if (feemode.value === 'include' && num <= minAmountForInclude.value) {
     error.value = t('wallet.errorAmountLessThanFee')
     return
   }
@@ -273,10 +283,9 @@ async function doSend(): Promise<void> {
       amount: num,
       feemode: feemode.value,
       message: message.value,
-      fee: DEFAULT_TX_FEE,
     })
-    // Показываем комиссию, которую реально забрала сеть: если сдача не дотянула
-    // до dust, она ушла майнеру, а в интерфейсе стоял заявленный 1 сатоши (N1).
+    // Показываем комиссию, которую реально забрала сеть: она считается от
+    // размера транзакции, а если сдача не дотянула до dust, то ушла майнеру.
     success.value = t('wallet.transferSentWithFee', {
       txid: txid.slice(0, 16),
       fee: formatPkoin(feePaidSatoshis, 8),

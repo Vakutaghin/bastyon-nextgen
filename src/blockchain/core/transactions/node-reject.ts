@@ -111,19 +111,49 @@ interface RejectShape {
   error?: unknown
 }
 
-/** Код и текст отказа из ответа ноды: `{code}`, `{error: {code}}` или `Error` с таким `cause`. */
+/**
+ * Код и текст отказа из ответа ноды: `{code}`, `{error: {code}}` или `Error` с
+ * таким `cause`.
+ *
+ * Обходим всё дерево, а не первый попавшийся слой: прокси заворачивает ответ
+ * ноды в `{error: {code, message}, code}`, и верхний слой несёт код без текста.
+ * Раньше поиск останавливался на нём, причина терялась, и человек видел голое
+ * «Сеть отклонила транзакцию: -26». Поэтому берём кандидата с текстом, если
+ * он есть хоть где-то в дереве.
+ */
 function findReject(error: unknown, depth = 0): { code: number; reason: string } | null {
-  if (!error || typeof error !== 'object' || depth > 3) return null
+  if (!error || typeof error !== 'object' || depth > 4) return null
   const shape = error as RejectShape
+  const found: { code: number; reason: string }[] = []
+
   const code = typeof shape.code === 'string' ? Number(shape.code) : shape.code
   if (typeof code === 'number' && Number.isInteger(code)) {
     const reason = typeof shape.message === 'string' ? shape.message : ''
-    return { code, reason }
+    found.push({ code, reason })
   }
-  if (shape.error && typeof shape.error === 'object') return findReject(shape.error, depth + 1)
-  if (error instanceof Error && error.cause) return findReject(error.cause, depth + 1)
-  return null
+
+  const nested =
+    shape.error && typeof shape.error === 'object' ? findReject(shape.error, depth + 1) : null
+  const deeper =
+    nested ?? (error instanceof Error && error.cause ? findReject(error.cause, depth + 1) : null)
+  if (deeper) found.push(deeper)
+
+  return found.find((candidate) => candidate.reason !== '') ?? found[0] ?? null
 }
+
+/** Причина отказа mempool → ключ текста. Порядок важен: ищем по вхождению. */
+const MEMPOOL_REASON_KEYS: readonly (readonly [string, string])[] = [
+  ['min relay fee not met', 'feeTooLow'],
+  ['mempool min fee not met', 'feeTooLow'],
+  ['insufficient fee', 'feeTooLow'],
+  ['fee too low', 'feeTooLow'],
+  ['absurdly-high-fee', 'feeTooHigh'],
+  ['dust', 'dustOutput'],
+  ['non-final', 'notFinal'],
+  ['tx-size', 'tooLarge'],
+  ['scriptsig-size', 'malformed'],
+  ['mandatory-script-verify-flag-failed', 'malformed'],
+]
 
 /**
  * Отказ ноды как `NodeRejectError` с текстом на языке интерфейса; `null`,
@@ -147,10 +177,22 @@ export function toNodeRejectError(error: unknown): NodeRejectError | null {
   const lower = reason.toLowerCase()
   const waitable = WAIT_REASONS.some((r) => lower.includes(r))
   if (code === MEMPOOL_REJECTED || (code === VERIFY_ERROR && waitable)) {
-    const message = waitable
-      ? t('nodeReject.waitPrevious')
-      : t('nodeReject.rejected', { reason: reason || String(code) })
-    return new NodeRejectError(code, message, { cause: error })
+    return new NodeRejectError(code, mempoolMessage(code, reason, lower, waitable), {
+      cause: error,
+    })
   }
   return null
+}
+
+/**
+ * Текст отказа mempool. Коды вроде -26 человеку ничего не говорят, поэтому
+ * сначала пробуем узнать причину по тексту ноды, а если текста нет — честно
+ * говорим об этом и называем самое вероятное.
+ */
+function mempoolMessage(code: number, reason: string, lower: string, waitable: boolean): string {
+  if (waitable) return t('nodeReject.waitPrevious')
+  const known = MEMPOOL_REASON_KEYS.find(([needle]) => lower.includes(needle))
+  if (known) return t(`nodeReject.${known[1]}`)
+  if (!reason) return t('nodeReject.rejectedNoReason', { code })
+  return t('nodeReject.rejected', { reason })
 }

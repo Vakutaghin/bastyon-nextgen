@@ -24,6 +24,7 @@ vi.mock('../transactions/transaction-sender', () => ({ sendTransactionWithMessag
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
 import { payForSubscription } from './paid-subscription-action'
+import { transferFee } from '../transactions/transfer-fee'
 
 const UTXO = { txid: 'aa'.repeat(32), vout: 0, amount: 100, scriptPubKey: '76a9' }
 
@@ -39,7 +40,10 @@ beforeEach(() => {
 describe('payForSubscription', () => {
   it('перевод автору с меткой подписки, комиссия сверху суммы', async () => {
     await expect(payForSubscription('PAuthor', 5_500_000_000)).resolves.toBe('d'.repeat(64))
-    expect(mocks.selectAndLockUnspents).toHaveBeenCalledWith([UTXO], 55 + 1e-8)
+    // Комиссия берётся по размеру транзакции, а не фиксированным сатоши:
+    // денежный перевод с одним сатоши сеть отклоняет (-26).
+    const fee = transferFee({ inputs: 1, outputs: 1, messageBytes: 'a:subscription'.length })
+    expect(mocks.selectAndLockUnspents).toHaveBeenCalledWith([UTXO], 55 + fee)
     expect(mocks.buildTransferTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
         outputs: [{ address: 'PAuthor', amount: 55 }],

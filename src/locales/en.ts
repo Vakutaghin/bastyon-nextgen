@@ -3095,6 +3095,13 @@ export default {
     settingsLimit: 'You have reached your settings change limit for the last 24 hours.',
     negativeScoreReputation: 'Your reputation does not allow negative ratings yet.',
     accountLocked: 'Your account has been blocked after user complaints or a jury decision.',
+    feeTooLow:
+      'The network rejected the transfer: the fee is below the minimum. Try again — the fee is recalculated from the transaction size.',
+    feeTooHigh: 'The fee came out absurdly high, so the network rejected the transfer.',
+    dustOutput: 'The amount is too small: the network treats such a transfer as dust. Increase it.',
+    notFinal: 'The network cannot accept this transaction yet. Wait a minute and try again.',
+    rejectedNoReason:
+      'The network rejected the transaction without naming a reason (code {code}). Usually this means the fee was too low — try again.',
     unknownCode: 'The network rejected the action (code {code}).',
     rejected: 'The network rejected the transaction: {reason}',
   },

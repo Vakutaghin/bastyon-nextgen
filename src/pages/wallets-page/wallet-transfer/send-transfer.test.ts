@@ -6,6 +6,7 @@ import {
   sendTransfer,
   type SendTransferDeps,
 } from './send-transfer'
+import { transferFee } from '@/blockchain/core/transactions/transfer-fee'
 
 const FEE = 0.01
 const keyPair = { privateKey: 'k' } as never
@@ -15,6 +16,7 @@ function deps(over: Partial<SendTransferDeps> = {}) {
     getUnspents: vi.fn(async () => [{ txid: 'a', vout: 0, amount: 5 }] as never),
     filterAvailableUnspents: vi.fn((u) => u),
     selectAndLockUnspents: vi.fn((u) => u),
+    unlockUTXOs: vi.fn(),
     buildTransferTransaction: vi.fn(
       async () => ({ hex: 'HEX', messageData: { m: 1 }, feePaidSatoshis: 1_000_000 }) as never
     ),
@@ -116,5 +118,63 @@ describe('sendTransfer', () => {
         d
       )
     ).rejects.toThrow('node down')
+  })
+
+  // Комиссия без явного fee — от размера: на один вход, а если входов
+  // набралось больше — по факту. Не хватило — набираем заново, прежний набор
+  // отпускаем.
+  describe('комиссия по размеру', () => {
+    const utxo = (txid: string, amount: number) => ({ txid, vout: 0, amount, scriptPubKey: 's' })
+
+    it('один вход — комиссия по оценке, повторного подбора нет', async () => {
+      const d = deps()
+      await sendTransfer(
+        { fromAddress: 'FROM', keyPair, toAddress: 'TO', amount: 2, feemode: 'exclude' },
+        d
+      )
+      const fee = transferFee({ inputs: 1, outputs: 1, messageBytes: 0 })
+      expect(d.selectAndLockUnspents).toHaveBeenCalledTimes(1)
+      expect(d.selectAndLockUnspents).toHaveBeenCalledWith(expect.any(Array), 2 + fee)
+      expect(d.buildTransferTransaction).toHaveBeenCalledWith(expect.objectContaining({ fee }))
+      expect(d.unlockUTXOs).not.toHaveBeenCalled()
+    })
+
+    it('входов стало больше и на новую комиссию не хватает — новый набор, старый отпущен', async () => {
+      // До трёх входов комиссия упирается в нижнюю границу, дальше растёт.
+      const one = transferFee({ inputs: 1, outputs: 1, messageBytes: 0 })
+      const three = transferFee({ inputs: 3, outputs: 1, messageBytes: 0 })
+      const four = transferFee({ inputs: 4, outputs: 1, messageBytes: 0 })
+      expect(three).toBeGreaterThan(one)
+      expect(four).toBeGreaterThan(three)
+      // Три входа ровно на сумму + комиссию по одному входу; четвёртый добирает.
+      const first = [utxo('a', 1), utxo('b', 0.5), utxo('c', 0.5 + one)]
+      const second = [...first, utxo('d', 1)]
+      const select = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second)
+      const d = deps({ selectAndLockUnspents: select })
+      await sendTransfer(
+        { fromAddress: 'FROM', keyPair, toAddress: 'TO', amount: 2, feemode: 'exclude' },
+        d
+      )
+      expect(select.mock.calls[1]![1]).toBeCloseTo(2 + three, 9)
+      expect(d.unlockUTXOs).toHaveBeenCalledWith(first)
+      expect(d.buildTransferTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({ unspents: second, fee: four })
+      )
+    })
+
+    it('на новую комиссию не хватает совсем — InsufficientFundsError, набор отпущен', async () => {
+      const one = transferFee({ inputs: 1, outputs: 1, messageBytes: 0 })
+      const first = [utxo('a', 1), utxo('b', 0.5), utxo('c', 0.5 + one)]
+      const select = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce([])
+      const d = deps({ selectAndLockUnspents: select })
+      await expect(
+        sendTransfer(
+          { fromAddress: 'FROM', keyPair, toAddress: 'TO', amount: 2, feemode: 'exclude' },
+          d
+        )
+      ).rejects.toBeInstanceOf(InsufficientFundsError)
+      expect(d.unlockUTXOs).toHaveBeenCalledWith(first)
+      expect(d.buildTransferTransaction).not.toHaveBeenCalled()
+    })
   })
 })

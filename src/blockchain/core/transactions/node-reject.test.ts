@@ -56,11 +56,38 @@ describe('toNodeRejectError', () => {
     expect(
       toNodeRejectError({ code: -25, message: 'bad-txns-inputs-missingorspent' })?.message
     ).toBe(t('nodeReject.waitPrevious'))
-    expect(toNodeRejectError({ code: -26, message: 'min relay fee not met' })?.message).toBe(
-      t('nodeReject.rejected', { reason: 'min relay fee not met' })
+    expect(toNodeRejectError({ code: -26, message: 'bad-txns-whatever' })?.message).toBe(
+      t('nodeReject.rejected', { reason: 'bad-txns-whatever' })
     )
     expect(toNodeRejectError({ code: -25, message: 'bad tx' })).toBeNull()
     expect(toNodeRejectError({ code: -8, message: 'Invalid parameter' })).toBeNull()
+  })
+
+  it('низкую комиссию называем словами, а не кодом: это самый частый отказ перевода', () => {
+    for (const reason of ['min relay fee not met', 'mempool min fee not met', 'insufficient fee']) {
+      expect(toNodeRejectError({ code: -26, message: reason })?.message).toBe(
+        t('nodeReject.feeTooLow')
+      )
+    }
+    expect(toNodeRejectError({ code: -26, message: 'dust' })?.message).toBe(
+      t('nodeReject.dustOutput')
+    )
+    expect(toNodeRejectError({ code: -26, message: 'absurdly-high-fee' })?.message).toBe(
+      t('nodeReject.feeTooHigh')
+    )
+  })
+
+  it('отказ без текста не показываем голым кодом', () => {
+    const message = toNodeRejectError({ code: -26 })?.message
+    expect(message).toBe(t('nodeReject.rejectedNoReason', { code: -26 }))
+    expect(message).not.toBe('Сеть отклонила транзакцию: -26')
+  })
+
+  it('причину ноды находим и под обёрткой прокси, где верхний слой без текста', () => {
+    // Прокси отдаёт {error: {code, message}, code} — раньше поиск
+    // останавливался на верхнем слое и причина терялась.
+    const wrapped = { error: { code: -26, message: 'min relay fee not met' }, code: -26 }
+    expect(toNodeRejectError(wrapped)?.message).toBe(t('nodeReject.feeTooLow'))
   })
 
   it('уже готовый NodeRejectError возвращается как есть', () => {

@@ -38,7 +38,7 @@ vi.mock('@/blockchain/core/transactions/transaction-builder', () => ({
 vi.mock('@/blockchain/core/transactions/transaction-sender', () => ({
   sendTransactionWithMessage: tx.sendTransactionWithMessage,
 }))
-vi.mock('@/blockchain/constants/transactions', () => ({ DEFAULT_TX_FEE: 0.01 }))
+vi.mock('@/blockchain/core/transactions/transfer-fee', () => ({ transferFee: () => 0.01 }))
 
 import { PkoinMessageDeliveryError, useMessageSending } from './use-message-sending'
 

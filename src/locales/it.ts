@@ -3115,6 +3115,15 @@ export default {
     negativeScoreReputation: 'La tua reputazione non consente ancora valutazioni negative.',
     accountLocked:
       'Il tuo account è stato bloccato per segnalazioni degli utenti o per decisione della giuria.',
+    feeTooLow:
+      'La rete ha rifiutato il trasferimento: la commissione è inferiore al minimo. Riprova: la commissione viene ricalcolata in base alla dimensione della transazione.',
+    feeTooHigh:
+      'La commissione è risultata incredibilmente alta, perciò la rete ha rifiutato il trasferimento.',
+    dustOutput:
+      "L'importo è troppo piccolo: la rete considera polvere un trasferimento del genere. Aumentalo.",
+    notFinal: 'La rete non può ancora accettare questa transazione. Attendi un minuto e riprova.',
+    rejectedNoReason:
+      'La rete ha rifiutato la transazione senza indicarne il motivo (codice {code}). Di solito la commissione è troppo bassa: riprova.',
     unknownCode: 'La rete ha rifiutato l’azione (codice {code}).',
     rejected: 'La rete ha rifiutato la transazione: {reason}',
   },

@@ -158,7 +158,7 @@ import {
   filterAvailableUnspents,
   getUnspents,
 } from '@/blockchain/core/transactions/unspents-manager'
-import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
+import { transferFeeSatoshis } from '@/blockchain/core/transactions/transfer-fee'
 import { SATOSHI, type PaidPlanId } from '@/helpers/paid-subscription/plans'
 import { formatPkoin, formatTermDate } from '@/helpers/paid-subscription/format'
 import { userAvatar, userName } from '@/services/user-names'
@@ -240,7 +240,9 @@ const insufficient = computed(
   () =>
     balance.value !== null &&
     !!selectedOffer.value &&
-    balance.value < selectedOffer.value.amount + Math.round(DEFAULT_TX_FEE * SATOSHI)
+    balance.value <
+      selectedOffer.value.amount +
+        transferFeeSatoshis({ inputs: 1, outputs: 1, messageBytes: 'a:subscription'.length })
 )
 
 async function loadBalance(): Promise<void> {

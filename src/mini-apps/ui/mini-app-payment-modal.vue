@@ -27,7 +27,7 @@
         <SC_TotalAmount>{{ formatAmount(total) }} PKOIN</SC_TotalAmount>
       </SC_TotalRow>
       <SC_FeeRow>
-        {{ t('miniapps.paymentFee', { amount: formatAmount(DEFAULT_TX_FEE), mode: feemodeLabel }) }}
+        {{ t('miniapps.paymentFee', { amount: formatAmount(estimatedFee), mode: feemodeLabel }) }}
       </SC_FeeRow>
       <SC_MessageRow v-if="message">{{ t('miniapps.paymentMessage', { message }) }}</SC_MessageRow>
       <SC_Error v-if="error">{{ error }}</SC_Error>
@@ -48,7 +48,8 @@ import {
 import { buildTransferTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import { splitFeeAcrossReceivers } from '@/blockchain/core/transactions/split-fee'
 import { sendTransactionWithMessage } from '@/blockchain/core/transactions/transaction-sender'
-import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
+import { transferFee } from '@/blockchain/core/transactions/transfer-fee'
+import { utf8Length } from '@/helpers/common/op-return'
 import { fitOpReturnText } from '@/helpers/common/op-return'
 import { playSound } from '@/services/app-sounds'
 import {
@@ -99,6 +100,19 @@ const feemodeLabel = computed(() =>
 const sending = ref(false)
 const error = ref<string | null>(null)
 
+/**
+ * Комиссия, которую показываем до оплаты: по одному входу — столько платит
+ * обычная покупка. Точную считаем перед сборкой, когда известны входы.
+ * Один сатоши тут держать нельзя: сеть такой перевод отклоняет (-26).
+ */
+const estimatedFee = computed(() =>
+  transferFee({
+    inputs: 1,
+    outputs: payment.value?.recievers.length ?? 1,
+    messageBytes: utf8Length(message.value),
+  })
+)
+
 function formatAmount(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 8 })
 }
@@ -114,7 +128,7 @@ async function onConfirm() {
 
   const feemode = payment.value.feemode ?? 'include'
   const totalAmount = total.value
-  const requiredAmount = feemode === 'exclude' ? totalAmount + DEFAULT_TX_FEE : totalAmount
+  const requiredAmount = feemode === 'exclude' ? totalAmount + estimatedFee.value : totalAmount
 
   sending.value = true
   error.value = null
@@ -128,13 +142,21 @@ async function onConfirm() {
       throw new Error(t('miniapps.errorInsufficientFunds'))
     }
 
+    // Комиссия считается от размера, а размер зависит от числа входов —
+    // поэтому окончательную берём уже по выбранным входам.
+    const fee = transferFee({
+      inputs: selected.length,
+      outputs: payment.value.recievers.length,
+      messageBytes: utf8Length(message.value),
+    })
+
     const built = await buildTransferTransaction({
       unspents: selected,
       fromAddress: mainAddr,
       sourceAddresses: [mainAddr],
       keyPair,
-      outputs: splitFeeAcrossReceivers(payment.value.recievers, feemode, DEFAULT_TX_FEE),
-      fee: DEFAULT_TX_FEE,
+      outputs: splitFeeAcrossReceivers(payment.value.recievers, feemode, fee),
+      fee,
       message: message.value,
       feemode,
     })

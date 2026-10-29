@@ -15,7 +15,9 @@ import {
 } from '../transactions/unspents-manager'
 import { buildTransferTransaction } from '../transactions/transaction-builder'
 import { sendTransactionWithMessage } from '../transactions/transaction-sender'
-import { AMOUNT_MULTIPLIER, DEFAULT_TX_FEE } from '../../constants/transactions'
+import { AMOUNT_MULTIPLIER } from '../../constants/transactions'
+import { transferFee } from '../transactions/transfer-fee'
+import { utf8Length } from '@/helpers/common/op-return'
 import { t } from '@/i18n'
 
 /** Платит автору `amount` сатоши за подписку. Возвращает txid. */
@@ -32,7 +34,12 @@ export async function payForSubscription(authorAddress: string, amount: number):
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
   // exclude: комиссия сверху суммы, автору — ровно `amount`.
-  const selected = selectAndLockUnspents(unspents, pkoin + DEFAULT_TX_FEE) // лок входов (S6)
+  // Комиссия от размера: денежный перевод с одним сатоши сеть не принимает.
+  const messageBytes = utf8Length(SUBSCRIPTION_MARKER)
+  const selected = selectAndLockUnspents(
+    unspents,
+    pkoin + transferFee({ inputs: 1, outputs: 1, messageBytes })
+  ) // лок входов (S6)
   if (!selected.length) throw new Error(t('paidSubscriptions.errInsufficient'))
 
   const built = await buildTransferTransaction({
@@ -41,7 +48,7 @@ export async function payForSubscription(authorAddress: string, amount: number):
     sourceAddresses: [address],
     keyPair,
     outputs: [{ address: authorAddress, amount: pkoin }],
-    fee: DEFAULT_TX_FEE,
+    fee: transferFee({ inputs: selected.length, outputs: 1, messageBytes }),
     message: SUBSCRIPTION_MARKER,
     feemode: 'exclude',
   })

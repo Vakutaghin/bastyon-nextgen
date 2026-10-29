@@ -13,6 +13,7 @@ import { AMOUNT_MULTIPLIER, toSatoshis, DUST_VALUE } from '../../constants/trans
 import { loadPocketnetBitcoin, getTransactionBuilder } from './btc17-loader'
 import { t } from '@/i18n'
 import { MAX_OP_RETURN_BYTES, utf8Length } from '@/helpers/common/op-return'
+import { transferFeeSatoshis } from './transfer-fee'
 
 /** Параметры для сборки транзакции перевода PKOIN */
 export interface BuildTransferTransactionParams {
@@ -83,7 +84,18 @@ export async function buildTransferTransaction(
 
   const totalInputAmount = unspents.reduce((sum, u) => sum + u.amount, 0)
   const totalInputSatoshis = toSatoshis(totalInputAmount)
-  const feeSatoshis = toSatoshis(fee)
+  // Нижняя граница комиссии считается от размера транзакции. С одним сатоши
+  // нода отвечает -26 («Сеть отклонила транзакцию»): у денежного перевода, в
+  // отличие от социальной транзакции, работает обычный minRelayTxFee. Берём
+  // максимум из запрошенной и минимальной, чтобы ни один путь перевода —
+  // кошелёк, чат, мини-приложение, донат, платная подписка — не ушёл в сеть с
+  // заведомо отвергаемой комиссией. Подробности в transfer-fee.ts.
+  const minFeeSatoshis = transferFeeSatoshis({
+    inputs: unspents.length,
+    outputs: outputs.length,
+    messageBytes: message ? utf8Length(message) : 0,
+  })
+  const feeSatoshis = Math.max(toSatoshis(fee), minFeeSatoshis)
 
   const outputsAmount = outputs.reduce((s, o) => s + o.amount, 0)
   const outputsSatoshis = outputs.reduce((s, o) => s + toSatoshis(o.amount), 0)

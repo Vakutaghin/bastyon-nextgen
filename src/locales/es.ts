@@ -3121,6 +3121,15 @@ export default {
     settingsLimit: 'Has alcanzado tu límite de cambios de configuración de las últimas 24 horas.',
     negativeScoreReputation: 'Tu reputación aún no permite dar valoraciones negativas.',
     accountLocked: 'Tu cuenta ha sido bloqueada por quejas de usuarios o por decisión del jurado.',
+    feeTooLow:
+      'La red rechazó la transferencia: la comisión está por debajo del mínimo. Inténtalo de nuevo: la comisión se recalcula según el tamaño de la transacción.',
+    feeTooHigh: 'La comisión resultó increíblemente alta, por eso la red rechazó la transferencia.',
+    dustOutput:
+      'El importe es demasiado pequeño: la red considera polvo una transferencia así. Auméntalo.',
+    notFinal:
+      'La red todavía no puede aceptar esta transacción. Espera un minuto e inténtalo de nuevo.',
+    rejectedNoReason:
+      'La red rechazó la transacción sin indicar el motivo (código {code}). Normalmente la comisión es demasiado baja: inténtalo de nuevo.',
     unknownCode: 'La red rechazó la acción (código {code}).',
     rejected: 'La red rechazó la transacción: {reason}',
   },

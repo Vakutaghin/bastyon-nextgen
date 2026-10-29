@@ -3,6 +3,7 @@ import { buildTransaction, buildTransferTransaction } from './transaction-builde
 import type { KeyPair } from '../../types/keys'
 import type { UTXO } from '@/composables/use-wallet-queries'
 import { t } from '@/i18n'
+import { transferFeeSatoshis } from './transfer-fee'
 
 // ---------------------------------------------------------------------------
 // btc17.js (кастомный bitcoinjs-lib) мокаем целиком: FakeTxBuilder фиксирует
@@ -201,6 +202,16 @@ describe('buildTransferTransaction', () => {
     )
   })
 
+  it('комиссию ниже минимума сети поднимает до минимума: с одним сатоши нода отвечает -26', async () => {
+    const res = await buildTransferTransaction({ ...base(), fee: 1 / 1e8 })
+    expect(res.feePaidSatoshis).toBe(transferFeeSatoshis({ inputs: 1, outputs: 1 }))
+  })
+
+  it('комиссию выше минимума не трогает', async () => {
+    const res = await buildTransferTransaction({ ...base(), fee: 0.005 })
+    expect(res.feePaidSatoshis).toBe(500000)
+  })
+
   it('собирает перевод: выходы получателю + change, messageData', async () => {
     const res = await buildTransferTransaction(base())
 
@@ -210,9 +221,10 @@ describe('buildTransferTransaction', () => {
     expect(res.outputs).toEqual([{ address: 'Pdest', amount: 1 }])
 
     const txb = lastTxb()
-    // получатель в сатоши, затем change
+    // получатель в сатоши, затем change за вычетом комиссии по размеру
+    const fee = transferFeeSatoshis({ inputs: 1, outputs: 1 })
     expect(txb.calls.addOutput[0]).toEqual(['Pdest', 100000000])
-    expect(txb.calls.addOutput[1]).toEqual(['PFrom', 99999999])
+    expect(txb.calls.addOutput[1]).toEqual(['PFrom', 100000000 - fee])
 
     expect(res.messageData).toEqual({
       source: { v: ['Psrc'] }, // derived из unspents.address
@@ -266,10 +278,11 @@ describe('buildTransferTransaction', () => {
   })
 
   it('не создаёт change output, если сдача меньше dust', async () => {
-    // вход 1.000007, выход 1, комиссия 1 сат → сдача 699 сат < dust
+    // Сдача на сатоши меньше пыли: вход = выход + комиссия + 699 сатоши.
+    const fee = transferFeeSatoshis({ inputs: 1, outputs: 1 })
     await buildTransferTransaction({
       ...base(),
-      unspents: [utxo({ amount: 1.000007, address: 'Psrc' })],
+      unspents: [utxo({ amount: (100000000 + fee + 699) / 1e8, address: 'Psrc' })],
     })
     // только выход получателю, change нет
     expect(lastTxb().calls.addOutput).toHaveLength(1)
