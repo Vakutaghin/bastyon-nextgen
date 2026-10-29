@@ -1,6 +1,6 @@
 import { onMounted, onBeforeUnmount, watch, type Ref } from 'vue'
-import * as PIXI from 'pixi.js'
-import { initPixiApp } from '@/helpers/common/init-pixi-app'
+import type * as PIXI from 'pixi.js'
+import { initPixiApp, loadPixi } from '@/helpers/common/init-pixi-app'
 import { logger } from '@/services/logger'
 
 const log = logger.scope('[audio-visualizer]')
@@ -72,7 +72,9 @@ export function useAudioVisualizer(
 
     // Без WebGL волны просто нет — см. initPixiApp. Приложение запоминаем
     // только запущенным: полузапущенное не разрушить при закрытии плеера.
-    const instance = new PIXI.Application()
+    const lib = await loadPixi()
+    if (disposed) return
+    const instance = new lib.Application()
     const ready = await initPixiApp(
       instance,
       {
@@ -94,7 +96,7 @@ export function useAudioVisualizer(
     app = instance
     elAfter.appendChild(app.canvas)
 
-    graphics = new PIXI.Graphics()
+    graphics = new lib.Graphics()
     app.stage.addChild(graphics)
 
     app.ticker.add(drawWave)

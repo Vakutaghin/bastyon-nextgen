@@ -1,15 +1,17 @@
 // Эффект звёзд и монет: без WebGL запуск PixiJS падает, и это не должно
 // доходить до общего обработчика ошибок («Что-то пошло не так» на каждом
-// запуске). Снятый во время запуска эффект не оставляет приложение.
+// запуске). Снятый во время запуска эффект не оставляет приложение. PixiJS
+// запускается с первого взрыва, а не при старте приложения.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h as render, ref } from 'vue'
+import { defineComponent, h as render, reactive, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 
+type Event = { id: number; x: number; y: number }
 const h = vi.hoisted(() => ({
   init: vi.fn<() => Promise<void>>(),
   destroy: vi.fn(),
-  store: { explosionEvents: [] as unknown[], consumeExplosion: () => {} },
+  store: { explosionEvents: [] as Event[], consumeExplosion: (_id: number) => {} },
 }))
 
 vi.mock('pixi.js/unsafe-eval', () => ({}))
@@ -41,7 +43,11 @@ vi.mock('pixi.js', () => {
       events: { setTargetElement: vi.fn() },
     }
   }
-  return { Application, Graphics: Chain, Sprite: class {}, Texture: class {} }
+  class Sprite {
+    anchor = { set: vi.fn() }
+    scale = { set: vi.fn() }
+  }
+  return { Application, Graphics: Chain, Sprite, Texture: class {} }
 })
 vi.mock('@/stores/effects-store', () => ({ useEffectsStore: () => h.store }))
 
@@ -62,10 +68,26 @@ function mountHost() {
   return { wrapper, errorHandler }
 }
 
+let lastId = 0
+/** Взрыв; PixiJS грузится отдельным куском — ждём, пока запуск дойдёт до init. */
+async function explode(): Promise<void> {
+  h.store.explosionEvents.push({ id: ++lastId, x: 10, y: 10 })
+  await vi.waitFor(() => expect(h.init).toHaveBeenCalled())
+  await flushPromises()
+}
+
 beforeEach(() => {
   resetPixiAvailabilityForTests()
   h.init.mockReset()
   h.destroy.mockReset()
+  const store = reactive({
+    explosionEvents: [] as Event[],
+    consumeExplosion(id: number) {
+      const i = store.explosionEvents.findIndex((e) => e.id === id)
+      if (i !== -1) store.explosionEvents.splice(i, 1)
+    },
+  })
+  h.store = store
 })
 
 afterEach(() => {
@@ -73,11 +95,18 @@ afterEach(() => {
 })
 
 describe('useStarExplosion', () => {
+  it('до первого взрыва PixiJS не запускается', async () => {
+    const { wrapper } = mountHost()
+    await flushPromises()
+    expect(h.init).not.toHaveBeenCalled()
+    expect(wrapper.find('canvas').exists()).toBe(false)
+  })
+
   it('без WebGL эффекта нет, а ошибка не уходит в общий обработчик', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     h.init.mockRejectedValue(new Error('CanvasRenderer is not yet implemented'))
     const { wrapper, errorHandler } = mountHost()
-    await flushPromises()
+    await explode()
 
     expect(errorHandler).not.toHaveBeenCalled()
     expect(wrapper.find('canvas').exists()).toBe(false)
@@ -86,13 +115,18 @@ describe('useStarExplosion', () => {
     expect(h.destroy).not.toHaveBeenCalled()
   })
 
-  it('с WebGL холст эффекта встаёт в контейнер', async () => {
+  it('с WebGL холст эффекта встаёт в контейнер с первым взрывом, запуск один', async () => {
     h.init.mockResolvedValue(undefined)
     const { wrapper, errorHandler } = mountHost()
-    await flushPromises()
+    await explode()
+    await explode()
 
     expect(errorHandler).not.toHaveBeenCalled()
-    expect(wrapper.find('canvas').exists()).toBe(true)
+    expect(wrapper.findAll('canvas')).toHaveLength(1)
+    expect(h.init).toHaveBeenCalledTimes(1)
+    // Холст показан на время взрыва.
+    const display = (wrapper.find('canvas').element as HTMLCanvasElement).style.display
+    expect(display).toBe('')
   })
 
   it('снятый во время запуска эффект разрушает приложение и холст не ставит', async () => {
@@ -100,6 +134,7 @@ describe('useStarExplosion', () => {
     h.init.mockReturnValue(new Promise<void>((resolve) => (finish = resolve)))
     const { wrapper } = mountHost()
     const host = wrapper.element as HTMLElement
+    await explode()
     wrapper.unmount()
     finish()
     await flushPromises()

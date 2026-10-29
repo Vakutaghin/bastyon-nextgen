@@ -71,6 +71,45 @@ export function clearEnvelope(): void {
   lsRemove(VAULT_MIGRATION_KEY)
 }
 
+/**
+ * Шифротексты всех записей под сейфом: фраза, список аккаунтов, аккаунты — в
+ * localStorage и sessionStorage. Записи с конвертом `{data}` разворачиваем.
+ */
+export function listEncryptedPayloads(): string[] {
+  const out: string[] = []
+  const stores = [ls(), typeof sessionStorage !== 'undefined' ? sessionStorage : null]
+  for (const store of stores) {
+    if (!store) continue
+    try {
+      for (let i = 0; i < store.length; i++) {
+        const k = store.key(i)
+        if (!k) continue
+        if (
+          k !== MNEMONIC_STORAGE_KEY &&
+          k !== ACCOUNTS_LIST_KEY &&
+          !k.startsWith(ACCOUNT_STORAGE_PREFIX)
+        )
+          continue
+        const raw = store.getItem(k)
+        if (!raw) continue
+        if (!raw.startsWith('{')) {
+          out.push(raw)
+          continue
+        }
+        try {
+          const data = (JSON.parse(raw) as { data?: unknown }).data
+          if (typeof data === 'string') out.push(data)
+        } catch {
+          /* битая запись — прочитается и разберётся как раньше */
+        }
+      }
+    } catch {
+      /* хранилище недоступно */
+    }
+  }
+  return out
+}
+
 export function hasAnyEncryptedPayload(): boolean {
   const store = ls()
   if (!store) return false

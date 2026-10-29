@@ -12,6 +12,18 @@
 import type { ApplicationOptions } from 'pixi.js'
 import { logger } from '@/services/logger'
 
+/**
+ * PixiJS — отдельным куском, с первого эффекта. При запуске он не нужен, а это
+ * полмегабайта скрипта и WebGL-контекст, которые телефон разбирал и держал с
+ * первой секунды.
+ */
+export async function loadPixi(): Promise<typeof import('pixi.js')> {
+  const pixi = await import('pixi.js')
+  // Патч под CSP без unsafe-eval — до создания Application.
+  await import('./pixi-csp-patch')
+  return pixi
+}
+
 /** То, что нужно от Application: сам запуск. */
 export interface PixiInitTarget {
   init(options?: Partial<ApplicationOptions>): Promise<void>

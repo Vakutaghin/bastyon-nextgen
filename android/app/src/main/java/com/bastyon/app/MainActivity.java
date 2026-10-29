@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebView;
 import android.graphics.Color;
 
@@ -21,6 +22,7 @@ import com.bastyon.app.plugins.radio.MeshRadioPlugin;
 import com.bastyon.app.plugins.radio.MeshRnsPlugin;
 import com.bastyon.app.plugins.voice.VoiceInputPlugin;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
     @Override
@@ -32,6 +34,20 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MeshRnsPlugin.class);
         registerPlugin(VoiceInputPlugin.class);
         super.onCreate(savedInstanceState);
+
+        // Процесс отрисовки WebView система убивает в фоне, когда ей не хватает
+        // памяти. Без обработчика Android закрывал приложение целиком, а после
+        // возврата бывал белый экран. Пересоздаём окно: оно поднимет новый
+        // WebView и загрузит приложение заново.
+        if (getBridge() != null) {
+            getBridge().addWebViewListener(new WebViewListener() {
+                @Override
+                public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                    recreate();
+                    return true;
+                }
+            });
+        }
 
         // Edge-to-edge: WebView рисует под status/navigation barами.
         // На targetSdk 35+ это default, но вызываем явно для совместимости с младшими SDK.

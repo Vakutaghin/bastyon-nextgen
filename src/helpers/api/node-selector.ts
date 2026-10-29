@@ -29,6 +29,9 @@ const PROBE_TIMEOUT_MS = 4_000
 /** Сколько доверяем выбранной ноде без перепинга (как 120s ping-cache в оригинале). */
 const TRUST_TTL_MS = 120_000
 
+/** Сколько ждём ноды выше по списку, когда живая уже ответила. */
+const PREFER_EARLIER_MS = 250
+
 interface CurrentState {
   proxy: ServerEndpoint
   validatedAt: number
@@ -106,17 +109,42 @@ async function probe(server: ServerEndpoint): Promise<boolean> {
 
 /**
  * Пингует все прокси параллельно, выбирает первую живую (по порядку списка) как
- * текущую и возвращает список, упорядоченный «живые → мёртвые» (мёртвые в хвосте
- * как последняя надежда). Если живых нет — возвращает исходный порядок.
+ * текущую и возвращает список, упорядоченный «живые → ещё не ответившие →
+ * мёртвые» (мёртвые в хвосте как последняя надежда). Если живых нет —
+ * возвращает исходный порядок.
+ *
+ * Мёртвых по таймауту не ждём: раньше выбор кончался, только когда отвалится
+ * последняя, — до 4 с на каждом запуске, и лента всё это время не
+ * запрашивалась. Ответила живая — ждём ещё немного тех, кто выше по списку, и
+ * выбираем.
  */
 async function probeAll(proxies: ServerEndpoint[]): Promise<ServerEndpoint[]> {
-  const results = await Promise.all(proxies.map(async (p) => ({ proxy: p, ok: await probe(p) })))
-  const live = results.filter((r) => r.ok).map((r) => r.proxy)
-  const dead = results.filter((r) => !r.ok).map((r) => r.proxy)
+  const results: (boolean | undefined)[] = proxies.map(() => undefined)
+  await new Promise<void>((resolve) => {
+    let left = proxies.length
+    let grace: ReturnType<typeof setTimeout> | null = null
+    proxies.forEach((proxy, i) => {
+      void probe(proxy).then((ok) => {
+        results[i] = ok
+        left -= 1
+        if (left === 0) {
+          if (grace) clearTimeout(grace)
+          resolve()
+        } else if (ok && !grace && results.slice(0, i).some((r) => r === undefined)) {
+          grace = setTimeout(resolve, PREFER_EARLIER_MS)
+        } else if (ok && !grace) {
+          resolve()
+        }
+      })
+    })
+  })
+  const live = proxies.filter((_, i) => results[i] === true)
+  const pending = proxies.filter((_, i) => results[i] === undefined)
+  const dead = proxies.filter((_, i) => results[i] === false)
 
   if (live[0]) setCurrent(live[0])
 
-  return live.length ? [...live, ...dead] : proxies
+  return live.length ? [...live, ...pending, ...dead] : proxies
 }
 
 /**

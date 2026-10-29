@@ -239,6 +239,15 @@ export async function fetchHttp(params: HttpRequestParams): Promise<unknown> {
 }
 
 /**
+ * Начать поиск живой ноды при запуске, не дожидаясь первого запроса: он уходит
+ * только после первой отрисовки, и лента ждала ещё и пинга. Режим Tor стор
+ * знает из настроек сразу — мимо Tor пинг не пойдёт.
+ */
+export function warmUpProxies(): void {
+  void orderedProxies(servers.servers.production.proxy as ServerEndpoint[]).catch(() => {})
+}
+
+/**
  * Выполняет RPC запрос к Pocketnet серверу с автоматическим переключением между серверами при ошибках.
  *
  * Логика работы:

@@ -84,6 +84,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   // Счётчик новых постов сверху ленты (lentaunseen-lite): фоновая проверка головы
   // ленты vs отображаемой; пилюля «новые посты» в content-feed.
   const newPostsCount = ref<number>(0)
+  /** Когда голова ленты последний раз приходила с сервера — загрузкой или проверкой. */
+  let lastNewPostsCheck = 0
 
   // Ответ по текущему фильтру уже разобран и разложен в allPosts. Без этого
   // признака «Лента пуста» мигала: между «isLoading стал false» и «посты
@@ -204,6 +206,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       let postsToEnrich: AdaptedPost[]
       if (requestedTxid === '') {
         // Первая загрузка — заменяем все посты.
+        lastNewPostsCheck = Date.now()
         allPosts.value = newPosts
         postsToEnrich = newPosts
       } else {
@@ -299,10 +302,17 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
    * Не мутирует ленту — только обновляет `newPostsCount` для пилюли.
    */
   const NEW_POSTS_PEEK = 20
+  // Возврат в окно или приложение тоже проверяет, но не чаще раза в минуту:
+  // раньше лента запрашивалась на каждом переключении. В фоне не проверяем —
+  // пилюлю там никто не видит, а телефон тратит сеть и батарею.
+  const NEW_POSTS_MIN_GAP = 60_000
   const checkForNewPosts = async (): Promise<void> => {
     if (!enabled || isLoading.value || isLoadingMore.value) return
+    if (typeof document !== 'undefined' && document.hidden) return
+    if (Date.now() - lastNewPostsCheck < NEW_POSTS_MIN_GAP) return
     const headId = String(allPosts.value[0]?.id ?? '')
     if (!headId) return
+    lastNewPostsCheck = Date.now()
     try {
       const resp = await buildFeedQueryByTab(filtersStore.activeTab, {
         currentTxid: '',

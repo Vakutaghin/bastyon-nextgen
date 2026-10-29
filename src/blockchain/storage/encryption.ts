@@ -15,15 +15,127 @@ const IV_SIZE = 128 / 8 // 16 bytes (AES block size)
 const KEY_SIZE = 256 / 8 // 32 bytes (AES-256)
 const PBKDF2_ITERATIONS = 100_000
 
+// 100 000 итераций PBKDF2 на crypto-js — это секунды главного потока телефона
+// на каждое чтение или запись. При запуске их набиралось с пяток, и приложение
+// стояло, пока не посчитает. Ключ для пары «пароль + соль» всегда один и тот
+// же, поэтому считаем его раз за запуск и держим в памяти (там уже лежит и сам
+// пароль — секрет сейфа). Новые записи под тем же паролем берут соль, ключ
+// которой уже посчитан: IV у каждой записи по-прежнему свой.
+const MAX_CACHED_KEYS = 64
+const derivedKeys = new Map<string, CryptoJS.lib.WordArray>()
+const writeSalts = new Map<string, CryptoJS.lib.WordArray>()
+
+function passphraseId(passphrase: string): string {
+  return CryptoJS.SHA256(passphrase).toString(CryptoJS.enc.Hex)
+}
+
+function keyId(passphrase: string, salt: CryptoJS.lib.WordArray): string {
+  return `${passphraseId(passphrase)}:${CryptoJS.enc.Hex.stringify(salt)}`
+}
+
+function rememberKey(
+  passphrase: string,
+  salt: CryptoJS.lib.WordArray,
+  key: CryptoJS.lib.WordArray
+): void {
+  if (derivedKeys.size >= MAX_CACHED_KEYS) derivedKeys.clear()
+  derivedKeys.set(keyId(passphrase, salt), key.clone())
+  const pid = passphraseId(passphrase)
+  if (!writeSalts.has(pid)) writeSalts.set(pid, salt.clone())
+}
+
 /**
  * Derives AES key from passphrase using PBKDF2
  */
 function deriveKey(passphrase: string, salt: CryptoJS.lib.WordArray): CryptoJS.lib.WordArray {
-  return CryptoJS.PBKDF2(passphrase, salt, {
+  const cached = derivedKeys.get(keyId(passphrase, salt))
+  if (cached) return cached.clone()
+  const key = CryptoJS.PBKDF2(passphrase, salt, {
     keySize: KEY_SIZE / 4, // CryptoJS uses 32-bit words
     iterations: PBKDF2_ITERATIONS,
     hasher: CryptoJS.algo.SHA256,
   })
+  rememberKey(passphrase, salt, key)
+  return key
+}
+
+function saltForWrite(passphrase: string): CryptoJS.lib.WordArray {
+  return (
+    writeSalts.get(passphraseId(passphrase))?.clone() ?? CryptoJS.lib.WordArray.random(SALT_SIZE)
+  )
+}
+
+/** Соль записи v2; null — запись другого формата или битая. */
+function saltOf(encryptedData: string): CryptoJS.lib.WordArray | null {
+  if (!encryptedData.startsWith(V2_PREFIX)) return null
+  try {
+    const raw = CryptoJS.enc.Base64.parse(encryptedData.slice(V2_PREFIX.length))
+    if (raw.sigBytes <= SALT_SIZE + IV_SIZE) return null
+    return CryptoJS.lib.WordArray.create(raw.words.slice(0, SALT_SIZE / 4), SALT_SIZE)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Посчитать ключи записей заранее, пока идёт запуск. WebCrypto считает PBKDF2
+ * вне главного потока и во много раз быстрее crypto-js; потом синхронное
+ * decryptData этих записей и запись новых под тем же паролем ничего не стоят.
+ * Не бросает: без WebCrypto ключи посчитаются как раньше, при чтении.
+ */
+export async function prewarmKeys(passphrase: string, encrypted: string[]): Promise<void> {
+  const subtle = globalThis.crypto?.subtle
+  if (!passphrase || !subtle) return
+  const salts = new Map<string, CryptoJS.lib.WordArray>()
+  for (const blob of encrypted) {
+    const salt = blob ? saltOf(blob) : null
+    if (salt && !derivedKeys.has(keyId(passphrase, salt))) salts.set(keyId(passphrase, salt), salt)
+  }
+  if (salts.size === 0) return
+  try {
+    const material = await subtle.importKey(
+      'raw',
+      new TextEncoder().encode(passphrase),
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    )
+    await Promise.all(
+      [...salts.values()].map(async (salt) => {
+        const bits = await subtle.deriveBits(
+          {
+            name: 'PBKDF2',
+            hash: 'SHA-256',
+            salt: hexToBytes(CryptoJS.enc.Hex.stringify(salt)),
+            iterations: PBKDF2_ITERATIONS,
+          },
+          material,
+          KEY_SIZE * 8
+        )
+        rememberKey(passphrase, salt, CryptoJS.enc.Hex.parse(bytesToHex(new Uint8Array(bits))))
+      })
+    )
+  } catch {
+    // Посчитается при чтении, как раньше.
+  }
+}
+
+/** Забыть посчитанные ключи — когда сейф закрыт или уничтожен. */
+export function forgetKeys(): void {
+  derivedKeys.clear()
+  writeSalts.clear()
+}
+
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
+  const out = new Uint8Array(hex.length / 2)
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16)
+  return out
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  let hex = ''
+  for (const b of bytes) hex += b.toString(16).padStart(2, '0')
+  return hex
 }
 
 /**
@@ -53,7 +165,7 @@ export function encryptData(
   }
 
   try {
-    const salt = CryptoJS.lib.WordArray.random(SALT_SIZE)
+    const salt = saltForWrite(key)
     const iv = CryptoJS.lib.WordArray.random(IV_SIZE)
     const derivedKey = deriveKey(key, salt)
 

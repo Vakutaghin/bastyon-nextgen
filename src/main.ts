@@ -48,7 +48,7 @@ import {
 import { useModalStore } from '@/stores/modal-store'
 import { configureUnlockUi, ensureVaultUnlocked } from '@/blockchain/storage/vault/vault-unlock'
 // Force-load request module so __torDebug is available in the console at boot.
-import '@/helpers/api/request'
+import { warmUpProxies } from '@/helpers/api/request'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { showToastsForNewNotifications } from '@/b-components/header/header-notifications/notification-toasts'
 import type { NotificationItem } from '@/stores/notifications-store'
@@ -87,6 +87,8 @@ useMessengerStore(pinia)
 const notificationsStore = useNotificationsStore(pinia)
 const torStore = useTorStore(pinia)
 torStore.hydrate().catch(() => {})
+// Живую ноду ищем сразу, параллельно с запуском, а не с первым запросом ленты.
+warmUpProxies()
 
 // P0-1: мост разблокировки сейфа (passphrase-режим) + ранний старт разлока.
 // Для passwordless — молчаливый авто-разлок; модалка не показывается. В embed

@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-  orderedProxies,
-  markProxyAlive,
-  markProxyDead,
-  resetProxySelection,
-} from './node-selector'
+import { orderedProxies, markProxyAlive, markProxyDead, resetProxySelection } from './node-selector'
 
 // appFetch мокаем: /ping живой ноды → ok:true, мёртвой → reject (как сетевой сбой).
 const appFetch = vi.fn()
@@ -37,7 +32,12 @@ describe('orderedProxies', () => {
     expect(appFetch).toHaveBeenCalledTimes(6) // пинганули все
     expect(ordered[0]).toEqual(P('2')) // первая живая по порядку
     expect(ordered.slice(0, 2)).toEqual([P('2'), P('3')]) // живые впереди
-    expect(ordered.slice(2).map((p) => p.host).sort()).toEqual(['1', '4', '5', '6']) // мёртвые в хвосте
+    expect(
+      ordered
+        .slice(2)
+        .map((p) => p.host)
+        .sort()
+    ).toEqual(['1', '4', '5', '6']) // мёртвые в хвосте
   })
 
   it('липнет к выбранной ноде: повторный вызов не перепингивает', async () => {
@@ -88,6 +88,41 @@ describe('orderedProxies', () => {
     expect(appFetch).toHaveBeenCalledTimes(6) // один probe-all на оба вызова
     expect(a[0]).toEqual(P('3'))
     expect(b[0]).toEqual(P('3'))
+  })
+
+  it('не ждёт, пока мёртвые отвалятся по таймауту', async () => {
+    // 1 и 2 отвечают, 3–6 висят (на деле — до таймаута в 4 с).
+    appFetch.mockImplementation((url: string) =>
+      /https:\/\/[12]:/.test(url) ? Promise.resolve({ ok: true }) : new Promise(() => {})
+    )
+    const started = Date.now()
+    const ordered = await orderedProxies(ALL)
+    expect(Date.now() - started).toBeLessThan(1000)
+    expect(ordered.slice(0, 2)).toEqual([P('1'), P('2')])
+  })
+
+  it('нода выше по списку, ответившая чуть позже, всё равно первая', async () => {
+    appFetch.mockImplementation((url: string) => {
+      if (url.includes('https://2:')) return Promise.resolve({ ok: true })
+      if (url.includes('https://1:'))
+        return new Promise((resolve) => setTimeout(() => resolve({ ok: true }), 100))
+      return new Promise(() => {})
+    })
+    const ordered = await orderedProxies(ALL)
+    expect(ordered[0]).toEqual(P('1'))
+  })
+
+  it('медленную ноду выше по списку не ждёт дольше короткого окна', async () => {
+    appFetch.mockImplementation((url: string) => {
+      if (url.includes('https://2:')) return Promise.resolve({ ok: true })
+      if (url.includes('https://1:'))
+        return new Promise((resolve) => setTimeout(() => resolve({ ok: true }), 2000))
+      return new Promise(() => {})
+    })
+    const started = Date.now()
+    const ordered = await orderedProxies(ALL)
+    expect(Date.now() - started).toBeLessThan(1000)
+    expect(ordered[0]).toEqual(P('2'))
   })
 
   it('пустой список прокси возвращается как есть', async () => {

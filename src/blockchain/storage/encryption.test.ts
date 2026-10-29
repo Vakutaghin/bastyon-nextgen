@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import CryptoJS from 'crypto-js'
-import { encryptData, decryptData } from './encryption'
+import { encryptData, decryptData, forgetKeys, prewarmKeys } from './encryption'
 
 describe('encryptData', () => {
   it('produces output with v2: prefix', () => {
@@ -89,5 +89,51 @@ describe('legacy backward compatibility', () => {
     // decryptData should still handle it
     const decrypted = decryptData(legacyEncrypted, key)
     expect(decrypted).toBe(plaintext)
+  })
+})
+
+// 100 000 итераций crypto-js — секунды главного потока телефона на каждое
+// чтение: при запуске их было с пяток, и приложение стояло.
+describe('derived key cache', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    forgetKeys()
+  })
+
+  it('reads the same record again and writes under the same key without PBKDF2', () => {
+    const blob = encryptData('mnemonic words', 'vault-secret')
+    const pbkdf2 = vi.spyOn(CryptoJS, 'PBKDF2')
+    expect(decryptData(blob, 'vault-secret')).toBe('mnemonic words')
+    const second = encryptData('accounts list', 'vault-secret')
+    expect(decryptData(second, 'vault-secret')).toBe('accounts list')
+    expect(pbkdf2).not.toHaveBeenCalled()
+    // IV у каждой записи свой: одинаковый текст — разные шифротексты.
+    expect(encryptData('same', 'vault-secret')).not.toBe(encryptData('same', 'vault-secret'))
+  })
+
+  it('a key prewarmed by WebCrypto is the one crypto-js derives', async () => {
+    const blobs = [encryptData('first', 'Прошлый секрет 🔑'), encryptData('second', 'other')]
+    forgetKeys()
+    await prewarmKeys('Прошлый секрет 🔑', blobs)
+    const pbkdf2 = vi.spyOn(CryptoJS, 'PBKDF2')
+    expect(decryptData(blobs[0]!, 'Прошлый секрет 🔑')).toBe('first')
+    expect(pbkdf2).not.toHaveBeenCalled()
+    // Запись под другим паролем не прогревалась — её ключ считается как раньше.
+    expect(decryptData(blobs[1]!, 'other')).toBe('second')
+    expect(pbkdf2).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips legacy and broken records', async () => {
+    const legacy = CryptoJS.AES.encrypt('old', 'k').toString()
+    await expect(prewarmKeys('k', [legacy, 'v2:not-base64!', '', 'v2:'])).resolves.toBeUndefined()
+    expect(decryptData(legacy, 'k')).toBe('old')
+  })
+
+  it('forgets the keys when the vault closes', () => {
+    const blob = encryptData('secret', 'vault-secret')
+    forgetKeys()
+    const pbkdf2 = vi.spyOn(CryptoJS, 'PBKDF2')
+    expect(decryptData(blob, 'vault-secret')).toBe('secret')
+    expect(pbkdf2).toHaveBeenCalledTimes(1)
   })
 })

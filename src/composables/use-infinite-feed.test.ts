@@ -157,6 +157,32 @@ describe('useInfiniteFeed', () => {
     expect(feed.allPosts.value.map((p) => p.id)).toEqual(['a', 'b', 'c', 'd'])
   })
 
+  it('returning to the app peeks for new posts at most once a minute, never in background', async () => {
+    vi.useFakeTimers({ now: 1_000_000, toFake: ['Date'] })
+    try {
+      mountFeed()
+      await deliver(page('a', 'b'))
+      const peek = vi.mocked(buildFeedQueryByTab)
+      peek.mockClear()
+
+      // Лента только что пришла: возврат в окно её не перезапрашивает.
+      window.dispatchEvent(new Event('focus'))
+      expect(peek).not.toHaveBeenCalled()
+
+      vi.setSystemTime(1_000_000 + 61_000)
+      const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+      window.dispatchEvent(new Event('focus'))
+      expect(peek).not.toHaveBeenCalled()
+      hidden.mockRestore()
+
+      window.dispatchEvent(new Event('focus'))
+      window.dispatchEvent(new Event('focus'))
+      expect(peek).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('drops a page that belongs to the previous filter (S16)', async () => {
     const feed = mountFeed()
     await deliver(page('a', 'b'))

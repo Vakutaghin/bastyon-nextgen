@@ -1,12 +1,9 @@
-import { onMounted, onUnmounted, watch, type Ref } from 'vue'
-import { Application, Graphics, Sprite, Texture } from 'pixi.js'
-// Self-installing патч: подменяет шейдер/UBO-системы pixi на полифилы без
-// `new Function()`. Нужен, потому что CSP приложения запрещает unsafe-eval, и
-// иначе `app.init()` падает с «Current environment does not allow unsafe-eval».
-// Импорт-сайд-эффект, обязан стоять до создания Application.
-import 'pixi.js/unsafe-eval'
+import { onUnmounted, watch, type Ref } from 'vue'
+import type { Application, Sprite, Texture } from 'pixi.js'
 import { useEffectsStore } from '@/stores/effects-store'
-import { initPixiApp } from '@/helpers/common/init-pixi-app'
+import { initPixiApp, loadPixi } from '@/helpers/common/init-pixi-app'
+
+type Pixi = typeof import('pixi.js')
 
 function resolveContainerEl(
   ref: Ref<HTMLElement | { $el: HTMLElement } | null>
@@ -20,6 +17,9 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
   const effectsStore = useEffectsStore()
 
   let app: Application | null = null
+  let pixi: Pixi | null = null
+  /** Запуск PixiJS — один на все взрывы, пока он идёт. */
+  let starting: Promise<Application | null> | null = null
   /** Компонент уже снят: запуск, который закончится позже, приложение не оставляет. */
   let disposed = false
   const particles: Array<{
@@ -33,8 +33,8 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
   let starTexture: Texture | null = null
   let coinTexture: Texture | null = null
 
-  function createStarTexture(appInstance: Application): Texture {
-    const graphics = new Graphics()
+  function createStarTexture(lib: Pixi, appInstance: Application): Texture {
+    const graphics = new lib.Graphics()
     graphics.star(0, 0, 5, 10, 5)
     graphics.fill({ color: 0xffd700 })
     graphics.stroke({ width: 1, color: 0xffaa00 })
@@ -42,8 +42,8 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
   }
 
   /** Монета: золотой круг с тёмным ободком и внутренним кольцом. */
-  function createCoinTexture(appInstance: Application): Texture {
-    const graphics = new Graphics()
+  function createCoinTexture(lib: Pixi, appInstance: Application): Texture {
+    const graphics = new lib.Graphics()
     graphics.circle(0, 0, 9)
     graphics.fill({ color: 0xf5c518 })
     graphics.stroke({ width: 2, color: 0xb8860b })
@@ -54,12 +54,12 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
 
   function createExplosion(x: number, y: number, variant: 'star' | 'coin' = 'star') {
     const texture = variant === 'coin' ? coinTexture : starTexture
-    if (!app || !texture) return
+    if (!app || !pixi || !texture) return
     showCanvas(app)
 
     const particleCount = 20
     for (let i = 0; i < particleCount; i++) {
-      const sprite = new Sprite(texture)
+      const sprite = new pixi.Sprite(texture)
       sprite.x = x
       sprite.y = y
       sprite.anchor.set(0.5)
@@ -122,11 +122,33 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
     instance.canvas.style.display = ''
   }
 
-  onMounted(async () => {
-    const el = resolveContainerEl(container)
-    if (!el) return
+  /**
+   * PixiJS и холст — с первого взрыва, а не при запуске приложения: нужны они
+   * только при оценке и донате. Первый взрыв ждёт запуска, дальше — сразу.
+   */
+  function start(): Promise<Application | null> {
+    if (!starting) {
+      starting = boot().then((ready) => {
+        // Не запустилось (нет контейнера, кусок не загрузился) — попробуем со следующим.
+        if (!ready && !disposed) starting = null
+        return ready
+      })
+    }
+    return starting
+  }
 
-    const instance = new Application()
+  async function boot(): Promise<Application | null> {
+    const el = resolveContainerEl(container)
+    if (!el || disposed) return null
+    let lib: Pixi
+    try {
+      lib = await loadPixi()
+    } catch {
+      return null
+    }
+    if (disposed) return null
+
+    const instance = new lib.Application()
 
     // Цикл не крутим постоянно: раньше пустой полноэкранный WebGL-холст
     // перерисовывался 60 раз в секунду всё время работы приложения (N36).
@@ -145,12 +167,14 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
       },
       '[star-explosion]'
     )
-    if (!ready) return
-    if (disposed) {
+    if (!ready) return null
+    const elAfter = resolveContainerEl(container)
+    if (disposed || !elAfter) {
       instance.destroy(true, { children: true, texture: true })
-      return
+      return null
     }
     app = instance
+    pixi = lib
 
     app.canvas.style.position = 'absolute'
     app.canvas.style.top = '0'
@@ -162,13 +186,14 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
     // requestAnimationFrame всё время работы приложения.
     app.renderer.events.setTargetElement(null as unknown as HTMLElement)
 
-    el.appendChild(app.canvas)
+    elAfter.appendChild(app.canvas)
 
-    starTexture = createStarTexture(app)
-    coinTexture = createCoinTexture(app)
+    starTexture = createStarTexture(lib, app)
+    coinTexture = createCoinTexture(lib, app)
 
     app.ticker.add(update)
-  })
+    return app
+  }
 
   onUnmounted(() => {
     disposed = true
@@ -181,9 +206,14 @@ export function useStarExplosion(container: Ref<HTMLElement | { $el: HTMLElement
   watch(
     () => effectsStore.explosionEvents,
     (events) => {
-      ;[...events].forEach((event) => {
-        createExplosion(event.x, event.y, event.variant === 'coin' ? 'coin' : 'star')
-        effectsStore.consumeExplosion(event.id)
+      const batch = [...events]
+      if (!batch.length) return
+      batch.forEach((event) => effectsStore.consumeExplosion(event.id))
+      void start().then((ready) => {
+        if (!ready) return
+        batch.forEach((event) =>
+          createExplosion(event.x, event.y, event.variant === 'coin' ? 'coin' : 'star')
+        )
       })
     },
     { deep: true }

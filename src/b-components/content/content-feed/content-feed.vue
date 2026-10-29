@@ -192,6 +192,7 @@ import { useBlockedAuthors } from '@/composables/use-blocked-authors'
 import type { AdaptedPost } from '@/composables/use-feed'
 import { isMobile } from '@mobile/utils/platform'
 import { useViewport } from '@/composables/use-viewport'
+import { isPageOverlaid } from '@/composables/use-page-overlay'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import MiniAppsShelf from '@/mini-apps/ui/mini-apps-shelf.vue'
 import Button from '@/components/button/button.vue'
@@ -368,10 +369,14 @@ const displayedPosts = computed<FeedItem[]>(() => {
 // посты и картинки появлялись рывком, лента замирала. Карточка дорогая (каждый
 // styled-элемент — компонент Vue), поэтому порция — одна. Догрузка начинается
 // за экран до конца ленты, так что порции успевают.
+//
+// Под мессенджером во весь экран ленты не видно, а кадры нужны чату: там
+// карточки монтируются по одной, когда поток свободен, и первая порция тоже.
 const FIRST_RENDER = 5
 const RENDER_STEP = 1
+const OVERLAID_RENDER_WAIT_MS = 1000
 const renderLimit = ref<number>(FIRST_RENDER)
-let renderFrame: number | null = null
+let cancelRender: (() => void) | null = null
 
 const renderedPosts = computed<FeedItem[]>(() => displayedPosts.value.slice(0, renderLimit.value))
 
@@ -387,27 +392,48 @@ const renderedTail = computed<FeedItem[]>(() =>
   renderedPosts.value.slice(headCount.value > 0 ? headCount.value + 1 : 0)
 )
 
+function scheduleRender(): void {
+  if (cancelRender) return
+  if (isPageOverlaid.value && typeof window.requestIdleCallback === 'function') {
+    const id = window.requestIdleCallback(renderMore, { timeout: OVERLAID_RENDER_WAIT_MS })
+    cancelRender = () => window.cancelIdleCallback(id)
+  } else if (isPageOverlaid.value) {
+    const id = setTimeout(renderMore, OVERLAID_RENDER_WAIT_MS / 10)
+    cancelRender = () => clearTimeout(id)
+  } else {
+    const id = requestAnimationFrame(renderMore)
+    cancelRender = () => cancelAnimationFrame(id)
+  }
+}
+
 function renderMore(): void {
-  renderFrame = null
+  cancelRender = null
   const total = displayedPosts.value.length
   renderLimit.value = Math.min(total, renderLimit.value + RENDER_STEP)
-  if (renderLimit.value < total) renderFrame = requestAnimationFrame(renderMore)
+  if (renderLimit.value < total) scheduleRender()
 }
 
 watch(
   () => displayedPosts.value.length,
-  (total) => {
+  (total, prev) => {
     // Лента сброшена (вкладка, язык, «Обновить»): снова с первой порции.
     if (total === 0) renderLimit.value = FIRST_RENDER
-    if (renderLimit.value < total && renderFrame === null) {
-      renderFrame = requestAnimationFrame(renderMore)
-    }
+    else if (!prev && isPageOverlaid.value) renderLimit.value = RENDER_STEP
+    if (renderLimit.value < total) scheduleRender()
   },
   { immediate: true }
 )
 
+// Мессенджер закрыли — дальше снова по карточке за кадр.
+watch(isPageOverlaid, () => {
+  if (!cancelRender) return
+  cancelRender()
+  cancelRender = null
+  scheduleRender()
+})
+
 onUnmounted(() => {
-  if (renderFrame !== null) cancelAnimationFrame(renderFrame)
+  cancelRender?.()
   dividerObserver?.disconnect()
 })
 

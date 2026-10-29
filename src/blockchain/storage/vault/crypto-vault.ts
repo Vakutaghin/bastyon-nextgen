@@ -39,10 +39,12 @@ import {
   writeEnvelope,
   clearEnvelope,
   hasAnyEncryptedPayload,
+  listEncryptedPayloads,
   type DeviceEnvelope,
   type PassphraseEnvelope,
 } from './vault-envelope-store'
 import { recordFailedAttempt, clearAttempts } from './vault-attempts'
+import { forgetKeys, prewarmKeys } from '../encryption'
 
 // Публичный API сохранён: getAttemptState/AttemptState раньше жили здесь и
 // импортируются vault-unlock — реэкспортируем из vault-attempts.
@@ -171,12 +173,35 @@ export function hasVault(): boolean {
 
 // ─── boot gate ────────────────────────────────────────────────────────────────
 
+/** Сколько бут ждёт ключей записей; дальше они досчитаются сами, в фоне. */
+const PREWARM_WAIT_MS = 3000
+
+/**
+ * Ключи всех записей под сейфом — заранее и вне главного потока (см.
+ * prewarmKeys). Без этого чтения сразу после бута морозили приложение на
+ * секунды. В окне миграции записи ещё под fingerprint — для него тоже.
+ */
+async function prewarmPayloadKeys(): Promise<void> {
+  const payloads = listEncryptedPayloads()
+  if (payloads.length === 0) return
+  const passphrases = [
+    secretB64 ?? (degraded ? getDeviceFingerprint() : null),
+    readStoredFingerprint(),
+  ]
+  const work = Promise.all(
+    passphrases.filter((p): p is string => Boolean(p)).map((p) => prewarmKeys(p, payloads))
+  )
+  await Promise.race([work, new Promise((resolve) => setTimeout(resolve, PREWARM_WAIT_MS))])
+}
+
 /** Мемоизированный бут-гейт. НИКОГДА не реджектит; транзиентные сбои не кэширует. */
 export function ensureVaultReady(): Promise<VaultOutcome> {
   if (readyPromise) return readyPromise
   readyPromise = withLock(runReadyInner)
-    .then((out) => {
+    .then(async (out) => {
       if (out.status === 'storage-unavailable') readyPromise = null // ретрай на следующем вызове [A2/B3]
+      if (out.status === 'unlocked' || out.status === 'degraded-fingerprint')
+        await prewarmPayloadKeys().catch(() => {})
       return out
     })
     .catch(() => {
@@ -401,6 +426,7 @@ export async function submitPassphrase(pw: string): Promise<SubmitResult> {
   setUnlocked(s, 'passphrase')
   readyPromise = Promise.resolve(outcome())
   clearAttempts()
+  await prewarmPayloadKeys().catch(() => {})
   // Self-tuning KDF (VP-6): конверт, созданный при меньшем счётчике итераций,
   // прозрачно перезаворачиваем на текущий target (свежие соль и IV). Best-effort:
   // сбой оставляет старый конверт, который только что успешно развернулся.
@@ -501,6 +527,7 @@ export async function disablePassphrase(pw: string): Promise<void> {
 // ─── lock / destroy ───────────────────────────────────────────────────────────
 
 export function lockVault(): void {
+  forgetKeys()
   if (secret) secret.fill(0)
   secret = null
   secretB64 = null
