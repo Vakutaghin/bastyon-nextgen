@@ -10,10 +10,16 @@ How to record and send a voice message, and why the record button does not work 
 
 The microphone button to the right of the input field is **“Record voice message”**. It is there while the field is empty.
 
-- **With a mouse:** press and hold the button while you speak. Let go, and the message is sent.
-- **With a finger:** hold the button while you speak and lift your finger to send. Slide left to cancel the recording, slide up to lock it so you no longer have to hold. Then **“Cancel”** and a send button appear at the bottom.
+It works the same with a mouse and with a finger:
 
-While recording, you see how long it has been going.
+- press and hold the button while you speak. Let go, and the message is sent;
+- slide up to the lock above the button to lock the recording, so you no longer have to hold. Then **“Cancel”** and a send button appear at the bottom;
+- slide left to cancel the recording. The Esc key cancels it too;
+- if you press and let go at once, nothing is recorded: a hint “Hold to record, release to send” appears above the button.
+
+With the keyboard, Enter or Space on the button starts a recording that is already locked.
+
+Recording responds from the first touch: the time appears at once, and the dot next to it starts blinking when the microphone is actually recording — usually almost at once.
 
 ## Listening
 

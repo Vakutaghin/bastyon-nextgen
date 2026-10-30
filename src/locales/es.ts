@@ -1082,7 +1082,9 @@ export default {
       'Aquí no se pueden grabar mensajes de voz: el navegador integrado no da acceso al micrófono.',
     micFailed: 'No se pudo activar el micrófono.',
     recordingInProgress: 'Grabando voz',
-    swipeHint: '< Izquierda: cancelar, Arriba: bloquear',
+    slideToCancel: 'Desliza a la izquierda para cancelar',
+    slideToLock: 'Desliza hacia arriba para grabar sin mantener',
+    holdToRecord: 'Mantén pulsado para grabar, suelta para enviar',
     openEmojiPicker: 'Abrir el selector de emojis',
     resizeWindow:
       'Arrastra para cambiar el tamaño de la ventana. Doble clic para el tamaño original',

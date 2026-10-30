@@ -1090,7 +1090,9 @@ export default {
       'Impossible d’enregistrer des messages vocaux ici : le navigateur intégré ne donne pas accès au micro.',
     micFailed: 'Impossible d’activer le micro.',
     recordingInProgress: 'Enregistrement vocal',
-    swipeHint: '< Gauche – annuler, Haut – verrouiller',
+    slideToCancel: 'Glissez à gauche pour annuler',
+    slideToLock: 'Glissez vers le haut pour enregistrer sans maintenir',
+    holdToRecord: 'Maintenez pour enregistrer, relâchez pour envoyer',
     openEmojiPicker: 'Ouvrir le sélecteur d’emoji',
     resizeWindow:
       'Faites glisser pour redimensionner la fenêtre. Double-clic pour la taille d’origine',

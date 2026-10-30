@@ -64,11 +64,11 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     meta?: { duration?: number; name?: string }
   ) => {
     try {
-      const room = await prepareRoom(chatId)
-
-      // Оптимистичное сообщение. Blob — в local-media: плеер берёт его оттуда
-      // и рисует волну, пока голосовое грузится (fetch ссылки `blob:` CSP не
-      // пускает, и вместо волны была ошибка загрузки).
+      // Оптимистичное сообщение — сразу, до подготовки комнаты: подгрузка
+      // участников идёт по сети, и голосовое появлялось в чате с задержкой
+      // после того, как кнопку отпустили. Blob — в local-media: плеер берёт
+      // его оттуда и рисует волну, пока голосовое грузится (fetch ссылки
+      // `blob:` CSP не пускает, и вместо волны была ошибка загрузки).
       const objectUrl = registerLocalMedia(blob)
       const tempId = makeTempId()
       const now = Date.now()
@@ -93,6 +93,7 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
       }
       pushOptimistic(messages, chatId, tempMessage)
 
+      const room = await prepareRoom(chatId)
       const onProgress = createProgressHandler(messages, chatId, tempId)
 
       // Шифрование

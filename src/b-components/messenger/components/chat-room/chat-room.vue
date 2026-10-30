@@ -146,9 +146,11 @@
     />
 
     <SC_ChatInputBar ref="inputAreaRef">
-      <!-- RECORDING STATE -->
-      <template v-if="isRecording || isLocked">
-        <SC_RecordingTimer>{{ recordingDuration }}</SC_RecordingTimer>
+      <!-- RECORDING STATE: с первого касания, не дожидаясь микрофона. -->
+      <template v-if="isRecording">
+        <SC_RecordingTimer data-testid="voice-timer" :class="{ live: isCapturing }">{{
+          recordingDuration
+        }}</SC_RecordingTimer>
 
         <template v-if="isLocked">
           <SC_CancelButton @click="cancelRecording">{{ t('messenger.cancel') }}</SC_CancelButton>
@@ -158,10 +160,16 @@
           </SC_SendButton>
         </template>
 
+        <!-- Подсказки едут за пальцем: --voice-* на панели ставит use-voice-recording. -->
         <template v-else>
           <SC_SwipeHint>
-            <span>{{ t('messenger.swipeHint') }}</span>
+            <LeftOutlined />
+            <span>{{ t('messenger.slideToCancel') }}</span>
           </SC_SwipeHint>
+          <SC_LockHint data-testid="voice-lock-hint" :title="t('messenger.slideToLock')">
+            <LockOutlined />
+            <UpOutlined />
+          </SC_LockHint>
         </template>
       </template>
 
@@ -209,22 +217,29 @@
         </SC_InputSlot>
       </template>
 
-      <!-- VOICE BUTTON (видна при записи или когда input пуст). -->
+      <!-- VOICE BUTTON (видна при записи или когда input пуст). Жест — pointer
+           events; mousedown и touchstart гасим, чтобы поле не теряло фокус и
+           клавиатура телефона не пряталась. С клавиатуры — запись с замком. -->
       <SC_VoiceButton
         v-if="!inviteMode && !inputValue.trim() && !isLocked"
         :class="{ recording: isRecording }"
-        @mousedown.prevent="startRecording"
-        @mouseup.prevent="stopRecording"
-        @touchstart.prevent="startRecording"
-        @touchend.prevent="handleTouchEnd"
-        @touchcancel.prevent="handleTouchEnd"
-        @touchmove.prevent="handleTouchMove"
         :aria-label="
           isRecording ? t('messenger.recordingInProgress') : t('messenger.recordVoiceMessage')
         "
+        @pointerenter="warmUpMic"
+        @pointerdown="onPressStart"
+        @mousedown.prevent
+        @touchstart.prevent
+        @contextmenu.prevent
+        @keydown.enter.prevent="startLocked"
+        @keydown.space.prevent="startLocked"
       >
         <MicIcon />
       </SC_VoiceButton>
+
+      <SC_HoldHint v-if="holdHint && !isRecording" role="status">
+        {{ t('messenger.holdToRecord') }}
+      </SC_HoldHint>
 
       <!-- TEXT SEND BUTTON (виден когда есть текст и не идёт запись). -->
       <SC_SendButton
@@ -253,11 +268,14 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
+  LeftOutlined,
+  LockOutlined,
   MicIcon,
   SearchOutlined,
   SendOutlined,
   SmileOutlined,
   StopOutlined,
+  UpOutlined,
 } from '@/components/icons'
 import { Popconfirm } from 'ant-design-vue'
 import { Z_INDEX } from '@/styles/design-tokens'
@@ -279,7 +297,7 @@ import { useMessengerStore } from '../../store'
 import { chatUserName } from '../../helpers'
 import { useMessengerProfileCache } from '../../store/messenger-profile-cache'
 import { usePasteDrop } from './use-paste-drop'
-import { useVoiceRecording } from './use-voice-recording'
+import { useVoiceRecording, warmUpMic } from './use-voice-recording'
 import { usePartnerInfo } from './use-partner-info'
 import { useChatInput } from './use-chat-input'
 import { useIpfsSend } from './use-ipfs-send'
@@ -303,6 +321,8 @@ import {
   SC_VoiceButton,
   SC_RecordingTimer,
   SC_SwipeHint,
+  SC_LockHint,
+  SC_HoldHint,
   SC_CancelButton,
   SC_FirstMessageHint,
   SC_PartnerHeader,
@@ -524,13 +544,14 @@ watch(
 // Голосовая запись с touch-жестами.
 const {
   isRecording,
+  isCapturing,
   isLocked,
   recordingDuration,
-  startRecording,
+  holdHint,
+  onPressStart,
+  startLocked,
   cancelRecording,
   stopRecording,
-  handleTouchMove,
-  handleTouchEnd,
 } = useVoiceRecording({
   currentChatId: () => store.activeChatId,
   onAudioRecorded: async (blob, duration, chatId) => {
@@ -542,7 +563,8 @@ const {
 })
 
 // Пока записываете — собеседникам «записывает голосовое…», если не выключено в настройках.
-useRecordingBroadcast(activeRoomId, isRecording, () => privacy.prefs.recording)
+// С ответа микрофона, а не с касания: короткое нажатие — не запись.
+useRecordingBroadcast(activeRoomId, isCapturing, () => privacy.prefs.recording)
 
 /** Первое сообщение новому собеседнику: создаётся комната, потом уходит текст. */
 const creatingChat = ref(false)

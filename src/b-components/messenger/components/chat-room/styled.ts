@@ -177,16 +177,23 @@ export const SC_VoiceButton = styled.button`
   z-index: 10;
   user-select: none;
   -webkit-user-select: none;
+  /* Жест целиком наш: без прокрутки, масштаба и меню долгого нажатия —
+     иначе система забирала касание посреди записи. */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 
   &:hover {
     background-color: rgb(var(--ui-primary-rgb) / 75%);
     color: var(--ui-text-inverted);
   }
 
+  /* Кнопка едет за пальцем без задержки: transform без перехода. */
   &.recording,
   &.recording:hover {
     background-color: var(--ui-error);
-    transform: scale(1.1);
+    transform: translate(var(--voice-dx, 0), var(--voice-dy, 0)) scale(1.15);
+    transition: background-color var(--transition-fast);
   }
 
   svg {
@@ -207,6 +214,7 @@ export const SC_RecordingTimer = styled.div`
   align-items: center;
   gap: 8px;
 
+  /* Точка мигает, когда микрофон уже пишет; до этого — бледная. */
   &::before {
     content: '';
     display: block;
@@ -214,6 +222,11 @@ export const SC_RecordingTimer = styled.div`
     height: 10px;
     border-radius: 50%;
     background-color: var(--color-red-dark);
+    opacity: 0.35;
+  }
+
+  &.live::before {
+    opacity: 1;
     animation: pulse 1s infinite;
   }
 
@@ -232,14 +245,24 @@ export const SC_RecordingTimer = styled.div`
   }
 `
 
+/** «Влево — отмена»: едет за пальцем и бледнеет к порогу отмены. */
 export const SC_SwipeHint = styled.div`
   align-self: center;
   color: var(--ui-text-dimmed);
-  font-size: 12px;
+  font-size: 13px;
   display: flex;
   align-items: center;
   gap: 4px;
-  animation: slideLeft 1.5s infinite;
+  user-select: none;
+  -webkit-user-select: none;
+  transform: translateX(var(--voice-dx, 0));
+  opacity: calc(1 - 0.7 * var(--voice-cancel, 0));
+
+  svg {
+    width: 16px;
+    height: 16px;
+    animation: slideLeft 1.5s infinite;
+  }
 
   @keyframes slideLeft {
     0% {
@@ -257,6 +280,71 @@ export const SC_SwipeHint = styled.div`
       opacity: 1;
     }
   }
+`
+
+/**
+ * Замок над кнопкой записи: вверх до него — пишется без пальца. Стоит так,
+ * что кнопка, едущая за пальцем, доходит до него ровно на пороге замка
+ * (LOCK_DISTANCE_PX), и ярче по мере того, как подходит.
+ */
+export const SC_LockHint = styled.div`
+  position: absolute;
+  right: 12px;
+  bottom: calc(100% + 24px);
+  width: 40px;
+  padding: 10px 0 6px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--ui-radius-3xl);
+  border: 1px solid var(--ui-border);
+  background-color: var(--ui-bg);
+  box-shadow: var(--ui-shadow-md);
+  color: var(--ui-text-muted);
+  pointer-events: none;
+  z-index: 11;
+  opacity: calc(0.75 + 0.25 * var(--voice-lock, 0));
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  svg + svg {
+    width: 14px;
+    height: 14px;
+    animation: lockNudge 1.2s infinite;
+  }
+
+  @keyframes lockNudge {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+`
+
+/** Нажали и сразу отпустили: подсказка над кнопкой записи. */
+export const SC_HoldHint = styled.div`
+  position: absolute;
+  right: 8px;
+  bottom: calc(100% + 8px);
+  max-width: calc(100% - 16px);
+  padding: 6px 10px;
+  border-radius: var(--ui-radius-md);
+  background-color: var(--ui-bg-inverted);
+  color: var(--ui-text-inverted);
+  font-size: 12px;
+  line-height: calc(1.35 * var(--leading-scale));
+  box-shadow: var(--ui-shadow-md);
+  pointer-events: none;
+  z-index: 11;
 `
 
 export const SC_CancelButton = styled.button`

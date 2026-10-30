@@ -1081,7 +1081,9 @@ export default {
       'Qui non si possono registrare messaggi vocali: il browser integrato non dà accesso al microfono.',
     micFailed: 'Impossibile attivare il microfono.',
     recordingInProgress: 'Registrazione vocale',
-    swipeHint: '< Sinistra – annulla, Su – blocca',
+    slideToCancel: 'Scorri a sinistra per annullare',
+    slideToLock: 'Scorri in alto per registrare senza tenere premuto',
+    holdToRecord: 'Tieni premuto per registrare, rilascia per inviare',
     openEmojiPicker: 'Apri il selettore di emoji',
     resizeWindow:
       'Trascina per ridimensionare la finestra. Doppio clic per la dimensione originale',
