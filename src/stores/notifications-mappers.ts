@@ -9,7 +9,7 @@ import type {
   NotificationUserSnapshot,
 } from './notifications-types'
 import { MES_TYPE_TITLE_KEYS } from './notifications-constants'
-import { formatPkoin } from '@/helpers/common/pkoin-formatter'
+import { formatPaymentSatoshis } from '@/helpers/common/pkoin-formatter'
 import { DONATE_MARKER, SUBSCRIPTION_MARKER, opReturnText } from '@/helpers/common/op-return'
 
 /** Первая непустая строка по списку ключей. */
@@ -232,7 +232,7 @@ export function incomingCoins(
 
 /** Сумма для описания: `+1.5 PKOIN` (от языка не зависит, поэтому хранится готовой). */
 function amountLabel(satoshis: string | number): string {
-  return `+${formatPkoin(satoshis, 8, false)} PKOIN`
+  return `+${formatPaymentSatoshis(satoshis)} PKOIN`
 }
 
 /**

@@ -89,6 +89,34 @@ export function formatPkoinAmount(pkoin: number | null | undefined, decimals: nu
 }
 
 /**
+ * Сумма платежа в уведомлениях и событиях: от 1 PKOIN — до двух знаков после
+ * запятой, меньше — до трёх, а если и три нули — до первой ненулевой цифры.
+ * Хвостовые нули убираются. Раньше перевод меньше 1 PKOIN в событиях шапки
+ * выходил «0»: там обрезалось до двух знаков.
+ *
+ * @example
+ * formatPaymentAmount(12.345) // "12.35"
+ * formatPaymentAmount(0.1234) // "0.123"
+ * formatPaymentAmount(0.0004) // "0.0004"
+ * formatPaymentAmount(0.00012345) // "0.0001"
+ */
+export function formatPaymentAmount(pkoin: number | null | undefined): string {
+  if (pkoin === null || pkoin === undefined || !Number.isFinite(pkoin) || pkoin === 0) return '0'
+  const abs = Math.abs(pkoin)
+  // Первая ненулевая цифра дробной части: 0.0004 → 4-й знак. Считаем по
+  // величине, а не по toFixed(3): 0.0005 при округлении до трёх знаков дало
+  // бы «0.001» — вдвое больше.
+  const firstDigit = abs < 1 ? Math.ceil(-Math.log10(abs) - 1e-9) : 0
+  const decimals = abs >= 1 ? 2 : Math.min(PKOIN_DECIMALS, Math.max(3, firstDigit))
+  return pkoin.toFixed(decimals).replace(/\.?0+$/, '')
+}
+
+/** То же для суммы в минимальных единицах (сатоши). */
+export function formatPaymentSatoshis(satoshis: number | string | null | undefined): string {
+  return formatPaymentAmount(formatPkoinFromSmallestUnits(satoshis))
+}
+
+/**
  * Форматирует баланс PKOIN с разделителями тысяч
  *
  * @param balanceInSmallestUnits - Баланс в минимальных единицах (число или строка)

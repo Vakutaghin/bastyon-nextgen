@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
+  formatPaymentAmount,
+  formatPaymentSatoshis,
   formatPkoinFromSmallestUnits,
   formatPkoin,
   formatPkoinWithSeparators,
@@ -123,5 +125,38 @@ describe('formatPkoinAmount (V4/V5: вход уже в PKOIN)', () => {
     expect(formatPkoinAmount(0)).toBe('0')
     expect(formatPkoinAmount(null)).toBe('0')
     expect(formatPkoinAmount(NaN)).toBe('0')
+  })
+})
+
+describe('formatPaymentAmount: суммы в уведомлениях и событиях', () => {
+  it('от 1 PKOIN — до двух знаков, без хвостовых нулей', () => {
+    expect(formatPaymentAmount(12.345)).toBe('12.35')
+    expect(formatPaymentAmount(2)).toBe('2')
+    expect(formatPaymentAmount(1.5)).toBe('1.5')
+    expect(formatPaymentAmount(1)).toBe('1')
+  })
+
+  it('меньше 1 — до трёх знаков, а не «0»', () => {
+    expect(formatPaymentAmount(0.5)).toBe('0.5')
+    expect(formatPaymentAmount(0.1234)).toBe('0.123')
+    expect(formatPaymentAmount(0.05)).toBe('0.05')
+    expect(formatPaymentAmount(0.004)).toBe('0.004')
+  })
+
+  it('три нуля — дальше, до первой ненулевой цифры', () => {
+    expect(formatPaymentAmount(0.0004)).toBe('0.0004')
+    expect(formatPaymentAmount(0.0005)).toBe('0.0005')
+    expect(formatPaymentAmount(0.00012345)).toBe('0.0001')
+    expect(formatPaymentAmount(0.00000001)).toBe('0.00000001')
+    expect(formatPaymentAmount(0.001)).toBe('0.001')
+  })
+
+  it('ноль и мусор — «0»; сатоши переводятся в PKOIN', () => {
+    expect(formatPaymentAmount(0)).toBe('0')
+    expect(formatPaymentAmount(NaN)).toBe('0')
+    expect(formatPaymentAmount(undefined)).toBe('0')
+    expect(formatPaymentSatoshis(50_000_000)).toBe('0.5')
+    expect(formatPaymentSatoshis('40000')).toBe('0.0004')
+    expect(formatPaymentSatoshis(1_234_567_890)).toBe('12.35')
   })
 })

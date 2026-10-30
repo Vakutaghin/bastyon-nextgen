@@ -85,7 +85,7 @@
               <SC_EventPanel v-if="item.title || item.amount">
                 <SC_PostTitle v-if="item.title" :title="item.title">{{ item.title }}</SC_PostTitle>
                 <SC_SnippetSpaced v-if="item.amount">
-                  {{ formatPkoinAmount(item.amount) }} PKOIN
+                  {{ formatPaymentAmount(item.amount) }} PKOIN
                 </SC_SnippetSpaced>
               </SC_EventPanel>
               <SC_ItemActions>
@@ -164,7 +164,7 @@ import {
 import { useRouter } from 'vue-router'
 import type { PendingKind } from '@/blockchain/core/transactions/broadcast-events'
 import { usePendingTransactionsStore } from '@/stores/pending-transactions-store'
-import { formatPkoinAmount } from '@/helpers/common/pkoin-formatter'
+import { formatPaymentAmount } from '@/helpers/common/pkoin-formatter'
 import { userName } from '@/services/user-names'
 import { useAuthStore } from '@/blockchain'
 import {
