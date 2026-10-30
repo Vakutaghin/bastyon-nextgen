@@ -20,7 +20,6 @@ use tokio::sync::mpsc;
 use tokio_rustls::rustls::{self, ClientConfig};
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 
-use crate::tor::state::TorStatus;
 use crate::tor::ws::{self as tor_ws, SharedWsMap, WsHandle, WsOutgoing};
 use crate::tor::TorManager;
 use verifier::{PinVerifier, PIN_MISMATCH};
@@ -62,11 +61,7 @@ fn tls_config(verifier: Arc<PinVerifier>) -> Result<ClientConfig, String> {
 }
 
 async fn ensure_tor_off(tor: &TorManager) -> Result<(), String> {
-    if tor.state.read().await.status == TorStatus::Off {
-        Ok(())
-    } else {
-        Err("tor_enabled: direct node connections are off while Tor is on".into())
-    }
+    tor.refuse_direct().await
 }
 
 /// Хост и порт из адреса ноды; схема и путь — только разрешённые.

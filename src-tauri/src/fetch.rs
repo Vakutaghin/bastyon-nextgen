@@ -46,6 +46,10 @@ pub async fn download_client(tor: &TorManager) -> Result<reqwest::Client, String
         .user_agent("Bastyon/1.0")
         .connect_timeout(Duration::from_secs(30));
     let builder = match st.status {
+        // `Off` при включённом Tor — перезапуск с новыми мостами, а не «без Tor».
+        TorStatus::Off if tor.wanted.load(std::sync::atomic::Ordering::SeqCst) => {
+            return Err(format!("{}: status=Off", crate::tor::TOR_NOT_READY))
+        }
         TorStatus::Off => builder,
         TorStatus::Ready => builder.proxy(
             reqwest::Proxy::all(format!("socks5h://127.0.0.1:{}", st.socks_port))

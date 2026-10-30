@@ -62,9 +62,24 @@ pub fn spawn(paths: &TorPaths) -> std::io::Result<TorChild> {
     // (pt_config::PT_DIR_REL).
     if let Some(parent) = paths.binary.parent() {
         cmd.current_dir(parent);
+        #[cfg(target_os = "linux")]
+        cmd.env("LD_LIBRARY_PATH", library_path(parent));
     }
 
     Ok(TorChild { child: cmd.spawn()? })
+}
+
+/// У tor из бандла для Linux нет RPATH: libevent, libssl и libcrypto лежат
+/// рядом с ним, и без этой переменной tor не запускался там, где своего
+/// libevent-2.1 нет (так запускает его и Tor Browser).
+#[cfg(any(target_os = "linux", test))]
+fn library_path(tor_dir: &std::path::Path) -> std::ffi::OsString {
+    let mut value = tor_dir.as_os_str().to_owned();
+    if let Some(inherited) = std::env::var_os("LD_LIBRARY_PATH").filter(|v| !v.is_empty()) {
+        value.push(":");
+        value.push(inherited);
+    }
+    value
 }
 
 /// Сообщение статуса, когда процесс завершился сам (не через `tor_stop`).
@@ -262,6 +277,17 @@ mod tests {
         );
         assert_eq!(parse_bootstrap_pct("nothing here"), None);
         assert_eq!(parse_bootstrap_pct("Bootstrapped 100% (done): Done"), Some(100));
+    }
+
+    #[test]
+    fn bundled_libraries_come_first_on_linux() {
+        let dir = std::path::Path::new("/home/u/.local/share/app/tor/tor");
+        let value = library_path(dir).into_string().unwrap();
+        let ours = dir.to_str().unwrap();
+        assert!(
+            value == ours || value.starts_with(&format!("{ours}:")),
+            "{value}"
+        );
     }
 
     #[test]

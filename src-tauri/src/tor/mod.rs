@@ -29,6 +29,9 @@ use tokio::sync::RwLock;
 /// JS сверяет по этому префиксу и не уходит на прямое соединение (V20 fail-closed).
 pub const TOR_NOT_READY: &str = "tor_not_ready";
 
+/// Отказ прямому соединению при включённом Tor (`TorManager::refuse_direct`).
+pub const TOR_ENABLED: &str = "tor_enabled";
+
 /// Торифицированные reqwest-клиенты. Политика редиректов у reqwest per-client,
 /// поэтому для `redirect: 'manual'` (fetch-tunnel мини-апп, V25) держим второй.
 #[derive(Clone)]
@@ -55,6 +58,10 @@ pub struct TorManager {
     pub install_lock: tokio::sync::Mutex<()>,
     /// Идёт фоновая загрузка новой версии бандла (`upgrade_in_background`).
     pub upgrading: AtomicBool,
+    /// Человек включил Tor: от `tor_start` до `tor_stop` без `restart`. Пока
+    /// Tor перезапускается с новыми мостами, статус `Off`, а мимо Tor всё
+    /// равно ничего не идёт (`refuse_direct`).
+    pub wanted: AtomicBool,
 }
 
 impl TorManager {
@@ -69,7 +76,18 @@ impl TorManager {
             start_gen: AtomicU64::new(0),
             install_lock: tokio::sync::Mutex::new(()),
             upgrading: AtomicBool::new(false),
+            wanted: AtomicBool::new(false),
         }
+    }
+
+    /// Прямое соединение (ноды напрямую, скачивание модулей, IPFS) — только
+    /// когда Tor выключен: не включён человеком и не работает.
+    pub async fn refuse_direct(&self) -> Result<(), String> {
+        let status = self.state.read().await.status;
+        if self.wanted.load(Ordering::SeqCst) || status != TorStatus::Off {
+            return Err(format!("{TOR_ENABLED}: direct connections are off while Tor is on"));
+        }
+        Ok(())
     }
 
     fn build_torified_clients(socks_port: u16) -> reqwest::Result<TorClients> {
@@ -336,6 +354,7 @@ pub async fn tor_start(
     app: AppHandle,
     mgr: State<'_, TorManager>,
 ) -> Result<TorStateSnapshot, String> {
+    mgr.wanted.store(true, Ordering::SeqCst);
     {
         let st = mgr.state.read().await;
         // `Installing` тоже занят: второй `tor_start` во время загрузки писал
@@ -424,11 +443,17 @@ async fn upgrade_client(mgr: &TorManager) -> Result<reqwest::Client, String> {
         .map_err(err_string)
 }
 
+/// `restart` — перезапуск с новыми мостами: Tor остаётся включённым, и
+/// прямые соединения между остановкой и `tor_start` по-прежнему закрыты.
 #[tauri::command]
 pub async fn tor_stop(
     app: AppHandle,
     mgr: State<'_, TorManager>,
+    restart: Option<bool>,
 ) -> Result<TorStateSnapshot, String> {
+    if restart != Some(true) {
+        mgr.wanted.store(false, Ordering::SeqCst);
+    }
     // Инвалидируем запуск в полёте и прерываем загрузку архива.
     mgr.start_gen.fetch_add(1, Ordering::SeqCst);
     mgr.install_cancel.store(true, Ordering::SeqCst);
@@ -686,5 +711,20 @@ mod tests {
         mgr.state.write().await.status = TorStatus::Ready;
         assert!(mgr.pick_client(false).await.is_ok());
         assert!(mgr.pick_client(true).await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn direct_connections_wait_for_tor_to_be_turned_off() {
+        let mgr = TorManager::new(TorPaths::from_root(std::env::temp_dir().join("tor-test")));
+        assert!(mgr.refuse_direct().await.is_ok(), "Tor off");
+        mgr.state.write().await.status = TorStatus::Ready;
+        assert!(mgr.refuse_direct().await.is_err(), "Tor running");
+        // Перезапуск с новыми мостами: статус `Off`, а Tor всё ещё включён.
+        mgr.state.write().await.status = TorStatus::Off;
+        mgr.wanted.store(true, Ordering::SeqCst);
+        let err = mgr.refuse_direct().await.unwrap_err();
+        assert!(err.starts_with(TOR_ENABLED), "{err}");
+        mgr.wanted.store(false, Ordering::SeqCst);
+        assert!(mgr.refuse_direct().await.is_ok());
     }
 }

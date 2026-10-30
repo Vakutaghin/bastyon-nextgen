@@ -2,7 +2,7 @@
 //! по которому их настраивает Tor Browser. С новым бандлом сами обновляются
 //! и мосты, и способ запуска транспортов: в 15.x Snowflake переехал в
 //! lyrebird, и прописанный в коде `snowflake-client` перестал существовать.
-//! Нет файла или он битый — копия из 15.0.25 (`pt_config.fallback.json`).
+//! Нет файла или он битый — копия из 15.0.25 (`pt_config.fallback.json`, в 16.0 тот же).
 
 use serde::Deserialize;
 use std::collections::BTreeMap;

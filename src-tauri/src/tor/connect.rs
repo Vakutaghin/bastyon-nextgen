@@ -49,6 +49,23 @@ fn stall_timeout(transport: &str) -> Duration {
 
 pub const DIRECT: &str = "direct";
 
+/// Snowflake, который договаривается с брокером через AMP cache Google, а не
+/// через CDN77. Moat советует его для России (ответ для `ru` от 30.10.2026),
+/// но из России сам Moat недоступен: его отражатель тоже на CDN77, а CDN77 там
+/// закрыт. Во встроенных мостах бандла такого Snowflake нет — без этих строк
+/// автоподбор в России о нём не узнал бы.
+const SNOWFLAKE_AMP: [&str; 2] = [
+    "snowflake 192.0.2.5:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72 url=https://snowflake-broker.torproject.net/ ampcache=https://cdn.ampproject.org/ front=www.google.com ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn",
+    "snowflake 192.0.2.6:80 8838024498816A039FCBBAB14E6F40A0843051FA fingerprint=8838024498816A039FCBBAB14E6F40A0843051FA url=https://snowflake-broker.torproject.net/ ampcache=https://cdn.ampproject.org/ front=www.google.com ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn",
+];
+
+fn snowflake_amp() -> Candidate {
+    Candidate {
+        transport: "snowflake".into(),
+        bridges: bridges::parse_lines(&SNOWFLAKE_AMP).lines(),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Candidate {
     /// `direct`, `snowflake`, `webtunnel`, `obfs4`, `meek`, `custom`…
@@ -93,7 +110,8 @@ pub fn manual_candidate(kind: BridgeKind, custom: &[String], pt: &PtConfig) -> O
 }
 
 /// Порядок попыток автоподбора. `moat` — ответ Moat (`None` — не дозвонились).
-/// После советов Moat — встроенные, которых в них не было, без мостов — в конце.
+/// После советов Moat — встроенные, которых в них не было, и Snowflake через
+/// AMP cache, если его не было среди советов; без мостов — в конце.
 pub fn auto_plan(moat: Option<&MoatSettings>, pt: &PtConfig) -> Vec<Candidate> {
     let mut plan: Vec<Candidate> = Vec::new();
     match moat {
@@ -116,6 +134,12 @@ pub fn auto_plan(moat: Option<&MoatSettings>, pt: &PtConfig) -> Vec<Candidate> {
     for kind in ["snowflake", "obfs4", "meek"] {
         if !plan.iter().any(|c| c.transport == kind) {
             plan.extend(Candidate::builtin(kind, pt));
+        }
+        let has_amp = plan
+            .iter()
+            .any(|c| c.bridges.iter().any(|b| b.contains(" ampcache=")));
+        if kind == "snowflake" && !has_amp {
+            plan.push(snowflake_amp());
         }
     }
     if !plan.iter().any(|c| c.bridges.is_empty()) {
@@ -523,8 +547,16 @@ mod tests {
         let plan = auto_plan(Some(&moat), &pt);
         assert_eq!(
             transports(&plan),
-            ["webtunnel", "obfs4", "snowflake", "meek", DIRECT]
+            [
+                "webtunnel",
+                "obfs4",
+                "snowflake",
+                "snowflake",
+                "meek",
+                DIRECT
+            ]
         );
+        assert_eq!(plan[3], snowflake_amp(), "AMP cache after the CDN77 one");
         assert_eq!(plan[0].bridges, vec![WEBTUNNEL.to_string()]);
         assert_eq!(
             plan[2].bridges,
@@ -541,14 +573,41 @@ mod tests {
             bridges: vec![],
         };
         let plan = auto_plan(Some(&moat), &pt);
-        assert_eq!(transports(&plan), [DIRECT, "snowflake", "obfs4", "meek"]);
+        assert_eq!(
+            transports(&plan),
+            [DIRECT, "snowflake", "snowflake", "obfs4", "meek"]
+        );
     }
 
     #[test]
     fn without_moat_builtins_come_before_direct() {
         let plan = auto_plan(None, &PtConfig::fallback());
+        assert_eq!(
+            transports(&plan),
+            ["snowflake", "snowflake", "obfs4", "meek", DIRECT]
+        );
+        assert!(plan[..4].iter().all(|c| !c.bridges.is_empty()));
+        assert_eq!(
+            plan[1].bridges.len(),
+            2,
+            "both AMP lines pass the bridge check"
+        );
+    }
+
+    /// Moat прислал Snowflake с AMP cache сам — второй такой же не нужен.
+    #[test]
+    fn amp_snowflake_from_moat_is_not_doubled() {
+        let pt = PtConfig::fallback();
+        let moat = MoatSettings {
+            country: Some("ru".into()),
+            bridges: vec![MoatBridges {
+                kind: "snowflake".into(),
+                source: BridgeSource::BridgeDb,
+                lines: vec![SNOWFLAKE_AMP[0].into()],
+            }],
+        };
+        let plan = auto_plan(Some(&moat), &pt);
         assert_eq!(transports(&plan), ["snowflake", "obfs4", "meek", DIRECT]);
-        assert!(plan[..3].iter().all(|c| !c.bridges.is_empty()));
     }
 
     #[test]

@@ -1,11 +1,11 @@
 {
-  "version": "15.0.25",
+  "version": "16.0",
   "sha256": {
-    "linux-i686": "e3195aa30946de60b1a31ef584f2e8bc2623a99815f4a102a89257a01bef9a77",
-    "linux-x86_64": "19cf18726eecb362e0f21d27afa9ea9efe5da928bfdfbb1ceb5fe54519e87f4a",
-    "macos-aarch64": "a3febb6179152b0b4f56a0f5cc57bf5cc8ecef7db35e7c3e9d5a044c8158c26c",
-    "macos-x86_64": "e1ae4d4a734d28bb590839188511deb3cebc26fcbce9df66d01b2c452060fe95",
-    "windows-i686": "55a1e4c9b6df47c6e5fde1b3d755c858374d6cc0809c1dd1533a8622bb52de96",
-    "windows-x86_64": "c1988c701de2f24f7d098d1d6d7f507b58f27740d097f29c246e0524d639b252"
+    "linux-aarch64": "bed98744e093a0dc3a22be0eecfdce7a33cb36866d3f15fcf011a35bf3513d0d",
+    "linux-x86_64": "cc950ebe9acb80188325c3a2cd8817def7dd7237d6fdcd861bb87b234a0cb2fd",
+    "macos-aarch64": "b8da251eccbe9e82f3681ee3af3c97fb4291c4a4e153e5b824bde48a1117cd6a",
+    "macos-x86_64": "5b1860215c26f2d408392d1d79e798a2f81d65eb939510bb94c11f237bd0bfc3",
+    "windows-i686": "24036933df360e6581e26653eccb9f3d069ab1f5e0aa5b80e716cbf6030f84dc",
+    "windows-x86_64": "2ee123e9167318a3742778ff704e75f01d4780f05a14522d451fe011011077c4"
   }
 }

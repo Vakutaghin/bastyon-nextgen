@@ -85,6 +85,7 @@ fn platform_for(os: &str, arch: &str) -> Result<PlatformInfo, InstallError> {
         ("windows", "x86") => ("windows", "i686"),
         ("linux", "x86_64") => ("linux", "x86_64"),
         ("linux", "x86") => ("linux", "i686"),
+        ("linux", "aarch64") => ("linux", "aarch64"),
         ("macos", "x86_64") => ("macos", "x86_64"),
         ("macos", "aarch64") => ("macos", "aarch64"),
         _ => {
@@ -95,7 +96,8 @@ fn platform_for(os: &str, arch: &str) -> Result<PlatformInfo, InstallError> {
         }
     };
     let key = format!("{}-{}", platform, arch_tag);
-    // Для Linux ARM Tor Project бандл не собирает — хэша нет, ставить нечего.
+    // Платформы, для которой Tor Project бандл не собрал (Linux i686 с 16.0),
+    // в закреплённых хэшах нет — ставить нечего.
     let sha256 = pin()
         .sha256
         .get(&key)
@@ -518,6 +520,8 @@ mod tests {
             ("macos", "x86_64"),
             ("windows", "x86_64"),
             ("linux", "x86_64"),
+            // Бандл для Linux ARM у Tor Project есть с 16.0.
+            ("linux", "aarch64"),
         ] {
             let p = platform_for(os, arch).unwrap_or_else(|e| panic!("{os}-{arch}: {e}"));
             assert!(
@@ -527,7 +531,7 @@ mod tests {
             );
         }
         assert!(matches!(
-            platform_for("linux", "aarch64"),
+            platform_for("freebsd", "x86_64"),
             Err(InstallError::UnsupportedPlatform(_))
         ));
     }

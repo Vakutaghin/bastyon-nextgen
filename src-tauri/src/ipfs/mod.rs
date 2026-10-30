@@ -91,6 +91,8 @@ pub async fn ipfs_ensure(
     app: AppHandle,
     mgr: State<'_, IpfsManager>,
 ) -> Result<IpfsStateSnapshot, String> {
+    // Под Tor IPFS не работает вовсе: и демон, и шлюзы видят настоящий IP.
+    app.state::<crate::tor::TorManager>().refuse_direct().await?;
     // Быстрый путь без блокировки (с проверкой, что child не умер).
     reap_dead_child(&mgr).await;
     {
@@ -807,6 +809,8 @@ pub async fn ipfs_save_encrypted(
     id: String,
     size_hint: Option<u64>,
 ) -> Result<bool, String> {
+    // Под Tor IPFS не работает вовсе: и демон, и шлюзы видят настоящий IP.
+    app.state::<crate::tor::TorManager>().refuse_direct().await?;
     if !is_plausible_cid(&cid) {
         return Err("invalid CID".into());
     }
@@ -907,6 +911,8 @@ pub async fn ipfs_save(
     id: String,
     size_hint: Option<u64>,
 ) -> Result<bool, String> {
+    // Под Tor IPFS не работает вовсе: и демон, и шлюзы видят настоящий IP.
+    app.state::<crate::tor::TorManager>().refuse_direct().await?;
     let target = SaveTarget::parse(&namespace, &root, &path)?;
     let base = local_base(&mgr, &source).await?;
 

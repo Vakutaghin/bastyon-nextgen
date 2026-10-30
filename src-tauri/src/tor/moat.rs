@@ -28,7 +28,9 @@ const MOAT_TARGETS: &str = "https://1723079976.rsc.cdn77.org|cdn.zk.mk+www.cdn77
 /// Транспорты бандла; `vanilla` — мост без транспорта.
 const REQUEST_TRANSPORTS: &[&str] = &["obfs4", "snowflake", "webtunnel", "meek", "vanilla"];
 const PT_START_TIMEOUT: Duration = Duration::from_secs(15);
-const REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
+/// Moat через meek отвечает за 2–20 с. Где отражатель закрыт (CDN77 в РФ,
+/// замер 30.10.2026), ждать дольше незачем: автоподбор тем временем стоит.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_RESPONSE: u64 = 1 << 20;
 /// Moat: «не удалось определить страну».
 pub const CODE_NO_COUNTRY: i64 = 406;
