@@ -406,6 +406,15 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
       const addresses = (params[0] as string[]) ?? []
       return data.profiles.filter((p) => addresses.includes(p.address)).map(profileJson)
     }
+    case 'searchusers': {
+      // [текст, 'users', блок, сдвиг, сколько]: имя содержит текст, без учёта регистра.
+      const text = String(params[0] ?? '').toLowerCase()
+      const count = Number(params[4] ?? 10)
+      return data.profiles
+        .filter((p) => (p.name ?? '').toLowerCase().includes(text))
+        .slice(0, count)
+        .map(profileJson)
+    }
     case 'getcomments': {
       // [пост, ветка, читатель, id]: со списком id — эти комментарии с любого
       // поста; иначе корневые комментарии поста или ответы ветки.

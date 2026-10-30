@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { nuxtField } from '@/styles/field-styles'
 
 export const SC_ChatListRoot = styled.div`
   flex: 1;
@@ -122,4 +123,154 @@ export const SC_ChatsLoadingSpinner = styled.span`
   border-top-color: var(--color-text-secondary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
+`
+
+/** Лупа в шапке мессенджера: по нажатию над списком раскрывается поле поиска. */
+export const SC_SearchToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--ui-radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-tertiary);
+  }
+
+  &.active {
+    color: var(--ui-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+  }
+`
+
+/** Поле поиска на месте ряда разделов: лупа, ввод, значок загрузки, крестик. */
+export const SC_SearchBar = styled.div`
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border-bottom: 1px solid var(--color-bg-hover);
+  color: var(--color-text-secondary);
+
+  > .anticon {
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+`
+
+export const SC_SearchInput = styled.input`
+  ${nuxtField}
+  flex: 1;
+  min-width: 0;
+  padding: 5px 10px;
+
+  &::-webkit-search-cancel-button {
+    display: none;
+  }
+`
+
+export const SC_SearchClose = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--ui-radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-tertiary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+  }
+`
+
+/** Подпись раздела выдачи: «Чаты и группы», «Люди в Bastyon». */
+export const SC_SearchSection = styled.div`
+  padding: 10px 16px 6px;
+  color: var(--ui-text-dimmed);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+`
+
+/** «Ничего не нашлось» и подсказки в выдаче. */
+export const SC_SearchNote = styled.div`
+  padding: 6px 16px 12px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+`
+
+/** Человек из поиска по сети — строка как у чата, только короче. */
+export const SC_PersonRow = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid var(--color-bg-hover);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+
+  &:hover {
+    background-color: var(--color-bg-tertiary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: -2px;
+  }
+`
+
+export const SC_PersonInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+`
+
+export const SC_PersonName = styled.span`
+  overflow: hidden;
+  color: var(--ui-text-highlighted);
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`
+
+export const SC_PersonAddress = styled.span`
+  color: var(--ui-text-dimmed);
+  font-size: 12px;
 `

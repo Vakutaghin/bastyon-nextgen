@@ -8,6 +8,8 @@ keywords:
   - leave group
   - mute notifications
   - search in chat
+  - find a chat
+  - find a person
   - delete conversation
   - contact profile
 ---
@@ -20,7 +22,7 @@ How to start a conversation, find a chat or a message, see a group’s members, 
 
 You start a conversation with someone from their profile — the **“Start chat”** button — or with the chat button next to their name in a post header. A card with the person opens: name, reputation, followers and following, and a field for the first message. The other person gets the chat only once you send it: a single press of the button used to leave them an empty chat. If they have not published their encryption keys yet, the app says so and the text stays in the field. You can also write to someone who has never opened chats: the message waits for them. The first message goes out once the chat server confirms the other person is invited, usually within a second. If the server does not answer, the app says it could not create the chat, the text stays in the field, and you can send it again.
 
-The messenger has no people search of its own: find the person by name with [search](search.md).
+You can find a person right in the messenger — with the magnifier above the chat list, see [below](#find-a-chat-or-a-person) — or by name with [search](search.md).
 
 If someone new writes to you, the chat with them appears in the list by itself, labelled **“Invitation to chat”** (for a group, with the name of who invited you) and with the time of the invitation. Its messages show when you open it: the app accepts the invitation itself.
 
@@ -51,6 +53,15 @@ The three-dot button on a chat:
 - **“Mute notifications”** — the chat stops making sounds and sending notifications. A crossed-out bell appears next to the name, the unread count turns grey, and if the server sent no count, a grey dot takes its place. **“Unmute notifications”** puts it back. The setting is kept on the chat server, so it applies on all your devices and in the previous Bastyon app.
 - **“Delete dialog”** — the app asks again: **“Delete dialog?”** You leave the conversation, and it disappears from your list. The other person keeps it, and if either of you starts a chat again, it will be a new conversation. The copy of the chat saved on this device, if any, is deleted with it.
 - **“Leave group”** — what groups have instead of deleting. You leave the group and stop receiving its messages. You can return to a private group only with a new invitation.
+
+## Find a chat or a person
+
+The magnifier in the messenger header, next to the cross, opens a search field above the list. As you type, two sections appear below:
+
+- **“Chats and groups”** — your conversations, groups and channels whose name contains what you typed, up to five. Those whose name starts with it come first. All chats are searched, whichever switch is on;
+- **“People on Bastyon”** — network accounts with that name, up to fifteen. The app searches from two letters and once you pause typing; while it searches, a spinner turns in the field.
+
+Tap a chat to open it, or a person to open your conversation with them: the existing one or a new one, as with the **“Start chat”** button. **Enter** opens the first result. To close the search, use the cross in the field, **Esc** or the magnifier again.
 
 ## The other person’s profile
 

@@ -1062,6 +1062,18 @@ export default {
     filterChatsEmpty: '还没有对话',
     filterDirectEmpty: '还没有私聊',
     filterGroupsEmpty: '还没有群组',
+    listSearch: {
+      open: '查找聊天或用户',
+      close: '关闭搜索',
+      placeholder: '聊天、群组或用户',
+      searching: '正在搜索…',
+      chats: '聊天和群组',
+      people: 'Bastyon 用户',
+      noChats: '没有匹配的聊天',
+      noPeople: '未找到任何人',
+      typeMore: '请至少输入两个字符',
+      failed: '无法搜索用户，请检查网络连接',
+    },
     chatsEmptyTitle: '还没有聊天',
     chatsEmptyText: '要开始对话，请打开对方的个人资料并点击“开始聊天”。群组和频道也会显示在这里。',
     group: {

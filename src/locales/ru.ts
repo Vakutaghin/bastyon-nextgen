@@ -1113,6 +1113,18 @@ export default {
     filterChatsEmpty: 'Переписок пока нет',
     filterDirectEmpty: 'Личных переписок пока нет',
     filterGroupsEmpty: 'Групп пока нет',
+    listSearch: {
+      open: 'Найти чат или человека',
+      close: 'Закрыть поиск',
+      placeholder: 'Чат, группа или человек',
+      searching: 'Ищу…',
+      chats: 'Чаты и группы',
+      people: 'Люди в Bastyon',
+      noChats: 'Среди ваших чатов не нашлось',
+      noPeople: 'Никого не нашлось',
+      typeMore: 'Введите хотя бы две буквы',
+      failed: 'Не удалось найти людей, проверьте связь',
+    },
     chatsEmptyTitle: 'Чатов пока нет',
     chatsEmptyText:
       'Чтобы начать переписку, откройте профиль человека и нажмите «Начать чат». Здесь же будут группы и каналы.',

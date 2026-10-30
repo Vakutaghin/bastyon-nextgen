@@ -1128,6 +1128,18 @@ export default {
     filterChatsEmpty: 'Aucune discussion pour le moment',
     filterDirectEmpty: 'Aucune discussion personnelle pour le moment',
     filterGroupsEmpty: 'Aucun groupe pour le moment',
+    listSearch: {
+      open: 'Chercher une discussion ou une personne',
+      close: 'Fermer la recherche',
+      placeholder: 'Discussion, groupe ou personne',
+      searching: 'Recherche…',
+      chats: 'Discussions et groupes',
+      people: 'Personnes sur Bastyon',
+      noChats: 'Aucune discussion trouvée',
+      noPeople: 'Personne trouvé',
+      typeMore: 'Saisissez au moins deux lettres',
+      failed: 'Recherche de personnes impossible, vérifiez la connexion',
+    },
     chatsEmptyTitle: 'Pas encore de discussions',
     chatsEmptyText:
       'Pour commencer, ouvrez le profil d’une personne et touchez « Démarrer une discussion ». Les groupes et les chaînes apparaîtront aussi ici.',

@@ -137,6 +137,15 @@ export const SC_Content = styled.div`
   background-color: var(--color-bg-primary);
 `
 
+/** Кнопки у правого края шапки: заголовок «Сообщения» короткий, крестик всё равно справа. */
+export const SC_HeaderEnd = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
+`
+
 export const SC_CloseButton = styled.button`
   appearance: none;
   border: none;
@@ -152,8 +161,6 @@ export const SC_CloseButton = styled.button`
   border-radius: var(--ui-radius-md);
   color: var(--ui-text-muted);
   font-size: 16px;
-  /* Заголовок «Сообщения» короткий: крестик всё равно у правого края. */
-  margin-left: auto;
 
   &:hover {
     background: var(--ui-bg-elevated);

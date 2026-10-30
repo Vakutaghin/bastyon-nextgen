@@ -22,9 +22,13 @@
       </slot>
       <!-- Что догружается: рядом с заголовком, у открытого чата — перед крестиком. -->
       <slot name="status" />
-      <SC_CloseButton type="button" :aria-label="t('chat.close')" @click="emit('close')">
-        <CloseOutlined />
-      </SC_CloseButton>
+      <!-- Справа: кнопки списка (лупа) и крестик. -->
+      <SC_HeaderEnd>
+        <slot name="tools" />
+        <SC_CloseButton type="button" :aria-label="t('chat.close')" @click="emit('close')">
+          <CloseOutlined />
+        </SC_CloseButton>
+      </SC_HeaderEnd>
     </SC_Header>
 
     <SC_Content>
@@ -38,6 +42,7 @@ import { ref, watchPostEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   SC_Window,
+  SC_HeaderEnd,
   SC_Header,
   SC_Title,
   SC_Content,

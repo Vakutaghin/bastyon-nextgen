@@ -6,6 +6,7 @@
           <span>{{ t('messenger.messages') }}</span>
           <MessengerActivity scope="list" />
         </SC_SidebarTitle>
+        <ChatSearchToggle />
         <slot name="header-actions" />
       </SC_SidebarHeader>
       <SyncErrorBanner />
@@ -75,6 +76,7 @@ import { useI18n } from 'vue-i18n'
 import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
 import ChatList from '../chat-list/chat-list.vue'
+import ChatSearchToggle from '../chat-list/chat-search-toggle.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
 import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
 import ChannelRoom from '../channel-room/channel-room.vue'

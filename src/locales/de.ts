@@ -1126,6 +1126,18 @@ export default {
     filterChatsEmpty: 'Noch keine Chats',
     filterDirectEmpty: 'Noch keine persönlichen Chats',
     filterGroupsEmpty: 'Noch keine Gruppen',
+    listSearch: {
+      open: 'Chat oder Person suchen',
+      close: 'Suche schließen',
+      placeholder: 'Chat, Gruppe oder Person',
+      searching: 'Suche…',
+      chats: 'Chats und Gruppen',
+      people: 'Personen auf Bastyon',
+      noChats: 'Keine passenden Chats',
+      noPeople: 'Niemand gefunden',
+      typeMore: 'Mindestens zwei Buchstaben eingeben',
+      failed: 'Personensuche fehlgeschlagen, Verbindung prüfen',
+    },
     chatsEmptyTitle: 'Noch keine Chats',
     chatsEmptyText:
       'Um eine Unterhaltung zu beginnen, öffnen Sie ein Profil und tippen Sie auf „Chat starten“. Gruppen und Kanäle erscheinen ebenfalls hier.',

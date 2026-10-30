@@ -31,6 +31,9 @@
           :scope="activityScope"
         />
       </template>
+      <template v-if="listShown" #tools>
+        <ChatSearchToggle />
+      </template>
 
       <!-- Без него окошко при сбое синка показывало только вечную «Загрузку диалогов». -->
       <SyncErrorBanner v-if="!activeChatId && !(lastTargetAddress && inviteViewActive)" />
@@ -103,6 +106,7 @@ import { ArrowLeftIcon, CloseOutlined, MessageOutlined } from '@/components/icon
 import MessengerButton from '../messenger-button/messenger-button.vue'
 import MessengerWindow from '../messenger-window/messenger-window.vue'
 import ChatList from '../chat-list/chat-list.vue'
+import ChatSearchToggle from '../chat-list/chat-search-toggle.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
 import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
 import ChannelRoom from '../channel-room/channel-room.vue'
@@ -199,6 +203,14 @@ const activityScope = computed<'list' | 'chat' | null>(() => {
   if (!id) return lastTargetAddress.value && inviteViewActive.value ? null : 'list'
   return channelAddressOf(id) || isMeshDialogId(id) ? null : 'chat'
 })
+
+/** В окошке виден список чатов (не открытый чат и не загрузка) — тогда в шапке лупа. */
+const listShown = computed<boolean>(
+  () =>
+    !activeChatId.value &&
+    !(lastTargetAddress.value && inviteViewActive.value) &&
+    !isDialogsLoading.value
+)
 
 function onWidgetBack(): void {
   if (activeChatId.value) {

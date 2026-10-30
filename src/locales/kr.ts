@@ -1105,6 +1105,18 @@ export default {
     filterChatsEmpty: '아직 대화가 없습니다',
     filterDirectEmpty: '아직 개인 대화가 없습니다',
     filterGroupsEmpty: '아직 그룹이 없습니다',
+    listSearch: {
+      open: '채팅 또는 사람 찾기',
+      close: '검색 닫기',
+      placeholder: '채팅, 그룹 또는 사람',
+      searching: '검색 중…',
+      chats: '채팅 및 그룹',
+      people: 'Bastyon 사용자',
+      noChats: '일치하는 채팅이 없습니다',
+      noPeople: '아무도 찾지 못했습니다',
+      typeMore: '두 글자 이상 입력하세요',
+      failed: '사람을 검색하지 못했습니다. 연결을 확인하세요',
+    },
     chatsEmptyTitle: '아직 채팅이 없습니다',
     chatsEmptyText:
       '대화를 시작하려면 상대의 프로필을 열고 「채팅 시작」을 누르세요. 그룹과 채널도 여기에 표시됩니다.',

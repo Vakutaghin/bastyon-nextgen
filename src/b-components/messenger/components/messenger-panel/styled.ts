@@ -65,6 +65,12 @@ export const SC_SidebarHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+
+  /* Список во всю ширину: справа над шапкой крестик полноэкранного мессенджера,
+     лупа — левее него. */
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
+    padding-right: calc(var(--safe-right) + 64px);
+  }
 `
 
 /** «Сообщения» и значок «догружается» рядом. */
