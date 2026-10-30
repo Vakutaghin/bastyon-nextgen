@@ -1,5 +1,6 @@
 // appFetch при включённом Tor: ждёт готовности, при failed бросает, при
-// выключении во время ожидания уходит обычным путём (V20).
+// выключении во время ожидания тоже бросает — собранный для Tor запрос
+// напрямую не уходит (V20).
 
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -79,11 +80,40 @@ describe('appFetch × Tor', () => {
     expect(mocks.tauriFetch).not.toHaveBeenCalled()
   })
 
-  it('пользователь выключил Tor во время ожидания — запрос идёт обычным путём', async () => {
+  it('Tor выключили во время ожидания — ошибка, а не прямой запрос', async () => {
     const store = torStore('off')
     const p = appFetch('https://1.pocketnet.app:8899/rpc/x')
+    await new Promise((r) => setTimeout(r, 0)) // запрос уже ждёт Tor
     store.enabled = false
-    await expect((await p).text()).resolves.toBe('direct')
+    expect(isTorNotReadyError(await p.catch((e) => e))).toBe(true)
+    expect(mocks.tauriFetch).not.toHaveBeenCalled()
+    // Следующий запрос — уже без Tor.
+    await expect((await appFetch('https://1.pocketnet.app:8899/rpc/x')).text()).resolves.toBe(
+      'direct'
+    )
+  })
+
+  it('перезапуск Tor с новыми мостами: ждавший запрос уходит через Tor', async () => {
+    const store = torStore('bootstrapping')
+    const p = appFetch('https://1.pocketnet.app:8899/rpc/x')
+    store.status = 'off'
+    await Promise.resolve()
+    store.status = 'starting'
+    store.status = 'ready'
+    await expect((await p).text()).resolves.toBe('tor')
+    expect(mocks.tauriFetch).not.toHaveBeenCalled()
+  })
+
+  it('свой предел времени доходит до torFetch', async () => {
+    torStore('ready')
+    await appFetch(
+      'https://matrix.pocketnet.app/_matrix/media/v3/upload',
+      { method: 'POST' },
+      {
+        timeoutMs: 600_000,
+      }
+    )
+    expect(mocks.torFetch.mock.lastCall![2]).toEqual({ timeoutMs: 600_000 })
   })
 
   it('same-origin всегда через глобальный fetch (dev-proxy)', async () => {

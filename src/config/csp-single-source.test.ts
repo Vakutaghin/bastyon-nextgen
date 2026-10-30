@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 // Плагин сборки лежит в корне репозитория рядом с vite.config.js.
-import { stripMetaCsp } from '../../vite-plugin-csp.js'
+import { cspSingleSource, stripMetaCsp, stripNetworkHints } from '../../vite-plugin-csp.js'
 import servers from '@/servers.json'
 
 const ROOT = resolve(__dirname, '../..')
@@ -98,4 +98,21 @@ describe('CSP Tauri покрывает то, что раньше давала me
       expect(directive(tauriCsp, name)).not.toBe('')
     }
   )
+})
+
+describe('прогрев соединений в приложении для компьютера', () => {
+  it('в Tauri-сборке нет preconnect и dns-prefetch, DNS заранее не спрашивается', () => {
+    expect(indexHtml).toMatch(/rel="preconnect"/)
+    const html = cspSingleSource({ isTauri: true }).transformIndexHtml.handler(indexHtml)
+    expect(html).not.toMatch(/rel="(preconnect|dns-prefetch)"|Прогрев соединений/)
+    expect(html).toContain('<meta http-equiv="x-dns-prefetch-control" content="off" />')
+    expect(html).toContain('<div id="app">')
+    expect(stripNetworkHints('<link rel="dns-prefetch" href="https://x.example" />')).toBe('')
+  })
+
+  it('в вебе прогрев остаётся', () => {
+    expect(cspSingleSource({ isTauri: false }).transformIndexHtml.handler(indexHtml)).toBe(
+      indexHtml
+    )
+  })
 })

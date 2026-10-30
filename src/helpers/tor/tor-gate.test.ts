@@ -6,9 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTorStore } from '@/stores/tor-store'
 import {
+  TOR_ENABLED_KEY,
   TorNotReadyError,
   isTorNotReadyError,
   routingModeOf,
+  torEnabledInStorage,
   torRoutingMode,
   waitForTorRouting,
 } from './tor-gate'
@@ -102,9 +104,24 @@ describe('waitForTorRouting', () => {
 })
 
 describe('torRoutingMode без pinia', () => {
+  afterEach(() => {
+    delete (window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__
+    localStorage.removeItem(TOR_ENABLED_KEY)
+  })
+
   it('деградирует в direct (тесты/воркеры без стора)', async () => {
     // Активной pinia нет — useTorStore бросит, гейт ловит.
     setActivePinia(undefined as unknown as ReturnType<typeof createPinia>)
+    await expect(torRoutingMode()).resolves.toBe('direct')
+  })
+
+  it('в приложении с включённым Tor — failed, а не direct', async () => {
+    setActivePinia(undefined as unknown as ReturnType<typeof createPinia>)
+    ;(window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {}
+    localStorage.setItem(TOR_ENABLED_KEY, '1')
+    expect(torEnabledInStorage()).toBe(true)
+    await expect(torRoutingMode()).resolves.toBe('failed')
+    localStorage.setItem(TOR_ENABLED_KEY, '0')
     await expect(torRoutingMode()).resolves.toBe('direct')
   })
 })

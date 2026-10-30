@@ -2252,6 +2252,8 @@ export default {
     videoBypassBody:
       'The player loads video directly from the PeerTube server — the server will see your IP address. Node requests and chat stay in Tor.',
     videoBypassOk: 'Watch bypassing Tor',
+    audioBypassBody: 'Audio will bypass Tor: the PeerTube server will see your IP address.',
+    audioBypassOk: 'Listen bypassing Tor',
   },
   misc: {
     bastyonFeed: 'Bastyon Feed',

@@ -28,7 +28,11 @@
         <MusicIcon v-else />
       </SC_Cover>
 
-      <SC_Info type="button" :title="current.title" @click="openPost">
+      <SC_TorNote v-if="state.torBlocked" role="status" data-testid="mini-player-tor">
+        <span>{{ t('torMedia.audioBypassBody') }}</span>
+        <Button size="small" @click="acceptTorBypass">{{ t('torMedia.audioBypassOk') }}</Button>
+      </SC_TorNote>
+      <SC_Info v-else type="button" :title="current.title" @click="openPost">
         <SC_Title>{{ current.title || t('media.untitled') }}</SC_Title>
         <SC_Artist>
           <template v-if="state.error">{{ state.error }}</template>
@@ -146,7 +150,9 @@ import {
   SkipBackIcon,
   SkipForwardIcon,
 } from '@/components/icons'
+import { Button } from 'ant-design-vue'
 import { formatDuration } from '@/services/media/media-post'
+import { acceptTorBypass } from '@/services/media/audio-engine'
 import { useViewport } from '@/composables/use-viewport'
 import { useMiniPlayer } from './use-mini-player'
 import {
@@ -165,6 +171,7 @@ import {
   SC_QueueTitle,
   SC_Time,
   SC_Title,
+  SC_TorNote,
 } from './mini-player.styled'
 
 const { t } = useI18n()

@@ -2166,6 +2166,8 @@ export default {
     videoBypassBody:
       '播放器直接从 PeerTube 服务器加载视频——服务器会看到你的 IP 地址。节点请求和聊天仍通过 Tor。',
     videoBypassOk: '绕过 Tor 观看',
+    audioBypassBody: '音频将绕过 Tor：PeerTube 服务器会看到你的 IP 地址。',
+    audioBypassOk: '绕过 Tor 收听',
   },
   misc: {
     bastyonFeed: 'Bastyon 信息流',

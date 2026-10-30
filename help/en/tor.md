@@ -25,7 +25,7 @@ If your provider blocks Tor — as in Russia — bridges help to connect. In the
 - **“meek (via CDN, slow)”** — disguises Tor as traffic to a large content delivery network. Slow, but gets through almost everywhere;
 - **“Custom bridges”** — paste bridges one per line: obfs4, WebTunnel, Snowflake, or meek. The **“Get bridges”** button asks the Tor Project for fresh bridges for your country. The @GetBridgesBot Telegram bot and bridges.torproject.org also hand out bridges. Lines that do not look like a bridge are skipped, and the app tells you how many.
 
-Press **“Apply”** — Tor restarts with the new bridges.
+Press **“Apply”** — Tor restarts with the new bridges. While it restarts, requests wait for it and do not go out directly.
 
 If the connection makes no progress for a long time, the menu warns that the method seems blocked — choose another one. If none of the methods worked in **“Automatic”** mode, press **“Retry”** or add your own bridges.
 
@@ -33,6 +33,8 @@ If the connection makes no progress for a long time, the menu warns that the met
 <summary>How automatic bridges work</summary>
 
 The app asks Moat, the Tor Project service that hands out bridges. The Tor Project site is blocked in Russia, so the request goes through meek: the provider sees traffic to a content delivery network, while the encryption runs end to end to the Tor Project. Moat works out the country from the IP address the request came from — just as when Tor Browser requests bridges — and the menu shows it.
+
+Sometimes Moat itself is out of reach: in Russia the content delivery network that meek goes through is blocked. Then the app waits for it no longer than half a minute and tries the built-in methods: Snowflake, Snowflake through Google's AMP cache, obfs4 and meek. The Tor Project recommends Snowflake through the AMP cache for Russia, but Tor's built-in bridges do not include it — the app adds it.
 
 An attempt that makes no progress for a minute and a half gives way to the next one; meek, the slowest, gets four minutes. The app remembers the method that worked and tries it first next time, without asking Moat.
 
@@ -50,8 +52,10 @@ The app’s windows themselves cannot be routed entirely through Tor on every sy
 
 - **images** do not show by themselves: press **“Load through Tor”** on an image, and it loads through Tor;
 - **videos** can be watched only directly: the app warns **“Video will bypass Tor”** — the PeerTube server will see your IP address — and plays the video after **“Watch bypassing Tor”**. Node requests and the chat stay in Tor;
+- **music and podcasts** in the mini player also play only directly: instead of the track title you see “Audio will bypass Tor: the PeerTube server will see your IP address” and a **“Listen bypassing Tor”** button. Your consent lasts while the app is open;
 - **YouTube and other embeds** and **mini apps** are turned off;
-- **IPFS** does not work at all — see [Files and IPFS](ipfs.md).
+- **IPFS** does not work at all — see [Files and IPFS](ipfs.md);
+- **links** from posts and chats open in your regular browser, and it goes online on its own, without the app's Tor.
 
 ## Turning it off
 

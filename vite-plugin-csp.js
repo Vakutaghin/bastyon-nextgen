@@ -20,14 +20,32 @@ export function stripMetaCsp(html) {
   return html.replace(META_CSP_RE, '\n    ')
 }
 
-/** Плагин: снимает meta-CSP только в Tauri-сборке. */
+const NETWORK_HINT_RE =
+  /\s*<!--[^>]*-->(?=\s*<link\s+rel=(?:"|')(?:preconnect|dns-prefetch))|\s*<link\s+rel=(?:"|')(?:preconnect|dns-prefetch)(?:"|')[^>]*>/gi
+
+/**
+ * Приложение для компьютера: без прогрева соединений и DNS. Окно открывало
+ * соединение к ноде и спрашивало DNS у провайдера, ещё не зная о Tor, —
+ * с настоящего IP, прямо перед запросами к той же ноде через Tor. Чужие ссылки
+ * в ленте WebView2 тоже резолвил бы заранее, мимо Tor.
+ */
+export function stripNetworkHints(html) {
+  return html
+    .replace(NETWORK_HINT_RE, '')
+    .replace(
+      /<meta charset="UTF-8" \/>/i,
+      '$&\n    <meta http-equiv="x-dns-prefetch-control" content="off" />'
+    )
+}
+
+/** Плагин: в Tauri-сборке снимает meta-CSP и прогрев соединений. */
 export function cspSingleSource({ isTauri }) {
   return {
     name: 'csp-single-source',
     transformIndexHtml: {
       order: 'pre',
       handler(html) {
-        return isTauri ? stripMetaCsp(html) : html
+        return isTauri ? stripNetworkHints(stripMetaCsp(html)) : html
       },
     },
   }

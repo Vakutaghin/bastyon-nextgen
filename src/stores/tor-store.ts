@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 
-import { routingModeOf, type TorRoutingMode } from '@/helpers/tor/tor-gate'
+import {
+  routingModeOf,
+  TOR_ENABLED_KEY as LS_ENABLED,
+  type TorRoutingMode,
+} from '@/helpers/tor/tor-gate'
 import { applyTorMediaPolicy, isTorMediaPolicyApplied } from '@/helpers/tor/tor-media-policy'
 
 export type TorStatus = 'off' | 'installing' | 'starting' | 'bootstrapping' | 'ready' | 'failed'
@@ -57,7 +61,6 @@ export type TorInstallProgress = {
   message: string
 }
 
-const LS_ENABLED = 'tor:enabled'
 const LS_BRIDGES_USE = 'tor:bridges:use'
 const LS_BRIDGES_KIND = 'tor:bridges:kind'
 const LS_BRIDGES_CUSTOM = 'tor:bridges:custom'
@@ -126,6 +129,17 @@ function persistString(key: string, value: string): void {
   } catch {
     /* best-effort */
   }
+}
+
+const enabledListeners = new Set<() => void>()
+
+/**
+ * Tor включили (не при запуске с уже включённым): соединения, открытые до
+ * этого напрямую, переоткрываются через Tor. Возвращает отписку.
+ */
+export function onTorEnabled(cb: () => void): () => void {
+  enabledListeners.add(cb)
+  return () => enabledListeners.delete(cb)
 }
 
 /** Вынесено, чтобы тесты стора подменяли перезагрузку. */
@@ -249,10 +263,20 @@ export const useTorStore = defineStore('tor', {
 
     async enable(): Promise<void> {
       if (!this.available) return
+      const turnedOn = !this.enabled
       this.enabled = true
       persistBool(LS_ENABLED, true)
       // До tor_start: картинки/фреймы не должны успеть уйти мимо Tor (V21).
       applyTorMediaPolicy()
+      if (turnedOn) {
+        for (const cb of enabledListeners) {
+          try {
+            cb()
+          } catch {
+            /* слушатель сам разберётся */
+          }
+        }
+      }
       try {
         await this.pushBridges()
         const snap = await tauriInvoke<TorStateSnapshot>('tor_start')
@@ -363,9 +387,29 @@ export const useTorStore = defineStore('tor', {
     }): Promise<void> {
       this.setBridgeConfig(opts)
       await this.pushBridges()
-      if (this.enabled) {
-        await this.disable({ keepPolicy: true })
-        await this.enable()
+      await this.restart()
+    },
+
+    /**
+     * Перезапуск с новыми мостами («Применить», «Повторить»). `enabled` не
+     * сбрасывается: раньше перезапуск шёл через `disable()`, routingMode на это
+     * время становился `direct`, и запросы, ждавшие Tor (RPC с подписью, /sync
+     * с токеном), уходили напрямую. Rust тоже помнит, что Tor включён.
+     */
+    async restart(): Promise<void> {
+      if (!this.available || !this.enabled) return
+      try {
+        const snap = await tauriInvoke<TorStateSnapshot>('tor_stop', { restart: true })
+        this.applySnapshot(snap)
+      } catch {
+        // backend already stopped
+      }
+      try {
+        const snap = await tauriInvoke<TorStateSnapshot>('tor_start')
+        this.applySnapshot(snap)
+      } catch (e) {
+        this.status = 'failed'
+        this.message = String(e)
       }
     },
   },

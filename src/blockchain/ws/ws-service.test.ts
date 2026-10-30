@@ -81,6 +81,7 @@ const { _pickWebSocketCtor, _generateApiSignature, _orderedProxies, mockAuth } =
 
 vi.mock('@/helpers/tor/tor-websocket', () => ({
   pickWebSocketCtor: _pickWebSocketCtor,
+  TorWebSocket: class {},
 }))
 
 // node-selector: по умолчанию — исходный порядок (proxy[0]); отдельные тесты

@@ -217,10 +217,14 @@ export const useIpfsStore = defineStore('ipfs', {
     busy(state): boolean {
       return state.status === 'installing' || state.status === 'starting'
     },
-    /** Tor сейчас реально торифицирует трафик (для privacy-guard публичного шлюза). */
+    /**
+     * Tor включён — IPFS не работает: Kubo, узел в окне и шлюзы ходят мимо Tor.
+     * Не только при готовом Tor: пока он подключается или не смог, нода
+     * точно так же светила бы настоящий IP.
+     */
     torActive(): boolean {
       try {
-        return useTorStore().shouldTorify
+        return useTorStore().wantsTor
       } catch {
         return false
       }

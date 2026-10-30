@@ -111,6 +111,18 @@ export const SC_Info = styled.button`
   color: inherit;
 `
 
+/** Tor включён: вместо названия — что звук пойдёт мимо Tor, и согласие. */
+export const SC_TorNote = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ui-text-muted);
+`
+
 export const SC_Title = styled.div`
   font-size: 14px;
   font-weight: 600;

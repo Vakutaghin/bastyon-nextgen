@@ -19,12 +19,15 @@
  */
 
 import { appFetch } from './fetch-strategies'
+import { torRoutingMode, waitForTorRouting } from '@/helpers/tor/tor-gate'
 import type { ServerEndpoint } from './rpc-retry'
 
 const STORAGE_KEY = 'bastyon_live_proxy'
 
 /** Таймаут health-пинга одной ноды. */
 const PROBE_TIMEOUT_MS = 4_000
+/** Через Tor: новая цепочка до выхода — ещё несколько секунд. */
+const TOR_PROBE_TIMEOUT_MS = 15_000
 
 /** Сколько доверяем выбранной ноде без перепинга (как 120s ping-cache в оригинале). */
 const TRUST_TTL_MS = 120_000
@@ -90,8 +93,16 @@ function setCurrent(proxy: ServerEndpoint): void {
  * AbortController. /ping у прокси лёгкий (≈0.4s) и отвечает 200 пока прокси жив.
  */
 async function probe(server: ServerEndpoint): Promise<boolean> {
+  // Под Tor таймаут считается с готовности Tor: раньше 4 с истекали, пока он
+  // подключался, и на каждом запуске все прокси выходили мёртвыми.
+  let mode = await torRoutingMode()
+  if (mode === 'wait') mode = await waitForTorRouting().catch(() => 'failed' as const)
+  if (mode === 'failed') return false
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS)
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    mode === 'tor' ? TOR_PROBE_TIMEOUT_MS : PROBE_TIMEOUT_MS
+  )
   try {
     const res = await appFetch(`https://${server.host}:${server.port}/ping`, {
       method: 'POST',

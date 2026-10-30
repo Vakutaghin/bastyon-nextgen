@@ -2279,6 +2279,8 @@ export default {
     videoBypassBody:
       'Le lecteur charge la vidéo directement depuis le serveur PeerTube : le serveur verra votre adresse IP. Les requêtes aux nœuds et le chat restent dans Tor.',
     videoBypassOk: 'Regarder sans Tor',
+    audioBypassBody: 'Le son passera hors de Tor : le serveur PeerTube verra votre adresse IP.',
+    audioBypassOk: 'Écouter sans Tor',
   },
   misc: {
     bastyonFeed: 'Fil Bastyon',

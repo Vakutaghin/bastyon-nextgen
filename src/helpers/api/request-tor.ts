@@ -74,7 +74,17 @@ export function raceWithAbort<T>(
   })
 }
 
-export async function torFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+/** Что fetch-init не выражает. */
+export interface TorFetchOptions {
+  /** Свой предел на весь запрос вместо 120 с клиента Rust — для больших загрузок. */
+  timeoutMs?: number
+}
+
+export async function torFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  opts: TorFetchOptions = {}
+): Promise<Response> {
   if (init?.signal?.aborted) {
     throw new DOMException('Aborted', 'AbortError')
   }
@@ -91,6 +101,7 @@ export async function torFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     body_b64: bodyBytes ? bytesToBase64(bodyBytes) : undefined,
     // `redirect: 'manual'` (fetch-tunnel мини-апп, V25): 3xx возвращается как есть.
     no_redirect: init?.redirect === 'manual',
+    timeout_ms: opts.timeoutMs,
   }
 
   const { invoke } = await import('@tauri-apps/api/core')

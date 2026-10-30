@@ -36,6 +36,24 @@ export interface TorGateState {
   status: TorStatus
 }
 
+/** Флаг «Tor включён» в localStorage (его пишет tor-store). */
+export const TOR_ENABLED_KEY = 'tor:enabled'
+
+/**
+ * Tor включён по сохранённому флагу — на случай, когда стора нет (pinia ещё
+ * не поднята). Без Tauri Tor не бывает.
+ */
+export function torEnabledInStorage(): boolean {
+  if (typeof window === 'undefined') return false
+  if (!('__TAURI_INTERNALS__' in window) && !('__TAURI__' in window)) return false
+  try {
+    const raw = window.localStorage.getItem(TOR_ENABLED_KEY)
+    return raw === '1' || raw === 'true'
+  } catch {
+    return false
+  }
+}
+
 /** Чистое правило — геттер стора и тесты. */
 export function routingModeOf(s: TorGateState): TorRoutingMode {
   if (!s.available || !s.enabled) return 'direct'
@@ -58,8 +76,9 @@ export async function torRoutingMode(): Promise<TorRoutingMode> {
   try {
     return (await getStore()).routingMode
   } catch {
-    // Нет pinia (тесты, воркеры) — значит и Tor-стора нет.
-    return 'direct'
+    // Нет pinia (тесты, воркеры) — Tor-стора нет. Но если Tor включён, мимо
+    // него не идём: запрос получит ошибку, а не прямое соединение.
+    return torEnabledInStorage() ? 'failed' : 'direct'
   }
 }
 

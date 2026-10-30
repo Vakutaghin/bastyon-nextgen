@@ -12,13 +12,27 @@ vi.mock('./mxc-resolver', () => ({
     mxc.startsWith('mxc://') ? `https://media.example/${mxc.slice(6)}` : '',
 }))
 
-import { sendAudio, sendFile, sendImage, sendVideo, uploadContent } from './media-sender'
+const { routing, matrixFetch } = vi.hoisted(() => ({
+  routing: { mode: 'direct' as string },
+  matrixFetch: vi.fn(),
+}))
+vi.mock('@/helpers/tor/tor-gate', () => ({ torRoutingMode: async () => routing.mode }))
+vi.mock('@/helpers/api/fetch-strategies', () => ({ matrixFetch }))
+
+import {
+  sendAudio,
+  sendFile,
+  sendImage,
+  sendVideo,
+  torUploadTimeoutMs,
+  uploadContent,
+} from './media-sender'
 import type { MatrixClient } from './types'
 
 function fakeClient(upload: unknown = 'mxc://srv/media1') {
   return {
-    uploadContent: vi.fn(async (_file: Blob, opts: { progressCallback?: (i: object) => void }) => {
-      opts.progressCallback?.({ loaded: 50, total: 100 })
+    uploadContent: vi.fn(async (_file: Blob, opts: { progressHandler?: (i: object) => void }) => {
+      opts.progressHandler?.({ loaded: 50, total: 100 })
       return upload
     }),
     sendEvent: vi.fn(async (_roomId: string, _type: string, _content: unknown) => ({
@@ -52,6 +66,48 @@ describe('media-sender', () => {
 
       const objectClient = fakeClient({ content_uri: 'mxc://srv/media2' })
       await expect(uploadContent(asClient(objectClient), blob)).resolves.toBe('mxc://srv/media2')
+    })
+
+    it('под Tor файл идёт нашим fetch с токеном, а не XMLHttpRequest SDK', async () => {
+      routing.mode = 'wait'
+      matrixFetch.mockResolvedValue(
+        new Response(JSON.stringify({ content_uri: 'mxc://srv/tor1' }), { status: 200 })
+      )
+      const onProgress = vi.fn()
+      const torClient = {
+        ...fakeClient(),
+        getHomeserverUrl: () => 'https://matrix.example/',
+        getAccessToken: () => 'tok',
+      }
+      const blob = new Blob(['12345'], { type: 'image/jpeg' })
+      try {
+        await expect(
+          uploadContent(torClient as unknown as MatrixClient, blob, {
+            name: 'фото.jpg',
+            onProgress,
+          })
+        ).resolves.toBe('mxc://srv/tor1')
+      } finally {
+        routing.mode = 'direct'
+      }
+      expect(torClient.uploadContent).not.toHaveBeenCalled()
+      const [url, init, torOpts] = matrixFetch.mock.lastCall!
+      expect(url).toBe(
+        'https://matrix.example/_matrix/media/v3/upload?filename=%D1%84%D0%BE%D1%82%D0%BE.jpg'
+      )
+      expect(init).toMatchObject({
+        method: 'POST',
+        headers: { Authorization: 'Bearer tok', 'Content-Type': 'image/jpeg' },
+        body: blob,
+      })
+      expect(torOpts).toEqual({ timeoutMs: torUploadTimeoutMs(5) })
+      expect(onProgress).toHaveBeenCalledWith(5, 5)
+    })
+
+    it('предел загрузки через Tor растёт с размером, но не больше 30 минут', () => {
+      expect(torUploadTimeoutMs(0)).toBe(120_000)
+      expect(torUploadTimeoutMs(10 * 1024 * 1024)).toBe(120_000 + 320_000)
+      expect(torUploadTimeoutMs(10 * 1024 * 1024 * 1024)).toBe(30 * 60_000)
     })
 
     it('ответ без адреса — ошибка', async () => {

@@ -11,6 +11,8 @@
  */
 import type { MatrixClient, MatrixEventContent, SecretsBlock } from './types'
 import { resolveMxcHttpUrl } from './mxc-resolver'
+import { matrixFetch } from '@/helpers/api/fetch-strategies'
+import { torRoutingMode } from '@/helpers/tor/tor-gate'
 
 export interface UploadOpts {
   name?: string
@@ -34,11 +36,16 @@ export async function uploadContent(
       }
     : undefined
 
-  const res = await client.uploadContent(file, {
-    name: opts.name,
-    type: opts.type || (file as { type?: string })?.type,
-    progressCallback: progressCb,
-  })
+  // SDK отправляет файл XMLHttpRequest'ом окна — мимо Tor, с токеном. Под
+  // Tor (и пока он подключается) — нашим fetch, который ждёт Tor или падает.
+  const res =
+    (await torRoutingMode()) === 'direct'
+      ? await client.uploadContent(file, {
+          name: opts.name,
+          type: opts.type || (file as { type?: string })?.type,
+          progressHandler: progressCb,
+        })
+      : await uploadThroughFetch(client, file, opts)
   // matrix-js-sdk may return a string (mxc://...) or { content_uri: 'mxc://...' }.
   const uri =
     typeof res === 'string'
@@ -49,6 +56,46 @@ export async function uploadContent(
     throw new Error('Upload content failed: invalid response')
   }
   return uri
+}
+
+/** Предел на загрузку через Tor: 2 мин плюс секунда на каждые 32 КБ, не больше 30 мин. */
+export function torUploadTimeoutMs(size: number): number {
+  return Math.min(30 * 60_000, 120_000 + Math.ceil(size / 32_768) * 1000)
+}
+
+/** `POST /_matrix/media/v3/upload` через `matrixFetch` — как делает SDK. */
+async function uploadThroughFetch(
+  client: MatrixClient,
+  file: Blob | File,
+  opts: UploadOpts
+): Promise<unknown> {
+  const base = (client.getHomeserverUrl?.() ?? '').replace(/\/+$/, '')
+  const token = client.getAccessToken?.()
+  if (!base || !token) throw new Error('Upload content failed: no session')
+  const url = new URL(`${base}/_matrix/media/v3/upload`)
+  const name = opts.name ?? (file as { name?: string }).name
+  if (name) url.searchParams.set('filename', name)
+  const res = await matrixFetch(
+    url.toString(),
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': opts.type || file.type || 'application/octet-stream',
+      },
+      body: file,
+    },
+    { timeoutMs: torUploadTimeoutMs(file.size) }
+  )
+  if (!res.ok) throw new Error(`Upload content failed: HTTP ${res.status}`)
+  const json = (await res.json()) as unknown
+  // Через Tor файл уходит одним вызовом — прогресс только в конце.
+  try {
+    opts.onProgress?.(file.size, file.size)
+  } catch {
+    /* ignore */
+  }
+  return json
 }
 
 // ─── Audio ───────────────────────────────────────────────────────────────────

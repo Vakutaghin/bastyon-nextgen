@@ -2230,6 +2230,8 @@ export default {
     videoBypassBody:
       '플레이어는 PeerTube 서버에서 동영상을 직접 불러오므로 서버에 회원님의 IP 주소가 보입니다. 노드 요청과 채팅은 계속 Tor를 거칩니다.',
     videoBypassOk: 'Tor 없이 보기',
+    audioBypassBody: '오디오가 Tor를 거치지 않습니다. PeerTube 서버에 IP 주소가 보입니다.',
+    audioBypassOk: 'Tor 없이 듣기',
   },
   misc: {
     bastyonFeed: 'Bastyon 피드',

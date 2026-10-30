@@ -19,6 +19,8 @@ import {
 import { logger } from '@/services/logger'
 import { t } from '@/i18n'
 import type { QueueItem } from '@/stores/playback-queue-store'
+import { useTorStore } from '@/stores/tor-store'
+import { torEnabledInStorage } from '@/helpers/tor/tor-gate'
 
 const log = logger.scope('[audio-engine]')
 
@@ -33,6 +35,8 @@ export interface AudioEngineState {
   duration: number
   /** Текст ошибки для человека. */
   error: string | null
+  /** Tor включён: звук грузится напрямую с сервера PeerTube — ждём согласия. */
+  torBlocked: boolean
 }
 
 export interface AudioEngineHooks {
@@ -52,12 +56,26 @@ export const audioState: AudioEngineState = reactive({
   position: 0,
   duration: 0,
   error: null,
+  torBlocked: false,
 })
 
 let element: HTMLAudioElement | null = null
 let hls: Hls | null = null
 let hooks: AudioEngineHooks | null = null
 let current: QueueItem | null = null
+/** «Слушать мимо Tor» — до конца сеанса: включение и выключение Tor перезагружают окно. */
+let torBypassAccepted = false
+let pendingLoad: { item: QueueItem; startAt: number } | null = null
+
+/** Звук пошёл бы мимо Tor: hls.js и `<audio>` грузят его окном, не через Tor. */
+function torBlocksAudio(): boolean {
+  if (torBypassAccepted) return false
+  try {
+    return useTorStore().wantsTor
+  } catch {
+    return torEnabledInStorage()
+  }
+}
 let generation = 0
 let unregister: (() => void) | null = null
 let ticker: ReturnType<typeof setInterval> | null = null
@@ -161,7 +179,13 @@ export async function load(item: QueueItem, startAt = 0, autoplay = true): Promi
     position: startAt,
     duration: item.duration ?? 0,
     error: null,
+    torBlocked: false,
   })
+  if (torBlocksAudio()) {
+    pendingLoad = { item, startAt }
+    Object.assign(audioState, { loading: false, torBlocked: true })
+    return
+  }
 
   let sources: Awaited<ReturnType<typeof getVideoSourcesFromUrl>>
   try {
@@ -230,8 +254,17 @@ export function pause(): void {
 }
 
 export function toggle(): void {
+  if (audioState.torBlocked) return
   if (!element || element.paused) void play()
   else pause()
+}
+
+/** Человек согласился, что звук пойдёт мимо Tor: грузим отложенный трек. */
+export function acceptTorBypass(): void {
+  torBypassAccepted = true
+  const pending = pendingLoad
+  pendingLoad = null
+  if (pending && current?.id === pending.item.id) void load(pending.item, pending.startAt, true)
 }
 
 export function seek(seconds: number): void {
@@ -245,6 +278,7 @@ export function seek(seconds: number): void {
 export function stop(): void {
   generation++
   current = null
+  pendingLoad = null
   element?.pause()
   detachHls()
   element?.removeAttribute('src')
@@ -255,6 +289,7 @@ export function stop(): void {
     position: 0,
     duration: 0,
     error: null,
+    torBlocked: false,
   })
   void backgroundMediaController.release(PLAYER_ID)
 }

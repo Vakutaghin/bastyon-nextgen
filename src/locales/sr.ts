@@ -2249,6 +2249,8 @@ export default {
     videoBypassBody:
       'Плејер учитава видео директно са PeerTube сервера — сервер ће видети вашу IP адресу. Захтеви чворовима и ћаскање остају у Tor-у.',
     videoBypassOk: 'Гледај мимо Tor-а',
+    audioBypassBody: 'Звук ће ићи мимо Tor-а: PeerTube сервер ће видети вашу IP адресу.',
+    audioBypassOk: 'Слушај мимо Tor-а',
   },
   misc: {
     bastyonFeed: 'Bastyon фид',

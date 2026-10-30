@@ -19,7 +19,7 @@
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
 
-import { TorNotReadyError, waitForTorRouting } from './tor-gate'
+import { TorNotReadyError, torEnabledInStorage, waitForTorRouting } from './tor-gate'
 
 /** Сколько сокет ждёт готовности Tor до отказа (ws-service сам закрывает через 10 с). */
 export const TOR_WS_WAIT_TIMEOUT_MS = 60_000
@@ -349,7 +349,8 @@ export async function pickWebSocketCtor(): Promise<typeof WebSocket> {
       return TorWebSocket as unknown as typeof WebSocket
     }
   } catch {
-    /* best-effort */
+    // Стора нет, а Tor включён: сокет дождётся Tor или закроется с ошибкой.
+    if (torEnabledInStorage()) return TorWebSocket as unknown as typeof WebSocket
   }
   return WebSocket
 }

@@ -142,7 +142,7 @@ watch(
 
 const models = computed(() => store.status?.models ?? [])
 const choiceSize = computed(() => models.value.find((m) => m.id === choice.value)?.size ?? 0)
-const viaTor = computed(() => tor.shouldTorify)
+const viaTor = computed(() => tor.wantsTor)
 
 function modelName(id: VoiceModelId | undefined): string {
   return id ? t(`voiceInput.models.${id}`) : ''

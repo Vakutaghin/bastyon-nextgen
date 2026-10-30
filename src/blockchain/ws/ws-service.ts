@@ -13,7 +13,9 @@
 import servers from '@/servers.json'
 import type { ApiSignature } from '../types/signatures'
 import type { KeyPair } from '../types/keys'
-import { pickWebSocketCtor } from '@/helpers/tor/tor-websocket'
+import { pickWebSocketCtor, TorWebSocket } from '@/helpers/tor/tor-websocket'
+import { torRoutingMode, waitForTorRouting } from '@/helpers/tor/tor-gate'
+import { onTorEnabled } from '@/stores/tor-store'
 import { orderedProxies } from '@/helpers/api/node-selector'
 import type { ServerEndpoint } from '@/helpers/api/rpc-retry'
 import { debugLog } from '@/helpers/common/debug-log'
@@ -44,6 +46,8 @@ type WsHandler = (data: WsMessage) => void
 const RECONNECT_BASE_DELAY = 2000
 const RECONNECT_MAX_DELAY = 30000
 const CONNECT_TIMEOUT_MS = 10000
+/** Через Tor: SOCKS, цепочка до выхода, TLS и рукопожатие — на meek и Snowflake дольше 10 с. */
+const TOR_CONNECT_TIMEOUT_MS = 45_000
 
 // --- Service ---
 
@@ -170,6 +174,20 @@ class PocketnetWsService {
 
     debugLog('[WS] Connecting to', url)
 
+    // Tor включён: ждём его готовности до сокета. Таймаут соединения
+    // раньше шёл с создания сокета и рвал его, пока Tor подключается.
+    try {
+      let mode = await torRoutingMode()
+      if (mode === 'wait') mode = await waitForTorRouting()
+      if (mode === 'failed') throw new Error('Tor failed')
+    } catch (e) {
+      if (superseded()) return
+      debugLog('[WS] Tor is not ready:', e)
+      this.scheduleReconnect()
+      return
+    }
+    if (superseded()) return
+
     try {
       const Ctor = await pickWebSocketCtor()
       // close() во время ожидания конструктора: сокет больше не нужен — иначе
@@ -188,6 +206,7 @@ class PocketnetWsService {
     let opened = false
 
     // Таймаут на установление соединения: зависший SYN иначе держал бы сокет вечно.
+    const timeoutMs = socket instanceof TorWebSocket ? TOR_CONNECT_TIMEOUT_MS : CONNECT_TIMEOUT_MS
     this.clearConnectTimer()
     this.connectTimer = setTimeout(() => {
       this.connectTimer = null
@@ -200,7 +219,7 @@ class PocketnetWsService {
         }
         if (!this.closing) this.scheduleReconnect()
       }
-    }, CONNECT_TIMEOUT_MS)
+    }, timeoutMs)
 
     this.socket.onopen = () => {
       opened = true
@@ -505,5 +524,10 @@ export const wsService = new PocketnetWsService()
 
 // Запросы пошли другим путём (прокси ↔ ноды напрямую) — уведомления тоже.
 onRouteChange(() => {
+  if (wsService.active) wsService.reconnect()
+})
+
+// Tor включили на ходу: открытый сокет с подпиской адреса шёл мимо Tor.
+onTorEnabled(() => {
   if (wsService.active) wsService.reconnect()
 })

@@ -8,7 +8,7 @@ vi.mock('@tauri-apps/api/core', () => ({ invoke }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn(async () => () => {}) }))
 
 import { TOR_MEDIA_META_ID } from '@/helpers/tor/tor-media-policy'
-import { torStoreHooks, useTorStore } from './tor-store'
+import { onTorEnabled, torStoreHooks, useTorStore } from './tor-store'
 
 const snapshot = (status: string) => ({
   status,
@@ -79,6 +79,41 @@ describe('tor-store media policy', () => {
     expect(reload).not.toHaveBeenCalled()
     expect(store.enabled).toBe(true)
     expect(document.getElementById(TOR_MEDIA_META_ID)).not.toBeNull()
+  })
+
+  it('перезапуск ни на миг не открывает прямой путь; Rust знает, что это перезапуск', async () => {
+    const store = useTorStore()
+    store.available = true
+    await store.enable()
+    const modes: string[] = []
+    invoke.mockImplementation(async (cmd: string) => {
+      modes.push(`${cmd}:${store.routingMode}`)
+      if (cmd === 'tor_start') return snapshot('bootstrapping')
+      return snapshot('off')
+    })
+    await store.applyAndRestart({ useBridges: true, kind: 'obfs4' })
+    expect(invoke).toHaveBeenCalledWith('tor_stop', { restart: true })
+    expect(modes.filter((m) => /^tor_(stop|start):/.test(m))).toEqual([
+      'tor_stop:wait',
+      'tor_start:wait',
+    ])
+    expect(store.routingMode).toBe('wait')
+  })
+
+  it('onTorEnabled — только при включении, не при запуске с уже включённым', async () => {
+    const cb = vi.fn()
+    const off = onTorEnabled(cb)
+    try {
+      const store = useTorStore()
+      store.available = true
+      store.enabled = false
+      await store.enable()
+      expect(cb).toHaveBeenCalledTimes(1)
+      await store.enable()
+      expect(cb).toHaveBeenCalledTimes(1)
+    } finally {
+      off()
+    }
   })
 
   it('failed — routingMode failed, не direct', async () => {

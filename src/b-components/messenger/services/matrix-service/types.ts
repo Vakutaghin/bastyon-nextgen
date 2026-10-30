@@ -34,11 +34,13 @@ export interface MatrixClient {
     opts: {
       name?: string
       type?: string
-      progressCallback?: (info: { loaded: number; total?: number }) => void
+      progressHandler?: (info: { loaded: number; total?: number }) => void
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => Promise<any>
   mxcUrlToHttp?: (mxcUrl: string) => string | null
+  getHomeserverUrl?: () => string
+  getAccessToken?: () => string | null
 }
 
 export interface SecretsBlock {

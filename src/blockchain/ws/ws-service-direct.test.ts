@@ -60,7 +60,10 @@ vi.mock('@/helpers/api/direct-nodes/node-pool', () => ({
   markNodeDead: h.dead,
 }))
 vi.mock('@/helpers/api/direct-nodes/node-websocket', () => ({ NodeWebSocket: FakeNodeSocket }))
-vi.mock('@/helpers/tor/tor-websocket', () => ({ pickWebSocketCtor: vi.fn() }))
+vi.mock('@/helpers/tor/tor-websocket', () => ({
+  pickWebSocketCtor: vi.fn(),
+  TorWebSocket: class {},
+}))
 vi.mock('@/helpers/api/node-selector', () => ({ orderedProxies: vi.fn(async (l: unknown) => l) }))
 vi.mock('@/helpers/common/debug-log', () => ({ debugLog: vi.fn() }))
 vi.mock('@/blockchain/core/signatures', () => ({ generateApiSignature: vi.fn() }))

@@ -11,7 +11,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
 import { RNS_CONFIG_PREFIX } from '@/blockchain/constants/storage'
@@ -259,6 +259,21 @@ export const useReticulumStore = defineStore('reticulum', () => {
     status.value = 'idle'
     interfaces.value = []
   }
+
+  // Tor включили при работающем узле: интернет-хабы шли бы мимо Tor, а
+  // фильтр интерфейсов срабатывает только при запуске — перезапускаем.
+  watch(
+    () => useTorStore().enabled,
+    (on) => {
+      if (!on || status.value !== 'running') return
+      if (
+        allowedInterfaces(config.value.interfaces, true).length === config.value.interfaces.length
+      ) {
+        return
+      }
+      void stop().then(() => start())
+    }
+  )
 
   async function refreshStatus(): Promise<void> {
     if (status.value !== 'running') return

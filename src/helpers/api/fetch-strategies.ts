@@ -12,12 +12,16 @@
  */
 
 import { TorNotReadyError, torRoutingMode, waitForTorRouting } from '@/helpers/tor/tor-gate'
-import { getTauriFetch, isSameOriginUrl, torFetch } from './request-tor'
+import { getTauriFetch, isSameOriginUrl, torFetch, type TorFetchOptions } from './request-tor'
 import { isNativeMatrixRequest, nativeFetch } from './request-native'
 
 export { getTauriFetch } from './request-tor'
 
-export async function appFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function appFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  torOpts?: TorFetchOptions
+): Promise<Response> {
   const url =
     typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
 
@@ -31,6 +35,11 @@ export async function appFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     // Установка/бутстрап: запрос ждёт готовности, а не уходит напрямую.
     // Abort-сигнал вызывающего (таймаут RPC) прерывает ожидание.
     mode = await waitForTorRouting({ signal: init?.signal ?? undefined })
+    // Tor выключили, пока запрос ждал: собранный для Tor запрос (с подписью,
+    // с токеном) напрямую не отправляем.
+    if (mode === 'direct') {
+      throw new TorNotReadyError('off', `Tor was turned off; refusing direct request to ${url}`)
+    }
   }
   if (mode === 'failed') {
     throw new TorNotReadyError(
@@ -39,7 +48,7 @@ export async function appFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     )
   }
   if (mode === 'tor') {
-    return torFetch(input, init)
+    return torFetch(input, init, torOpts)
   }
   const tauriF = await getTauriFetch()
   return (tauriF ?? globalThis.fetch)(input, init)
@@ -48,7 +57,11 @@ export async function appFetch(input: RequestInfo | URL, init?: RequestInit): Pr
 /** Fetch for Matrix/chat: routes через Tor когда включён, plugin-http для cross-origin
  *  (CORS bypass), plain browser fetch для same-origin (Vite dev proxy). На Android —
  *  нативный HTTP мимо CORS WebView, как plugin-http в Tauri; Tor там не бывает. */
-export async function matrixFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function matrixFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  torOpts?: TorFetchOptions
+): Promise<Response> {
   if (isNativeMatrixRequest(input, init)) return nativeFetch(input, init)
-  return appFetch(input, init)
+  return appFetch(input, init, torOpts)
 }

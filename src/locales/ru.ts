@@ -2248,6 +2248,8 @@ export default {
     videoBypassBody:
       'Плеер загружает видео напрямую с сервера PeerTube — сервер увидит ваш IP-адрес. Запросы к нодам и чат при этом остаются в Tor.',
     videoBypassOk: 'Смотреть мимо Tor',
+    audioBypassBody: 'Звук пойдёт мимо Tor: сервер PeerTube увидит ваш IP-адрес.',
+    audioBypassOk: 'Слушать мимо Tor',
   },
   misc: {
     bastyonFeed: 'Лента Bastyon',
