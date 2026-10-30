@@ -1,5 +1,5 @@
 ---
-keywords: [notifications, bell, alerts, sound, notification filter, system notifications, push, reply to a comment, you replied, comments on my posts]
+keywords: [notifications, bell, alerts, sound, notification filter, notification sections, ratings, followers, transfers, system notifications, push, reply to a comment, you replied, comments on my posts]
 ---
 
 # Notifications
@@ -23,11 +23,21 @@ The avatar and the name in a notification lead to the profile of whoever did it.
 
 The list starts with the last 20 notifications; **“Show more”** at the bottom adds the next ones.
 
-The three-dot button on a notification has **“Open”**, the same as clicking the notification itself, **“On blockchain”**, the event’s transaction in a window over the page (see [Blockchain explorer](explorer.md#on-blockchain-without-leaving-the-feed)), and **“Hide notification”**. **“Clear all”** at the top hides the whole list, and with the **“Comments”** filter — only the comments. Hidden notifications do not come back.
+The three-dot button on a notification has **“Open”**, the same as clicking the notification itself, **“On blockchain”**, the event’s transaction in a window over the page (see [Blockchain explorer](explorer.md#on-blockchain-without-leaving-the-feed)), and **“Hide notification”**. **“Clear all”** at the top hides the whole list, and with a section selected — only that section. Hidden notifications do not come back.
+
+## Sections
+
+Above the list are **“All”** and the sections that currently have something:
+
+- **“Comments”** — comments on your posts and replies to you, the things you can reply to;
+- **“Ratings”** — ratings of your posts and comments;
+- **“Followers”** — who followed or unfollowed you;
+- **“PKOIN”** — transfers, donations, paid subscription payments and network rewards;
+- **“Posts”** — reposts and boosts of your posts, new posts of authors whose bell you turned on.
+
+The number on a button is how many new ones the section has. Mentions and profile updates are only in **“All”**.
 
 ## Comments
-
-Above the list are **“All”** and **“Comments”**. **“Comments”** keeps comments on your posts and replies to you — the things you can reply to. The number on the button is how many of them are new.
 
 A comment or a reply has a **“Reply”** button. The post opens at that comment with the reply field already open, ready for typing. A reply to a reply already starts with the author’s name, for example “@alice,”, so that everyone in the thread sees whom you are answering. More in [Comments](comments.md).
 

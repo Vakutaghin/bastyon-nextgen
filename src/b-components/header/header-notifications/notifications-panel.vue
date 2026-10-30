@@ -17,7 +17,8 @@
       </SC_NotificationsHeaderActions>
     </SC_NotificationsHeader>
 
-    <!-- Комментарии отдельно: их легко потерять среди оценок и подписок. -->
+    <!-- Разделы: комментарии легко потерять среди оценок и подписок, переводы — среди
+         всего остального. Показываем только разделы, где что-то есть. -->
     <SC_FilterRow
       v-if="notificationsStore.list.length > 0"
       role="group"
@@ -27,12 +28,17 @@
         {{ t('header.filterAll') }}
       </SC_FilterChip>
       <SC_FilterChip
+        v-for="category in shownCategories"
+        :key="category"
         type="button"
-        :aria-pressed="filter === 'comments'"
-        @click.stop="setFilter('comments')"
+        :data-filter="category"
+        :aria-pressed="filter === category"
+        @click.stop="setFilter(category)"
       >
-        {{ t('header.filterComments') }}
-        <SC_FilterCount v-if="unreadComments > 0">{{ unreadComments }}</SC_FilterCount>
+        {{ t(CATEGORY_LABELS[category]) }}
+        <SC_FilterCount v-if="unreadByCategory[category] > 0">
+          {{ unreadByCategory[category] }}
+        </SC_FilterCount>
       </SC_FilterChip>
     </SC_FilterRow>
 
@@ -43,9 +49,11 @@
     </SC_LoaderWrap>
     <SC_EmptyMessage v-else-if="list.length === 0">
       {{
-        filter === 'comments' && notificationsStore.list.length > 0
-          ? t('header.noComments')
-          : t('header.noNewNotifications')
+        filter === 'all' || notificationsStore.list.length === 0
+          ? t('header.noNewNotifications')
+          : filter === 'comments'
+            ? t('header.noComments')
+            : t('header.noInFilter')
       }}
     </SC_EmptyMessage>
     <SC_NotificationsList v-else>
@@ -217,6 +225,12 @@ import { isTxid } from '@/b-components/chain-info/chain-link'
 import type { NotificationItem } from '@/stores/notifications-store'
 import { isLowRatingValue } from '@/stores/notification-filtering'
 import { isReplyableNotification, notificationTarget } from '@/stores/notification-target'
+import {
+  NOTIFICATION_CATEGORIES,
+  countByCategory,
+  notificationCategory,
+  type NotificationCategory,
+} from '@/stores/notification-categories'
 import UserMark from '@/components/user-mark'
 import Skeleton from '@/components/skeleton'
 import { userMarkOf } from '@/services/user-marks'
@@ -305,23 +319,37 @@ const expandedIds = ref(new Set<string>())
 /** Сколько показывать за раз; «Показать ещё» — следующие столько же. */
 const PAGE_SIZE = 20
 
-/** «Все» или только комментарии и ответы — те, на которые можно ответить. */
-const filter = ref<'all' | 'comments'>('all')
+/** Подписи разделов в ряду фильтров. */
+const CATEGORY_LABELS: Record<NotificationCategory, string> = {
+  comments: 'header.filterComments',
+  ratings: 'header.filterRatings',
+  subscribers: 'header.filterSubscribers',
+  coins: 'header.filterCoins',
+  posts: 'header.filterPosts',
+}
+
+/** «Все» или один раздел: комментарии, оценки, подписчики, PKOIN, посты. */
+const filter = ref<'all' | NotificationCategory>('all')
 const limit = ref(PAGE_SIZE)
 
 const source = computed(() =>
-  filter.value === 'comments'
-    ? notificationsStore.list.filter(isReplyableNotification)
-    : notificationsStore.list
+  filter.value === 'all'
+    ? notificationsStore.list
+    : notificationsStore.list.filter((item) => notificationCategory(item) === filter.value)
 )
 const list = computed(() => source.value.slice(0, limit.value))
-const unreadComments = computed(
-  () => notificationsStore.unreadList.filter(isReplyableNotification).length
+const countsByCategory = computed(() => countByCategory(notificationsStore.list))
+const unreadByCategory = computed(() => countByCategory(notificationsStore.unreadList))
+/** Разделы, где есть уведомления; выбранный — даже если его очистили. */
+const shownCategories = computed(() =>
+  NOTIFICATION_CATEGORIES.filter(
+    (category) => countsByCategory.value[category] > 0 || filter.value === category
+  )
 )
 const isLoading = computed(() => notificationsStore.loading)
 const isEnriching = computed(() => notificationsStore.enriching)
 
-function setFilter(next: 'all' | 'comments'): void {
+function setFilter(next: 'all' | NotificationCategory): void {
   filter.value = next
   limit.value = PAGE_SIZE
 }

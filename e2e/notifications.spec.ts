@@ -262,6 +262,29 @@ test('фильтр «Комментарии», «Вы ответили» и пр
   await expect(page).toHaveURL(new RegExp(`/${ALICE}$`))
 })
 
+test('разделы: видны только те, где что-то есть; «Оценки» — без комментариев', async ({ page }) => {
+  test.setTimeout(120_000)
+  await signInWithThreads(page)
+  const menu = await openBell(page)
+  await expect(menu.getByText('Мой комментарий').first()).toBeVisible({ timeout: 30_000 })
+
+  // Есть комментарии и оценка — подписчиков, PKOIN и постов нет, их кнопок тоже.
+  const filters = menu.getByRole('group', { name: 'Какие уведомления показать' })
+  await expect(filters.getByRole('button')).toHaveText([/^Все$/, /Комментарии/, /Оценки/])
+
+  const ratings = filters.getByRole('button', { name: /Оценки/ })
+  await expect(ratings).toContainText('1')
+  await ratings.click()
+  await expect(ratings).toHaveAttribute('aria-pressed', 'true')
+  const items = menu.getByTestId('notification-item')
+  await expect(items).toHaveCount(1)
+  await expect(items).toContainText('оценил ваш комментарий')
+  await expect(menu.getByRole('button', { name: 'Ответить' })).toHaveCount(0)
+
+  await filters.getByRole('button', { name: 'Все' }).click()
+  await expect(menu.getByText('прокомментировал ваш пост')).toBeVisible()
+})
+
 /**
  * Много разных отправителей. Полные профили с десяти адресов нода не отдаёт
  * (таймаут SQL), и раньше вместо всех ников оставались адреса.
