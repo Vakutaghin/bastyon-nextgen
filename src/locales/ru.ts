@@ -1973,7 +1973,6 @@ export default {
     loading: 'Загрузка…',
     close: 'Закрыть',
     navigation: 'Навигация',
-    account: 'Аккаунт',
   },
   chat: {
     postLoading: 'Загружаем пост…',

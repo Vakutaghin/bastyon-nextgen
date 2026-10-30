@@ -2071,7 +2071,6 @@ export default {
     loading: 'Caricamento…',
     close: 'Chiudi',
     navigation: 'Navigazione',
-    account: 'Account',
   },
   chat: {
     postLoading: 'Caricamento del post…',

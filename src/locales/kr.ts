@@ -2039,7 +2039,6 @@ export default {
     loading: '불러오는 중…',
     close: '닫기',
     navigation: '탐색',
-    account: '계정',
   },
   chat: {
     postLoading: '게시물을 불러오는 중…',

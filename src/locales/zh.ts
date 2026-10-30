@@ -1978,7 +1978,6 @@ export default {
     loading: '加载中…',
     close: '关闭',
     navigation: '导航',
-    account: '账户',
   },
   chat: {
     postLoading: '正在加载帖子…',

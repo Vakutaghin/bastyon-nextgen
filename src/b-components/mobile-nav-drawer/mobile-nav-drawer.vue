@@ -33,23 +33,9 @@
           <SidebarTabs />
         </SC_DrawerPanel>
 
-        <!-- Разделы из меню аккаунта в шапке компьютера — такими же пунктами. -->
-        <SC_DrawerPanel v-if="isAuthenticated">
-          <SC_DrawerSectionTitle>{{ t('sidebar.account') }}</SC_DrawerSectionTitle>
-          <SC_Tabs>
-            <SC_TabsItem
-              v-for="item in accountItems"
-              :key="item.id"
-              :active="!!item.path && isActive(item.path)"
-              :disabled="false"
-              type="button"
-              @click="openItem(item)"
-            >
-              <component :is="item.icon" />
-              <SC_TabsLabel>{{ item.label }}</SC_TabsLabel>
-            </SC_TabsItem>
-          </SC_Tabs>
-        </SC_DrawerPanel>
+        <!-- Пунктов аккаунта (профиль, кошельки, настройки…) здесь нет: они в
+             меню аватара в шапке, и на телефоне тоже — второй такой же список
+             только удлинял меню. -->
 
         <SC_DrawerPanel v-if="sidebarBlocks.length > 0">
           <component :is="SIDEBAR_BLOCK_COMPONENTS[id]" v-for="id in sidebarBlocks" :key="id" />
@@ -70,16 +56,10 @@ import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useUIStore } from '@/stores/ui-store'
-import type { MenuItemId } from '@/stores/header-layout'
-import {
-  MENU_ITEMS,
-  MENU_ITEM_PATHS,
-  useHeaderLayout,
-} from '@/b-components/header/header-layout/layout-items'
+import { useHeaderLayout } from '@/b-components/header/header-layout/layout-items'
 import SidebarTabs from '@/b-components/sidebar/sidebar-tabs/sidebar-tabs.vue'
 import { SIDEBAR_BLOCK_COMPONENTS } from '@/b-components/sidebar/sidebar-blocks'
 import AppVersionBadge from '@/b-components/app-update/app-version-badge.vue'
-import { SC_Tabs, SC_TabsItem, SC_TabsLabel } from '@/b-components/sidebar/sidebar-tabs/styled'
 import { CloseOutlined } from '@/components/icons'
 import {
   SC_Backdrop,
@@ -106,54 +86,12 @@ const uiStore = useUIStore()
 
 const isAuthenticated = computed(() => authStore.isUserAuthenticated)
 
-const profileLink = computed<string>(() => {
-  const name = authStore.getUserProfile?.name
-  if (name) return '/' + name.toLowerCase()
-  const address = authStore.getUserAddress
-  return address ? '/' + address : '/'
-})
-
-// Те же пункты и порядок, что в меню аккаунта на компьютере (Настройки →
-// «Шапка и меню»), без «Справки» и «Коллекций»: они уже есть в разделах выше.
-const IN_SECTIONS: readonly MenuItemId[] = ['help', 'collections']
-const { menuItems, sidebarBlocks } = useHeaderLayout()
-const accountItems = computed(() =>
-  menuItems.value
-    .filter((id) => !IN_SECTIONS.includes(id))
-    .map((id) => ({
-      id,
-      path: id === 'profile' ? profileLink.value : MENU_ITEM_PATHS[id],
-      label: t(MENU_ITEMS[id].labelKey!),
-      icon: MENU_ITEMS[id].icon,
-    }))
-)
+const { sidebarBlocks } = useHeaderLayout()
 
 const everOpened = ref(false)
 
-function isActive(path: string): boolean {
-  if (path === '/') return route.path === '/'
-  return route.path === path || route.path.startsWith(path + '/')
-}
-
 function close() {
   emit('close')
-}
-
-function openItem(item: { id: MenuItemId; path?: string }): void {
-  if (item.path) {
-    go(item.path)
-    return
-  }
-  // «Сообщить об ошибке» — чат поддержки во весь экран.
-  close()
-  void import('@/b-components/header/header-report-bug/open-support-chat').then((m) =>
-    m.openSupportChat()
-  )
-}
-
-function go(path: string) {
-  if (route.path !== path) void router.push(path)
-  close()
 }
 
 function openAuth(mode: 'login' | 'register') {

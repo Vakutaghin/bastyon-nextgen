@@ -80,7 +80,7 @@ When the screen is narrow — on a phone or in a shrunk window on a computer —
 
 The header slides away as you scroll down and comes back as soon as you scroll up a little. While the on-screen keyboard is open, the bottom bar is hidden to leave room for the text.
 
-The menu behind the three-line button in the header, right of the logo, is the same left panel as on a computer: the feed sections, **“Services”**, **“Blockchain explorer”**, **“Help”**, pinned apps, and the category and tag filters. When you are signed in, **“Account”** follows: the same items as in the account menu on a computer, in the same order, except **“Help”**, which is already above. Otherwise **“Sign in”** and **“Sign up”** are at the top of the menu.
+The menu behind the three-line button in the header, right of the logo, is the same left panel as on a computer: the feed sections, **“Services”**, **“Blockchain explorer”**, **“Help”**, pinned apps, and the category and tag filters. The profile, wallets, settings and the rest of the account items are in the avatar menu, as on a computer, and are not repeated in the side menu. If you are not signed in, **“Sign in”** and **“Sign up”** are at the top of the menu.
 
 Of the icons, only the bell and the theme switch fit in the phone header; if you hide them in the settings, they are gone here too.
 

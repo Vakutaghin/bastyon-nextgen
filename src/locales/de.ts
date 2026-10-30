@@ -2084,7 +2084,6 @@ export default {
     loading: 'Wird geladen…',
     close: 'Schließen',
     navigation: 'Navigation',
-    account: 'Konto',
   },
   chat: {
     postLoading: 'Beitrag wird geladen…',

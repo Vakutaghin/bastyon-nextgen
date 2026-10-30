@@ -2058,7 +2058,6 @@ export default {
     loading: 'Loading…',
     close: 'Close',
     navigation: 'Navigation',
-    account: 'Account',
   },
   chat: {
     postLoading: 'Loading post…',

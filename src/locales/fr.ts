@@ -2084,7 +2084,6 @@ export default {
     loading: 'Chargement…',
     close: 'Fermer',
     navigation: 'Navigation',
-    account: 'Compte',
   },
   chat: {
     postLoading: 'Chargement de la publication…',

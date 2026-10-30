@@ -2054,7 +2054,6 @@ export default {
     loading: 'Учитавање…',
     close: 'Затвори',
     navigation: 'Навигација',
-    account: 'Налог',
   },
   chat: {
     postLoading: 'Учитавање објаве…',

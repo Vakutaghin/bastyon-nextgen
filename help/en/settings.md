@@ -6,7 +6,7 @@ keywords: [settings, preferences, content, modules, cache, diagnostics, what’s
 
 Every settings tab in order: what each one holds and where to read more.
 
-Settings open from the account menu — **“Settings”** — or, on a phone, from the side menu. They are available only once you are signed in. The language, theme and other app options are shared by all accounts on the device.
+Settings open from the account menu — **“Settings”**. They are available only once you are signed in. The language, theme and other app options are shared by all accounts on the device.
 
 ## General
 
@@ -24,7 +24,7 @@ Settings open from the account menu — **“Settings”** — or, on a phone, f
 What stands in the header to the right of the search, what is in the avatar menu and what is in the left panel — and in what order.
 
 - **“Header icons”** — **“Services”**, **“Notifications”**, **“Chats”**, Tor, IPFS, the theme switch, **“Page width”** and **“Report a bug”**. The hourglass is not configurable: it appears on its own, next to the bell, when an action is waiting for the network. The avatar is always at the edge.
-- **“Account menu”** — the items of the avatar menu, and on a phone of the **“Account”** section of the side menu. **“Settings”** cannot be hidden: that is how hidden items are brought back. **“Switch account”** and **“Sign out”** are always at the bottom.
+- **“Account menu”** — the items of the avatar menu. **“Settings”** cannot be hidden: that is how hidden items are brought back. **“Switch account”** and **“Sign out”** are always at the bottom.
 - **“Left panel”** — the sections to the left of the feed, see [Finding your way around](interface.md#the-left-panel); on a phone this is **“Navigation”** in the side menu. If you hide **“Feed”**, the logo in the header still leads to the feed. Pinned mini apps come below the sections; unpin them with the star in the catalog, see [Services](mini-apps.md).
 - **“Below the sections”** — what comes below the sections in the left panel, and on a phone at the bottom of the side menu: the **“Best first”** switch with the **“Feed language”** field, **“Categories”** and **“Trending tags”**. A hidden block has no effect: whatever was selected in it is cleared. The feed goes in the usual order and in the interface language, without filtering by categories and tags.
 
