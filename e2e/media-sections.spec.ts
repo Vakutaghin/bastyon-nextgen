@@ -207,6 +207,25 @@ test('вид «Постами»: у «Видео» и «Аудио» свой, �
   await expect(page.getByTestId('track-row')).toHaveCount(2)
 })
 
+// Посты раздела — шириной страницы, как сетка: кнопка ширины в шапке сужает и
+// растягивает их. Раньше колонка стояла на 720 px при любой ширине.
+test('вид «Постами» следует кнопке ширины в шапке', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 })
+  await useMockNode(page, DATA)
+  await open(page, '/video')
+  await page.getByTestId('media-view-switch').getByRole('button', { name: 'Постами' }).click()
+  const list = page.getByTestId('media-post-list')
+  await expect(list.getByTestId('post-media')).toHaveCount(2)
+  const width = async () => Math.round((await list.boundingBox())!.width)
+
+  const full = await width()
+  expect(full).toBeGreaterThan(1500)
+  await page.getByRole('button', { name: 'Ограничить ширину' }).click()
+  await expect.poll(width).toBeLessThan(1280)
+  await page.getByRole('button', { name: 'Во всю ширину' }).click()
+  await expect.poll(width).toBe(full)
+})
+
 test('раздел «Аудио»: трек в мини-плеере, следующий, плеер живёт при переходах', async ({
   page,
 }) => {
