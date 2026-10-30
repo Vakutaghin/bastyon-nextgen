@@ -38,9 +38,16 @@ export const SC_CaptchaSvgImage = styled.div`
   margin: 1.5em 0;
   text-align: center;
 
+  /* Прокси рисует капчу тёмно-серым на прозрачном фоне (svg-captcha,
+     color: false) — в тёмной теме она сливается с фоном. Плашка светлая
+     в любой теме: картинка рассчитана на светлый фон. */
   img {
     max-width: 100%;
     height: auto;
+    box-sizing: border-box;
+    padding: 4px 8px;
+    border-radius: var(--ui-radius-sm);
+    background: #fff;
   }
 `
 
