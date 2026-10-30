@@ -32,9 +32,13 @@ import {
 } from './matrix-service/messaging'
 import { tetatetid, getMatrixId, resolveMatrixHost } from '../helpers'
 import { ARCHIVE_REDACT_EVENT } from '../lib/archive-redact'
+import { RECORDING_EVENT, RECORDING_MAX_RECIPIENTS } from '../lib/chat-privacy'
+import { logger } from '@/services/logger'
 import type { MatrixClient, MatrixEventContent } from './matrix-service/types'
 import type { MatrixClient as SdkMatrixClient, ICreateClientOpts } from 'matrix-js-sdk'
 import { Preset, PushRuleActionName, Visibility } from 'matrix-js-sdk'
+
+const log = logger.scope('[matrix]')
 
 export class MatrixService {
   private client: SdkMatrixClient | null = null
@@ -51,6 +55,11 @@ export class MatrixService {
    * непрочитанные. Такой вход сверяется с номером и клиента не ставит.
    */
   private session = 0
+  /**
+   * Сообщать ли серверу, что вы в сети («Настройки» → «Чаты» → «Приватность»).
+   * Задаётся до входа: от него зависит уже первый запрос синка.
+   */
+  private presenceVisible = false
 
   public configure(baseUrl: string) {
     this.baseUrl = baseUrl
@@ -118,9 +127,13 @@ export class MatrixService {
     })
 
     if (accessToken) {
-      // Присутствие («в сети») не объявляем — как и прежний чат Bastyon: синк
-      // идёт с set_presence=offline, а чужое присутствие приложение не показывает.
-      await this.client.startClient({ initialSyncLimit: 1, disablePresence: true })
+      // «В сети» по умолчанию не объявляем — как и прежний чат Bastyon: синк
+      // идёт с set_presence=offline. Включили в настройках — синк сам держит
+      // «в сети», пока приложение открыто.
+      await this.client.startClient({
+        initialSyncLimit: 1,
+        disablePresence: !this.presenceVisible,
+      })
       this.startKeepAlive()
     }
     return true
@@ -193,6 +206,65 @@ export class MatrixService {
 
     if (this.client) {
       this.client.on(event as Parameters<SdkMatrixClient['on']>[0], listener)
+    }
+  }
+
+  /**
+   * Сообщать ли, что вы в сети. До входа — запоминаем для первого синка. У
+   * работающего клиента параметр синка задан при старте и копируется внутрь,
+   * поэтому меняем его у синка напрямую и сразу ставим статус запросом —
+   * иначе собеседник увидит перемену только после перезапуска.
+   */
+  public async setPresenceVisible(visible: boolean): Promise<void> {
+    if (this.presenceVisible === visible) return
+    this.presenceVisible = visible
+    const client = this.client
+    if (!client) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- syncApi закрыт в типах SDK; без него переключение ждало бы перезапуска синка
+    const syncOpts = (client as any).syncApi?.opts as { disablePresence?: boolean } | undefined
+    if (syncOpts) syncOpts.disablePresence = !visible
+    const presence = visible ? sdk.SetPresence.Online : sdk.SetPresence.Offline
+    try {
+      await client.setSyncPresence(presence)
+      await client.setPresence({ presence })
+    } catch (e) {
+      // Сервер мог отключить присутствие — для чата это не ошибка.
+      log.debug('setPresence failed', e)
+    }
+  }
+
+  /**
+   * Присутствие собеседника, если сервер его прислал: `null` — ничего не
+   * известно (не делится, сервер без присутствия, прежний клиент Bastyon).
+   */
+  public getUserPresence(userId: string): { online: boolean; lastActiveAt: number | null } | null {
+    const user = this.client?.getUser?.(userId)
+    if (!user || !user.lastPresenceTs) return null
+    const online = user.presence === 'online' || user.currentlyActive === true
+    const lastActiveAt = user.lastActiveAgo ? user.lastPresenceTs - user.lastActiveAgo : null
+    return { online, lastActiveAt }
+  }
+
+  /**
+   * «Записывает голосовое»: to-device сообщение всем участникам комнаты,
+   * кроме себя (на все их устройства). В историю чата оно не попадает.
+   */
+  public async sendRecording(roomId: string, recording: boolean): Promise<void> {
+    const client = this.client
+    const myId = client?.getUserId?.()
+    const room = client?.getRoom?.(roomId)
+    if (!client || !myId || !room) return
+    const others = room
+      .getJoinedMembers()
+      .map((m) => m.userId)
+      .filter((id) => id !== myId)
+    if (!others.length || others.length > RECORDING_MAX_RECIPIENTS) return
+    const content = { room_id: roomId, recording }
+    const map = new Map(others.map((id) => [id, new Map([['*', content]])]))
+    try {
+      await client.sendToDevice(RECORDING_EVENT, map)
+    } catch (e) {
+      log.debug('sendRecording failed', e)
     }
   }
 

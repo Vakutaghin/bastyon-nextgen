@@ -131,7 +131,11 @@
       </SC_ReplyBannerClose>
     </SC_ReplyBanner>
 
-    <SC_TypingIndicator v-if="isTyping">
+    <!-- Записывает голосовое — важнее, чем «печатает»: показываем его. -->
+    <SC_TypingIndicator v-if="recordingName" data-testid="recording-indicator">
+      {{ t('messenger.recordingNamed', { name: recordingName }) }}
+    </SC_TypingIndicator>
+    <SC_TypingIndicator v-else-if="isTyping">
       {{ typingName ? t('messenger.typingNamed', { name: typingName }) : t('messenger.typing') }}
     </SC_TypingIndicator>
 
@@ -286,6 +290,8 @@ import { useSupportChat } from '../support-report/use-support-chat'
 import { supportReportPreview } from '../../lib/support-report-preview'
 import { tooLargeForChat } from './too-large-for-chat'
 import { useCloseOnBack } from '@/composables/use-back-button'
+import { useRecordingBroadcast, useRecordingIndicator } from './use-recording-signal'
+import { useMessengerPrivacyStore } from '../../store/messenger-privacy-store'
 import {
   SC_ChatRoomContainer,
   SC_PartnerStats,
@@ -373,6 +379,8 @@ const { t, locale } = useI18n()
 const activeRoomId = computed<string | null>(() => uiStore.activeChatId)
 const isGroupChat = computed<boolean>(() => !!store.activeDialog?.group)
 const { isTyping, typingName } = useTypingIndicator(activeRoomId)
+const { recordingName } = useRecordingIndicator(activeRoomId)
+const privacy = useMessengerPrivacyStore()
 const { seenIds } = useReadReceipts(activeRoomId)
 const { isBlocked, busy: blockBusy, toggleBlock } = useBlockUser(activeRoomId)
 
@@ -413,10 +421,11 @@ watch(activeRoomId, () => {
 })
 
 // Отправка собственного typing-статуса (throttle: не чаще раза в 3с).
+// «Показывать, что я печатаю» выключено в настройках — не шлём вовсе.
 let lastTypingSent = 0
 function notifyTyping(): void {
   const rid = activeRoomId.value
-  if (!rid) return
+  if (!rid || !privacy.prefs.typing) return
   const now = Date.now()
   if (now - lastTypingSent > 3000) {
     lastTypingSent = now
@@ -504,6 +513,14 @@ watch(inputValue, (value) => {
   if (value) notifyTyping()
 })
 
+// Выключили «печатает», пока набирали, — собеседнику сразу «перестал».
+watch(
+  () => privacy.prefs.typing,
+  (on) => {
+    if (!on && lastTypingSent) stopTyping()
+  }
+)
+
 // Голосовая запись с touch-жестами.
 const {
   isRecording,
@@ -523,6 +540,9 @@ const {
     }
   },
 })
+
+// Пока записываете — собеседникам «записывает голосовое…», если не выключено в настройках.
+useRecordingBroadcast(activeRoomId, isRecording, () => privacy.prefs.recording)
 
 /** Первое сообщение новому собеседнику: создаётся комната, потом уходит текст. */
 const creatingChat = ref(false)

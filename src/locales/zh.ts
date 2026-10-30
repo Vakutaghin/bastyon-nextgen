@@ -480,6 +480,15 @@ export default {
     },
     chats: {
       signIn: '请登录：每个账号的聊天保存设置各自独立。',
+      privacy: '隐私',
+      privacyHint: '聊天对象能看到的你的状态。此设置适用于你的所有设备。',
+      privacy_online: '显示我在线',
+      privacy_onlineHint:
+        'Bastyon NextGen 用户会看到“在线”或你最后在线的时间。关闭后，你也看不到别人的在线状态。关闭后，你的状态会在一分钟内从对方那里消失。',
+      privacy_typing: '显示我正在输入',
+      privacy_typingHint: '你输入消息时，对方会看到“正在输入…”。',
+      privacy_recording: '显示我正在录制语音',
+      privacy_recordingHint: '你录音时，Bastyon NextGen 上的对方会看到“正在录制语音…”。',
       archive: '将聊天记录保存到设备',
       archiveHint:
         '聊天服务器只保留消息三个月，之后会删除。开启后，聊天记录会复制到此设备：旧消息仍留在聊天中，并标注服务器上已没有。副本使用账号密钥加密，不会发送到任何地方。',
@@ -973,6 +982,11 @@ export default {
     inputPlaceholder: '输入消息...',
     typing: '正在输入…',
     typingNamed: '{name} 正在输入…',
+    recordingNamed: '{name} 正在录制语音…',
+    presence: {
+      online: '在线',
+      lastSeen: '最后在线：{ago}',
+    },
     searchPlaceholder: '在对话中搜索…',
     searchNoResults: '在此对话中未找到结果。',
     seen: '已读',

@@ -1,7 +1,11 @@
 /**
- * Typing-индикатор для активной комнаты. Слушает события Matrix
- * `RoomMember.typing` напрямую на клиенте (matrix-service не имеет `off`,
- * поэтому подписываемся/отписываемся через raw-client для корректного lifecycle).
+ * Typing-индикатор для активной комнаты. Слушает на клиенте (matrix-service не
+ * имеет `off`, поэтому подписываемся/отписываемся через raw-client):
+ * - `m.typing` из синка (событие клиента `event`) — тогда флаги участников
+ *   открытой комнаты уже обновлены. Основной путь: `RoomMember.typing` SDK
+ *   пробрасывает на клиент не для всех участников, и «печатает…» у
+ *   собеседника не появлялось вовсе;
+ * - `RoomMember.typing` — там, где он всё же приходит.
  *
  * Логика обновления множества «печатающих» вынесена в чистую {@link applyTypingEvent}
  * — тестируется без Matrix.
@@ -42,7 +46,24 @@ export function applyTypingEvent(
   return next
 }
 
+/**
+ * Кто печатает в комнате — по флагам участников. У `m.typing` из синка нет
+ * `room_id`, но SDK обновляет флаги до того, как разошлёт событие, поэтому
+ * на любое `m.typing` пересчитываем открытую комнату целиком. Себя не показываем.
+ */
+export function typingFromMembers(
+  members: ReadonlyArray<{ userId?: string; typing?: boolean }>,
+  myId: string | null
+): Set<string> {
+  return new Set(
+    members
+      .filter((m) => m.typing && typeof m.userId === 'string' && m.userId !== myId)
+      .map((m) => m.userId as string)
+  )
+}
+
 const TYPING_EVENT = 'RoomMember.typing'
+const CLIENT_EVENT = 'event'
 
 export function useTypingIndicator(activeRoomId: Ref<string | null>) {
   const typingIds = ref<Set<string>>(new Set())
@@ -56,6 +77,18 @@ export function useTypingIndicator(activeRoomId: Ref<string | null>) {
       typingIds.value,
       { userId: member.userId, roomId: member.roomId, typing: !!member.typing },
       { roomId: activeRoomId.value, myId }
+    )
+  }
+
+  function onEvent(event: { getType?: () => string }): void {
+    if (event?.getType?.() !== 'm.typing') return
+    const rid = activeRoomId.value
+    const client = matrixService.getClient()
+    const room = rid ? client?.getRoom?.(rid) : null
+    if (!room) return
+    typingIds.value = typingFromMembers(
+      room.getJoinedMembers?.() ?? [],
+      client?.getUserId?.() ?? null
     )
   }
 
@@ -78,10 +111,14 @@ export function useTypingIndicator(activeRoomId: Ref<string | null>) {
   })
 
   onMounted(() => {
-    matrixService.getClient()?.on?.(TYPING_EVENT, onTyping)
+    const client = matrixService.getClient()
+    client?.on?.(TYPING_EVENT, onTyping)
+    client?.on?.(CLIENT_EVENT, onEvent)
   })
   onBeforeUnmount(() => {
-    matrixService.getClient()?.off?.(TYPING_EVENT, onTyping)
+    const client = matrixService.getClient()
+    client?.off?.(TYPING_EVENT, onTyping)
+    client?.off?.(CLIENT_EVENT, onEvent)
   })
 
   return { isTyping, typingName }

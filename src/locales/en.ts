@@ -509,6 +509,17 @@ export default {
     },
     chats: {
       signIn: 'Sign in: each account has its own chat saving.',
+      privacy: 'Privacy',
+      privacyHint:
+        'What the people you chat with see about you. The setting applies on all your devices.',
+      privacy_online: 'Show that I’m online',
+      privacy_onlineHint:
+        'People on Bastyon NextGen see “online” or when you were last online. When off, you don’t see this for others either. After you turn it off, your status disappears for others within a minute.',
+      privacy_typing: 'Show that I’m typing',
+      privacy_typingHint: 'The other person sees “typing…” while you write a message.',
+      privacy_recording: 'Show that I’m recording a voice message',
+      privacy_recordingHint:
+        'The other person on Bastyon NextGen sees “recording a voice message…” while you record.',
       archive: 'Save chats on this device',
       archiveHint:
         'The chat server keeps messages for three months, then deletes them. With this on, chats are copied to this device: old messages stay in the chat, marked as no longer on the server. The copy is encrypted with your account key and is never sent anywhere.',
@@ -1019,6 +1030,11 @@ export default {
     inputPlaceholder: 'Type a message...',
     typing: 'typing…',
     typingNamed: '{name} is typing…',
+    recordingNamed: '{name} is recording a voice message…',
+    presence: {
+      online: 'online',
+      lastSeen: 'last seen {ago}',
+    },
     searchPlaceholder: 'Search in conversation…',
     searchNoResults: 'Nothing found in this conversation.',
     seen: 'Seen',

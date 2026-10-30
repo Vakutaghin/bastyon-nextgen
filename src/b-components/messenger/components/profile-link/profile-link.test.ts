@@ -12,6 +12,10 @@ import { i18n, setI18nLocale } from '@/i18n'
 const mocks = vi.hoisted(() => ({ store: null as unknown as Record<string, unknown> }))
 
 vi.mock('../../store', () => ({ useMessengerStore: () => mocks.store }))
+// «В сети» под именем — не тема этих тестов: статус не показываем.
+vi.mock('../../store/messenger-privacy-store', () => ({
+  useMessengerPrivacyStore: () => ({ prefs: { online: false, typing: true, recording: true } }),
+}))
 
 import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
 import type { ShownPartner } from '../chat-partner-title/use-shown-partner'

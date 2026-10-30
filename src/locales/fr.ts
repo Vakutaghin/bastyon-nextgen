@@ -517,6 +517,17 @@ export default {
     },
     chats: {
       signIn: 'Connectez-vous : chaque compte enregistre ses conversations séparément.',
+      privacy: 'Confidentialité',
+      privacyHint:
+        'Ce que vos interlocuteurs voient de vous. Le réglage s’applique sur tous vos appareils.',
+      privacy_online: 'Montrer que je suis en ligne',
+      privacy_onlineHint:
+        'Les personnes sur Bastyon NextGen voient « en ligne » ou quand vous étiez en ligne pour la dernière fois. Désactivé, vous ne le voyez pas non plus chez les autres. Une fois désactivé, votre statut disparaît chez les autres en moins d’une minute.',
+      privacy_typing: 'Montrer que j’écris',
+      privacy_typingHint: 'Votre interlocuteur voit « écrit… » pendant que vous tapez un message.',
+      privacy_recording: 'Montrer que j’enregistre un message vocal',
+      privacy_recordingHint:
+        'Votre interlocuteur sur Bastyon NextGen voit « enregistre un message vocal… » pendant l’enregistrement.',
       archive: 'Enregistrer les conversations sur l’appareil',
       archiveHint:
         'Le serveur de discussion garde les messages trois mois, puis les supprime. Avec cette option, les conversations sont copiées sur cet appareil : les anciens messages restent visibles, marqués comme absents du serveur. La copie est chiffrée avec la clé de votre compte et n’est envoyée nulle part.',
@@ -1036,6 +1047,11 @@ export default {
     inputPlaceholder: 'Écrivez un message...',
     typing: 'écrit…',
     typingNamed: '{name} écrit…',
+    recordingNamed: '{name} enregistre un message vocal…',
+    presence: {
+      online: 'en ligne',
+      lastSeen: 'vu {ago}',
+    },
     searchPlaceholder: 'Rechercher dans la conversation…',
     searchNoResults: 'Aucun résultat dans cette conversation.',
     seen: 'Vu',

@@ -74,7 +74,12 @@
         :mark="partner.mark"
         shape="circle"
       />
-      <SC_PartnerTitleName>{{ partner.name }}</SC_PartnerTitleName>
+      <!-- Под именем — «в сети», если собеседник делится статусом, а вы — своим. -->
+      <SC_GroupTitleText v-if="presence">
+        <SC_PartnerTitleName>{{ partner.name }}</SC_PartnerTitleName>
+        <SC_GroupTitleSub data-testid="partner-presence">{{ presence }}</SC_GroupTitleSub>
+      </SC_GroupTitleText>
+      <SC_PartnerTitleName v-else>{{ partner.name }}</SC_PartnerTitleName>
     </ProfileLink>
     <!-- Значок «догружается» — тоже сразу за именем. -->
     <slot />
@@ -90,6 +95,8 @@ import ChannelAvatar from '../channel-avatar/channel-avatar.vue'
 import { MegaphoneIcon, MessageOutlined } from '@/components/icons'
 import { useMessengerStore } from '../../store'
 import type { ShownPartner } from './use-shown-partner'
+import { usePartnerPresence } from './use-partner-presence'
+import { useMessengerPrivacyStore } from '../../store/messenger-privacy-store'
 import {
   SC_ChannelTitleSub,
   SC_GroupTitleBtn,
@@ -103,6 +110,13 @@ import {
 const props = defineProps<{ partner: ShownPartner }>()
 const { t } = useI18n()
 const store = useMessengerStore()
+const privacy = useMessengerPrivacyStore()
+
+// Только личный чат: у группы и канала статуса одного человека нет.
+const { label: presence } = usePartnerPresence(
+  () => (props.partner.group || props.partner.channel ? null : props.partner.address),
+  () => privacy.prefs.online
+)
 
 function writeToAuthor(): void {
   if (props.partner.address) void store.openInviteWithAddress(props.partner.address)

@@ -25,7 +25,9 @@ vi.mock('../../store/messenger-chat-store', () => ({
 vi.mock('../../store/messenger-profile-cache', () => ({
   useMessengerProfileCache: () => ({ changedKeyPeers: {}, acceptChangedKeys: vi.fn() }),
 }))
-vi.mock('../../services/matrix-service', () => ({ matrixService: { sendTyping: vi.fn() } }))
+vi.mock('../../services/matrix-service', () => ({
+  matrixService: { sendTyping: vi.fn(), sendRecording: vi.fn(), getClient: () => null },
+}))
 vi.mock('./use-typing-indicator', async () => {
   const { ref } = await import('vue')
   return { useTypingIndicator: () => ({ isTyping: ref(false), typingName: ref('') }) }

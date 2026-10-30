@@ -22,6 +22,7 @@ const h = vi.hoisted(() => {
       (hex.match(/../g) ?? []).map((b) => String.fromCharCode(parseInt(b, 16))).join(''),
     stop: vi.fn(),
     purgeLocalData: vi.fn(async () => {}),
+    setPresenceVisible: vi.fn(async () => {}),
     leaveAndForgetRoom: vi.fn(async () => {}),
   }
   const auth = { isUserAuthenticated: true, address: 'PAlice', keyPair: { privateKey: 'k' } }

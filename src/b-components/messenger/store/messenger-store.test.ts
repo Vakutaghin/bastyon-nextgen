@@ -31,6 +31,7 @@ const h = vi.hoisted(() => {
     on: vi.fn(),
     getAccountData: vi.fn((): unknown => undefined),
     setAccountData: vi.fn(async () => {}),
+    setPresenceVisible: vi.fn(async () => {}),
     createDirectRoom: vi.fn(async (): Promise<string | null> => '!new:host'),
     joinIfInvited: vi.fn(async () => {}),
   }

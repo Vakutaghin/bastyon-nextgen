@@ -3,6 +3,26 @@
 
   <SC_ArchiveLead v-if="!auth.isUserAuthenticated">{{ t('settings.chats.signIn') }}</SC_ArchiveLead>
   <template v-else>
+    <!-- Что собеседники видят о вас: общее для всех устройств аккаунта. -->
+    <SC_ArchiveHead>
+      <SC_SystemTitle>{{ t('settings.chats.privacy') }}</SC_SystemTitle>
+      <SC_SystemHint>{{ t('settings.chats.privacyHint') }}</SC_SystemHint>
+    </SC_ArchiveHead>
+    <SC_SystemSection>
+      <SC_SystemRow v-for="key in PRIVACY_KEYS" :key="key">
+        <SC_SystemLabel>
+          <SC_SystemTitle>{{ t(`settings.chats.privacy_${key}`) }}</SC_SystemTitle>
+          <SC_SystemHint>{{ t(`settings.chats.privacy_${key}Hint`) }}</SC_SystemHint>
+        </SC_SystemLabel>
+        <Switch
+          :checked="privacy.prefs[key]"
+          :data-testid="`privacy-${key}`"
+          :aria-label="t(`settings.chats.privacy_${key}`)"
+          @change="(on: SwitchValue) => void privacy.set(key, on === true)"
+        />
+      </SC_SystemRow>
+    </SC_SystemSection>
+
     <SC_SystemSection>
       <SC_SystemRow>
         <SC_SystemLabel>
@@ -125,6 +145,8 @@ import { Z_INDEX } from '@/styles/design-tokens'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useMessengerArchiveStore } from '@/b-components/messenger/store/messenger-archive-store'
 import { archivableChatId, type ArchiveMode } from '@/b-components/messenger/lib/archive-prefs'
+import { useMessengerPrivacyStore } from '@/b-components/messenger/store/messenger-privacy-store'
+import type { ChatPrivacy } from '@/b-components/messenger/lib/chat-privacy'
 import { SC_SettingsSectionTitle } from '../settings-page-main.styled'
 import {
   SC_DangerButton,
@@ -165,6 +187,7 @@ interface ChatRow {
 }
 
 const MODES: ArchiveMode[] = ['all', 'selected']
+const PRIVACY_KEYS: Array<keyof ChatPrivacy> = ['online', 'typing', 'recording']
 /** С какого числа чатов показывать поиск. */
 const SEARCH_FROM = 8
 
@@ -172,6 +195,7 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const messenger = useMessengerStore()
 const archive = useMessengerArchiveStore()
+const privacy = useMessengerPrivacyStore()
 const query = ref('')
 
 // Копию открывает вход в мессенджер; настройки могли открыть раньше него.
@@ -179,6 +203,8 @@ onMounted(() => {
   if (!archive.ready && auth.address && auth.keyPair) {
     void archive.attach(auth.address, auth.keyPair.privateKey)
   }
+  // Настройки открыли раньше мессенджера — приватность аккаунта с прошлого раза.
+  if (auth.address) privacy.attach(auth.address)
 })
 
 /** Чаты мессенджера и чаты, от которых осталась только копия. */

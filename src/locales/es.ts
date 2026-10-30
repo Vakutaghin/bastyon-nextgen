@@ -515,6 +515,17 @@ export default {
     },
     chats: {
       signIn: 'Inicia sesión: cada cuenta guarda sus chats por separado.',
+      privacy: 'Privacidad',
+      privacyHint:
+        'Lo que ven de ti las personas con quienes chateas. El ajuste se aplica en todos tus dispositivos.',
+      privacy_online: 'Mostrar que estoy en línea',
+      privacy_onlineHint:
+        'Quienes usan Bastyon NextGen ven «en línea» o cuándo estuviste en línea por última vez. Si lo desactivas, tampoco lo verás de los demás. Al desactivarlo, tu estado desaparece para los demás en menos de un minuto.',
+      privacy_typing: 'Mostrar que estoy escribiendo',
+      privacy_typingHint: 'La otra persona ve «escribiendo…» mientras redactas un mensaje.',
+      privacy_recording: 'Mostrar que estoy grabando un audio',
+      privacy_recordingHint:
+        'La otra persona en Bastyon NextGen ve «grabando un audio…» mientras grabas.',
       archive: 'Guardar los chats en el dispositivo',
       archiveHint:
         'El servidor de chats conserva los mensajes tres meses y luego los borra. Con esta opción, los chats se copian a este dispositivo: los mensajes antiguos siguen en el chat, marcados como ya no disponibles en el servidor. La copia está cifrada con la clave de tu cuenta y no se envía a ningún sitio.',
@@ -1028,6 +1039,11 @@ export default {
     inputPlaceholder: 'Escribe un mensaje...',
     typing: 'escribiendo…',
     typingNamed: '{name} está escribiendo…',
+    recordingNamed: '{name} está grabando un audio…',
+    presence: {
+      online: 'en línea',
+      lastSeen: 'visto por última vez {ago}',
+    },
     searchPlaceholder: 'Buscar en la conversación…',
     searchNoResults: 'No se encontró nada en esta conversación.',
     seen: 'Visto',

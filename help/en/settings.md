@@ -46,7 +46,7 @@ Which events to show, sound and system notifications — see [Notifications](not
 
 ## Chats
 
-Whether to save chats on this device — the chat server deletes them after three months — for all chats or selected ones, how much is saved and how to erase it. See [Chats saved on this device](chat-archive.md).
+**“Privacy”** — what the people you chat with see about you: “online”, “typing”, “recording a voice message”, see [Chats](chats.md#what-the-other-person-sees-about-you). Below it — whether to save chats on this device — the chat server deletes them after three months — for all chats or selected ones, how much is saved and how to erase it. See [Chats saved on this device](chat-archive.md).
 
 ## System
 

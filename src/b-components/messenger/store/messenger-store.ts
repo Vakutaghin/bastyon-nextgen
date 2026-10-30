@@ -38,6 +38,8 @@ import { useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerProfileCache } from './messenger-profile-cache'
 import { useMessengerChatStore } from './messenger-chat-store'
 import { useMessengerChannelsStore } from './messenger-channels-store'
+import { useMessengerPrivacyStore } from './messenger-privacy-store'
+import { CHAT_PRIVACY_ACCOUNT_DATA } from '../lib/chat-privacy'
 import { ARCHIVE_PREFS_KEY, useMessengerArchiveStore } from './messenger-archive-store'
 import { useArchiveSync } from './messenger-store/use-archive-sync'
 import { chatArchiveAPI } from '@/db/apis/chat-archive-api'
@@ -63,6 +65,7 @@ export const useMessengerStore = defineStore('messenger', () => {
   const chatStore = useMessengerChatStore()
   // Каналы — посты авторов, которых читают в мессенджере; в списке рядом с чатами.
   const channels = useMessengerChannelsStore()
+  const privacy = useMessengerPrivacyStore()
   // Личные списки видео и аудио живут там же — в данных аккаунта Matrix.
   const mediaLibrary = useMediaLibraryStore()
   // Mesh-диалоги (переписка через радио, src/mesh) идут в общем списке с
@@ -357,6 +360,7 @@ export const useMessengerStore = defineStore('messenger', () => {
       if (state !== 'PREPARED') return
       channels.syncWithServer()
       mediaLibrary.syncWithServer()
+      privacy.syncWithServer()
     }
   )
   if (typeof document !== 'undefined') {
@@ -451,6 +455,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     // Каналы с прошлого запуска — сразу; серверная копия подтянется после синка.
     channels.attach(authStore.address)
     mediaLibrary.attach(authStore.address)
+    // «В сети» решается до входа: от этого зависит уже первый синк.
+    privacy.attach(authStore.address)
     void archive.attach(authStore.address, authStore.keyPair.privateKey)
     // Переписка через радио не зависит от Matrix: без интернета она нужнее всего.
     void meshChat.ensureLoaded()
@@ -504,6 +510,9 @@ export const useMessengerStore = defineStore('messenger', () => {
                 // Личные списки видео и аудио поменяли на другом устройстве.
                 else if (type === MEDIA_LIBRARY_ACCOUNT_DATA)
                   mediaLibrary.applyRemote(event.getContent?.())
+                // Приватность поменяли на другом устройстве.
+                else if (type === CHAT_PRIVACY_ACCOUNT_DATA)
+                  privacy.applyRemote(event.getContent?.())
               }
             )
             listenersRegistered = true
@@ -834,6 +843,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     profileCache.reset()
     channels.reset()
     mediaLibrary.reset()
+    privacy.reset()
     // Копия переписки остаётся на устройстве: она зашифрована ключом аккаунта
     // и снова откроется при входе в него. Стирается с удалением аккаунта.
     archiveSync.stop()

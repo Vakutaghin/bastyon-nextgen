@@ -508,6 +508,16 @@ export default {
     },
     chats: {
       signIn: '로그인하세요: 대화 저장은 계정마다 따로 설정됩니다.',
+      privacy: '개인정보',
+      privacyHint: '대화 상대에게 보이는 내 상태입니다. 모든 기기에 적용됩니다.',
+      privacy_online: '온라인 상태 표시',
+      privacy_onlineHint:
+        'Bastyon NextGen 사용자는 "온라인" 또는 마지막 접속 시간을 봅니다. 끄면 다른 사람의 상태도 볼 수 없습니다. 끄면 1분 이내에 다른 사람에게서 내 상태가 사라집니다.',
+      privacy_typing: '입력 중 표시',
+      privacy_typingHint: '메시지를 입력하는 동안 상대방에게 "입력 중…"이 표시됩니다.',
+      privacy_recording: '음성 메시지 녹음 중 표시',
+      privacy_recordingHint:
+        '녹음하는 동안 Bastyon NextGen 상대방에게 "음성 메시지 녹음 중…"이 표시됩니다.',
       archive: '대화를 기기에 저장',
       archiveHint:
         '채팅 서버는 메시지를 3개월 동안 보관한 뒤 삭제합니다. 이 설정을 켜면 대화가 이 기기에 복사되어, 오래된 메시지도 서버에 없다는 표시와 함께 대화에 남습니다. 사본은 계정 키로 암호화되며 어디로도 전송되지 않습니다.',
@@ -1015,6 +1025,11 @@ export default {
     inputPlaceholder: '메시지 입력...',
     typing: '입력 중…',
     typingNamed: '{name}님이 입력 중…',
+    recordingNamed: '{name} 님이 음성 메시지를 녹음 중…',
+    presence: {
+      online: '온라인',
+      lastSeen: '마지막 접속 {ago}',
+    },
     searchPlaceholder: '대화에서 검색…',
     searchNoResults: '이 대화에서 찾은 결과가 없습니다.',
     seen: '읽음',

@@ -10,6 +10,10 @@ keywords:
   - search in chat
   - find a chat
   - find a person
+  - online
+  - typing
+  - recording a voice message
+  - privacy
   - delete conversation
   - contact profile
 ---
@@ -90,6 +94,16 @@ For each member in the list:
 This app cannot yet create groups, invite or remove members. PKOIN can be sent only in private chats.
 
 Group messages use a simpler encryption scheme than private ones — see [Message encryption](chat-encryption.md).
+
+## What the other person sees about you
+
+In **“Settings”** → **“Chats”** → **“Privacy”**:
+
+- **“Show that I’m online”** — off by default, as in the previous Bastyon. Turn it on, and people on Bastyon NextGen see **“online”** or “last seen 5 minutes ago” under your name in the chat header. It works both ways: while it is off for you, you don’t see this for others either. After you turn it off, your status disappears for others within a minute;
+- **“Show that I’m typing”** — the other person sees “Anna is typing…” while you write a message. On by default;
+- **“Show that I’m recording a voice message”** — the other person on Bastyon NextGen sees “Anna is recording a voice message…” while you hold the microphone button. On by default.
+
+The setting is shared by all your devices: it is kept on the chat server with your account. The previous Bastyon app shows neither “online” nor “recording a voice message”.
 
 ## An unpleasant contact
 
