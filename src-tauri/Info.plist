@@ -19,9 +19,25 @@
   приложение, — а macOS спрашивает доступ от имени приложения и берёт текст
   отсюда. Без него macOS закрывает модуль при первом обращении к Bluetooth.
   Права hardened runtime для Bluetooth нет: оно есть только у песочницы App Store.
+
+  CFBundleLocalizations — языки приложения (src/locales). Без них macOS
+  считала бандл только английским, и контекстное меню WebKit, системные
+  диалоги и пункты вроде «Службы» были по-английски даже на русской системе.
 -->
 <plist version="1.0">
   <dict>
+    <key>CFBundleLocalizations</key>
+    <array>
+      <string>ru</string>
+      <string>en</string>
+      <string>de</string>
+      <string>es</string>
+      <string>fr</string>
+      <string>it</string>
+      <string>ko</string>
+      <string>sr</string>
+      <string>zh-Hans</string>
+    </array>
     <key>NSMicrophoneUsageDescription</key>
     <string>Bastyon uses the microphone for voice input and voice messages. Speech is recognized on this computer.</string>
     <key>NSCameraUsageDescription</key>

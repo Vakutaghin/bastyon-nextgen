@@ -1,3 +1,4 @@
+mod app_menu;
 mod asr;
 mod desktop_prefs;
 mod fetch;
@@ -996,6 +997,7 @@ pub fn run() {
       ipfs::sink::ipfs_sink_abort,
       ipfs::names::ipfs_name_put,
       tray::tray_set_labels,
+      app_menu::app_menu_set_labels,
       desktop_prefs::desktop_prefs_get,
       desktop_prefs::desktop_prefs_set,
       asr::asr_status,
@@ -1136,6 +1138,11 @@ pub fn run() {
       // Крестик и значок в строке меню — настройки до трея: значок macOS по ним.
       if let Err(e) = desktop_prefs::init(app.handle()) {
         log::warn!("desktop prefs: {e}");
+      }
+
+      // Строка меню macOS — на русском до подписей от интерфейса.
+      if let Err(e) = app_menu::init(app.handle()) {
+        log::warn!("app menu: {e}");
       }
 
       // Значок в трее (Windows, Linux) или в строке меню (macOS, по настройке).
