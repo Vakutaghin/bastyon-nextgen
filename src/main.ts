@@ -37,6 +37,7 @@ import { setupBackButton } from '@/composables/use-back-button'
 import { setupAppPreferences } from '@/composables/use-app-preferences-effects'
 import { setupQuitShortcut } from '@/helpers/desktop/quit-shortcut'
 import { installDropGuard } from '@/helpers/common/drop-guard'
+import { installPopupClickShield } from '@/helpers/common/popup-click-shield'
 import { initDatabase } from '@/db/database'
 import { useAuthStore } from '@/blockchain'
 import {
@@ -120,6 +121,8 @@ void setupAppPreferences()
 setupQuitShortcut()
 // Файл, брошенный мимо зон для файлов, не открывается вместо приложения.
 installDropGuard()
+// Нажатие мимо открытого меню только закрывает его, а не жмёт то, что под ним.
+installPopupClickShield()
 
 void router.isReady().then(() => {
   if (isEmbedRoute()) return

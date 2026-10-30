@@ -13,7 +13,9 @@
         <SC_TermMore :href="href" @click="more">{{ t('help.term.more') }}</SC_TermMore>
       </SC_TermCard>
     </template>
-    <SC_Term type="button"><slot /></SC_Term>
+    <!-- data-popup-hover: мышью определение открыто, пока курсор рядом, —
+         нажатие мимо него не маскируется (helpers/common/popup-click-shield). -->
+    <SC_Term type="button" data-popup-hover><slot /></SC_Term>
   </APopover>
   <slot v-else />
 </template>

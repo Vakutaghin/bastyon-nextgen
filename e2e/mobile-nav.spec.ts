@@ -88,6 +88,62 @@ test.describe('Навигация на телефоне', () => {
 })
 
 /**
+ * С аккаунтом: пункты аккаунта — только в меню аватара, в боковом меню их нет.
+ * Нажатие мимо открытого меню аватара только закрывает его — до кнопки под
+ * ним (здесь «Поиск» в нижней панели) оно не доходит.
+ */
+test.describe('Телефон с аккаунтом', () => {
+  const MNEMONIC =
+    'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+  const ME = { address: 'PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPy', name: 'me_ng' }
+
+  async function signIn(page: Page): Promise<void> {
+    await useMockNode(page, { profiles: [ME], posts: [], comments: [] })
+    await page.goto('/')
+    await page.waitForSelector('#app > *', { timeout: 30_000 })
+    await page
+      .getByRole('button', { name: 'Понятно' })
+      .click({ timeout: 5_000 })
+      .catch(() => {})
+    await page.getByRole('button', { name: 'Войти' }).first().click()
+    const dialog = page.getByRole('dialog', { name: 'Вход в аккаунт' })
+    await dialog.locator('input, textarea').first().fill(MNEMONIC)
+    await dialog.getByRole('button', { name: 'Войти' }).click()
+    await expect(dialog).toBeHidden({ timeout: 30_000 })
+  }
+
+  const accountMenu = (page: Page) => page.locator('.header-user-dropdown')
+
+  test('пункты аккаунта — в меню аватара, а не в боковом меню', async ({ page }) => {
+    await signIn(page)
+    await page.getByRole('button', { name: 'Меню' }).click()
+    await expect(menu(page).getByRole('button', { name: 'Лента', exact: true })).toBeVisible()
+    for (const item of ['Профиль', 'Кошельки', 'Настройки']) {
+      await expect(menu(page).getByRole('button', { name: item, exact: true })).toHaveCount(0)
+    }
+    await menu(page).getByRole('button', { name: 'Закрыть' }).click()
+    await expect(menu(page)).toHaveCount(0)
+
+    await page.locator('[data-header-avatar]').click()
+    for (const item of ['Профиль', 'Кошельки', 'Настройки']) {
+      await expect(accountMenu(page).getByRole('menuitem', { name: item })).toBeVisible()
+    }
+  })
+
+  test('нажатие мимо меню аватара только закрывает его', async ({ page }) => {
+    await signIn(page)
+    await page.locator('[data-header-avatar]').click()
+    await expect(accountMenu(page)).toBeVisible()
+    await bottomNav(page, 'Поиск').tap()
+    await expect(accountMenu(page)).toBeHidden()
+    await expect(page).toHaveURL(/\/$/)
+    // Меню закрыто — та же кнопка работает как обычно.
+    await bottomNav(page, 'Поиск').tap()
+    await expect(page).toHaveURL(/\/search$/)
+  })
+})
+
+/**
  * Телефон боком (data-shell="rail"): каркас телефона, но разделы — колонкой
  * слева, шапка ниже, окна не выше экрана. 844×390 — iPhone 14 боком: шире
  * 768 px, и по одной ширине приложение раньше считало его компьютером.
