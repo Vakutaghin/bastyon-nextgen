@@ -94,12 +94,13 @@ const apps = ref<RemoteAppEntry[] | null>(null)
 const failed = ref(false)
 const brokenIcons = reactive(new Set<string>())
 
-// Под Tor мини-приложения не открываются, а иконки грузились бы напрямую с
-// чужих сайтов, мимо Tor, — полки нет вовсе.
+// Под Tor на компьютере мини-приложения не открываются, а иконки грузились бы
+// напрямую с чужих сайтов, мимо Tor, — полки нет вовсе. На Android окно ходит
+// через Tor, и полка остаётся.
 const visible = computed(
   () =>
     shelfStore.hidden === false &&
-    !torStore.wantsTor &&
+    !torStore.mediaBypassesTor &&
     !failed.value &&
     (apps.value === null || apps.value.length > 0)
 )
@@ -121,7 +122,7 @@ onMounted(() => {
 // Грузим, только когда полку покажут: её могут вернуть со страницы «Сервисы»
 // или выключить Tor, пока лента открыта.
 watch(
-  () => shelfStore.hidden === false && !torStore.wantsTor,
+  () => shelfStore.hidden === false && !torStore.mediaBypassesTor,
   (show) => {
     if (show) void ensureLoaded()
   },

@@ -1,10 +1,10 @@
-use crate::tor::state::SharedTorState;
+use crate::state::SharedTorState;
+use crate::Emitter;
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use dashmap::DashMap;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter};
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio_socks::tcp::Socks5Stream;
@@ -66,7 +66,7 @@ pub fn validate_id(id: &str) -> Result<(), WsError> {
 }
 
 pub async fn connect(
-    app: AppHandle,
+    emit: Emitter,
     map: SharedWsMap,
     shared: SharedTorState,
     id: String,
@@ -116,13 +116,13 @@ pub async fn connect(
         let (ws, _resp) = tokio_tungstenite::client_async(request, tls)
             .await
             .map_err(|e| WsError::Handshake(e.to_string()))?;
-        let reader = spawn_ws_loops(app, map.clone(), id.clone(), ws, rx, "tor:ws");
+        let reader = spawn_ws_loops(emit, map.clone(), id.clone(), ws, rx, "tor:ws");
         map.insert(id, WsHandle { tx, reader });
     } else {
         let (ws, _resp) = tokio_tungstenite::client_async(request, raw)
             .await
             .map_err(|e| WsError::Handshake(e.to_string()))?;
-        let reader = spawn_ws_loops(app, map.clone(), id.clone(), ws, rx, "tor:ws");
+        let reader = spawn_ws_loops(emit, map.clone(), id.clone(), ws, rx, "tor:ws");
         map.insert(id, WsHandle { tx, reader });
     }
 
@@ -135,8 +135,8 @@ pub async fn connect(
 /// исчезает из карты (rx → None), и закрывает sink. События —
 /// `<events>:<id>:message|close|error` (`tor:ws` или `node:ws` у прямых
 /// сокетов к нодам).
-pub(crate) fn spawn_ws_loops<S>(
-    app: AppHandle,
+pub fn spawn_ws_loops<S>(
+    emit: Emitter,
     map: SharedWsMap,
     id: String,
     ws: tokio_tungstenite::WebSocketStream<S>,
@@ -152,7 +152,7 @@ where
     let event_close = format!("{events}:{id}:close");
     let event_err = format!("{events}:{id}:error");
 
-    let app_reader = app.clone();
+    let emit_reader = emit.clone();
     let event_msg_r = event_msg.clone();
     let event_close_r = event_close.clone();
     let event_err_r = event_err.clone();
@@ -163,20 +163,17 @@ where
         while let Some(msg) = stream.next().await {
             match msg {
                 Ok(Message::Text(t)) => {
-                    let _ = app_reader.emit(
-                        &event_msg_r,
+                    emit_reader(&event_msg_r,
                         serde_json::json!({ "kind": "text", "data": t.to_string() }),
                     );
                 }
                 Ok(Message::Binary(b)) => {
-                    let _ = app_reader.emit(
-                        &event_msg_r,
+                    emit_reader(&event_msg_r,
                         serde_json::json!({ "kind": "binary", "data_b64": B64.encode(&b) }),
                     );
                 }
                 Ok(Message::Close(frame)) => {
-                    let _ = app_reader.emit(
-                        &event_close_r,
+                    emit_reader(&event_close_r,
                         serde_json::json!({
                             "code": frame.as_ref().map(|f| u16::from(f.code)),
                             "reason": frame.as_ref().map(|f| f.reason.to_string()),
@@ -187,7 +184,7 @@ where
                 }
                 Ok(_) => {}
                 Err(e) => {
-                    let _ = app_reader.emit(&event_err_r, serde_json::json!({ "error": e.to_string() }));
+                    emit_reader(&event_err_r, serde_json::json!({ "error": e.to_string() }));
                     break;
                 }
             }
@@ -195,8 +192,7 @@ where
         // Ошибка чтения / EOF без Close-фрейма = соединение мертво; JS ждёт
         // `close`, иначе остаётся в OPEN навсегда.
         if !close_sent {
-            let _ = app_reader.emit(
-                &event_close_r,
+            emit_reader(&event_close_r,
                 serde_json::json!({ "code": 1006, "reason": "connection lost" }),
             );
         }
@@ -206,7 +202,7 @@ where
         log::debug!("[tor:ws:{}] reader exit", id_r);
     });
 
-    let app_writer = app.clone();
+    let emit_writer = emit;
     let event_err_w = event_err.clone();
     let id_w = id.clone();
     tokio::spawn(async move {
@@ -216,8 +212,7 @@ where
                 WsOutgoing::Binary { data_b64 } => match B64.decode(&data_b64) {
                     Ok(b) => Message::Binary(b.into()),
                     Err(e) => {
-                        let _ = app_writer.emit(
-                            &event_err_w,
+                        emit_writer(&event_err_w,
                             serde_json::json!({ "error": format!("bad base64: {}", e) }),
                         );
                         continue;
@@ -246,7 +241,7 @@ where
                 }
             };
             if let Err(e) = sink.send(to_send).await {
-                let _ = app_writer.emit(&event_err_w, serde_json::json!({ "error": e.to_string() }));
+                emit_writer(&event_err_w, serde_json::json!({ "error": e.to_string() }));
                 break;
             }
         }
@@ -298,19 +293,11 @@ pub async fn close_all(map: &SharedWsMap) {
     }
 }
 
-pub(crate) fn build_rustls_connector() -> Result<tokio_rustls::TlsConnector, String> {
-    use rustls_native_certs::load_native_certs;
+pub fn build_rustls_connector() -> Result<tokio_rustls::TlsConnector, String> {
     use std::sync::Arc;
-    use tokio_rustls::rustls::{ClientConfig, RootCertStore};
+    use tokio_rustls::rustls::ClientConfig;
 
-    let mut roots = RootCertStore::empty();
-    let result = load_native_certs();
-    if result.certs.is_empty() && !result.errors.is_empty() {
-        return Err(format!("no native roots: {:?}", result.errors));
-    }
-    for cert in result.certs {
-        let _ = roots.add(cert);
-    }
+    let roots = root_certs()?;
     // Провайдер — явно: в сборке включены и ring, и aws-lc-rs, и
     // `ClientConfig::builder()` без выбранного по умолчанию паниковал —
     // wss через Tor (чат) и Moat падали на первом же соединении.
@@ -321,6 +308,27 @@ pub(crate) fn build_rustls_connector() -> Result<tokio_rustls::TlsConnector, Str
         .with_root_certificates(roots)
         .with_no_client_auth();
     Ok(tokio_rustls::TlsConnector::from(Arc::new(cfg)))
+}
+
+#[cfg(not(target_os = "android"))]
+fn root_certs() -> Result<tokio_rustls::rustls::RootCertStore, String> {
+    let mut roots = tokio_rustls::rustls::RootCertStore::empty();
+    let result = rustls_native_certs::load_native_certs();
+    if result.certs.is_empty() && !result.errors.is_empty() {
+        return Err(format!("no native roots: {:?}", result.errors));
+    }
+    for cert in result.certs {
+        let _ = roots.add(cert);
+    }
+    Ok(roots)
+}
+
+/// Хранилище Android rustls-native-certs не читает — список Mozilla, как у reqwest.
+#[cfg(target_os = "android")]
+fn root_certs() -> Result<tokio_rustls::rustls::RootCertStore, String> {
+    Ok(tokio_rustls::rustls::RootCertStore {
+        roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
+    })
 }
 
 #[cfg(test)]

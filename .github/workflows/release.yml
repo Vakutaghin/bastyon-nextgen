@@ -554,10 +554,12 @@ jobs:
       - name: Sync Capacitor Android project
         run: pnpm exec cap sync android
 
-      # Узел Reticulum (src-tauri/crates/bastyon-rns-jni) и голосовой ввод
-      # (crates/bastyon-asr-jni, whisper.cpp через cmake): Gradle собирает их
-      # scripts/build-rns-android.sh и build-asr-android.sh под NDK раннера.
-      # Без Rust APK собрался бы без узла и без диктовки. armeabi-v7a — телефоны с 32-битным Android при 64-битном
+      # Узел Reticulum (src-tauri/crates/bastyon-rns-jni), голосовой ввод
+      # (crates/bastyon-asr-jni, whisper.cpp через cmake) и Tor
+      # (crates/bastyon-tor-jni и tor-expert-bundle для Android): Gradle
+      # собирает их scripts/build-rns-android.sh, build-asr-android.sh и
+      # build-tor-android.sh под NDK раннера. Без Rust APK собрался бы без
+      # узла, диктовки и Tor. armeabi-v7a — телефоны с 32-битным Android при 64-битном
       # процессоре (Redmi 9A и другие недорогие): APK с одной arm64-v8a в lib/
       # они не ставят, «приложение несовместимо с устройством».
       - name: Install Rust for the Reticulum node
@@ -591,6 +593,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           RNS_ANDROID_ABIS: arm64-v8a armeabi-v7a
+          TOR_ANDROID_ABIS: arm64-v8a armeabi-v7a
         run: |
           set -euo pipefail
           if [ -z "$ANDROID_KEYSTORE_B64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
@@ -623,6 +626,20 @@ jobs:
               exit 1
             }
           done
+          # Tor встроен в APK: build-tor-android.sh без цели Rust или бандла
+          # тоже только предупреждает.
+          for abi in $TOR_ANDROID_ABIS; do
+            for lib in libtor.so liblyrebird.so libbastyon_tor_jni.so; do
+              grep -qx "lib/$abi/$lib" <<<"$LIBS" || {
+                echo "::error::В APK нет lib/$abi/$lib — Tor на таких телефонах не будет"
+                exit 1
+              }
+            done
+          done
+          unzip -Z1 app/build/outputs/apk/release/app-release.apk | grep -qx "assets/tor/pt_config.json" || {
+            echo "::error::В APK нет assets/tor/pt_config.json — мосты Tor возьмутся из встроенной копии"
+            exit 1
+          }
           # Голосовой ввод — только 64-битный ARM: build-asr-android.sh без
           # cmake или цели Rust тоже молча пропускает его.
           for lib in libbastyon_asr_jni.so libc++_shared.so; do

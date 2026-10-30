@@ -1,6 +1,7 @@
 /**
  * Drop-in replacement for the standard WebSocket that pipes the connection
- * through the Tauri/Rust SOCKS5 tunnel into Tor.
+ * through the Rust SOCKS5 tunnel into Tor (Tauri on desktop, the Tor plugin
+ * on Android — `tor-bridge`).
  *
  * Behaviour mirrors the WebSocket DOM interface closely enough that libraries
  * (e.g. matrix-js-sdk, simple-ws clients) can use it as a transport.
@@ -17,8 +18,7 @@
  *   requires sub-protocols, extend the Rust side to forward them.
  */
 
-import type { UnlistenFn } from '@tauri-apps/api/event'
-
+import { torInvoke, torListen } from './tor-bridge'
 import { TorNotReadyError, torEnabledInStorage, waitForTorRouting } from './tor-gate'
 
 /** Сколько сокет ждёт готовности Tor до отказа (ws-service сам закрывает через 10 с). */
@@ -63,7 +63,7 @@ export class TorWebSocket extends EventTarget implements WebSocket {
   /** Rust держит сокет с момента успешного `tor_ws_connect` до `tor_ws_close`. */
   private _rustOpen = false
   private _closeSent = false
-  private _unlisteners: UnlistenFn[] = []
+  private _unlisteners: Array<() => void> = []
   private _pendingSends: Array<() => void> = []
 
   // on* — аксессоры на прототипе, а не поля экземпляра: обработчик вызывается
@@ -127,11 +127,10 @@ export class TorWebSocket extends EventTarget implements WebSocket {
     const id = this._id
 
     const send = async () => {
-      const { invoke } = await import('@tauri-apps/api/core')
       const payload = await this._encodeOutgoing(data)
       this._bufferedAmount += payload.size
       try {
-        await invoke('tor_ws_send', { id, payload: payload.frame })
+        await torInvoke('tor_ws_send', { id, payload: payload.frame })
       } catch (e) {
         this._dispatchError(String(e))
       } finally {
@@ -170,18 +169,16 @@ export class TorWebSocket extends EventTarget implements WebSocket {
       throw new TorNotReadyError(mode === 'failed' ? 'failed' : 'off')
     }
 
-    const { invoke } = await import('@tauri-apps/api/core')
-    const { listen } = await import('@tauri-apps/api/event')
     const id = this._id
 
-    // Подписки ДО invoke: Tauri не буферизует события (V22).
+    // Подписки ДО invoke: события не буферизуются (V22).
     this._unlisteners.push(
-      await listen<IncomingMessage>(`tor:ws:${id}:message`, (e) => this._onMessage(e.payload)),
-      await listen<{ code?: number | null; reason?: string | null }>(`tor:ws:${id}:close`, (e) =>
-        this._onServerClose(e.payload?.code ?? 1006, e.payload?.reason ?? '')
+      await torListen<IncomingMessage>(`tor:ws:${id}:message`, (p) => this._onMessage(p)),
+      await torListen<{ code?: number | null; reason?: string | null }>(`tor:ws:${id}:close`, (p) =>
+        this._onServerClose(p?.code ?? 1006, p?.reason ?? '')
       ),
-      await listen<{ error: string }>(`tor:ws:${id}:error`, (e) =>
-        this._dispatchError(e.payload?.error ?? 'unknown')
+      await torListen<{ error: string }>(`tor:ws:${id}:error`, (p) =>
+        this._dispatchError(p?.error ?? 'unknown')
       )
     )
     if (this._readyState !== CONNECTING) {
@@ -189,7 +186,7 @@ export class TorWebSocket extends EventTarget implements WebSocket {
       return
     }
 
-    await invoke('tor_ws_connect', { id, url: this.url })
+    await torInvoke('tor_ws_connect', { id, url: this.url })
     this._rustOpen = true
 
     if (this._readyState !== CONNECTING) {
@@ -205,14 +202,13 @@ export class TorWebSocket extends EventTarget implements WebSocket {
     if (this._closeSent) return
     this._closeSent = true
     const id = this._id
-    const { invoke } = await import('@tauri-apps/api/core')
     try {
-      await invoke('tor_ws_send', { id, payload: { kind: 'close', code, reason } })
+      await torInvoke('tor_ws_send', { id, payload: { kind: 'close', code, reason } })
     } catch {
       /* best-effort */
     }
     try {
-      await invoke('tor_ws_close', { id })
+      await torInvoke('tor_ws_close', { id })
     } catch {
       /* best-effort */
     }
@@ -337,8 +333,8 @@ function base64ToBytes(b64: string): Uint8Array {
 }
 
 /**
- * Конструктор для новых соединений: `TorWebSocket`, когда Tor включён в
- * десктопе (даже если ещё бутстрапится — сокет дождётся готовности), иначе
+ * Конструктор для новых соединений: `TorWebSocket`, когда Tor включён
+ * (даже если ещё бутстрапится — сокет дождётся готовности), иначе
  * нативный. Раньше при `enabled && !ready` уходил нативный сокет (V20).
  */
 export async function pickWebSocketCtor(): Promise<typeof WebSocket> {

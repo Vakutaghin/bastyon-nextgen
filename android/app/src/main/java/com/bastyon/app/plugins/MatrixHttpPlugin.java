@@ -2,6 +2,7 @@ package com.bastyon.app.plugins;
 
 import android.text.TextUtils;
 
+import com.bastyon.app.plugins.tor.TorNetwork;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -92,7 +93,8 @@ public class MatrixHttpPlugin extends Plugin {
             File out = null;
             HttpURLConnection conn = null;
             try {
-                conn = (HttpURLConnection) new URL(url).openConnection();
+                // Под Tor — через Tor; Tor ещё не готов — исключение, а не напрямую.
+                conn = (HttpURLConnection) new URL(url).openConnection(TorNetwork.proxy());
                 active.put(id, conn);
                 conn.setRequestMethod(method);
                 conn.setInstanceFollowRedirects(true);

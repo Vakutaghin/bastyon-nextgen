@@ -11,6 +11,7 @@
 import { watch } from 'vue'
 
 import type { TorStatus } from '@/stores/tor-store'
+import { isAndroidTor } from './tor-bridge'
 
 export type TorRoutingMode = 'direct' | 'tor' | 'wait' | 'failed'
 
@@ -41,11 +42,12 @@ export const TOR_ENABLED_KEY = 'tor:enabled'
 
 /**
  * Tor включён по сохранённому флагу — на случай, когда стора нет (pinia ещё
- * не поднята). Без Tauri Tor не бывает.
+ * не поднята). Tor бывает только в приложениях: на компьютере и на Android.
  */
 export function torEnabledInStorage(): boolean {
   if (typeof window === 'undefined') return false
-  if (!('__TAURI_INTERNALS__' in window) && !('__TAURI__' in window)) return false
+  const app = '__TAURI_INTERNALS__' in window || '__TAURI__' in window || isAndroidTor()
+  if (!app) return false
   try {
     const raw = window.localStorage.getItem(TOR_ENABLED_KEY)
     return raw === '1' || raw === 'true'
@@ -127,4 +129,32 @@ export async function waitForTorRouting(
       { flush: 'sync' }
     )
   })
+}
+
+/**
+ * Куда идёт запрос: `tor` или `direct`. Пока Tor ставится или бутстрапится —
+ * ждёт; Tor не смог или его выключили, пока ждали, — `TorNotReadyError`.
+ */
+export async function torRoute(
+  url: string,
+  signal?: AbortSignal | null
+): Promise<'tor' | 'direct'> {
+  let mode = await torRoutingMode()
+  if (mode === 'wait') {
+    // Установка/бутстрап: запрос ждёт готовности, а не уходит напрямую.
+    // Abort-сигнал вызывающего (таймаут RPC) прерывает ожидание.
+    mode = await waitForTorRouting({ signal: signal ?? undefined })
+    // Tor выключили, пока запрос ждал: собранный для Tor запрос (с подписью,
+    // с токеном) напрямую не отправляем.
+    if (mode === 'direct') {
+      throw new TorNotReadyError('off', `Tor was turned off; refusing direct request to ${url}`)
+    }
+  }
+  if (mode === 'failed') {
+    throw new TorNotReadyError(
+      'failed',
+      `Tor is enabled but failed; refusing direct request to ${url}`
+    )
+  }
+  return mode === 'tor' ? 'tor' : 'direct'
 }

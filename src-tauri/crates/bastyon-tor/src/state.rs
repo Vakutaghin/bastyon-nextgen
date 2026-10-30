@@ -64,6 +64,8 @@ pub struct TorStateSnapshot {
     /// Идёт запрос мостов у Moat.
     pub fetching_bridges: bool,
     pub error_code: Option<TorErrorCode>,
+    /// HTTP-туннель Tor (`HTTPTunnelPort`, Android: WebView и Java); `None` — нет.
+    pub http_tunnel_port: Option<u16>,
 }
 
 #[derive(Debug)]
@@ -73,6 +75,7 @@ pub struct TorState {
     pub message: Option<String>,
     pub socks_port: u16,
     pub control_port: u16,
+    pub http_tunnel_port: Option<u16>,
     pub child_pid: Option<u32>,
     pub use_bridges: bool,
     pub bridge_kind: BridgeKind,
@@ -103,6 +106,7 @@ impl Default for TorState {
             message: None,
             socks_port: 9250,
             control_port: 9251,
+            http_tunnel_port: None,
             child_pid: None,
             use_bridges: false,
             bridge_kind: BridgeKind::None,
@@ -137,6 +141,7 @@ impl TorState {
             stalled: self.stalled,
             fetching_bridges: self.fetching_bridges,
             error_code: self.error_code,
+            http_tunnel_port: self.http_tunnel_port,
         }
     }
 
@@ -165,12 +170,17 @@ pub struct TorPaths {
     pub binary: PathBuf,
     pub data_dir: PathBuf,
     pub torrc: PathBuf,
+    /// Каталог `pt_config.json` и рабочий каталог транспортов.
     pub pt_dir: PathBuf,
     pub geoip: PathBuf,
     pub geoip6: PathBuf,
+    /// Android: tor и транспорты — в каталоге библиотек APK (`None` — бандл
+    /// на компьютере).
+    pub native_libs: Option<PathBuf>,
 }
 
 impl TorPaths {
+    /// Бандл, распакованный в `root` (компьютер).
     pub fn from_root(root: PathBuf) -> Self {
         let bin_name = if cfg!(windows) { "tor.exe" } else { "tor" };
         Self {
@@ -180,7 +190,45 @@ impl TorPaths {
             pt_dir: root.join("tor").join("pluggable_transports"),
             geoip: root.join("data").join("geoip"),
             geoip6: root.join("data").join("geoip6"),
+            native_libs: None,
             root,
+        }
+    }
+
+    /// Tor в APK. Запускать программы Android 10+ разрешает только из
+    /// каталога библиотек приложения, поэтому они лежат там под именами
+    /// `libtor.so` и `lib<транспорт>.so`; `pt_config.json` — в `root`.
+    /// GeoIP клиенту не нужен, в APK его нет.
+    pub fn android(root: PathBuf, native_libs: PathBuf) -> Self {
+        Self {
+            binary: native_libs.join("libtor.so"),
+            data_dir: root.join("data"),
+            torrc: root.join("torrc"),
+            pt_dir: root.clone(),
+            geoip: root.join("data").join("geoip"),
+            geoip6: root.join("data").join("geoip6"),
+            native_libs: Some(native_libs),
+            root,
+        }
+    }
+
+    /// Файл программы транспорта (`lyrebird` из pt_config).
+    pub fn pt_program(&self, program: &str) -> PathBuf {
+        match &self.native_libs {
+            Some(dir) => dir.join(format!("lib{program}.so")),
+            None => self.pt_dir.join(program),
+        }
+    }
+
+    /// Программа транспорта для `ClientTransportPlugin`. Tor режет значение
+    /// по пробелам и кавычек не понимает, а на macOS данные приложения лежат
+    /// в `Application Support` — с пробелом, поэтому у бандла путь
+    /// относительный (рабочий каталог tor — его каталог, `process::spawn`).
+    /// Каталог библиотек Android без пробелов — путь полный.
+    pub fn pt_torrc_exec(&self, program: &str) -> String {
+        match &self.native_libs {
+            Some(_) => self.pt_program(program).to_string_lossy().into_owned(),
+            None => format!("{}{program}", crate::pt_config::PT_DIR_REL),
         }
     }
 }
@@ -224,6 +272,7 @@ mod tests {
                 "stalled": true,
                 "fetching_bridges": false,
                 "error_code": "all_methods_failed",
+                "http_tunnel_port": null,
             })
         );
     }
@@ -277,5 +326,22 @@ mod tests {
         assert_eq!(paths.geoip6, root.join("data").join("geoip6"));
         assert_eq!(paths.torrc, root.join("torrc"));
         assert_eq!(paths.data_dir, root.join("data"));
+        assert_eq!(paths.pt_program("lyrebird"), paths.pt_dir.join("lyrebird"));
+    }
+
+    #[test]
+    fn android_runs_tor_and_transports_from_the_library_dir() {
+        let root = PathBuf::from("/data/user/0/com.bastyon.app/files/tor");
+        let libs = PathBuf::from("/data/app/~~Ab3==/com.bastyon.app-Xy_9==/lib/arm64");
+        let paths = TorPaths::android(root.clone(), libs.clone());
+        assert_eq!(paths.binary, libs.join("libtor.so"));
+        assert_eq!(paths.pt_program("lyrebird"), libs.join("liblyrebird.so"));
+        assert_eq!(
+            paths.pt_torrc_exec("lyrebird"),
+            "/data/app/~~Ab3==/com.bastyon.app-Xy_9==/lib/arm64/liblyrebird.so"
+        );
+        assert_eq!(paths.pt_dir, root);
+        assert_eq!(paths.data_dir, root.join("data"));
+        assert_eq!(paths.torrc, root.join("torrc"));
     }
 }

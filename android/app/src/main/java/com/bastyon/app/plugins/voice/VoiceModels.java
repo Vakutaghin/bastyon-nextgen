@@ -1,5 +1,7 @@
 package com.bastyon.app.plugins.voice;
 
+import com.bastyon.app.plugins.tor.TorNetwork;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -115,7 +117,7 @@ final class VoiceModels {
         HttpURLConnection conn;
         try {
             // Hugging Face отвечает переадресацией на своё хранилище — тоже https.
-            conn = (HttpURLConnection) new URL(spec.url()).openConnection();
+            conn = (HttpURLConnection) new URL(spec.url()).openConnection(TorNetwork.proxy());
             conn.setInstanceFollowRedirects(true);
             conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
             conn.setReadTimeout(READ_TIMEOUT_MS);

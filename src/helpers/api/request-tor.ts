@@ -1,6 +1,7 @@
 /**
- * Tor-туннель через Tauri-команду `tor_fetch`. Энкодит request как base64,
- * передаёт invoke'ом в Rust, декодирует ответ обратно в `Response`.
+ * Tor-туннель через команду `tor_fetch` (Tauri на компьютере, плагин Tor на
+ * Android — `tor-bridge`). Энкодит request как base64, передаёт в Rust,
+ * декодирует ответ обратно в `Response`.
  *
  * Все вспомогательные helpers для конвертации body/headers сюда же —
  * они нигде больше не используются и тесно связаны с `tor_fetch` контрактом.
@@ -9,6 +10,7 @@
 import type { TorFetchRequest, TorFetchResponse } from './types/request'
 import { recordTorRequest } from './request-debug'
 import { TorNotReadyError } from '@/helpers/tor/tor-gate'
+import { torInvoke } from '@/helpers/tor/tor-bridge'
 
 /** Tauri 1/2 detection: __TAURI__, __TAURI_INTERNALS__, __TAURI_METADATA__, or any __TAURI* key. */
 export function isTauriEnv(): boolean {
@@ -104,11 +106,10 @@ export async function torFetch(
     timeout_ms: opts.timeoutMs,
   }
 
-  const { invoke } = await import('@tauri-apps/api/core')
   let resp: TorFetchResponse
   const startedAt = performance.now()
   try {
-    resp = await raceWithAbort(invoke<TorFetchResponse>('tor_fetch', { req }), init?.signal)
+    resp = await raceWithAbort(torInvoke<TorFetchResponse>('tor_fetch', { req }), init?.signal)
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') throw e
     const message = typeof e === 'string' ? e : ((e as Error)?.message ?? JSON.stringify(e))

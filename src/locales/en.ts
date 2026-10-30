@@ -333,7 +333,7 @@ export default {
     torCountry: 'Country according to the Tor Project: {country}',
     torViaCustom: 'your bridges',
     torViaVanilla: 'plain bridges',
-    torDesktopOnly: 'Available only in the desktop app.',
+    torDesktopOnly: 'Available in the desktop and Android apps.',
     torStatusStopping: 'Tor is stopping…',
     torStatusOff: 'Tor is off',
     torStatusInstalling: 'Downloading: {pct}% — {message}',
@@ -343,12 +343,16 @@ export default {
     torStatusReady: 'Connected to the Tor network',
     torStatusError: 'Error: {message}',
     torError: 'Error',
-    torDesktopOnlyTitle: 'Tor is available only in the desktop app',
+    torDesktopOnlyTitle: 'Tor is available in the desktop and Android apps',
     torDesktopOnlyContent:
-      'Open Bastyon in the desktop app — the browser version does not support built-in Tor.',
+      'Open Bastyon in the desktop or Android app — the browser version does not support built-in Tor.',
     torEnableTitle: 'Enable Tor?',
     torEnableContent:
       'On first launch Tor (~20 MB) is downloaded; this may take a minute. Node requests, chat and the app API go through Tor. Images, video and embeds (YouTube, mini-apps) do not — so while Tor is on they are blocked: an image can be loaded through Tor on click, video only directly, with your IP, after confirmation. Turning Tor off reloads the app.',
+    torEnableContentAndroid:
+      'Tor is built into the app and connects by itself. Everything goes through Tor: node requests, chat, images, video and mini-apps. Connecting takes from a few seconds to a couple of minutes.',
+    torMediaHintAndroid:
+      'The whole app goes through Tor: nodes, chat, images, video and mini-apps.',
     torEnableOk: 'Enable',
     torMediaHint:
       'Through Tor: nodes, chat, API. Images — through Tor on click; video, YouTube and mini-apps — disabled or directly with your IP after confirmation. Turning Tor off reloads the app.',

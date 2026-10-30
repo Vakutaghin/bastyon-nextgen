@@ -1,6 +1,9 @@
 {
   "version": "16.0",
   "sha256": {
+    "android-aarch64": "bf8f4c63652fd7daa62288713c7fa512f244a5b972808f6251450e5fdfca9120",
+    "android-armv7": "13befa352b64c32ba460b63066179bb1c9eaf6c3ea7057ae860dcdd22b8acf7b",
+    "android-x86_64": "ab3152ba164bcd49e50175086c62e40ffa2bf9002a4f6473f77111bd88b0462b",
     "linux-aarch64": "bed98744e093a0dc3a22be0eecfdce7a33cb36866d3f15fcf011a35bf3513d0d",
     "linux-x86_64": "cc950ebe9acb80188325c3a2cd8817def7dd7237d6fdcd861bb87b234a0cb2fd",
     "macos-aarch64": "b8da251eccbe9e82f3681ee3af3c97fb4291c4a4e153e5b824bde48a1117cd6a",

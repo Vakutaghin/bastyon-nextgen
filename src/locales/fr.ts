@@ -337,7 +337,7 @@ export default {
     torCountry: 'Pays selon le Tor Project : {country}',
     torViaCustom: 'vos ponts',
     torViaVanilla: 'ponts simples',
-    torDesktopOnly: 'Disponible uniquement dans l’application de bureau.',
+    torDesktopOnly: 'Disponible dans les applications de bureau et Android.',
     torStatusStopping: 'Arrêt de Tor…',
     torStatusOff: 'Tor est désactivé',
     torStatusInstalling: 'Téléchargement : {pct} % — {message}',
@@ -347,12 +347,16 @@ export default {
     torStatusReady: 'Connecté au réseau Tor',
     torStatusError: 'Erreur : {message}',
     torError: 'Erreur',
-    torDesktopOnlyTitle: 'Tor n’est disponible que dans l’application de bureau',
+    torDesktopOnlyTitle: 'Tor est disponible dans les applications de bureau et Android',
     torDesktopOnlyContent:
-      'Ouvrez Bastyon dans l’application de bureau — la version navigateur ne prend pas en charge Tor intégré.',
+      'Ouvrez Bastyon dans l’application de bureau ou Android — la version navigateur ne prend pas en charge Tor intégré.',
     torEnableTitle: 'Activer Tor ?',
     torEnableContent:
       'Au premier lancement, Tor (~20 Mo) est téléchargé ; cela peut prendre une minute. Les requêtes aux nœuds, le chat et l’API de l’application passent par Tor. Les images, vidéos et contenus intégrés (YouTube, mini-apps) non — ils sont donc bloqués tant que Tor est activé : une image peut être chargée via Tor d’un clic, une vidéo seulement en direct, avec votre IP, après confirmation. Désactiver Tor recharge l’application.',
+    torEnableContentAndroid:
+      'Tor est intégré à l’application et se connecte tout seul. Tout passe par Tor : les requêtes aux nœuds, le chat, les images, les vidéos et les mini-applications. La connexion prend de quelques secondes à quelques minutes.',
+    torMediaHintAndroid:
+      'Toute l’application passe par Tor : nœuds, chat, images, vidéos et mini-applications.',
     torEnableOk: 'Activer',
     torMediaHint:
       'Via Tor : nœuds, chat, API. Images — via Tor d’un clic ; vidéos, YouTube et mini-apps — désactivés ou en direct avec votre IP après confirmation. Désactiver Tor recharge l’application.',

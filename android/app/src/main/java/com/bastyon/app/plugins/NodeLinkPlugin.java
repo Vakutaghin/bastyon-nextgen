@@ -2,6 +2,7 @@ package com.bastyon.app.plugins;
 
 import android.util.Base64;
 
+import com.bastyon.app.plugins.tor.TorNetwork;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -54,6 +55,8 @@ import javax.net.ssl.X509TrustManager;
  *   wsConnect({ id, url, pin }) → { fingerprint }; дальше события
  *       wsMessage { id, data } и wsClose { id, code, reason }.
  *   wsSend({ id, data }), wsClose({ id })
+ *
+ * При включённом Tor — отказ с кодом tor_enabled.
  */
 @CapacitorPlugin(name = "NodeLink")
 public class NodeLinkPlugin extends Plugin {
@@ -76,12 +79,26 @@ public class NodeLinkPlugin extends Plugin {
     /** Фабрика на ноду и отпечаток: соединения к той же ноде переиспользуются. */
     private final Map<String, SSLSocketFactory> factories = new ConcurrentHashMap<>();
 
+    /** Включили Tor: открытые напрямую соединения закрываются, как у компьютера. */
+    private final Runnable closeOnTor = () -> executor.execute(this::closeAll);
+
+    @Override
+    public void load() {
+        super.load();
+        TorNetwork.addOnEnabled(closeOnTor);
+    }
+
     @Override
     protected void handleOnDestroy() {
-        for (HttpsURLConnection conn : requests.values()) conn.disconnect();
-        for (NodeSocket socket : sockets.values()) socket.shutdown();
+        TorNetwork.removeOnEnabled(closeOnTor);
+        closeAll();
         executor.shutdownNow();
         super.handleOnDestroy();
+    }
+
+    private void closeAll() {
+        for (HttpsURLConnection conn : requests.values()) conn.disconnect();
+        for (NodeSocket socket : sockets.values()) socket.shutdown();
     }
 
     // --- Сертификат -----------------------------------------------------------
@@ -164,8 +181,19 @@ public class NodeLinkPlugin extends Plugin {
 
     // --- RPC ------------------------------------------------------------------
 
+    /**
+     * С Tor мимо него ничего не идёт — как у компьютера (refuse_direct):
+     * запросы с адресом и подписью ноде напрямую не уходят.
+     */
+    private static boolean refusedUnderTor(PluginCall call) {
+        if (!TorNetwork.directRefused()) return false;
+        call.reject("tor_enabled: direct connections are off while Tor is on", "tor_enabled");
+        return true;
+    }
+
     @PluginMethod
     public void request(PluginCall call) {
+        if (refusedUnderTor(call)) return;
         String id = call.getString("id", "");
         String url = call.getString("url", "");
         String body = call.getString("body", "");
@@ -249,6 +277,7 @@ public class NodeLinkPlugin extends Plugin {
 
     @PluginMethod
     public void wsConnect(PluginCall call) {
+        if (refusedUnderTor(call)) return;
         String id = call.getString("id", "");
         String url = call.getString("url", "");
         String pin = call.getString("pin");

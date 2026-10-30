@@ -3,11 +3,13 @@
 // напрямую не уходит (V20).
 
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   torFetch: vi.fn(),
   tauriFetch: vi.fn(),
+  nativeFetch: vi.fn(),
+  native: false,
 }))
 vi.mock('./request-tor', async (importOriginal) => {
   const orig = await importOriginal<typeof import('./request-tor')>()
@@ -18,9 +20,14 @@ vi.mock('./request-tor', async (importOriginal) => {
   }
 })
 
+vi.mock('./request-native', () => ({
+  isNativeMatrixRequest: () => mocks.native,
+  nativeFetch: mocks.nativeFetch,
+}))
+
 import { isTorNotReadyError } from '@/helpers/tor/tor-gate'
 import { useTorStore } from '@/stores/tor-store'
-import { appFetch } from './fetch-strategies'
+import { appFetch, matrixFetch } from './fetch-strategies'
 
 describe('appFetch × Tor', () => {
   beforeEach(() => {
@@ -122,5 +129,51 @@ describe('appFetch × Tor', () => {
     const res = await appFetch('/rpc/x')
     await expect(res.text()).resolves.toBe('same')
     spy.mockRestore()
+  })
+})
+
+// Android: JSON-API чатов — нативным HTTP; под Tor плагин идёт через Tor и
+// ждёт его так же, как appFetch.
+describe('matrixFetch × Tor на Android', () => {
+  const SYNC = 'https://matrix.pocketnet.app/_matrix/client/v3/sync'
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mocks.native = true
+    mocks.torFetch.mockReset()
+    mocks.nativeFetch.mockReset().mockResolvedValue(new Response('native'))
+  })
+  afterEach(() => {
+    mocks.native = false
+  })
+
+  function torStore(enabled: boolean, status: 'off' | 'bootstrapping' | 'ready' | 'failed') {
+    const store = useTorStore()
+    store.available = true
+    store.enabled = enabled
+    store.status = status
+    return store
+  }
+
+  it('без Tor — сразу нативный запрос', async () => {
+    torStore(false, 'off')
+    await expect((await matrixFetch(SYNC)).text()).resolves.toBe('native')
+  })
+
+  it('Tor подключается — нативный запрос ждёт готовности', async () => {
+    const store = torStore(true, 'bootstrapping')
+    const p = matrixFetch(SYNC)
+    await Promise.resolve()
+    expect(mocks.nativeFetch).not.toHaveBeenCalled()
+    store.status = 'ready'
+    await expect((await p).text()).resolves.toBe('native')
+    expect(mocks.torFetch).not.toHaveBeenCalled()
+  })
+
+  it('Tor не смог — ошибка, а не запрос', async () => {
+    torStore(true, 'failed')
+    const err = await matrixFetch(SYNC).catch((e: unknown) => e)
+    expect(isTorNotReadyError(err)).toBe(true)
+    expect(mocks.nativeFetch).not.toHaveBeenCalled()
   })
 })

@@ -4,7 +4,8 @@
 # с подписью, проверяет подпись ключом Tor Browser Developers и пишет версию
 # и хэши архивов в `src-tauri/src/tor/bundle.json`. Приложение сверяет архив
 # с этим файлом, откуда бы его ни скачало, а release.yml по нему же кладёт
-# архивы в зеркало на GitHub (релиз `tor-<версия>`).
+# архивы в зеркало на GitHub (релиз `tor-<версия>`). Архивы для Android
+# берёт сборка APK (scripts/build-tor-android.sh): tor там входит в APK.
 #
 #   scripts/tor-bundle-pin.sh 15.0.25
 #
@@ -35,7 +36,7 @@ import json, re, sys
 path, ver = sys.argv[1], sys.argv[2]
 pins = {}
 pattern = re.compile(
-    r"([0-9a-f]{64})\s+\*?tor-expert-bundle-((?:linux|macos|windows)-[a-z0-9_]+)-"
+    r"([0-9a-f]{64})\s+\*?tor-expert-bundle-((?:linux|macos|windows|android)-[a-z0-9_]+)-"
     + re.escape(ver) + r"\.tar\.gz$"
 )
 for line in open(path):

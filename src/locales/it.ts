@@ -334,7 +334,7 @@ export default {
     torCountry: 'Paese secondo il Tor Project: {country}',
     torViaCustom: 'i tuoi bridge',
     torViaVanilla: 'bridge semplici',
-    torDesktopOnly: 'Disponibile solo nell’app desktop.',
+    torDesktopOnly: 'Disponibile nelle app desktop e Android.',
     torStatusStopping: 'Arresto di Tor…',
     torStatusOff: 'Tor è disattivato',
     torStatusInstalling: 'Download: {pct}% — {message}',
@@ -344,12 +344,15 @@ export default {
     torStatusReady: 'Connesso alla rete Tor',
     torStatusError: 'Errore: {message}',
     torError: 'Errore',
-    torDesktopOnlyTitle: 'Tor è disponibile solo nell’app desktop',
+    torDesktopOnlyTitle: 'Tor è disponibile nelle app desktop e Android',
     torDesktopOnlyContent:
-      'Apri Bastyon nell’app desktop: la versione browser non supporta Tor integrato.',
+      'Apri Bastyon nell’app desktop o Android: la versione browser non supporta Tor integrato.',
     torEnableTitle: 'Attivare Tor?',
     torEnableContent:
       'Al primo avvio viene scaricato Tor (~20 MB); può richiedere un minuto. Le richieste ai nodi, la chat e l’API dell’app passano da Tor. Immagini, video e contenuti incorporati (YouTube, mini-app) no, quindi sono bloccati finché Tor è attivo: un’immagine si può caricare tramite Tor con un clic, un video solo direttamente, con il tuo IP, dopo conferma. Disattivare Tor ricarica l’app.',
+    torEnableContentAndroid:
+      'Tor è integrato nell’app e si connette da solo. Tutto passa per Tor: le richieste ai nodi, la chat, le immagini, i video e le mini-app. La connessione richiede da pochi secondi a un paio di minuti.',
+    torMediaHintAndroid: 'Tutta l’app passa per Tor: nodi, chat, immagini, video e mini-app.',
     torEnableOk: 'Attiva',
     torMediaHint:
       'Tramite Tor: nodi, chat, API. Immagini: tramite Tor con un clic; video, YouTube e mini-app: disattivati o diretti con il tuo IP dopo conferma. Disattivare Tor ricarica l’app.',

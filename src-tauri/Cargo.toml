@@ -1,10 +1,11 @@
 # Крейты mesh-сетей: узел Reticulum (общий для модуля и Android), JNI-обёртка
 # для Android и модуль для компьютера — отдельная программа, которую
-# приложение скачивает по просьбе человека (src/mesh). vendor/rns-net,
+# приложение скачивает по просьбе человека (src/mesh). bastyon-tor — Tor
+# (общий для компьютера и Android). vendor/rns-net,
 # vendor/rns-crypto — с правками (VENDORED.md в каждом): не члены workspace,
 # подменяют версии с crates.io через [patch.crates-io] ниже.
 [workspace]
-members = ["crates/bastyon-rns", "crates/bastyon-rns-jni", "crates/bastyon-mesh", "crates/bastyon-asr-jni"]
+members = ["crates/bastyon-rns", "crates/bastyon-rns-jni", "crates/bastyon-mesh", "crates/bastyon-asr-jni", "crates/bastyon-tor", "crates/bastyon-tor-jni"]
 exclude = ["vendor/rns-net", "vendor/rns-crypto"]
 
 [package]
@@ -54,6 +55,7 @@ tauri-plugin-http = "2"
 tokio = { version = "1", features = ["full"] }
 
 # --- Tor stack ---
+bastyon-tor = { path = "crates/bastyon-tor" }
 reqwest = { version = "0.12", default-features = false, features = ["json", "socks", "rustls-tls", "stream", "gzip", "brotli", "deflate"] }
 tokio-socks = "0.5"
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-native-roots"] }

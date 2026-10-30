@@ -22,6 +22,7 @@ const h = vi.hoisted(() => {
 
 vi.mock('@capacitor/core', () => ({
   Capacitor: {
+    isNativePlatform: () => true,
     getPlatform: () => h.platform,
     isPluginAvailable: (name: string) => name === 'AppUpdater',
   },

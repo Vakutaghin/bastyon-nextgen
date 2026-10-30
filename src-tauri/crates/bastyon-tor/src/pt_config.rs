@@ -4,14 +4,15 @@
 //! lyrebird, и прописанный в коде `snowflake-client` перестал существовать.
 //! Нет файла или он битый — копия из 15.0.25 (`pt_config.fallback.json`, в 16.0 тот же).
 
+use crate::state::TorPaths;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::path::Path;
 
 const FALLBACK_JSON: &str = include_str!("pt_config.fallback.json");
 
-/// Каталог транспортов относительно рабочего каталога tor (`<root>/tor`, см.
-/// `process::spawn`). В torrc путь только относительный: Tor режет значение
+/// Каталог транспортов бандла относительно рабочего каталога tor (`<root>/tor`,
+/// см. `process::spawn`). В torrc путь только относительный: Tor режет значение
 /// `ClientTransportPlugin` по пробелам и кавычек не понимает, а на macOS
 /// данные приложения лежат в `Application Support` — с пробелом. Абсолютный
 /// путь в кавычках там не запускался, и мосты на Mac не работали вовсе.
@@ -87,14 +88,13 @@ impl PtConfig {
     /// Все `ClientTransportPlugin` бандла. Tor запускает транспорт, только
     /// когда он нужен мосту, поэтому лишние строки ничего не стоят, а мост
     /// любого типа из «Своих» находит свой транспорт.
-    pub fn torrc_lines(&self) -> String {
+    pub fn torrc_lines(&self, paths: &TorPaths) -> String {
         let mut out = String::new();
         for plugin in &self.plugins {
             out.push_str("ClientTransportPlugin ");
             out.push_str(&plugin.transports.join(","));
             out.push_str(" exec ");
-            out.push_str(PT_DIR_REL);
-            out.push_str(&plugin.program);
+            out.push_str(&paths.pt_torrc_exec(&plugin.program));
             for arg in &plugin.args {
                 out.push(' ');
                 out.push_str(arg);
@@ -183,7 +183,8 @@ mod tests {
 
     #[test]
     fn torrc_lines_use_a_relative_path_without_quotes() {
-        let lines = PtConfig::fallback().torrc_lines();
+        let paths = TorPaths::from_root("/Users/a b/Library/Application Support/x/tor".into());
+        let lines = PtConfig::fallback().torrc_lines(&paths);
         assert!(lines.contains(&format!(
             "ClientTransportPlugin meek_lite,obfs2,obfs3,obfs4,scramblesuit,webtunnel exec {PT_DIR_REL}{}\n",
             exe("lyrebird")
@@ -194,6 +195,19 @@ mod tests {
         )));
         assert!(!lines.contains('"'), "{lines}");
         assert!(!lines.contains("${pt_path}"), "{lines}");
+    }
+
+    #[test]
+    fn android_torrc_points_at_the_library_dir() {
+        let paths = TorPaths::android(
+            "/data/user/0/com.bastyon.app/files/tor".into(),
+            "/data/app/x/lib/arm64".into(),
+        );
+        let lines = PtConfig::fallback().torrc_lines(&paths);
+        assert!(
+            lines.contains("ClientTransportPlugin snowflake exec /data/app/x/lib/arm64/liblyrebird.so\n"),
+            "{lines}"
+        );
     }
 
     #[test]

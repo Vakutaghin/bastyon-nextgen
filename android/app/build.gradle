@@ -42,6 +42,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    // Библиотеки распаковываются при установке: tor и lyrebird (libtor.so,
+    // liblyrebird.so) — программы, Android запускает их только из каталога
+    // библиотек на диске. Без распаковки они лежали бы внутри APK.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 // Узел Reticulum (src-tauri/crates/bastyon-rns-jni): .so собирает cargo под
@@ -64,6 +72,16 @@ tasks.register('buildAsrNative', Exec) {
 }
 preBuild.dependsOn 'buildAsrNative'
 
+// Tor (src-tauri/crates/bastyon-tor-jni и tor-expert-bundle для Android из
+// src-tauri/src/tor/bundle.json): входит в APK, не скачивается. Без cargo,
+// NDK или бандла скрипт только предупреждает — APK соберётся без Tor.
+def torScript = rootProject.file('../scripts/build-tor-android.sh')
+tasks.register('buildTorNative', Exec) {
+    onlyIf { torScript.exists() && System.getenv('BASTYON_SKIP_TOR') == null }
+    commandLine 'bash', torScript.absolutePath
+}
+preBuild.dependsOn 'buildTorNative'
+
 repositories {
     flatDir{
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
@@ -76,6 +94,8 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation "androidx.media:media:$androidxMediaVersion"
+    // Прокси WebView под Tor (plugins/tor/TorNetwork). Та же версия, что у Capacitor.
+    implementation "androidx.webkit:webkit:$androidxWebkitVersion"
     // Звук ролика, пока приложение свёрнуто или экран погашен: WebView в фоне
     // видео не играет (MediaPlaybackService). Только плеер и HLS.
     implementation "androidx.media3:media3-exoplayer:$media3Version"

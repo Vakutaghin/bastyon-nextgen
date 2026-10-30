@@ -20,6 +20,7 @@ import { logger } from '@/services/logger'
 import { t } from '@/i18n'
 import type { QueueItem } from '@/stores/playback-queue-store'
 import { useTorStore } from '@/stores/tor-store'
+import { webViewThroughTor } from '@/helpers/tor/tor-bridge'
 import { torEnabledInStorage } from '@/helpers/tor/tor-gate'
 
 const log = logger.scope('[audio-engine]')
@@ -67,13 +68,16 @@ let current: QueueItem | null = null
 let torBypassAccepted = false
 let pendingLoad: { item: QueueItem; startAt: number } | null = null
 
-/** Звук пошёл бы мимо Tor: hls.js и `<audio>` грузят его окном, не через Tor. */
+/**
+ * Звук пошёл бы мимо Tor: hls.js и `<audio>` грузят его окном, не через Tor.
+ * На Android окно ходит через Tor само.
+ */
 function torBlocksAudio(): boolean {
   if (torBypassAccepted) return false
   try {
-    return useTorStore().wantsTor
+    return useTorStore().mediaBypassesTor
   } catch {
-    return torEnabledInStorage()
+    return torEnabledInStorage() && !webViewThroughTor()
   }
 }
 let generation = 0

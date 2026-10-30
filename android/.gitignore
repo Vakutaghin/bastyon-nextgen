@@ -103,3 +103,5 @@ app/src/main/res/xml/config.xml
 # Узел Reticulum собирается из src-tauri/crates/bastyon-rns-jni
 # (scripts/build-rns-android.sh), в репозиторий не кладётся.
 app/src/main/jniLibs/
+# pt_config.json из бандла Tor (scripts/build-tor-android.sh).
+app/src/main/assets/tor/

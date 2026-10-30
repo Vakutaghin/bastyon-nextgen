@@ -1,7 +1,7 @@
-use crate::tor::state::{SharedTorState, TorPaths, TorState, TorStateSnapshot, TorStatus};
+use crate::state::{SharedTorState, TorPaths, TorState, TorStateSnapshot, TorStatus};
+use crate::Emitter;
 use std::process::{Child, ChildStderr, ChildStdout, Command, Stdio};
 use std::thread;
-use tauri::{AppHandle, Emitter, Runtime};
 
 pub struct TorChild {
     pub child: Child,
@@ -32,14 +32,14 @@ pub struct TorLogs {
 impl TorLogs {
     /// Потоки разбирают stdout/stderr: прогресс бутстрапа, ошибки, падения
     /// транспорта. Каждое изменение — событие `tor:state`.
-    pub fn start<RT: Runtime>(self, app: AppHandle<RT>, shared: SharedTorState) {
+    pub fn start(self, emit: Emitter, shared: SharedTorState) {
         let pid = self.pid;
         if let Some(out) = self.stdout {
-            let (app, shared) = (app.clone(), shared.clone());
-            thread::spawn(move || stream_log(out, app, shared, pid));
+            let (emit, shared) = (emit.clone(), shared.clone());
+            thread::spawn(move || stream_log(out, emit, shared, pid));
         }
         if let Some(err) = self.stderr {
-            thread::spawn(move || stream_log(err, app, shared, pid));
+            thread::spawn(move || stream_log(err, emit, shared, pid));
         }
     }
 }
@@ -85,12 +85,7 @@ fn library_path(tor_dir: &std::path::Path) -> std::ffi::OsString {
 /// Сообщение статуса, когда процесс завершился сам (не через `tor_stop`).
 pub const EXITED_MESSAGE: &str = "tor process exited unexpectedly";
 
-fn stream_log<R: std::io::Read, RT: Runtime>(
-    reader: R,
-    app: AppHandle<RT>,
-    shared: SharedTorState,
-    pid: u32,
-) {
+fn stream_log<R: std::io::Read>(reader: R, emit: Emitter, shared: SharedTorState, pid: u32) {
     use std::io::{BufRead, BufReader};
     let buf = BufReader::new(reader);
     let mut recent_warns: Vec<String> = Vec::new();
@@ -102,7 +97,7 @@ fn stream_log<R: std::io::Read, RT: Runtime>(
             apply_log_line(state, pid, &line, &mut recent_warns)
         });
         if let Some(Some(s)) = snapshot {
-            let _ = app.emit("tor:state", &s);
+            emit_snapshot(&emit, &s);
         }
     }
 
@@ -111,8 +106,12 @@ fn stream_log<R: std::io::Read, RT: Runtime>(
     // обнуляет `child_pid` до kill, поэтому штатную остановку не трогаем.
     let snapshot = with_state(&shared, |state| mark_exited(state, pid));
     if let Some(Some(s)) = snapshot {
-        let _ = app.emit("tor:state", &s);
+        emit_snapshot(&emit, &s);
     }
+}
+
+fn emit_snapshot(emit: &Emitter, snapshot: &TorStateSnapshot) {
+    emit("tor:state", serde_json::to_value(snapshot).unwrap_or_default());
 }
 
 /// Строка лога → изменение состояния. Строки не текущего процесса (убитая

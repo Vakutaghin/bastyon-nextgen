@@ -206,7 +206,7 @@ pub async fn node_ws_connect(
         .map_err(|e| e.to_string())?;
 
     let (tx, rx) = mpsc::channel::<WsOutgoing>(64);
-    let reader = tor_ws::spawn_ws_loops(app, sockets.clone(), id.clone(), ws, rx, WS_EVENTS);
+    let reader = tor_ws::spawn_ws_loops(crate::tor::emitter(&app), sockets.clone(), id.clone(), ws, rx, WS_EVENTS);
     sockets.insert(id, WsHandle { tx, reader });
     let fingerprint = seen.lock().ok().and_then(|s| s.clone()).unwrap_or_default();
     Ok(NodeWsOpened { fingerprint })

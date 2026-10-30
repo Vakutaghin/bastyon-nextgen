@@ -333,7 +333,7 @@ export default {
     torCountry: 'Tor Project 기준 국가: {country}',
     torViaCustom: '사용자 지정 브리지',
     torViaVanilla: '일반 브리지',
-    torDesktopOnly: '데스크톱 앱에서만 사용할 수 있습니다.',
+    torDesktopOnly: '데스크톱 앱과 Android 앱에서 사용할 수 있습니다.',
     torStatusStopping: 'Tor를 중지하는 중…',
     torStatusOff: 'Tor 꺼짐',
     torStatusInstalling: '다운로드 중: {pct}% — {message}',
@@ -343,12 +343,15 @@ export default {
     torStatusReady: 'Tor 네트워크에 연결됨',
     torStatusError: '오류: {message}',
     torError: '오류',
-    torDesktopOnlyTitle: 'Tor는 데스크톱 앱에서만 사용할 수 있습니다',
+    torDesktopOnlyTitle: 'Tor는 데스크톱 앱과 Android 앱에서 사용할 수 있습니다',
     torDesktopOnlyContent:
-      '데스크톱 앱에서 Bastyon을 여세요. 브라우저 버전은 내장 Tor를 지원하지 않습니다.',
+      '데스크톱 앱이나 Android 앱에서 Bastyon을 여세요. 브라우저 버전은 내장 Tor를 지원하지 않습니다.',
     torEnableTitle: 'Tor를 켤까요?',
     torEnableContent:
       '처음 실행하면 Tor(~20MB)를 다운로드하며 1분 정도 걸릴 수 있습니다. 노드 요청, 채팅, 앱 API는 Tor를 거칩니다. 이미지, 동영상, 임베드(YouTube, 미니 앱)는 거치지 않으므로 Tor가 켜져 있는 동안 차단됩니다. 이미지는 클릭하면 Tor를 통해 불러올 수 있고, 동영상은 확인 후 회원님의 IP로 직접 재생됩니다. Tor를 끄면 앱이 다시 로드됩니다.',
+    torEnableContentAndroid:
+      'Tor는 앱에 내장되어 있으며 자동으로 연결됩니다. 노드 요청, 채팅, 이미지, 동영상, 미니 앱 등 모든 것이 Tor를 경유합니다. 연결에는 몇 초에서 몇 분이 걸립니다.',
+    torMediaHintAndroid: '앱 전체가 Tor를 경유합니다: 노드, 채팅, 이미지, 동영상, 미니 앱.',
     torEnableOk: '켜기',
     torMediaHint:
       'Tor 경유: 노드, 채팅, API. 이미지는 클릭 시 Tor 경유, 동영상·YouTube·미니 앱은 꺼지거나 확인 후 회원님의 IP로 직접 연결됩니다. Tor를 끄면 앱이 다시 로드됩니다.',

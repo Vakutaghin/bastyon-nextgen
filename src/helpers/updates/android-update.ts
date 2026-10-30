@@ -9,11 +9,13 @@
  * приложение не может. Если установщик поставил новую версию, этот процесс
  * завершается и ответа нет; если вернулся — обновление не поставили.
  *
- * Tor на телефоне нет (только в сборке для компьютера), поэтому APK, как и
- * остальное, качается напрямую.
+ * При включённом Tor APK качается через Tor (AppUpdaterPlugin — через его
+ * HTTP-туннель): пока Tor не подключился — ждём, не смог — ошибка, напрямую
+ * не качаем.
  */
 
 import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core'
+import { torRoute } from '@/helpers/tor/tor-gate'
 import type { ReleaseApk } from './github-release'
 import type { InstallProgress } from './install-update'
 
@@ -53,6 +55,7 @@ export async function installAndroidUpdate(
   apk: ReleaseApk,
   onProgress: (progress: InstallProgress) => void
 ): Promise<AndroidInstallResult> {
+  await torRoute(apk.url)
   onProgress({ phase: 'download', fraction: 0 })
   const sub = await AppUpdater.addListener('progress', ({ received, total }) => {
     onProgress({ phase: 'download', fraction: total > 0 ? Math.min(1, received / total) : null })

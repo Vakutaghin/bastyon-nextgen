@@ -336,7 +336,7 @@ export default {
     torCountry: 'País según Tor Project: {country}',
     torViaCustom: 'tus puentes',
     torViaVanilla: 'puentes simples',
-    torDesktopOnly: 'Solo disponible en la aplicación de escritorio.',
+    torDesktopOnly: 'Disponible en las aplicaciones de escritorio y Android.',
     torStatusStopping: 'Deteniendo Tor…',
     torStatusOff: 'Tor está desactivado',
     torStatusInstalling: 'Descargando: {pct} % — {message}',
@@ -346,12 +346,16 @@ export default {
     torStatusReady: 'Conectado a la red Tor',
     torStatusError: 'Error: {message}',
     torError: 'Error',
-    torDesktopOnlyTitle: 'Tor solo está disponible en la aplicación de escritorio',
+    torDesktopOnlyTitle: 'Tor está disponible en las aplicaciones de escritorio y Android',
     torDesktopOnlyContent:
-      'Abre Bastyon en la aplicación de escritorio: la versión del navegador no admite Tor integrado.',
+      'Abre Bastyon en la aplicación de escritorio o de Android: la versión del navegador no admite Tor integrado.',
     torEnableTitle: '¿Activar Tor?',
     torEnableContent:
       'En el primer inicio se descarga Tor (~20 MB); puede tardar un minuto. Las solicitudes a los nodos, el chat y la API de la aplicación pasan por Tor. Las imágenes, los vídeos y los contenidos incrustados (YouTube, miniapps) no, así que se bloquean mientras Tor está activo: una imagen se puede cargar por Tor con un clic y un vídeo solo directamente, con tu IP, tras confirmarlo. Desactivar Tor recarga la aplicación.',
+    torEnableContentAndroid:
+      'Tor está integrado en la aplicación y se conecta solo. Todo pasa por Tor: las solicitudes a los nodos, el chat, las imágenes, los vídeos y las miniaplicaciones. La conexión tarda desde unos segundos hasta un par de minutos.',
+    torMediaHintAndroid:
+      'Toda la aplicación pasa por Tor: nodos, chat, imágenes, vídeos y miniaplicaciones.',
     torEnableOk: 'Activar',
     torMediaHint:
       'Por Tor: nodos, chat, API. Imágenes: por Tor con un clic; vídeos, YouTube y miniapps: desactivados o directamente con tu IP tras confirmarlo. Desactivar Tor recarga la aplicación.',

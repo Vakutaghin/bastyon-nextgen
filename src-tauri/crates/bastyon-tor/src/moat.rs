@@ -10,9 +10,9 @@
 //! поэтому через Tor её спрашивать нельзя: ответ был бы для страны выходного
 //! узла.
 
-use crate::tor::bridges;
-use crate::tor::pt_config::PtConfig;
-use crate::tor::state::TorPaths;
+use crate::bridges;
+use crate::pt_config::PtConfig;
+use crate::state::TorPaths;
 use serde::Deserialize;
 use std::process::Stdio;
 use std::time::Duration;
@@ -151,7 +151,7 @@ async fn request(
         )
         .await?
         .into_inner();
-        let connector = crate::tor::ws::build_rustls_connector().map_err(MoatError::Tls)?;
+        let connector = crate::ws::build_rustls_connector().map_err(MoatError::Tls)?;
         let name = rustls_pki_types::ServerName::try_from(MOAT_HOST)
             .map_err(|e| MoatError::Tls(e.to_string()))?;
         let mut tls = connector
@@ -202,7 +202,7 @@ impl MeekClient {
         let state_dir = paths.data_dir.join("moat_pt_state");
         std::fs::create_dir_all(&state_dir)?;
 
-        let mut cmd = tokio::process::Command::new(paths.pt_dir.join(&plugin.program));
+        let mut cmd = tokio::process::Command::new(paths.pt_program(&plugin.program));
         cmd.args(&plugin.args)
             .env("TOR_PT_MANAGED_TRANSPORT_VER", "1")
             .env("TOR_PT_STATE_LOCATION", &state_dir)

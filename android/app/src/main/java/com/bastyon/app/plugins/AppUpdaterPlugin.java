@@ -12,6 +12,7 @@ import android.provider.Settings;
 import androidx.activity.result.ActivityResult;
 import androidx.core.content.FileProvider;
 
+import com.bastyon.app.plugins.tor.TorNetwork;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -130,7 +131,7 @@ public class AppUpdaterPlugin extends Plugin {
         HttpURLConnection conn;
         try {
             // github.com отвечает переадресацией на хранилище файлов — тоже https.
-            conn = (HttpURLConnection) new URL(url).openConnection();
+            conn = (HttpURLConnection) new URL(url).openConnection(TorNetwork.proxy());
             conn.setInstanceFollowRedirects(true);
             conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
             conn.setReadTimeout(READ_TIMEOUT_MS);

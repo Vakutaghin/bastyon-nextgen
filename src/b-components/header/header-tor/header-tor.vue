@@ -27,8 +27,11 @@
         <SC_TorWarning v-if="stalled && status === 'bootstrapping'">
           {{ t('header.torStalledHint') }}
         </SC_TorWarning>
-        <!-- Честно о границах: через Tor идёт только appFetch, медиа/фреймы — нет (V21). -->
-        <SC_TorHint v-if="enabled">{{ t('header.torMediaHint') }}</SC_TorHint>
+        <!-- Честно о границах: на компьютере через Tor идёт только appFetch,
+             медиа/фреймы — нет (V21). На Android через Tor идёт всё окно. -->
+        <SC_TorHint v-if="enabled">
+          {{ t(builtin ? 'header.torMediaHintAndroid' : 'header.torMediaHint') }}
+        </SC_TorHint>
 
         <SC_TorProgressOuter v-if="showProgress">
           <SC_TorProgressInner :pct="progressPct" />
@@ -134,6 +137,7 @@ const { t, locale } = useI18n()
 const tor = useTorStore()
 const {
   available,
+  builtin,
   enabled,
   status,
   bootstrapPct,
@@ -288,7 +292,7 @@ async function onToggleSwitch(...args: unknown[]): Promise<void> {
       const ok = await new Promise<boolean>((resolve) => {
         Modal.confirm({
           title: t('header.torEnableTitle'),
-          content: t('header.torEnableContent'),
+          content: t(builtin.value ? 'header.torEnableContentAndroid' : 'header.torEnableContent'),
           okText: t('header.torEnableOk'),
           cancelText: t('header.cancel'),
           onOk: () => {

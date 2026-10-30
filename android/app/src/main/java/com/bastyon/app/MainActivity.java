@@ -21,6 +21,8 @@ import com.bastyon.app.plugins.MatrixHttpPlugin;
 import com.bastyon.app.plugins.NodeLinkPlugin;
 import com.bastyon.app.plugins.radio.MeshRadioPlugin;
 import com.bastyon.app.plugins.radio.MeshRnsPlugin;
+import com.bastyon.app.plugins.tor.TorNetwork;
+import com.bastyon.app.plugins.tor.TorPlugin;
 import com.bastyon.app.plugins.voice.VoiceInputPlugin;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
@@ -35,6 +37,10 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MeshRadioPlugin.class);
         registerPlugin(MeshRnsPlugin.class);
         registerPlugin(VoiceInputPlugin.class);
+        // Прокси WebView — до его создания: включённый Tor действует с первой
+        // загрузки. Без Tor в сборке плагина нет, и интерфейс его не покажет.
+        TorNetwork.init(this);
+        if (TorNetwork.available()) registerPlugin(TorPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Процесс отрисовки WebView система убивает в фоне, когда ей не хватает

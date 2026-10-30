@@ -1,6 +1,6 @@
-use crate::tor::bridges;
-use crate::tor::pt_config::PtConfig;
-use crate::tor::state::{TorPaths, TorState};
+use crate::bridges;
+use crate::pt_config::PtConfig;
+use crate::state::{TorPaths, TorState};
 use std::io::Write;
 use std::path::Path;
 
@@ -19,6 +19,10 @@ pub fn render_torrc(state: &TorState, paths: &TorPaths, pt: &PtConfig) -> String
     let mut out = String::new();
 
     out.push_str(&format!("SocksPort 127.0.0.1:{}\n", state.socks_port));
+    // CONNECT с именем хоста: имя разрешает Tor, не устройство.
+    if let Some(port) = state.http_tunnel_port {
+        out.push_str(&format!("HTTPTunnelPort 127.0.0.1:{port}\n"));
+    }
     // Без ControlPort: приложение им не пользуется, а открытый контрол-порт без
     // аутентификации (CookieAuthentication 0) позволял любому локальному
     // процессу `AUTHENTICATE` → `SETEVENTS STREAM` (все хосты назначения) и
@@ -51,7 +55,7 @@ pub fn render_torrc(state: &TorState, paths: &TorPaths, pt: &PtConfig) -> String
     let bridges = bridges::parse_lines(&state.active_bridges);
     if !bridges.bridges.is_empty() {
         out.push_str("UseBridges 1\n");
-        out.push_str(&pt.torrc_lines());
+        out.push_str(&pt.torrc_lines(paths));
         for bridge in &bridges.bridges {
             out.push_str("Bridge ");
             out.push_str(&bridge.line);
@@ -84,6 +88,18 @@ mod tests {
         assert!(!torrc.contains("CookieAuthentication 0"), "{torrc}");
         assert!(torrc.contains("__OwningControllerProcess"));
         assert!(!torrc.contains("UseBridges"), "direct attempt: {torrc}");
+        assert!(!torrc.contains("HTTPTunnelPort"), "{torrc}");
+    }
+
+    #[test]
+    fn http_tunnel_only_when_asked() {
+        let state = TorState {
+            http_tunnel_port: Some(9251),
+            ..TorState::default()
+        };
+        let paths = TorPaths::from_root(PathBuf::from("/tmp/bastyon-tor-test"));
+        let torrc = render_torrc(&state, &paths, &PtConfig::fallback());
+        assert!(torrc.contains("\nHTTPTunnelPort 127.0.0.1:9251\n"), "{torrc}");
     }
 
     #[test]

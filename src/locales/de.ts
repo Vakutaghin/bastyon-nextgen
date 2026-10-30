@@ -335,7 +335,7 @@ export default {
     torCountry: 'Land laut Tor Project: {country}',
     torViaCustom: 'eigene Bridges',
     torViaVanilla: 'einfache Bridges',
-    torDesktopOnly: 'Nur in der Desktop-App verfügbar.',
+    torDesktopOnly: 'In der Desktop- und Android-App verfügbar.',
     torStatusStopping: 'Tor wird beendet…',
     torStatusOff: 'Tor ist aus',
     torStatusInstalling: 'Download: {pct}% — {message}',
@@ -345,12 +345,15 @@ export default {
     torStatusReady: 'Mit dem Tor-Netzwerk verbunden',
     torStatusError: 'Fehler: {message}',
     torError: 'Fehler',
-    torDesktopOnlyTitle: 'Tor ist nur in der Desktop-App verfügbar',
+    torDesktopOnlyTitle: 'Tor ist in der Desktop- und Android-App verfügbar',
     torDesktopOnlyContent:
-      'Öffne Bastyon in der Desktop-App — die Browserversion unterstützt kein integriertes Tor.',
+      'Öffne Bastyon in der Desktop- oder Android-App — die Browserversion unterstützt kein integriertes Tor.',
     torEnableTitle: 'Tor aktivieren?',
     torEnableContent:
       'Beim ersten Start wird Tor (~20 MB) heruntergeladen; das kann eine Minute dauern. Anfragen an Nodes, der Chat und die App-API laufen über Tor. Bilder, Videos und Einbettungen (YouTube, Mini-Apps) nicht — deshalb sind sie blockiert, solange Tor an ist: Ein Bild kann per Klick über Tor geladen werden, ein Video nur direkt, mit deiner IP, nach Bestätigung. Beim Ausschalten von Tor wird die App neu geladen.',
+    torEnableContentAndroid:
+      'Tor ist in die App integriert und verbindet sich selbst. Alles läuft über Tor: Anfragen an Nodes, Chat, Bilder, Videos und Mini-Apps. Die Verbindung dauert einige Sekunden bis wenige Minuten.',
+    torMediaHintAndroid: 'Die ganze App läuft über Tor: Nodes, Chat, Bilder, Videos und Mini-Apps.',
     torEnableOk: 'Aktivieren',
     torMediaHint:
       'Über Tor: Nodes, Chat, API. Bilder — per Klick über Tor; Videos, YouTube und Mini-Apps — deaktiviert oder nach Bestätigung direkt mit deiner IP. Beim Ausschalten von Tor wird die App neu geladen.',

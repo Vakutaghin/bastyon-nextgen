@@ -1,6 +1,6 @@
 /**
  * Подписи для меню Tor: чем идёт подключение и в какой стране, по данным
- * Moat, находится пользователь (src-tauri/src/tor/connect.rs).
+ * Moat, находится пользователь (src-tauri/crates/bastyon-tor/src/connect.rs).
  */
 
 /** Названия транспортов, как их пишет Tor Browser. */

@@ -6,16 +6,15 @@
 //! Moat советует для страны, потом встроенные. Застрявшая попытка уступает
 //! место следующей, сработавшая запоминается.
 
-use crate::tor::bridges;
-use crate::tor::moat::{self, BridgeSource, MoatSettings};
-use crate::tor::pt_config::PtConfig;
-use crate::tor::state::{BridgeKind, TorErrorCode, TorStatus};
-use crate::tor::{config, process, TorManager};
+use crate::bridges;
+use crate::moat::{self, BridgeSource, MoatSettings};
+use crate::pt_config::PtConfig;
+use crate::state::{BridgeKind, TorErrorCode, TorStatus};
+use crate::{config, process, TorManager};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Manager, Runtime};
 
 /// Сколько бутстрап может не двигаться, пока попытка считается живой. Через
 /// Snowflake и WebTunnel Tor молчит до минуты на загрузке дескрипторов
@@ -201,18 +200,16 @@ enum Outcome {
 
 /// Запускается из `tor_start` после установки; живёт, пока поколение запуска
 /// (`start_gen`) — его.
-pub async fn supervise<R: Runtime>(app: AppHandle<R>, gen: u64) {
-    let mgr = app.state::<TorManager>();
-    let mgr: &TorManager = mgr.inner();
+pub async fn supervise(mgr: &TorManager, gen: u64) {
     let pt = PtConfig::load(&mgr.paths.pt_dir);
     let (kind, custom) = {
         let st = mgr.state.read().await;
         (st.bridge_kind, st.custom_bridges.clone())
     };
     if kind == BridgeKind::Auto {
-        run_auto(&app, mgr, gen, &pt).await;
+        run_auto(mgr, gen, &pt).await;
     } else {
-        run_manual(&app, mgr, gen, kind, &custom, &pt).await;
+        run_manual(mgr, gen, kind, &custom, &pt).await;
     }
 }
 
@@ -220,8 +217,7 @@ fn still_ours(mgr: &TorManager, gen: u64) -> bool {
     mgr.start_gen.load(Ordering::SeqCst) == gen
 }
 
-async fn run_manual<R: Runtime>(
-    app: &AppHandle<R>,
+async fn run_manual(
     mgr: &TorManager,
     gen: u64,
     kind: BridgeKind,
@@ -229,13 +225,13 @@ async fn run_manual<R: Runtime>(
     pt: &PtConfig,
 ) {
     let Some(candidate) = manual_candidate(kind, custom, pt) else {
-        finish_failed(app, mgr, gen, TorErrorCode::NoValidBridges).await;
+        finish_failed(mgr, gen, TorErrorCode::NoValidBridges).await;
         return;
     };
-    attempt(app, mgr, gen, pt, &candidate, 1, false).await;
+    attempt(mgr, gen, pt, &candidate, 1, false).await;
 }
 
-async fn run_auto<R: Runtime>(app: &AppHandle<R>, mgr: &TorManager, gen: u64, pt: &PtConfig) {
+async fn run_auto(mgr: &TorManager, gen: u64, pt: &PtConfig) {
     {
         let mut st = mgr.state.write().await;
         if !still_ours(mgr, gen) {
@@ -251,14 +247,14 @@ async fn run_auto<R: Runtime>(app: &AppHandle<R>, mgr: &TorManager, gen: u64, pt
         country = cached_country;
         set_country(mgr, gen, country.clone()).await;
         n += 1;
-        match attempt(app, mgr, gen, pt, &cached, n, true).await {
+        match attempt(mgr, gen, pt, &cached, n, true).await {
             Outcome::Ready => return,
             Outcome::Cancelled => return,
             Outcome::Failed | Outcome::Stalled => tried.push(cached),
         }
     }
 
-    if !set_fetching(app, mgr, gen, true).await {
+    if !set_fetching(mgr, gen, true).await {
         return;
     }
     let settings = match moat::settings_or_defaults(&mgr.paths, pt).await {
@@ -272,7 +268,7 @@ async fn run_auto<R: Runtime>(app: &AppHandle<R>, mgr: &TorManager, gen: u64, pt
         country = Some(c);
     }
     set_country(mgr, gen, country.clone()).await;
-    if !set_fetching(app, mgr, gen, false).await {
+    if !set_fetching(mgr, gen, false).await {
         return;
     }
 
@@ -281,7 +277,7 @@ async fn run_auto<R: Runtime>(app: &AppHandle<R>, mgr: &TorManager, gen: u64, pt
             continue;
         }
         n = n.saturating_add(1);
-        match attempt(app, mgr, gen, pt, &candidate, n, true).await {
+        match attempt(mgr, gen, pt, &candidate, n, true).await {
             Outcome::Ready => {
                 save_cache(&mgr.paths.root, &candidate, country.as_deref());
                 return;
@@ -293,9 +289,9 @@ async fn run_auto<R: Runtime>(app: &AppHandle<R>, mgr: &TorManager, gen: u64, pt
 
     // Сначала `Failed` с обнулённым child_pid, потом kill: смерть последнего
     // процесса уже ничего не меняет.
-    finish_failed(app, mgr, gen, TorErrorCode::AllMethodsFailed).await;
+    finish_failed(mgr, gen, TorErrorCode::AllMethodsFailed).await;
     if still_ours(mgr, gen) {
-        super::kill_existing_child(mgr);
+        mgr.kill_child();
     }
 }
 
@@ -307,8 +303,7 @@ async fn set_country(mgr: &TorManager, gen: u64, country: Option<String>) {
 }
 
 /// `false` — запуск уже не наш.
-async fn set_fetching<R: Runtime>(
-    app: &AppHandle<R>,
+async fn set_fetching(
     mgr: &TorManager,
     gen: u64,
     on: bool,
@@ -325,12 +320,11 @@ async fn set_fetching<R: Runtime>(
             st.bootstrap_pct = 0;
         }
     }
-    mgr.emit_state(app).await;
+    mgr.emit_state().await;
     true
 }
 
-async fn finish_failed<R: Runtime>(
-    app: &AppHandle<R>,
+async fn finish_failed(
     mgr: &TorManager,
     gen: u64,
     code: TorErrorCode,
@@ -346,12 +340,11 @@ async fn finish_failed<R: Runtime>(
         st.fetching_bridges = false;
         st.child_pid = None;
     }
-    mgr.emit_state(app).await;
+    mgr.emit_state().await;
 }
 
 /// Одна попытка: torrc с мостами кандидата, свежий процесс tor, надзор.
-async fn attempt<R: Runtime>(
-    app: &AppHandle<R>,
+async fn attempt(
     mgr: &TorManager,
     gen: u64,
     pt: &PtConfig,
@@ -380,12 +373,12 @@ async fn attempt<R: Runtime>(
             st.message = Some(e.to_string());
             st.status = TorStatus::Failed;
             drop(st);
-            mgr.emit_state(app).await;
+            mgr.emit_state().await;
             return Outcome::Failed;
         }
     }
-    super::kill_existing_child(mgr);
-    mgr.emit_state(app).await;
+    mgr.kill_child();
+    mgr.emit_state().await;
 
     let mut child = match process::spawn(&mgr.paths) {
         Ok(c) => c,
@@ -396,7 +389,7 @@ async fn attempt<R: Runtime>(
                 st.status = TorStatus::Failed;
             }
             drop(st);
-            mgr.emit_state(app).await;
+            mgr.emit_state().await;
             return Outcome::Failed;
         }
     };
@@ -416,13 +409,12 @@ async fn attempt<R: Runtime>(
         st.child_pid = Some(pid);
         st.status = TorStatus::Bootstrapping;
     }
-    logs.start(app.clone(), mgr.state.clone());
+    logs.start(mgr.emitter(), mgr.state.clone());
     // Клиенты собираются заново при первом запросе после Ready.
     *mgr.torified.write().await = None;
-    mgr.emit_state(app).await;
+    mgr.emit_state().await;
 
     watch(
-        app,
         mgr,
         gen,
         stall_timeout(&candidate.transport),
@@ -442,8 +434,7 @@ fn kill_child_if(mgr: &TorManager, pid: u32) {
     }
 }
 
-async fn watch<R: Runtime>(
-    app: &AppHandle<R>,
+async fn watch(
     mgr: &TorManager,
     gen: u64,
     stall: Duration,
@@ -480,7 +471,7 @@ async fn watch<R: Runtime>(
             last_change = Instant::now();
             if marked_stalled {
                 marked_stalled = false;
-                set_stalled(app, mgr, gen, false).await;
+                set_stalled(mgr, gen, false).await;
             }
         }
         let stuck = last_change.elapsed() >= stall || pt_failures >= PT_FAILURE_LIMIT;
@@ -491,13 +482,13 @@ async fn watch<R: Runtime>(
             }
             if !marked_stalled {
                 marked_stalled = true;
-                set_stalled(app, mgr, gen, true).await;
+                set_stalled(mgr, gen, true).await;
             }
         }
     }
 }
 
-async fn set_stalled<R: Runtime>(app: &AppHandle<R>, mgr: &TorManager, gen: u64, stalled: bool) {
+async fn set_stalled(mgr: &TorManager, gen: u64, stalled: bool) {
     {
         let mut st = mgr.state.write().await;
         if !still_ours(mgr, gen) {
@@ -505,13 +496,13 @@ async fn set_stalled<R: Runtime>(app: &AppHandle<R>, mgr: &TorManager, gen: u64,
         }
         st.stalled = stalled;
     }
-    mgr.emit_state(app).await;
+    mgr.emit_state().await;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tor::moat::MoatBridges;
+    use crate::moat::MoatBridges;
 
     const WEBTUNNEL: &str = "webtunnel [2001:db8::1]:443 DF82B4001F68C2312CB01762E8AE203EB9F1FF54 url=https://wt.example ver=0.0.5";
     const OBFS4: &str =
@@ -648,15 +639,15 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
-    /// Живое подключение через mock-приложение Tauri. Нужна копия бандла
-    /// (каталог с `tor/` и `data/`), кэш автоподбора пишется в неё же:
+    /// Живое подключение. Нужна копия бандла (каталог с `tor/` и `data/`),
+    /// кэш автоподбора пишется в неё же:
     /// `BASTYON_TOR_ROOT=… [BASTYON_TOR_KIND=auto|snowflake|obfs4|meek|none]
     /// [BASTYON_TOR_FAKE_CACHE=1] [BASTYON_TOR_STALL_SECS=30]
-    /// cargo test --lib live_connect -- --ignored --nocapture`.
+    /// cargo test -p bastyon-tor live_connect -- --ignored --nocapture`.
     /// `FAKE_CACHE` кладёт в кэш мёртвый мост — проверка перехода дальше.
-    #[test]
+    #[tokio::test(flavor = "multi_thread")]
     #[ignore]
-    fn live_connect() {
+    async fn live_connect() {
         let root =
             std::path::PathBuf::from(std::env::var("BASTYON_TOR_ROOT").expect("BASTYON_TOR_ROOT"));
         let kind_name = std::env::var("BASTYON_TOR_KIND").unwrap_or_else(|_| "auto".into());
@@ -670,55 +661,42 @@ mod tests {
             save_cache(&root, &dead, Some("zz"));
         }
 
-        let app = tauri::test::mock_builder()
-            .build(tauri::generate_context!(test = true))
-            .expect("mock app");
-        app.manage(TorManager::new(crate::tor::state::TorPaths::from_root(
-            root,
-        )));
-        let handle = app.handle().clone();
-
-        let status =
-            tauri::async_runtime::block_on(async move {
-                let mgr = handle.state::<TorManager>();
-                {
-                    let mut st = mgr.state.write().await;
-                    st.bridge_kind = kind;
-                    if let Some((socks, control)) = crate::tor::pick_free_port_pair() {
-                        st.socks_port = socks;
-                        st.control_port = control;
-                    }
-                }
-                let gen = mgr.start_gen.fetch_add(1, Ordering::SeqCst) + 1;
-                let task = tauri::async_runtime::spawn(supervise(handle.clone(), gen));
-                let started = Instant::now();
-                let mut last = String::new();
-                let status =
-                    loop {
-                        tokio::time::sleep(Duration::from_millis(500)).await;
-                        let st = mgr.state.read().await;
-                        let line =
-                            format!(
-                    "{:?} {}% via {:?} #{} stalled={} fetching={} error={:?} country={:?}",
-                    st.status, st.bootstrap_pct, st.active_transport, st.attempt,
-                    st.stalled, st.fetching_bridges, st.error_code, st.country
-                );
-                        if line != last {
-                            println!("{:>6.1}s {}", started.elapsed().as_secs_f32(), line);
-                            last = line;
-                        }
-                        if matches!(st.status, TorStatus::Ready | TorStatus::Failed)
-                            && !st.fetching_bridges
-                        {
-                            break st.status;
-                        }
-                        assert!(started.elapsed() < Duration::from_secs(900), "timed out");
-                    };
-                mgr.start_gen.fetch_add(1, Ordering::SeqCst);
-                crate::tor::kill_existing_child(&mgr);
-                let _ = task.await;
-                status
-            });
+        let mgr = crate::testing::manager(crate::state::TorPaths::from_root(root));
+        {
+            let mut st = mgr.state.write().await;
+            st.bridge_kind = kind;
+            if let Some((socks, control)) = crate::pick_free_port_pair() {
+                st.socks_port = socks;
+                st.control_port = control;
+            }
+        }
+        let gen = mgr.start_gen.fetch_add(1, Ordering::SeqCst) + 1;
+        let task = {
+            let mgr = mgr.clone();
+            tokio::spawn(async move { supervise(&mgr, gen).await })
+        };
+        let started = Instant::now();
+        let mut last = String::new();
+        let status = loop {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            let st = mgr.state.read().await;
+            let line = format!(
+                "{:?} {}% via {:?} #{} stalled={} fetching={} error={:?} country={:?}",
+                st.status, st.bootstrap_pct, st.active_transport, st.attempt,
+                st.stalled, st.fetching_bridges, st.error_code, st.country
+            );
+            if line != last {
+                println!("{:>6.1}s {}", started.elapsed().as_secs_f32(), line);
+                last = line;
+            }
+            if matches!(st.status, TorStatus::Ready | TorStatus::Failed) && !st.fetching_bridges {
+                break st.status;
+            }
+            assert!(started.elapsed() < Duration::from_secs(900), "timed out");
+        };
+        mgr.start_gen.fetch_add(1, Ordering::SeqCst);
+        mgr.kill_child();
+        let _ = task.await;
         assert_eq!(status, TorStatus::Ready);
     }
 }

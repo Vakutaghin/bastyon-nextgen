@@ -17,6 +17,7 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 
+import androidx.annotation.OptIn;
 import androidx.core.app.NotificationCompat;
 import androidx.media.app.NotificationCompat.MediaStyle;
 import androidx.media.session.MediaButtonReceiver;
@@ -25,7 +26,11 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.PlaybackParameters;
 import androidx.media3.common.Player;
+import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
+
+import com.bastyon.app.plugins.tor.TorHttpDataSource;
+import com.bastyon.app.plugins.tor.TorNetwork;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -440,11 +445,13 @@ public class MediaPlaybackService extends Service {
         }
     }
 
+    @OptIn(markerClass = UnstableApi.class)
     private void startNativePlayer(Intent intent) {
         String url = intent.getStringExtra(EXTRA_URL);
         if (url == null || url.isEmpty()) return;
         if (player == null) {
-            player = new ExoPlayer.Builder(this).build();
+            // Загрузки — через Tor, когда он включён (TorHttpDataSource).
+            player = new ExoPlayer.Builder(this, TorHttpDataSource.mediaSourceFactory(this)).build();
             // Фокусом управляет плеер: звонок — пауза, вернулись в приложение —
             // отпустил, и фокус снова берёт WebView.
             player.setAudioAttributes(new androidx.media3.common.AudioAttributes.Builder()
@@ -584,7 +591,7 @@ public class MediaPlaybackService extends Service {
         new Thread(() -> {
             try {
                 URL u = new URL(url);
-                HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                HttpURLConnection conn = (HttpURLConnection) u.openConnection(TorNetwork.proxy());
                 conn.setConnectTimeout(5_000);
                 conn.setReadTimeout(5_000);
                 conn.setDoInput(true);

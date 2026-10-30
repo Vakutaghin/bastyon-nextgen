@@ -322,7 +322,7 @@ export default {
     torCountry: 'Tor Project 判定的国家：{country}',
     torViaCustom: '自定义网桥',
     torViaVanilla: '普通网桥',
-    torDesktopOnly: '仅在桌面应用中可用。',
+    torDesktopOnly: '在桌面应用和 Android 应用中可用。',
     torStatusStopping: '正在停止 Tor…',
     torStatusOff: 'Tor 已关闭',
     torStatusInstalling: '正在下载：{pct}% — {message}',
@@ -332,11 +332,14 @@ export default {
     torStatusReady: '已连接 Tor 网络',
     torStatusError: '错误：{message}',
     torError: '错误',
-    torDesktopOnlyTitle: 'Tor 仅在桌面应用中可用',
-    torDesktopOnlyContent: '请在桌面应用中打开 Bastyon——浏览器版本不支持内置 Tor。',
+    torDesktopOnlyTitle: 'Tor 可在桌面应用和 Android 应用中使用',
+    torDesktopOnlyContent: '请在桌面应用或 Android 应用中打开 Bastyon——浏览器版本不支持内置 Tor。',
     torEnableTitle: '启用 Tor？',
     torEnableContent:
       '首次启动时会下载 Tor（约 20 MB），可能需要一分钟。节点请求、聊天和应用 API 通过 Tor。图片、视频和嵌入内容（YouTube、小程序）不通过 Tor，因此在 Tor 开启期间会被屏蔽：图片可点击后通过 Tor 加载，视频只能在确认后以你的 IP 直接播放。关闭 Tor 会重新加载应用。',
+    torEnableContentAndroid:
+      'Tor 已内置于应用中，会自动连接。所有流量都经过 Tor：节点请求、聊天、图片、视频和小程序。连接需要几秒到几分钟。',
+    torMediaHintAndroid: '整个应用都经过 Tor：节点、聊天、图片、视频和小程序。',
     torEnableOk: '启用',
     torMediaHint:
       '通过 Tor：节点、聊天、API。图片——点击后通过 Tor；视频、YouTube 和小程序——被禁用，或在确认后以你的 IP 直接连接。关闭 Tor 会重新加载应用。',

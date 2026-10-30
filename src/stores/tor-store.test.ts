@@ -206,3 +206,29 @@ describe('tor-store bridges', () => {
     expect(invoke).toHaveBeenCalledWith('tor_request_bridges', undefined)
   })
 })
+
+describe('tor-store hydrate', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    invoke.mockReset()
+  })
+
+  it('сохранённый выбор мостов переживает перезапуск Rust', async () => {
+    localStorage.setItem('tor:bridges:kind', 'auto')
+    // Rust только что запущен: мосты в его состоянии — по умолчанию.
+    let rustKind = 'none'
+    invoke.mockImplementation(async (cmd: string, args?: { payload?: { kind: string } }) => {
+      if (cmd === 'tor_set_bridges') {
+        rustKind = args!.payload!.kind
+        return { snapshot: { ...snapshot('off'), bridge_kind: rustKind }, rejected: [] }
+      }
+      return { ...snapshot('off'), bridge_kind: rustKind }
+    })
+    const store = useTorStore()
+    store.available = true
+    await store.hydrate()
+    expect(rustKind).toBe('auto')
+    expect(store.bridgeKind).toBe('auto')
+  })
+})

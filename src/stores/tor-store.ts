@@ -1,17 +1,24 @@
 import { defineStore } from 'pinia'
 
 import {
+  guardWebView,
+  isAndroidTor,
+  torInvoke,
+  torListen,
+  webViewThroughTor,
+} from '@/helpers/tor/tor-bridge'
+import {
   routingModeOf,
   TOR_ENABLED_KEY as LS_ENABLED,
   type TorRoutingMode,
 } from '@/helpers/tor/tor-gate'
-import { applyTorMediaPolicy, isTorMediaPolicyApplied } from '@/helpers/tor/tor-media-policy'
+import { isTorMediaPolicyApplied } from '@/helpers/tor/tor-media-policy'
 
 export type TorStatus = 'off' | 'installing' | 'starting' | 'bootstrapping' | 'ready' | 'failed'
 
 /**
  * `auto` — мосты по стране через Moat, как Connection Assist в Tor Browser
- * (src-tauri/src/tor/connect.rs). `meek` — встроенный meek_lite через CDN.
+ * (src-tauri/crates/bastyon-tor/src/connect.rs). `meek` — встроенный meek_lite через CDN.
  */
 export type TorBridgeKind = 'none' | 'auto' | 'snowflake' | 'obfs4' | 'meek' | 'custom'
 
@@ -27,7 +34,7 @@ export const TOR_BRIDGE_KINDS: readonly TorBridgeKind[] = [
 /** Тот, кто мосты не выбирал, получает автоподбор: из РФ без мостов Tor не подключается. */
 export const DEFAULT_BRIDGE_KIND: TorBridgeKind = 'auto'
 
-/** Ошибки со своим текстом в меню (src-tauri/src/tor/state.rs, TorErrorCode). */
+/** Ошибки со своим текстом в меню (src-tauri/crates/bastyon-tor/src/state.rs, TorErrorCode). */
 export type TorErrorCode = 'all_methods_failed' | 'no_valid_bridges'
 
 export type TorStateSnapshot = {
@@ -76,17 +83,6 @@ function isTauriEnv(): boolean {
   } catch {
     return false
   }
-}
-
-async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  const { invoke } = await import('@tauri-apps/api/core')
-  return invoke<T>(cmd, args)
-}
-
-async function tauriListen<T>(event: string, cb: (payload: T) => void): Promise<() => void> {
-  const { listen } = await import('@tauri-apps/api/event')
-  const unlisten = await listen<T>(event, (e) => cb(e.payload))
-  return unlisten
 }
 
 function loadBool(key: string, def: boolean): boolean {
@@ -155,7 +151,9 @@ function reloadDocument(): void {
 
 export const useTorStore = defineStore('tor', {
   state: () => ({
-    available: isTauriEnv(),
+    /** Компьютер (Tor скачивается) или Android (Tor в APK, `builtin`). */
+    available: isTauriEnv() || isAndroidTor(),
+    builtin: isAndroidTor(),
     enabled: loadBool(LS_ENABLED, false),
     status: 'off' as TorStatus,
     bootstrapPct: 0,
@@ -185,11 +183,18 @@ export const useTorStore = defineStore('tor', {
       return state.enabled && state.status === 'ready'
     },
     /**
-     * Пользователь включил Tor в десктопе. Пока он не `ready`, запросы ждут
+     * Пользователь включил Tor. Пока он не `ready`, запросы ждут
      * или падают — но не идут напрямую (V20). Медиа-политика тоже от этого флага.
      */
     wantsTor(state): boolean {
       return state.enabled && state.available
+    },
+    /**
+     * Картинки, видео и фреймы окна пошли бы мимо Tor — их показывают по
+     * нажатию через Tor (V21). На Android окно само ходит через Tor.
+     */
+    mediaBypassesTor(state): boolean {
+      return state.enabled && state.available && !webViewThroughTor()
     },
     /** direct | tor | wait | failed — см. `helpers/tor/tor-gate`. */
     routingMode(state): TorRoutingMode {
@@ -212,29 +217,35 @@ export const useTorStore = defineStore('tor', {
     async hydrate(): Promise<void> {
       if (!this.available) return
       // Флаг из localStorage: политика нужна до первого рендера, не после tor_start.
-      if (this.enabled) applyTorMediaPolicy()
+      if (this.enabled) await guardWebView()
       await this.subscribe()
+      // Мосты — до снимка: у только что запущенного Rust они по умолчанию
+      // (`none`), и снимок затирал сохранённый выбор, а pushBridges отправлял
+      // `none` обратно — после перезапуска Tor подключался без мостов.
+      await this.pushBridges().catch(() => {})
       try {
-        const snap = await tauriInvoke<TorStateSnapshot>('tor_status')
+        const snap = await torInvoke<TorStateSnapshot>('tor_status')
         this.applySnapshot(snap)
       } catch {
         // backend not ready — will retry on next user action
       }
 
-      await this.pushBridges().catch(() => {})
-
       if (this.enabled && this.status === 'off') {
         await this.enable()
+      } else if (!this.enabled && this.builtin) {
+        // Android помнит «Tor включён» сам (прокси окна до загрузки), а
+        // данные окна могли стереть: включён ли Tor, решает этот флаг.
+        await torInvoke('tor_stop').catch(() => {})
       }
     },
 
     async subscribe(): Promise<void> {
       if (this._subscribed) return
       this._subscribed = true
-      this._stateUnlisten = await tauriListen<TorStateSnapshot>('tor:state', (snap) => {
+      this._stateUnlisten = await torListen<TorStateSnapshot>('tor:state', (snap) => {
         this.applySnapshot(snap)
       })
-      this._installUnlisten = await tauriListen<TorInstallProgress>(
+      this._installUnlisten = await torListen<TorInstallProgress>(
         'tor:install-progress',
         (progress) => {
           this.install = progress
@@ -267,7 +278,7 @@ export const useTorStore = defineStore('tor', {
       this.enabled = true
       persistBool(LS_ENABLED, true)
       // До tor_start: картинки/фреймы не должны успеть уйти мимо Tor (V21).
-      applyTorMediaPolicy()
+      await guardWebView()
       if (turnedOn) {
         for (const cb of enabledListeners) {
           try {
@@ -279,7 +290,7 @@ export const useTorStore = defineStore('tor', {
       }
       try {
         await this.pushBridges()
-        const snap = await tauriInvoke<TorStateSnapshot>('tor_start')
+        const snap = await torInvoke<TorStateSnapshot>('tor_start')
         this.applySnapshot(snap)
       } catch (e) {
         this.status = 'failed'
@@ -297,7 +308,7 @@ export const useTorStore = defineStore('tor', {
       persistBool(LS_ENABLED, false)
       if (!this.available) return
       try {
-        const snap = await tauriInvoke<TorStateSnapshot>('tor_stop')
+        const snap = await torInvoke<TorStateSnapshot>('tor_stop')
         this.applySnapshot(snap)
       } catch {
         // backend already stopped or unreachable
@@ -309,7 +320,7 @@ export const useTorStore = defineStore('tor', {
 
     async refreshInstalled(): Promise<void> {
       if (!this.available) return
-      this.installed = await tauriInvoke<boolean>('tor_installed').catch(() => null)
+      this.installed = await torInvoke<boolean>('tor_installed').catch(() => null)
     },
 
     /**
@@ -317,9 +328,9 @@ export const useTorStore = defineStore('tor', {
      * tor не удалить. Скачается снова, когда Tor включат. false — не вышло.
      */
     async uninstall(): Promise<boolean> {
-      if (!this.available || this.enabled) return false
+      if (!this.available || this.builtin || this.enabled) return false
       try {
-        await tauriInvoke('tor_uninstall')
+        await torInvoke('tor_uninstall')
         return true
       } catch {
         return false
@@ -358,7 +369,7 @@ export const useTorStore = defineStore('tor', {
         .map((s) => s.trim())
         .filter(Boolean)
       try {
-        const result = await tauriInvoke<TorBridgesResult>('tor_set_bridges', {
+        const result = await torInvoke<TorBridgesResult>('tor_set_bridges', {
           payload: {
             use_bridges: this.useBridges,
             kind: this.bridgeKind,
@@ -377,7 +388,7 @@ export const useTorStore = defineStore('tor', {
      */
     async requestBridges(): Promise<TorRequestedBridges> {
       if (!this.available) return { country: null, bridges: [] }
-      return tauriInvoke<TorRequestedBridges>('tor_request_bridges')
+      return torInvoke<TorRequestedBridges>('tor_request_bridges')
     },
 
     async applyAndRestart(opts: {
@@ -399,13 +410,13 @@ export const useTorStore = defineStore('tor', {
     async restart(): Promise<void> {
       if (!this.available || !this.enabled) return
       try {
-        const snap = await tauriInvoke<TorStateSnapshot>('tor_stop', { restart: true })
+        const snap = await torInvoke<TorStateSnapshot>('tor_stop', { restart: true })
         this.applySnapshot(snap)
       } catch {
         // backend already stopped
       }
       try {
-        const snap = await tauriInvoke<TorStateSnapshot>('tor_start')
+        const snap = await torInvoke<TorStateSnapshot>('tor_start')
         this.applySnapshot(snap)
       } catch (e) {
         this.status = 'failed'

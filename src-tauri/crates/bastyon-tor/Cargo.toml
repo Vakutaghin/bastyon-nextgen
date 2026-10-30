@@ -1,0 +1,35 @@
+[package]
+name = "bastyon-tor"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+publish = false
+
+# Tor приложения без Tauri: torrc, мосты, Moat, автоподбор, процесс tor,
+# запросы и WebSocket через SOCKS. Общий для компьютера (src/tor — команды
+# Tauri и скачивание бандла) и Android (bastyon-tor-jni — tor в APK).
+[dependencies]
+base64 = "0.22"
+dashmap = "6"
+futures-util = "0.3"
+log = "0.4"
+reqwest = { version = "0.12", default-features = false, features = ["json", "socks", "rustls-tls", "stream", "gzip", "brotli", "deflate"] }
+rustls-pki-types = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "process", "io-util", "net", "macros"] }
+tokio-socks = "0.5"
+# ring — явно: его же берёт reqwest, а провайдер по умолчанию при двух
+# включённых (aws-lc-rs идёт фичей по умолчанию) rustls не выбирает и падает.
+tokio-rustls = { version = "0.26", features = ["ring"] }
+tokio-tungstenite = "0.24"
+url = "2"
+
+# Корневые сертификаты для wss и Moat: системные; на Android rustls-native-certs
+# хранилища системы не видит — там список Mozilla, как у reqwest.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+rustls-native-certs = "0.8"
+
+[target.'cfg(target_os = "android")'.dependencies]
+webpki-roots = "1"
