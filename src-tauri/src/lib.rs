@@ -5,6 +5,7 @@ mod ffmpeg;
 mod ipfs;
 mod main_window;
 mod mesh;
+mod node_link;
 mod storage;
 mod system_info;
 mod tor;
@@ -963,6 +964,10 @@ pub fn run() {
       tor::tor_ws_connect,
       tor::tor_ws_send,
       tor::tor_ws_close,
+      node_link::node_fetch,
+      node_link::node_ws_connect,
+      node_link::node_ws_send,
+      node_link::node_ws_close,
       ipfs::ipfs_status,
       ipfs::ipfs_ensure,
       ipfs::ipfs_cancel_install,

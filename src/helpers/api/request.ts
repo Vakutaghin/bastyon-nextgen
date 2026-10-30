@@ -16,7 +16,13 @@ import servers from '@/servers.json'
 import { getRpcPath } from './rpc-endpoints'
 import { appFetch } from './fetch-strategies'
 import { retryWithBackoff, type ServerEndpoint } from './rpc-retry'
-import { orderedProxies } from './node-selector'
+import { anyProxyAlive, orderedProxies } from './node-selector'
+import {
+  connectionRoute,
+  mayFallBackToDirect,
+  reportProxiesUnreachable,
+} from './direct-nodes/connection-route'
+import { directRpc } from './direct-nodes/direct-rpc'
 import { signRpcParamsIfNeeded, signHttpDataIfNeeded } from './request-signing'
 import { hasRpcTrafficListeners, reportRpcTraffic, respondingNode } from './rpc-traffic'
 import type { T_RpcRequestParams, RpcRequestConfig, HttpRequestParams } from './types/request'
@@ -231,8 +237,15 @@ export async function fetchHttp(params: HttpRequestParams): Promise<unknown> {
     return tryHttpRequest(params, params.options.host, params.options.port)
   }
 
+  const proxies = servers.servers.production.proxy as ServerEndpoint[]
+  // Это умеет только прокси. Когда идём к нодам напрямую, до прокси обычно не
+  // достучаться — не ждём таймаута каждого, а сразу говорим, что недоступен.
+  if ((await connectionRoute()) === 'direct' && !(await anyProxyAlive(proxies))) {
+    throw new Error(`Proxy servers are unreachable: ${params.path}`)
+  }
+
   return retryWithBackoff(params, {
-    servers: servers.servers.production.proxy as ServerEndpoint[],
+    servers: proxies,
     request: tryHttpRequest,
     protocolName: 'HTTP',
   })
@@ -245,6 +258,17 @@ export async function fetchHttp(params: HttpRequestParams): Promise<unknown> {
  */
 export function warmUpProxies(): void {
   void orderedProxies(servers.servers.production.proxy as ServerEndpoint[]).catch(() => {})
+  void connectionRoute().catch(() => {})
+}
+
+/** Все прокси упали по сети (а не ответили ошибкой ноды). */
+function proxiesUnreachable(error: unknown): boolean {
+  const all = (error as { allErrors?: unknown } | null)?.allErrors
+  return (
+    Array.isArray(all) &&
+    all.length > 0 &&
+    all.every((e) => !(e as { httpStatus?: unknown } | null)?.httpStatus)
+  )
 }
 
 /**
@@ -265,6 +289,8 @@ export async function getByPRC(
     return tryRpcRequest(params, config.host, config.port)
   }
 
+  if ((await connectionRoute()) === 'direct') return directRpc(params)
+
   const proxies = servers.servers.production.proxy as ServerEndpoint[]
 
   // Неидемпотентные вызовы (бродкаст транзакции, V1): один сервер и никакого
@@ -275,12 +301,23 @@ export async function getByPRC(
     return tryRpcRequest(params, server.host, server.port)
   }
 
-  return retryWithBackoff(params, {
-    servers: proxies,
-    request: tryRpcRequest,
-    isLogicErrorThrowable: true,
-    protocolName: 'RPC',
-  })
+  // «Авто»: прокси перестали отвечать по ходу — после первого сбоя проверяем
+  // все разом и, если молчат все, не ждём таймаута каждого, а идём к нодам.
+  const fallback = await mayFallBackToDirect()
+  try {
+    return await retryWithBackoff(params, {
+      servers: proxies,
+      request: tryRpcRequest,
+      isLogicErrorThrowable: true,
+      protocolName: 'RPC',
+      stopAfterFailure: fallback ? async () => !(await anyProxyAlive(proxies)) : undefined,
+    })
+  } catch (error) {
+    if (fallback && proxiesUnreachable(error) && (await reportProxiesUnreachable())) {
+      return directRpc(params)
+    }
+    throw error
+  }
 }
 
 /**

@@ -17,6 +17,10 @@ import { pickWebSocketCtor } from '@/helpers/tor/tor-websocket'
 import { orderedProxies } from '@/helpers/api/node-selector'
 import type { ServerEndpoint } from '@/helpers/api/rpc-retry'
 import { debugLog } from '@/helpers/common/debug-log'
+import { connectionRoute, onRouteChange } from '@/helpers/api/direct-nodes/connection-route'
+import { NODE_WSS_PORT } from '@/helpers/api/direct-nodes/node-call'
+import { directNodes, markNodeDead } from '@/helpers/api/direct-nodes/node-pool'
+import { NodeWebSocket } from '@/helpers/api/direct-nodes/node-websocket'
 
 // --- Types ---
 
@@ -63,6 +67,13 @@ class PocketnetWsService {
   private connecting: Promise<void> | null = null
   /** Растёт на каждом close(): подключение, начатое до него, сокет уже не создаёт. */
   private generation = 0
+  /**
+   * Сокет к ноде напрямую (режим подключения «Ноды»): подписка — адресом без
+   * подписи, как её делает прокси (proxy16 node/wss.js), ответ —
+   * `{result: 'Registered'}`; дальше нода шлёт то же, что пересылал прокси.
+   */
+  private directNode: string | null = null
+  private directAddress: string | null = null
 
   // Public state
   isConnected = false
@@ -113,6 +124,27 @@ class PocketnetWsService {
     const generation = this.generation
     const superseded = () => this.closing || generation !== this.generation
 
+    const route = await connectionRoute().catch(() => 'proxy' as const)
+    if (superseded()) return
+    if (route === 'direct') {
+      let host: string | undefined
+      try {
+        host = (await directNodes())[0]
+      } catch {
+        host = undefined
+      }
+      if (superseded()) return
+      if (!host) {
+        this.scheduleReconnect()
+        return
+      }
+      this.directNode = host
+      debugLog('[WS] Connecting to node', host)
+      this.attach(new NodeWebSocket(host, NODE_WSS_PORT) as unknown as WebSocket)
+      return
+    }
+    this.directNode = null
+
     const proxyList = servers.servers.production.proxy
     if (!proxyList?.length) {
       console.error('[WS] No proxy servers configured')
@@ -143,12 +175,17 @@ class PocketnetWsService {
       // close() во время ожидания конструктора: сокет больше не нужен — иначе
       // он открылся бы после закрытия сервиса и жил бы без хозяина.
       if (superseded()) return
-      this.socket = new Ctor(url)
+      this.attach(new Ctor(url))
     } catch (e) {
       console.error('[WS] Failed to create WebSocket:', e)
       this.scheduleReconnect()
-      return
     }
+  }
+
+  /** Обработчики сокета — общие для прокси и ноды. */
+  private attach(socket: WebSocket) {
+    this.socket = socket
+    let opened = false
 
     // Таймаут на установление соединения: зависший SYN иначе держал бы сокет вечно.
     this.clearConnectTimer()
@@ -166,6 +203,7 @@ class PocketnetWsService {
     }, CONNECT_TIMEOUT_MS)
 
     this.socket.onopen = () => {
+      opened = true
       debugLog('[WS] Connected!')
       this.clearConnectTimer()
       this.isConnected = true
@@ -191,6 +229,8 @@ class PocketnetWsService {
 
     this.socket.onclose = (event) => {
       debugLog('[WS] Closed, code:', event.code, 'reason:', event.reason)
+      // Нода не открыла сокет — следующая попытка возьмёт другую.
+      if (!opened && this.directNode && !this.closing) markNodeDead(this.directNode)
       this.clearConnectTimer()
       this.isConnected = false
       this.emit('close', {})
@@ -277,6 +317,13 @@ class PocketnetWsService {
         return
       }
 
+      if (this.directNode) {
+        this.directAddress = address
+        debugLog('[WS] Subscribing to address at node:', address)
+        this.send(JSON.stringify({ addr: address, nonce: '0', signature: '0', pubkey: '0' }))
+        return
+      }
+
       if (!keyPair) {
         const { useAuthStore } = await import('@/blockchain/store/auth-store')
         const authStore = useAuthStore()
@@ -313,6 +360,12 @@ class PocketnetWsService {
   // --- Message handling ---
 
   private handleMessage(data: WsMessage) {
+    // Нода подтверждает подписку по-своему.
+    if (this.directNode && data.result === 'Registered' && !data.msg) {
+      data.msg = 'registered'
+      data.addr = this.directAddress ?? undefined
+    }
+
     // Нормализация (аналог satolist.js:23169-23185)
     if (!data.msg && !data.mesType) {
       if (data.vin && data.vout) {
@@ -433,6 +486,12 @@ class PocketnetWsService {
 
     this.isConnected = false
     this.connected.clear()
+    this.directAddress = null
+  }
+
+  /** Сокет открыт или открывается. */
+  get active(): boolean {
+    return this.socket !== null || this.connecting !== null
   }
 
   destroy() {
@@ -443,3 +502,8 @@ class PocketnetWsService {
 
 /** Singleton */
 export const wsService = new PocketnetWsService()
+
+// Запросы пошли другим путём (прокси ↔ ноды напрямую) — уведомления тоже.
+onRouteChange(() => {
+  if (wsService.active) wsService.reconnect()
+})

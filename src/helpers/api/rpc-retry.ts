@@ -27,13 +27,18 @@ export interface RetryWithBackoffOptions<P, R> {
   isLogicErrorThrowable?: boolean
   /** Имя протокола для сообщения «All ... servers failed» (RPC / HTTP). */
   protocolName: 'RPC' | 'HTTP'
+  /**
+   * После сбоя сервера: true — остальные не пробовать (режим «Авто» проверил,
+   * что не отвечает ни один прокси, и запрос уйдёт к нодам напрямую).
+   */
+  stopAfterFailure?: () => Promise<boolean>
 }
 
 export async function retryWithBackoff<P, R>(
   params: P,
-  opts: RetryWithBackoffOptions<P, R>,
+  opts: RetryWithBackoffOptions<P, R>
 ): Promise<R> {
-  const { servers, request, isLogicErrorThrowable = false, protocolName } = opts
+  const { servers, request, isLogicErrorThrowable = false, protocolName, stopAfterFailure } = opts
 
   if (!servers || servers.length === 0) {
     throw new Error(`No ${protocolName} servers available`)
@@ -58,6 +63,7 @@ export async function retryWithBackoff<P, R>(
 
       markProxyDead(server)
       lastError.push(error instanceof Error ? error : new Error(String(error)))
+      if (stopAfterFailure && (await stopAfterFailure())) break
     }
   }
 

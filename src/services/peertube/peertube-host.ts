@@ -12,15 +12,66 @@ import { fetchHttp } from '@/helpers/api/request'
 /** Тип отбора инстанса под задачу (веса ранжирования на ноде различаются). */
 export type PeertubeHostType = 'upload' | 'importVideo' | 'liveStream'
 
+// ─── хосты на случай, когда прокси недоступен ───────────────────────────────
+//
+// Куда грузить, знает только прокси. Когда до него не достучаться (режим
+// подключения «Ноды напрямую», в РФ прокси закрыты), а сами видеосерверы
+// открываются, берём его последний ответ, а до первого — этот список
+// (peertube/roys на 30.10.2026). Ответ прокси «мест нет» — по-прежнему ошибка.
+
+const KNOWN_HOSTS_KEY = 'bastyon_peertube_roys'
+const DEFAULT_UPLOAD_HOSTS = [
+  'peertube800.pocketnet.app',
+  'peertube160.pocketnet.app',
+  'peertube101.pocketnet.app',
+  'peertube1000.pocketnet.app',
+  'peertube372.pocketnet.app',
+]
+
+function readKnownHosts(): Partial<Record<PeertubeHostType, string[]>> {
+  try {
+    const parsed: unknown = JSON.parse(globalThis.localStorage?.getItem(KNOWN_HOSTS_KEY) ?? '{}')
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function rememberHosts(type: PeertubeHostType, hosts: string[]): void {
+  if (!hosts.length) return
+  try {
+    globalThis.localStorage?.setItem(
+      KNOWN_HOSTS_KEY,
+      JSON.stringify({ ...readKnownHosts(), [type]: hosts })
+    )
+  } catch {
+    // не запомнится — останется встроенный список
+  }
+}
+
+/** Последние хосты от прокси или встроенные (для загрузки). */
+export function knownPeertubeHosts(type: PeertubeHostType = 'upload'): string[] {
+  const stored = readKnownHosts()[type]
+  if (Array.isArray(stored) && stored.every((h) => typeof h === 'string') && stored.length) {
+    return stored
+  }
+  return type === 'upload' ? [...DEFAULT_UPLOAD_HOSTS] : []
+}
+
 /**
  * Резолвит хост под задачу через ноду (`peertube/best`). Бросает, если нода не
  * вернула хост (все инстансы заполнены/недоступны — вызывающий показывает ретрай).
+ * Прокси недоступен — первый из известных хостов.
  */
 export async function resolvePeertubeHost(type: PeertubeHostType = 'upload'): Promise<string> {
-  const res = (await fetchHttp({ path: 'peertube/best', data: { type } })) as
-    | { host?: string }
-    | string
-    | null
+  let res: { host?: string } | string | null
+  try {
+    res = (await fetchHttp({ path: 'peertube/best', data: { type } })) as typeof res
+  } catch (error) {
+    const [known] = knownPeertubeHosts(type)
+    if (known) return known
+    throw error
+  }
 
   const host = typeof res === 'string' ? res : res?.host
   if (!host) throw new Error('peertube_no_host')
@@ -51,7 +102,17 @@ export function parseRoyHosts(data: unknown): string[] {
  * картинок есть не на каждом инстансе загрузки (image-upload-service).
  */
 export async function resolvePeertubeHosts(type: PeertubeHostType = 'upload'): Promise<string[]> {
-  return parseRoyHosts(await fetchHttp({ path: 'peertube/roys', data: { type } }))
+  let data: unknown
+  try {
+    data = await fetchHttp({ path: 'peertube/roys', data: { type } })
+  } catch (error) {
+    const known = knownPeertubeHosts(type)
+    if (known.length) return known
+    throw error
+  }
+  const hosts = parseRoyHosts(data)
+  rememberHosts(type, hosts)
+  return hosts
 }
 
 // ─── allowlist хостов от ноды ────────────────────────────────────────────────

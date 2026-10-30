@@ -18,6 +18,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.bastyon.app.plugins.AppUpdaterPlugin;
 import com.bastyon.app.plugins.BackgroundMediaPlugin;
 import com.bastyon.app.plugins.MatrixHttpPlugin;
+import com.bastyon.app.plugins.NodeLinkPlugin;
 import com.bastyon.app.plugins.radio.MeshRadioPlugin;
 import com.bastyon.app.plugins.radio.MeshRnsPlugin;
 import com.bastyon.app.plugins.voice.VoiceInputPlugin;
@@ -30,6 +31,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(BackgroundMediaPlugin.class);
         registerPlugin(AppUpdaterPlugin.class);
         registerPlugin(MatrixHttpPlugin.class);
+        registerPlugin(NodeLinkPlugin.class);
         registerPlugin(MeshRadioPlugin.class);
         registerPlugin(MeshRnsPlugin.class);
         registerPlugin(VoiceInputPlugin.class);

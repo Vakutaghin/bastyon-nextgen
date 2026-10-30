@@ -50,6 +50,7 @@ Whether to save chats on this device — the chat server deletes them after thre
 
 ## System
 
+- **“Network connection”** (in the desktop and Android apps) — **“Auto”**, **“Proxy”** or **“Direct to nodes”**, see [Proxy or direct to nodes](network.md#proxy-or-direct-to-nodes).
 - **“Animations”** — smooth transitions; turn them off if the app feels sluggish.
 - **“Interface scale”** and **“Launch at login”** — in the desktop app, see [Language and appearance](appearance.md) and [The desktop app](desktop-app.md).
 - **“When the window is closed”** (Windows and Linux) — **“Minimize to tray”** or **“Quit the app”**; **“Icon in the menu bar”** (macOS) — whether Bastyon shows at the top of the screen. See [The desktop app](desktop-app.md).

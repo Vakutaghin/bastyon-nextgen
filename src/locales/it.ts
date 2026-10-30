@@ -551,6 +551,25 @@ export default {
       deleteAllSureOk: 'Elimina per sempre',
       deletedAll: 'Chat salvate eliminate',
     },
+    network: {
+      title: 'Connessione alla rete',
+      hint: 'Come l’app raggiunge la blockchain.',
+      infoLabel: 'Ulteriori informazioni sulla connessione',
+      info: 'Auto: tramite i proxy di Bastyon e, se nessuno risponde (per esempio perché sono bloccati), direttamente ai nodi della blockchain. Appena un proxy risponde di nuovo, l’app torna a usarlo. Proxy: solo tramite i proxy. Nodi diretti: sempre ai nodi. La connessione a un nodo è cifrata e il suo certificato viene memorizzato al primo contatto. Il nodo vede il tuo indirizzo IP. Registrazione, traduzione dei post e anteprime dei link funzionano solo tramite un proxy.',
+      mode: {
+        auto: 'Auto',
+        proxy: 'Proxy',
+        direct: 'Nodi diretti',
+      },
+      statusProxy: 'Ora: tramite un proxy',
+      statusDirect: 'Ora: direttamente ai nodi, connessi: {n}',
+      statusAutoDirect:
+        'I proxy non rispondono, ora direttamente ai nodi, connessi: {n}. I proxy vengono ricontrollati ogni tre minuti.',
+      statusSearching: 'Ricerca dei nodi…',
+      statusNoNodes: 'Nessun nodo ha risposto direttamente. Controlla la connessione a internet.',
+      statusTor: 'Tor è attivo: la connessione passa da Tor, questa scelta non si applica.',
+      statusChecking: 'Verifica della connessione…',
+    },
     system: {
       animations: 'Animazioni',
       animationsHint: 'Transizioni fluide nell’interfaccia. Disattivale se l’app sembra lenta.',

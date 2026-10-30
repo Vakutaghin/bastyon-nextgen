@@ -555,6 +555,25 @@ export default {
       deleteAllSureOk: 'Endgültig löschen',
       deletedAll: 'Gespeicherte Chats gelöscht',
     },
+    network: {
+      title: 'Netzwerkverbindung',
+      hint: 'Wie die App die Blockchain erreicht.',
+      infoLabel: 'Mehr zur Verbindung',
+      info: 'Auto: über die Bastyon-Proxys, und wenn keiner antwortet (zum Beispiel weil sie gesperrt sind), direkt zu den Blockchain-Nodes. Sobald ein Proxy wieder antwortet, wechselt die App zurück. Proxy: nur über Proxys. Nodes direkt: immer zu den Nodes. Die Verbindung zu einer Node ist verschlüsselt, ihr Zertifikat wird beim ersten Kontakt gespeichert. Die Node sieht deine IP-Adresse. Registrierung, Übersetzung von Beiträgen und Linkvorschauen funktionieren nur über einen Proxy.',
+      mode: {
+        auto: 'Auto',
+        proxy: 'Proxy',
+        direct: 'Nodes direkt',
+      },
+      statusProxy: 'Jetzt: über einen Proxy',
+      statusDirect: 'Jetzt: direkt zu den Nodes, verbunden: {n}',
+      statusAutoDirect:
+        'Die Proxys antworten nicht, jetzt direkt zu den Nodes, verbunden: {n}. Die Proxys werden alle drei Minuten erneut geprüft.',
+      statusSearching: 'Nodes werden gesucht…',
+      statusNoNodes: 'Keine Node hat direkt geantwortet. Prüfe deine Internetverbindung.',
+      statusTor: 'Tor ist an: Die Verbindung läuft darüber, diese Auswahl gilt nicht.',
+      statusChecking: 'Verbindung wird geprüft…',
+    },
     system: {
       animations: 'Animationen',
       animationsHint:

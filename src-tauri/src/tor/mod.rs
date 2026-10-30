@@ -348,6 +348,9 @@ pub async fn tor_start(
         }
     }
 
+    // С Tor мимо него ничего не идёт: прямые сокеты к нодам закрываем.
+    crate::node_link::close_all().await;
+
     let gen = mgr.start_gen.fetch_add(1, Ordering::SeqCst) + 1;
     mgr.install_cancel.store(false, Ordering::SeqCst);
 

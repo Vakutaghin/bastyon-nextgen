@@ -2,6 +2,8 @@
   <SC_SettingsSectionTitle>{{ t('settings.tabs.system') }}</SC_SettingsSectionTitle>
 
   <SC_SystemSection>
+    <ConnectionModeSection v-if="directAvailable()" />
+
     <SC_SystemRow>
       <SC_SystemLabel>
         <SC_SystemTitle>{{ t('settings.system.animations') }}</SC_SystemTitle>
@@ -171,7 +173,9 @@ import {
   useStorageStore,
   type CacheKind,
 } from '@/stores/storage-store'
+import { directAvailable } from '@/helpers/api/direct-nodes/connection-route'
 import { SC_SettingsSectionTitle } from '../settings-page-main.styled'
+import ConnectionModeSection from './connection-mode-section.vue'
 import {
   SC_CacheControls,
   SC_CacheRow,

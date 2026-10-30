@@ -1,10 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+const { fetchHttpMock } = vi.hoisted(() => ({ fetchHttpMock: vi.fn() }))
+vi.mock('@/helpers/api/request', () => ({ fetchHttp: fetchHttpMock }))
+
 import {
   fetchPeertubeHostAllowlist,
+  knownPeertubeHosts,
   parseAllServers,
   parseRoyHosts,
   resetPeertubeHostAllowlistCache,
+  resolvePeertubeHost,
+  resolvePeertubeHosts,
 } from './peertube-host'
 
 beforeEach(() => resetPeertubeHostAllowlistCache())
@@ -58,5 +64,28 @@ describe('parseRoyHosts', () => {
   it('мусор → пустой список', () => {
     expect(parseRoyHosts(null)).toEqual([])
     expect(parseRoyHosts('host')).toEqual([])
+  })
+})
+
+describe('хосты загрузки без прокси', () => {
+  beforeEach(() => {
+    localStorage.removeItem('bastyon_peertube_roys')
+    fetchHttpMock.mockReset()
+  })
+
+  it('прокси ответил — список запоминается; потом не ответил — берётся он', async () => {
+    fetchHttpMock.mockResolvedValueOnce({ 0: 'a.example', 1: 'b.example' })
+    expect(await resolvePeertubeHosts('upload')).toEqual(['a.example', 'b.example'])
+    fetchHttpMock.mockRejectedValue(new Error('Proxy servers are unreachable'))
+    expect(await resolvePeertubeHosts('upload')).toEqual(['a.example', 'b.example'])
+    expect(await resolvePeertubeHost('upload')).toBe('a.example')
+  })
+
+  it('до первого ответа — встроенный список; «мест нет» от прокси — ошибка', async () => {
+    fetchHttpMock.mockRejectedValue(new Error('Proxy servers are unreachable'))
+    expect(knownPeertubeHosts('upload')).toContain('peertube800.pocketnet.app')
+    expect(await resolvePeertubeHost('upload')).toBe('peertube800.pocketnet.app')
+    fetchHttpMock.mockReset().mockResolvedValue({})
+    await expect(resolvePeertubeHost('upload')).rejects.toThrow('peertube_no_host')
   })
 })

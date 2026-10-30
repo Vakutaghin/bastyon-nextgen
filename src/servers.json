@@ -1,71 +1,130 @@
 {
-  "servers" : {
-    "production" : {
-      "proxy" : [
+  "servers": {
+    "production": {
+      "proxy": [
         {
-          "host" : "1.pocketnet.app",
-          "port" : 8899,
-          "wss" : 8099
+          "host": "1.pocketnet.app",
+          "port": 8899,
+          "wss": 8099
         },
         {
-          "host" : "2.pocketnet.app",
-          "port" : 8899,
-          "wss" : 8099
+          "host": "2.pocketnet.app",
+          "port": 8899,
+          "wss": 8099
         },
 
         {
-          "host" : "3.pocketnet.app",
-          "port" : 8899,
-          "wss" : 8099
+          "host": "3.pocketnet.app",
+          "port": 8899,
+          "wss": 8099
         },
         {
-          "host" : "4.pocketnet.app",
-          "port" : 8899,
-          "wss" : 8099
+          "host": "pre.pocketnet.app",
+          "port": 8899,
+          "wss": 8099
         },
         {
-          "host" : "5.pocketnet.app",
-          "port" : 8899,
-          "wss" : 8099
+          "host": "4.pocketnet.app",
+          "port": 8899,
+          "wss": 8099
         },
         {
-          "host" : "6.pocketnet.app",
-          "port" : 8899,
-          "wss" : 8099
+          "host": "5.pocketnet.app",
+          "port": 8899,
+          "wss": 8099
+        },
+        {
+          "host": "6.pocketnet.app",
+          "port": 8899,
+          "wss": 8099
         }
       ],
 
-      "translateProxy" : {
-        "host" : "2.pocketnet.app",
-        "port" : 8899,
-        "wss" : 8099
+      "nodes": {
+        "port": 38881,
+        "wss": 8887,
+        "seeds": [
+          "5.187.79.252",
+          "5.189.141.204",
+          "31.134.132.69",
+          "37.195.170.158",
+          "38.23.148.12",
+          "45.8.158.57",
+          "45.8.159.44",
+          "45.26.189.183",
+          "46.37.123.165",
+          "47.37.77.64",
+          "52.144.105.179",
+          "64.23.187.30",
+          "74.208.146.132",
+          "75.157.28.85",
+          "77.51.225.138",
+          "77.66.184.135",
+          "81.22.52.221",
+          "85.175.4.178",
+          "89.28.48.25",
+          "90.150.90.91",
+          "90.189.165.203",
+          "92.43.190.107",
+          "92.255.229.244",
+          "93.170.82.253",
+          "94.156.128.149",
+          "95.165.69.47",
+          "95.165.153.197",
+          "95.174.109.119",
+          "109.197.196.106",
+          "128.69.178.18",
+          "154.5.252.240",
+          "157.22.229.127",
+          "158.69.119.121",
+          "173.212.224.64",
+          "173.218.41.87",
+          "176.106.244.20",
+          "178.168.110.85",
+          "178.217.159.221",
+          "178.234.11.26",
+          "188.113.188.153",
+          "188.168.81.74",
+          "193.142.156.77",
+          "194.107.176.248",
+          "195.133.13.225",
+          "213.21.13.19",
+          "213.109.13.125",
+          "213.159.55.60"
+        ]
       },
 
-      "matrix" : "matrix.pocketnet.app",
-      "matrixMirrors" : ["matrix.2.pocketnet.app"],
+      "translateProxy": {
+        "host": "2.pocketnet.app",
+        "port": 8899,
+        "wss": 8099
+      },
 
-      "monetization" : {
-        "url" : "pnettool.pocketnet.app",
-        "auth" : "dXNlcjE6R2ZoamttIDQuLg=="
+      "matrix": "matrix.pocketnet.app",
+      "matrixMirrors": ["matrix.2.pocketnet.app"],
+
+      "monetization": {
+        "url": "pnettool.pocketnet.app",
+        "auth": "dXNlcjE6R2ZoamttIDQuLg=="
       }
     },
 
-    "test" : {
-      "proxy" : [
+    "test": {
+      "proxy": [
         {
-          "host" : "test.pocketnet.app",
-          "port" : 8899,
-          "wss" : 8099
+          "host": "test.pocketnet.app",
+          "port": 8899,
+          "wss": 8099
         }
       ],
 
-      "translateProxy" : {
-        "host" : "2.pocketnet.app",
-        "port" : 8899,
-        "wss" : 8099
+      "translateProxy": {
+        "host": "2.pocketnet.app",
+        "port": 8899,
+        "wss": 8099
       },
 
-      "matrix" : "test.matrix.pocketnet.app"
+      "matrix": "test.matrix.pocketnet.app"
     }
   }
 }

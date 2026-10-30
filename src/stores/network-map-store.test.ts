@@ -87,7 +87,8 @@ describe('network-map-store', () => {
     expect([...store.snapshot.nodes.keys()].sort()).toEqual(['10.0.0.1', '10.0.0.2', '20.0.0.9'])
     expect(store.snapshot.nodes.get('10.0.0.1')).toMatchObject({ answered: true, country: 'DE' })
     expect(store.snapshot.nodes.get('20.0.0.9')).toMatchObject({ listening: false, country: null })
-    expect(store.snapshot.proxies).toHaveLength(6)
+    // Все прокси из servers.json: 1–6.pocketnet.app и pre.pocketnet.app.
+    expect(store.snapshot.proxies).toHaveLength(7)
     // Вопросы — через живой прокси с названной нодой.
     expect(mocks.getByPRC).toHaveBeenCalledWith(
       expect.objectContaining({

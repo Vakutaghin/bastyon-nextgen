@@ -116,13 +116,13 @@ pub async fn connect(
         let (ws, _resp) = tokio_tungstenite::client_async(request, tls)
             .await
             .map_err(|e| WsError::Handshake(e.to_string()))?;
-        let reader = spawn_ws_loops(app, map.clone(), id.clone(), ws, rx);
+        let reader = spawn_ws_loops(app, map.clone(), id.clone(), ws, rx, "tor:ws");
         map.insert(id, WsHandle { tx, reader });
     } else {
         let (ws, _resp) = tokio_tungstenite::client_async(request, raw)
             .await
             .map_err(|e| WsError::Handshake(e.to_string()))?;
-        let reader = spawn_ws_loops(app, map.clone(), id.clone(), ws, rx);
+        let reader = spawn_ws_loops(app, map.clone(), id.clone(), ws, rx, "tor:ws");
         map.insert(id, WsHandle { tx, reader });
     }
 
@@ -132,22 +132,25 @@ pub async fn connect(
 }
 
 /// Возвращает JoinHandle reader-таска. Writer завершается сам, когда `tx`
-/// исчезает из карты (rx → None), и закрывает sink.
-fn spawn_ws_loops<S>(
+/// исчезает из карты (rx → None), и закрывает sink. События —
+/// `<events>:<id>:message|close|error` (`tor:ws` или `node:ws` у прямых
+/// сокетов к нодам).
+pub(crate) fn spawn_ws_loops<S>(
     app: AppHandle,
     map: SharedWsMap,
     id: String,
     ws: tokio_tungstenite::WebSocketStream<S>,
     mut rx: mpsc::Receiver<WsOutgoing>,
+    events: &str,
 ) -> tokio::task::JoinHandle<()>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
 {
     let (mut sink, mut stream) = ws.split();
 
-    let event_msg = format!("tor:ws:{}:message", id);
-    let event_close = format!("tor:ws:{}:close", id);
-    let event_err = format!("tor:ws:{}:error", id);
+    let event_msg = format!("{events}:{id}:message");
+    let event_close = format!("{events}:{id}:close");
+    let event_err = format!("{events}:{id}:error");
 
     let app_reader = app.clone();
     let event_msg_r = event_msg.clone();

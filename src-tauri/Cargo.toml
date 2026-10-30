@@ -62,6 +62,9 @@ tokio-tungstenite = { version = "0.24", features = ["rustls-tls-native-roots"] }
 tokio-rustls = { version = "0.26", features = ["ring"] }
 rustls-native-certs = "0.8"
 rustls-pki-types = "1"
+# Подпись рукопожатия нод проверяется ключом из их сертификата: он версии 1,
+# webpki такие не разбирает (node_link). Та же версия, что у rustls.
+ring = "0.17"
 http = "1"
 futures-util = "0.3"
 flate2 = "1"

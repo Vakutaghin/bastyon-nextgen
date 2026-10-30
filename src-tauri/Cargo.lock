@@ -165,6 +165,7 @@ dependencies = [
  "percent-encoding",
  "reqwest 0.12.28",
  "reqwest 0.13.2",
+ "ring",
  "rustls-native-certs",
  "rustls-pki-types",
  "serde",

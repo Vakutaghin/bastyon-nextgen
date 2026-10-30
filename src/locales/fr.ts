@@ -558,6 +558,25 @@ export default {
       deleteAllSureOk: 'Supprimer définitivement',
       deletedAll: 'Conversations enregistrées supprimées',
     },
+    network: {
+      title: 'Connexion au réseau',
+      hint: 'Comment l’application accède à la blockchain.',
+      infoLabel: 'En savoir plus sur la connexion',
+      info: 'Auto : via les proxys Bastyon et, si aucun ne répond (par exemple parce qu’ils sont bloqués), directement aux nœuds de la blockchain. Dès qu’un proxy répond à nouveau, l’application revient dessus. Proxy : uniquement via les proxys. Nœuds en direct : toujours vers les nœuds. La connexion à un nœud est chiffrée et son certificat est mémorisé au premier contact. Le nœud voit votre adresse IP. L’inscription, la traduction des publications et les aperçus de liens ne fonctionnent que via un proxy.',
+      mode: {
+        auto: 'Auto',
+        proxy: 'Proxy',
+        direct: 'Nœuds en direct',
+      },
+      statusProxy: 'Actuellement : via un proxy',
+      statusDirect: 'Actuellement : directement aux nœuds, connectés : {n}',
+      statusAutoDirect:
+        'Les proxys ne répondent pas, actuellement directement aux nœuds, connectés : {n}. Les proxys sont revérifiés toutes les trois minutes.',
+      statusSearching: 'Recherche de nœuds…',
+      statusNoNodes: 'Aucun nœud n’a répondu directement. Vérifiez votre connexion internet.',
+      statusTor: 'Tor est activé : la connexion passe par lui, ce choix ne s’applique pas.',
+      statusChecking: 'Vérification de la connexion…',
+    },
     system: {
       animations: 'Animations',
       animationsHint:

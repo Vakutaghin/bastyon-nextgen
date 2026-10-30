@@ -174,6 +174,28 @@ export async function orderedProxies(proxies: ServerEndpoint[]): Promise<ServerE
   return selectionInFlight
 }
 
+/**
+ * Отвечает ли хоть один прокси: true — с первым ответом, false — когда не
+ * ответил никто (через PROBE_TIMEOUT_MS). Так режим «Авто» решает, идти ли к
+ * нодам напрямую.
+ */
+export function anyProxyAlive(proxies: ServerEndpoint[]): Promise<boolean> {
+  return new Promise((resolve) => {
+    let left = proxies.length
+    if (!left) {
+      resolve(false)
+      return
+    }
+    for (const proxy of proxies) {
+      void probe(proxy).then((ok) => {
+        left -= 1
+        if (ok) resolve(true)
+        else if (left === 0) resolve(false)
+      })
+    }
+  })
+}
+
 /** Нода, с которой сейчас работает приложение (для сведений в поддержку). */
 export function currentProxy(): ServerEndpoint | null {
   return current?.proxy ?? null

@@ -8,13 +8,14 @@ The feed does not load, the server is unavailable, the chat does not connect: wh
 
 ## The feed does not load
 
-If no node answered, instead of the feed you see **“Server temporarily unavailable”** and a **“Refresh”** button. The app looks for a live node among the six public ones and switches to it by itself, so usually it is enough to wait and press **“Refresh”**. See [Network and nodes](network.md).
+If no node answered, instead of the feed you see **“Server temporarily unavailable”** and a **“Refresh”** button. The app looks for a live proxy and switches to it by itself, and if none answers, the desktop and Android apps connect to nodes directly. So usually it is enough to wait and press **“Refresh”**. See [Network and nodes](network.md).
 
 If nothing loads on any screen:
 
 - check your internet — open any website;
 - if [Tor](tor.md) is on, it may be the cause, see below;
-- if you are on a VPN or a corporate network, it may block the nodes: they use port 8899, and live updates use 8099.
+- if your provider blocks the Bastyon proxies (as is now the case in Russia), make sure **“Settings”** → **“System”** → **“Network connection”** is set to **“Auto”** or **“Direct to nodes”**, see [Proxy or direct to nodes](network.md#proxy-or-direct-to-nodes). This does not work in the browser: there you need a VPN;
+- if you are on a VPN or a corporate network, it may block the nodes: the proxies use port 8899 and live updates use 8099; directly, nodes answer on ports 38881 and 8887.
 
 ## Tor does not connect
 
