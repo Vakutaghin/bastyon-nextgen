@@ -151,6 +151,9 @@ const { _ipfs } = vi.hoisted(() => ({
 }))
 vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => _ipfs }))
 
+const { _uploads } = vi.hoisted(() => ({ _uploads: { forgetAccount: vi.fn() } }))
+vi.mock('@/stores/video-uploads-store', () => ({ useVideoUploadsStore: () => _uploads }))
+
 // Настройки в IndexedDB: черновики постов (поля и картинки) стираются при
 // выходе и удалении аккаунта.
 const { _settings } = vi.hoisted(() => ({
@@ -666,6 +669,15 @@ describe('auth-store', () => {
         expect(_ipfs.forgetAccount).toHaveBeenCalledWith(removed)
       }
     })
+
+    it('недогруженные видео удалённого аккаунта отменяются: его ключей больше нет', async () => {
+      const store = await signedInAs('PCur', ['POther'])
+
+      await store.removeAccount('POther')
+      await vi.dynamicImportSettled()
+
+      expect(_uploads.forgetAccount).toHaveBeenCalledWith('POther')
+    })
   })
 
   // ── _syncFromKeysStore / _syncFromProfileStore ─────────────────────────
@@ -768,6 +780,61 @@ describe('auth-store', () => {
       expect(store.keyPair).toBeNull()
       expect(store.error).toBe('Key generation failed')
       expect(store.isLoading).toBe(false)
+    })
+  })
+
+  // ── Смена аккаунта: сброс и accountEpoch ───────────────────────────────
+
+  describe('смена аккаунта', () => {
+    async function mockNewKeys(): Promise<void> {
+      const { generateKeys } = await import('../core/keys')
+      ;(generateKeys as any).mockReturnValue({ mnemonic: 'mnemonic words', keyPair: fakeKeyPair() })
+      vi.doMock('../core/addresses', () => ({
+        generateAddressFromKeyPair: vi.fn().mockReturnValue({
+          addressInfo: { address: 'PTestAddress123' },
+        }),
+      }))
+    }
+
+    it('регистрация второго аккаунта сбрасывает данные первого, мессенджер только останавливает', async () => {
+      await mockNewKeys()
+      const store = useAuthStore()
+      store.$patch({
+        isAuthenticated: true,
+        authState: 'authenticated',
+        address: 'PFirstAccount',
+        keyPair: fakeKeyPair() as any,
+      })
+
+      await store.register({ saveAfterRegistration: true })
+
+      expect(_resetAccountScopedStores).toHaveBeenCalledWith('PTestAddress123')
+      expect(store.accountEpoch).toBe(1)
+      await vi.waitFor(() => expect(_messenger.logout).toHaveBeenCalledWith({ purge: false }))
+      expect(_messenger.initMatrix).not.toHaveBeenCalled()
+    })
+
+    it('первая регистрация гостя — не смена аккаунта', async () => {
+      await mockNewKeys()
+      const store = useAuthStore()
+
+      await store.register()
+
+      expect(_resetAccountScopedStores).not.toHaveBeenCalled()
+      expect(store.accountEpoch).toBe(0)
+    })
+
+    it('accountEpoch растёт, когда сторы уже сброшены под новый адрес', async () => {
+      const store = useAuthStore()
+      let epochAtReset = -1
+      _resetAccountScopedStores.mockImplementationOnce(async () => {
+        epochAtReset = store.accountEpoch
+      })
+
+      await store.resetForAccount('PNext')
+
+      expect(epochAtReset).toBe(0)
+      expect(store.accountEpoch).toBe(1)
     })
   })
 

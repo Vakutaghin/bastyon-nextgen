@@ -87,6 +87,12 @@ export const useAuthStore = defineStore('auth', {
   state: (): UserState & {
     userAvatarUrl: string | null
     accountsList: AccountsList | null
+    /**
+     * Растёт, когда пер-аккаунтное состояние сброшено под новый адрес
+     * (resetForAccount). По нему интерфейс уходит со страниц прежнего
+     * аккаунта (use-account-switch-reset).
+     */
+    accountEpoch: number
   } => ({
     isAuthenticated: false,
     // Если в localStorage уже есть следы сессии — стартуем в 'restoring',
@@ -101,6 +107,7 @@ export const useAuthStore = defineStore('auth', {
     error: null,
     isFetchingUserState: false,
     accountsList: null,
+    accountEpoch: 0,
   }),
 
   getters: {
@@ -287,6 +294,7 @@ export const useAuthStore = defineStore('auth', {
     async register(options: RegistrationOptions = {}): Promise<RegistrationResult> {
       const { saveAfterRegistration = false } = options
       const keys = useKeysStore()
+      const previousAddress = this.isUserAuthenticated ? this.address : null
 
       this.setLoading(true)
       this.setError(null)
@@ -313,10 +321,19 @@ export const useAuthStore = defineStore('auth', {
           this._syncFromKeysStore()
         }
 
-        this.invalidateAllQueries().catch(() => {})
-        // Второй аккаунт регистрируют при открытом сокете прежнего: connect()
-        // ничего бы не сделал, и события нового адреса не приходили бы.
-        wsService.switchAccount(this.address)
+        if (previousAddress && previousAddress !== this.address) {
+          // Второй аккаунт поверх первого — та же смена аккаунта, что и
+          // переключение: подписки, списки, загрузки и страницы прежнего не
+          // должны остаться новому. Мессенджер нового войдёт, когда userInfo
+          // уйдёт в сеть (use-registration-flow), — до тех пор прежний только
+          // останавливаем.
+          await this.resetForAccount(this.address, { startMessenger: false })
+        } else {
+          this.invalidateAllQueries().catch(() => {})
+          // Второй аккаунт регистрируют при открытом сокете прежнего: connect()
+          // ничего бы не сделал, и события нового адреса не приходили бы.
+          wsService.switchAccount(this.address)
+        }
         this.setLoading(false)
 
         return { mnemonic, address, keyPair }
@@ -654,6 +671,10 @@ export const useAuthStore = defineStore('auth', {
         import('@/stores/ipfs-store')
           .then(({ useIpfsStore }) => useIpfsStore().forgetAccount(address))
           .catch((e: unknown) => console.warn('[auth-store] ipfs forgetAccount failed:', e))
+        // Его недогруженные видео: ключей на устройстве больше нет.
+        import('@/stores/video-uploads-store')
+          .then(({ useVideoUploadsStore }) => useVideoUploadsStore().forgetAccount(address))
+          .catch((e: unknown) => console.warn('[auth-store] uploads forgetAccount failed:', e))
 
         if (!keys.accountsList?.accounts?.length) {
           this.accountsList = null
@@ -689,13 +710,16 @@ export const useAuthStore = defineStore('auth', {
 
     // ── Messenger ───────────────────────────────────────────────────────
 
-    async resetMessenger(relogin: boolean = false): Promise<void> {
+    async resetMessenger(
+      relogin: boolean = false,
+      { purge = !relogin }: { purge?: boolean } = {}
+    ): Promise<void> {
       try {
         const { useMessengerStore } = await import('@/b-components/messenger/store')
         const messengerStore = useMessengerStore()
         // Выход (без relogin) — стираем с диска sync-state и расшифрованные DM
         // (V15/Р6); при смене аккаунта кэши per-user остаются.
-        messengerStore.logout({ purge: !relogin })
+        messengerStore.logout({ purge })
         if (relogin) {
           messengerStore.initMatrix().catch((e: unknown) => {
             console.error('[auth-store] Failed to re-init matrix:', e)
@@ -712,9 +736,13 @@ export const useAuthStore = defineStore('auth', {
      * posts-store), переподключает WS на новый адрес (или закрывает), сбрасывает
      * кэш запросов и перелогинивает мессенджер — единственный владелец
      * Matrix-логина, чтобы не было двух параллельных сессий (S11).
-     * `address = null` — выход.
+     * `address = null` — выход. `startMessenger: false` — мессенджер прежнего
+     * аккаунта останавливается, а новый пока не входит (регистрация).
      */
-    async resetForAccount(address: Address | null): Promise<void> {
+    async resetForAccount(
+      address: Address | null,
+      { startMessenger = !!address }: { startMessenger?: boolean } = {}
+    ): Promise<void> {
       try {
         await resetAccountScopedStores(address)
       } catch (e) {
@@ -722,7 +750,8 @@ export const useAuthStore = defineStore('auth', {
       }
       wsService.switchAccount(address)
       this.invalidateAllQueries().catch(() => {})
-      this.resetMessenger(!!address).catch(() => {})
+      this.resetMessenger(startMessenger, { purge: !address }).catch(() => {})
+      this.accountEpoch++
     },
 
     // ── Cache invalidation ──────────────────────────────────────────────

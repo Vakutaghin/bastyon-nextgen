@@ -156,6 +156,14 @@ describe('usePostComposer', () => {
       expect(compose().message.value).toBe('')
     })
 
+    it('аккаунт сменили при открытой форме — черновик остаётся тому, чья форма', () => {
+      const c = compose()
+      mocks.auth.getUserAddress = 'POther'
+      c.onMessageInput('пишу от первого')
+      expect(localStorage.getItem(postDraftKey(ME))).toBe('пишу от первого')
+      expect(localStorage.getItem(postDraftKey('POther'))).toBeNull()
+    })
+
     it('правка и репост черновик не трогают', () => {
       compose().onMessageInput('мой черновик')
       const edit = compose({ mode: 'edit', source: { txid: 'tx1', message: 'старый текст' } })
@@ -251,6 +259,15 @@ describe('usePostComposer', () => {
       await c.publish()
       expect(mocks.openAuthModal).toHaveBeenCalledWith('login')
       expect(mocks.sendPost).not.toHaveBeenCalled()
+    })
+
+    it('аккаунт сменили при открытой форме — от имени нового не публикует', async () => {
+      const c = compose()
+      fillValidPost(c)
+      mocks.auth.getUserAddress = 'PSomeoneElse'
+      await c.publish()
+      expect(mocks.sendPost).not.toHaveBeenCalled()
+      expect(mocks.addPending).not.toHaveBeenCalled()
     })
 
     it('невалидный пост: тост с причиной, без отправки', async () => {

@@ -182,6 +182,7 @@ describe('UploadDialog', () => {
     const store = await open()
     store.jobs.unshift({
       id: 'j1',
+      owner: 'PMe',
       fileName: 'Кот.mp4',
       size: 1000,
       title: 'Кот',

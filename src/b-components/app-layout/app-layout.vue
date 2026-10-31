@@ -5,7 +5,7 @@
 
     <SC_Appcnt :class="{ 'has-bottom-nav': isMobileOrTablet }">
       <AppHeader />
-      <router-view />
+      <router-view :key="pageKey" />
     </SC_Appcnt>
 
     <BottomNav v-if="isMobileOrTablet" />
@@ -45,11 +45,14 @@ import { openExternal } from '@/helpers/common/open-external'
 import { isTauriEnv } from '@/helpers/api/request-tor'
 import { useViewport } from '@/composables/use-viewport'
 import { watchSoftKeyboard } from '@/composables/use-soft-keyboard'
+import { useAccountSwitchReset } from '@/composables/use-account-switch-reset'
 import { SC_Application, SC_Camera, SC_Appcnt } from './styled'
 
 const uiStore = useUIStore()
 const router = useRouter()
 const { isMobileOrTablet } = useViewport()
+// Сменили аккаунт — на ленту, страница собирается заново.
+const pageKey = useAccountSwitchReset()
 
 // Ссылки внутри v-html (посты, комментарии, сообщения) разбирает
 // `classifyContentLink`: меншен и `bastyon://` уходят в router (N15), внешняя

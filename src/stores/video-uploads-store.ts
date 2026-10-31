@@ -9,12 +9,16 @@
  * места обрыва (транспорт помнит upload_id). У ролика есть обложка: у видео —
  * первый кадр, у звука — та, что сделает сервер, или то, что выбрал человек;
  * сервер получает её, когда ролик загружен.
+ *
+ * Загрузка принадлежит аккаунту, который её начал: идёт его ключами до конца,
+ * даже если аккаунт переключили, но видна и доступна только ему (attach).
  */
 
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useAuthStore } from '@/blockchain/store/auth-store'
+import type { KeyPair } from '@/blockchain/types/keys'
 import {
   describeVideoUploadError,
   titleFromFileName,
@@ -55,6 +59,8 @@ export interface VideoUploadResult {
 
 export interface VideoUploadJob {
   id: string
+  /** Адрес аккаунта, начавшего загрузку. */
+  owner: string
   fileName: string
   size: number
   /** Название ролика: им же станет заголовок поста. */
@@ -75,7 +81,14 @@ export interface VideoUploadJob {
   cover?: VideoCoverState
 }
 
+interface UploadAuthor {
+  keyPair: KeyPair
+  address: string
+}
+
 interface JobRuntime {
+  /** Ключи аккаунта, начавшего загрузку: ролик уходит в его канал. */
+  author: UploadAuthor
   file: File
   /** Сжатый файл: при повторе загрузки второй раз не сжимаем. */
   uploadFile: File | null
@@ -112,7 +125,10 @@ const isActive = (job: VideoUploadJob): boolean =>
   job.status === 'compressing' || job.status === 'uploading'
 
 export const useVideoUploadsStore = defineStore('video-uploads', () => {
+  /** Загрузки текущего аккаунта. */
   const jobs = ref<VideoUploadJob[]>([])
+  /** Загрузки других аккаунтов этого устройства: идут, но не видны. */
+  let parked: VideoUploadJob[] = []
   /** Окно загрузки открыто; `dialogJobId` — какая задача в нём (null — выбор файла). */
   const dialogOpen = ref(false)
   const dialogJobId = ref<string | null>(null)
@@ -127,9 +143,10 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
   const activeJobs = computed(() => jobs.value.filter(isActive))
   const dialogJob = computed(() => jobs.value.find((j) => j.id === dialogJobId.value) ?? null)
 
-  const find = (id: string): VideoUploadJob | undefined => jobs.value.find((j) => j.id === id)
+  const find = (id: string): VideoUploadJob | undefined =>
+    jobs.value.find((j) => j.id === id) ?? parked.find((j) => j.id === id)
 
-  function auth() {
+  function auth(): UploadAuthor | null {
     const authStore = useAuthStore()
     const keyPair = authStore.getKeyPair
     const address = authStore.getUserAddress
@@ -151,15 +168,17 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
 
   /** Начать загрузку файла; null — не вошли (открывается вход). */
   function start(file: File, options: { compress?: boolean } = {}): string | null {
-    if (!auth()) {
+    const author = auth()
+    if (!author) {
       useModalStore().openAuthModal('login')
       return null
     }
     const id = `upload_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
     const title = titleFromFileName(file.name)
-    const cover = createCover(file.type.startsWith('audio/'))
+    const cover = createCover(author, file.type.startsWith('audio/'))
     jobs.value.unshift({
       id,
+      owner: author.address,
       fileName: file.name,
       size: file.size,
       title,
@@ -173,7 +192,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       startedAt: Date.now(),
       cover: cover?.state,
     })
-    runtime.set(id, { file, uploadFile: null, controller: null, serverName: title, cover })
+    runtime.set(id, { author, file, uploadFile: null, controller: null, serverName: title, cover })
     cover?.begin(file)
     panelHidden.value = false
     void run(id)
@@ -209,8 +228,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       }
       if (rt.controller !== controller) return
 
-      const author = auth()
-      if (!author) throw new Error('peertube_token_signed_out')
+      const { author } = rt
       job.status = 'uploading'
       job.progress = 0
       const name = job.title.trim() || titleFromFileName(rt.file.name)
@@ -267,6 +285,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
 
   function remove(id: string): void {
     jobs.value = jobs.value.filter((j) => j.id !== id)
+    parked = parked.filter((j) => j.id !== id)
     forget(id)
     if (dialogJobId.value === id) dialogJobId.value = null
   }
@@ -283,6 +302,29 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     panelHidden.value = jobs.value.length > 0
   }
 
+  /**
+   * Сменился аккаунт: видны только его загрузки, загрузки прежнего идут
+   * дальше незаметно и вернутся, когда на него переключатся. Окно загрузки
+   * прежнего закрывается — в нём были бы его ролик и его кнопка «В пост».
+   */
+  function attach(address: string | null): void {
+    const all = [...jobs.value, ...parked]
+    jobs.value = all.filter((j) => j.owner === address)
+    parked = all.filter((j) => j.owner !== address)
+    if (dialogJobId.value && !jobs.value.some((j) => j.id === dialogJobId.value)) {
+      dialogJobId.value = null
+      dialogOpen.value = false
+    }
+    panelHidden.value = false
+  }
+
+  /** Аккаунт ушёл с устройства: его загрузки отменяются, ключей больше нет. */
+  function forgetAccount(address: string | null): void {
+    for (const job of [...jobs.value, ...parked]) {
+      if (address === null || job.owner === address) cancel(job.id)
+    }
+  }
+
   function setTitle(id: string, title: string): void {
     const job = find(id)
     if (job) job.title = title
@@ -295,8 +337,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     const title = job?.title.trim()
     if (!job || !rt || job.status !== 'done' || !job.result || !title || title === rt.serverName)
       return
-    const author = auth()
-    if (!author) return
+    const { author } = rt
     const { host, uuid } = job.result
     try {
       const signature = buildPeertubeSignature(author.keyPair, author.address)
@@ -308,13 +349,11 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     }
   }
 
-  function createCover(audio: boolean): VideoCover {
+  function createCover(author: UploadAuthor, audio: boolean): VideoCover {
     return createVideoCover(
       {
         firstFrame: (file) => deps.firstFrame(file),
         save: async ({ host, uuid }, image) => {
-          const author = auth()
-          if (!author) throw new Error('peertube_token_signed_out')
           await deps.saveCover({ host, uuid, image, ...author })
         },
         serverCover: ({ host, uuid }) => deps.serverCover({ host, id: uuid }),
@@ -362,6 +401,8 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     retry,
     dismiss,
     hidePanel,
+    attach,
+    forgetAccount,
     setTitle,
     commitTitle,
     fileOf,

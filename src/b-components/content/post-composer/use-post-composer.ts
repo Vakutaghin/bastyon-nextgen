@@ -316,7 +316,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const onMessageInput = (value: string): void => {
     message.value = value
     // Черновик персистим только в режиме создания (edit/repost не засоряют его).
-    if (mode === 'create') writeDraft(authStore.getUserAddress, value)
+    if (mode === 'create') writeDraft(draftAddress, value)
   }
 
   const onCaptionInput = (value: string): void => {
@@ -459,7 +459,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   /** Стереть черновик в хранилищах (форма очищается отдельно). */
   const clearStoredDraft = (): void => {
     if (mode !== 'create') return
-    writeDraft(authStore.getUserAddress, '')
+    writeDraft(draftAddress, '')
     for (const timer of [fieldsTimer, imagesTimer]) if (timer) clearTimeout(timer)
     fieldsTimer = null
     imagesTimer = null
@@ -493,6 +493,9 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       modalStore.openAuthModal('login')
       return
     }
+    // Аккаунт сменили, пока форма была открыта: пост ушёл бы от имени нового
+    // (use-account-switch-reset форму закрывает, это — последний рубеж).
+    if (authStore.getUserAddress !== ownAddress) return
 
     if (videoUploading.value || articleUploading.value) return
 

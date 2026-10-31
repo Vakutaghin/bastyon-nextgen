@@ -323,4 +323,57 @@ describe('video-uploads-store', () => {
     await store.commitCover(id)
     expect(saveCover).not.toHaveBeenCalled()
   })
+
+  it('сменили аккаунт посреди сжатия: ролик уходит в канал начавшего, новому не виден', async () => {
+    const store = useVideoUploadsStore()
+    let compressed: (o: CompressOutcome) => void = () => {}
+    const compress = vi.fn(() => new Promise<CompressOutcome>((resolve) => (compressed = resolve)))
+    const up = controllableUpload()
+    const rename = vi.fn(async () => {})
+    store.setDepsForTests({ upload: up.upload as never, compress, rename })
+    const id = store.start(file('Отпуск.mov'), { compress: true })!
+    store.openDialog(id)
+
+    mocks.auth.getKeyPair = { privateKey: 'other' }
+    mocks.auth.getUserAddress = 'POther'
+    store.attach('POther')
+    expect(store.jobs).toHaveLength(0)
+    expect(store.dialogOpen).toBe(false)
+
+    compressed({ file: file('Отпуск.mp4', 10), skipped: null })
+    await vi.waitFor(() => expect(up.upload).toHaveBeenCalled())
+    expect(up.upload.mock.calls[0]![0]).toMatchObject({
+      address: 'PMe',
+      keyPair: { privateKey: 'k' },
+    })
+    // Название, дописанное во время загрузки, сервер получает от того же аккаунта.
+    store.setTitle(id, 'Отпуск на море')
+    up.finish()
+    await vi.waitFor(() => expect(rename).toHaveBeenCalled())
+    expect(mocks.ensureToken).toHaveBeenCalledWith(expect.objectContaining({ address: 'PMe' }))
+    expect(store.jobs).toHaveLength(0)
+
+    // Вернулись на начавший аккаунт — его загрузка снова видна.
+    store.attach('PMe')
+    expect(store.jobs.map((j) => [j.id, j.status])).toEqual([[id, 'done']])
+  })
+
+  it('аккаунт ушёл с устройства — его загрузки отменяются, чужие идут', () => {
+    const store = useVideoUploadsStore()
+    const up = controllableUpload()
+    store.setDepsForTests({ upload: up.upload as never, rename: vi.fn() })
+    const mine = store.start(file('Моё.mp4'))!
+    mocks.auth.getUserAddress = 'POther'
+    store.attach('POther')
+    const other = store.start(file('Чужое.mp4'))!
+
+    store.forgetAccount('PMe')
+    store.attach('PMe')
+    expect(store.jobs.find((j) => j.id === mine)).toBeUndefined()
+    store.attach('POther')
+    expect(store.jobs.map((j) => j.id)).toEqual([other])
+
+    store.forgetAccount(null)
+    expect(store.jobs).toHaveLength(0)
+  })
 })

@@ -23,6 +23,7 @@ export async function resetAccountScopedStores(address?: string | null): Promise
     { usePaidSubscriptionsStore },
     { useCollectionsStore },
     { useMediaLibraryStore },
+    { useVideoUploadsStore },
   ] = await Promise.all([
     import('@/stores/pending-ratings-store'),
     import('@/stores/notifications-store'),
@@ -35,6 +36,7 @@ export async function resetAccountScopedStores(address?: string | null): Promise
     import('@/stores/paid-subscriptions-store'),
     import('@/stores/collections-store'),
     import('@/stores/media-library-store'),
+    import('@/stores/video-uploads-store'),
   ])
   usePendingRatingsStore().reset()
   // Уведомления нового аккаунта наблюдатель адреса в main.ts начинает грузить
@@ -62,6 +64,10 @@ export async function resetAccountScopedStores(address?: string | null): Promise
   useCollectionsStore().attach(address ?? null)
   useMediaLibraryStore().reset()
   if (address) useMediaLibraryStore().attach(address)
+  // Загрузки видео прежнего аккаунта идут его ключами, но новому не видны.
+  // Выход стирает все аккаунты устройства — и их загрузки.
+  if (address) useVideoUploadsStore().attach(address)
+  else useVideoUploadsStore().forgetAccount(null)
   // Блок-лист и подписки нового аккаунта — сразу: карточки ленты, стоящие на
   // экране, их не перезапросят, и до смены страницы лента показывала посты
   // заблокированных, а кнопки — чужие подписки.
