@@ -42,7 +42,60 @@ fn threads() -> i32 {
     let n = std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(4);
+    #[cfg(target_os = "android")]
+    if let Some(big) = fast_cores(n) {
+        return big;
+    }
     n.saturating_sub(1).clamp(1, 8) as i32
+}
+
+/// Быстрые ядра телефона — с наибольшей частотой. ggml на каждом шаге ждёт
+/// самое медленное ядро, и маленькие ядра тормозили весь расчёт; так же
+/// считает пример whisper.cpp для Android. None — частоты не прочитать.
+#[cfg(target_os = "android")]
+fn fast_cores(n: usize) -> Option<i32> {
+    let freqs: Vec<u64> = (0..n)
+        .filter_map(|i| {
+            std::fs::read_to_string(format!(
+                "/sys/devices/system/cpu/cpu{i}/cpufreq/cpuinfo_max_freq"
+            ))
+            .ok()?
+            .trim()
+            .parse()
+            .ok()
+        })
+        .collect();
+    let min = *freqs.iter().min()?;
+    let fast = freqs.iter().filter(|&&f| f > min).count();
+    // Все ядра одинаковые — берём все, кроме одного.
+    let count = if fast == 0 { n.saturating_sub(1) } else { fast };
+    Some(count.clamp(2, 8) as i32)
+}
+
+/// Окна кодировщика whisper — по 20 мс звука, всего 1500 на 30 с.
+const ENCODER_FRAMES_PER_SECOND: f32 = 50.0;
+const ENCODER_FRAMES_MAX: i32 = 1500;
+/// Запас окон за концом звука: без него модель обрывает последнее слово.
+const ENCODER_FRAMES_MARGIN: i32 = 64;
+
+/// Сколько окон кодировщика считать для `samples` (16 кГц): whisper всегда
+/// считает все 30 с, даже если сказано полсекунды. На процессоре черновик
+/// первой секунды речи стоил столько же, сколько вся фраза (0,9 с против
+/// 0,08 с на маке, на телефоне — секунды), и слова появлялись только после
+/// конца речи. 0 — все 30 с.
+fn audio_ctx(samples: usize) -> i32 {
+    let frames = (samples as f32 / 16_000.0 * ENCODER_FRAMES_PER_SECOND).ceil() as i32;
+    let ctx = frames + ENCODER_FRAMES_MARGIN;
+    if ctx >= ENCODER_FRAMES_MAX {
+        0
+    } else {
+        ctx
+    }
+}
+
+/// Токенов на черновик: речь — до шести-восьми в секунду, с запасом.
+fn draft_max_tokens(samples: usize) -> i32 {
+    (samples as f32 / 16_000.0 * 10.0).ceil() as i32 + 10
 }
 
 /// Логи whisper.cpp — в log, а не в stderr приложения.
@@ -115,6 +168,20 @@ impl Engine {
             SamplingStrategy::Greedy { best_of: 1 }
         };
         let mut params = FullParams::new(strategy);
+        // Укороченное окно — у черновика всегда, у фразы — на процессоре. На
+        // видеокарте фраза считается по всем 30 с, как модель училась: это
+        // доли секунды, а точность важнее.
+        if pass == Pass::Draft || !use_gpu() {
+            params.set_audio_ctx(audio_ctx(samples.len()));
+        }
+        if pass == Pass::Draft {
+            // Черновик — один проход. Сомнительный результат whisper пересчитывает
+            // с нарастающей «температурой», до шести раз: на первой секунде новой
+            // фразы это 3 с вместо 0,2 — и слова вставали, пока черновик ждали.
+            params.set_temperature_inc(0.0);
+            // Зациклилась модель — не дописывать повтор до предела контекста.
+            params.set_max_tokens(draft_max_tokens(samples.len()));
+        }
         params.set_language(Some(language));
         params.set_n_threads(threads());
         params.set_translate(false);
@@ -146,7 +213,11 @@ impl Engine {
             let piece = segment.to_str_lossy().map_err(|e| format!("engine_error: {e}"))?;
             text.push_str(&piece);
         }
-        Ok(clean_transcript(&text))
+        let text = clean_transcript(&text);
+        Ok(match pass {
+            Pass::Draft => cut_loop(&text),
+            Pass::Phrase => text,
+        })
     }
 }
 
@@ -277,6 +348,31 @@ fn strip_sound_tags(text: &str) -> String {
     out.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// Черновик, в котором модель пошла по кругу: «в следующем году, в следующем
+/// году, в следующем…» — оставляем первый круг. Слова сравниваются без
+/// регистра и знаков; повтор двух и больше слов подряд — уже круг, одного —
+/// с третьего раза («очень-очень» бывает и в речи).
+fn cut_loop(text: &str) -> String {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    let norm: Vec<String> = words
+        .iter()
+        .map(|w| w.trim_matches(|c: char| !c.is_alphanumeric()).to_lowercase())
+        .collect();
+    for i in 0..words.len() {
+        for k in 1..=6 {
+            let times = if k == 1 { 3 } else { 2 };
+            if i + k * times > words.len() || norm[i..i + k].iter().any(|w| w.is_empty()) {
+                continue;
+            }
+            if (1..times).all(|r| norm[i..i + k] == norm[i + r * k..i + (r + 1) * k]) {
+                let kept = words[..i + k].join(" ");
+                return kept.trim_end_matches([',', ';', ' ']).to_string();
+            }
+        }
+    }
+    text.to_string()
+}
+
 /// «Слышен. Слышен. Слышен. Слышен.» — зацикливание модели на шуме.
 fn is_repetition(text: &str) -> bool {
     let words: Vec<String> = text
@@ -324,6 +420,30 @@ mod tests {
             assert_eq!(clean_transcript(h), "", "{h}");
         }
         assert_eq!(clean_transcript("Ну и шутка (смех) правда?"), "Ну и шутка правда?");
+    }
+
+    #[test]
+    fn encoder_window_follows_the_audio() {
+        // Секунда — 50 окон и запас; длинная фраза — снова все 30 с.
+        assert_eq!(audio_ctx(16_000), 50 + ENCODER_FRAMES_MARGIN);
+        assert_eq!(audio_ctx(8_000), 25 + ENCODER_FRAMES_MARGIN);
+        assert_eq!(audio_ctx(16_000 * 29), 0);
+        assert!(audio_ctx(16_000 * 15) < ENCODER_FRAMES_MAX);
+    }
+
+    #[test]
+    fn draft_loops_are_cut_to_the_first_round() {
+        assert_eq!(cut_loop("в следующем году в следующем году"), "в следующем году");
+        assert_eq!(
+            cut_loop("В следующем году, в следующем году, в следующем"),
+            "В следующем году"
+        );
+        assert_eq!(cut_loop("Да, да, да, конечно"), "Да");
+        // Обычная речь и двойное слово остаются как есть.
+        let speech = "Привет, сегодня я хочу рассказать, как мы съездили на море.";
+        assert_eq!(cut_loop(speech), speech);
+        assert_eq!(cut_loop("очень очень холодно"), "очень очень холодно");
+        assert!(draft_max_tokens(16_000) >= 20);
     }
 
     #[test]

@@ -14,8 +14,8 @@ import {
  * (src-tauri/src/asr) и на Android (плагин VoiceInput, voice-backend). Стор
  * держит модели, скачивание, одну активную диктовку и раздаёт распознанный
  * текст полю, которое её начало: черновик фразы по ходу речи, потом её текст.
- * Если IDLE_STOP_MS не слышно ни речи, ни распознанного текста, диктовка
- * выключается сама, как на телефоне.
+ * Если IDLE_STOP_MS не распознано ни одного нового слова, диктовка
+ * выключается сама, как голосовой ввод на телефонах Xiaomi.
  */
 
 export type VoiceModelId = 'base' | 'small' | 'turbo'
@@ -65,11 +65,25 @@ const MODEL_IDS: VoiceModelId[] = ['base', 'small', 'turbo']
 /** Поля с диктовкой; не реактивно — стор хранит только id владельца. */
 const targets = new Map<string, DictationTarget>()
 
-/** Столько без речи и распознанного текста — и диктовка выключается сама. */
+/**
+ * Столько без нового распознанного слова — и диктовка выключается сама.
+ * Шум, музыка и разговор за стеной детектор речи принимает за речь, но слов
+ * из них не выходит — отсчёт они не держат.
+ */
 export const IDLE_STOP_MS = 10_000
 let idleWatch: ReturnType<typeof setInterval> | null = null
-/** Когда последний раз слышали речь или получили текст. */
-let lastActivity = 0
+/** Когда последний раз пришло новое слово. */
+let lastWords = 0
+/** Последний черновик фразы: его повтор — не новые слова. */
+let lastDraft = { seq: -1, text: '' }
+
+const HAS_WORD = /[\p{L}\p{N}]/u
+
+/** В тексте фразы `seq` есть слова, которых не было в её прошлом черновике. */
+function newWords(seq: number, text: string): boolean {
+  if (!HAS_WORD.test(text)) return false
+  return lastDraft.seq !== seq || lastDraft.text !== text
+}
 
 function stopIdleWatch(): void {
   if (idleWatch) clearInterval(idleWatch)
@@ -236,7 +250,6 @@ export const useVoiceInputStore = defineStore('voice-input', {
         if (!this.owns(p.session) || this.phase === 'finishing') return
         this.level = p.level
         this.speaking = p.speaking
-        if (p.speaking) lastActivity = Date.now()
       })
       await on<{ session: number; loading: boolean; pending: number }>('asr:state', (p) => {
         if (!this.owns(p.session)) return
@@ -245,12 +258,13 @@ export const useVoiceInputStore = defineStore('voice-input', {
       })
       await on<{ session: number; seq: number; text: string }>('asr:partial', (p) => {
         if (!this.owns(p.session) || !this.ownerId) return
-        lastActivity = Date.now()
+        if (newWords(p.seq, p.text)) lastWords = Date.now()
+        lastDraft = { seq: p.seq, text: p.text }
         targets.get(this.ownerId)?.draft(p.text, p.seq)
       })
       await on<{ session: number; seq: number; text: string }>('asr:text', (p) => {
         if (!this.owns(p.session) || !this.ownerId) return
-        if (p.text) lastActivity = Date.now()
+        if (newWords(p.seq, p.text)) lastWords = Date.now()
         targets.get(this.ownerId)?.insert(p.text, p.seq)
       })
       await on<{ session: number; reason: string; error: string | null }>('asr:end', (p) => {
@@ -365,19 +379,21 @@ export const useVoiceInputStore = defineStore('voice-input', {
     },
 
     /**
-     * Следить за тишиной: пока модель грузится, фразы ждут распознавания или
-     * детектор слышит речь, отсчёт не идёт.
+     * Следить, идут ли слова: IDLE_STOP_MS без нового слова — «стоп». Пока
+     * модель грузится или сказанное ещё распознаётся, отсчёт стоит: слова
+     * уже сказаны и вот-вот появятся.
      */
     watchIdle(): void {
       stopIdleWatch()
-      lastActivity = Date.now()
+      lastWords = Date.now()
+      lastDraft = { seq: -1, text: '' }
       idleWatch = setInterval(() => {
         if (this.phase !== 'listening') return
-        if (this.loading || this.pending > 0 || this.speaking) {
-          lastActivity = Date.now()
+        if (this.loading || this.pending > 0) {
+          lastWords = Date.now()
           return
         }
-        if (Date.now() - lastActivity >= IDLE_STOP_MS) void this.stop()
+        if (Date.now() - lastWords >= IDLE_STOP_MS) void this.stop()
       }, 1000)
     },
 

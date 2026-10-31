@@ -26,14 +26,20 @@ const MIN_SPEECH_MS: usize = 250;
 /// детектор ловит с опозданием.
 const PAD_BEFORE_MS: usize = 300;
 const PAD_AFTER_MS: usize = 250;
+/// Фраза длиннее этого заканчивается и на короткой паузе — вдохе, запятой:
+/// черновик пересчитывает фразу с начала, и на длинной он дорожает с каждой
+/// секундой, а на телефоне начинает отставать от речи.
+const SOFT_UTTERANCE_MS: usize = 5_000;
+const SOFT_PAUSE_MS: usize = 300;
 /// Длиннее whisper распознаёт хуже, а текст ждать дольше: режем в самой тихой
 /// точке последних секунд.
-const MAX_UTTERANCE_MS: usize = 20_000;
+const MAX_UTTERANCE_MS: usize = 15_000;
 const CUT_SEARCH_MS: usize = 4_000;
 /// Черновик начатой фразы — когда в ней набралось столько речи…
 const DRAFT_MIN_SPEECH_MS: usize = 500;
-/// …и снова, когда к ней прибавилось столько звука.
-const DRAFT_STEP_MS: usize = 600;
+/// …и снова, когда к ней прибавилось столько звука. На медленном устройстве
+/// черновики реже сами: следующий считается, когда готов прежний.
+const DRAFT_STEP_MS: usize = 400;
 /// Как часто пересчитывать детектор.
 const ANALYZE_EVERY_MS: usize = 256;
 /// Звук перед новыми кадрами, на котором детектор «вслушивается» (у Silero
@@ -172,7 +178,12 @@ impl<D: SpeechDetector> Segmenter<D> {
         self.speaking = n - 1 - last < frames(END_SILENCE_MS);
         let speech_frames = (first..=last).filter(|&i| is_speech(i)).count();
         let enough_speech = speech_frames >= frames(MIN_SPEECH_MS);
-        let paused = at_end || n - 1 - last >= frames(END_SILENCE_MS);
+        let pause = if n - first >= frames(SOFT_UTTERANCE_MS) {
+            frames(SOFT_PAUSE_MS)
+        } else {
+            frames(END_SILENCE_MS)
+        };
+        let paused = at_end || n - 1 - last >= pause;
 
         let start = first.saturating_sub(frames(PAD_BEFORE_MS)) * FRAME;
         if paused {
@@ -191,6 +202,16 @@ impl<D: SpeechDetector> Segmenter<D> {
             self.phrase_done();
             return Ok(Some(utterance));
         }
+        if let Some((gap_start, gap_end)) = soft_gap(&probs, first, n) {
+            // Длинная фраза и пауза в ней: конец фразы — в паузе, речь после
+            // неё — уже следующая. Детектор пересчитывается раз в 256 мс, и
+            // короткую паузу в хвосте он мог и не застать.
+            let end_frame = (gap_start + frames(PAD_AFTER_MS)).min(gap_end);
+            let utterance = self.buf[start..(end_frame * FRAME).min(self.buf.len())].to_vec();
+            self.drop_frames(end_frame);
+            self.phrase_done();
+            return Ok(Some(utterance));
+        }
         if (n - first) >= frames(MAX_UTTERANCE_MS) {
             // Говорят без пауз: режем в самом тихом кадре последних секунд.
             let from = n.saturating_sub(frames(CUT_SEARCH_MS)).max(first + 1);
@@ -205,6 +226,22 @@ impl<D: SpeechDetector> Segmenter<D> {
         }
         Ok(None)
     }
+}
+
+/// Первая пауза не короче SOFT_PAUSE_MS, начавшаяся после SOFT_UTTERANCE_MS
+/// речи от кадра `first`, — и после неё снова речь: начало и конец паузы.
+fn soft_gap(probs: &[f32], first: usize, n: usize) -> Option<(usize, usize)> {
+    let mut run_start = None;
+    for (i, &p) in probs.iter().enumerate().take(n).skip(first + frames(SOFT_UTTERANCE_MS)) {
+        if p < SPEECH_PROB {
+            run_start.get_or_insert(i);
+        } else if let Some(start) = run_start.take() {
+            if i - start >= frames(SOFT_PAUSE_MS) {
+                return Some((start, i));
+            }
+        }
+    }
+    None
 }
 
 #[cfg(test)]
@@ -336,11 +373,30 @@ mod tests {
     #[test]
     fn long_speech_without_pauses_is_split() {
         let mut seg = Segmenter::new(Energy);
-        let phrases = feed(&mut seg, &ms(45_000, true));
-        assert_eq!(phrases.len(), 2);
+        // Ровный звук: самое тихое место — начало окна поиска, режется на 11-й секунде.
+        let phrases = feed(&mut seg, &ms(40_000, true));
+        assert_eq!(phrases.len(), 3);
         for p in &phrases {
-            assert!(p.len() as f32 / 16_000.0 <= 20.5);
+            assert!(p.len() as f32 / 16_000.0 <= 15.5);
         }
+        assert!(seg.finish().unwrap().is_some());
+    }
+
+    #[test]
+    fn long_phrase_ends_on_a_short_pause() {
+        let mut seg = Segmenter::new(Energy);
+        // В начале фразы вдох её не заканчивает…
+        let mut audio = ms(2000, true);
+        audio.extend(ms(400, false));
+        audio.extend(ms(4000, true));
+        assert!(feed(&mut seg, &audio).is_empty());
+        // …а после пяти секунд речи — заканчивает.
+        audio = ms(400, false);
+        audio.extend(ms(1500, true));
+        let phrases = feed(&mut seg, &audio);
+        assert_eq!(phrases.len(), 1);
+        let secs = phrases[0].len() as f32 / 16_000.0;
+        assert!(secs > 6.0 && secs < 7.2, "{secs}");
         assert!(seg.finish().unwrap().is_some());
     }
 }

@@ -4,7 +4,7 @@ import { useMockNode, type MockNodeData } from './support/mock-node'
 /**
  * Голосовой ввод в окне поста: слова появляются в поле по ходу речи
  * (черновик), распознанная целиком фраза встаёт на их место, Ctrl+Z убирает
- * последнюю фразу одним шагом, а после 10 секунд тишины диктовка выключается
+ * последнюю фразу одним шагом, а после 10 секунд без новых слов диктовка выключается
  * сама.
  * Приложение думает, что оно в Tauri: `__TAURI_INTERNALS__` подменён после
  * входа (как в my-files-permanent-link.spec.ts), команды asr_* отвечает тест,
@@ -133,7 +133,7 @@ test('слова по ходу речи, фраза на их месте, Ctrl+Z
   await emit(page, 'asr:text', { seq: 1, text: '' })
   await expect(text).toHaveValue('Итак')
 
-  // 10 секунд без речи и текста — диктовка выключается сама.
+  // 10 секунд без новых слов — диктовка выключается сама.
   expect(await calls(page)).not.toContain('asr_stop')
   await expect.poll(() => calls(page), { timeout: 15_000 }).toContain('asr_stop')
   await emit(page, 'asr:end', { reason: 'stopped', error: null })

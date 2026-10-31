@@ -262,12 +262,9 @@ describe('voice input store', () => {
       expect(store.phase).toBe('finishing')
     })
 
-    it('речь и распознанный текст откладывают выключение', async () => {
+    it('отсчёт сбрасывают только новые распознанные слова', async () => {
       vi.useFakeTimers()
       await listening()
-      await vi.advanceTimersByTimeAsync(8000)
-      emit('asr:level', { session: 9, level: 0.5, speaking: true })
-      emit('asr:level', { session: 9, level: 0.1, speaking: false })
       await vi.advanceTimersByTimeAsync(8000)
       emit('asr:partial', { session: 9, seq: 0, text: 'привет' })
       await vi.advanceTimersByTimeAsync(8000)
@@ -275,6 +272,30 @@ describe('voice input store', () => {
       await vi.advanceTimersByTimeAsync(8000)
       expect(stopped()).toBe(false)
       await vi.advanceTimersByTimeAsync(3000)
+      expect(stopped()).toBe(true)
+    })
+
+    it('шум без слов диктовку не держит: детектор слышит «речь», а слов нет', async () => {
+      vi.useFakeTimers()
+      await listening()
+      for (let s = 0; s < 11; s++) {
+        emit('asr:level', { session: 9, level: 0.5, speaking: true })
+        await vi.advanceTimersByTimeAsync(1000)
+      }
+      expect(stopped()).toBe(true)
+    })
+
+    it('повтор того же черновика и пустой текст фразы — не новые слова', async () => {
+      vi.useFakeTimers()
+      await listening()
+      emit('asr:partial', { session: 9, seq: 0, text: 'привет' })
+      await vi.advanceTimersByTimeAsync(5000)
+      emit('asr:partial', { session: 9, seq: 0, text: 'привет' })
+      // Текст фразы совпал с черновиком: слова уже засчитаны 5 с назад.
+      emit('asr:text', { session: 9, seq: 0, text: 'привет' })
+      emit('asr:text', { session: 9, seq: 1, text: '' })
+      emit('asr:partial', { session: 9, seq: 2, text: '…' })
+      await vi.advanceTimersByTimeAsync(5500)
       expect(stopped()).toBe(true)
     })
 

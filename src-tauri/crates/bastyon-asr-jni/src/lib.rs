@@ -555,14 +555,17 @@ mod tests {
         assert_eq!(whisper_language("xx"), "auto");
     }
 
-    /// Сессия целиком, как её ведёт телефон: куски по 100 мс, черновики,
-    /// «стоп», текст и конец. Нужны модели в `BASTYON_ASR_DIR` (ggml-base-q5_1.bin и
-    /// ggml-silero-v6.2.0.bin) и запись `BASTYON_ASR_WAV` (16 кГц, моно, 16 бит).
+    /// Сессия целиком, как её ведёт телефон: куски по 100 мс в темпе речи,
+    /// черновики, «стоп», текст и конец. Нужны модели в `BASTYON_ASR_DIR`
+    /// (ggml-silero-v6.2.0.bin и модель `BASTYON_ASR_MODEL_FILE`, по умолчанию
+    /// ggml-base-q5_1.bin) и запись `BASTYON_ASR_WAV` (16 кГц, моно, 16 бит).
     #[test]
     #[ignore]
     fn live_session_transcribes_a_recording() {
         let dir =
             std::path::PathBuf::from(std::env::var("BASTYON_ASR_DIR").expect("BASTYON_ASR_DIR"));
+        let model = std::env::var("BASTYON_ASR_MODEL_FILE")
+            .unwrap_or_else(|_| "ggml-base-q5_1.bin".into());
         let wav =
             std::fs::read(std::env::var("BASTYON_ASR_WAV").expect("BASTYON_ASR_WAV")).unwrap();
         let data = wav
@@ -574,11 +577,12 @@ mod tests {
             .chunks_exact(2)
             .map(|b| i16::from_le_bytes([b[0], b[1]]) as f32 / 32768.0)
             .collect();
+        let speech_secs = samples.len() as f32 / 16_000.0;
 
         let (tx, rx) = mpsc::channel::<serde_json::Value>();
         let tx = Mutex::new(tx);
         let id = start_session(
-            dir.join("ggml-base-q5_1.bin").to_string_lossy().into(),
+            dir.join(&model).to_string_lossy().into(),
             dir.join("ggml-silero-v6.2.0.bin").to_string_lossy().into(),
             &std::env::var("BASTYON_ASR_LANG").unwrap_or_else(|_| "ru".into()),
             String::new(),
@@ -588,30 +592,46 @@ mod tests {
         )
         .unwrap();
         // В темпе записи, как телефон: иначе черновикам некогда появиться.
-        for chunk in samples.chunks(1600) {
-            send_session(id, Msg::Audio(chunk.to_vec()));
-            std::thread::sleep(Duration::from_millis(100));
-        }
-        send_session(id, Msg::Stop);
+        let t0 = std::time::Instant::now();
+        let feeder = std::thread::spawn(move || {
+            for chunk in samples.chunks(1600) {
+                send_session(id, Msg::Audio(chunk.to_vec()));
+                std::thread::sleep(Duration::from_millis(100));
+            }
+            send_session(id, Msg::Stop);
+        });
 
         let mut texts = Vec::new();
         let mut partials = 0;
+        let mut first_partial = None;
         let end = loop {
             let ev = rx
                 .recv_timeout(Duration::from_secs(120))
                 .expect("session timed out");
             assert_eq!(ev["session"], json!(id));
+            let at = t0.elapsed().as_secs_f32();
             match ev["event"].as_str() {
-                Some("text") => texts.push(ev["text"].as_str().unwrap().to_string()),
-                Some("partial") => partials += 1,
+                Some("text") => {
+                    let text = ev["text"].as_str().unwrap().to_string();
+                    println!("{at:5.1}s  text    #{}: {text}", ev["seq"]);
+                    texts.push(text);
+                }
+                Some("partial") => {
+                    partials += 1;
+                    first_partial.get_or_insert(at);
+                    println!("{at:5.1}s  partial #{}: {}", ev["seq"], ev["text"].as_str().unwrap());
+                }
                 Some("end") => break ev,
                 _ => {}
             }
         };
-        println!("texts: {texts:?}, partials: {partials}");
+        feeder.join().unwrap();
+        println!("speech {speech_secs:.1}s, partials: {partials}");
         assert_eq!(end["reason"], json!("stopped"), "{end}");
         assert!(!texts.join(" ").trim().is_empty());
-        assert!(partials > 0, "черновики по ходу речи");
+        // Слова — по ходу речи, а не после неё.
+        let first = first_partial.expect("черновики по ходу речи");
+        assert!(first < speech_secs / 2.0, "первый черновик на {first:.1} с");
         assert!(lock(&SESSION).is_none(), "session slot is freed");
     }
 }
