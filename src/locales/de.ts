@@ -690,7 +690,7 @@ export default {
       statusProxy: 'Jetzt: über einen Proxy',
       statusDirect: 'Jetzt: direkt zu den Nodes, verbunden: {n}',
       statusAutoDirect:
-        'Die Proxys antworten nicht, jetzt direkt zu den Nodes, verbunden: {n}. Die Proxys werden alle drei Minuten erneut geprüft.',
+        'Die Proxys antworten nicht, jetzt direkt zu den Nodes, verbunden: {n}. Die Proxys werden jede Minute erneut geprüft.',
       statusSearching: 'Nodes werden gesucht…',
       statusNoNodes: 'Keine Node hat direkt geantwortet. Prüfe deine Internetverbindung.',
       statusTor: 'Tor ist an: Die Verbindung läuft darüber, diese Auswahl gilt nicht.',

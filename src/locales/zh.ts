@@ -642,7 +642,7 @@ export default {
       },
       statusProxy: '当前：通过代理',
       statusDirect: '当前：直连节点，已连接：{n}',
-      statusAutoDirect: '代理没有响应，当前直连节点，已连接：{n}。每三分钟重新检查一次代理。',
+      statusAutoDirect: '代理没有响应，当前直连节点，已连接：{n}。每分钟重新检查一次代理。',
       statusSearching: '正在查找节点…',
       statusNoNodes: '没有节点直接响应。请检查网络连接。',
       statusTor: 'Tor 已开启：连接通过 Tor，此选项不适用。',

@@ -1,6 +1,7 @@
 // Выбор маршрута: в браузере и под Tor — только прокси; «Прокси»/«Ноды» — как
-// выбрано; «Авто» — прокси, а если ни один не ответил, ноды, и обратно на
-// прокси, как только они ответят (по таймеру, при смене сети, при возврате).
+// выбрано; «Авто» — прокси, а если ни один не ответил, а ноды отвечают, ноды,
+// и обратно на прокси, как только они ответят (по таймеру, при смене сети, при
+// возврате в приложение). Сбой в фоне и сразу после возврата — не в счёт.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,8 +9,10 @@ const h = vi.hoisted(() => ({
   available: vi.fn(() => true),
   alive: vi.fn(async () => true),
   tor: vi.fn(async () => 'direct'),
+  nodes: vi.fn(async (): Promise<string[]> => ['1.2.3.4']),
 }))
 vi.mock('./native-link', () => ({ isNodeLinkAvailable: h.available }))
+vi.mock('./node-pool', () => ({ directNodes: h.nodes }))
 vi.mock('../node-selector', () => ({ anyProxyAlive: h.alive }))
 vi.mock('@/helpers/tor/tor-gate', () => ({ torRoutingMode: h.tor }))
 
@@ -23,6 +26,7 @@ import {
   setConnectionMode,
 } from './connection-route'
 import { connectionState } from './connection-state'
+import { resetAppForegroundForTests, setAppActiveForTests } from '@/helpers/common/app-foreground'
 
 describe('connectionRoute', () => {
   beforeEach(() => {
@@ -30,10 +34,13 @@ describe('connectionRoute', () => {
     h.available.mockReturnValue(true)
     h.alive.mockReset().mockResolvedValue(true)
     h.tor.mockReset().mockResolvedValue('direct')
+    h.nodes.mockReset().mockResolvedValue(['1.2.3.4'])
+    resetAppForegroundForTests()
     resetConnectionRouteForTests()
   })
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
     resetConnectionRouteForTests()
   })
 
@@ -71,12 +78,12 @@ describe('connectionRoute', () => {
     h.alive.mockResolvedValue(false)
     expect(await connectionRoute()).toBe('direct')
 
-    // Через три минуты прокси всё ещё молчат.
-    await vi.advanceTimersByTimeAsync(3 * 60_000)
+    // Через минуту прокси всё ещё молчат.
+    await vi.advanceTimersByTimeAsync(60_000)
     expect(connectionState.route).toBe('direct')
 
     h.alive.mockResolvedValue(true)
-    await vi.advanceTimersByTimeAsync(3 * 60_000)
+    await vi.advanceTimersByTimeAsync(60_000)
     expect(connectionState.route).toBe('proxy')
     expect(changes).toEqual(['proxy'])
     expect(await connectionRoute()).toBe('proxy')
@@ -94,6 +101,49 @@ describe('connectionRoute', () => {
     window.dispatchEvent(new Event('online'))
     await vi.waitFor(() => expect(connectionState.route).toBe('proxy'))
     expect(changes).toEqual(['direct', 'proxy'])
+  })
+
+  it('«Авто»: молчат и прокси, и ноды — сети нет, остаёмся на прокси', async () => {
+    h.alive.mockResolvedValue(false)
+    h.nodes.mockRejectedValue(new Error('No Pocketnet nodes answered directly'))
+    expect(await connectionRoute()).toBe('proxy')
+    expect(await reportProxiesUnreachable()).toBe(false)
+    expect(connectionState.route).toBe('proxy')
+
+    // Сеть появилась, прокси так и молчат, а ноды отвечают — на ноды.
+    h.nodes.mockResolvedValue(['1.2.3.4'])
+    expect(await reportProxiesUnreachable()).toBe(true)
+    expect(connectionState.route).toBe('direct')
+  })
+
+  it('«Авто»: сбой в фоне, сразу после возврата и без сети — не повод уходить к нодам', async () => {
+    vi.useFakeTimers()
+    expect(await connectionRoute()).toBe('proxy')
+
+    setAppActiveForTests(false)
+    expect(await reportProxiesUnreachable()).toBe(false)
+    setAppActiveForTests(true)
+    expect(await reportProxiesUnreachable()).toBe(false)
+    expect(h.nodes).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(15_000)
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    expect(await reportProxiesUnreachable()).toBe(false)
+    expect(connectionState.route).toBe('proxy')
+
+    vi.restoreAllMocks()
+    expect(await reportProxiesUnreachable()).toBe(true)
+    expect(connectionState.route).toBe('direct')
+  })
+
+  it('«Авто» на нодах: вернулись в приложение — прокси перепроверяются сразу', async () => {
+    h.alive.mockResolvedValue(false)
+    expect(await connectionRoute()).toBe('direct')
+    h.alive.mockClear().mockResolvedValue(true)
+    setAppActiveForTests(false)
+    setAppActiveForTests(true)
+    await vi.waitFor(() => expect(connectionState.route).toBe('proxy'))
+    expect(h.alive).toHaveBeenCalledTimes(1)
   })
 
   it('смена режима сбрасывает решение «Авто»', async () => {

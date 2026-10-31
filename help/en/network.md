@@ -18,7 +18,7 @@ Besides the nodes, the app talks to the [Matrix](glossary.md#matrix) chat server
 
 In the desktop and Android apps, **“Settings”** → **“System”** → **“Network connection”** lets you choose how the app goes online:
 
-- **“Auto”** (the default) — through a proxy, and if none answers, for example because they are blocked, directly to nodes. While the app works directly, it checks the proxies every three minutes, when the network changes and when you come back to the app, and switches back as soon as a proxy answers;
+- **“Auto”** (the default) — through a proxy, and if none answers, for example because they are blocked, directly to nodes. While the app works directly, it checks the proxies every minute, when the network changes and when you come back to the app, and switches back as soon as a proxy answers. A failure while the app is in the background or has just been reopened does not count: the phone may have had no network then;
 - **“Proxy”** — only through proxies;
 - **“Direct to nodes”** — always to nodes.
 
@@ -28,6 +28,7 @@ Directly, the app connects to nodes on their secure ports: 38881 for requests an
 
 Keep in mind:
 
+- a proxy is usually faster: it has a cache and many nodes behind it. “Direct to nodes” is for when the proxies are unreachable; if they work, “Auto” is better — it moves to nodes by itself when needed;
 - the node sees your IP address, while through a proxy only the proxy saw it;
 - signing up a new account, post translation and link previews exist only on the proxy and do not work without it. Images and videos still upload: the app remembers the video servers;
 - the browser has no direct connection, only the apps do;

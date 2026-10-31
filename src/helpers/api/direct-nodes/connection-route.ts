@@ -6,9 +6,14 @@
  * - «Ноды напрямую» — только ноды (кроме того, что умеет один прокси:
  *   регистрация, переводы, превью ссылок — это по-прежнему через него);
  * - «Авто» (по умолчанию) — прокси, а если ни один не ответил при запуске
- *   или все перестали отвечать по ходу — ноды. Пока идём напрямую, прокси
- *   перепроверяются раз в три минуты, при смене сети и при возврате в
- *   приложение; ответил — возвращаемся на него.
+ *   или все перестали отвечать по ходу, а ноды отвечают — ноды. Пока идём
+ *   напрямую, прокси перепроверяются раз в минуту, при смене сети и при
+ *   возврате в приложение; ответил — возвращаемся на него.
+ *
+ * Ноды — запасной путь: через прокси быстрее (у него кэш и много нод за
+ * спиной). Поэтому сбой не в счёт, когда приложение свёрнуто или только что
+ * вернулось (система могла отрезать ему сеть, телефон её ещё поднимает), и
+ * когда молчат и ноды — значит, сети нет вовсе.
  *
  * С включённым Tor режим не действует: запросы идут через Tor к прокси, а
  * мимо Tor приложение ничего не отправляет. В браузере прямого подключения
@@ -17,15 +22,23 @@
 
 import servers from '@/servers.json'
 import { torRoutingMode } from '@/helpers/tor/tor-gate'
+import {
+  isAppInBackground,
+  msSinceForeground,
+  onAppForeground,
+} from '@/helpers/common/app-foreground'
 import { anyProxyAlive } from '../node-selector'
 import type { ServerEndpoint } from '../rpc-retry'
 import { connectionState, type ConnectionMode, type ConnectionRoute } from './connection-state'
 import { isNodeLinkAvailable } from './native-link'
+import { directNodes } from './node-pool'
 
 export type { ConnectionMode, ConnectionRoute } from './connection-state'
 
 const MODE_KEY = 'bastyon_connection_mode'
-const RECHECK_MS = 3 * 60_000
+const RECHECK_MS = 60_000
+/** После возврата из фона сбои ещё не в счёт: сеть поднимается. */
+const WAKE_GRACE_MS = 15_000
 const PROXIES = servers.servers.production.proxy as ServerEndpoint[]
 
 function readMode(): ConnectionMode {
@@ -84,11 +97,21 @@ export async function connectionRoute(): Promise<ConnectionRoute> {
   return deciding
 }
 
+/** Отвечает ли напрямую хоть одна нода (выбор рабочих нод кэшируется). */
+async function nodesAnswer(): Promise<boolean> {
+  return directNodes().then(
+    (hosts) => hosts.length > 0,
+    () => false
+  )
+}
+
 async function decide(): Promise<ConnectionRoute> {
-  const alive = await anyProxyAlive(PROXIES)
+  // Молчат и прокси, и ноды — сети нет: остаёмся на прокси, а когда сеть
+  // появится, сбой запроса решит заново (reportProxiesUnreachable).
+  const direct = !(await anyProxyAlive(PROXIES)) && (await nodesAnswer())
   // Пока проверяли, режим могли сменить.
   if (connectionState.mode !== 'auto') return setRoute(connectionState.mode)
-  autoRoute = alive ? 'proxy' : 'direct'
+  autoRoute = direct ? 'direct' : 'proxy'
   if (autoRoute === 'direct') startRecheck()
   return setRoute(autoRoute)
 }
@@ -102,13 +125,26 @@ export async function mayFallBackToDirect(): Promise<boolean> {
   )
 }
 
+/** Сбой сейчас ничего не говорит о прокси: приложение в фоне или сети нет. */
+function failureDoesNotCount(): boolean {
+  return (
+    isAppInBackground() ||
+    msSinceForeground() < WAKE_GRACE_MS ||
+    globalThis.navigator?.onLine === false
+  )
+}
+
 /**
  * Запрос не прошёл ни через один прокси (сбой сети, а не ответ ноды). В
- * режиме «Авто» дальше идём напрямую; false — нельзя.
+ * режиме «Авто» дальше идём напрямую, если ноды отвечают; false — нельзя.
  */
 export async function reportProxiesUnreachable(): Promise<boolean> {
   if (!(await mayFallBackToDirect())) return false
   if (autoRoute === 'direct') return true
+  if (failureDoesNotCount() || !(await nodesAnswer())) return false
+  // Пока спрашивали ноды, режим могли сменить, а другой запрос — уже уйти к ним.
+  if (connectionState.mode !== 'auto' || failureDoesNotCount()) return false
+  if (connectionState.route === 'direct') return true
   autoRoute = 'direct'
   setRoute('direct')
   startRecheck()
@@ -127,16 +163,15 @@ export function setConnectionMode(mode: ConnectionMode): void {
   void connectionRoute()
 }
 
-const onVisible = () => {
-  if (document.visibilityState === 'visible') void recheck()
-}
 const onOnline = () => void recheck()
+let stopForeground: (() => void) | null = null
 
 function startRecheck(): void {
   if (recheckTimer) return
   recheckTimer = setInterval(() => void recheck(), RECHECK_MS)
   globalThis.addEventListener?.('online', onOnline)
-  globalThis.document?.addEventListener('visibilitychange', onVisible)
+  // Вернулись в приложение — сразу; на Android visibilitychange не приходит.
+  stopForeground = onAppForeground(onOnline)
   connectionOf()?.addEventListener?.('change', onOnline)
 }
 
@@ -144,7 +179,8 @@ function stopRecheck(): void {
   if (recheckTimer) clearInterval(recheckTimer)
   recheckTimer = null
   globalThis.removeEventListener?.('online', onOnline)
-  globalThis.document?.removeEventListener('visibilitychange', onVisible)
+  stopForeground?.()
+  stopForeground = null
   connectionOf()?.removeEventListener?.('change', onOnline)
 }
 

@@ -683,7 +683,7 @@ export default {
       statusProxy: 'Ora: tramite un proxy',
       statusDirect: 'Ora: direttamente ai nodi, connessi: {n}',
       statusAutoDirect:
-        'I proxy non rispondono, ora direttamente ai nodi, connessi: {n}. I proxy vengono ricontrollati ogni tre minuti.',
+        'I proxy non rispondono, ora direttamente ai nodi, connessi: {n}. I proxy vengono ricontrollati ogni minuto.',
       statusSearching: 'Ricerca dei nodi…',
       statusNoNodes: 'Nessun nodo ha risposto direttamente. Controlla la connessione a internet.',
       statusTor: 'Tor è attivo: la connessione passa da Tor, questa scelta non si applica.',

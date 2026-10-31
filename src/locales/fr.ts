@@ -696,7 +696,7 @@ export default {
       statusProxy: 'Actuellement : via un proxy',
       statusDirect: 'Actuellement : directement aux nœuds, connectés : {n}',
       statusAutoDirect:
-        'Les proxys ne répondent pas, actuellement directement aux nœuds, connectés : {n}. Les proxys sont revérifiés toutes les trois minutes.',
+        'Les proxys ne répondent pas, actuellement directement aux nœuds, connectés : {n}. Les proxys sont revérifiés chaque minute.',
       statusSearching: 'Recherche de nœuds…',
       statusNoNodes: 'Aucun nœud n’a répondu directement. Vérifiez votre connexion internet.',
       statusTor: 'Tor est activé : la connexion passe par lui, ce choix ne s’applique pas.',
