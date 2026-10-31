@@ -37,7 +37,7 @@ export const SC_PhoneBalance = styled.div`
   align-items: flex-start;
   white-space: nowrap;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     display: flex;
   }
 `
