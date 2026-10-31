@@ -23,6 +23,7 @@ import { useIpfsNodeViewerStore } from '@/stores/ipfs-node-viewer-store'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
 import { useIpnsRenewal } from '@/composables/use-ipns-renewal'
 import { useTrayLabels } from '@/composables/use-tray-labels'
+import { useAppBadge } from '@/composables/use-app-badge'
 import { publicShareOrigin } from '@/helpers/common/share-origin'
 import { useTheme } from '@/composables/use-theme'
 import { useAuthStore } from '@/blockchain/store/auth-store'
@@ -90,6 +91,10 @@ useIpnsRenewal(() => !isEmbed.value)
 
 // Меню значка в трее — на языке приложения (только десктоп).
 if (isTauriBuild) useTrayLabels()
+
+// Непрочитанные сообщения на значке приложения и во вкладке. Во фрейме
+// (embed) мессенджера нет.
+if (!isEmbed.value) useAppBadge()
 
 // Блок-лист и подписки — как только сессия восстановилась: карточки ленты,
 // смонтированные раньше, сами их не запросят. Вход и смену аккаунта ведёт

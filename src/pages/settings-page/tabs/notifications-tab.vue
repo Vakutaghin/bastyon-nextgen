@@ -22,6 +22,7 @@ import {
   type NotificationFilterKey,
 } from '@/stores/notification-settings-store'
 import { ensureBrowserNotifPermission } from '@/composables/use-browser-notifications'
+import { ensureAppBadgePermission } from '@/services/app-badge'
 import {
   SC_SettingsSectionTitle,
   SC_NotificationsList,
@@ -32,6 +33,7 @@ import {
 const NOTIFICATION_KEYS: NotificationFilterKey[] = [
   'sound',
   'browserNotif',
+  'appBadge',
   'win',
   'transactions',
   'upvotes',
@@ -49,5 +51,7 @@ async function onChange(key: NotificationFilterKey, checked: boolean): Promise<v
   await notificationSettings.setFilter(key, checked)
   // При включении браузерных уведомлений — запрашиваем разрешение браузера.
   if (key === 'browserNotif' && checked) await ensureBrowserNotifPermission()
+  // На Android число на значке держится на уведомлении — нужно разрешение.
+  if (key === 'appBadge' && checked) await ensureAppBadgePermission(true)
 }
 </script>

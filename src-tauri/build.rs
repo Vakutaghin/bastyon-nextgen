@@ -59,6 +59,7 @@ const COMMANDS: &[&str] = &[
   "ipfs_sink_abort",
   "ipfs_name_put",
   "tray_set_labels",
+  "app_badge_set",
   "app_menu_set_labels",
   "desktop_prefs_get",
   "desktop_prefs_set",

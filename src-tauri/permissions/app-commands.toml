@@ -60,6 +60,7 @@ permissions = [
   "allow-ipfs-sink-abort",
   "allow-ipfs-name-put",
   "allow-tray-set-labels",
+  "allow-app-badge-set",
   "allow-app-menu-set-labels",
   "allow-desktop-prefs-get",
   "allow-desktop-prefs-set",

@@ -15,6 +15,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.bastyon.app.plugins.AppBadgePlugin;
 import com.bastyon.app.plugins.AppUpdaterPlugin;
 import com.bastyon.app.plugins.BackgroundMediaPlugin;
 import com.bastyon.app.plugins.MatrixHttpPlugin;
@@ -32,6 +33,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(BackgroundMediaPlugin.class);
         registerPlugin(AppUpdaterPlugin.class);
+        registerPlugin(AppBadgePlugin.class);
         registerPlugin(MatrixHttpPlugin.class);
         registerPlugin(NodeLinkPlugin.class);
         registerPlugin(MeshRadioPlugin.class);

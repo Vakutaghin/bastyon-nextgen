@@ -2948,6 +2948,7 @@ export default {
     browserNewCount: 'Новых уведомлений: {count}',
     filterSound: 'Звук',
     filterBrowser: 'Браузерные уведомления',
+    filterAppBadge: 'Счётчик непрочитанных сообщений на значке приложения',
     filterWin: 'Coinstake выигрыш',
     filterTransactions: 'Транзакция получена',
     filterUpvotes: 'Новая оценка (лайки)',
@@ -3412,6 +3413,14 @@ export default {
     nicknameReserved: 'Псевдоним не может содержать «bastyon» или «pocketnet»',
     validationTitle: 'Валидация аккаунта в блокчейне',
     validationMessage: 'Ваш аккаунт проходит валидацию в блокчейне. Пожалуйста, подождите...',
+  },
+  /** Число непрочитанных на значке приложения (composables/use-app-badge.ts). */
+  appBadge: {
+    tooltip:
+      '{name} — {n} непрочитанное сообщение | {name} — {n} непрочитанных сообщения | {name} — {n} непрочитанных сообщений',
+    unread:
+      '{n} непрочитанное сообщение | {n} непрочитанных сообщения | {n} непрочитанных сообщений',
+    channel: 'Непрочитанные сообщения',
   },
   tray: {
     open: 'Открыть Bastyon',

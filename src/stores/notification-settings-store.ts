@@ -8,6 +8,7 @@ export const NOTIFICATION_FILTERS_KEY = 'notificationFilters'
 export type NotificationFilterKey =
   | 'sound'
   | 'browserNotif'
+  | 'appBadge'
   | 'win'
   | 'transactions'
   | 'upvotes'
@@ -21,6 +22,8 @@ export interface NotificationFiltersState {
   sound: boolean
   /** Браузерные (Web Notification API) уведомления, когда вкладка в фоне. Opt-in. */
   browserNotif: boolean
+  /** Число непрочитанных сообщений на значке приложения и во вкладке (`useAppBadge`). */
+  appBadge: boolean
   win: boolean
   transactions: boolean
   upvotes: boolean
@@ -34,6 +37,7 @@ export interface NotificationFiltersState {
 const DEFAULT_FILTERS: NotificationFiltersState = {
   sound: true,
   browserNotif: false,
+  appBadge: true,
   win: true,
   transactions: true,
   upvotes: true,
@@ -51,6 +55,7 @@ const DEFAULT_FILTERS: NotificationFiltersState = {
 export const NOTIFICATION_FILTER_LABEL_KEYS: Record<NotificationFilterKey, string> = {
   sound: 'notif.filterSound',
   browserNotif: 'notif.filterBrowser',
+  appBadge: 'notif.filterAppBadge',
   win: 'notif.filterWin',
   transactions: 'notif.filterTransactions',
   upvotes: 'notif.filterUpvotes',
@@ -113,6 +118,7 @@ export const useNotificationSettingsStore = defineStore('notificationSettings', 
         const payload: NotificationFiltersState = {
           sound: this.sound,
           browserNotif: this.browserNotif,
+          appBadge: this.appBadge,
           win: this.win,
           transactions: this.transactions,
           upvotes: this.upvotes,

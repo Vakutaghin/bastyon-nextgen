@@ -1,3 +1,4 @@
+mod app_badge;
 mod app_menu;
 mod asr;
 mod desktop_prefs;
@@ -997,6 +998,7 @@ pub fn run() {
       ipfs::sink::ipfs_sink_abort,
       ipfs::names::ipfs_name_put,
       tray::tray_set_labels,
+      app_badge::app_badge_set,
       app_menu::app_menu_set_labels,
       desktop_prefs::desktop_prefs_get,
       desktop_prefs::desktop_prefs_set,
@@ -1144,6 +1146,9 @@ pub fn run() {
       if let Err(e) = app_menu::init(app.handle()) {
         log::warn!("app menu: {e}");
       }
+
+      // Счётчик непрочитанных на значке — до трея: трей берёт из него число.
+      app_badge::init(app.handle());
 
       // Значок в трее (Windows, Linux) или в строке меню (macOS, по настройке).
       // Не вышло — работаем без него.

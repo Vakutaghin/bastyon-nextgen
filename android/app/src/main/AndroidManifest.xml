@@ -101,6 +101,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Число непрочитанных на значке у лаунчеров Huawei и Honor (AppBadgePlugin). -->
+    <uses-permission android:name="com.huawei.android.launcher.permission.CHANGE_BADGE" />
+    <uses-permission android:name="com.hihonor.android.launcher.permission.CHANGE_BADGE" />
 
     <!--
         Обновление изнутри приложения (plugins/AppUpdaterPlugin): скачанный APK

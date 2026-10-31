@@ -2994,6 +2994,7 @@ export default {
     browserNewCount: '{count} neue Benachrichtigungen',
     filterSound: 'Ton',
     filterBrowser: 'Browser-Benachrichtigungen',
+    filterAppBadge: 'Anzahl ungelesener Nachrichten auf dem App-Symbol',
     filterWin: 'Coinstake-Gewinn',
     filterTransactions: 'Transaktion erhalten',
     filterUpvotes: 'Neue Bewertung (Likes)',
@@ -3483,6 +3484,11 @@ export default {
     nicknameReserved: 'Ein Nickname darf „bastyon“ oder „pocketnet“ nicht enthalten',
     validationTitle: 'Kontoprüfung in der Blockchain',
     validationMessage: 'Dein Konto wird in der Blockchain geprüft. Bitte warte...',
+  },
+  appBadge: {
+    tooltip: '{name} — {n} ungelesene Nachricht | {name} — {n} ungelesene Nachrichten',
+    unread: '{n} ungelesene Nachricht | {n} ungelesene Nachrichten',
+    channel: 'Ungelesene Nachrichten',
   },
   tray: {
     open: 'Bastyon öffnen',

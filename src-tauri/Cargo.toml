@@ -127,6 +127,10 @@ whisper-rs = { version = "0.16", features = ["log_backend"] }
 libloading = "0.7"
 # Очистка кэша WebKitGTK (src/storage.rs). Ровно та версия, что у wry.
 webkit2gtk = { version = "=2.0.2", features = ["v2_38"] }
+# Счётчик непрочитанных у значка в доке (src/app_badge.rs): сигнал
+# com.canonical.Unity.LauncherEntry по сессионной шине. Та же версия и фичи, что
+# у tauri-plugin-single-instance и opener: новых крейтов не добавляет.
+zbus = "5.9"
 
 # Mock-рантайм Tauri для теста ACL (acl_tests в src/lib.rs).
 [dev-dependencies]

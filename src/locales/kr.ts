@@ -2928,6 +2928,7 @@ export default {
     browserNewCount: '새 알림 {count}개',
     filterSound: '소리',
     filterBrowser: '브라우저 알림',
+    filterAppBadge: '앱 아이콘에 읽지 않은 메시지 수 표시',
     filterWin: '코인스테이크 보상',
     filterTransactions: '거래 받음',
     filterUpvotes: '새 평가(좋아요)',
@@ -3390,6 +3391,11 @@ export default {
     nicknameReserved: '닉네임에 "bastyon" 또는 "pocketnet"을 포함할 수 없습니다',
     validationTitle: '블록체인에서 계정 확인 중',
     validationMessage: '블록체인에서 계정을 확인하고 있습니다. 잠시 기다려 주세요...',
+  },
+  appBadge: {
+    tooltip: '{name} — 읽지 않은 메시지 {n}개',
+    unread: '읽지 않은 메시지 {n}개',
+    channel: '읽지 않은 메시지',
   },
   tray: {
     open: 'Bastyon 열기',

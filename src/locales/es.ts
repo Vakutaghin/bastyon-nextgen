@@ -2979,6 +2979,7 @@ export default {
     browserNewCount: '{count} notificaciones nuevas',
     filterSound: 'Sonido',
     filterBrowser: 'Notificaciones del navegador',
+    filterAppBadge: 'Número de mensajes no leídos en el icono de la app',
     filterWin: 'Premio de coinstake',
     filterTransactions: 'Transacción recibida',
     filterUpvotes: 'Nueva valoración (me gusta)',
@@ -3459,6 +3460,11 @@ export default {
     nicknameReserved: 'El apodo no puede contener «bastyon» ni «pocketnet»',
     validationTitle: 'Validación de la cuenta en la blockchain',
     validationMessage: 'Tu cuenta se está validando en la blockchain. Espera, por favor...',
+  },
+  appBadge: {
+    tooltip: '{name} — {n} mensaje no leído | {name} — {n} mensajes no leídos',
+    unread: '{n} mensaje no leído | {n} mensajes no leídos',
+    channel: 'Mensajes no leídos',
   },
   tray: {
     open: 'Abrir Bastyon',

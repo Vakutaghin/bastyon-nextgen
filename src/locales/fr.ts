@@ -2996,6 +2996,7 @@ export default {
     browserNewCount: '{count} nouvelles notifications',
     filterSound: 'Son',
     filterBrowser: 'Notifications du navigateur',
+    filterAppBadge: 'Nombre de messages non lus sur l’icône de l’app',
     filterWin: 'Gain de coinstake',
     filterTransactions: 'Transaction reçue',
     filterUpvotes: 'Nouvelle note (j’aime)',
@@ -3482,6 +3483,11 @@ export default {
     validationTitle: 'Validation du compte dans la blockchain',
     validationMessage:
       'Votre compte est en cours de validation dans la blockchain. Veuillez patienter...',
+  },
+  appBadge: {
+    tooltip: '{name} — {n} message non lu | {name} — {n} messages non lus',
+    unread: '{n} message non lu | {n} messages non lus',
+    channel: 'Messages non lus',
   },
   tray: {
     open: 'Ouvrir Bastyon',

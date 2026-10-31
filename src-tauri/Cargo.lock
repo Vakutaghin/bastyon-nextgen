@@ -198,6 +198,7 @@ dependencies = [
  "whisper-rs",
  "windows 0.61.3",
  "windows-version",
+ "zbus",
  "zip 2.4.2",
 ]
 

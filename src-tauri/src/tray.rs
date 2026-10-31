@@ -10,7 +10,7 @@ use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, Wry};
 
-const TRAY_ID: &str = "main";
+pub(crate) const TRAY_ID: &str = "main";
 const OPEN_ID: &str = "tray-open";
 const QUIT_ID: &str = "tray-quit";
 
@@ -105,6 +105,9 @@ fn build(app: &AppHandle) -> tauri::Result<()> {
   builder.build(app)?;
 
   state.menu = Some(TrayMenu { open, quit });
+  drop(state);
+  // Значок поставлен заново — сразу с числом непрочитанных.
+  crate::app_badge::refresh_tray(app);
   Ok(())
 }
 

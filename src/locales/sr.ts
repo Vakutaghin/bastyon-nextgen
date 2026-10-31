@@ -2950,6 +2950,7 @@ export default {
     browserNewCount: 'Нових обавештења: {count}',
     filterSound: 'Звук',
     filterBrowser: 'Обавештења прегледача',
+    filterAppBadge: 'Број непрочитаних порука на иконици апликације',
     filterWin: 'Добитак coinstake-а',
     filterTransactions: 'Примљена трансакција',
     filterUpvotes: 'Нова оцена (свиђања)',
@@ -3416,6 +3417,12 @@ export default {
     nicknameReserved: 'Надимак не може да садржи „bastyon“ или „pocketnet“',
     validationTitle: 'Провера налога у блокчејну',
     validationMessage: 'Ваш налог се проверава у блокчејну. Сачекајте...',
+  },
+  appBadge: {
+    tooltip:
+      '{name} — {n} непрочитана порука | {name} — {n} непрочитане поруке | {name} — {n} непрочитаних порука',
+    unread: '{n} непрочитана порука | {n} непрочитане поруке | {n} непрочитаних порука',
+    channel: 'Непрочитане поруке',
   },
   tray: {
     open: 'Отвори Bastyon',
