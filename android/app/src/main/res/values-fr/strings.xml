@@ -8,4 +8,8 @@
     <string name="media_play">Lire</string>
     <string name="media_next">Suivant</string>
     <string name="media_forward">Avancer de 10 secondes</string>
+    <string name="offline_channel_name">Téléchargements</string>
+    <string name="offline_downloading">Téléchargement %1$d %%</string>
+    <string name="offline_downloading_unknown">Téléchargement…</string>
+    <string name="offline_cancel">Annuler</string>
 </resources>

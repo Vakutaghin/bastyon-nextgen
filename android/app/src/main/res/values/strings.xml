@@ -13,4 +13,9 @@
     <string name="media_play">Play</string>
     <string name="media_next">Next</string>
     <string name="media_forward">Forward 10 seconds</string>
+    <!-- Уведомление загрузки роликов (plugins/offline/OfflineDownloadService); «Пауза» — media_pause. -->
+    <string name="offline_channel_name">Downloads</string>
+    <string name="offline_downloading">Downloading %1$d%%</string>
+    <string name="offline_downloading_unknown">Downloading…</string>
+    <string name="offline_cancel">Cancel</string>
 </resources>

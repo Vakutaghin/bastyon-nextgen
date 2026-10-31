@@ -8,4 +8,8 @@
     <string name="media_play">播放</string>
     <string name="media_next">下一个</string>
     <string name="media_forward">前进 10 秒</string>
+    <string name="offline_channel_name">下载</string>
+    <string name="offline_downloading">正在下载 %1$d%%</string>
+    <string name="offline_downloading_unknown">正在下载…</string>
+    <string name="offline_cancel">取消</string>
 </resources>

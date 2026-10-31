@@ -71,6 +71,14 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
+        <!-- Скачивание роликов для просмотра без сети (plugins/offline): живёт,
+             пока есть ждущие или качающийся, и переживает закрытие приложения. -->
+        <service
+            android:name=".plugins.offline.OfflineDownloadService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <receiver
             android:name="androidx.media.session.MediaButtonReceiver"
             android:exported="true">
@@ -100,6 +108,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Скачивание роликов в фоне (OfflineDownloadService) и «только по Wi-Fi»:
+         нужна смена сети (ConnectivityManager). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Число непрочитанных на значке у лаунчеров Huawei и Honor (AppBadgePlugin). -->
     <uses-permission android:name="com.huawei.android.launcher.permission.CHANGE_BADGE" />

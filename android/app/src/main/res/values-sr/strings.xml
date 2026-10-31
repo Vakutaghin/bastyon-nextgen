@@ -8,4 +8,8 @@
     <string name="media_play">Пусти</string>
     <string name="media_next">Следеће</string>
     <string name="media_forward">Напред 10 секунди</string>
+    <string name="offline_channel_name">Преузимања</string>
+    <string name="offline_downloading">Преузимање %1$d%%</string>
+    <string name="offline_downloading_unknown">Преузимање…</string>
+    <string name="offline_cancel">Откажи</string>
 </resources>

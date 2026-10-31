@@ -8,4 +8,8 @@
     <string name="media_play">재생</string>
     <string name="media_next">다음</string>
     <string name="media_forward">10초 앞으로</string>
+    <string name="offline_channel_name">다운로드</string>
+    <string name="offline_downloading">다운로드 중 %1$d%%</string>
+    <string name="offline_downloading_unknown">다운로드 중…</string>
+    <string name="offline_cancel">취소</string>
 </resources>

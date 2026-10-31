@@ -21,6 +21,8 @@ import com.bastyon.app.plugins.AppUpdaterPlugin;
 import com.bastyon.app.plugins.BackgroundMediaPlugin;
 import com.bastyon.app.plugins.MatrixHttpPlugin;
 import com.bastyon.app.plugins.NodeLinkPlugin;
+import com.bastyon.app.plugins.offline.OfflineVideoPlugin;
+import com.bastyon.app.plugins.offline.OfflineWebViewClient;
 import com.bastyon.app.plugins.radio.MeshRadioPlugin;
 import com.bastyon.app.plugins.radio.MeshRnsPlugin;
 import com.bastyon.app.plugins.tor.TorNetwork;
@@ -41,6 +43,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MeshRadioPlugin.class);
         registerPlugin(MeshRnsPlugin.class);
         registerPlugin(VoiceInputPlugin.class);
+        registerPlugin(OfflineVideoPlugin.class);
         // Прокси WebView — до его создания: включённый Tor действует с первой
         // загрузки. Без Tor в сборке плагина нет, и интерфейс его не покажет.
         TorNetwork.init(this);
@@ -52,6 +55,9 @@ public class MainActivity extends BridgeActivity {
         // возврата бывал белый экран. Пересоздаём окно: оно поднимет новый
         // WebView и загрузит приложение заново.
         if (getBridge() != null) {
+            // Скачанные ролики (/_offline_/<id>/<файл>) — свой ответ с честным
+            // Range, остальное — как у Capacitor (plugins/offline/OfflineWebViewClient).
+            getBridge().setWebViewClient(new OfflineWebViewClient(getBridge()));
             getBridge().addWebViewListener(new WebViewListener() {
                 @Override
                 public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {

@@ -8,4 +8,8 @@
     <string name="media_play">Riproduci</string>
     <string name="media_next">Successivo</string>
     <string name="media_forward">Avanti di 10 secondi</string>
+    <string name="offline_channel_name">Download</string>
+    <string name="offline_downloading">Download %1$d%%</string>
+    <string name="offline_downloading_unknown">Download in corso…</string>
+    <string name="offline_cancel">Annulla</string>
 </resources>
