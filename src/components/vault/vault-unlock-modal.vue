@@ -6,6 +6,7 @@
     :closable="false"
     :mask-closable="false"
     :keyboard="false"
+    :wrap-class-name="BACK_IGNORED_CLASS"
     :z-index="3000"
     :footer="null"
   >
@@ -64,6 +65,7 @@ import { useI18n } from 'vue-i18n'
 import { Modal, Button, Input } from 'ant-design-vue'
 
 import { useModalStore } from '@/stores/modal-store'
+import { BACK_IGNORED_CLASS } from '@/composables/use-back-button'
 import {
   submitUnlockPassphrase,
   requestUnlockReset,
