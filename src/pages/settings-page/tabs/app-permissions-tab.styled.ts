@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { TRANSITIONS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_Perms = styled.section`
   display: flex;
@@ -40,6 +40,11 @@ export const SC_AppHead = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+
+  /* Телефон: значок и имя — первой строкой, кнопки — второй. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-wrap: wrap;
+  }
 `
 
 export const SC_AppIcon = styled.div`
@@ -71,6 +76,10 @@ export const SC_AppName = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-basis: calc(100% - 42px);
+  }
 `
 
 export const SC_PermRow = styled.div`
@@ -120,6 +129,10 @@ export const SC_RevokeBtn = styled.button`
   &:hover {
     background: var(--color-bg-hover);
   }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    min-height: 36px;
+  }
 `
 
 export const SC_RevokeAllBtn = styled.button`
@@ -135,6 +148,11 @@ export const SC_RevokeAllBtn = styled.button`
 
   &:hover {
     background: var(--color-bg-hover);
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex: 1 1 0;
+    min-height: 36px;
   }
 `
 
@@ -152,5 +170,10 @@ export const SC_DeleteAppBtn = styled.button`
 
   &:hover {
     background: var(--color-bg-hover);
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex: 1 1 0;
+    min-height: 36px;
   }
 `

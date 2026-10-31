@@ -3,11 +3,12 @@
     <SC_SettingsPage>
       <h1 class="visually-hidden">{{ t('settings.title') }}</h1>
       <SC_SettingsContentWrapper>
-        <SC_SettingsSidebar>
+        <SC_SettingsSidebar ref="sidebarRef">
           <SC_SettingsSidebarItem
             v-for="tab in SETTINGS_TABS"
             :key="tab.key"
             :active="activeTab === tab.key"
+            :data-tab="tab.key"
             type="button"
             @click="activeTab = tab.key"
           >
@@ -33,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotificationSettingsStore } from '@/stores'
@@ -98,6 +99,23 @@ if (route.query.tab === 'blockExplorer' || route.query.tab === 'diagnostics') {
 const tabFromQuery = SETTINGS_TABS.find((tab) => tab.key === route.query.tab)?.key
 const activeTab = ref<T_SettingsTabKey>(tabFromQuery ?? 'notifications')
 
+// В узком окне вкладки — строкой с прокруткой вбок: выбранная, в том числе
+// открытая по ссылке `?tab=`, не должна оставаться за краем экрана.
+const sidebarRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
+
+function revealActiveTab(behavior: 'auto' | 'smooth'): void {
+  const r = sidebarRef.value
+  const nav = r instanceof HTMLElement ? r : (r?.$el ?? null)
+  const item = nav?.querySelector<HTMLElement>(`[data-tab="${activeTab.value}"]`)
+  if (!nav || !item || nav.scrollWidth <= nav.clientWidth) return
+  const navBox = nav.getBoundingClientRect()
+  const itemBox = item.getBoundingClientRect()
+  const left = itemBox.left - navBox.left - (navBox.width - itemBox.width) / 2
+  nav.scrollBy({ left, behavior })
+}
+
+watch(activeTab, () => void nextTick(() => revealActiveTab('smooth')))
+
 // Подгружаем стартовые состояния (язык, фильтры) до того, как соответствующие
 // табы будут открыты — иначе при первом переключении на «Уведомления» switch
 // показал бы дефолтные значения вместо сохранённых.
@@ -106,5 +124,6 @@ const uiStore = useUIStore()
 onMounted(() => {
   notificationSettings.load()
   void uiStore.loadLanguage()
+  revealActiveTab('auto')
 })
 </script>

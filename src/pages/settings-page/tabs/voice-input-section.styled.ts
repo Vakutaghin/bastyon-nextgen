@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_VoiceCard = styled.div`
   margin-top: 20px;
@@ -12,6 +13,7 @@ export const SC_VoiceCard = styled.div`
 
 export const SC_VoiceHead = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -60,6 +62,12 @@ export const SC_ModelRow = styled.div`
     margin: 0;
     accent-color: var(--color-primary);
   }
+
+  /* Узкое окно: кнопки — под описанием модели, а не сжимают его. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    grid-template-columns: auto 1fr;
+    row-gap: 8px;
+  }
 `
 
 export const SC_ModelInfo = styled.div`
@@ -93,6 +101,10 @@ export const SC_ModelActions = styled.div`
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    grid-column: 2;
+  }
 `
 
 export const SC_Commands = styled.details`

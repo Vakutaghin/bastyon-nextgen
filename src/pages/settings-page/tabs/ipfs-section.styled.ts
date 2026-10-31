@@ -12,6 +12,7 @@ export const SC_IpfsCard = styled.div`
 
 export const SC_IpfsHead = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;

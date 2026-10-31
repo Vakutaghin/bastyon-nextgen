@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { TRANSITIONS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_Blacklist = styled.section`
   display: flex;
@@ -102,6 +102,10 @@ export const SC_UnblockBtn = styled.button`
   &:disabled {
     opacity: 0.75;
     cursor: not-allowed;
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    min-height: 36px;
   }
 `
 

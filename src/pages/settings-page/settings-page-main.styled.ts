@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, SPACING } from '@/styles/design-tokens'
 
 export const SC_SettingsWork = styled.div`
   display: flex;
@@ -27,15 +27,11 @@ export const SC_SettingsContentWrapper = styled.div`
   gap: 24px;
   padding: 0 var(--content-padding-x);
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  /* Узкое окно: вкладки строкой над содержимым, поля задают они сами. */
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     flex-direction: column;
-    padding: 8px;
-    gap: 12px;
-  }
-
-  @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    padding: 6px;
-    gap: 8px;
+    padding: 0;
+    gap: 0;
   }
 `
 
@@ -46,12 +42,9 @@ export const SC_SettingsMain = styled.main`
   padding: 24px;
   border-radius: var(--ui-radius-lg);
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    padding: 16px 12px;
-  }
-
-  @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    padding: 12px 8px;
+  /* Одно поле по бокам у всех вкладок — то же, что у строки вкладок. */
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
+    padding: ${() => SPACING.MD};
   }
 `
 

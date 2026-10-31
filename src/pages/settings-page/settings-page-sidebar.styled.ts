@@ -1,5 +1,5 @@
 import styled, { css } from 'vue3-styled-components'
-import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
+import { BREAKPOINTS, SPACING, TRANSITIONS } from '@/styles/design-tokens'
 
 const sidebarItemProps = { active: Boolean }
 
@@ -11,11 +11,27 @@ export const SC_SettingsSidebar = styled.nav`
   gap: 2px;
   padding: 8px 0;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  /* Узкое окно: вкладки одной строкой с прокруткой вбок, как вкладки профиля.
+     Отступ справа — псевдоэлементом: правый padding у прокручиваемого flex
+     старый Safari не учитывает. */
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     width: 100%;
-    flex-flow: row wrap;
-    gap: 6px;
-    padding: 4px 0;
+    flex-direction: row;
+    gap: 4px;
+    padding: 8px 0 8px ${() => SPACING.MD};
+    border-bottom: 1px solid var(--ui-border);
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    &::after {
+      content: '';
+      flex: none;
+      width: 12px;
+    }
   }
 `
 
@@ -54,9 +70,11 @@ export const SC_SettingsSidebarItem = styled('button', sidebarItemProps)`
       }
     `}
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  /* Палец: высота 40 px, подпись в одну строку. */
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
+    flex: none;
     width: auto;
-    min-width: 110px;
-    padding: 8px 12px;
+    padding: 10px 14px;
+    white-space: nowrap;
   }
 `

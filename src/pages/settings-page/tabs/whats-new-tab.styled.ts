@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 /** Версия приложения и проверка обновлений — над списком изменений. */
 export const SC_AppVersion = styled.div`
@@ -43,5 +44,9 @@ export const SC_UpdateButton = styled.button`
   &:disabled {
     cursor: not-allowed;
     opacity: 0.75;
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    min-height: 36px;
   }
 `

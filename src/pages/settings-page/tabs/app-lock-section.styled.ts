@@ -1,10 +1,8 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
-export const SC_AppLockActions = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-`
+// Кнопки — как у остальных карточек «Безопасности».
+export { SC_SecurityActions as SC_AppLockActions } from './security-section.styled'
 
 export const SC_AppLockRow = styled.div`
   display: flex;
@@ -33,5 +31,12 @@ export const SC_SetupBody = styled.div`
 
   & > .ant-segmented + .ant-segmented {
     align-self: center;
+  }
+
+  /* Узкий телефон: «Графический ключ» целиком, без многоточия. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    .ant-segmented-item-label {
+      padding-inline: 4px;
+    }
   }
 `

@@ -1,4 +1,9 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
+
+// Строка настройки на телефоне: подпись во всю ширину; переключатель и одна
+// кнопка — справа от неё, выбор варианта и группы кнопок — под ней во всю
+// ширину. Так у всех вкладок одна сетка и ничего не вылезает за экран.
 
 export const SC_SystemSection = styled.section`
   display: flex;
@@ -18,6 +23,11 @@ export const SC_SystemRow = styled.div`
   &:last-child {
     border-bottom: 0;
   }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-wrap: wrap;
+    gap: 10px 16px;
+  }
 `
 
 export const SC_SystemLabel = styled.div`
@@ -25,6 +35,11 @@ export const SC_SystemLabel = styled.div`
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+
+  /* Занимает остаток строки, но не выталкивает переключатель вниз. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex: 1 1 0;
+  }
 `
 
 /** Подпись и описание строки — как у поля формы Nuxt UI. */
@@ -47,6 +62,13 @@ export const SC_ScaleRow = styled.div`
   padding: 4px;
   background: var(--ui-bg-elevated);
   border-radius: var(--ui-radius-lg);
+
+  /* Под подписью во всю ширину, варианты поровну. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
 `
 
 const scaleProps = { active: Boolean }
@@ -69,6 +91,14 @@ export const SC_ScaleButton = styled('button', scaleProps)`
   &:hover {
     background: ${(p) => (p.active ? 'var(--ui-primary)' : 'transparent')};
     color: ${(p) => (p.active ? 'var(--ui-text-inverted)' : 'var(--ui-text-highlighted)')};
+  }
+
+  /* Палец: группа высотой 44 px; длинная подпись переносится по словам. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex: 1 1 0;
+    min-height: 36px;
+    padding: 6px 4px;
+    text-align: center;
   }
 `
 
@@ -95,6 +125,11 @@ export const SC_DangerButton = styled.button`
     cursor: not-allowed;
     opacity: 0.75;
   }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    min-height: 36px;
+    padding: 6px 12px;
+  }
 `
 
 /** Строка кэша: подпись, а под ней на узком окне — предел и кнопка. */
@@ -119,6 +154,29 @@ export const SC_CacheControls = styled.div`
   justify-content: flex-end;
   gap: 8px;
   margin-left: auto;
+
+  /* Телефон: выбор — строкой во всю ширину, под ним переключатель и кнопка по краям. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    gap: 10px 8px;
+    margin-left: 0;
+  }
+`
+
+/**
+ * Качество скачанных роликов: семь вариантов в строку телефона не входят —
+ * на нём две ровные строки по четыре ячейки, «Спрашивать» — в две.
+ */
+export const SC_QualityRow = styled(SC_ScaleRow)`
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+
+    & > :first-child {
+      grid-column: span 2;
+    }
+  }
 `
 
 /** Сколько занято сейчас — под описанием. */

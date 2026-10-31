@@ -1,10 +1,12 @@
 <template>
   <SC_SettingsSectionTitle>{{ t('settings.tabs.general') }}</SC_SettingsSectionTitle>
-  <SC_GeneralBlock>
-    <SC_GeneralRow>
-      <SC_GeneralLabel>{{ languageLabel }}</SC_GeneralLabel>
-      <SC_LangSwitcher>
-        <SC_LangButton
+  <SC_SystemSection>
+    <SC_SystemRow>
+      <SC_SystemLabel>
+        <SC_SystemTitle>{{ languageLabel }}</SC_SystemTitle>
+      </SC_SystemLabel>
+      <SC_ScaleRow>
+        <SC_ScaleButton
           v-for="lang in supportedLanguages"
           :key="lang"
           :active="appLanguage === lang"
@@ -13,13 +15,15 @@
           @click="onSetLanguage(lang)"
         >
           {{ lang.toUpperCase() }}
-        </SC_LangButton>
-      </SC_LangSwitcher>
-    </SC_GeneralRow>
-    <SC_GeneralRow>
-      <SC_GeneralLabel>{{ t('settings.general.theme') }}</SC_GeneralLabel>
-      <SC_LangSwitcher>
-        <SC_LangButton
+        </SC_ScaleButton>
+      </SC_ScaleRow>
+    </SC_SystemRow>
+    <SC_SystemRow>
+      <SC_SystemLabel>
+        <SC_SystemTitle>{{ t('settings.general.theme') }}</SC_SystemTitle>
+      </SC_SystemLabel>
+      <SC_ScaleRow>
+        <SC_ScaleButton
           v-for="opt in themeOptions"
           :key="opt.value"
           :active="themeMode === opt.value"
@@ -27,17 +31,17 @@
           @click="setTheme(opt.value)"
         >
           {{ t(opt.labelKey) }}
-        </SC_LangButton>
-      </SC_LangSwitcher>
-    </SC_GeneralRow>
+        </SC_ScaleButton>
+      </SC_ScaleRow>
+    </SC_SystemRow>
     <!-- Ширина — только на компьютере: на телефоне и планшете страница и так во всю ширину. -->
-    <SC_GeneralRow v-if="!mobile" data-testid="page-width-setting">
-      <SC_GeneralText>
-        <SC_GeneralLabel>{{ t('settings.general.pageWidth') }}</SC_GeneralLabel>
-        <SC_GeneralHint>{{ t('settings.general.pageWidthHint') }}</SC_GeneralHint>
-      </SC_GeneralText>
-      <SC_LangSwitcher>
-        <SC_LangButton
+    <SC_SystemRow v-if="!mobile" data-testid="page-width-setting">
+      <SC_SystemLabel>
+        <SC_SystemTitle>{{ t('settings.general.pageWidth') }}</SC_SystemTitle>
+        <SC_SystemHint>{{ t('settings.general.pageWidthHint') }}</SC_SystemHint>
+      </SC_SystemLabel>
+      <SC_ScaleRow>
+        <SC_ScaleButton
           v-for="opt in pageWidthOptions"
           :key="opt.value"
           :active="pageWidth === opt.value"
@@ -45,21 +49,21 @@
           @click="setPageWidth(opt.value)"
         >
           {{ t(opt.labelKey) }}
-        </SC_LangButton>
-      </SC_LangSwitcher>
-    </SC_GeneralRow>
-    <SC_GeneralRow v-if="!mobile">
-      <SC_GeneralText>
-        <SC_GeneralLabel>{{ t('settings.general.pageWidthButton') }}</SC_GeneralLabel>
-        <SC_GeneralHint>{{ t('settings.general.pageWidthButtonHint') }}</SC_GeneralHint>
-      </SC_GeneralText>
+        </SC_ScaleButton>
+      </SC_ScaleRow>
+    </SC_SystemRow>
+    <SC_SystemRow v-if="!mobile">
+      <SC_SystemLabel>
+        <SC_SystemTitle>{{ t('settings.general.pageWidthButton') }}</SC_SystemTitle>
+        <SC_SystemHint>{{ t('settings.general.pageWidthButtonHint') }}</SC_SystemHint>
+      </SC_SystemLabel>
       <Switch
         :checked="widthButtonShown"
         :aria-label="t('settings.general.pageWidthButton')"
         @change="onWidthButton"
       />
-    </SC_GeneralRow>
-  </SC_GeneralBlock>
+    </SC_SystemRow>
+  </SC_SystemSection>
 
   <SC_SettingsSectionTitle>{{ t('settings.content.title') }}</SC_SettingsSectionTitle>
   <SC_SystemSection>
@@ -143,16 +147,7 @@ import { useTheme, type ThemeMode } from '@/composables/use-theme'
 import { usePageWidth, type PageWidth } from '@/composables/use-page-width'
 import { useViewport } from '@/composables/use-viewport'
 import { useHeaderLayoutStore } from '@/stores/header-layout-store'
-import {
-  SC_SettingsSectionTitle,
-  SC_GeneralBlock,
-  SC_GeneralRow,
-  SC_GeneralHint,
-  SC_GeneralLabel,
-  SC_GeneralText,
-  SC_LangSwitcher,
-  SC_LangButton,
-} from '../settings-page.styled'
+import { SC_SettingsSectionTitle } from '../settings-page.styled'
 
 const uiStore = useUIStore()
 const { language: appLanguage } = storeToRefs(uiStore)

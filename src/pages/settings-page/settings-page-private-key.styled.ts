@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { TRANSITIONS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 export const SC_PrivateKeySection = styled.div`
   max-width: 560px;
@@ -38,7 +38,9 @@ export const SC_PrivateKeyValue = styled.div`
   font-size: 14px;
   line-height: calc(1.6 * var(--leading-scale));
   color: var(--color-text-primary);
-  word-break: break-all;
+  /* Слова сид-фразы целиком, ключ без пробелов — где придётся. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
   user-select: all;
 `
 
@@ -91,6 +93,11 @@ export const SC_ShowKeyButton = styled.button`
     background: var(--color-border-default);
     cursor: not-allowed;
   }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    width: 100%;
+    justify-content: center;
+  }
 `
 
 export const SC_HideKeyButton = styled.button`
@@ -112,6 +119,12 @@ export const SC_HideKeyButton = styled.button`
   &:hover {
     color: var(--ui-primary);
     border-color: var(--ui-primary);
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
   }
 `
 
@@ -144,6 +157,14 @@ export const SC_ConfirmButtons = styled.div`
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+
+  /* Телефон: две кнопки поровну, по 40 px в высоту. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    & > * {
+      flex: 1 1 0;
+      min-height: 40px;
+    }
+  }
 `
 
 export const SC_ConfirmBtnPrimary = styled.button`

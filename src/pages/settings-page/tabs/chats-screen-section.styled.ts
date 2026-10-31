@@ -1,6 +1,7 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 import { nuxtField } from '@/styles/field-styles'
-import { SC_SystemRow } from './system-tab.styled'
+import { SC_ScaleRow, SC_SystemRow } from './system-tab.styled'
 
 /** Строка правила: подпись сжимается первой, на узком экране выбор уходит под неё. */
 export const SC_ScreenRow = styled(SC_SystemRow)`
@@ -30,11 +31,31 @@ export const SC_ScreenNumber = styled.input`
   }
 `
 
+/** Люди: поле «ник или адрес», ошибка и список — отступ до следующего раздела общий. */
+export const SC_ScreenPeople = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+
+  & > * {
+    margin: 0;
+  }
+`
+
 /** Ник или адрес — и кнопка «Скрыть». */
 export const SC_ScreenAdd = styled.form`
   display: flex;
   gap: 8px;
-  margin-bottom: 8px;
+`
+
+/** «Скрыт / Виден» у человека; на телефоне — второй строкой под ником. */
+export const SC_ScreenPersonRule = styled(SC_ScaleRow)`
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    order: 1;
+    flex: 1 1 calc(100% - 48px);
+    margin-left: 48px;
+  }
 `
 
 export const SC_ScreenInput = styled.input`
@@ -66,7 +87,6 @@ export const SC_ScreenAddButton = styled.button`
 `
 
 export const SC_ScreenError = styled.p`
-  margin: 0 0 12px;
   font-size: 13px;
   color: var(--ui-error);
 `

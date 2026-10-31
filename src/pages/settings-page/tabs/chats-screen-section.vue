@@ -65,58 +65,60 @@
   </SC_ArchiveHead>
   <SC_ArchiveLead>{{ t('settings.chats.screenPeopleHint') }}</SC_ArchiveLead>
 
-  <SC_ScreenAdd @submit.prevent="onAdd">
-    <SC_ScreenInput
-      v-model="nick"
-      type="text"
-      autocomplete="off"
-      autocapitalize="off"
-      spellcheck="false"
-      enterkeyhint="done"
-      :placeholder="t('settings.chats.screenAddPlaceholder')"
-      :aria-label="t('settings.chats.screenAddPlaceholder')"
-      data-testid="screen-add-input"
-    />
-    <SC_ScreenAddButton type="submit" :disabled="adding || !nick.trim()" data-testid="screen-add">
-      {{ t('settings.chats.screenAdd') }}
-    </SC_ScreenAddButton>
-  </SC_ScreenAdd>
-  <SC_ScreenError v-if="addError" role="alert" data-testid="screen-add-error">
-    {{ addError }}
-  </SC_ScreenError>
+  <SC_ScreenPeople>
+    <SC_ScreenAdd @submit.prevent="onAdd">
+      <SC_ScreenInput
+        v-model="nick"
+        type="text"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        enterkeyhint="done"
+        :placeholder="t('settings.chats.screenAddPlaceholder')"
+        :aria-label="t('settings.chats.screenAddPlaceholder')"
+        data-testid="screen-add-input"
+      />
+      <SC_ScreenAddButton type="submit" :disabled="adding || !nick.trim()" data-testid="screen-add">
+        {{ t('settings.chats.screenAdd') }}
+      </SC_ScreenAddButton>
+    </SC_ScreenAdd>
+    <SC_ScreenError v-if="addError" role="alert" data-testid="screen-add-error">
+      {{ addError }}
+    </SC_ScreenError>
 
-  <SC_ArchiveList v-if="people.length">
-    <SC_ArchiveRow v-for="p in people" :key="p.address" data-testid="screen-person">
-      <Avatar :src="p.avatar" :alt="p.name" :fallback-text="p.name" :size="36" shape="circle" />
-      <SC_ArchiveInfo>
-        <SC_ArchiveName>{{ p.name }}</SC_ArchiveName>
-        <SC_ArchiveMeta>{{ shortAddress(p.address) }}</SC_ArchiveMeta>
-      </SC_ArchiveInfo>
-      <SC_ScaleRow role="radiogroup" :aria-label="p.name">
-        <SC_ScaleButton
-          v-for="rule in PERSON_RULES"
-          :key="rule"
+    <SC_ArchiveList v-if="people.length">
+      <SC_ArchiveRow v-for="p in people" :key="p.address" data-testid="screen-person">
+        <Avatar :src="p.avatar" :alt="p.name" :fallback-text="p.name" :size="36" shape="circle" />
+        <SC_ArchiveInfo>
+          <SC_ArchiveName>{{ p.name }}</SC_ArchiveName>
+          <SC_ArchiveMeta>{{ shortAddress(p.address) }}</SC_ArchiveMeta>
+        </SC_ArchiveInfo>
+        <SC_ScreenPersonRule role="radiogroup" :aria-label="p.name">
+          <SC_ScaleButton
+            v-for="rule in PERSON_RULES"
+            :key="rule"
+            type="button"
+            role="radio"
+            :active="p.rule === rule"
+            :aria-checked="p.rule === rule"
+            :data-testid="`screen-person-${rule}`"
+            @click="screen.setPerson(p.address, rule)"
+          >
+            {{ t(`settings.chats.screenPerson_${rule}`) }}
+          </SC_ScaleButton>
+        </SC_ScreenPersonRule>
+        <SC_ArchiveDelete
           type="button"
-          role="radio"
-          :active="p.rule === rule"
-          :aria-checked="p.rule === rule"
-          :data-testid="`screen-person-${rule}`"
-          @click="screen.setPerson(p.address, rule)"
+          :title="t('settings.chats.screenRemove')"
+          :aria-label="t('settings.chats.screenRemoveOf', { name: p.name })"
+          data-testid="screen-person-remove"
+          @click="screen.setPerson(p.address, null)"
         >
-          {{ t(`settings.chats.screenPerson_${rule}`) }}
-        </SC_ScaleButton>
-      </SC_ScaleRow>
-      <SC_ArchiveDelete
-        type="button"
-        :title="t('settings.chats.screenRemove')"
-        :aria-label="t('settings.chats.screenRemoveOf', { name: p.name })"
-        data-testid="screen-person-remove"
-        @click="screen.setPerson(p.address, null)"
-      >
-        <CloseOutlined />
-      </SC_ArchiveDelete>
-    </SC_ArchiveRow>
-  </SC_ArchiveList>
+          <CloseOutlined />
+        </SC_ArchiveDelete>
+      </SC_ArchiveRow>
+    </SC_ArchiveList>
+  </SC_ScreenPeople>
 </template>
 
 <script setup lang="ts">
@@ -160,6 +162,8 @@ import {
   SC_ScreenError,
   SC_ScreenInput,
   SC_ScreenNumber,
+  SC_ScreenPeople,
+  SC_ScreenPersonRule,
   SC_ScreenRow,
 } from './chats-screen-section.styled'
 

@@ -6,7 +6,7 @@
       <SC_CacheUsage>{{ usageText }}</SC_CacheUsage>
     </SC_SystemLabel>
     <SC_CacheControls>
-      <SC_ScaleRow :aria-label="t('offlineVideo.defaultQuality')">
+      <SC_QualityRow :aria-label="t('offlineVideo.defaultQuality')">
         <SC_ScaleButton
           v-for="choice in OFFLINE_QUALITY_CHOICES"
           :key="String(choice)"
@@ -16,7 +16,7 @@
         >
           {{ choice === 'ask' ? t('offlineVideo.ask') : `${choice}p` }}
         </SC_ScaleButton>
-      </SC_ScaleRow>
+      </SC_QualityRow>
       <SC_SwitchLine v-if="isAndroid">
         <Switch
           :checked="store.wifiOnly"
@@ -48,8 +48,8 @@ import {
   SC_CacheRow,
   SC_CacheUsage,
   SC_DangerButton,
+  SC_QualityRow,
   SC_ScaleButton,
-  SC_ScaleRow,
   SC_SwitchLine,
   SC_SystemHint,
   SC_SystemLabel,

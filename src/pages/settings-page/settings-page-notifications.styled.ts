@@ -10,6 +10,7 @@ export const SC_NotificationsRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   padding: 12px 0;
   border-bottom: 1px solid var(--color-overlay-6);
   font-size: 14px;
@@ -22,4 +23,5 @@ export const SC_NotificationsRow = styled.div`
 
 export const SC_NotificationsRowLabel = styled.span`
   flex: 1;
+  min-width: 0;
 `

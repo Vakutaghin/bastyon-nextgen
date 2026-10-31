@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_LayoutHint = styled.p`
   margin: -8px 0 12px;
@@ -129,5 +130,9 @@ export const SC_ResetButton = styled.button`
   &:disabled {
     color: var(--ui-text-dimmed);
     cursor: default;
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    min-height: 36px;
   }
 `

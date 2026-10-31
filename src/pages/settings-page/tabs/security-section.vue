@@ -3,14 +3,14 @@
     <SC_SecurityLevel>{{ t('vault.security') }}: {{ levelLabel }}</SC_SecurityLevel>
     <SC_SecurityDesc>{{ levelDesc }}</SC_SecurityDesc>
 
-    <div v-if="!degraded">
+    <SC_SecurityActions v-if="!degraded">
       <Button v-if="level !== 'passphrase'" type="primary" :loading="busy" @click="openEnable">
         {{ t('vault.enablePassphrase') }}
       </Button>
       <Button v-else danger :loading="busy" @click="openDisable">
         {{ t('vault.disablePassphrase') }}
       </Button>
-    </div>
+    </SC_SecurityActions>
   </SC_SecurityCard>
 
   <!-- Резервная копия (VP-8): статус проверки + повторная проверка по желанию. -->
@@ -19,9 +19,9 @@
     <SC_SecurityDesc :class="{ warn: backupStatus.state !== 'ok' }">{{
       backupStatusLabel
     }}</SC_SecurityDesc>
-    <div>
+    <SC_SecurityActions>
       <Button @click="openBackupCheck('standalone')">{{ t('vault.backupCheckButton') }}</Button>
-    </div>
+    </SC_SecurityActions>
   </SC_SecurityCard>
 
   <!-- Шаг 1 включения passphrase и самостоятельная проверка: челлендж по словам. -->
@@ -91,6 +91,7 @@ import { useAuthStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
 import BackupCheckModal from './backup-check-modal.vue'
 import {
+  SC_SecurityActions,
   SC_SecurityCard,
   SC_SecurityLevel,
   SC_SecurityDesc,

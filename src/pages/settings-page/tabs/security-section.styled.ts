@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_SecurityCard = styled.div`
   margin-top: 20px;
@@ -24,6 +25,17 @@ export const SC_SecurityDesc = styled.p`
 
   &.warn {
     color: var(--color-danger);
+  }
+`
+
+/** Кнопки карточки; на телефоне — столбцом во всю ширину. */
+export const SC_SecurityActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-direction: column;
   }
 `
 

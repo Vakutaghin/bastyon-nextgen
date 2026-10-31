@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_ArchiveLead = styled.p`
   margin: 0 0 16px;
@@ -14,6 +15,18 @@ export const SC_ArchiveHead = styled.div`
   justify-content: space-between;
   gap: 4px 16px;
   margin-bottom: 12px;
+
+  /* Заголовок подраздела — заметнее строк под ним. */
+  & > :first-child {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* Телефон: пояснение всегда под заголовком, а не то справа, то снизу. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-direction: column;
+    gap: 2px;
+  }
 `
 
 export const SC_ArchiveSearch = styled.input`
@@ -50,6 +63,11 @@ export const SC_ArchiveRow = styled.li`
 
   & + & {
     border-top: 1px solid var(--ui-border);
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-wrap: wrap;
+    gap: 8px 12px;
   }
 `
 
@@ -98,6 +116,11 @@ export const SC_ArchiveDelete = styled.button`
 
   &:focus-visible {
     outline: 2px solid var(--ui-focus-outline);
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    width: 40px;
+    height: 40px;
   }
 `
 
