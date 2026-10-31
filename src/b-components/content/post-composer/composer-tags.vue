@@ -67,6 +67,8 @@ const props = defineProps<{
   inputValue: string
   /** Идёт публикация поста: теги уже в нём. */
   disabled?: boolean
+  /** Язык поста: подсказки — из тегов этого языка. */
+  language: string
 }>()
 const emit = defineEmits<{
   (e: 'add', raw: string): void
@@ -75,7 +77,7 @@ const emit = defineEmits<{
   (e: 'update:inputValue', value: string): void
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 // ref на SC_TagInput (styled.input) — Vue кладёт сюда инстанс обёртки, а не DOM-узел,
 // поэтому держим оба варианта и достаём нативный input через $el (как getTextareaEl в post-composer).
 const inputRef = ref<HTMLInputElement | { $el?: HTMLInputElement } | null>(null)
@@ -101,10 +103,10 @@ watch(
 // Облако трендовых тегов (gettags не умеет префикс-поиск — фильтруем на клиенте).
 // Тот же ключ, что у облака тегов в сайдбаре: один запрос, один кэш.
 const { data: tagsResponse } = useRpcQuery(
-  () => ['tags', 'cloud', locale.value, '100'],
+  () => ['tags', 'cloud', props.language, '100'],
   () => ({
     method: rpcEndpoints.getTags,
-    parameters: ['', '100', '', locale.value],
+    parameters: ['', '100', '', props.language],
     options: { auth: false },
   }),
   { staleTime: 5 * 60 * 1000, gcTime: 10 * 60 * 1000, refetchOnWindowFocus: false }

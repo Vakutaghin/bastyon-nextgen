@@ -29,6 +29,7 @@ import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
 
+import com.bastyon.app.R;
 import com.bastyon.app.plugins.tor.TorHttpDataSource;
 import com.bastyon.app.plugins.tor.TorNetwork;
 
@@ -207,13 +208,14 @@ public class MediaPlaybackService extends Service {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
-        if (nm.getNotificationChannel(CHANNEL_ID) != null) return;
+        // Канал уже есть — создание обновит только имя и описание: после смены
+        // языка системы они на новом языке.
         NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
-                "Bastyon playback",
+                getString(R.string.media_channel_name),
                 NotificationManager.IMPORTANCE_LOW
         );
-        channel.setDescription("Background media playback controls");
+        channel.setDescription(getString(R.string.media_channel_description));
         channel.setShowBadge(false);
         nm.createNotificationChannel(channel);
     }
@@ -347,21 +349,23 @@ public class MediaPlaybackService extends Service {
         // Очередь — «предыдущий» и «следующий», один ролик — перемотка на 10 с.
         builder.addAction(hasQueue()
                 ? new NotificationCompat.Action(
-                        android.R.drawable.ic_media_previous, "Previous", buildSkipPendingIntent(false))
+                        android.R.drawable.ic_media_previous, getString(R.string.media_previous),
+                        buildSkipPendingIntent(false))
                 : new NotificationCompat.Action(
-                        android.R.drawable.ic_media_rew, "Rewind", buildSeekDeltaPendingIntent(-10_000L)));
+                        android.R.drawable.ic_media_rew, getString(R.string.media_rewind),
+                        buildSeekDeltaPendingIntent(-10_000L)));
 
         if (currentIsPlaying) {
             builder.addAction(new NotificationCompat.Action(
                     android.R.drawable.ic_media_pause,
-                    "Pause",
+                    getString(R.string.media_pause),
                     MediaButtonReceiver.buildMediaButtonPendingIntent(
                             this, PlaybackStateCompat.ACTION_PAUSE)
             ));
         } else {
             builder.addAction(new NotificationCompat.Action(
                     android.R.drawable.ic_media_play,
-                    "Play",
+                    getString(R.string.media_play),
                     MediaButtonReceiver.buildMediaButtonPendingIntent(
                             this, PlaybackStateCompat.ACTION_PLAY)
             ));
@@ -369,9 +373,11 @@ public class MediaPlaybackService extends Service {
 
         builder.addAction(hasQueue()
                 ? new NotificationCompat.Action(
-                        android.R.drawable.ic_media_next, "Next", buildSkipPendingIntent(true))
+                        android.R.drawable.ic_media_next, getString(R.string.media_next),
+                        buildSkipPendingIntent(true))
                 : new NotificationCompat.Action(
-                        android.R.drawable.ic_media_ff, "Forward", buildSeekDeltaPendingIntent(10_000L)));
+                        android.R.drawable.ic_media_ff, getString(R.string.media_forward),
+                        buildSeekDeltaPendingIntent(10_000L)));
 
         MediaStyle style = new MediaStyle()
                 .setMediaSession(mediaSession.getSessionToken())

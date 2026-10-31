@@ -1549,7 +1549,7 @@ export default {
     statsTitle: 'Активность сети',
     statsToggleHours: '48 часов',
     statsToggleDays: '30 дней',
-    statsSubtitle: 'Всего {total} транзакций за {unit}',
+    statsSubtitle: 'Транзакций за {unit}: {total}',
     statsUnitHours: '{n} ч',
     statsUnitDays: '{n} д',
     statsUnitSuffixHours: 'ч',

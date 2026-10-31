@@ -4,4 +4,13 @@
     <string name="title_activity_main">Bastyon NextGen</string>
     <string name="package_name">com.bastyon.app</string>
     <string name="custom_url_scheme">com.bastyon.app</string>
+    <!-- Уведомление фонового воспроизведения: язык системы, values-<язык> рядом. -->
+    <string name="media_channel_name">Playback</string>
+    <string name="media_channel_description">Media playback controls in the background</string>
+    <string name="media_previous">Previous</string>
+    <string name="media_rewind">Rewind 10 seconds</string>
+    <string name="media_pause">Pause</string>
+    <string name="media_play">Play</string>
+    <string name="media_next">Next</string>
+    <string name="media_forward">Forward 10 seconds</string>
 </resources>

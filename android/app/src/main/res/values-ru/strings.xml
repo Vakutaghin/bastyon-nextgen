@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="media_channel_name">Воспроизведение</string>
+    <string name="media_channel_description">Управление звуком и видео в фоне</string>
+    <string name="media_previous">Предыдущее</string>
+    <string name="media_rewind">Назад на 10 секунд</string>
+    <string name="media_pause">Пауза</string>
+    <string name="media_play">Воспроизвести</string>
+    <string name="media_next">Следующее</string>
+    <string name="media_forward">Вперёд на 10 секунд</string>
+</resources>

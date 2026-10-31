@@ -32,7 +32,7 @@
 
       <div v-else-if="message.type === 'audio'" class="message-audio">
         <AudioMessage :message="message" :compact="isCompact" />
-        <SC_AudioUrlMissing v-if="!message.url">Audio URL missing</SC_AudioUrlMissing>
+        <SC_AudioUrlMissing v-if="!message.url">{{ t('messenger.audioNoUrl') }}</SC_AudioUrlMissing>
       </div>
 
       <div v-else-if="message.type === 'image'" class="message-image">

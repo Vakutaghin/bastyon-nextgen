@@ -50,6 +50,11 @@ export interface MockPost {
   lastComment?: string
   /** Только по txid (getrawtransactionwithmessagebyid): в общих лентах его нет — как продвигаемый пост. */
   byIdOnly?: boolean
+  /**
+   * Язык поста (`l`). С ним лента с языком в запросе отбирает пост, как нода;
+   * без него — пост русский и виден на любом языке ленты.
+   */
+  language?: string
 }
 
 export interface MockComment {
@@ -226,7 +231,7 @@ function postJson(post: MockPost, data: MockNodeData, index: number) {
     id: 37_000_000 + index,
     address: post.address,
     time: NOW - (post.ago ?? 600 * (index + 1)),
-    l: 'ru',
+    l: post.language ?? 'ru',
     type: post.type ?? 'share',
     c: post.caption ?? '',
     m: post.message,
@@ -332,6 +337,12 @@ function collectionShareJson(c: MockCollection, index: number, data: MockNodeDat
   }
 }
 
+/** Язык ленты в запросе (4-й параметр) отбирает посты, у которых язык задан. */
+function inLanguage(post: MockPost, params: unknown[]): boolean {
+  const lang = params[3]
+  return !lang || !post.language || post.language === lang
+}
+
 function rpcResult(method: string, params: unknown[], data: MockNodeData): unknown {
   switch (method) {
     case 'getprofilecollections': {
@@ -353,7 +364,9 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
         ...unknown[],
       ]
       const own = data.posts
-        .map((p, i) => postJson(p, data, i))
+        .map((p, i) => [p, i] as const)
+        .filter(([p]) => inLanguage(p, params))
+        .map(([p, i]) => postJson(p, data, i))
         .filter((p) => !address || p.address === address)
         .sort((a, b) => b.time - a.time)
       const start = fromTxid ? own.findIndex((p) => p.txid === fromTxid) + 1 : 0
@@ -369,7 +382,9 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
       const [, fromTxid, count] = params as [unknown, string, number]
       const followed = new Set(data.subscribes ?? [])
       const feed = data.posts
-        .map((p, i) => postJson(p, data, i))
+        .map((p, i) => [p, i] as const)
+        .filter(([p]) => inLanguage(p, params))
+        .map(([p, i]) => postJson(p, data, i))
         .filter((p) => followed.has(p.address))
         .sort((a, b) => b.time - a.time)
       const start = fromTxid ? feed.findIndex((p) => p.txid === fromTxid) + 1 : 0
@@ -387,7 +402,7 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
         height: HEIGHT,
         contents: data.posts
           .map((p, i) => [p, i] as const)
-          .filter(([p]) => !p.byIdOnly)
+          .filter(([p]) => !p.byIdOnly && inLanguage(p, params))
           .map(([p, i]) => postJson(p, data, i)),
         users: [],
         videos: {},

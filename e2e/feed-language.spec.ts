@@ -69,6 +69,84 @@ test('язык ленты меняет только ленту, язык из ш
   await expect(page.locator('.ant-select-selection-item[title="Deutsch"]')).toBeVisible()
 })
 
+test('подписки — на всех языках, общая лента и комментарии — на языке ленты', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.setViewportSize({ width: 1400, height: 900 })
+  const BOB = 'PBobbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+  const ME = 'PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPy'
+  const comments: string[] = []
+  page.on('request', (request) => {
+    if (!request.url().endsWith('/getlastcomments')) return
+    const params = (request.postDataJSON() as { parameters?: unknown[] })?.parameters
+    if (typeof params?.[2] === 'string') comments.push(params[2])
+  })
+  await useMockNode(page, {
+    profiles: [
+      { address: ME, name: 'me_ng' },
+      { address: ALICE, name: 'alice_ng' },
+      { address: BOB, name: 'bob_ng' },
+    ],
+    posts: [
+      {
+        txid: 'a'.repeat(64),
+        address: ALICE,
+        message: 'Алиса пишет по-русски',
+        language: 'ru',
+        ago: 60,
+      },
+      {
+        txid: 'b'.repeat(64),
+        address: BOB,
+        message: 'Bob writes in English',
+        language: 'en',
+        ago: 120,
+      },
+      { txid: 'c'.repeat(64), address: BOB, message: 'Боб и по-русски', language: 'ru', ago: 180 },
+    ],
+    comments: [],
+    subscribes: [ALICE],
+  })
+  await page.route('**/_matrix/**', (route) => route.abort())
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('bastyon_locale')) localStorage.setItem('bastyon_locale', 'ru')
+    if (!localStorage.getItem('bastyon_feed_locale'))
+      localStorage.setItem('bastyon_feed_locale', 'en')
+  })
+  await page.goto('/')
+  await page.waitForSelector('#app > *', { timeout: 30_000 })
+  await page
+    .getByRole('button', { name: 'Понятно' })
+    .click({ timeout: 5_000 })
+    .catch(() => {})
+  await page.getByRole('button', { name: 'Войти' }).first().click()
+  const auth = page.getByRole('dialog', { name: 'Вход в аккаунт' })
+  await auth
+    .locator('input, textarea')
+    .first()
+    .fill(
+      'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+    )
+  await auth.getByRole('button', { name: 'Войти' }).click()
+  await expect(auth).toBeHidden({ timeout: 30_000 })
+
+  // Лента на английском: русских постов Боба нет, новое от подписок — по-русски.
+  // Подборка держится и после перезапроса всего, что идёт сразу за входом.
+  const feed = page.locator('main')
+  await expect(feed.getByText('Bob writes in English')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByTestId('feed-subscriptions-divider')).toBeVisible({ timeout: 30_000 })
+  await expect(feed.getByText('Алиса пишет по-русски')).toBeVisible()
+  await page.waitForTimeout(3_000)
+  await expect(feed.getByText('Алиса пишет по-русски')).toBeVisible()
+  await expect(feed.getByText('Боб и по-русски')).toHaveCount(0)
+  await expect.poll(() => comments.at(-1)).toBe('en')
+
+  // «Подписки» — все языки: русский пост Алисы виден, английский Боба — нет, он не в подписках.
+  await page.getByRole('navigation').getByRole('button', { name: 'Подписки' }).click()
+  await expect(page).toHaveURL(/feedMode=subscriptions/)
+  await expect(feed.getByText('Алиса пишет по-русски')).toBeVisible({ timeout: 30_000 })
+  await expect(feed.getByText('Bob writes in English')).toHaveCount(0)
+})
+
 test('язык ленты в меню телефона: список открывается поверх меню', async ({ page }) => {
   test.setTimeout(120_000)
   await page.setViewportSize({ width: 390, height: 844 })

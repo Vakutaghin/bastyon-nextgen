@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PaperClipOutlined } from '@/components/icons'
 import { useCloseOnBack } from '@/composables/use-back-button'
@@ -64,7 +64,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const title = props.title ?? t('messenger.attach')
+const title = computed(() => props.title ?? t('messenger.attach'))
 
 const menuOpen = ref(false)
 const rootRef = ref<HTMLElement | null>(null)

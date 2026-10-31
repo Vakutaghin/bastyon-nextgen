@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="media_channel_name">Riproduzione</string>
+    <string name="media_channel_description">Controlli di riproduzione in background</string>
+    <string name="media_previous">Precedente</string>
+    <string name="media_rewind">Indietro di 10 secondi</string>
+    <string name="media_pause">Pausa</string>
+    <string name="media_play">Riproduci</string>
+    <string name="media_next">Successivo</string>
+    <string name="media_forward">Avanti di 10 secondi</string>
+</resources>

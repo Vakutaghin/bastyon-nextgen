@@ -1,7 +1,7 @@
 // UI-состояние мессенджера: открытие/закрытие, полноэкранность, активный диалог, invite
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, shallowRef } from 'vue'
 
 import type { Dialog } from '../types'
 
@@ -59,7 +59,19 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
   const groupInfoChatId = ref<string | null>(null)
 
   const syncState = ref<string>('STOPPED')
-  const syncError = ref<string | null>(null)
+  // Текст ошибки собирают при чтении: баннер, висящий при смене языка,
+  // переводится вместе с интерфейсом. Строка присваивается как есть.
+  const syncErrorText = shallowRef<(() => string) | null>(null)
+  const syncError = computed<string | null>({
+    get: () => syncErrorText.value?.() ?? null,
+    set: (text) => {
+      syncErrorText.value = text === null ? null : () => text
+    },
+  })
+  /** Ошибка синка, переводимая на ходу: `text` зовёт t() при каждом показе. */
+  function setSyncError(text: () => string): void {
+    syncErrorText.value = text
+  }
   /** Техническая причина ошибки синка (HTTP-код, «fetch failed…») — для поддержки. */
   const syncErrorDetail = ref<string | null>(null)
   const isSyncStarted = ref(false)
@@ -236,6 +248,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     syncState,
     syncError,
     syncErrorDetail,
+    setSyncError,
     isSyncStarted,
     isInitInProgress,
     chatFilter,

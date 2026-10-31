@@ -535,7 +535,7 @@ export const useMessengerStore = defineStore('messenger', () => {
           // Провал логина был виден только в консоли — пользователь смотрел на
           // вечную «Загрузку диалогов» (S37).
           uiStore.syncState = 'ERROR'
-          uiStore.syncError = t('appMsg.messenger.loginFailed')
+          uiStore.setSyncError(() => t('appMsg.messenger.loginFailed'))
           uiStore.dialogsLoadedOnce = true
           if (!matrixService.getClient()) scheduleLoginRetry()
         } finally {

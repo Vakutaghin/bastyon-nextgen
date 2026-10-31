@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="media_channel_name">Репродукција</string>
+    <string name="media_channel_description">Управљање репродукцијом у позадини</string>
+    <string name="media_previous">Претходно</string>
+    <string name="media_rewind">Назад 10 секунди</string>
+    <string name="media_pause">Пауза</string>
+    <string name="media_play">Пусти</string>
+    <string name="media_next">Следеће</string>
+    <string name="media_forward">Напред 10 секунди</string>
+</resources>

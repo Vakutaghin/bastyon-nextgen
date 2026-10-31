@@ -21,7 +21,7 @@ Posts from authors you have [blocked](blocking.md) are not shown in the feed. To
 
 ## The feed language
 
-The feed, tags and recommendations are in the feed language: the app passes it to the node, and the node picks posts in that language. At first it is the same as the interface language. To read posts in another language without changing the interface, pick the language in the **“Feed language”** field under the **“Best first”** switch in the left panel; on a phone it is in the side menu. If you change the interface language in the header or in the settings, the feed switches to the same language. More in [Language and appearance](appearance.md).
+The feed, tags and recommendations are in the feed language: the app passes it to the node, and the node picks posts in that language. At first it is the same as the interface language. To read posts in another language without changing the interface, pick the language in the **“Feed language”** field under the **“Best first”** switch in the left panel; on a phone it is in the side menu. If you change the interface language in the header or in the settings, the feed switches to the same language. **“Subscriptions”** does not filter by language: posts of the people you follow show in any language. More in [Language and appearance](appearance.md).
 
 ## New posts and refreshing
 

@@ -18,7 +18,9 @@
       <slot name="actions" />
       <!-- В открытом чате вместо заголовка — собеседник со ссылкой на профиль. -->
       <slot name="title">
-        <SC_Title :title="title">{{ title }}</SC_Title>
+        <SC_Title :title="title ?? t('messenger.messages')">{{
+          title ?? t('messenger.messages')
+        }}</SC_Title>
       </slot>
       <!-- Что догружается: рядом с заголовком, у открытого чата — перед крестиком. -->
       <slot name="status" />
@@ -59,7 +61,7 @@ const BOTH: ResizeAxes = { width: true, height: true }
 
 const { t } = useI18n()
 
-withDefaults(defineProps<{ isOpen: boolean; title?: string }>(), { title: 'Messenger' })
+defineProps<{ isOpen: boolean; title?: string }>()
 const emit = defineEmits<{ close: [] }>()
 
 const { size, resizing, startResize, resizeByKey, resetSize } = useWidgetSize()

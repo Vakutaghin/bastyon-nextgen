@@ -81,6 +81,9 @@ function setup(
     syncState: 'STOPPED',
     syncError: null as string | null,
     syncErrorDetail: null as string | null,
+    setSyncError(text: () => string) {
+      this.syncError = text()
+    },
     dialogsLoadedOnce: false,
     isChatOnScreen: (chatId: string | null) => onScreen && !!chatId && chatId === activeChatId,
   }

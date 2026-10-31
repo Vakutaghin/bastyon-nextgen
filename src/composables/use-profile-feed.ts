@@ -43,7 +43,7 @@ const CONFIRMED_RETRY_WINDOW_MS = 2 * 60_000
  * Infinite scroll для ленты профиля
  */
 export function useProfileFeed(options: UseProfileFeedOptions) {
-  const { address, initialLimit = 10, pageSize = 10, threshold, lang = 'ru' } = options
+  const { address, initialLimit = 10, pageSize = 10, threshold, lang = '' } = options
 
   // Безопасное расстояние для подгрузки
   const safeDistance = threshold ?? (typeof window !== 'undefined' ? window.innerHeight : 1000)

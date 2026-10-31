@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { ruPluralRule, setI18nLocale, tn } from './index'
+import { frPluralRule, loadLocaleMessages, ruPluralRule, setI18nLocale, tn } from './index'
 import { getCommentLengthHint } from '@/b-components/content/post-card/components/post-card-comments/helpers'
 import { COMMENT_MAX_LENGTH } from '@/b-components/content/post-card/components/post-card-comments/consts'
 
@@ -18,6 +18,20 @@ describe('ruPluralRule', () => {
     expect(ruPluralRule(1, 4)).toBe(1)
     expect(ruPluralRule(3, 4)).toBe(2)
     expect(ruPluralRule(7, 4)).toBe(3)
+  })
+})
+
+describe('frPluralRule', () => {
+  it('0 и 1 — единственное число, дальше множественное', () => {
+    expect([0, 1].map((n) => frPluralRule(n, 2))).toEqual([0, 0])
+    expect([2, 5, 21].map((n) => frPluralRule(n, 2))).toEqual([1, 1, 1])
+  })
+
+  it('во французском интерфейсе «0 caractère restant»', async () => {
+    await loadLocaleMessages('fr')
+    setI18nLocale('fr')
+    expect(tn('commentsMsg.charsLeft', 0)).toBe('0 caractère restant')
+    expect(tn('commentsMsg.charsLeft', 2)).toBe('2 caractères restants')
   })
 })
 

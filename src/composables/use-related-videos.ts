@@ -11,7 +11,6 @@ import { useBlockedAuthors } from '@/composables/use-blocked-authors'
 import { useQuery } from '@tanstack/vue-query'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
-import { useUIStore } from '@/stores/ui-store'
 import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
 import type { GetProfileFeedResponse } from '@/types/rpc-responses/get-profile-feed'
 
@@ -26,12 +25,11 @@ export function useRelatedVideos(
   excludeTxid: MaybeRefOrGetter<string | null | undefined>,
   limit = 6
 ) {
-  const uiStore = useUIStore()
   const address = computed(() => resolve(authorAddress) || '')
   const exclude = computed(() => resolve(excludeTxid) || '')
 
   const { data, isLoading, error } = useQuery<GetProfileFeedResponse>({
-    queryKey: computed(() => ['related-videos', address.value, uiStore.contentLanguage]),
+    queryKey: computed(() => ['related-videos', address.value]),
     queryFn: () =>
       getByPRCWithAuth({
         method: rpcEndpoints.getProfileFeed,
@@ -43,7 +41,7 @@ export function useRelatedVideos(
           0, // height
           '', // txid
           limit + 6, // count — запас под исключение текущего поста
-          uiStore.contentLanguage, // lang
+          '', // lang: все языки, как на странице автора
           [], // tagsfilter
           VIDEO_TYPES, // type
           [], // _param6

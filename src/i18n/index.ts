@@ -94,6 +94,16 @@ export function ruPluralRule(choice: number, choicesLength: number): number {
   return Math.min(form, choicesLength - 1)
 }
 
+/**
+ * Во французском 0 и 1 — единственное число («0 commentaire»), а встроенное
+ * правило vue-i18n ставит 0 во множественное. Формы — «один | много».
+ */
+export function frPluralRule(choice: number, choicesLength: number): number {
+  const n = Math.abs(choice)
+  if (choicesLength === 2) return n < 2 ? 0 : 1
+  return n ? Math.min(n, 2) : 0
+}
+
 /** В корейском и китайском у существительных нет множественного числа. */
 const noPlural = (): number => 0
 
@@ -103,7 +113,7 @@ export const i18n = createI18n({
   // Ключа нет в словаре — английский: его понимают чаще, чем русский.
   fallbackLocale: 'en',
   messages: { ru, en },
-  pluralRules: { ru: ruPluralRule, sr: ruPluralRule, kr: noPlural, zh: noPlural },
+  pluralRules: { ru: ruPluralRule, sr: ruPluralRule, fr: frPluralRule, kr: noPlural, zh: noPlural },
 })
 
 /** Словарь того же устройства, что en.ts: полноту ключей проверяют тесты локалей. */

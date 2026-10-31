@@ -41,7 +41,7 @@
       <SC_VideoThumbnail
         v-if="showThumbnail"
         :src="thumbnailUrl ?? undefined"
-        alt="Video thumbnail"
+        alt=""
         :style="getThumbnailStyle()"
         @load="handleThumbnailLoad"
         @error="handleThumbnailError"

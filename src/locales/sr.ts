@@ -1547,7 +1547,7 @@ export default {
     statsTitle: 'Активност мреже',
     statsToggleHours: '48 сати',
     statsToggleDays: '30 дана',
-    statsSubtitle: 'Укупно {total} трансакција за {unit}',
+    statsSubtitle: 'Број трансакција за {unit}: {total}',
     statsUnitHours: '{n} ч',
     statsUnitDays: '{n} д',
     statsUnitSuffixHours: 'ч',

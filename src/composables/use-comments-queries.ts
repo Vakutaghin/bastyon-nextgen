@@ -13,7 +13,7 @@ import type {
   GetLastComment,
   GetLastCommentsResponse,
 } from '@/types/rpc-responses/get-last-comments'
-import { i18n } from '@/i18n'
+import { useUIStore } from '@/stores/ui-store'
 
 /**
  * Загружает комментарии к посту
@@ -60,7 +60,7 @@ export const LAST_COMMENTS_REFRESH_MS = 60 * 1000
 /**
  * Загружает последние комментарии
  *
- * Параметры getlastcomments: [limit, '', lang] — лимит (строка), пустая строка, язык интерфейса.
+ * Параметры getlastcomments: [limit, '', lang] — лимит (строка), пустая строка, язык ленты.
  * Обновляется раз в минуту, пока вкладка видна (в фоне vue-query интервал
  * пропускает — как старый клиент, который обновлял виджет только в фокусе).
  * Имена авторов догружаются до показа, чтобы новые строки не мелькали адресом.
@@ -68,8 +68,9 @@ export const LAST_COMMENTS_REFRESH_MS = 60 * 1000
  * @param enabled - Включен ли запрос
  */
 export function useLastComments(enabled: boolean = true) {
-  // Язык — интерфейса, а не всегда 'ru' (S62); смена языка перезапрашивает.
-  const parameters = (): [string, string, string] => ['20', '', String(i18n.global.locale.value)]
+  // Язык — ленты, рядом с которой стоит блок (S62); его смена перезапрашивает.
+  const uiStore = useUIStore()
+  const parameters = (): [string, string, string] => ['20', '', uiStore.contentLanguage]
   return useQuery<GetLastCommentsResponse>({
     queryKey: computed(() => ['comments', 'last', ...parameters()]),
     queryFn: async () => {

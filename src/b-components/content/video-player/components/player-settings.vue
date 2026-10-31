@@ -84,6 +84,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { bcp47 } from '@/i18n'
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, SpeedIcon, TuneIcon } from './player-icons'
 import {
   SC_SettingsMenu,
@@ -128,7 +129,7 @@ const panelRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
 /** «Обычная» для 1×, остальное — числом, как в меню YouTube. */
 function rateLabel(rate: number): string {
   if (rate === 1) return t('videoPlayer.normalSpeed')
-  return rate.toLocaleString(locale.value)
+  return rate.toLocaleString(bcp47(locale.value))
 }
 
 function panelEl(): HTMLElement | null {

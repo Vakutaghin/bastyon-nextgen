@@ -63,7 +63,7 @@
               :title="t('accounts.showSeedPhrase')"
               @click.stop="handleShowMnemonic(account.address)"
             >
-              <img :src="keyIcon" alt="Key" />
+              <img :src="keyIcon" alt="" />
             </SC_KeyIcon>
             <SC_LogoutIcon
               :title="t('accounts.logout')"

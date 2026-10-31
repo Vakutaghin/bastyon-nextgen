@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="media_channel_name">Lecture</string>
+    <string name="media_channel_description">Commandes de lecture en arrière-plan</string>
+    <string name="media_previous">Précédent</string>
+    <string name="media_rewind">Reculer de 10 secondes</string>
+    <string name="media_pause">Pause</string>
+    <string name="media_play">Lire</string>
+    <string name="media_next">Suivant</string>
+    <string name="media_forward">Avancer de 10 secondes</string>
+</resources>

@@ -1,4 +1,4 @@
-// «Последние комментарии»: getlastcomments [20, '', язык интерфейса]; имена
+// «Последние комментарии»: getlastcomments [20, '', язык ленты]; имена
 // авторов и адресатов догружаются до показа списка; список обновляется раз в
 // минуту — нода отдаёт только свежие 10 и листать назад не умеет, поэтому
 // «подгрузка» здесь — это новые комментарии. Адресат — автор комментария, на
@@ -15,7 +15,8 @@ vi.mock('@/helpers/api/request', () => ({
   getByPRCWithAuth: mocks.getByPRCWithAuth,
 }))
 
-import { i18n } from '@/i18n'
+import { createPinia, setActivePinia } from 'pinia'
+import { useUIStore } from '@/stores/ui-store'
 import { __resetUserNamesForTests, userName } from '@/services/user-names'
 import type { GetLastComment } from '@/types/rpc-responses/get-last-comments'
 import {
@@ -62,6 +63,7 @@ function withComposable<T>(fn: () => T): T {
 }
 
 beforeEach(() => {
+  setActivePinia(createPinia())
   vi.useFakeTimers()
   mocks.getByPRC.mockReset()
   __resetUserNamesForTests()
@@ -111,6 +113,9 @@ describe('useLastComments', () => {
       throw new Error(`unexpected ${p.method}`)
     })
 
+    // Язык ленты отдельно от интерфейса — блок идёт за лентой.
+    useUIStore().setFeedLanguage(useUIStore().language === 'de' ? 'fr' : 'de')
+    const feedLanguage = useUIStore().contentLanguage
     const query = withComposable(() => useLastComments(true))
     await vi.advanceTimersByTimeAsync(100)
     expect(query.data.value).toBeUndefined()
@@ -125,7 +130,7 @@ describe('useLastComments', () => {
     )
     expect(calls[0]).toMatchObject({
       method: 'getlastcomments',
-      parameters: ['20', '', String(i18n.global.locale.value)],
+      parameters: ['20', '', feedLanguage],
       options: { auth: false },
     })
     expect(calls[1]).toMatchObject({ method: 'getuserprofile', parameters: [[ALICE, BOB], '1'] })

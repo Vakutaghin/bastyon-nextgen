@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="media_channel_name">播放</string>
+    <string name="media_channel_description">后台播放控制</string>
+    <string name="media_previous">上一个</string>
+    <string name="media_rewind">后退 10 秒</string>
+    <string name="media_pause">暂停</string>
+    <string name="media_play">播放</string>
+    <string name="media_next">下一个</string>
+    <string name="media_forward">前进 10 秒</string>
+</resources>

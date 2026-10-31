@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, watch } from 'vue'
+import { computed, defineAsyncComponent, shallowRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ConfigProvider } from 'ant-design-vue'
+import type { Locale as AntdLocale } from 'ant-design-vue/es/locale'
+import type { Locale } from '@/i18n'
+import { loadAntdLocale } from '@/i18n/antd-locale'
 import AppLayout from '@/b-components/app-layout/app-layout.vue'
 import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
 import DonateModal from '@/b-components/donate/donate-modal.vue'
@@ -46,7 +49,7 @@ const ipfsNodeViewer = useIpfsNodeViewerStore()
 
 // Embed-роуты (`/embed/...`, meta.embed) рендерятся БЕЗ chrome (хедер/футер/
 // сайдбар/глобальные модалки) — это самостоятельная вьюха для встраивания в iframe.
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const isEmbed = computed<boolean>(() => route.meta?.embed === true)
 
@@ -117,10 +120,24 @@ const themeConfig = computed(() => buildAntdTheme(isDark.value))
 // Modal.confirm, notification и message рендерятся вне дерева приложения и
 // берут тему из глобального конфига, а не из <ConfigProvider>.
 watch(themeConfig, setStaticApiTheme, { immediate: true })
+
+// Подписи самого antd (кнопка Modal.info, пустой список) — на языке интерфейса.
+const antdLocale = shallowRef<AntdLocale>()
+watch(
+  () => locale.value as Locale,
+  (next) => {
+    loadAntdLocale(next)
+      .then((loaded) => {
+        if (locale.value === next) antdLocale.value = loaded
+      })
+      .catch(() => {})
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
-  <ConfigProvider prefixCls="ant" :theme="themeConfig">
+  <ConfigProvider prefixCls="ant" :theme="themeConfig" :locale="antdLocale">
     <!-- Приложение во фрейме чужого сайта не показываем (S67). -->
     <SC_FramedNotice v-if="isFramedApp">
       <p>{{ t('appMsg.framedNotice') }}</p>

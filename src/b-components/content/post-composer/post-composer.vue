@@ -151,6 +151,7 @@
       :max="MAX_TAGS"
       :input-value="tagInput"
       :disabled="submitting"
+      :language="language"
       @update:input-value="tagInput = $event"
       @add="addTag"
       @remove="removeTag"

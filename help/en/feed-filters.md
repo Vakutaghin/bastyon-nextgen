@@ -29,6 +29,8 @@ The **“Best first”** switch above the categories changes the feed order: ins
 
 The **“Feed language”** field under the **“Best first”** switch chooses the language of the posts in the feed, the tags and the recommendations. The interface language stays as it is. Changing the interface language, in the header or in the settings, switches the feed to the same language.
 
+The **“Subscriptions”** section, a person's page and their videos under a video are in all languages: you see the posts of the people you follow whatever language they write in.
+
 ## Where it is remembered
 
 The selected categories, your own categories, the **“Best first”** switch and the **“Feed language”** are saved on this device and shared by all accounts on it. On another device you need to pick the filters again.

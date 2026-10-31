@@ -96,7 +96,11 @@ export async function buildTopFeedQuery(
   }) as Promise<GetHierarchicalStripResponse>
 }
 
-/** Вкладка «Подписки»: getsubscribesfeed. */
+/**
+ * Вкладка «Подписки»: getsubscribesfeed. На всех языках, как у старого клиента:
+ * подписались на человека — видите все его посты. С языком ленты посты подписок
+ * на других языках пропадали, а у редкого языка нода отвечала таймаутом.
+ */
 export async function buildSubscriptionsFeedQuery(
   ctx: FeedQueryContext
 ): Promise<GetHierarchicalStripResponse> {
@@ -106,7 +110,7 @@ export async function buildSubscriptionsFeedQuery(
       0,
       ctx.currentTxid,
       ctx.count,
-      ctx.lang,
+      '',
       ctx.allTags,
       ctx.contentTypes,
       [],

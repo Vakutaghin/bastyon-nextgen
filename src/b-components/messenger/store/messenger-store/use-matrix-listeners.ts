@@ -278,10 +278,12 @@ export function registerMatrixListeners(
       if (state === 'ERROR') {
         const reason = syncErrorReason(data?.error)
         const key = REASON_KEY[reason.kind]
-        const why = key ? t(key, { status: reason.status ?? '' }) : ''
-        uiStore.syncError = why
-          ? `${t('appMsg.messenger.syncError')}: ${why}`
-          : t('appMsg.messenger.syncError')
+        uiStore.setSyncError(() => {
+          const why = key ? t(key, { status: reason.status ?? '' }) : ''
+          return why
+            ? `${t('appMsg.messenger.syncError')}: ${why}`
+            : t('appMsg.messenger.syncError')
+        })
         uiStore.syncErrorDetail = reason.detail || null
         // В кольцо последних ошибок — оно уходит в «Сведения о приложении».
         if (prevState !== 'ERROR') log.error('Ошибка синхронизации:', reason.kind, reason.detail)

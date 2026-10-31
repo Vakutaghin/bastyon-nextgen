@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="media_channel_name">재생</string>
+    <string name="media_channel_description">백그라운드 재생 제어</string>
+    <string name="media_previous">이전</string>
+    <string name="media_rewind">10초 뒤로</string>
+    <string name="media_pause">일시정지</string>
+    <string name="media_play">재생</string>
+    <string name="media_next">다음</string>
+    <string name="media_forward">10초 앞으로</string>
+</resources>
