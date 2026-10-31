@@ -1,8 +1,9 @@
 // RPC напрямую к нодам: конверт как у прокси, перебор нод при сбое (но не при
-// ошибке самой ноды), транзакция — одна попытка, монеты и баланс — по
-// большинству нод, ленты — с профилями комментаторов, как их собирает прокси.
+// ошибке самой ноды), чтение без ответа дольше 4 с — и следующей ноде,
+// транзакция — одна попытка, монеты и баланс — по большинству нод, ленты — с
+// профилями комментаторов, как их собирает прокси.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
   call: vi.fn(),
@@ -25,6 +26,7 @@ import { NodePinMismatchError } from './native-link'
 import { NodeTransportError } from './node-call'
 
 const down = (host: string) => new NodeTransportError(host, 'timeout')
+const opts = expect.objectContaining({ timeoutMs: 30000 })
 
 describe('directRpc', () => {
   beforeEach(() => {
@@ -40,7 +42,7 @@ describe('directRpc', () => {
       result: 'success',
       data: { height: 5 },
     })
-    expect(h.call).toHaveBeenCalledWith('a', 'getnodeinfo', [], { timeoutMs: 30000 })
+    expect(h.call).toHaveBeenCalledWith('a', 'getnodeinfo', [], opts)
   })
 
   it('сбой связи — следующая нода; ошибка самой ноды — сразу наверх', async () => {
@@ -55,6 +57,70 @@ describe('directRpc', () => {
       code: -8,
     })
     expect(h.call).toHaveBeenCalledTimes(1)
+  })
+
+  describe('нода молчит', () => {
+    afterEach(() => vi.useRealTimers())
+
+    /** Ответ ноды по её имени; без ответа — висит, пока запрос не отменят. */
+    const nodesAnswer = (answers: Record<string, () => Promise<unknown>>) => {
+      const aborted: string[] = []
+      h.call.mockImplementation(
+        (host: string, _m: string, _p: unknown, o: { signal?: AbortSignal }) => {
+          o.signal?.addEventListener('abort', () => aborted.push(host))
+          return answers[host]?.() ?? new Promise(() => {})
+        }
+      )
+      return aborted
+    }
+
+    it('дольше 4 с — то же чтение и следующей; первый ответ отменяет остальные', async () => {
+      vi.useFakeTimers()
+      const aborted = nodesAnswer({ b: async () => 'from b' })
+      const res = directRpc({ method: 'getuserprofile', parameters: [['P']] })
+      await vi.advanceTimersByTimeAsync(3_999)
+      expect(h.call).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(res).resolves.toEqual({ result: 'success', data: 'from b' })
+      expect(h.call).toHaveBeenCalledTimes(2)
+      expect(aborted).toEqual(['a'])
+      // Молчавшую не списываем: может, просто медленная.
+      expect(h.dead).not.toHaveBeenCalled()
+    })
+
+    it('упала — следующая сразу, не через 4 с', async () => {
+      vi.useFakeTimers()
+      nodesAnswer({
+        a: async () => {
+          throw down('a')
+        },
+        b: async () => 'from b',
+      })
+      const res = directRpc({ method: 'getcomments', parameters: [] })
+      await vi.advanceTimersByTimeAsync(0)
+      await expect(res).resolves.toMatchObject({ data: 'from b' })
+      expect(h.dead).toHaveBeenCalledWith('a')
+    })
+
+    it('ошибка ноды, пока другая ещё думает, — сразу наверх', async () => {
+      vi.useFakeTimers()
+      const aborted = nodesAnswer({
+        b: () => Promise.reject({ code: -5, message: 'not found', httpStatus: 500 }),
+      })
+      const res = directRpc({ method: 'getcomments', parameters: [] })
+      const caught = res.catch((e: unknown) => e)
+      await vi.advanceTimersByTimeAsync(4_000)
+      await expect(caught).resolves.toMatchObject({ code: -5 })
+      expect(aborted).toEqual(['a', 'b'])
+    })
+
+    it('транзакцию второй ноде не шлёт, сколько бы первая ни молчала', async () => {
+      vi.useFakeTimers()
+      nodesAnswer({})
+      void directRpc({ method: 'sendrawtransactionwithmessage', parameters: ['hex'] })
+      await vi.advanceTimersByTimeAsync(20_000)
+      expect(h.call).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('медленный SQL и перегрузка — другая нода, а эта остаётся в рабочих', async () => {
@@ -169,7 +235,7 @@ describe('directRpc', () => {
     })) as { data: { contents: unknown; users: unknown } }
     expect(res.data.contents).toEqual(posts)
     // A сам автор поста — его профиль и так в ленте.
-    expect(h.call).toHaveBeenCalledWith('a', 'getuserprofile', [['C'], '1'], { timeoutMs: 30000 })
+    expect(h.call).toHaveBeenCalledWith('a', 'getuserprofile', [['C'], '1'], opts)
     expect(res.data.users).toEqual([{ address: 'C', name: 'c' }])
   })
 })

@@ -5,6 +5,9 @@
  *
  * Что прокси делал сам, здесь повторено:
  * - перебор нод при сбое; ошибка самой ноды (код от неё) другим не задаётся;
+ *   чтение, на которое нода молчит дольше HEDGE_MS, уходит и следующей —
+ *   берётся первый ответ (на плохой связи одна зависшая нода иначе держала
+ *   запрос до 30 с, и только потом спрашивалась другая);
  * - ленты через `/rpc-ex/` (proxy16 `rpcscenarios`): ответ кладётся в
  *   `{contents}`, и к нему догружаются профили авторов последних
  *   комментариев (`users`).
@@ -19,8 +22,14 @@ import type { T_RpcRequestParams } from '../types/request'
 import { NodePinMismatchError } from './native-link'
 import { nodeCall, NodeTransportError } from './node-call'
 import { directNodes, markNodeDead, markNodeRejected } from './node-pool'
+import { nodePath } from './rpc-spec'
 
 const DEFAULT_TIMEOUT_MS = 30_000
+/**
+ * Нода молчит дольше — то же чтение уходит и следующей. Обычный ответ ноды —
+ * до секунды, тяжёлые ленты — до нескольких.
+ */
+const HEDGE_MS = 4_000
 
 /** Сверяются у нескольких нод: от них зависит, что человек видит на счёте. */
 const QUORUM_METHODS = new Set(['txunspent', 'getaddressinfo'])
@@ -80,6 +89,56 @@ async function withFailover(method: string, params: unknown, timeoutMs: number):
     }
   }
   throw allFailed(lastError)
+}
+
+/**
+ * Чтение: лучшая нода, а молчит дольше HEDGE_MS или упала — и следующая, не
+ * дожидаясь первой. Первый ответ отменяет остальные запросы.
+ */
+async function hedged(method: string, params: unknown, timeoutMs: number): Promise<unknown> {
+  const hosts = await directNodes()
+  return new Promise((resolve, reject) => {
+    const controllers: AbortController[] = []
+    let next = 0
+    let active = 0
+    let done = false
+    let lastError: unknown = null
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const finish = (settle: () => void, winner?: AbortController) => {
+      if (done) return
+      done = true
+      if (timer) clearTimeout(timer)
+      for (const controller of controllers) if (controller !== winner) controller.abort()
+      settle()
+    }
+    const launch = () => {
+      if (timer) clearTimeout(timer)
+      timer = null
+      if (done) return
+      if (next >= hosts.length) {
+        if (active === 0) finish(() => reject(allFailed(lastError)))
+        return
+      }
+      const host = hosts[next++]!
+      const controller = new AbortController()
+      controllers.push(controller)
+      active++
+      nodeCall(host, method, params, { timeoutMs, signal: controller.signal }).then(
+        (value) => finish(() => resolve(value), controller),
+        (error: unknown) => {
+          active--
+          if (done) return
+          if (!retryable(host, error)) finish(() => reject(error))
+          else {
+            lastError = error
+            launch()
+          }
+        }
+      )
+      if (next < hosts.length) timer = setTimeout(launch, HEDGE_MS)
+    }
+    launch()
+  })
 }
 
 /** Одна попытка у лучшей ноды: транзакцию второй раз не отправляем. */
@@ -188,7 +247,7 @@ async function withUsers(
   ]
   if (!users.length) return result
   try {
-    result.users = await withFailover('getuserprofile', [users, '1'], timeoutMs)
+    result.users = await hedged('getuserprofile', [users, '1'], timeoutMs)
   } catch {
     // без профилей комментаторов лента всё равно покажется
   }
@@ -211,6 +270,8 @@ export async function directRpc(params: T_RpcRequestParams): Promise<unknown> {
     data = await once(method, parameters, timeoutMs)
   } else if (QUORUM_METHODS.has(method)) {
     data = await quorum(method, parameters, timeoutMs)
+  } else if (nodePath(method) === '/public/') {
+    data = await hedged(method, parameters, timeoutMs)
   } else {
     data = await withFailover(method, parameters, timeoutMs)
   }
