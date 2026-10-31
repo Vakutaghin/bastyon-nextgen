@@ -12,6 +12,7 @@ How to dictate the text of a post or a message: recognition runs right on your c
 2. Click the button with bars next to the smiley — **“Voice input”** — and speak.
 3. Words appear at the cursor as you speak, like on a phone keyboard. When you finish a phrase, the app recognizes it as a whole and puts the final text in its place — more accurate and with punctuation.
 4. To stop — the same button or the Esc key: **“Stop dictation (Esc)”**. On a phone, the same button. If no new word is recognized for 10 seconds, dictation turns itself off. Noise, music and talk nearby don’t keep it on: only words count.
+5. When you send the message or publish the post, dictation turns off. What you see in the field is what gets sent; to keep dictating, press the button again.
 
 The last dictated phrase can be undone like normal typing: Ctrl+Z, on a Mac Cmd+Z.
 

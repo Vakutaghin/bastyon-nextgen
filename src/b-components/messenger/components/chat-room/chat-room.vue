@@ -213,7 +213,11 @@
 
         <!-- Голосовой ввод текстом (не голосовое сообщение — оно у микрофона справа). -->
         <SC_InputSlot>
-          <VoiceInputButton :get-element="getInputEl" :language="String(locale)" />
+          <VoiceInputButton
+            ref="dictationRef"
+            :get-element="getInputEl"
+            :language="String(locale)"
+          />
         </SC_InputSlot>
       </template>
 
@@ -486,6 +490,9 @@ const {
 } = useChatInput({
   onSend: (text) => {
     stopTyping()
+    // Сообщение ушло — голосовой ввод выключается без хвоста: дораспознанная
+    // фраза и новые слова не начнут следующее сообщение сами.
+    dictationRef.value?.cancel()
     if (props.inviteMode) {
       void sendFirstMessage(text)
       return
@@ -506,6 +513,7 @@ const {
 function getInputEl(): HTMLTextAreaElement | null {
   return inputRef.value?.$el ?? null
 }
+const dictationRef = ref<InstanceType<typeof VoiceInputButton> | null>(null)
 
 // Недописанное сообщение ждёт в своём чате: ушли к списку или в другой чат —
 // текст на месте, когда вернулись. Только в памяти, до выхода из аккаунта:

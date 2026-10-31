@@ -1,13 +1,14 @@
 // Полоса ввода чата: недописанное сообщение ждёт в своём чате, в окне на
 // компьютере курсор сразу в поле, пикер эмодзи закрывается щелчком мимо и
 // клавишей Esc (и Esc при этом не уводит из чата), файл можно бросить на
-// ленту сообщений, а не только на полосу ввода. Matrix, стор мессенджера и
-// лента подменены; поле, пикер и вложения — настоящие.
+// ленту сообщений, а не только на полосу ввода, отправка выключает голосовой
+// ввод. Matrix, стор мессенджера, лента и движок распознавания подменены;
+// поле, пикер, вложения и кнопка голосового ввода — настоящие.
 
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
+import { defineComponent, reactive } from 'vue'
 
 import { i18n, setI18nLocale } from '@/i18n'
 
@@ -52,6 +53,34 @@ vi.mock('../../lib/support-account', async () => {
     resolveSupportAddress: vi.fn(async () => 'PSupport'),
   }
 })
+// Движок распознавания: команды записываются, события шлёт тест.
+const voice = vi.hoisted(() => ({
+  calls: [] as string[],
+  listeners: new Map<string, (payload: unknown) => void>(),
+}))
+vi.mock('@/helpers/voice-input/voice-backend', () => ({
+  isTauriVoice: () => true,
+  isAndroidVoice: () => false,
+  voiceAvailable: () => true,
+  voiceInvoke: async (cmd: string) => {
+    voice.calls.push(cmd)
+    if (cmd === 'asr_status')
+      return {
+        supported: true,
+        gpu: true,
+        installing: null,
+        models: [{ id: 'small', size: 1, installed: true }],
+      }
+    return cmd === 'asr_start' ? 7 : null
+  },
+  voiceListen: async (event: string, cb: (payload: unknown) => void) => {
+    voice.listeners.set(event, cb)
+    return () => {}
+  },
+}))
+const voiceEvent = (event: string, payload: Record<string, unknown>) =>
+  voice.listeners.get(event)!({ session: 7, ...payload })
+
 vi.mock('./use-mesh-share', async () => {
   const { ref } = await import('vue')
   return { useMeshShare: () => ({ available: ref(false), shareAddress: vi.fn() }) }
@@ -73,7 +102,19 @@ const MESSAGE: Message = {
 
 let mounted: VueWrapper | null = null
 
-function open(chatId: string, props: Record<string, unknown> = {}): VueWrapper {
+/** Кнопка голосового ввода без движка: чат зовёт у неё только `cancel`. */
+const DictationStub = defineComponent({
+  setup(_, { expose }) {
+    expose({ cancel: () => {} })
+    return () => null
+  },
+})
+
+function open(
+  chatId: string,
+  props: Record<string, unknown> = {},
+  { dictation = false } = {}
+): VueWrapper {
   mocks.store.activeChatId = chatId
   useMessengerUiStore().activeChatId = chatId
   mounted = mount(ChatRoom, {
@@ -84,7 +125,7 @@ function open(chatId: string, props: Record<string, unknown> = {}): VueWrapper {
       stubs: {
         MessageList: true,
         PkoinTransferModal: true,
-        VoiceInputButton: true,
+        VoiceInputButton: dictation ? false : DictationStub,
         MeshRouteBar: true,
         Popconfirm: true,
         SupportReportBar: true,
@@ -109,6 +150,8 @@ beforeEach(() => {
   for (const key of Object.keys(mocks.drafts)) delete mocks.drafts[key]
   mocks.sendImage.mockReset()
   mocks.sendFile.mockReset()
+  voice.calls.length = 0
+  voice.listeners.clear()
   mocks.store = reactive({
     activeChatId: null,
     currentUser: { id: 'me', name: 'Я' },
@@ -145,6 +188,31 @@ describe('полоса ввода чата', () => {
     expect(w.emitted('send')).toEqual([['Встретимся в\nсубботу?']])
     expect(field(w).value).toBe('')
     expect(mocks.drafts).toEqual({ '!b:host': 'Ок' })
+  })
+
+  it('сообщение ушло — голосовой ввод выключен, хвост фразы в пустое поле не пишется', async () => {
+    const w = open('!a:host', {}, { dictation: true })
+    await flushPromises()
+    const dictation = w.find('button[aria-label="Голосовой ввод"]')
+    await dictation.trigger('click')
+    await flushPromises()
+    expect(voice.calls).toContain('asr_start')
+    expect(dictation.attributes('aria-pressed')).toBe('true')
+
+    voiceEvent('asr:partial', { seq: 0, text: 'Встретимся в субботу' })
+    await flushPromises()
+    expect(field(w).value).toBe('Встретимся в субботу')
+
+    await w.find('textarea').trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(w.emitted('send')).toEqual([['Встретимся в субботу']])
+    expect(voice.calls).toContain('asr_cancel')
+    expect(dictation.attributes('aria-pressed')).toBe('false')
+
+    voiceEvent('asr:text', { seq: 0, text: 'Встретимся в субботу?' })
+    voiceEvent('asr:partial', { seq: 1, text: 'И ещё' })
+    await flushPromises()
+    expect(field(w).value).toBe('')
   })
 
   it('в окне на компьютере курсор сразу в поле, на телефоне — нет', async () => {

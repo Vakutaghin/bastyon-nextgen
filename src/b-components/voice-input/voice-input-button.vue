@@ -70,6 +70,9 @@ watch(
   }
 )
 
+// Поле отправили (сообщение в чате): диктовка кончается без хвоста — по той же причине.
+defineExpose({ cancel })
+
 const busy = computed(
   () => installing.value || phase.value === 'starting' || phase.value === 'finishing'
 )
