@@ -52,6 +52,7 @@ import {
   EllipsisVertical,
   Expand,
   Eye,
+  EyeOff,
   File,
   FileText,
   Flag,
@@ -355,6 +356,8 @@ export const DividerIcon = lucideIcon('DividerIcon', Minus)
 
 /** Окно поста: кто увидит пост. */
 export const EyeOutlined = lucideIcon('EyeOutlined', Eye)
+/** Чаты, спрятанные фильтром входящих. */
+export const EyeOffIcon = lucideIcon('EyeOffIcon', EyeOff)
 
 /** «Медиастудия»: вид списком, статистика ролика, пометка «аудио». */
 export const ListViewIcon = lucideIcon('ListViewIcon', Rows3)

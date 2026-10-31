@@ -42,6 +42,15 @@
         >
           <BellOffOutlined />
         </SC_MutedMark>
+        <!-- Спрятан фильтром входящих, а виден — глазом в шапке. -->
+        <SC_MutedMark
+          v-if="screenedTitle"
+          data-testid="screened-mark"
+          :title="screenedTitle"
+          :aria-label="screenedTitle"
+        >
+          <EyeOffIcon />
+        </SC_MutedMark>
       </SC_Name>
 
       <SC_LastMessage v-if="dialog.lastMessage">
@@ -115,6 +124,15 @@
                 {{ dialog.muted ? t('messenger.notifyOn') : t('messenger.notifyOff') }}
               </SC_DropdownItem>
               <SC_DropdownItem
+                v-if="canScreen"
+                data-testid="screen-toggle"
+                @click.stop="onToggleScreen"
+              >
+                <EyeOutlined v-if="screenReasonOf" />
+                <EyeOffIcon v-else />
+                {{ screenReasonOf ? t('messenger.screen.unhide') : t('messenger.screen.hide') }}
+              </SC_DropdownItem>
+              <SC_DropdownItem
                 v-if="canArchive"
                 data-testid="archive-toggle"
                 @click.stop="onToggleArchive"
@@ -170,6 +188,7 @@ import { supportReportPreview } from '../../lib/support-report-preview'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Modal } from 'ant-design-vue'
+import { appToast } from '@/b-components/app-toast'
 import Avatar from '@/components/avatar/avatar.vue'
 import { Z_INDEX } from '@/styles/design-tokens'
 import {
@@ -178,6 +197,8 @@ import {
   DeleteOutlined,
   DeviceCopyIcon,
   EllipsisOutlined,
+  EyeOffIcon,
+  EyeOutlined,
   LogoutOutlined,
   RadioTowerIcon,
   TeamOutlined,
@@ -187,6 +208,7 @@ import { isGroupDialog, isMeshTransport, type Dialog, type Message } from '../..
 import { useMessengerStore } from '../../store'
 import { useMessengerChatStore } from '../../store/messenger-chat-store'
 import { useMessengerArchiveStore } from '../../store/messenger-archive-store'
+import { useMessengerScreenStore } from '../../store/messenger-screen-store'
 import { archivableChatId } from '../../lib/archive-prefs'
 import { seenMessageIds, type ReceiptRoom } from '../../store/messenger-chat-store/read-receipts'
 import { matrixService } from '../../services/matrix-service'
@@ -287,6 +309,37 @@ function onToggleArchive(): void {
     centered: true,
     zIndex: Z_INDEX.CONFIRM,
     onOk: () => archive.setChat(props.dialog.id, on),
+  })
+}
+
+/** Фильтр входящих: прячет ли он этот чат и можно ли убрать чат в скрытые вручную. */
+const screen = useMessengerScreenStore()
+const screenReasonOf = computed(() => screen.reasonFor(props.dialog))
+const canScreen = computed<boolean>(() => !!screen.subjectOf(props.dialog))
+
+const screenedTitle = computed<string>(() => {
+  switch (screenReasonOf.value) {
+    case 'person':
+      return t('messenger.screen.reasonPerson')
+    case 'reputation':
+      return t('messenger.screen.reasonReputation', { n: screen.prefs.reputation.below })
+    case 'mark':
+      return t('messenger.screen.reasonMark')
+    default:
+      return ''
+  }
+})
+
+function onToggleScreen(): void {
+  menuOpen.value = false
+  if (screenReasonOf.value) {
+    screen.unhideChat(props.dialog)
+    return
+  }
+  screen.hideChat(props.dialog)
+  appToast.info({
+    message: t('messenger.screen.hiddenToast', { name: props.dialog.partner.name }),
+    description: t('messenger.screen.hiddenToastHint'),
   })
 }
 

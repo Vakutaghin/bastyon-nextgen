@@ -117,7 +117,19 @@
         <ChatListItem v-else-if="row.dialog" :dialog="row.dialog" @click="onSelect(row.id)" />
       </template>
 
-      <SC_EmptyHint v-if="shown.length === 0 && isOn('channels')" data-testid="channels-empty">
+      <!-- Всё, что подходит под раздел, спрятал фильтр входящих: сказать, а не показать пустоту. -->
+      <SC_EmptyHint
+        v-if="shown.length === 0 && screenedHere > 0 && !screen.showHidden"
+        class="screened"
+        data-testid="chats-all-screened"
+      >
+        <EyeOffIcon />
+        <span>{{ t('messenger.screen.allHidden', { n: screenedHere }, screenedHere) }}</span>
+        <SC_EmptyAction type="button" @click="screen.toggleShowHidden()">
+          {{ t('messenger.screen.showShort') }}
+        </SC_EmptyAction>
+      </SC_EmptyHint>
+      <SC_EmptyHint v-else-if="shown.length === 0 && isOn('channels')" data-testid="channels-empty">
         <MegaphoneIcon />
         <strong>{{ t('messenger.channel.emptyTitle') }}</strong>
         <span>{{ t('messenger.channel.emptyText') }}</span>
@@ -143,6 +155,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   CloseOutlined,
+  EyeOffIcon,
   MegaphoneIcon,
   MessageOutlined,
   SearchOutlined,
@@ -159,6 +172,7 @@ import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { isGroupDialog, type Dialog } from '../../types'
 import { useMessengerStore } from '../../store'
 import { useMessengerChannelsStore } from '../../store/messenger-channels-store'
+import { useMessengerScreenStore } from '../../store/messenger-screen-store'
 import { channelChatId } from '../../lib/channels'
 import { getAddressFromMatrixId } from '../../helpers'
 import type { ChatKind } from '../../store/messenger-ui-store'
@@ -173,6 +187,7 @@ import {
   SC_ChatsLoading,
   SC_ChatsLoadingSpinner,
   SC_ChipCount,
+  SC_EmptyAction,
   SC_EmptyHint,
   SC_FilterChip,
   SC_PersonAddress,
@@ -200,6 +215,7 @@ const emit = defineEmits<{ select: [id: string] }>()
 const { t } = useI18n()
 const store = useMessengerStore()
 const channels = useMessengerChannelsStore()
+const screen = useMessengerScreenStore()
 
 const showAll = computed<boolean>(() => store.chatFilter.length === 0)
 const isOn = (kind: ChatKind): boolean => store.chatFilter.includes(kind)
@@ -216,14 +232,26 @@ interface Row {
   channel?: string
 }
 
+const inKind = (d: Dialog): boolean => showAll.value || isOn(isGroupDialog(d) ? 'groups' : 'direct')
+
+/** Без спрятанных фильтром входящих — пока их не показали глазом в шапке. */
+const visibleDialogs = computed<Dialog[]>(() =>
+  screen.showHidden || screen.hiddenIds.size === 0
+    ? props.dialogs
+    : props.dialogs.filter((d) => !screen.hiddenIds.has(d.id))
+)
+
+/** Сколько чатов выбранного раздела спрятал фильтр. */
+const screenedHere = computed<number>(
+  () => props.dialogs.filter((d) => screen.hiddenIds.has(d.id) && inKind(d)).length
+)
+
 const dialogRows = computed<Row[]>(() =>
-  props.dialogs
-    .filter((d) => showAll.value || isOn(isGroupDialog(d) ? 'groups' : 'direct'))
-    .map((d) => ({
-      id: d.id,
-      time: d.lastMessage?.timestamp ?? d.createdAt ?? 0,
-      dialog: d,
-    }))
+  visibleDialogs.value.filter(inKind).map((d) => ({
+    id: d.id,
+    time: d.lastMessage?.timestamp ?? d.createdAt ?? 0,
+    dialog: d,
+  }))
 )
 
 /** Каналы по свежести последнего поста; ещё не загруженный — по времени добавления. */
@@ -336,7 +364,7 @@ const emptyText = computed<string | null>(() => {
 
 /** Где есть новое: переписки с непрочитанным и каналы с новыми постами. */
 const hiddenNew = computed<Record<ChatKind, number>>(() => {
-  const unread = props.dialogs.filter((d) => d.unreadCount > 0 || d.hasUnread)
+  const unread = visibleDialogs.value.filter((d) => d.unreadCount > 0 || d.hasUnread)
   const groups = unread.filter(isGroupDialog).length
   return { direct: unread.length - groups, groups, channels: channels.withNew }
 })

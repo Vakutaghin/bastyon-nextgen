@@ -265,6 +265,12 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
 
     const unreadCount = unreadCountOf(room)
 
+    // Личный чат, который начали вы: фильтр входящих (lib/chat-screen) его не прячет.
+    const creator = isDirect
+      ? room.currentState?.getStateEvents?.('m.room.create', '')?.getSender?.()
+      : undefined
+    const startedByMe = !!creator && creator === myUserId
+
     const muted = matrixService.isRoomMuted(room.roomId)
     // Без звука сервер непрочитанные не считает: новое видно по отметке прочтения.
     // В приглашении сообщения есть, но сосчитать их до вступления нельзя.
@@ -288,6 +294,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
       ...(muted ? { muted } : {}),
       ...(hasUnread ? { hasUnread } : {}),
       ...(invited ? { invite: { by: invitedBy } } : {}),
+      ...(startedByMe ? { startedByMe } : {}),
     }
   }
 

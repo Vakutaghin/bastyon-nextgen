@@ -39,6 +39,7 @@ import { useMessengerProfileCache } from './messenger-profile-cache'
 import { useMessengerChatStore } from './messenger-chat-store'
 import { useMessengerChannelsStore } from './messenger-channels-store'
 import { useMessengerPrivacyStore } from './messenger-privacy-store'
+import { useMessengerScreenStore } from './messenger-screen-store'
 import { CHAT_PRIVACY_ACCOUNT_DATA } from '../lib/chat-privacy'
 import { ARCHIVE_PREFS_KEY, useMessengerArchiveStore } from './messenger-archive-store'
 import { useArchiveSync } from './messenger-store/use-archive-sync'
@@ -66,6 +67,8 @@ export const useMessengerStore = defineStore('messenger', () => {
   // Каналы — посты авторов, которых читают в мессенджере; в списке рядом с чатами.
   const channels = useMessengerChannelsStore()
   const privacy = useMessengerPrivacyStore()
+  // Фильтр входящих: чьи чаты спрятаны, не звенят и не входят в счётчик.
+  const screen = useMessengerScreenStore()
   // Личные списки видео и аудио живут там же — в данных аккаунта Matrix.
   const mediaLibrary = useMediaLibraryStore()
   // Mesh-диалоги (переписка через радио, src/mesh) идут в общем списке с
@@ -485,6 +488,7 @@ export const useMessengerStore = defineStore('messenger', () => {
               markRoomRead,
               refreshUnreadCounts,
               onTokenRejected: recoverFromRejectedToken,
+              silences: screen.silences,
               archive: {
                 noteRoom: archiveSync.noteRoom,
                 remove: (roomId, ids) => void archive.remove(roomId, ids),
@@ -1063,7 +1067,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     // авто-разворачивается Pinia в голое число, и storeToRefs(messengerStore) не
     // может сделать из него ref → в хедере totalUnreadCount === undefined и computed
     // unreadBadge падает при появлении иконки мессенджера после входа.
-    totalUnreadCount: computed(() => uiStore.totalUnreadCount + meshChat.totalUnread),
+    // Спрятанное фильтром входящих — на кнопке «Скрытые», не здесь.
+    totalUnreadCount: computed(
+      () => uiStore.totalUnreadCount - screen.hiddenUnread + meshChat.totalUnread
+    ),
 
     // Методы
     loadDialogs,

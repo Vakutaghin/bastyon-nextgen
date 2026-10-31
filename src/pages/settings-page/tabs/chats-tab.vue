@@ -23,6 +23,8 @@
       </SC_SystemRow>
     </SC_SystemSection>
 
+    <ChatsScreenSection />
+
     <SC_SystemSection>
       <SC_SystemRow>
         <SC_SystemLabel>
@@ -148,6 +150,7 @@ import { archivableChatId, type ArchiveMode } from '@/b-components/messenger/lib
 import { useMessengerPrivacyStore } from '@/b-components/messenger/store/messenger-privacy-store'
 import type { ChatPrivacy } from '@/b-components/messenger/lib/chat-privacy'
 import { SC_SettingsSectionTitle } from '../settings-page-main.styled'
+import ChatsScreenSection from './chats-screen-section.vue'
 import {
   SC_DangerButton,
   SC_ScaleButton,

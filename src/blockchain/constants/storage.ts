@@ -41,6 +41,8 @@ export const MESSENGER_KEY_PINS_PREFIX = 'BST_MSG_KEYPINS_'
 export const MESSENGER_DIALOGS_PREFIX = 'BST_MSG_DIALOGS_'
 /** Каналы в мессенджере и последние посты в них: `BST_MSG_CHANNELS_<ownAddress>`. */
 export const MESSENGER_CHANNELS_PREFIX = 'BST_MSG_CHANNELS_'
+/** Фильтр входящих: правила и спрятанные люди, только на устройстве: `BST_MSG_SCREEN_<ownAddress>`. */
+export const MESSENGER_SCREEN_PREFIX = 'BST_MSG_SCREEN_'
 /** Личные списки видео и аудио — копия данных аккаунта Matrix: `BST_MEDIA_LIBRARY_<ownAddress>`. */
 export const MEDIA_LIBRARY_PREFIX = 'BST_MEDIA_LIBRARY_'
 /** Коллекции, отправленные и ещё не подтверждённые сетью: `BST_PENDING_COLLECTIONS_<ownAddress>`. */

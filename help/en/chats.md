@@ -16,11 +16,14 @@ keywords:
   - privacy
   - delete conversation
   - contact profile
+  - incoming filter
+  - hidden chats
+  - chat spam
 ---
 
 # Chats
 
-How to start a conversation, find a chat or a message, see a group’s members, mute notifications, delete a conversation or hide someone’s messages.
+How to start a conversation, find a chat or a message, see a group’s members, mute notifications, delete a conversation, hide someone’s messages or keep chats from random people out of the way.
 
 ## Starting a chat
 
@@ -55,6 +58,7 @@ The three-dot button on a chat:
 - **“Members”** — groups only: opens the group window, see [below](#group-chats).
 - **“Save on this device”** — keep this chat on the device so it stays when the server deletes it. The app asks again. **“Stop saving on this device”** turns it back off, see [Chats saved on this device](chat-archive.md).
 - **“Mute notifications”** — the chat stops making sounds and sending notifications. A crossed-out bell appears next to the name, the unread count turns grey, and if the server sent no count, a grey dot takes its place. **“Unmute notifications”** puts it back. The setting is kept on the chat server, so it applies on all your devices and in the previous Bastyon app.
+- **“Move to hidden”** — private chats and invitations: the incoming filter hides the chat, see [below](#incoming-filter).
 - **“Delete dialog”** — the app asks again: **“Delete dialog?”** You leave the conversation, and it disappears from your list. The other person keeps it, and if either of you starts a chat again, it will be a new conversation. The copy of the chat saved on this device, if any, is deleted with it.
 - **“Leave group”** — what groups have instead of deleting. You leave the group and stop receiving its messages. You can return to a private group only with a new invitation.
 
@@ -104,6 +108,25 @@ In **“Settings”** → **“Chats”** → **“Privacy”**:
 - **“Show that I’m recording a voice message”** — the other person on Bastyon NextGen sees “Anna is recording a voice message…” while you hold the microphone button. On by default.
 
 The setting is shared by all your devices: it is kept on the chat server with your account. The previous Bastyon app shows neither “online” nor “recording a voice message”.
+
+## Incoming filter
+
+To keep chats from strangers and random people out of the way, you can hide them from the list. The filter works on this device only: neither the other person nor the chat server knows about it.
+
+In **“Settings”** → **“Chats”** → **“Incoming filter”**:
+
+- **“Hide reputation below”** — a threshold and a switch. A new account has reputation 0; ratings of posts and comments raise it;
+- **“Verified”**, **“Moderator”**, **“Shark”** — for each status: **“Any”**, **“Hide”** (hide those who have it) or **“Only with it”** (hide those who don’t). If **“Only with it”** is chosen for several statuses, any one of them is enough. What the statuses mean is in [Account badges](account-badges.md);
+- **“People”** — a field for a nickname or address and a **“Hide”** button. Below is the list: each person is **“Hidden”** (always hide) or **“Shown”** (always show, whatever the rules say); the cross removes them from the list.
+
+The filter looks at whoever writes: in a private chat, at the other person; in an invitation, at whoever invited you, to a group too. Rules never hide chats you started, only your own choice does. Groups you have joined, channels and radio network chats are left alone.
+
+A hidden chat makes no sound, sends no notifications and is not counted in the unread number on the chats icon and the app icon. Above the list, next to the magnifier, an eye appears with a number: how many hidden chats have something new. The eye shows the hidden chats, with a crossed-out eye and the reason by their name; press it again to hide them again. If everything in the chosen section is hidden, the empty list has a **“Show”** button.
+
+In the three-dot menu of a private chat or an invitation:
+
+- **“Move to hidden”** — the person goes to the **“People”** list as **“Hidden”**;
+- **“Unhide”** — on a hidden chat. If you hid it, the person leaves the list; if a rule did, they are marked **“Shown”**.
 
 ## An unpleasant contact
 

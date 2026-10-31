@@ -45,6 +45,8 @@ export interface MatrixListenerCallbacks {
   onTokenRejected?: () => void
   /** Копия переписки на устройстве (use-archive-sync, messenger-archive-store). */
   archive?: ArchiveListenerHooks
+  /** Фильтр входящих прячет этот чат: без звука и уведомления (messenger-screen-store). */
+  silences?: (roomId: string, senderId: string) => Promise<boolean>
 }
 
 export interface ArchiveListenerHooks {
@@ -88,6 +90,7 @@ export function registerMatrixListeners(
     onTokenRejected,
     refreshUnreadCounts,
     archive,
+    silences,
   } = callbacks
 
   matrixService.on(
@@ -173,31 +176,35 @@ export function registerMatrixListeners(
           // «Без звука» (правило уведомлений комнаты) — ни звука, ни уведомления.
           const muted = matrixService.isRoomMuted(roomId)
           if (senderId !== chatStore.currentUser.id && !onScreen && isRecent && !isEdit && !muted) {
-            playSound('message')
-            // Браузерное уведомление о новом сообщении (если вкладка в фоне
-            // и пользователь включил браузерные уведомления).
-            try {
-              // Имя — из профиля Bastyon, а не hex-локалпарт матрикса; текст —
-              // человеческое описание, а не шифротекст (S41).
-              let address: string | null = null
+            // Фильтр входящих может ждать профиль отправителя — лента не ждёт.
+            void (async () => {
+              if (await silences?.(roomId, senderId).catch(() => false)) return
+              playSound('message')
+              // Браузерное уведомление о новом сообщении (если вкладка в фоне
+              // и пользователь включил браузерные уведомления).
               try {
-                address = getAddressFromMatrixId(senderId)
+                // Имя — из профиля Bastyon, а не hex-локалпарт матрикса; текст —
+                // человеческое описание, а не шифротекст (S41).
+                let address: string | null = null
+                try {
+                  address = getAddressFromMatrixId(senderId)
+                } catch {
+                  address = null
+                }
+                const profileName = address
+                  ? ctx.profileCache?.userProfiles?.[address]?.name
+                  : undefined
+                const senderName = senderDisplayName({
+                  profileName,
+                  roomMemberName: room.getMember?.(senderId)?.name,
+                  address,
+                  matrixId: senderId,
+                })
+                notifyMessage(senderName, notificationPreviewFor(event))
               } catch {
-                address = null
+                /* ignore */
               }
-              const profileName = address
-                ? ctx.profileCache?.userProfiles?.[address]?.name
-                : undefined
-              const senderName = senderDisplayName({
-                profileName,
-                roomMemberName: room.getMember?.(senderId)?.name,
-                address,
-                matrixId: senderId,
-              })
-              notifyMessage(senderName, notificationPreviewFor(event))
-            } catch {
-              /* ignore */
-            }
+            })()
           }
 
           if (uiStore.activeChatId === roomId) {

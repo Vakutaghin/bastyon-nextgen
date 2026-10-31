@@ -57,7 +57,13 @@ function mxEvent(type: string, over: Record<string, unknown> = {}) {
 
 const room = { roomId: ROOM, getMember: (id: string) => ({ name: `name-of-${id}` }) }
 
-function setup(activeChatId: string | null, options: { onScreen?: boolean } = {}) {
+function setup(
+  activeChatId: string | null,
+  options: {
+    onScreen?: boolean
+    silences?: (roomId: string, senderId: string) => Promise<boolean>
+  } = {}
+) {
   // Виджет по умолчанию открыт и на экране — read-marker шлём только тогда (V30).
   const onScreen = options.onScreen ?? true
   const chatStore = {
@@ -88,6 +94,7 @@ function setup(activeChatId: string | null, options: { onScreen?: boolean } = {}
     markRoomRead,
     onTokenRejected,
     refreshUnreadCounts,
+    silences: options.silences,
   })
   return {
     chatStore,
@@ -224,6 +231,28 @@ describe('registerMatrixListeners — Room.timeline', () => {
     expect(audioPlay).not.toHaveBeenCalled()
     expect(notifyMessage).not.toHaveBeenCalled()
     expect(scheduleLoadDialogs).toHaveBeenCalledTimes(1)
+  })
+
+  it('чат спрятан фильтром входящих — ни звука, ни уведомления, но список обновляется', async () => {
+    let release!: (quiet: boolean) => void
+    const silences = vi.fn(() => new Promise<boolean>((r) => (release = r)))
+    const { scheduleLoadDialogs } = setup('!other:host', { silences })
+    // Фильтр ждёт профиль отправителя — обработка сообщения его не ждёт.
+    await handlers['Room.timeline']!(mxEvent('m.room.message'), room, false)
+    expect(silences).toHaveBeenCalledWith(ROOM, '@peer:host')
+    expect(scheduleLoadDialogs).toHaveBeenCalledTimes(1)
+    release(true)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(audioPlay).not.toHaveBeenCalled()
+    expect(notifyMessage).not.toHaveBeenCalled()
+  })
+
+  it('фильтр пропустил — звук и уведомление, как обычно', async () => {
+    setup('!other:host', { silences: async () => false })
+    await handlers['Room.timeline']!(mxEvent('m.room.message'), room, false)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(audioPlay).toHaveBeenCalledTimes(1)
+    expect(notifyMessage).toHaveBeenCalledTimes(1)
   })
 
   it('старое сообщение (старше SOUND_MAX_AGE) не озвучивается', async () => {

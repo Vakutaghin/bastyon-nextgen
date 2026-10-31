@@ -574,6 +574,39 @@ export default {
         'Los mensajes que el servidor ya borró solo existen en esta copia. Después no se podrán recuperar.',
       deleteAllSureOk: 'Eliminar para siempre',
       deletedAll: 'Chats guardados eliminados',
+      screen: 'Filtro de entrantes',
+      screenHint:
+        'Oculta los chats de quienes te escriben, por reputación, estado o a mano. Solo en este dispositivo: nadie se entera. Los chats ocultos no suenan ni se cuentan; el ojo arriba de los chats los muestra.',
+      screenReputation: 'Ocultar con reputación menor que',
+      screenReputationHint:
+        'Las cuentas nuevas empiezan en 0; las valoraciones de publicaciones y comentarios la suben. Las reglas nunca ocultan los chats que empezaste tú.',
+      screenReputationValue: 'Umbral de reputación',
+      screenMark_verified: 'Verificado',
+      screenMark_verifiedHint: 'Marca junto al avatar: una cuenta de la lista de verificadas.',
+      screenMark_moderator: 'Moderador',
+      screenMark_moderatorHint:
+        'Corona: la red la da a cuentas de más de tres meses valoradas por cien personas.',
+      screenMark_shark: 'Tiburón',
+      screenMark_sharkHint:
+        'Bandera: lo mismo, pero con más de un año. Los tiburones pueden denunciar contenido.',
+      screenRule_any: 'Da igual',
+      screenRule_hide: 'Ocultar',
+      screenRule_only: 'Solo con él',
+      screenOnlyHint: '«Solo con él» en varios estados: basta con uno.',
+      screenPeople: 'Personas',
+      screenPeopleHint:
+        'Oculta a una persona por su nick o muéstrala siempre, digan lo que digan las reglas. Lo mismo está en el menú «⋯» de un chat.',
+      screenHiddenNow: 'Ahora hay {n} chat oculto | Ahora hay {n} chats ocultos',
+      screenHiddenNone: 'Ahora no hay nada oculto',
+      screenAddPlaceholder: 'Nick o dirección',
+      screenAdd: 'Ocultar',
+      screenNotFound: '«{name}» no existe en Bastyon',
+      screenSelf: 'Es tu cuenta',
+      screenAddFailed: 'No se pudo comprobar el nick, revisa la conexión',
+      screenPerson_hide: 'Oculto',
+      screenPerson_show: 'Visible',
+      screenRemove: 'Quitar de la lista',
+      screenRemoveOf: 'Quitar «{name}» de la lista',
     },
     network: {
       title: 'Conexión a la red',
@@ -1147,6 +1180,22 @@ export default {
     filterChatsEmpty: 'Aún no hay chats',
     filterDirectEmpty: 'Aún no hay chats personales',
     filterGroupsEmpty: 'Aún no hay grupos',
+    screen: {
+      show: 'Mostrar {n} chat filtrado | Mostrar {n} chats filtrados',
+      hideAgain: 'Volver a ocultar los chats filtrados',
+      withNew: 'Hay novedades en {n} chat | Hay novedades en {n} chats',
+      showShort: 'Mostrar',
+      allHidden:
+        'Aquí hay {n} chat oculto por el filtro | Aquí hay {n} chats ocultos por el filtro',
+      hide: 'Mover a ocultos',
+      unhide: 'Dejar de ocultar',
+      reasonPerson: 'Ocultado por ti',
+      reasonReputation: 'Filtrado: reputación menor que {n}',
+      reasonMark: 'Filtrado por estado',
+      hiddenToast: '«{name}» está oculto',
+      hiddenToastHint:
+        'El chat no suena ni aparece en la lista. El ojo arriba de los chats lo muestra; su menú «⋯» lo devuelve.',
+    },
     listSearch: {
       open: 'Buscar un chat o una persona',
       close: 'Cerrar búsqueda',

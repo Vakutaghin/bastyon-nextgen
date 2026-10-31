@@ -573,6 +573,39 @@ export default {
         'Nachrichten, die der Server bereits gelöscht hat, gibt es nur in dieser Kopie. Nach dem Löschen sind sie nicht wiederherstellbar.',
       deleteAllSureOk: 'Endgültig löschen',
       deletedAll: 'Gespeicherte Chats gelöscht',
+      screen: 'Eingangsfilter',
+      screenHint:
+        'Blendet Chats von Leuten aus, die Ihnen schreiben – nach Reputation, Status oder von Hand. Nur auf diesem Gerät: Niemand erfährt davon. Ausgeblendete Chats klingeln nicht und zählen nicht mit; das Auge oben in den Chats zeigt sie.',
+      screenReputation: 'Ausblenden bei Reputation unter',
+      screenReputationHint:
+        'Neue Konten starten bei 0, Bewertungen von Beiträgen und Kommentaren erhöhen sie. Chats, die Sie begonnen haben, blenden die Regeln nie aus.',
+      screenReputationValue: 'Reputationsschwelle',
+      screenMark_verified: 'Verifiziert',
+      screenMark_verifiedHint: 'Häkchen am Avatar: ein Konto aus der Liste der verifizierten.',
+      screenMark_moderator: 'Moderator',
+      screenMark_moderatorHint:
+        'Krone: Das Netz vergibt sie an Konten, die älter als drei Monate sind und von hundert Personen bewertet wurden.',
+      screenMark_shark: 'Hai',
+      screenMark_sharkHint:
+        'Fähnchen: dasselbe, aber älter als ein Jahr. Haie können Inhalte melden.',
+      screenRule_any: 'Egal',
+      screenRule_hide: 'Ausblenden',
+      screenRule_only: 'Nur damit',
+      screenOnlyHint: '„Nur damit“ bei mehreren Status: einer davon genügt.',
+      screenPeople: 'Personen',
+      screenPeopleHint:
+        'Eine Person per Nickname ausblenden oder immer anzeigen, egal was die Regeln sagen. Dasselbe gibt es im Menü „⋯“ eines Chats.',
+      screenHiddenNow: 'Gerade {n} Chat ausgeblendet | Gerade {n} Chats ausgeblendet',
+      screenHiddenNone: 'Gerade ist nichts ausgeblendet',
+      screenAddPlaceholder: 'Nickname oder Adresse',
+      screenAdd: 'Ausblenden',
+      screenNotFound: '„{name}“ gibt es in Bastyon nicht',
+      screenSelf: 'Das ist Ihr Konto',
+      screenAddFailed: 'Nickname konnte nicht geprüft werden, prüfen Sie die Verbindung',
+      screenPerson_hide: 'Ausgeblendet',
+      screenPerson_show: 'Sichtbar',
+      screenRemove: 'Aus der Liste entfernen',
+      screenRemoveOf: '„{name}“ aus der Liste entfernen',
     },
     network: {
       title: 'Netzwerkverbindung',
@@ -1152,6 +1185,22 @@ export default {
     filterChatsEmpty: 'Noch keine Chats',
     filterDirectEmpty: 'Noch keine persönlichen Chats',
     filterGroupsEmpty: 'Noch keine Gruppen',
+    screen: {
+      show: '{n} gefilterten Chat anzeigen | {n} gefilterte Chats anzeigen',
+      hideAgain: 'Gefilterte Chats wieder ausblenden',
+      withNew: 'Neues in {n} Chat | Neues in {n} Chats',
+      showShort: 'Anzeigen',
+      allHidden:
+        '{n} Chat hier hat der Eingangsfilter ausgeblendet | {n} Chats hier hat der Eingangsfilter ausgeblendet',
+      hide: 'Ausblenden',
+      unhide: 'Wieder einblenden',
+      reasonPerson: 'Von Ihnen ausgeblendet',
+      reasonReputation: 'Gefiltert: Reputation unter {n}',
+      reasonMark: 'Nach Status gefiltert',
+      hiddenToast: '„{name}“ ist ausgeblendet',
+      hiddenToastHint:
+        'Der Chat klingelt nicht und steht nicht in der Liste. Das Auge oben in den Chats zeigt ihn, sein Menü „⋯“ holt ihn zurück.',
+    },
     listSearch: {
       open: 'Chat oder Person suchen',
       close: 'Suche schließen',

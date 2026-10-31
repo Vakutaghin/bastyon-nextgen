@@ -32,6 +32,7 @@
         />
       </template>
       <template v-if="listShown" #tools>
+        <ChatScreenToggle />
         <ChatSearchToggle />
       </template>
 
@@ -107,6 +108,7 @@ import MessengerButton from '../messenger-button/messenger-button.vue'
 import MessengerWindow from '../messenger-window/messenger-window.vue'
 import ChatList from '../chat-list/chat-list.vue'
 import ChatSearchToggle from '../chat-list/chat-search-toggle.vue'
+import ChatScreenToggle from '../chat-list/chat-screen-toggle.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
 import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'
 import ChannelRoom from '../channel-room/channel-room.vue'

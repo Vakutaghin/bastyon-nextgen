@@ -577,6 +577,41 @@ export default {
         'Les messages que le serveur a déjà supprimés n’existent que dans cette copie. Une fois supprimés, ils ne pourront pas être récupérés.',
       deleteAllSureOk: 'Supprimer définitivement',
       deletedAll: 'Conversations enregistrées supprimées',
+      screen: 'Filtre des messages entrants',
+      screenHint:
+        'Masque les conversations des personnes qui vous écrivent, selon la réputation, le statut ou à la main. Sur cet appareil seulement : personne n’est prévenu. Les conversations masquées ne sonnent pas et ne sont pas comptées ; l’œil en haut des conversations les affiche.',
+      screenReputation: 'Masquer si la réputation est inférieure à',
+      screenReputationHint:
+        'Les nouveaux comptes partent de 0, les notes des publications et des commentaires la font monter. Les règles ne masquent jamais les conversations que vous avez commencées.',
+      screenReputationValue: 'Seuil de réputation',
+      screenMark_verified: 'Vérifié',
+      screenMark_verifiedHint:
+        'Coche près de l’avatar : un compte de la liste des comptes vérifiés.',
+      screenMark_moderator: 'Modérateur',
+      screenMark_moderatorHint:
+        'Couronne : le réseau la donne aux comptes de plus de trois mois notés par cent personnes.',
+      screenMark_shark: 'Requin',
+      screenMark_sharkHint:
+        'Drapeau : pareil, mais pour un compte de plus d’un an. Les requins peuvent signaler du contenu.',
+      screenRule_any: 'Peu importe',
+      screenRule_hide: 'Masquer',
+      screenRule_only: 'Seulement avec',
+      screenOnlyHint: '« Seulement avec » sur plusieurs statuts : un seul suffit.',
+      screenPeople: 'Personnes',
+      screenPeopleHint:
+        'Masquer une personne par son pseudo ou toujours l’afficher, quelles que soient les règles. C’est aussi dans le menu « ⋯ » d’une conversation.',
+      screenHiddenNow:
+        '{n} conversation masquée en ce moment | {n} conversations masquées en ce moment',
+      screenHiddenNone: 'Rien n’est masqué en ce moment',
+      screenAddPlaceholder: 'Pseudo ou adresse',
+      screenAdd: 'Masquer',
+      screenNotFound: '« {name} » n’existe pas sur Bastyon',
+      screenSelf: 'C’est votre compte',
+      screenAddFailed: 'Impossible de vérifier le pseudo, vérifiez la connexion',
+      screenPerson_hide: 'Masqué',
+      screenPerson_show: 'Visible',
+      screenRemove: 'Retirer de la liste',
+      screenRemoveOf: 'Retirer « {name} » de la liste',
     },
     network: {
       title: 'Connexion au réseau',
@@ -1155,6 +1190,22 @@ export default {
     filterChatsEmpty: 'Aucune discussion pour le moment',
     filterDirectEmpty: 'Aucune discussion personnelle pour le moment',
     filterGroupsEmpty: 'Aucun groupe pour le moment',
+    screen: {
+      show: 'Afficher {n} conversation filtrée | Afficher {n} conversations filtrées',
+      hideAgain: 'Masquer à nouveau les conversations filtrées',
+      withNew: 'Du nouveau dans {n} conversation | Du nouveau dans {n} conversations',
+      showShort: 'Afficher',
+      allHidden:
+        '{n} conversation ici est masquée par le filtre | {n} conversations ici sont masquées par le filtre',
+      hide: 'Masquer',
+      unhide: 'Ne plus masquer',
+      reasonPerson: 'Masqué par vous',
+      reasonReputation: 'Filtré : réputation inférieure à {n}',
+      reasonMark: 'Filtré selon le statut',
+      hiddenToast: '« {name} » est masqué',
+      hiddenToastHint:
+        'La conversation ne sonne pas et n’apparaît pas dans la liste. L’œil en haut des conversations l’affiche, son menu « ⋯ » la rétablit.',
+    },
     listSearch: {
       open: 'Chercher une discussion ou une personne',
       close: 'Fermer la recherche',

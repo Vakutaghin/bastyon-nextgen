@@ -99,9 +99,33 @@ export const SC_EmptyHint = styled.div`
     color: var(--ui-violet);
   }
 
+  &.screened .anticon {
+    color: var(--ui-text-dimmed);
+  }
+
   strong {
     color: var(--ui-text-highlighted);
     font-weight: 500;
+  }
+`
+
+/** Кнопка-ссылка в пустом списке: «Показать» спрятанные фильтром. */
+export const SC_EmptyAction = styled.button`
+  padding: 4px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-full);
+  background: transparent;
+  color: var(--ui-primary);
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(var(--ui-primary-rgb) / 10%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
   }
 `
 
@@ -157,6 +181,59 @@ export const SC_SearchToggle = styled.button`
     outline: 2px solid var(--ui-primary);
     outline-offset: 2px;
   }
+`
+
+/**
+ * Глаз «Скрытые» в шапке мессенджера, рядом с лупой. С числом — капсула:
+ * значок и сколько спрятанных чатов с новым.
+ */
+export const SC_ScreenToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 4px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--ui-radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-tertiary);
+  }
+
+  &.active {
+    color: var(--ui-primary);
+    background: rgb(var(--ui-primary-rgb) / 10%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+  }
+`
+
+/** Число на глазе: спрятанные чаты с новым. Приглушённое — это не общий счётчик. */
+export const SC_ScreenCount = styled.span`
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-text-dimmed);
+  color: var(--ui-text-inverted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 `
 
 /** Поле поиска на месте ряда разделов: лупа, ввод, значок загрузки, крестик. */
