@@ -192,6 +192,7 @@ function inertAround(root: HTMLElement): void {
   }
   apply()
   // Тост или окно, появившиеся под замком, тоже не должны ловить фокус.
+  observer?.disconnect()
   observer = new MutationObserver(apply)
   observer.observe(document.body, { childList: true })
 }
@@ -211,6 +212,7 @@ async function onLocked(): Promise<void> {
   ;(document.activeElement as HTMLElement | null)?.blur?.()
   if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
   // «Назад» на Android на замке сворачивает приложение, а не листает то, что под ним.
+  releaseBack?.()
   releaseBack = pushBackHandler(() => {
     if (view.value !== 'code') {
       view.value = view.value === 'signout' ? 'recover' : 'code'
@@ -221,7 +223,8 @@ async function onLocked(): Promise<void> {
   })
   await nextTick()
   const root = rootEl()
-  if (!root) return
+  // Открыли раньше, чем экран появился: оставленный inert погасил бы приложение.
+  if (!root || !appLock.locked) return
   inertAround(root)
   root.focus({ preventScroll: true })
 }
