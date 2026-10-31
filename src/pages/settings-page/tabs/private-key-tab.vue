@@ -1,6 +1,6 @@
 <template>
   <SC_PrivateKeySection>
-    <SC_SettingsSectionTitle>{{ t('settings.tabs.privateKey') }}</SC_SettingsSectionTitle>
+    <SC_SettingsSectionTitle>{{ t('settings.privateKey.title') }}</SC_SettingsSectionTitle>
 
     <!-- Confirm dialog -->
     <template v-if="pkConfirmVisible">
@@ -61,6 +61,9 @@
       </SC_ShowKeyButton>
     </template>
 
+    <!-- Пин-код или графический ключ на вход в приложение. -->
+    <AppLockSection />
+
     <!-- P0-1: безопасность сида at-rest (passwordless по умолчанию + opt-in passphrase). -->
     <SecuritySection />
   </SC_PrivateKeySection>
@@ -71,6 +74,7 @@ import { useI18n } from 'vue-i18n'
 import { CopyOutlined } from '@/components/icons'
 import { usePrivateKeyReveal } from '../use-private-key-reveal'
 import SecuritySection from './security-section.vue'
+import AppLockSection from './app-lock-section.vue'
 import {
   SC_PrivateKeySection,
   SC_SettingsSectionTitle,

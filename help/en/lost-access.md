@@ -23,7 +23,7 @@ In the **“Unlock your wallet”** window click **“Forgot your passphrase?”
 
 ## You do not have the phrase
 
-- **The app is still open on some device.** Right away open **“Settings”** → **“Private key”** → **“Reveal private key”**, write the phrase down and check your copy — see [Recovery phrase and private key](recovery-phrase.md).
+- **The app is still open on some device.** Right away open **“Settings”** → **“Security”** → **“Reveal private key”**, write the phrase down and check your copy — see [Recovery phrase and private key](recovery-phrase.md).
 - **The phrase is nowhere.** It cannot be recovered: nobody has a copy, including the developers. All that is left is to create a new account.
 
 ## "Local wallet key is lost"

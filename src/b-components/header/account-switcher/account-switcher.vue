@@ -129,6 +129,7 @@ import type { Address } from '@/blockchain/types/addresses'
 import type { AccountDisplayInfo } from './types'
 import { loadAccounts as loadAccountsHelper } from './helpers/load-accounts'
 import { loadAccountMnemonic } from './helpers/load-account-mnemonic'
+import { useAppLockStore } from '@/stores/app-lock-store'
 import keyIcon from './key-icon.svg?url'
 import {
   SC_AccountSwitcher,
@@ -259,6 +260,8 @@ async function handleConfirmShowMnemonic(): Promise<void> {
     console.error('Failed to load mnemonic: No account address selected')
     return
   }
+  // С замком приложения фразу показывают только тому, кто знает код.
+  if (!(await useAppLockStore().confirm())) return
 
   try {
     const { mnemonic: m, privateKeyHex: pk } = await loadAccountMnemonic(address)

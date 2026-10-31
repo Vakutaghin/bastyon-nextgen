@@ -22,7 +22,7 @@ The copy buttons in the app put the phrase on the clipboard, and after a minute 
 
 ## Where to see them again
 
-- **In the settings.** **“Settings”** → the **“Private key”** tab → **“Reveal private key”**. The app warns that showing the key is dangerous, and after **“Yes, reveal”** it shows the **“Seed phrase”** and the **“Private key (hex)”**.
+- **In the settings.** **“Settings”** → the **“Security”** tab → **“Reveal private key”**. The app warns that showing the key is dangerous, and after **“Yes, reveal”** it shows the **“Seed phrase”** and the **“Private key (hex)”**.
 - **In the account list.** The account menu → **“Switch account”** → the key icon next to the account → **“Show seed phrase”**. This way you can see the phrase of any account saved on the device.
 
 Before that, make sure nobody is near and the screen is not being recorded.

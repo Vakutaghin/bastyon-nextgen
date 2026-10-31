@@ -18,6 +18,8 @@ import {
   VAULT_ENVELOPE_BACKUP_KEY,
   VAULT_MIGRATION_KEY,
   VAULT_ATTEMPTS_KEY,
+  APP_LOCK_KEY,
+  APP_LOCK_ATTEMPTS_KEY,
   MESSENGER_KEY_PINS_PREFIX,
   MESSENGER_DIALOGS_PREFIX,
   MESSENGER_CHANNELS_PREFIX,
@@ -150,6 +152,9 @@ export function clearAllUserData(): void {
       localStorage.removeItem(VAULT_ENVELOPE_BACKUP_KEY)
       localStorage.removeItem(VAULT_MIGRATION_KEY)
       localStorage.removeItem(VAULT_ATTEMPTS_KEY)
+      // Замок приложения проверяется секретом сейфа: без сейфа его не открыть.
+      localStorage.removeItem(APP_LOCK_KEY)
+      localStorage.removeItem(APP_LOCK_ATTEMPTS_KEY)
     }
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem(ACCOUNTS_LIST_KEY)

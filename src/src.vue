@@ -16,6 +16,8 @@ import CollectionEditorModal from '@/b-components/media/collection-editor/collec
 import ReportModal from '@/b-components/report/report-modal.vue'
 import ChainInfoModal from '@/b-components/chain-info/chain-info-modal.vue'
 import VaultUnlockModal from '@/components/vault/vault-unlock-modal.vue'
+import AppLockScreen from '@/components/app-lock/app-lock-screen.vue'
+import AppLockConfirmModal from '@/components/app-lock/app-lock-confirm-modal.vue'
 import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
 import HelpPanel from '@/b-components/help/help-panel.vue'
 import { ImageGalleryHost } from '@/components/image-gallery'
@@ -178,6 +180,9 @@ watch(
       <HelpPanel />
       <!-- Просмотр картинок постов и комментариев — singleton, открывается modalStore.openImageGallery -->
       <ImageGalleryHost />
+      <!-- Замок приложения (пин-код, графический ключ) и подтверждение кодом — singleton, useAppLockStore -->
+      <AppLockConfirmModal />
+      <AppLockScreen />
     </template>
   </ConfigProvider>
 </template>

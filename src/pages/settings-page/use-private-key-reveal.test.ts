@@ -1,6 +1,7 @@
 // «Приватный ключ» в настройках: подтверждение → показ, «Скрыть» стирает
 // секрет из памяти, у мнемоники рядом выводится hex-ключ, а любая ошибка
-// чтения — тост с понятным текстом без показа.
+// чтения — тост с понятным текстом без показа. С замком приложения сперва
+// спрашивается его код.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,8 +12,10 @@ const mocks = vi.hoisted(() => ({
   copySecret: vi.fn(),
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
+  appLock: { enabled: false, confirm: vi.fn() },
 }))
 vi.mock('@/stores', () => ({ useAuthStore: () => mocks.auth }))
+vi.mock('@/stores/app-lock-store', () => ({ useAppLockStore: () => mocks.appLock }))
 vi.mock('@/blockchain', () => ({ recoverKeyPair: mocks.recoverKeyPair }))
 vi.mock('./load-account-secret', () => ({ loadAccountSecret: mocks.loadAccountSecret }))
 vi.mock('@/helpers/common/clipboard', () => ({ copySecret: mocks.copySecret }))
@@ -36,6 +39,8 @@ describe('usePrivateKeyReveal', () => {
     mocks.copySecret.mockReset().mockResolvedValue(true)
     mocks.toastError.mockReset()
     mocks.toastSuccess.mockReset()
+    mocks.appLock.enabled = false
+    mocks.appLock.confirm.mockReset()
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -154,6 +159,22 @@ describe('usePrivateKeyReveal', () => {
     await pk.pkCopyKey()
     expect(mocks.copySecret).toHaveBeenLastCalledWith(HEX)
     expect(mocks.toastSuccess).not.toHaveBeenCalled()
+  })
+
+  it('замок приложения: без верного кода секрет не читается, с ним — показывается', async () => {
+    mocks.appLock.enabled = true
+    mocks.appLock.confirm.mockResolvedValueOnce(false)
+    const pk = usePrivateKeyReveal()
+    await pk.pkConfirmAndReveal()
+    expect(mocks.loadAccountSecret).not.toHaveBeenCalled()
+    expect(pk.pkRevealed.value).toBe(false)
+    expect(pk.pkLoading.value).toBe(false)
+
+    mocks.appLock.confirm.mockResolvedValueOnce(true)
+    await pk.pkConfirmAndReveal()
+    expect(mocks.appLock.confirm).toHaveBeenCalledTimes(2)
+    expect(pk.pkRevealed.value).toBe(true)
+    expect(pk.pkMnemonic.value).toBe(SEED)
   })
 
   it('до показа копировать нечего', async () => {

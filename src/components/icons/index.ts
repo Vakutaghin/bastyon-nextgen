@@ -14,6 +14,7 @@ import { h, type Component, type FunctionalComponent } from 'vue'
 import {
   ArrowDown,
   ArrowLeft,
+  Delete,
   ArrowLeftRight,
   ArrowRight,
   ArrowUp,
@@ -254,6 +255,8 @@ export const KeyOutlined = lucideIcon('KeyOutlined', Key)
 export const LeftOutlined = lucideIcon('LeftOutlined', ChevronLeft)
 export const LoadingOutlined = lucideIcon('LoadingOutlined', LoaderCircle, 'none', true)
 export const LockOutlined = lucideIcon('LockOutlined', Lock)
+/** Стереть цифру на клавиатуре пин-кода (у Lucide этот знак называется Delete). */
+export const BackspaceOutlined = lucideIcon('BackspaceOutlined', Delete)
 export const LogoutOutlined = lucideIcon('LogoutOutlined', LogOut)
 export const MenuFoldOutlined = lucideIcon('MenuFoldOutlined', PanelLeftClose)
 export const MenuOutlined = lucideIcon('MenuOutlined', Menu)

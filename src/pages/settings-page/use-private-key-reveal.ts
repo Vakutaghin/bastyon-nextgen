@@ -15,6 +15,7 @@
  */
 import { ref, type Ref } from 'vue'
 import { useAuthStore } from '@/stores'
+import { useAppLockStore } from '@/stores/app-lock-store'
 import { recoverKeyPair } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
@@ -54,6 +55,9 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
 
   async function pkConfirmAndReveal(): Promise<void> {
     pkConfirmVisible.value = false
+    // С замком приложения фразу показывают только тому, кто знает код.
+    const appLock = useAppLockStore()
+    if (appLock.enabled && !(await appLock.confirm())) return
     pkLoading.value = true
 
     try {

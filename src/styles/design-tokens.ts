@@ -73,6 +73,8 @@ export const Z_INDEX = {
   TOAST: 3000,
   TOOLTIP: 4000,
   REACTION_PICKER: 10000,
+  // Замок приложения (пин-код, графический ключ) закрывает всё, включая подсказки и тосты.
+  APP_LOCK: 20000,
 } as const
 
 export const FONT_SIZE = {

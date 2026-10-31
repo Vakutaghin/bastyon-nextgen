@@ -49,7 +49,7 @@ The phrase and the key are equivalent: either is enough to get the account back.
 > [!CAUTION]
 > Only you see the phrase, and nobody can restore it. If you lose both the phrase and the device, the account is gone for good.
 
-This window will not appear by itself again. You can see the phrase again in the settings, on the **“Private key”** tab — see [Recovery phrase and private key](recovery-phrase.md).
+This window will not appear by itself again. You can see the phrase again in the settings, on the **“Security”** tab — see [Recovery phrase and private key](recovery-phrase.md).
 
 ## First steps
 

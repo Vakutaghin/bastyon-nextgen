@@ -404,6 +404,7 @@
   --transition-drawer: 0.24s cubic-bezier(0.32, 0.72, 0, 1); /* выезд мобильного меню */
   --transition-player: 0.25s cubic-bezier(0, 0, 0.2, 1); /* панель плеера, как у YouTube */
   --transition-player-quick: 0.1s cubic-bezier(0.4, 0, 1, 1); /* ползунки плеера */
+  --transition-tap: 0.1s ease-out; /* отклик на касание: клавиши и точки замка приложения */
 
   /* ── Breakpoints (для @container-queries и JS-кода через getComputedStyle) ── */
   --bp-small-mobile: 360px;
@@ -626,6 +627,22 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Неверный код на замке приложения: точки пин-кода вздрагивают. */
+@keyframes app-lock-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
   }
 }
 

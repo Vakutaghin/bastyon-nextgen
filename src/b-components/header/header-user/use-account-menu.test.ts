@@ -1,6 +1,7 @@
 // Меню аккаунта в шапке: набор пунктов (незавершённая регистрация, «Мои
-// файлы» только на десктопе), переходы, выход только из текущего аккаунта
-// после подтверждения и синхронизация окон входа/регистрации с modalStore.
+// файлы» только на десктопе, «Заблокировать» при заданном замке), переходы,
+// выход только из текущего аккаунта после подтверждения и синхронизация окон
+// входа/регистрации с modalStore.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
@@ -16,7 +17,14 @@ import { useAccountMenu, type AccountMenuOptions } from './use-account-menu'
 import type { MenuItemId } from '@/stores/header-layout'
 import { MENU_ITEMS } from '@/b-components/header/header-layout/layout-items'
 
-function setup(overrides: { registrationUnfinished?: boolean; items?: MenuItemId[] } = {}) {
+function setup(
+  overrides: {
+    registrationUnfinished?: boolean
+    items?: MenuItemId[]
+    lockEnabled?: boolean
+    lockApp?: () => void
+  } = {}
+) {
   const authStore = reactive({
     getUserAddress: 'PAddr1' as string | null,
     getUserProfile: null as { name?: string; address?: string } | null,
@@ -43,6 +51,8 @@ function setup(overrides: { registrationUnfinished?: boolean; items?: MenuItemId
     registerModalOpenRef,
     registrationUnfinished,
     ...(overrides.items ? { items: ref(overrides.items) } : {}),
+    lockEnabled: ref(overrides.lockEnabled ?? false),
+    lockApp: overrides.lockApp,
   } as unknown as AccountMenuOptions)
   return {
     authStore,
@@ -60,6 +70,19 @@ const keys = (items: Array<{ key?: string; type?: string }>) => items.map((i) =>
 describe('useAccountMenu', () => {
   beforeEach(() => {
     mocks.tauri = false
+  })
+
+  it('замок задан — «Заблокировать» над «Сменить аккаунт» и закрывает приложение', async () => {
+    const lockApp = vi.fn()
+    const { menu } = setup({ lockEnabled: true, lockApp })
+    expect(keys(menu.menuItems.value).slice(-4)).toEqual([
+      'divider',
+      'lockApp',
+      'switchAccount',
+      'signout',
+    ])
+    await menu.handleMenuClick({ key: 'lockApp' })
+    expect(lockApp).toHaveBeenCalledTimes(1)
   })
 
   it('пункты меню в вебе по умолчанию: профиль по адресу, без «Моих файлов»', () => {

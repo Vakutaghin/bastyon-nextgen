@@ -35,6 +35,15 @@ export const VAULT_MIGRATION_KEY = 'BST_VAULT_MIGRATION'
 /** Транзиентный счётчик неверных попыток passphrase (троттлинг; не секрет). */
 export const VAULT_ATTEMPTS_KEY = 'BST_VAULT_ATTEMPTS'
 
+/**
+ * Замок приложения: вид кода (пин-код или графический ключ), проверочная
+ * подпись кода под секретом сейфа и время до автоблокировки. Сам код нигде не
+ * хранится. См. src/helpers/app-lock/app-lock-config.ts.
+ */
+export const APP_LOCK_KEY = 'BST_APP_LOCK'
+/** Счётчик неверных попыток кода замка и пауза после них (не секрет). */
+export const APP_LOCK_ATTEMPTS_KEY = 'BST_APP_LOCK_ATTEMPTS'
+
 /** Префикс пинов ключей собеседников мессенджера (TOFU): `BST_MSG_KEYPINS_<ownAddress>`. */
 export const MESSENGER_KEY_PINS_PREFIX = 'BST_MSG_KEYPINS_'
 /** Список диалогов с прошлого запуска (с превью сообщений): `BST_MSG_DIALOGS_<ownAddress>`. */

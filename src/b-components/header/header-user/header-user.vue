@@ -129,6 +129,7 @@ import { formatPkoin } from '@/helpers/common/pkoin-formatter'
 import { resolveAvatarUrl } from '@/helpers/common/avatar-resolver'
 import { useRegistrationFlow } from './use-registration-flow'
 import { useAccountMenu } from './use-account-menu'
+import { useAppLockStore } from '@/stores/app-lock-store'
 import { useHeaderLayout } from '@/b-components/header/header-layout/layout-items'
 import {
   SC_UserDetails,
@@ -178,6 +179,7 @@ const {
 } = useRegistrationFlow({ authStore, isAuthenticated })
 
 // === Меню профиля + sign-in / sign-out ===
+const appLock = useAppLockStore()
 const {
   signInModalOpen,
   accountSwitcherOpen,
@@ -201,6 +203,8 @@ const {
   registerModalOpenRef: registerModalOpen,
   registrationUnfinished,
   items: useHeaderLayout().menuItems,
+  lockEnabled: computed(() => appLock.enabled),
+  lockApp: () => appLock.lock(),
 })
 
 // === Отображение пользователя в шапке ===

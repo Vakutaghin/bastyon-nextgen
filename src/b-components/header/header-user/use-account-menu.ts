@@ -19,7 +19,7 @@ import type { Router } from 'vue-router'
 import type { useAuthStore } from '@/blockchain'
 import type { useModalStore } from '@/stores/modal-store'
 import { t } from '@/i18n'
-import { LogoutOutlined, SwapOutlined, UserAddOutlined } from '@/components/icons'
+import { LockOutlined, LogoutOutlined, SwapOutlined, UserAddOutlined } from '@/components/icons'
 import type { MenuItemId } from '@/stores/header-layout'
 import {
   MENU_ITEMS,
@@ -63,11 +63,15 @@ export interface AccountMenuOptions {
    * на этой платформе). Без них — меню по умолчанию.
    */
   items?: Ref<MenuItemId[]>
+  /** Замок приложения задан — пункт «Заблокировать» над «Сменить аккаунт». */
+  lockEnabled?: Ref<boolean>
+  lockApp?: () => void
 }
 
 export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
   const { authStore, modalStore, router, openRegister, registerModalOpenRef } = opts
   const registrationUnfinished = opts.registrationUnfinished ?? ref(false)
+  const lockEnabled = opts.lockEnabled ?? ref(false)
 
   const signInModalOpen = ref(false)
   const accountSwitcherOpen = ref(false)
@@ -94,8 +98,8 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
   /** Значок слева от подписи — тот же, что у пункта в «Шапке и меню» и в меню телефона. */
   const iconOf = (icon: Component) => () => h(icon)
 
-  // Середина — из раскладки; «Завершить регистрацию» сверху и «Сменить
-  // аккаунт» / «Выйти» снизу не настраиваются.
+  // Середина — из раскладки; «Завершить регистрацию» сверху и «Заблокировать»
+  // / «Сменить аккаунт» / «Выйти» снизу не настраиваются.
   const menuItems = computed(() => [
     ...(registrationUnfinished.value
       ? [
@@ -113,6 +117,9 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
       icon: iconOf(MENU_ITEMS[id].icon),
     })),
     { type: 'divider' },
+    ...(lockEnabled.value
+      ? [{ key: 'lockApp', label: t('appLock.menuLock'), icon: iconOf(LockOutlined) }]
+      : []),
     { key: 'switchAccount', label: t('accountMsg.menuSwitchAccount'), icon: iconOf(SwapOutlined) },
     {
       key: 'signout',
@@ -154,6 +161,8 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
       // Чат поддержки — модуль мессенджера: грузится по нажатию.
       const { openSupportChat } = await import('../header-report-bug/open-support-chat')
       await openSupportChat()
+    } else if (key === 'lockApp') {
+      opts.lockApp?.()
     } else if (key === 'switchAccount') {
       accountSwitcherOpen.value = true
     } else if (key.startsWith('/')) {

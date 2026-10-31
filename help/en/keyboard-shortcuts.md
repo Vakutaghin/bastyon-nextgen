@@ -15,6 +15,7 @@ On a Mac, press Cmd instead of Ctrl.
 | F1 | help on the current screen — the article opens at the side, see [Using this help](using-help.md) |
 | Esc | close a window; in the chat, go back to the list, then close the messenger; finish dictation |
 | Ctrl+Q | quit the desktop app: the window’s close button only hides it, see [The desktop app](desktop-app.md) |
+| Ctrl+L | lock the app with your PIN or unlock pattern, if one is set, see [PIN and unlock pattern](device-protection.md#pin-and-unlock-pattern) |
 | Alt+← and Alt+→, on a Mac — Cmd+[ and Cmd+] | back and forward through the pages you opened, like the **“Back”** and **“Forward”** arrows in the header |
 
 The side “back” and “forward” mouse buttons also step through pages — in a browser and in the Windows app.
