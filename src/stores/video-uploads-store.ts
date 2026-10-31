@@ -121,6 +121,9 @@ const defaultDeps = (): VideoUploadsDeps => ({
   serverCover: getInstanceVideoCover,
 })
 
+/** Сколько ждать обложку, прежде чем сказать «Медиастудии», что ролик загружен. */
+export const COVER_WAIT_MS = 30_000
+
 const isActive = (job: VideoUploadJob): boolean =>
   job.status === 'compressing' || job.status === 'uploading'
 
@@ -136,6 +139,11 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
   const panelCollapsed = ref(false)
   /** Плашку закрыли — до следующей загрузки. */
   const panelHidden = ref(false)
+  /**
+   * Сколько раз ролики на сервере менялись: загрузка дошла вместе с обложкой,
+   * дошли новое название или обложка. «Медиастудия» по нему перечитывает список.
+   */
+  const serverChanges = ref(0)
 
   const runtime = new Map<string, JobRuntime>()
   let deps: VideoUploadsDeps = defaultDeps()
@@ -250,6 +258,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       // Название дописали, пока шла загрузка, — пусть и на сервере будет оно.
       void commitTitle(id)
       rt.cover?.attach({ host: result.host, uuid: result.uuid }, { audio: result.isAudio })
+      void afterCover(rt)
     } catch (error) {
       if (rt.controller !== controller) return
       if (error instanceof PeertubeUploadError && error.cancelled) return
@@ -344,6 +353,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       const token = await ensurePeertubeToken({ host, address: author.address, signature })
       await deps.rename({ host, id: uuid, name: title, accessToken: token.access_token })
       rt.serverName = title
+      serverChanges.value++
     } catch (e) {
       log.warn('rename failed', e)
     }
@@ -369,11 +379,35 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
 
   /** Новая обложка: сервер получит её сразу, если видео уже загружено. */
   function setCover(id: string, image: Blob, source: CoverSource, time = 0): void {
-    runtime.get(id)?.cover?.set(image, source, time)
+    const rt = runtime.get(id)
+    rt?.cover?.set(image, source, time)
+    if (rt && find(id)?.status === 'done') void afterCover(rt)
   }
 
   function retryCover(id: string): void {
-    runtime.get(id)?.cover?.retry()
+    const rt = runtime.get(id)
+    if (rt?.cover?.state.status !== 'error') return
+    rt.cover.retry()
+    void afterCover(rt)
+  }
+
+  /**
+   * Обложка дошла до сервера (или не смогла) — ролик на сервере изменился.
+   * Раньше не говорим: получив обложку, сервер удаляет миниатюру, которую
+   * сделал сам, и список, прочитанный до этого, показал бы её или пустое
+   * место вместо выбранной картинки. Зависший запрос ждём не дольше
+   * COVER_WAIT_MS — ролик в списке важнее.
+   */
+  async function afterCover(rt: JobRuntime): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    await Promise.race([
+      rt.cover?.flush(),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, COVER_WAIT_MS)
+      }),
+    ])
+    clearTimeout(timer)
+    serverChanges.value++
   }
 
   /** Дождаться, пока обложка дойдёт до сервера (перед постом). */
@@ -394,6 +428,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     dialogJob,
     panelCollapsed,
     panelHidden,
+    serverChanges,
     openDialog,
     closeDialog,
     start,

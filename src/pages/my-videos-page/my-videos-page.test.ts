@@ -262,6 +262,14 @@ describe('MyVideosPage', () => {
     expect(mocks.load).toHaveBeenCalledTimes(1)
   })
 
+  it('ролик на сервере изменился (загружен с обложкой, новое название) — список перечитывается', async () => {
+    await mountPage()
+    mocks.load.mockClear()
+    useVideoUploadsStore().serverChanges++
+    await flushPromises()
+    expect(mocks.load).toHaveBeenCalledTimes(1)
+  })
+
   it('пост ещё не в блоке — «Публикуется»; обработка видна рядом с состоянием поста', async () => {
     mocks.publishing = new Set(['u2'])
     await mountPage()

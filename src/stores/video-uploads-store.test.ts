@@ -27,7 +27,7 @@ vi.mock('@/services/peertube/peertube-auth', async (importOriginal) => ({
 }))
 
 import { PeertubeUploadError } from '@/services/peertube/peertube-upload'
-import { useVideoUploadsStore } from './video-uploads-store'
+import { COVER_WAIT_MS, useVideoUploadsStore } from './video-uploads-store'
 
 const file = (name = 'Отпуск 2026.mp4', size = 1000) =>
   new File([new Uint8Array(size)], name, { type: 'video/mp4' })
@@ -273,6 +273,68 @@ describe('video-uploads-store', () => {
     await store.commitCover(id)
     expect(images).toEqual(['frame 12'])
     expect(store.jobs[0]!.cover).toMatchObject({ source: 'frame', time: 12, status: 'saved' })
+  })
+
+  it('«Медиастудия» узнаёт о ролике, когда обложка уже на сервере, а не раньше', async () => {
+    const store = useVideoUploadsStore()
+    const up = controllableUpload()
+    let saved: () => void = () => {}
+    const saveCover = vi.fn(() => new Promise<void>((resolve) => (saved = resolve)))
+    const rename = vi.fn(async () => {})
+    store.setDepsForTests({
+      upload: up.upload as never,
+      rename,
+      firstFrame: async () => new Blob(['first']),
+      saveCover,
+    })
+    const id = store.start(file())!
+    await vi.waitFor(() => expect(store.jobs[0]!.cover?.source).toBe('first'))
+    up.finish()
+    await vi.waitFor(() => expect(saveCover).toHaveBeenCalledTimes(1))
+    // Ролик загружен, но сервер ещё держит свою миниатюру — список не трогаем.
+    expect(store.jobs[0]!.status).toBe('done')
+    expect(store.serverChanges).toBe(0)
+
+    saved()
+    await vi.waitFor(() => expect(store.serverChanges).toBe(1))
+
+    // Другая обложка после загрузки — снова, когда она дошла.
+    store.setCover(id, new Blob(['own']), 'image')
+    await vi.waitFor(() => expect(saveCover).toHaveBeenCalledTimes(2))
+    expect(store.serverChanges).toBe(1)
+    saved()
+    await vi.waitFor(() => expect(store.serverChanges).toBe(2))
+
+    // Новое название дошло до сервера — тоже.
+    store.setTitle(id, 'Сочи, июль')
+    await store.commitTitle(id)
+    expect(store.serverChanges).toBe(3)
+  })
+
+  it('обложка не уходит на сервер — ролик всё равно появляется в списке, не позже чем через COVER_WAIT_MS', async () => {
+    vi.useFakeTimers()
+    try {
+      const store = useVideoUploadsStore()
+      const up = controllableUpload()
+      const saveCover = vi.fn(() => new Promise<void>(() => {}))
+      store.setDepsForTests({
+        upload: up.upload as never,
+        rename: vi.fn(),
+        firstFrame: async () => new Blob(['first']),
+        saveCover,
+      })
+      store.start(file())
+      await vi.waitFor(() => expect(store.jobs[0]!.cover?.source).toBe('first'))
+      up.finish()
+      await vi.waitFor(() => expect(saveCover).toHaveBeenCalledTimes(1))
+      // waitFor с поддельными часами сам двигает их понемногу — запас в секунду.
+      await vi.advanceTimersByTimeAsync(COVER_WAIT_MS - 1_000)
+      expect(store.serverChanges).toBe(0)
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(store.serverChanges).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('у звука кадров нет: своя картинка уходит на сервер, а без неё видна обложка сервера', async () => {

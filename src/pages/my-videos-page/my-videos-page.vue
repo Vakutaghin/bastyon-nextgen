@@ -210,11 +210,13 @@ const { videos, loading, loaded, failedHosts, signedIn, load, remove, patch, isP
 
 onMounted(() => void load())
 
-// Загрузка закончилась — ролик уже на сервере.
-const doneCount = computed(() => uploads.jobs.filter((job) => job.status === 'done').length)
-watch(doneCount, (now, before) => {
-  if (now > before) void load()
-})
+// Ролик загружен и обложка дошла до сервера, сменили название или обложку —
+// список перечитывается. Не раньше обложки: сервер удаляет миниатюру, которую
+// сделал сам, и в списке осталась бы она или пустое место.
+watch(
+  () => uploads.serverChanges,
+  () => void load()
+)
 
 watch(signedIn, (yes) => {
   if (yes) void load()

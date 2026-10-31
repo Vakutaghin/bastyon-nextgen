@@ -53,6 +53,11 @@ interface VideoServer {
   /** Имена, которые приложение отправило в PUT videos/:uuid. */
   renamed: string[]
   covers: SentCover[]
+  /**
+   * Миниатюра ролика сейчас. Как у PeerTube: при загрузке сервер делает её
+   * сам, каждая присланная обложка — новый файл, прежний удаляется.
+   */
+  thumbnailPath: string
   /** Отпустить придержанный ответ на загрузку. */
   release: () => void
 }
@@ -61,10 +66,18 @@ interface VideoServer {
 /** Обложка, которую подменный сервер «сделал сам». */
 const SERVER_COVER = `https://${HOST}/lazy-static/previews/server-cover.jpg`
 
-async function useVideoServer(page: Page, options: { audio?: boolean } = {}): Promise<VideoServer> {
+async function useVideoServer(
+  page: Page,
+  options: { audio?: boolean; coverDelayMs?: number } = {}
+): Promise<VideoServer> {
   let release: () => void = () => {}
   const held = new Promise<void>((resolve) => (release = resolve))
-  const server: VideoServer = { renamed: [], covers: [], release: () => release() }
+  const server: VideoServer = {
+    renamed: [],
+    covers: [],
+    thumbnailPath: '/static/thumbnails/auto.jpg',
+    release: () => release(),
+  }
   let uploaded = false
 
   const node = (path: string) => new RegExp(`\\.pocketnet\\.app:8899/peertube/${path}`)
@@ -110,6 +123,7 @@ async function useVideoServer(page: Page, options: { audio?: boolean } = {}): Pr
                 name: server.renamed.at(-1) ?? 'test-video',
                 state: { id: 1 },
                 duration: 3,
+                thumbnailPath: server.thumbnailPath,
               },
             ],
           }
@@ -149,15 +163,23 @@ async function useVideoServer(page: Page, options: { audio?: boolean } = {}): Pr
     const thumbnail = multipartFile(raw, 'thumbnailfile')
     if (thumbnail) {
       const { type, data } = thumbnail
+      // Сервер перекодирует картинку не мгновенно.
+      if (options.coverDelayMs) await new Promise((r) => setTimeout(r, options.coverDelayMs))
       server.covers.push({
         thumbnail: true,
         preview: !!multipartFile(raw, 'previewfile'),
         type,
         jpegBytes: data.length ? data[0] === 0xff && data[1] === 0xd8 : null,
       })
+      server.thumbnailPath = `/static/thumbnails/cover-${server.covers.length}.jpg`
     }
     return route.fulfill({ status: 204, body: '' })
   })
+  await page.route(`https://${HOST}/static/thumbnails/*`, (route) =>
+    new URL(route.request().url()).pathname === server.thumbnailPath
+      ? route.fulfill({ path: 'e2e/fixtures/test-video.jpg', contentType: 'image/jpeg' })
+      : route.fulfill({ status: 404, body: '' })
+  )
   await page.route(SERVER_COVER, (route) =>
     route.fulfill({ path: 'e2e/fixtures/test-video.jpg', contentType: 'image/jpeg' })
   )
@@ -294,6 +316,39 @@ test('обложка: первый кадр по умолчанию, кадр с
   await expect.poll(() => server.covers.length).toBe(2)
   await expect(dialog.getByText('Обложка сохранена')).toBeVisible()
   expectJpegCover(server.covers[1], browserName)
+})
+
+test('в списке «Медиастудии» — выбранная обложка, а не миниатюра, которую сервер сделал сам и удалил', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await useMockNode(page, DATA)
+  const server = await useVideoServer(page, { coverDelayMs: 1_500 })
+  await page.goto('/')
+  await page.waitForSelector('#app > *', { timeout: 30_000 })
+  await page
+    .getByRole('button', { name: 'Понятно' })
+    .click({ timeout: 5_000 })
+    .catch(() => {})
+  await signIn(page)
+  await page.goto('/my-videos')
+  await page.getByRole('button', { name: 'Загрузить', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Загрузка видео или звука' })
+    .locator('input[type="file"]')
+    .setInputFiles('e2e/fixtures/test-video.mp4')
+  const dialog = page.getByRole('dialog', { name: 'test-video' })
+  await expect(dialog.getByRole('img', { name: 'Обложка' })).toHaveAttribute('src', /^blob:/, {
+    timeout: 15_000,
+  })
+
+  // Ролик загружен, обложка уходит следом: список ждёт её, а не показывает
+  // миниатюру сервера, которую тот через секунду удалит.
+  server.release()
+  await expect(dialog.getByText('Обложка сохранена')).toBeVisible({ timeout: 20_000 })
+  const thumbs = page.locator(`img[src^="https://${HOST}/static/thumbnails/"]`)
+  await expect(thumbs).toHaveCount(1, { timeout: 15_000 })
+  await expect(thumbs).toHaveAttribute('src', `https://${HOST}/static/thumbnails/cover-1.jpg`)
 })
 
 test('обложка в окне поста: «Изменить обложку», публикация ждёт её', async ({
