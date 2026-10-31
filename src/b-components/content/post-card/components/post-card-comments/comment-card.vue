@@ -14,6 +14,7 @@
         :name="authorName"
         :address="comment.address"
         :profile="comment.userprofile"
+        :mark-size="level === 1 ? 14 : 12"
       />
     </router-link>
 
@@ -147,9 +148,10 @@
 <script setup lang="ts">
 // Узел комментария: аватар + мета + тело + изображения + действия.
 // Используется для корневых комментариев (level 1, обёртка SC_CommentRow) и
-// ответов второго уровня (level 2, обёртка SC_CommentItem). Отличие — обёртка,
-// ссылка «Ответы» (только level 1) и адресат reply-хендлеров. Всё остальное и
-// все хелперы берутся из контекста дерева комментариев (provide/inject).
+// ответов второго уровня (level 2, обёртка SC_CommentItem). Отличие — обёртка
+// (у ответа аватар и значок меньше), ссылка «Ответы» (только level 1) и
+// адресат reply-хендлеров. Всё остальное и все хелперы берутся из контекста
+// дерева комментариев (provide/inject).
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ClockCircleOutlined, StopOutlined, EditOutlined } from '@/components/icons'

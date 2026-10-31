@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 export const SC_CommentsPreview = styled.div`
   display: flex;
@@ -72,6 +73,10 @@ export const SC_CommentsSortRow = styled.div`
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+
+  label {
+    white-space: nowrap;
+  }
 `
 
 /** Кнопка ручного обновления списка комментариев */
@@ -104,10 +109,14 @@ export const SC_RefreshBtn = styled.button`
   }
 `
 
-/** Место под селект сортировки (размер md, 32px) в строке заголовка комментариев. */
+/**
+ * Место под селект сортировки (размер md, 32px) в строке заголовка комментариев.
+ * 200px, но на узком экране (320px) сжимается: подпись, селект и кнопка
+ * обновления не помещались, и страница прокручивалась вбок.
+ */
 export const SC_CommentsSortSelect = styled.div`
-  flex: none;
-  width: 200px;
+  flex: 0 1 200px;
+  min-width: 0;
 `
 
 export const SC_CommentRepliesLink = styled.button`
@@ -125,5 +134,19 @@ export const SC_CommentRepliesLink = styled.button`
 
   &:hover {
     text-decoration: underline;
+  }
+
+  /* Телефон: в строке действий «Ответы (N)» не помещались вместе с
+     «Ответить» и «Ответить автору» — ссылка уходит отдельной строкой под
+     них, акцентным цветом, как раскрытие ветки в мобильных клиентах.
+     && — сильнее общих правил кнопок строки действий (SC_CommentActions). */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    && {
+      order: 1;
+      flex-basis: 100%;
+      text-align: left;
+      color: var(--ui-primary-text);
+      font-weight: 500;
+    }
   }
 `

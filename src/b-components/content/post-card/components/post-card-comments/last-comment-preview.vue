@@ -1,6 +1,8 @@
 <template>
   <SC_CommentWithReplies>
-    <SC_CommentItem>
+    <!-- Корневой комментарий — в той же раскладке, что в развёрнутом списке
+         (SC_CommentRow), ответы ниже — SC_CommentItem. -->
+    <SC_CommentRow>
       <router-link :to="lastCommentProfileLink">
         <CommentAvatar
           :url="lastCommentAvatarUrl"
@@ -75,7 +77,7 @@
           </button>
         </SC_CommentActions>
       </SC_CommentContent>
-    </SC_CommentItem>
+    </SC_CommentRow>
 
     <SC_ReplyPanelNested v-if="lastCommentId && isReplyPanelOpen(lastCommentId)">
       <BoundReplyPanel />
@@ -92,6 +94,7 @@
             :name="userName(reply.address, reply.userprofile)"
             :address="reply.address"
             :profile="reply.userprofile"
+            :mark-size="12"
           />
           <SC_CommentContent>
             <SC_CommentMeta>
@@ -143,6 +146,7 @@ import {
 } from './helpers'
 import {
   SC_CommentWithReplies,
+  SC_CommentRow,
   SC_CommentItem,
   SC_CommentContent,
   SC_CommentMeta,

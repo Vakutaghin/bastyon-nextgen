@@ -41,12 +41,39 @@ export const SC_ReplyPanel = styled.div`
     font-weight: 500;
     font-size: 14px;
   }
+
+  /* Телефон: поле во всю ширину. Аватар не показываем (свой и так понятно
+     чей), рамку и фон плашки снимаем — рамка есть у самого поля. Эмодзи,
+     отмена и отправка — строкой под полем: эмодзи слева, остальное справа.
+     Раньше все пять элементов стояли в ряд, и полю оставалось ~170px. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 4px;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+
+    .reply-avatar,
+    .reply-avatar-placeholder {
+      display: none;
+    }
+  }
 `
 
 /** Вложенная плашка ответа 1-го уровня (ответ на комментарий): отступ слева для визуальной ветки */
 export const SC_ReplyPanelNested = styled(SC_ReplyPanel)`
   margin-left: 50px;
   width: calc(100% - 50px);
+
+  /* На телефоне — как ответ в ветке: та же линия и тот же отступ (SC_CommentReplies). */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    margin-left: 15px;
+    width: calc(100% - 15px);
+    padding-left: 12px;
+    border-left: 2px solid var(--ui-border);
+  }
 `
 
 /** Вложенная плашка ответа 2-го уровня (ответ на ответ): без доп. отступа, т.к. уже внутри ветки с отступом */
@@ -58,6 +85,11 @@ export const SC_ReplyInputWrap = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 0;
+
+  /* Телефон: поле занимает всю первую строку плашки, кнопки — под ним. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-basis: 100%;
+  }
 `
 
 export const SC_ReplyTextarea = styled.textarea`
@@ -167,6 +199,11 @@ export const SC_EmojiTriggerBtn = styled.button`
     width: 20px;
     height: 20px;
   }
+
+  /* Телефон: в строке под полем эмодзи — слева, отмена и отправка — справа. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    margin-right: auto;
+  }
 `
 
 export const SC_ReplyCancelBtn = styled.button`
@@ -200,6 +237,13 @@ export const SC_ConfirmWrap = styled.div`
   align-items: center;
   gap: 12px;
   min-width: 0;
+
+  /* Телефон: вопрос — строкой, кнопки — под ним справа (раньше вопрос
+     сжимался в узкий столбик рядом с кнопками). */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 `
 
 export const SC_ConfirmMessage = styled.p`
@@ -207,12 +251,20 @@ export const SC_ConfirmMessage = styled.p`
   font-size: 14px;
   color: var(--color-text-primary);
   flex: 1;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-basis: 100%;
+  }
 `
 
 export const SC_ConfirmActions = styled.div`
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    margin-left: auto;
+  }
 `
 
 export const SC_ConfirmBtn = styled.button`

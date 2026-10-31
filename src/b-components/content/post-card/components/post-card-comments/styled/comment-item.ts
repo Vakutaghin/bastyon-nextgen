@@ -1,10 +1,15 @@
-import styled from 'vue3-styled-components'
+import styled, { css } from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
-export const SC_CommentRow = styled.div`
+/**
+ * Общее у корневого комментария и ответа: аватар слева, содержимое справа.
+ * Размер аватара — переменная --comment-avatar, её задаёт уровень; на телефоне
+ * аватары и зазор меньше, чтобы тексту и кнопкам оставалось шире.
+ */
+const commentNode = css`
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  width: 100%;
   box-sizing: border-box;
   transition: box-shadow var(--transition-normal);
 
@@ -12,9 +17,15 @@ export const SC_CommentRow = styled.div`
     opacity: 0.65;
   }
 
+  /* Свой комментарий — подложкой. Поля подложки вынесены наружу (отрицательный
+     отступ): текст стоит в той же колонке, что у соседей, и не теряет ширину.
+     Раньше поля съедали 16px, и ответ во вложенной ветке выглядел карточкой
+     в карточке. */
   &.is-mine {
     background: rgb(var(--ui-primary-rgb) / 6%);
     border-radius: var(--ui-radius-lg);
+    width: calc(100% + 16px);
+    margin-inline: -8px;
     padding: 6px 8px;
   }
 
@@ -31,8 +42,8 @@ export const SC_CommentRow = styled.div`
 
   .comment-avatar,
   .comment-avatar-placeholder {
-    width: 40px;
-    height: 40px;
+    width: var(--comment-avatar);
+    height: var(--comment-avatar);
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
@@ -52,62 +63,38 @@ export const SC_CommentRow = styled.div`
   .comment-avatar-placeholder {
     color: var(--ui-text-muted);
     font-weight: 500;
-    font-size: 14px;
+    font-size: var(--comment-avatar-initial);
   }
 `
 
+/** Корневой комментарий (первый уровень). */
+export const SC_CommentRow = styled.div`
+  --comment-avatar: 40px;
+  --comment-avatar-initial: 14px;
+
+  ${() => commentNode}
+  width: 100%;
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    --comment-avatar: 32px;
+    --comment-avatar-initial: 13px;
+
+    gap: 8px;
+  }
+`
+
+/** Ответ (второй уровень): аватар меньше, чем у корневого, — видна иерархия. */
 export const SC_CommentItem = styled.div`
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  box-sizing: border-box;
-  transition: box-shadow var(--transition-normal);
+  --comment-avatar: 32px;
+  --comment-avatar-initial: 13px;
 
-  &.is-pending {
-    opacity: 0.65;
-  }
+  ${() => commentNode}
 
-  &.is-mine {
-    background: rgb(var(--ui-primary-rgb) / 6%);
-    border-radius: var(--ui-radius-lg);
-    padding: 6px 8px;
-  }
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    --comment-avatar: 24px;
+    --comment-avatar-initial: 11px;
 
-  &.is-highlighted {
-    box-shadow: 0 0 0 2px rgb(var(--ui-primary-rgb) / 50%);
-    border-radius: var(--ui-radius-lg);
-  }
-
-  a {
-    border-bottom: 0;
-    text-decoration: none;
-    color: inherit;
-  }
-
-  .comment-avatar,
-  .comment-avatar-placeholder {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: var(--ui-bg-elevated);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .comment-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .comment-avatar-placeholder {
-    color: var(--ui-text-muted);
-    font-weight: 500;
-    font-size: 14px;
+    gap: 8px;
   }
 `
 
@@ -349,10 +336,17 @@ export const SC_TxStatusBadge = styled.span`
   }
 `
 
+/**
+ * Строка действий: оценки, «Ответы», «Ответить», «Ответить автору». Подписи не
+ * переносятся внутри кнопки: на узком экране раньше «1» уезжал под 👍, а
+ * «Ответить автору» ломался на две строки. Если всё же не помещается (длинный
+ * перевод, экран 320px) — на следующую строку уходит кнопка целиком.
+ */
 export const SC_CommentActions = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 4px 12px;
   margin-top: 2px;
 
   button {
@@ -363,6 +357,7 @@ export const SC_CommentActions = styled.div`
     background: transparent;
     font: inherit;
     text-align: inherit;
+    white-space: nowrap;
   }
 
   button,
@@ -384,5 +379,15 @@ export const SC_CommentActions = styled.div`
 
   .comment-score.comment-score--clickable {
     cursor: pointer;
+  }
+
+  /* Телефон: мельче и плотнее, как подписи действий в мобильных клиентах. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    column-gap: 10px;
+
+    button,
+    span {
+      font-size: 13px;
+    }
   }
 `

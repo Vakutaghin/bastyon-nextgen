@@ -12,12 +12,15 @@ const props = withDefaults(
     address?: string | null
     /** Профиль автора, если пришёл с комментарием: в нём бейджи узла. */
     profile?: VerifiableProfile | null
+    /** Диаметр значка, px: у ответов аватар меньше — и значок меньше. */
+    markSize?: number
   }>(),
   {
     url: null,
     name: '',
     address: null,
     profile: null,
+    markSize: 14,
   }
 )
 
@@ -30,7 +33,7 @@ const mark = computed(() => userMarkOf(props.address, props.profile))
 </script>
 
 <template>
-  <UserMark :mark="mark" :size="14">
+  <UserMark :mark="mark" :size="markSize">
     <div v-if="url" class="comment-avatar">
       <img :src="url" :alt="name" loading="lazy" decoding="async" />
     </div>
