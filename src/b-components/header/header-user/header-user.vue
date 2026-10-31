@@ -46,6 +46,13 @@
             {{ t('header.loading') }}
           </SC_UserLoading>
         </SC_UserDetails>
+
+        <!-- Узкая шапка: имени нет места, а баланс — у аватара, как у
+             кошелька. Те же две строки: сумма сверху, монета под ней. -->
+        <SC_PhoneBalance v-if="typeof userBalance === 'number'">
+          <SC_PhoneBalanceAmount>{{ formatBalance(userBalance) }}</SC_PhoneBalanceAmount>
+          <SC_PhoneBalanceUnit>PKOIN</SC_PhoneBalanceUnit>
+        </SC_PhoneBalance>
       </SC_UserInfoTrigger>
 
       <template #overlay>
@@ -128,6 +135,9 @@ import {
   SC_UserName,
   SC_UserBalance,
   SC_UserLoading,
+  SC_PhoneBalance,
+  SC_PhoneBalanceAmount,
+  SC_PhoneBalanceUnit,
   SC_UserInfoTrigger,
   SC_AuthSkeleton,
   SC_SkeletonLines,

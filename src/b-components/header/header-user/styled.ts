@@ -30,6 +30,34 @@ export const SC_UserBalance = styled.div`
   color: var(--ui-text-muted);
 `
 
+/** Только в узкой шапке (≤ 768 px), где SC_UserDetails скрыт. */
+export const SC_PhoneBalance = styled.div`
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  white-space: nowrap;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    display: flex;
+  }
+`
+
+export const SC_PhoneBalanceAmount = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-text-highlighted);
+`
+
+export const SC_PhoneBalanceUnit = styled.span`
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 12px;
+  letter-spacing: 0.02em;
+  color: var(--ui-text-muted);
+`
+
 export const SC_UserLoading = styled.div`
   font-size: 12px;
   color: var(--color-text-secondary);
