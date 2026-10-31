@@ -65,6 +65,7 @@ describe('collectSupportReport', () => {
     })
     expect(mocks.rpc.mock.calls[0]![0]).toMatchObject({ method: 'getnodeinfo' })
     expect(report.errors.map((e) => e.message)).toEqual(['[profile] <address> not found'])
+    expect(Array.isArray(report.stalls)).toBe(true)
     expect(reportJson(report)).not.toContain(ADDRESS)
   })
 

@@ -1362,7 +1362,7 @@ export default {
         network:
           'si hay internet, a qué nodo y servidor de chat está conectada la aplicación, cuánto espacio ocupa',
         errors:
-          'los últimos errores de la aplicación, sin direcciones, identificadores ni rutas de archivos',
+          'los últimos errores y bloqueos largos de la aplicación, sin direcciones, identificadores ni rutas de archivos',
       },
       consentNever:
         'No se envían las claves, la frase de recuperación, la contraseña, los mensajes, los contactos ni el historial. El mensaje va cifrado, como todo el chat privado.',

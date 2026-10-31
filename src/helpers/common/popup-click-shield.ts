@@ -12,7 +12,14 @@
  * Свои кнопки и панели, которым нужно поведение «по наведению», помечаются
  * `data-popup-hover`: для мыши они не маскируют — такая панель закрывается
  * сама, когда курсор ушёл, а нажатие рядом должно сработать.
+ *
+ * Маска — единая точка отказа: залипни класс `-open` без меню на экране, и
+ * приложение глохнет целиком (листается, но ни одно нажатие не доходит).
+ * Поэтому маскируем, только пока меню правда видно, и не больше двух нажатий
+ * подряд, если меню от них не закрывается.
  */
+
+import { noteStall } from '@/helpers/diagnostics/main-thread-stalls'
 
 /** Кнопки открытых меню, всплывающих панелей и списков поля. */
 const OPEN_TRIGGER = '.ant-dropdown-open, .ant-popover-open, .ant-select-open'
@@ -39,15 +46,25 @@ const GESTURE_EVENTS = [
 /** Щелчок после отпускания приходит сразу; без него маска снимается сама. */
 const RELEASE_MS = 400
 
+/** Сколько нажатий подряд гасить, если меню от них так и не закрылось. */
+const MAX_UNANSWERED = 2
+
 let shielding = false
 let releaseTimer: ReturnType<typeof setTimeout> | null = null
 /** Свой mousedown для antd — его не гасим. */
 let closing = false
+/** Погашено подряд, а меню всё ещё на экране. */
+let unanswered = 0
 
 function stop(): void {
   shielding = false
   if (releaseTimer) clearTimeout(releaseTimer)
   releaseTimer = null
+}
+
+/** Меню на экране: antd прячет закрытое `display: none`, но оставляет в DOM. */
+function popupVisible(doc: Document): boolean {
+  return Array.from(doc.querySelectorAll(POPUP)).some((el) => el.getClientRects().length > 0)
 }
 
 function insidePopup(target: EventTarget | null): boolean {
@@ -69,7 +86,21 @@ function start(event: PointerEvent): void {
   const open = doc.querySelector(
     event.pointerType === 'mouse' ? OPEN_TRIGGER_FOR_MOUSE : OPEN_TRIGGER
   )
-  if (!open || insidePopup(event.target)) return
+  if (!open || !popupVisible(doc)) {
+    unanswered = 0
+    return
+  }
+  if (insidePopup(event.target)) return
+  // Меню не закрывается от наших mousedown (ручное управление, сбой antd):
+  // лучше лишний щелчок под меню, чем приложение, глухое к нажатиям.
+  if (unanswered >= MAX_UNANSWERED) {
+    // В сведения для поддержки — раз за случай: чья кнопка залипла.
+    if (unanswered++ === MAX_UNANSWERED) {
+      noteStall({ ms: 0, kind: 'tap-shield', detail: open.className.toString().slice(0, 200) })
+    }
+    return
+  }
+  unanswered++
   shielding = true
   closePopups(doc)
 }

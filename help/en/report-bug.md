@@ -22,7 +22,7 @@ In the chat with support, the **“App details”** button is pinned above the c
 - the system and its version, phone model, screen, language and time zone;
 - theme, scale, and whether the messenger and Tor are on;
 - whether there is internet, which node and chat server the app is connected to;
-- recent app errors.
+- recent app errors and long freezes: how long they lasted and which code caused them. Freezes are kept for a week and survive a restart.
 
 Before sending, a window shows everything that will go, word for word — you decide whether to send it. Keys, the recovery phrase, password, messages, contacts and browsing history are not part of it, and addresses, IDs and file paths are removed from error texts. The message is encrypted like everything in a private chat.
 

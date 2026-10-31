@@ -3,7 +3,8 @@
  *
  * Только то, что помогает понять ошибку: версия и платформа, система, экран,
  * язык, настройки, от которых зависит работа, к чему подключено приложение и
- * последние ошибки (с вырезанными адресами, см. recent-errors). Ни ключей,
+ * последние ошибки (с вырезанными адресами, см. recent-errors) и долгие
+ * блокировки (main-thread-stalls). Ни ключей,
  * ни фразы восстановления, ни адреса и имени (поддержка и так видит, кто
  * пишет), ни переписки, контактов, страниц, где человек был.
  */
@@ -16,6 +17,7 @@ import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { isTauriEnv } from '@/helpers/api/request-tor'
 import { recentErrors, scrubForReport, type RecentError } from '@/helpers/diagnostics/recent-errors'
+import { recentStalls, type MainThreadStall } from '@/helpers/diagnostics/main-thread-stalls'
 import { i18n } from '@/i18n'
 import { useTheme } from '@/composables/use-theme'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
@@ -81,6 +83,8 @@ export interface SupportReportData {
   }
   storage?: { usedMb: number; quotaMb: number; persisted?: boolean }
   errors: RecentError[]
+  /** Долгие блокировки за неделю: «листается, но не нажимается». */
+  stalls: MainThreadStall[]
 }
 
 interface TauriSystemInfo {
@@ -283,6 +287,7 @@ export async function collectSupportReport(now: Date = new Date()): Promise<Supp
     },
     storage: storageUse,
     errors: recentErrors(),
+    stalls: recentStalls(now.getTime()),
   }
 }
 

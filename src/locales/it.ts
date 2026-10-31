@@ -1356,7 +1356,8 @@ export default {
         settings: 'tema, scala, se messaggistica e Tor sono attivi',
         network:
           'se c’è internet, a quale nodo e server di chat è collegata l’app, quanto spazio occupa',
-        errors: 'gli ultimi errori dell’app, senza indirizzi, identificativi e percorsi dei file',
+        errors:
+          'gli ultimi errori e blocchi lunghi dell’app, senza indirizzi, identificativi e percorsi dei file',
       },
       consentNever:
         'Chiavi, frase di recupero, password, messaggi, contatti e cronologia non vengono inviati. Il messaggio è cifrato come tutta la chat privata.',

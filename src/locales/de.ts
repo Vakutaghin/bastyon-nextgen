@@ -1367,7 +1367,8 @@ export default {
         settings: 'Design, Skalierung, ob Messenger und Tor eingeschaltet sind',
         network:
           'ob Internet da ist, mit welchem Knoten und Chat-Server die App verbunden ist, wie viel Speicher belegt ist',
-        errors: 'letzte App-Fehler; Adressen, Kennungen und Dateipfade sind entfernt',
+        errors:
+          'letzte App-Fehler und lange Hänger; Adressen, Kennungen und Dateipfade sind entfernt',
       },
       consentNever:
         'Schlüssel, Wiederherstellungsphrase, Passwort, Nachrichten, Kontakte und Verlauf werden nicht gesendet. Die Nachricht ist verschlüsselt wie der ganze private Chat.',

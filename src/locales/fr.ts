@@ -1372,7 +1372,7 @@ export default {
         settings: 'thème, échelle, messagerie et Tor activés ou non',
         network: 'la connexion Internet, le nœud et le serveur de chat utilisés, l’espace occupé',
         errors:
-          'les dernières erreurs de l’application, sans adresses, identifiants ni chemins de fichiers',
+          'les dernières erreurs et longs blocages de l’application, sans adresses, identifiants ni chemins de fichiers',
       },
       consentNever:
         'Les clés, la phrase de récupération, le mot de passe, les messages, les contacts et l’historique ne sont pas envoyés. Le message est chiffré comme tout le chat privé.',
