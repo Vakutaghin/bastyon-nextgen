@@ -37,22 +37,36 @@ function storage(): Storage | null {
   }
 }
 
+/**
+ * Последние разобранные пины. Их читают на каждого участника каждой
+ * расшифровки в группе, а это JSON на сотни собеседников: разбор заново —
+ * секунды главного потока на одно сообщение группы. Сверка с сырой строкой
+ * держит кэш верным, кто бы её ни поменял (выход из аккаунтов, другая вкладка).
+ */
+let parsedPins: { owner: string; raw: string; pins: PinMap } | null = null
+
 function readPins(owner: string): PinMap {
   const raw = storage()?.getItem(KEY_PINS_PREFIX + owner)
   if (!raw) return {}
+  if (parsedPins?.owner === owner && parsedPins.raw === raw) return parsedPins.pins
   try {
     const parsed = JSON.parse(raw) as unknown
-    return parsed && typeof parsed === 'object' ? (parsed as PinMap) : {}
+    const pins = parsed && typeof parsed === 'object' ? (parsed as PinMap) : {}
+    parsedPins = { owner, raw, pins }
+    return pins
   } catch {
     return {}
   }
 }
 
 function writePins(owner: string, pins: PinMap): void {
+  const raw = JSON.stringify(pins)
   try {
-    storage()?.setItem(KEY_PINS_PREFIX + owner, JSON.stringify(pins))
+    storage()?.setItem(KEY_PINS_PREFIX + owner, raw)
+    parsedPins = { owner, raw, pins }
   } catch {
     /* quota/приватный режим — пиннинг best-effort */
+    parsedPins = null
   }
 }
 

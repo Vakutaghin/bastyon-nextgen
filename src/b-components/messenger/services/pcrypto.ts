@@ -6,6 +6,7 @@ import BN from 'bn.js'
 import * as ecc from 'tiny-secp256k1'
 import { Buffer } from 'buffer'
 import CryptoJS from 'crypto-js'
+import { yieldToMain } from '@/helpers/common/yield-to-main'
 
 const salt = 'PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82'
 const secp256k1CurveN = new BN(
@@ -13,6 +14,23 @@ const secp256k1CurveN = new BN(
   16
 )
 const m = 12
+/** Сколько общих ключей помнить: по одному на чат и набор участников. */
+const KEY_CACHE_SIZE = 512
+/** Сколько считать на кривой подряд, не отдавая поток вводу и отрисовке. */
+const BUSY_SLICE_MS = 40
+
+let lastBreath = 0
+
+/**
+ * Расшифровки идут пачкой (Promise.all по чатам и сообщениям), а умножения на
+ * кривой синхронные: без передышек вся пачка — одна длинная задача, и
+ * приложение на это время не отвечает на нажатия.
+ */
+async function breathe(): Promise<void> {
+  if (performance.now() - lastBreath < BUSY_SLICE_MS) return
+  await yieldToMain()
+  lastBreath = performance.now()
+}
 
 export interface User {
   id: string
@@ -102,12 +120,19 @@ export class PcryptoService {
       return pbkdf2.pbkdf2Sync(f.sha224(input), salt, 1, 32, 'sha256')
     },
 
-    scalars: (block: number, privates: string[], users: User[]) => {
+    /**
+     * cuhash всех m позиций. От участника они не зависят, а раньше считались
+     * заново для каждого — m·N хэшей по строке из N ключей на одно событие.
+     */
+    cuhashes: (users: User[], block: number): Uint8Array[] =>
+      Array.from({ length: m }, (_, i) => new Uint8Array(this.eaa.cuhash(users, i, block))),
+
+    scalars: (hashes: Uint8Array[], privates: string[]) => {
       let sum: BN | null = null
 
       for (let i = 0; i < m; i++) {
         // Convert buffer to hex string for BN to avoid interpretation issues
-        const hashBuffer = Buffer.from(this.eaa.cuhash(users, i, block))
+        const hashBuffer = Buffer.from(hashes[i]!)
         const ch = new BN(hashBuffer.toString('hex'), 16)
 
         let privateKey = privates[i]
@@ -135,11 +160,11 @@ export class PcryptoService {
       return sum!
     },
 
-    points: (block: number, points: Uint8Array[], users: User[]) => {
+    points: (hashes: Uint8Array[], points: Uint8Array[]) => {
       let sum: Uint8Array | null = null
 
       for (let i = 0; i < m; i++) {
-        const ch = this.eaa.cuhash(users, i, block)
+        const ch = hashes[i]!
 
         // bitcoin.ecc.pointMultiply(points[i], ch, undefined, true)
         const mul = ecc.pointMultiply(points[i]!, ch, true)
@@ -157,9 +182,9 @@ export class PcryptoService {
       return sum!
     },
 
-    current: (block: number, users: User[]) => {
+    current: (hashes: Uint8Array[]) => {
       const privates = this.userPrivate.map((k) => k.private)
-      const sc = this.eaa.scalars(block, privates, users).toBuffer()
+      const sc = this.eaa.scalars(hashes, privates).toBuffer()
 
       // Ensure 32 bytes padding
       const target = Buffer.alloc(32)
@@ -168,37 +193,83 @@ export class PcryptoService {
       return target
     },
 
-    userspublics: (block: number, users: User[]) => {
-      const sum: Record<string, Uint8Array> = {}
+    /**
+     * С кем считаются общие ключи: все с ключами, кроме меня (если в комнате
+     * не один). Порядок и «последний с тем же id» — как у ключей объекта в
+     * прежнем userspublics.
+     */
+    holders: (users: User[]) => {
+      const out = new Map<string, User>()
       const myId = this.getmatrixid(this.myId)
 
       users.forEach((user) => {
         if (!user.keys || user.keys.length < m) return
         const userId = this.getmatrixid(user.id)
         if (userId === myId && users.length > 1) return
-
-        const publics = user.keys.map((key) => Buffer.from(key, 'hex'))
-        sum[userId] = this.eaa.points(block, publics, users)
+        out.set(userId, user)
       })
 
-      return sum
+      return out
+    },
+
+    shared: (hashes: Uint8Array[], user: User, c: Uint8Array) => {
+      const publics = user.keys.map((key) => new Uint8Array(Buffer.from(key, 'hex')))
+      const shared = ecc.pointMultiply(this.eaa.points(hashes, publics), c, true)
+      return shared
+        ? (pbkdf2.pbkdf2Sync(Buffer.from(shared).toString('hex'), salt, 64, 32, 'sha512') as Buffer)
+        : null
     },
 
     aeskeys: (block: number, users: User[]) => {
-      const us = this.eaa.userspublics(block, users)
-      const c = this.eaa.current(block, users)
+      const hashes = this.eaa.cuhashes(users, block)
+      const c = new Uint8Array(this.eaa.current(hashes))
       const su: Record<string, Buffer> = {}
 
-      Object.keys(us).forEach((id) => {
-        const point = us[id]!
-        const shared = ecc.pointMultiply(point, c, true)
-        if (shared) {
-          su[id] = pbkdf2.pbkdf2Sync(Buffer.from(shared).toString('hex'), salt, 64, 32, 'sha512')
-        }
+      this.eaa.holders(users).forEach((user, id) => {
+        const key = this.eaa.shared(hashes, user, c)
+        if (key) su[id] = key
       })
 
       return su
     },
+  }
+
+  /** Ключи собеседников: (хэши участников, ключи собеседника) → общий ключ. */
+  private keyCache = new Map<string, Buffer>()
+
+  /**
+   * Общий ключ с одним собеседником — то же, что `aeskeys(block, users)[keyindex]`
+   * (с тем же неточным совпадением id), но без точек остальных участников:
+   * расшифровке нужен только он. В группе на N человек это в N раз меньше
+   * умножений на кривой, а повтор (тот же набор участников и блок) — из кэша.
+   */
+  private async aeskey(block: number, users: User[], keyindex: string): Promise<Buffer | null> {
+    const holders = this.eaa.holders(users)
+    const id = holders.has(keyindex)
+      ? keyindex
+      : [...holders.keys()].find((k) => k.includes(keyindex) || keyindex.includes(k))
+    const user = id ? holders.get(id) : undefined
+    if (!user) return null
+
+    const hashes = this.eaa.cuhashes(users, block)
+    const cacheKey = `${hashes.map((h) => Buffer.from(h).toString('hex')).join('')}|${user.keys.join(',')}`
+    const known = this.keyCache.get(cacheKey)
+    if (known) return known
+
+    await breathe()
+    const key = this.eaa.shared(hashes, user, new Uint8Array(this.eaa.current(hashes)))
+    // Точка на бесконечности: прежний путь тогда искал другой id — так и здесь.
+    if (!key) {
+      const all = this.eaa.aeskeys(block, users)
+      const other = Object.keys(all).find((k) => k.includes(keyindex) || keyindex.includes(k))
+      return all[keyindex] ?? (other ? all[other]! : null)
+    }
+
+    if (this.keyCache.size >= KEY_CACHE_SIZE) {
+      this.keyCache.delete(this.keyCache.keys().next().value!)
+    }
+    this.keyCache.set(cacheKey, key)
+    return key
   }
 
   public async decryptSIVRaw(
@@ -335,14 +406,9 @@ export class PcryptoService {
         return dbIdA - dbIdB
       })
 
-    const keys = this.eaa.aeskeys(block, preparedUsers)
+    const key = await this.aeskey(block, preparedUsers, keyindex)
 
-    if (!keys[keyindex]) {
-      const matched = Object.keys(keys).find((k) => k.includes(keyindex) || keyindex.includes(k))
-      if (matched) keyindex = matched
-    }
-
-    if (!keys[keyindex]) {
+    if (!key) {
       throw new Error('emptykey')
     }
 
@@ -351,7 +417,7 @@ export class PcryptoService {
       typeof encryptedKeyData === 'string' ? encryptedKeyData : encryptedKeyData.encrypted || ''
     const nonce = typeof encryptedKeyData === 'string' ? '' : encryptedKeyData.nonce || ''
 
-    return await this.decryptSIV(keys[keyindex]!, encrypted, nonce)
+    return await this.decryptSIV(key, encrypted, nonce)
   }
 
   public async encryptKey(secret: string, users: User[], block: number, version: number) {

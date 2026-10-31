@@ -20,6 +20,7 @@ import { decryptTextWithSecret } from '../../services/encryption-service'
 import {
   findCommonKeyStateEvent,
   decryptGroupCommonKey,
+  knownGroupCommonKey,
   isGroupEncryptedContent,
 } from '../../services/group-encryption'
 import type { ChatContext, MxEvent, MxSecrets } from './types'
@@ -71,20 +72,24 @@ export function useMessageDecryption(ctx: ChatContext, chatCrypto: ChatCrypto) {
           return null
         }
 
-        const memberIds = getOrderedMemberIds(room, getEventTs(event))
-        const users = await collectPcryptoUsers(memberIds)
+        // Общий ключ уже расшифрован (или считается) — участники и их ключи не нужны.
+        let commonSecret = await (knownGroupCommonKey(pcryptoService.value, stateEvent) ?? null)
+        if (!commonSecret) {
+          const memberIds = getOrderedMemberIds(room, getEventTs(event))
+          const users = await collectPcryptoUsers(memberIds)
 
-        if (!users.find((u) => u.id === senderId)) {
-          const senderAddr = getAddressFromMatrixId(senderId)
-          if (senderAddr) {
-            await profileCache.fetchProfiles([senderAddr])
-            const p = profileCache.userProfiles[senderAddr]
-            if (p?.k) users.push({ id: senderId, keys: parseProfileKeys(p.k), dbId: p.id })
+          if (!users.find((u) => u.id === senderId)) {
+            const senderAddr = getAddressFromMatrixId(senderId)
+            if (senderAddr) {
+              await profileCache.fetchProfiles([senderAddr])
+              const p = profileCache.userProfiles[senderAddr]
+              if (p?.k) users.push({ id: senderId, keys: parseProfileKeys(p.k), dbId: p.id })
+            }
+            if (!users.find((u) => u.id === senderId)) return null
           }
-          if (!users.find((u) => u.id === senderId)) return null
-        }
 
-        const commonSecret = await decryptGroupCommonKey(pcryptoService.value, stateEvent, users)
+          commonSecret = await decryptGroupCommonKey(pcryptoService.value, stateEvent, users)
+        }
         if (!commonSecret) return null
 
         const decrypted = await decryptTextWithSecret(content.body, commonSecret)

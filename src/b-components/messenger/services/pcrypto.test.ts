@@ -83,3 +83,67 @@ describe('pcrypto direct-message (P0-2 wire format)', () => {
     }).rejects.toBeDefined()
   })
 })
+
+describe('pcrypto: ключ одного собеседника', () => {
+  // Группа на 6 человек: расшифровке нужен ключ только отправителя, а прежний
+  // расчёт (aeskeys) считал точки всех. Ключ обязан совпасть байт в байт.
+  const group: User[] = Array.from({ length: 6 }, (_, i) => {
+    const keys = deriveMessengerKeys(
+      Buffer.from(
+        String(i + 4)
+          .repeat(64)
+          .slice(0, 64),
+        'hex'
+      )
+    )
+    return { id: `@member${i}:matrix.pocketnet.app`, keys: keys.map((k) => k.public), dbId: i + 1 }
+  })
+  const me = deriveMessengerKeys(Buffer.from('44'.repeat(32), 'hex'))
+  type Internals = {
+    eaa: { aeskeys: (block: number, users: User[]) => Record<string, Buffer> }
+    aeskey: (block: number, users: User[], id: string) => Promise<Buffer | null>
+  }
+  const service = new PcryptoService(me, '@member0:matrix.pocketnet.app')
+  const inner = service as unknown as Internals
+
+  it('совпадает с ключом из полного расчёта для каждого участника', async () => {
+    const all = inner.eaa.aeskeys(77, group)
+    expect(Object.keys(all)).toHaveLength(5)
+    for (const [id, key] of Object.entries(all)) {
+      expect((await inner.aeskey(77, group, id))!.toString('hex')).toBe(key.toString('hex'))
+    }
+  })
+
+  it('неточный id ищется так же, как раньше; чужого нет — null', async () => {
+    const all = inner.eaa.aeskeys(77, group)
+    const key = await inner.aeskey(77, group, 'member3:matrix')
+    expect(key!.toString('hex')).toBe(all['member3']!.toString('hex'))
+    await expect(inner.aeskey(77, group, 'nobody')).resolves.toBeNull()
+  })
+
+  it('другой блок — другой ключ (кэш не путает)', async () => {
+    const a = await inner.aeskey(77, group, 'member2')
+    const b = await inner.aeskey(78, group, 'member2')
+    expect(a!.toString('hex')).not.toBe(b!.toString('hex'))
+    expect(b!.toString('hex')).toBe(inner.eaa.aeskeys(78, group)['member2']!.toString('hex'))
+  })
+
+  it('групповой секрет: участник расшифровывает то, что зашифровал другой', async () => {
+    const memberKeys = (i: number) =>
+      deriveMessengerKeys(
+        Buffer.from(
+          String(i + 4)
+            .repeat(64)
+            .slice(0, 64),
+          'hex'
+        )
+      )
+    const sender = new PcryptoService(memberKeys(1), group[1]!.id)
+    const reader = new PcryptoService(memberKeys(4), group[4]!.id)
+    const secrets = await sender.encryptKey('common-secret', group, 10, 2)
+    const event = { type: 'm.room.encryption', sender: group[1]!.id, content: secrets }
+    await expect(reader.decryptEvent(event, group)).resolves.toBe('common-secret')
+    // Повтор — из кэша, тот же результат.
+    await expect(reader.decryptEvent(event, group)).resolves.toBe('common-secret')
+  })
+})

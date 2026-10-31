@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   decryptTextWithSecret: vi.fn(),
   findCommonKeyStateEvent: vi.fn(),
   decryptGroupCommonKey: vi.fn(),
+  knownGroupCommonKey: vi.fn(),
 }))
 vi.mock('../../services/matrix-service', () => ({
   matrixService: {
@@ -30,6 +31,7 @@ vi.mock('../../services/group-encryption', async (importOriginal) => {
     isGroupEncryptedContent: actual.isGroupEncryptedContent,
     findCommonKeyStateEvent: mocks.findCommonKeyStateEvent,
     decryptGroupCommonKey: mocks.decryptGroupCommonKey,
+    knownGroupCommonKey: mocks.knownGroupCommonKey,
   }
 })
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
@@ -89,6 +91,7 @@ describe('useMessageDecryption', () => {
     mocks.decryptTextWithSecret.mockReset().mockResolvedValue('Групповое привет')
     mocks.findCommonKeyStateEvent.mockReset().mockReturnValue({ id: 'state' })
     mocks.decryptGroupCommonKey.mockReset().mockResolvedValue('common-secret')
+    mocks.knownGroupCommonKey.mockReset().mockReturnValue(null)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
@@ -219,6 +222,14 @@ describe('useMessageDecryption', () => {
       )
       expect(mocks.decryptTextWithSecret).toHaveBeenCalledWith('ab'.repeat(16), 'common-secret')
       expect(decryptionCache.persist).toHaveBeenCalledWith('@me:srv', '$e1', 'Групповое привет')
+    })
+
+    it('общий ключ группы уже расшифрован — участники и их ключи не собираются', async () => {
+      const { tryDecrypt, chatCrypto } = setup()
+      mocks.knownGroupCommonKey.mockReturnValueOnce(Promise.resolve('common-secret'))
+      await expect(tryDecrypt(event(groupContent))).resolves.toBe('Групповое привет')
+      expect(chatCrypto.collectPcryptoUsers).not.toHaveBeenCalled()
+      expect(mocks.decryptGroupCommonKey).not.toHaveBeenCalled()
     })
 
     it('нет комнаты, state-события или общего ключа — null вместо сырого hex', async () => {

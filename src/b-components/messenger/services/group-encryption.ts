@@ -32,6 +32,7 @@ import { matrixService } from './matrix-service'
  * и строгие SDK-типы их бы отвергли. Описываем лишь читаемые поля.
  */
 interface StateEventLike {
+  getId?: () => string | undefined
   getStateKey?: () => string | undefined
   getSender?: () => string | null | undefined
   getContent?: () => Record<string, unknown>
@@ -93,12 +94,60 @@ export function findCommonKeyStateEvent(
   )
 }
 
-export async function decryptGroupCommonKey(
+/** Сколько общих ключей групп помнить на один набор ключей мессенджера. */
+const COMMON_KEY_CACHE_SIZE = 1000
+
+/**
+ * Расшифрованные общие ключи групп по id state-события. Ключ один на все
+ * сообщения отправителя с этим комплектом участников, а раньше считался
+ * заново для каждого сообщения — секунды на группу в сотни человек. Хранится
+ * обещание: параллельные расшифровки одной группы ждут один расчёт. Неудача
+ * не запоминается.
+ */
+const commonKeys = new WeakMap<PcryptoService, Map<string, Promise<string | null>>>()
+
+function stateEventId(stateEvent: StateEventLike): string | null {
+  const id =
+    typeof stateEvent.getId === 'function' ? stateEvent.getId() : stateEvent.event?.event_id
+  return typeof id === 'string' && id ? id : null
+}
+
+/** Общий ключ, если он уже расшифрован или считается: без сбора участников. */
+export function knownGroupCommonKey(
+  pcryptoService: PcryptoService | null,
+  stateEvent: StateEventLike | null
+): Promise<string | null> | null {
+  const id = stateEvent ? stateEventId(stateEvent) : null
+  return (pcryptoService && id && commonKeys.get(pcryptoService)?.get(id)) || null
+}
+
+export function decryptGroupCommonKey(
   pcryptoService: PcryptoService | null,
   stateEvent: StateEventLike | null,
   users: PcryptoUser[]
 ): Promise<string | null> {
-  if (!pcryptoService || !stateEvent) return null
+  if (!pcryptoService || !stateEvent) return Promise.resolve(null)
+  const known = knownGroupCommonKey(pcryptoService, stateEvent)
+  if (known) return known
+  const id = stateEventId(stateEvent)
+  const pending = decryptCommonKeyOnce(pcryptoService, stateEvent, users)
+  if (!id) return pending
+
+  let cache = commonKeys.get(pcryptoService)
+  if (!cache) commonKeys.set(pcryptoService, (cache = new Map()))
+  if (cache.size >= COMMON_KEY_CACHE_SIZE) cache.delete(cache.keys().next().value!)
+  cache.set(id, pending)
+  void pending.then((secret) => {
+    if (!secret && cache.get(id) === pending) cache.delete(id)
+  })
+  return pending
+}
+
+async function decryptCommonKeyOnce(
+  pcryptoService: PcryptoService,
+  stateEvent: StateEventLike,
+  users: PcryptoUser[]
+): Promise<string | null> {
   const raw = stateEvent.event
   const senderId =
     typeof stateEvent.getSender === 'function'

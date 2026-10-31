@@ -27,6 +27,7 @@ import {
   decryptGroupCommonKey,
   findCommonKeyStateEvent,
   isGroupEncryptedContent,
+  knownGroupCommonKey,
   type ProfileCacheLike,
 } from './group-encryption'
 import type { PcryptoService } from './pcrypto'
@@ -130,6 +131,41 @@ describe('decryptGroupCommonKey', () => {
     await expect(
       decryptGroupCommonKey(null, { getContent: () => ({ keys: 'k' }) }, [])
     ).resolves.toBeNull()
+  })
+
+  it('ключ одного state-события считается раз: параллельные и повторные ждут его', async () => {
+    const service = pcrypto(async () => 'secret')
+    const state = { getId: () => '$state1', getContent: () => ({ keys: 'k' }) }
+    const both = await Promise.all([
+      decryptGroupCommonKey(service, state, []),
+      decryptGroupCommonKey(service, state, []),
+    ])
+    expect(both).toEqual(['secret', 'secret'])
+    await expect(knownGroupCommonKey(service, state)).resolves.toBe('secret')
+    await decryptGroupCommonKey(service, state, [])
+    expect(service.decryptEvent).toHaveBeenCalledTimes(1)
+    // Другое событие и другой набор ключей мессенджера — свой расчёт.
+    await decryptGroupCommonKey(service, { ...state, getId: () => '$state2' }, [])
+    expect(service.decryptEvent).toHaveBeenCalledTimes(2)
+    expect(
+      knownGroupCommonKey(
+        pcrypto(async () => 'x'),
+        state
+      )
+    ).toBeNull()
+  })
+
+  it('неудача не запоминается: следующая попытка считает заново', async () => {
+    let fail = true
+    const service = pcrypto(async () => {
+      if (fail) throw new Error('profiles not loaded yet')
+      return 'secret'
+    })
+    const state = { getId: () => '$state3', getContent: () => ({ keys: 'k' }) }
+    await expect(decryptGroupCommonKey(service, state, [])).resolves.toBeNull()
+    expect(knownGroupCommonKey(service, state)).toBeNull()
+    fail = false
+    await expect(decryptGroupCommonKey(service, state, [])).resolves.toBe('secret')
   })
 })
 

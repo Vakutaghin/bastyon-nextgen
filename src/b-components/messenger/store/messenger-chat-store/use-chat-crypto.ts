@@ -4,7 +4,7 @@
 // Это нижний слой графа зависимостей модулей чат-стора — он не зависит от
 // других use-* модулей, а они зависят от него (см. messenger-chat-store.ts).
 
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 
 import { deriveMessengerKeys } from '@/blockchain/core/keys'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
@@ -27,7 +27,10 @@ import type { ChatContext, MxEvent, MxRoom, MxRoomMember } from './types'
 export function useChatCrypto(ctx: ChatContext) {
   const { authStore, profileCache } = ctx
 
-  const pcryptoService = ref<PcryptoService | null>(null)
+  // shallowRef: глубокий ref пропускал каждое обращение криптографии к полям
+  // сервиса (ключи, кэши) через прокси реактивности — лишняя работа в самом
+  // горячем месте чатов, и класс с private-полями после разворота уже не он.
+  const pcryptoService = shallowRef<PcryptoService | null>(null)
   const localMessengerKeys = ref<{ private: string; public: string }[] | null>(null)
   const currentBlockHeight = ref<number | null>(null)
   let currentBlockFetchedAt = 0

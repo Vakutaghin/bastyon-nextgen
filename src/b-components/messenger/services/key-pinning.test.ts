@@ -60,4 +60,16 @@ describe('key-pinning (TOFU, P3-3)', () => {
     expect(localStorage.getItem(KEY_PINS_PREFIX + 'POther')).toBeNull()
     expect(localStorage.getItem('BST_OTHER')).toBe('keep')
   })
+
+  it('разобранные пины в памяти не отстают от localStorage: чужая правка и стирание видны', () => {
+    checkPeerKeys(OWNER, PEER, K1)
+    expect(getPinnedKeys(OWNER, PEER)).toBe(K1)
+    // Другая вкладка приняла новые ключи.
+    localStorage.setItem(KEY_PINS_PREFIX + OWNER, JSON.stringify({ [PEER]: K2 }))
+    expect(getPinnedKeys(OWNER, PEER)).toBe(K2)
+    // Выход из всех аккаунтов стирает ключи мимо этого модуля.
+    localStorage.removeItem(KEY_PINS_PREFIX + OWNER)
+    expect(getPinnedKeys(OWNER, PEER)).toBeNull()
+    expect(checkPeerKeys(OWNER, PEER, K1)).toBe('pinned')
+  })
 })
