@@ -118,6 +118,11 @@ objc2-foundation = { version = "0.3", default-features = false, features = ["std
 objc2-web-kit = { version = "0.3", default-features = false, features = ["std", "objc2-app-kit", "block2", "WKWebView", "WKWebViewConfiguration", "WKWebsiteDataStore", "WKWebsiteDataRecord"] }
 block2 = "0.6"
 
+# Свободное место для скачанных роликов (src/offline/space.rs). Та же версия,
+# что уже в дереве зависимостей.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [target.'cfg(not(target_os = "macos"))'.dependencies]
 whisper-rs = { version = "0.16", features = ["log_backend"] }
 
@@ -141,8 +146,9 @@ tauri = { version = "2.11.6", features = ["test"] }
 [target.'cfg(windows)'.dependencies]
 windows-version = "0.1"
 # Очистка кэша WebView2 (src/storage.rs) — те же версии, что у wry.
+# Win32_Storage_FileSystem — свободное место для скачанных роликов (src/offline/space.rs).
 webview2-com = "0.38"
-windows = "0.61"
+windows = { version = "0.61", features = ["Win32_Storage_FileSystem"] }
 
 # Криптография Reticulum (штампы LXMF, подписи) и в debug-сборке — с
 # оптимизацией: без неё штамп узла доставки считается минутами.

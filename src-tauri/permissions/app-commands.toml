@@ -105,4 +105,12 @@ permissions = [
   "allow-storage-usage",
   "allow-storage-set-limits",
   "allow-storage-clear",
+  "allow-offline-list",
+  "allow-offline-enqueue",
+  "allow-offline-pause",
+  "allow-offline-resume",
+  "allow-offline-remove",
+  "allow-offline-patch-meta",
+  "allow-offline-usage",
+  "allow-offline-clear",
 ]

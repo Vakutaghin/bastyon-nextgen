@@ -8,6 +8,7 @@ mod ipfs;
 mod main_window;
 mod mesh;
 mod node_link;
+mod offline;
 mod storage;
 mod system_info;
 mod tor;
@@ -1043,7 +1044,17 @@ pub fn run() {
       storage::storage_usage,
       storage::storage_set_limits,
       storage::storage_clear,
+      offline::offline_list,
+      offline::offline_enqueue,
+      offline::offline_pause,
+      offline::offline_resume,
+      offline::offline_remove,
+      offline::offline_patch_meta,
+      offline::offline_usage,
+      offline::offline_clear,
     ])
+    // Скачанные ролики: плеер и картинки берут их по id (offline/protocol.rs).
+    .register_asynchronous_uri_scheme_protocol(offline::protocol::SCHEME, offline::handle_protocol)
     .setup(|app| {
       #[cfg(debug_assertions)]
       {
@@ -1123,6 +1134,9 @@ pub fn run() {
 
       // Пределы кэшей — до IPFS: предел Kubo попадает в его конфиг при запуске ноды.
       storage::init(app.handle()).map_err(|e| e.to_string())?;
+
+      // Скачанные ролики — после Tor: под Tor качаются только через него.
+      offline::init(app.handle()).map_err(|e| e.to_string())?;
 
       // IPFS manager — initialise app state holder (Kubo module lifecycle).
       ipfs::init(app.handle()).map_err(|e| e.to_string())?;

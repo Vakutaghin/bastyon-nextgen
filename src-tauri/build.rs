@@ -104,6 +104,14 @@ const COMMANDS: &[&str] = &[
   "storage_usage",
   "storage_set_limits",
   "storage_clear",
+  "offline_list",
+  "offline_enqueue",
+  "offline_pause",
+  "offline_resume",
+  "offline_remove",
+  "offline_patch_meta",
+  "offline_usage",
+  "offline_clear",
 ];
 
 fn main() {
