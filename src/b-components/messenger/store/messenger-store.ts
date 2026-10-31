@@ -9,6 +9,7 @@ import { useAuthStore } from '@/blockchain'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type { Dialog } from '../types'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { onAppForeground } from '@/helpers/common/app-foreground'
 import { isUserVerified } from '@/helpers/profile/is-user-verified'
 import { userMark } from '@/helpers/profile/user-mark'
 import { logger } from '@/services/logger'
@@ -373,6 +374,10 @@ export const useMessengerStore = defineStore('messenger', () => {
     document.addEventListener('visibilitychange', onVisibility)
     onScopeDispose(() => document.removeEventListener('visibilitychange', onVisibility))
   }
+  // Вернулись в приложение: синк, упавший, пока оно было свёрнуто (система
+  // отрезала сеть), ждал бы паузы повтора — пусть идёт сразу. На Android
+  // visibilitychange не приходит, поэтому — по общему сигналу.
+  onScopeDispose(onAppForeground(() => void matrixService.getClient()?.retryImmediately?.()))
 
   // --- Инициализация Matrix ---
 

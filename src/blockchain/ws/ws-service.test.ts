@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { wsService } from './ws-service'
 import type { WsMessage } from './ws-service'
 import type { KeyPair } from '../types/keys'
+import { setAppActiveForTests } from '@/helpers/common/app-foreground'
 
 // ---------------------------------------------------------------------------
 // Fake WebSocket — управляемая вручную замена сокета. Сервис получает её
@@ -480,6 +481,35 @@ describe('PocketnetWsService', () => {
       await vi.advanceTimersByTimeAsync(30000)
       expect(FakeWebSocket.instances).toHaveLength(1)
       expect(wsService.isConnected).toBe(false)
+    })
+
+    it('вернулись в приложение: ждущий повтор — сразу, а после долгого фона — новый сокет', async () => {
+      vi.useFakeTimers()
+      await wsService.connect()
+      const ws = FakeWebSocket.instances[0]!
+      ws._open()
+
+      // Короткий выход при живом сокете — ничего не трогаем.
+      setAppActiveForTests(false)
+      await vi.advanceTimersByTimeAsync(5_000)
+      setAppActiveForTests(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(FakeWebSocket.instances).toHaveLength(1)
+
+      // Сокет упал, повтор ждёт паузы — вернулись, и он идёт сразу.
+      ws._serverClose()
+      setAppActiveForTests(false)
+      setAppActiveForTests(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(FakeWebSocket.instances).toHaveLength(2)
+
+      // Минута в фоне: открытому сокету не верим.
+      FakeWebSocket.instances[1]!._open()
+      setAppActiveForTests(false)
+      await vi.advanceTimersByTimeAsync(60_000)
+      setAppActiveForTests(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(FakeWebSocket.instances).toHaveLength(3)
     })
 
     it('reconnect() закрывает текущий сокет и поднимает новый', async () => {

@@ -19,6 +19,7 @@ import { onTorEnabled } from '@/stores/tor-store'
 import { orderedProxies } from '@/helpers/api/node-selector'
 import type { ServerEndpoint } from '@/helpers/api/rpc-retry'
 import { debugLog } from '@/helpers/common/debug-log'
+import { onAppForeground } from '@/helpers/common/app-foreground'
 import { connectionRoute, onRouteChange } from '@/helpers/api/direct-nodes/connection-route'
 import { NODE_WSS_PORT } from '@/helpers/api/direct-nodes/node-call'
 import { directNodes, markNodeDead } from '@/helpers/api/direct-nodes/node-pool'
@@ -48,6 +49,8 @@ const RECONNECT_MAX_DELAY = 30000
 const CONNECT_TIMEOUT_MS = 10000
 /** Через Tor: SOCKS, цепочка до выхода, TLS и рукопожатие — на meek и Snowflake дольше 10 с. */
 const TOR_CONNECT_TIMEOUT_MS = 45_000
+/** Столько в фоне — открытому сокету уже не верим: сеть могли отрезать молча. */
+const STALE_AFTER_BACKGROUND_MS = 60_000
 
 // --- Service ---
 
@@ -463,6 +466,16 @@ class PocketnetWsService {
   }
 
   /**
+   * Вернулись в приложение. Пауза перед повтором могла дорасти до 30 с —
+   * подключаемся сразу. После долгого фона и открытый сокет мог умереть
+   * молча (система отрезала сеть, onclose не пришёл) — открываем новый.
+   */
+  resume(awayMs: number) {
+    if (!this.active || this.closing) return
+    if (this.reconnectTimer || awayMs >= STALE_AFTER_BACKGROUND_MS) this.reconnect()
+  }
+
+  /**
    * Смена аккаунта (X9/S2): подписка живёт только в `onopen`, поэтому новому
    * адресу нужен новый сокет — иначе push'и приходили бы по адресу A.
    * Без адреса — просто закрываем.
@@ -526,6 +539,8 @@ export const wsService = new PocketnetWsService()
 onRouteChange(() => {
   if (wsService.active) wsService.reconnect()
 })
+
+onAppForeground((awayMs) => wsService.resume(awayMs))
 
 // Tor включили на ходу: открытый сокет с подпиской адреса шёл мимо Tor.
 onTorEnabled(() => {
