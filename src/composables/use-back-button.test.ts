@@ -1,11 +1,13 @@
 // Системная «Назад» на Android: обработчики стопкой — верхний первым, взял —
-// дальше не идёт; никто не взял — назад по истории, на первой странице ничего.
+// дальше не идёт; никто не взял — назад по истории, на первой странице
+// приложение сворачивается (не закрывается).
 
 import { effectScope, nextTick, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const platform = vi.hoisted(() => ({ name: 'android' }))
 const listeners = vi.hoisted(() => [] as Array<(event: { canGoBack: boolean }) => void>)
+const minimizeApp = vi.hoisted(() => vi.fn(async () => {}))
 
 vi.mock('@capacitor/core', () => ({ Capacitor: { getPlatform: () => platform.name } }))
 vi.mock('@capacitor/app', () => ({
@@ -14,6 +16,7 @@ vi.mock('@capacitor/app', () => ({
       listeners.push(cb)
       return { remove: vi.fn() }
     }),
+    minimizeApp,
   },
 }))
 
@@ -84,20 +87,25 @@ describe('use-back-button', () => {
     expect(handleBack()).toBe(false)
   })
 
-  it('на Android: никто не взял — назад по истории, на первой странице ничего', async () => {
+  it('на Android: никто не взял — назад по истории, на первой странице свернуть', async () => {
     const back = vi.spyOn(window.history, 'back').mockImplementation(() => {})
+    minimizeApp.mockClear()
     await setupBackButton()
     expect(listeners).toHaveLength(1)
 
     listeners[0]!({ canGoBack: true })
     expect(back).toHaveBeenCalledTimes(1)
+    expect(minimizeApp).not.toHaveBeenCalled()
     listeners[0]!({ canGoBack: false })
     expect(back).toHaveBeenCalledTimes(1)
+    expect(minimizeApp).toHaveBeenCalledTimes(1)
 
-    // Открыт чат — его обработчик берёт «Назад», страница не листается.
+    // Открыт чат — его обработчик берёт «Назад»: ни истории, ни сворачивания.
     pushBackHandler(() => true)
     listeners[0]!({ canGoBack: true })
+    listeners[0]!({ canGoBack: false })
     expect(back).toHaveBeenCalledTimes(1)
+    expect(minimizeApp).toHaveBeenCalledTimes(1)
   })
 
   it('на компьютере и в браузере кнопку не перехватываем', async () => {

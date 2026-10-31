@@ -72,6 +72,9 @@ export async function setupBackButton(): Promise<void> {
     await App.addListener('backButton', ({ canGoBack }) => {
       if (handleBack()) return
       if (canGoBack) window.history.back()
+      // Первая страница: свернуть, как принято на Android, — открытые чаты,
+      // ролик и место в ленте остаются.
+      else void App.minimizeApp().catch(() => {})
     })
   } catch (e) {
     log.warn('back button listener failed', e)

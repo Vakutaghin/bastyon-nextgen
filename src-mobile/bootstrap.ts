@@ -1,14 +1,13 @@
 /**
- * Инициализация Capacitor: статус-бар, splash, клавиатура, back-button.
+ * Инициализация Capacitor: статус-бар, splash, клавиатура.
  * Вызывается из src/main.js после монтирования приложения.
  * На web-сборке Capacitor.isNativePlatform() === false и функция выходит сразу,
  * нативные плагины подгружаются динамически только под мобильным WebView.
  */
 
 import { Capacitor } from '@capacitor/core'
-import type { Router } from 'vue-router'
 
-export async function initCapacitor(router?: Router): Promise<void> {
+export async function initCapacitor(): Promise<void> {
   if (!Capacitor.isNativePlatform()) {
     document.documentElement.setAttribute('data-platform', 'web')
     return
@@ -18,11 +17,7 @@ export async function initCapacitor(router?: Router): Promise<void> {
   document.documentElement.setAttribute('data-platform', platform)
   document.documentElement.setAttribute('data-native', 'true')
 
-  const [appMod, statusBarMod, splashMod, keyboardMod] = await Promise.all([
-    import('@capacitor/app').catch((e) => {
-      console.warn('[capacitor] @capacitor/app load failed', e)
-      return null
-    }),
+  const [statusBarMod, splashMod, keyboardMod] = await Promise.all([
     import('@capacitor/status-bar').catch((e) => {
       console.warn('[capacitor] @capacitor/status-bar load failed', e)
       return null
@@ -56,23 +51,14 @@ export async function initCapacitor(router?: Router): Promise<void> {
     }
   }
 
-  if (appMod) {
-    appMod.App.addListener('backButton', ({ canGoBack }) => {
-      if (canGoBack && router) {
-        router.back()
-      } else {
-        appMod.App.exitApp()
-      }
-    })
-  }
+  // «Назад» — в use-back-button (стопка обработчиков). Второй слушатель здесь
+  // листал историю вдобавок к нему, а на первой странице закрывал приложение,
+  // даже когда «Назад» закрывал чат.
 
   if (keyboardMod) {
     keyboardMod.Keyboard.addListener('keyboardWillShow', (info) => {
       document.body.classList.add('keyboard-open')
-      document.documentElement.style.setProperty(
-        '--keyboard-height',
-        `${info.keyboardHeight}px`
-      )
+      document.documentElement.style.setProperty('--keyboard-height', `${info.keyboardHeight}px`)
     })
     keyboardMod.Keyboard.addListener('keyboardWillHide', () => {
       document.body.classList.remove('keyboard-open')

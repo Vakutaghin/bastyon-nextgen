@@ -191,7 +191,7 @@ function doMount() {
 
   try {
     app.mount('#app')
-    initCapacitor(router).catch((e) => console.warn('[main] initCapacitor failed:', e))
+    initCapacitor().catch((e) => console.warn('[main] initCapacitor failed:', e))
   } catch (e) {
     console.error('[main] Mount failed:', e)
   }
