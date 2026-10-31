@@ -3,6 +3,8 @@
     <h1 class="visually-hidden">{{ t('misc.bastyonFeed') }}</h1>
     <SidebarLeft v-if="!mobile" :collapsed="leftSidebarCollapsed" />
     <SC_HomeMainContent :class="{ 'sidebar-right-hidden': !rightSidebarVisible || mobile }">
+      <!-- Нет сети — смотреть можно скачанное. -->
+      <OfflineBanner />
       <ContentFeed
         :feed-data="null"
         :loading="false"
@@ -23,6 +25,7 @@ import { useI18n } from 'vue-i18n'
 import SidebarLeft from '@/b-components/sidebar/sidebar-left/sidebar-left.vue'
 import SidebarRight from '@/b-components/sidebar/sidebar-right/sidebar-right.vue'
 import ContentFeed from '@/b-components/content/content-feed/content-feed.vue'
+import OfflineBanner from '@/b-components/offline-video/offline-banner.vue'
 import { settingsAPI } from '@/db/apis/settings-api'
 import { useViewport } from '@/composables/use-viewport'
 import { SC_HomeWork, SC_HomeMainContent } from './home-page.styled'

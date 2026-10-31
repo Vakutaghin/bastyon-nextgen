@@ -3,12 +3,14 @@
  * список субтитров (`/api/v1/videos/{id}/captions`), фетчит каждый VTT и отдаёт
  * его как blob-URL — так `<track>` не зависит от CORS/crossorigin исходного хоста.
  * Если субтитров нет — просто пустой список (видео работает как раньше).
+ * У скачанного ролика — дорожки из его папки, без сети.
  */
 
 import { onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import { parsePeerTubeUrl } from '@/helpers/api/peertube-parser'
 import { appFetch } from '@/helpers/api/fetch-strategies'
 import { getPeerTubeCaptions } from '@/helpers/api/peertube-api'
+import { offlineCaptions } from '@/services/offline-video/offline-lookup'
 
 export interface SubtitleTrack {
   language: string
@@ -38,12 +40,17 @@ export function useVideoSubtitles(videoUrl: Ref<string | undefined>) {
     const parsed = url ? parsePeerTubeUrl(url) : null
     if (!parsed) return
 
+    // Скачанный ролик — субтитры из его папки, обычным fetch: своя схема
+    // компьютера и перехват Android не для appFetch (Tor, нативный HTTP).
+    let offline
     let captions
     try {
-      captions = await getPeerTubeCaptions(parsed.host, parsed.videoId)
+      offline = url ? await offlineCaptions(url) : null
+      captions = offline ?? (await getPeerTubeCaptions(parsed.host, parsed.videoId))
     } catch {
       return
     }
+    const local = !!offline
     if (my !== token || captions.length === 0) return
 
     const built: SubtitleTrack[] = []
@@ -51,7 +58,9 @@ export function useVideoSubtitles(videoUrl: Ref<string | undefined>) {
     for (const c of captions) {
       try {
         // appFetch: под Tor субтитры идут через torFetch, а не сырым fetch (V21).
-        const res = await appFetch(c.url, { credentials: 'omit' })
+        const res = local
+          ? await fetch(c.url, { credentials: 'omit' })
+          : await appFetch(c.url, { credentials: 'omit' })
         if (my !== token) return abandon() // переключились — чистим уже собранное
         if (!res.ok) continue
         const text = await res.text()

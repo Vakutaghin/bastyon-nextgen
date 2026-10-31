@@ -15,6 +15,8 @@
         </div>
       </SC_SectionHead>
 
+      <OfflineBanner kind="audio" />
+
       <SC_Tabs :aria-label="t('audioSection.title')">
         <router-link
           v-for="item in tabs"
@@ -74,13 +76,15 @@
 
       <LibraryListView v-else-if="tab === 'music'" :list-id="MY_MUSIC" kind="audio" />
       <MediaPlaylistsTab v-else-if="tab === 'playlists'" kind="audio" />
+      <OfflineDownloadsList v-else-if="tab === 'downloads'" kind="audio" />
     </SC_SectionPage>
   </SC_SectionWork>
 </template>
 
 <script setup lang="ts">
 // Раздел «Аудио», как музыка в ВК: рубрики по тегам, подписки, «Моя музыка»
-// (личный список), плейлисты и альбомы, поиск. Треки играет мини-плеер внизу
+// (личный список), плейлисты и альбомы, скачанное для прослушивания без сети,
+// поиск. Треки играет мини-плеер внизу
 // экрана — подряд, пока человек ходит по приложению. Ленту можно смотреть
 // списком треков или постами, как главную; вид запоминается.
 
@@ -95,6 +99,8 @@ import MediaPostList from '@/b-components/media/media-post-list/media-post-list.
 import MediaViewSwitch from '@/b-components/media/media-view-switch/media-view-switch.vue'
 import LibraryListView from '@/b-components/media/library-list/library-list-view.vue'
 import MediaPlaylistsTab from '@/b-components/media/media-playlists-tab/media-playlists-tab.vue'
+import OfflineBanner from '@/b-components/offline-video/offline-banner.vue'
+import OfflineDownloadsList from '@/b-components/offline-video/offline-downloads-list.vue'
 import { useMediaFeed, type MediaFeedSource } from '@/composables/use-media-feed'
 import { requireAuth } from '@/composables/use-auth-gate'
 import { useAuthStore } from '@/blockchain'
@@ -113,9 +119,9 @@ import {
   SC_Tabs,
 } from '../media-section/media-section.styled'
 
-type Tab = 'home' | 'subscriptions' | 'music' | 'playlists'
+type Tab = 'home' | 'subscriptions' | 'music' | 'playlists' | 'downloads'
 
-const NEED_AUTH = new Set<string>(['subscriptions', 'music', 'playlists'])
+const NEED_AUTH = new Set<string>(['subscriptions', 'music', 'playlists', 'downloads'])
 
 const { t } = useI18n()
 const route = useRoute()
@@ -127,11 +133,13 @@ const tabs = [
   { id: 'subscriptions', labelKey: 'audioSection.tabs.subscriptions', to: '/audio/subscriptions' },
   { id: 'music', labelKey: 'audioSection.tabs.music', to: '/audio/music' },
   { id: 'playlists', labelKey: 'audioSection.tabs.playlists', to: '/audio/playlists' },
+  { id: 'downloads', labelKey: 'audioSection.tabs.downloads', to: '/audio/downloads' },
 ]
 
 const tab = computed<Tab>(() => {
   const raw = typeof route.params.tab === 'string' ? route.params.tab : ''
-  return ['subscriptions', 'music', 'playlists'].includes(raw) && authStore.isUserAuthenticated
+  return ['subscriptions', 'music', 'playlists', 'downloads'].includes(raw) &&
+    authStore.isUserAuthenticated
     ? (raw as Tab)
     : 'home'
 })

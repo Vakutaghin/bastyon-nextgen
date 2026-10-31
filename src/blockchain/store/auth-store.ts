@@ -471,6 +471,10 @@ export const useAuthStore = defineStore('auth', {
         profile.clearProfile()
 
         clearAllUserData()
+        // Выход из всех аккаунтов стирает и всё скачанное.
+        import('@/stores/offline-videos-store')
+          .then(({ useOfflineVideosStore }) => useOfflineVideosStore().clearAll())
+          .catch((e: unknown) => console.warn('[auth-store] offline clearAll failed:', e))
         // P0-1: снести device-ключ сейфа из IndexedDB + залочить память (async).
         // clearAllUserData уже стёр LS-артефакты; здесь добиваем IDB.
         await destroyVault()
@@ -675,6 +679,11 @@ export const useAuthStore = defineStore('auth', {
         import('@/stores/video-uploads-store')
           .then(({ useVideoUploadsStore }) => useVideoUploadsStore().forgetAccount(address))
           .catch((e: unknown) => console.warn('[auth-store] uploads forgetAccount failed:', e))
+        // Скачанное им для просмотра без сети: файл, который не нужен больше
+        // никому на устройстве, удаляется.
+        import('@/stores/offline-videos-store')
+          .then(({ useOfflineVideosStore }) => useOfflineVideosStore().forgetAccount(address))
+          .catch((e: unknown) => console.warn('[auth-store] offline forgetAccount failed:', e))
 
         if (!keys.accountsList?.accounts?.length) {
           this.accountsList = null

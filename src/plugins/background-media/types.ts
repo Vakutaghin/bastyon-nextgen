@@ -23,7 +23,7 @@ export type BackgroundMediaUpdateOptions = Partial<BackgroundMediaStartOptions>
 
 /** Звук ролика в нативном плеере службы, пока приложение свёрнуто. */
 export interface BackgroundMediaNativeOptions extends BackgroundMediaStartOptions {
-  /** HLS-плейлист или файл ролика (http/https). */
+  /** HLS-плейлист или файл ролика (http/https); скачанный — `file://` с диска. */
   url: string
   /** 0…1; 0 — ролик был без звука. */
   volume?: number

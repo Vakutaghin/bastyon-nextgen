@@ -34,7 +34,8 @@ async function streamUrl(item: QueueItem): Promise<string | null> {
   const known = resolved.get(item.url)
   if (known) return known
   const sources = await getVideoSourcesFromUrl(item.url)
-  const url = sources.hlsPlaylistUrl ?? sources.progressiveUrl
+  // Скачанный трек ExoPlayer берёт файлом с диска.
+  const url = sources.nativeUrl ?? sources.hlsPlaylistUrl ?? sources.progressiveUrl
   if (url) resolved.set(item.url, url)
   return url
 }
@@ -71,7 +72,9 @@ export function useNativeHandoff(
     const audio = engine.audioElement()
     if (!current || current.type !== 'audio' || !audio || !engine.audioState.playing) return
     const currentUrl =
-      engine.currentHlsUrl() ?? (/^https?:/.test(audio.currentSrc) ? audio.currentSrc : null)
+      engine.currentNativeUrl() ??
+      engine.currentHlsUrl() ??
+      (/^https?:/.test(audio.currentSrc) ? audio.currentSrc : null)
     if (!currentUrl) return
 
     // Подряд идущие треки после текущего: на ролике очередь для ExoPlayer кончается.

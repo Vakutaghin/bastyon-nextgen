@@ -19,11 +19,12 @@ export const TOR_MEDIA_CLASS = 'tor-media-blocked'
 /**
  * `'self'` — tauri://localhost / http://tauri.localhost; `asset:` — превью
  * транскодера через convertFileSrc; `blob:`/`data:` — TorImage, QR, локальные
- * файлы. Фреймы: только свои — YouTube, превью композера и мини-аппы под Tor
+ * файлы; `bastyon-offline:` — обложки и аватары скачанных роликов, с диска. Фреймы: только свои — YouTube, превью композера и мини-аппы под Tor
  * отключены и на уровне компонентов.
  */
 export const TOR_MEDIA_CSP =
-  "img-src 'self' data: blob: asset: https://asset.localhost http://asset.localhost; " +
+  "img-src 'self' data: blob: asset: https://asset.localhost http://asset.localhost " +
+  'bastyon-offline: http://bastyon-offline.localhost; ' +
   "frame-src 'self'"
 
 export function isTorMediaPolicyApplied(doc: Document | undefined = globalDocument()): boolean {

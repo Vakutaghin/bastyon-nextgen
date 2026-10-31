@@ -371,6 +371,7 @@ import { useVideoThumbnail } from './composables/use-video-thumbnail'
 import { useVideoSubtitles } from './composables/use-video-subtitles'
 import { useVideoElementEvents } from './composables/use-video-element-events'
 import { useTorMedia } from '@/composables/use-tor-media'
+import { knownLocalCopy } from '@/services/offline-video/offline-lookup'
 import { resolveDomElement, resolveVideoElement } from './composables/utils'
 import AudioVisualizer from '@/b-components/content/video-player/components/audio-visualizer/audio-visualizer.vue'
 import PlayerProgress from './components/player-progress.vue'
@@ -719,7 +720,8 @@ const torNoticeVisible = ref(false)
 let torPendingForcePlay = false
 
 function initPlayer(forcePlay = false): ReturnType<typeof hlsInitPlayer> | undefined {
-  if (mediaBlocked.value && !torBypassAccepted.value) {
+  // Скачанный ролик играет с диска — мимо Tor ничего не уходит.
+  if (mediaBlocked.value && !torBypassAccepted.value && !knownLocalCopy(props.videoUrl)) {
     torPendingForcePlay = forcePlay
     torNoticeVisible.value = true
     return undefined

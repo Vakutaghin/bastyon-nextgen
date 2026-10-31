@@ -15,6 +15,8 @@
         </div>
       </SC_SectionHead>
 
+      <OfflineBanner kind="video" />
+
       <SC_Tabs :aria-label="t('videoSection.title')">
         <router-link
           v-for="item in tabs"
@@ -71,13 +73,15 @@
 
       <LibraryListView v-else-if="tab === 'saved'" :list-id="SAVED_VIDEOS" kind="video" />
       <LibraryListView v-else-if="tab === 'later'" :list-id="WATCH_LATER" kind="video" />
+      <OfflineDownloadsList v-else-if="tab === 'downloads'" kind="video" />
     </SC_SectionPage>
   </SC_SectionWork>
 </template>
 
 <script setup lang="ts">
 // Раздел «Видео», как в ВК: свежее и лучшее, подписки, плейлисты, сохранённое,
-// «Смотреть позже», загруженные (кабинет «Мои видео») и поиск по роликам.
+// «Смотреть позже», скачанные для просмотра без сети, загруженные (кабинет
+// «Мои видео») и поиск по роликам.
 // Вкладка — в адресе (`/video/subscriptions`), поиск — в `?q=`. Ленту можно
 // смотреть сеткой или постами, как главную; вид запоминается.
 
@@ -91,6 +95,8 @@ import MediaPostList from '@/b-components/media/media-post-list/media-post-list.
 import MediaViewSwitch from '@/b-components/media/media-view-switch/media-view-switch.vue'
 import LibraryListView from '@/b-components/media/library-list/library-list-view.vue'
 import MediaPlaylistsTab from '@/b-components/media/media-playlists-tab/media-playlists-tab.vue'
+import OfflineBanner from '@/b-components/offline-video/offline-banner.vue'
+import OfflineDownloadsList from '@/b-components/offline-video/offline-downloads-list.vue'
 import { useMediaFeed, type MediaFeedSource } from '@/composables/use-media-feed'
 import { requireAuth } from '@/composables/use-auth-gate'
 import { useAuthStore } from '@/blockchain'
@@ -108,12 +114,19 @@ import {
   SC_Tabs,
 } from '../media-section/media-section.styled'
 
-type Tab = 'home' | 'subscriptions' | 'playlists' | 'saved' | 'later'
+type Tab = 'home' | 'subscriptions' | 'playlists' | 'saved' | 'later' | 'downloads'
 const SORTS = ['fresh', 'best'] as const
 type Sort = (typeof SORTS)[number]
 
 /** Вкладки, которым нужен вход: подписки и всё своё. */
-const NEED_AUTH = new Set<string>(['subscriptions', 'playlists', 'saved', 'later', 'uploads'])
+const NEED_AUTH = new Set<string>([
+  'subscriptions',
+  'playlists',
+  'saved',
+  'later',
+  'downloads',
+  'uploads',
+])
 
 const { t } = useI18n()
 const route = useRoute()
@@ -126,12 +139,13 @@ const tabs = [
   { id: 'playlists', labelKey: 'videoSection.tabs.playlists', to: '/video/playlists' },
   { id: 'saved', labelKey: 'videoSection.tabs.saved', to: '/video/saved' },
   { id: 'later', labelKey: 'videoSection.tabs.later', to: '/video/later' },
+  { id: 'downloads', labelKey: 'videoSection.tabs.downloads', to: '/video/downloads' },
   { id: 'uploads', labelKey: 'videoSection.tabs.uploads', to: '/my-videos' },
 ]
 
 const tab = computed<Tab>(() => {
   const raw = typeof route.params.tab === 'string' ? route.params.tab : ''
-  const known: Tab[] = ['subscriptions', 'playlists', 'saved', 'later']
+  const known: Tab[] = ['subscriptions', 'playlists', 'saved', 'later', 'downloads']
   return (known as string[]).includes(raw) && (raw === 'home' || authStore.isUserAuthenticated)
     ? (raw as Tab)
     : 'home'

@@ -10,6 +10,7 @@ import { reactive } from 'vue'
 import Hls from 'hls.js'
 
 import { getVideoSourcesFromUrl } from '@/helpers/api/peertube-url'
+import { knownLocalCopy } from '@/services/offline-video/offline-lookup'
 import { HLS_LOAD_POLICY } from '@/b-components/content/video-player/services/hls-error-recovery'
 import { videoPlayerManager } from '@/b-components/content/video-player/video-player-manager'
 import {
@@ -67,13 +68,17 @@ let current: QueueItem | null = null
 /** «Слушать мимо Tor» — до конца сеанса: включение и выключение Tor перезагружают окно. */
 let torBypassAccepted = false
 let pendingLoad: { item: QueueItem; startAt: number } | null = null
+/** Скачанная копия текущего трека — для ExoPlayer, когда приложение свернули. */
+let currentNative: string | null = null
 
 /**
  * Звук пошёл бы мимо Tor: hls.js и `<audio>` грузят его окном, не через Tor.
  * На Android окно ходит через Tor само.
  */
-function torBlocksAudio(): boolean {
+function torBlocksAudio(item: QueueItem): boolean {
   if (torBypassAccepted) return false
+  // Скачанное играет с диска — в сеть не ходит.
+  if (knownLocalCopy(item.url)) return false
   try {
     return useTorStore().mediaBypassesTor
   } catch {
@@ -173,6 +178,7 @@ export async function load(item: QueueItem, startAt = 0, autoplay = true): Promi
   const audio = el()
   const mine = ++generation
   current = item
+  currentNative = null
   audio.pause()
   detachHls()
   audio.removeAttribute('src')
@@ -185,7 +191,7 @@ export async function load(item: QueueItem, startAt = 0, autoplay = true): Promi
     error: null,
     torBlocked: false,
   })
-  if (torBlocksAudio()) {
+  if (torBlocksAudio(item)) {
     pendingLoad = { item, startAt }
     Object.assign(audioState, { loading: false, torBlocked: true })
     return
@@ -202,6 +208,7 @@ export async function load(item: QueueItem, startAt = 0, autoplay = true): Promi
     return
   }
   if (mine !== generation) return
+  currentNative = sources.nativeUrl ?? null
 
   const start = (): void => {
     if (mine !== generation) return
@@ -316,4 +323,9 @@ export function audioElement(): HTMLAudioElement | null {
 
 export function currentHlsUrl(): string | null {
   return hls?.url ?? null
+}
+
+/** Адрес скачанной копии текущего трека для ExoPlayer (Android); null — копии нет. */
+export function currentNativeUrl(): string | null {
+  return currentNative
 }

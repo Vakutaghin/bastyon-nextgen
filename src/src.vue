@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, shallowRef, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, shallowRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ConfigProvider } from 'ant-design-vue'
@@ -25,6 +25,7 @@ import { useHelpHotkey } from '@/composables/use-help-hotkey'
 import { useHistoryHotkeys } from '@/composables/use-history-hotkeys'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
 import { useIpfsNodeViewerStore } from '@/stores/ipfs-node-viewer-store'
+import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import { useBackupNudge } from '@/composables/use-backup-nudge'
 import { useIpnsRenewal } from '@/composables/use-ipns-renewal'
 import { useTrayLabels } from '@/composables/use-tray-labels'
@@ -45,6 +46,19 @@ const VideoUploadDialog = defineAsyncComponent(
 const VideoUploadsPanel = defineAsyncComponent(
   () => import('@/b-components/video-studio/uploads-panel.vue')
 )
+// Скачанные ролики: лист выбора качества и окно просмотра без сети.
+const OfflineQualitySheet = defineAsyncComponent(
+  () => import('@/b-components/offline-video/offline-quality-sheet.vue')
+)
+const OfflineVideoModal = defineAsyncComponent(
+  () => import('@/b-components/offline-video/offline-video-modal.vue')
+)
+const offlineVideos = useOfflineVideosStore()
+// Список скачанного и недокачанное — когда запуск уже прошёл.
+onMounted(() => {
+  setTimeout(() => void offlineVideos.hydrate(), 3000)
+})
+
 // Окно просмотра IPFS без своей ноды — грузится с первой ссылкой.
 const IpfsNodeViewer = defineAsyncComponent(() => import('@/components/ipfs/ipfs-node-viewer.vue'))
 const ipfsNodeViewer = useIpfsNodeViewerStore()
@@ -155,6 +169,9 @@ watch(
       <!-- Загрузка видео: окно из «Моих видео» и плашка с идущими загрузками. -->
       <VideoUploadDialog />
       <VideoUploadsPanel />
+      <!-- Скачанное: лист качества и окно ролика без сети — singleton, useOfflineVideosStore -->
+      <OfflineQualitySheet v-if="offlineVideos.sheet" />
+      <OfflineVideoModal v-if="offlineVideos.opened" />
       <!-- Mini-apps payment modal — singleton, управляется через payment-modal-controller -->
       <MiniAppPaymentModal />
       <!-- Донат автору — singleton, открывается через useDonateStore -->

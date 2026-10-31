@@ -14,6 +14,7 @@ The section opens with **“Audio”** in the left panel, on a phone — in the 
 - **“Subscriptions”** — tracks by the authors you follow.
 - **“My music”** — your private list — see [Private lists](media-library.md).
 - **“Playlists”** — your albums and playlists, public and private — see [Collections and playlists](collections.md).
+- **“Downloads”** — tracks downloaded to listen offline — see [Download to watch offline](offline-video.md).
 
 The artist is the author of the post: their tracks, albums and playlists are on the **“Audio”** tab of their profile.
 

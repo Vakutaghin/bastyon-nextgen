@@ -10,6 +10,7 @@ import {
   type ActivePlayerHandle,
   type MediaSessionPayload,
 } from './background-media-controller'
+import { nativeUrlForPageUrl } from '@/services/offline-video/offline-lookup'
 
 interface Options {
   playerId: Ref<string>
@@ -92,10 +93,16 @@ export function useBackgroundPlayback(opts: Options) {
   /** Звук сейчас у нативного плеера: состояние и позиция — его. */
   let nativeActive = false
 
-  /** Что отдать нативному плееру: blob: (свой файл до загрузки) ему не открыть. */
+  /**
+   * Что отдать нативному плееру: blob: (свой файл до загрузки) ему не открыть,
+   * скачанный ролик — файлом с диска, а не адресом перехвата WebView.
+   */
   const nativeSource = (video: HTMLVideoElement): string | null => {
     const url = hls.value?.url ?? video.currentSrc
-    return url && /^https?:/i.test(url) ? url : null
+    if (!url) return null
+    const local = nativeUrlForPageUrl(url)
+    if (local !== undefined) return local
+    return /^https?:/i.test(url) ? url : null
   }
 
   const startNative = (): boolean => {

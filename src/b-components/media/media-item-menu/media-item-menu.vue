@@ -15,7 +15,8 @@
 </template>
 
 <script setup lang="ts">
-// Меню ролика или трека: в очередь, личные списки, «Добавить в…».
+// Меню ролика или трека: в очередь, личные списки, «Добавить в…», скачать для
+// просмотра без сети.
 
 import { computed, h, ref, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -23,6 +24,8 @@ import { Dropdown, Menu } from 'ant-design-vue'
 import {
   AddToListIcon,
   AudioPlaylistIcon,
+  DeleteOutlined,
+  DownloadOutlined,
   MoreOutlined,
   PlusOutlined,
   SaveIcon,
@@ -34,6 +37,11 @@ import { requireAuth } from '@/composables/use-auth-gate'
 import { useMediaLibrary } from '@/composables/use-media-library'
 import { usePlaybackQueueStore } from '@/stores/playback-queue-store'
 import { useAddToListStore } from '@/stores/add-to-list-store'
+import { useOfflineVideosStore } from '@/stores/offline-videos-store'
+import {
+  offlineSourceFromPost,
+  useOfflineDownload,
+} from '@/b-components/offline-video/use-offline-download'
 import { MY_MUSIC, SAVED_VIDEOS, WATCH_LATER } from '@/services/media-library/media-library-doc'
 import { mediaTitle, mediaTypeOf, postId, toQueueItem } from '@/services/media/media-post'
 import { cachedMediaInfo } from '@/services/media/media-info'
@@ -46,6 +54,8 @@ const { t } = useI18n()
 const { library } = useMediaLibrary()
 const queue = usePlaybackQueueStore()
 const addToList = useAddToListStore()
+const offline = useOfflineVideosStore()
+const { download } = useOfflineDownload()
 const open = ref(false)
 
 const type = computed(() => mediaTypeOf(props.post))
@@ -74,12 +84,28 @@ const items = computed(() => {
     )
   }
   out.push({ key: 'add', label: t('collections.addToEllipsis'), icon: icon(AddToListIcon) })
+  if (offline.available && type.value) {
+    out.push(
+      offline.mineFor(props.post.videoUrl)
+        ? { key: 'offline-remove', label: t('offlineVideo.remove'), icon: icon(DeleteOutlined) }
+        : { key: 'offline', label: t('offlineVideo.download'), icon: icon(DownloadOutlined) }
+    )
+  }
   return out
 })
 
 function onClick({ key }: { key: string | number }): void {
   open.value = false
   const k = String(key)
+  if (k === 'offline') {
+    download(offlineSourceFromPost(props.post))
+    return
+  }
+  if (k === 'offline-remove') {
+    const item = offline.mineFor(props.post.videoUrl)
+    if (item) void offline.remove(item.id)
+    return
+  }
   if (k === 'next' || k === 'end') {
     const item = toQueueItem(props.post, cachedMediaInfo(props.post.videoUrl ?? ''))
     if (item) queue.enqueue(item, k)

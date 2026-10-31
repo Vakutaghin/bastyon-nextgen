@@ -125,6 +125,9 @@
       </SC_CacheRow>
     </template>
 
+    <!-- Скачанные ролики: место, качество по умолчанию, «Только по Wi-Fi». -->
+    <OfflineVideosRow />
+
     <SC_SystemRow>
       <SC_SystemLabel>
         <SC_SystemTitle>{{ t('settings.system.storeDecrypted') }}</SC_SystemTitle>
@@ -176,6 +179,7 @@ import {
 import { directAvailable } from '@/helpers/api/direct-nodes/connection-route'
 import { SC_SettingsSectionTitle } from '../settings-page-main.styled'
 import ConnectionModeSection from './connection-mode-section.vue'
+import OfflineVideosRow from './offline-videos-row.vue'
 import {
   SC_CacheControls,
   SC_CacheRow,

@@ -220,6 +220,9 @@
             </template>
           </Dropdown>
 
+          <!-- Скачать для просмотра без сети — на странице и в окне поста, как у YouTube. -->
+          <OfflineDownloadButton v-if="canDownload" :post="post" />
+
           <SC_PostActionBtn
             v-if="canBoost"
             type="button"
@@ -310,6 +313,7 @@ import { useAddToListStore } from '@/stores/add-to-list-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { publicEmbedCode, publicPostUrl } from '@/helpers/common/share-origin'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
+import OfflineDownloadButton from '@/b-components/offline-video/offline-download-button.vue'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import StarRating from '@/b-components/content/post-card/components/star-rating/star-rating.vue'
 import PostCardComments from '@/b-components/content/post-card/components/post-card-comments/post-card-comments.vue'
@@ -428,6 +432,14 @@ const { videoPlayerRef, chapters, videoEmbeds, linkPreviewUrl, handleSeekTimecod
 // Просмотры ролика или прослушивания трека — с видеосервера, как в старом клиенте.
 const isPeerTubeMedia = computed<boolean>(
   () => (props.post.type === 'video' || props.post.type === 'audio') && !!props.post.videoUrl
+)
+// «Скачать» — у ролика или трека на странице и в окне поста; прямой эфир не качается.
+const canDownload = computed<boolean>(
+  () =>
+    isPeerTubeMedia.value &&
+    !!props.post.videoUrl?.startsWith('peertube://') &&
+    !props.post.videoUrl.endsWith('/stream') &&
+    (props.showFull || props.inModal)
 )
 const { count: viewsCount, live: viewsLive } = usePostViews(() =>
   isPeerTubeMedia.value ? props.post.videoUrl : undefined

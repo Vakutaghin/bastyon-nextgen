@@ -56,6 +56,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Watching videos](video-player.md)
   - [The Video section](video-section.md)
   - [The Audio section](audio-section.md)
+  - [Download to watch offline](offline-video.md)
   - [Collections and playlists](collections.md)
   - [Private lists](media-library.md)
   - [Uploading video and audio](video-upload.md)

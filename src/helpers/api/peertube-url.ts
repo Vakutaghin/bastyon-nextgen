@@ -4,6 +4,7 @@
 
 import { parsePeerTubeUrl } from './peertube-parser'
 import { getPeerTubeVideoInfo, type PeerTubeVideoInfo } from './peertube-api'
+import { offlineFileUrl, offlineSources } from '@/services/offline-video/offline-lookup'
 
 // Re-exports для обратной совместимости с импортёрами.
 export { parsePeerTubeUrl } from './peertube-parser'
@@ -49,7 +50,7 @@ interface ProgressiveCandidate {
  * копию (redundancy): плейлист лежит у них, а `fileUrl` по-прежнему указывает
  * на исходную ноду, которой может уже не быть. Файлы копии называются так же.
  */
-function besidePlaylist(fileUrl: string, playlistUrl: string | undefined): string {
+export function besidePlaylist(fileUrl: string, playlistUrl: string | undefined): string {
   if (!playlistUrl) return fileUrl
   try {
     const file = new URL(fileUrl)
@@ -137,6 +138,10 @@ export async function getVideoThumbnailFromUrl(peertubeUrl: string): Promise<str
   const parsed = parsePeerTubeUrl(peertubeUrl)
   if (!parsed) throw new Error(`Invalid PeerTube URL: ${peertubeUrl}`)
 
+  // Скачанный ролик — обложка с диска, без сети.
+  const local = await offlineFileUrl(peertubeUrl, 'thumb.jpg')
+  if (local) return local
+
   const videoInfo = await getPeerTubeVideoInfo(parsed.host, parsed.videoId)
   return getVideoThumbnailUrl(videoInfo, videoInfo.servedBy ?? parsed.host)
 }
@@ -159,10 +164,17 @@ export interface VideoSources {
   hlsPlaylistUrl: string | null
   /** Прямой mp4 на той же ноде — fallback, если HLS не воспроизводится. null, если нет файлов. */
   progressiveUrl: string | null
+  /**
+   * Скачанная копия для нативного плеера (ExoPlayer фонового звука на
+   * Android). Есть только у скачанного; тогда `progressiveUrl` — та же копия
+   * для страницы.
+   */
+  nativeUrl?: string | null
 }
 
 /**
  * Источники видео из PeerTube URL за один сетевой запрос (parser + API + извлечение обоих URL).
+ * У скачанного ролика — его локальная копия, без сети.
  *
  * В отличие от {@link getHlsPlaylistFromUrl}, чётко разделяет HLS (только `streamingPlaylists`)
  * и прогрессивный mp4 — чтобы плеер мог деградировать с HLS на прямой файл, а не кормить
@@ -173,6 +185,11 @@ export interface VideoSources {
 export async function getVideoSourcesFromUrl(peertubeUrl: string): Promise<VideoSources> {
   const parsed = parsePeerTubeUrl(peertubeUrl)
   if (!parsed) throw new Error(`Invalid PeerTube URL: ${peertubeUrl}`)
+
+  // Скачанная копия важнее сети и при живой сети: без запроса к ноде и без
+  // трафика. Играет как прямой mp4.
+  const local = await offlineSources(peertubeUrl)
+  if (local) return { hlsPlaylistUrl: null, progressiveUrl: local.url, nativeUrl: local.nativeUrl }
 
   const videoInfo = await getPeerTubeVideoInfo(parsed.host, parsed.videoId)
   const hlsPlaylistUrl = videoInfo.streamingPlaylists?.[0]?.playlistUrl ?? null

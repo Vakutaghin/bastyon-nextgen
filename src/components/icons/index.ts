@@ -131,6 +131,7 @@ import {
   Vote,
   Wallet,
   Wifi,
+  WifiOff,
   X,
   Zap,
   ZoomIn,
@@ -336,6 +337,8 @@ export const RadioTowerIcon = lucideIcon('RadioTowerIcon', RadioTower)
 export const UsbIcon = lucideIcon('UsbIcon', Usb)
 export const BluetoothIcon = lucideIcon('BluetoothIcon', Bluetooth)
 export const WifiIcon = lucideIcon('WifiIcon', Wifi)
+/** Нет сети — плашка «Скачанное». */
+export const WifiOffIcon = lucideIcon('WifiOffIcon', WifiOff)
 
 /** Переключатель темы — солнце и луна, как кнопка цветовой схемы у Nuxt UI. */
 export const ThemeLightIcon = lucideIcon('ThemeLightIcon', Sun)

@@ -56,6 +56,7 @@
   - [Просмотр видео](video-player.md)
   - [Раздел «Видео»](video-section.md)
   - [Раздел «Аудио»](audio-section.md)
+  - [Скачать для просмотра без сети](offline-video.md)
   - [Коллекции и плейлисты](collections.md)
   - [Личные списки](media-library.md)
   - [Загрузка видео и аудио](video-upload.md)

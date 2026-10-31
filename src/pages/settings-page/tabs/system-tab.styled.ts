@@ -127,3 +127,13 @@ export const SC_CacheUsage = styled.span`
   color: var(--ui-text-highlighted);
   font-variant-numeric: tabular-nums;
 `
+
+/** Переключатель с подписью справа — внутри строки с кнопками. */
+export const SC_SwitchLine = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ui-text);
+  cursor: pointer;
+`

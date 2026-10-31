@@ -39,6 +39,10 @@ export interface PeerTubeVideoInfo {
   servedBy?: string
   /** Просмотры за всё время (у прямого эфира — см. `viewers`). */
   views?: number
+  /** 1 — опубликован; иначе ещё обрабатывается (файлов качеств нет). */
+  state?: { id: number; label?: string }
+  /** Секунды. */
+  duration?: number
   isLive?: boolean
   /** Сколько смотрят прямой эфир сейчас. */
   viewers?: number
