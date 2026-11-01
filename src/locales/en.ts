@@ -1124,6 +1124,7 @@ export default {
       retention: 'The server keeps this chat’s messages for {period}.',
       retentionDays: '{n} day | {n} days',
       loadFailed: 'Could not load the chat history.',
+      slow: 'The chat server is taking too long — showing what has loaded so far.',
       roomMissing:
         'The chat server could not find this conversation: you may have left it, or it was deleted.',
       retry: 'Retry',

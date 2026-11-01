@@ -11,7 +11,8 @@ import { useAuthStore } from '@/blockchain/store/auth-store'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 
-import { PROFILE_BATCH_SIZE, PROFILE_FETCH_DELAY } from './consts'
+import { PROFILE_BATCH_SIZE, PROFILE_FETCH_DELAY, PROFILE_WAIT_TIMEOUT } from './consts'
+import { within } from '../lib/within'
 import { checkPeerKeys, acceptPeerKeys } from '../services/key-pinning'
 
 export const useMessengerProfileCache = defineStore('messenger-profile-cache', () => {
@@ -141,7 +142,10 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
     if (fetchTimeout) clearTimeout(fetchTimeout)
     fetchTimeout = setTimeout(processQueue, PROFILE_FETCH_DELAY)
 
-    return Promise.all(promises).then(() => {})
+    // Нода молчит, а прокси перебираются с паузами — минуты. Ждущий (расшифровка
+    // при открытии чата) идёт дальше без профиля; профиль придёт позже, и
+    // заглушку дорасшифрует повтор.
+    return within(Promise.all(promises), PROFILE_WAIT_TIMEOUT).then(() => {})
   }
 
   /**
@@ -158,6 +162,8 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
     userProfiles.value = {}
     changedKeyPeers.value = {}
     warnedThisSession.clear()
+    // Ждущих отпускаем: иначе их обещания не завершились бы никогда.
+    for (const resolvers of pendingResolvers.values()) resolvers.forEach((r) => r())
     pendingResolvers.clear()
     fetchQueue = []
     if (fetchTimeout) clearTimeout(fetchTimeout)

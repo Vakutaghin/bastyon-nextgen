@@ -1136,6 +1136,7 @@ export default {
       retention: 'El servidor guarda los mensajes de este chat durante {period}.',
       retentionDays: '{n} día | {n} días',
       loadFailed: 'No se pudo cargar el historial del chat.',
+      slow: 'El servidor de chats tarda demasiado: se muestra lo que ya se cargó.',
       roomMissing:
         'El servidor de chat no encontró esta conversación: quizá la abandonaste o se eliminó.',
       retry: 'Reintentar',

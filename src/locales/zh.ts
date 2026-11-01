@@ -1073,6 +1073,7 @@ export default {
       retention: '服务器会保存这个聊天的消息 {period}。',
       retentionDays: '{n} 天',
       loadFailed: '无法加载聊天记录。',
+      slow: '聊天服务器响应过慢，仅显示已加载的内容。',
       roomMissing: '聊天服务器找不到这段对话：你可能已经退出，或它已被删除。',
       retry: '重试',
       deletedOneByYou: '你删除了一条消息',

@@ -52,15 +52,19 @@ function dated(text: string, ts?: number): string {
   return ts ? `${text} · ${formatLongDate(ts)}` : text
 }
 
+/** Ошибки со своим текстом: подробности под ним не нужны. */
+const KNOWN_ERRORS: Record<string, string> = {
+  room_not_found: 'messenger.history.roomMissing',
+  timeout: 'messenger.history.slow',
+}
+
 const errorText = computed<string>(() =>
-  props.history?.error === 'room_not_found'
-    ? t('messenger.history.roomMissing')
-    : t('messenger.history.loadFailed')
+  t(KNOWN_ERRORS[props.history?.error ?? ''] ?? 'messenger.history.loadFailed')
 )
 
 const errorDetails = computed<string>(() => {
   const error = props.history?.error
-  return error && error !== 'room_not_found' ? error.slice(0, 200) : ''
+  return error && !KNOWN_ERRORS[error] ? error.slice(0, 200) : ''
 })
 
 const lines = computed<string[]>(() => {

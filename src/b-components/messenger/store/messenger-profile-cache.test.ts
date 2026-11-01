@@ -79,3 +79,35 @@ describe('messenger-profile-cache — пиннинг ключей собесед
     expect(getPinnedKeys('PMe', 'PNoKeys')).toBeNull()
   })
 })
+
+describe('messenger-profile-cache — ждущие профиль не висят', () => {
+  it('нода молчит — ждущий идёт дальше через 20 с; профиль, пришедший позже, сохраняется', async () => {
+    const cache = useMessengerProfileCache()
+    let answer: (v: unknown) => void = () => {}
+    getByPRC.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)))
+    let done = false
+    const waiting = cache.fetchProfiles(['PSlow']).then(() => (done = true))
+    await vi.advanceTimersByTimeAsync(19_999)
+    expect(done).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
+    await waiting
+    expect(done).toBe(true)
+    expect(cache.userProfiles['PSlow']).toBeUndefined()
+
+    answer([{ address: 'PSlow', name: 'Медленный', k: '02cc' }])
+    await vi.advanceTimersByTimeAsync(0)
+    expect(cache.userProfiles['PSlow']?.name).toBe('Медленный')
+  })
+
+  it('сброс (смена аккаунта) отпускает ждущих, а не оставляет их навсегда', async () => {
+    const cache = useMessengerProfileCache()
+    getByPRC.mockImplementationOnce(() => new Promise(() => {}))
+    let done = false
+    const waiting = cache.fetchProfiles(['PGone']).then(() => (done = true))
+    await vi.advanceTimersByTimeAsync(200)
+    cache.reset()
+    await vi.advanceTimersByTimeAsync(0)
+    await waiting
+    expect(done).toBe(true)
+  })
+})

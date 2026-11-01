@@ -6,6 +6,7 @@ import { reactive, ref } from 'vue'
 import { matrixService } from '../../services/matrix-service'
 import { getRoomTimelineEvents, isMessageEvent } from '../../helpers'
 import { earliestServerTs, isNotFoundError } from '../../lib/archive-merge'
+import { within } from '../../lib/within'
 import {
   reachedHistoryStart,
   readHistory,
@@ -13,8 +14,13 @@ import {
   type HistoryRoom,
 } from '../../lib/chat-history'
 import type { Message } from '../../types'
-import { MESSAGES_PER_PAGE, ROOM_WAIT_TIMEOUT } from '../consts'
-import type { ChatContext, MxRoom } from './types'
+import {
+  HISTORY_STEP_TIMEOUT,
+  MESSAGES_PER_PAGE,
+  OPEN_DECRYPT_TIMEOUT,
+  ROOM_WAIT_TIMEOUT,
+} from '../consts'
+import type { ChatContext, MxEvent, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
 import type { MessageMapping } from './use-message-mapping'
 
@@ -99,23 +105,46 @@ export function useMessageLoading(
    * история. Раньше — одну страницу: если в конце ленты были только служебные
    * события (вступления, роли, реакции), чат открывался пустым.
    */
-  /** true — сервер старше ничего не отдаст: дошли до начала или он перестал листать. */
-  const paginateRoomHistory = async (room: MxRoom): Promise<boolean> => {
+  /**
+   * `exhausted` — сервер старше ничего не отдаст: дошли до начала или он
+   * перестал листать; `slow` — страница не пришла за HISTORY_STEP_TIMEOUT,
+   * показываем то, что уже есть.
+   */
+  const paginateRoomHistory = async (
+    room: MxRoom
+  ): Promise<{ exhausted: boolean; slow: boolean }> => {
     const client = matrixService.getClient()
-    if (!client || !room || typeof room.getLiveTimeline !== 'function') return false
+    if (!client || !room || typeof room.getLiveTimeline !== 'function')
+      return { exhausted: false, slow: false }
     const liveTimeline = room.getLiveTimeline()
     for (let page = 0; page < MAX_HISTORY_PAGES; page++) {
       const events = liveTimeline.getEvents()
       const messageCount = events.filter(isMessageEvent).length
-      if (events.length >= MESSAGES_PER_PAGE && messageCount >= MIN_SHOWN_MESSAGES) return false
-      if (reachedHistoryStart(room as unknown as HistoryRoom)) return true
-      const more = await client.paginateEventTimeline(liveTimeline, {
-        backwards: true,
-        limit: MESSAGES_PER_PAGE,
-      })
-      if (!more) return true
+      if (events.length >= MESSAGES_PER_PAGE && messageCount >= MIN_SHOWN_MESSAGES)
+        return { exhausted: false, slow: false }
+      if (reachedHistoryStart(room as unknown as HistoryRoom))
+        return { exhausted: true, slow: false }
+      const more = await within(
+        client.paginateEventTimeline(liveTimeline, {
+          backwards: true,
+          limit: MESSAGES_PER_PAGE,
+        }),
+        HISTORY_STEP_TIMEOUT
+      )
+      if (!more.done) return { exhausted: false, slow: true }
+      if (!more.value) return { exhausted: true, slow: false }
     }
-    return false
+    return { exhausted: false, slow: false }
+  }
+
+  /**
+   * Сообщение для ленты при открытии: расшифровка, ждущая ключи дольше
+   * OPEN_DECRYPT_TIMEOUT, не держит весь чат — пока заглушка, повтор
+   * расшифрует (use-redecrypt).
+   */
+  const mapForOpen = async (event: MxEvent): Promise<Message | null> => {
+    const mapped = await within(mapEventToMessage(event), OPEN_DECRYPT_TIMEOUT)
+    return mapped.done ? mapped.value : mapEventToMessage(event, true)
   }
 
   /**
@@ -149,9 +178,15 @@ export function useMessageLoading(
         // Если по комнате висит приглашение — вступаем при открытии. Иначе
         // последующая отправка падает с M_FORBIDDEN («not in room»), а состояние
         // комнаты (участники/история) подгружается не полностью.
-        await matrixService.joinIfInvited(chatId)
-        await room.loadMembersIfNeeded?.()
-        const exhausted = await paginateRoomHistory(room)
+        // Каждый запрос — не дольше HISTORY_STEP_TIMEOUT: сокет, умерший при
+        // смене сети, держал «Загрузка сообщений…» бесконечно.
+        const joined = await within(matrixService.joinIfInvited(chatId), HISTORY_STEP_TIMEOUT)
+        const members = await within(
+          Promise.resolve(room.loadMembersIfNeeded?.()),
+          HISTORY_STEP_TIMEOUT
+        )
+        const { exhausted, slow } = await paginateRoomHistory(room)
+        const incomplete = !joined.done || !members.done || slow
         // Local-echo события matrix-js-sdk (id вида `~…`) попадают в
         // IndexedDB-стор и возвращаются при следующем запуске: сообщение висит
         // навсегда без ответа/удаления, потому что действия требуют `$`-id.
@@ -161,7 +196,7 @@ export function useMessageLoading(
           const id = typeof e?.getId === 'function' ? e.getId() : e?.event_id
           return typeof id !== 'string' || !id.startsWith('~')
         })
-        const mapped = await Promise.all(timelineEvents.map((e) => mapEventToMessage(e)))
+        const mapped = await Promise.all(timelineEvents.map((e) => mapForOpen(e)))
         const list = mapped.filter((m): m is Message => Boolean(m))
 
         // Пока грузилась история, по WS могло прийти новое сообщение (и на него
@@ -188,7 +223,7 @@ export function useMessageLoading(
         const merged = await archive.mergeInto(chatId, list, { exhausted, reachedStart })
         messages[chatId] = merged.messages
         void archive.save(chatId, list)
-        noteHistory(chatId, room, undefined, merged.more)
+        noteHistory(chatId, room, incomplete ? 'timeout' : undefined, merged.more)
         if (merged.messages.length > list.length && !reachedStart) void markGone(chatId, list)
       } else if (uiStore.activeChatId === chatId) {
         // Синк прошёл, а комнаты нет: сервер её не знает или нас в ней нет.

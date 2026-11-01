@@ -16,7 +16,7 @@ async function deriveAesCbcKey(secretStr: string): Promise<CryptoKey> {
     enc.encode(secretStr),
     'PBKDF2',
     false,
-    ['deriveBits', 'deriveKey'],
+    ['deriveBits', 'deriveKey']
   )
 
   return window.crypto.subtle.deriveKey(
@@ -29,7 +29,7 @@ async function deriveAesCbcKey(secretStr: string): Promise<CryptoKey> {
     keyMaterial,
     { name: 'AES-CBC', length: 256 },
     true,
-    ['encrypt', 'decrypt'],
+    ['encrypt', 'decrypt']
   )
 }
 
@@ -40,9 +40,13 @@ async function deriveAesCbcKey(secretStr: string): Promise<CryptoKey> {
  * @param blob - исходные аудиоданные
  * @returns зашифрованный блоб и строка-секрет для шифрования через pcrypto
  */
-export async function encryptAudioBlob(blob: Blob): Promise<{ encryptedBlob: Blob; secretStr: string }> {
+export async function encryptAudioBlob(
+  blob: Blob
+): Promise<{ encryptedBlob: Blob; secretStr: string }> {
   const rand = crypto.getRandomValues(new Uint8Array(32))
-  const secretStr = Array.from(rand).map((b) => b.toString(16).padStart(2, '0')).join('')
+  const secretStr = Array.from(rand)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 
   const derivedKey = await deriveAesCbcKey(secretStr)
 
@@ -50,7 +54,7 @@ export async function encryptAudioBlob(blob: Blob): Promise<{ encryptedBlob: Blo
   const cipherBuffer = await window.crypto.subtle.encrypt(
     { name: 'AES-CBC', iv: AES_CBC_IV },
     derivedKey,
-    plainBuffer,
+    plainBuffer
   )
 
   const encryptedBlob = new Blob([cipherBuffer], { type: 'application/octet-stream' })
@@ -70,11 +74,19 @@ export async function decryptAudioBlob(blob: Blob, secretStr: string): Promise<B
 
   // Проверка размера данных для AES-CBC
   if (arrayBuffer.byteLength < 16) {
-    console.error('[EncryptionService] Данные слишком малы для AES-CBC:', arrayBuffer.byteLength, 'байт')
+    console.error(
+      '[EncryptionService] Данные слишком малы для AES-CBC:',
+      arrayBuffer.byteLength,
+      'байт'
+    )
     return null
   }
   if (arrayBuffer.byteLength % 16 !== 0) {
-    console.error('[EncryptionService] Невалидный размер для AES-CBC (не кратен 16):', arrayBuffer.byteLength, 'байт')
+    console.error(
+      '[EncryptionService] Невалидный размер для AES-CBC (не кратен 16):',
+      arrayBuffer.byteLength,
+      'байт'
+    )
     return null
   }
 
@@ -83,7 +95,7 @@ export async function decryptAudioBlob(blob: Blob, secretStr: string): Promise<B
   const decryptedResult = await window.crypto.subtle.decrypt(
     { name: 'AES-CBC', iv: AES_CBC_IV },
     derivedKey,
-    arrayBuffer,
+    arrayBuffer
   )
 
   const decryptedBytes = new Uint8Array(decryptedResult)
@@ -102,7 +114,7 @@ export async function encryptTextWithSecret(plaintext: string, secretStr: string
   const cipherBuffer = await window.crypto.subtle.encrypt(
     { name: 'AES-CBC', iv: AES_CBC_IV },
     derivedKey,
-    enc.encode(plaintext),
+    enc.encode(plaintext)
   )
   return Array.from(new Uint8Array(cipherBuffer))
     .map((b) => b.toString(16).padStart(2, '0'))
@@ -119,7 +131,7 @@ export async function decryptTextWithSecret(hexCipher: string, secretStr: string
   const plainBuffer = await window.crypto.subtle.decrypt(
     { name: 'AES-CBC', iv: AES_CBC_IV },
     derivedKey,
-    bytes as unknown as BufferSource,
+    bytes as unknown as BufferSource
   )
   return new TextDecoder().decode(plainBuffer)
 }

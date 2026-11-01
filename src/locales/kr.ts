@@ -1119,6 +1119,7 @@ export default {
       retention: '서버는 이 채팅의 메시지를 {period} 동안 보관합니다.',
       retentionDays: '{n}일',
       loadFailed: '채팅 기록을 불러올 수 없습니다.',
+      slow: '채팅 서버의 응답이 너무 늦습니다. 지금까지 불러온 내용만 표시합니다.',
       roomMissing:
         '채팅 서버에서 이 대화를 찾을 수 없습니다. 대화에서 나갔거나 삭제되었을 수 있습니다.',
       retry: '다시 시도',

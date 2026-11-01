@@ -1132,6 +1132,7 @@ export default {
       retention: 'Il server conserva i messaggi di questa chat per {period}.',
       retentionDays: '{n} giorno | {n} giorni',
       loadFailed: 'Impossibile caricare la cronologia della chat.',
+      slow: 'Il server delle chat non risponde: viene mostrato ciò che è già stato caricato.',
       roomMissing:
         'Il server della chat non ha trovato questa conversazione: forse l’hai lasciata o è stata eliminata.',
       retry: 'Riprova',

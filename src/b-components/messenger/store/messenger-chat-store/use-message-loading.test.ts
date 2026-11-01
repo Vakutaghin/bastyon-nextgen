@@ -22,6 +22,8 @@ import { useMessageLoading } from './use-message-loading'
 
 type Ev = { id: string; ts: number }
 
+const stuckDecrypt = new Set<string>()
+
 const client = {
   getUserId: () => '@me:host',
   paginateEventTimeline: vi.fn(async () => {}),
@@ -50,7 +52,14 @@ function setup() {
     pcryptoService: ref({}),
   }
   const mapping = {
-    mapEventToMessage: vi.fn(async (e: Ev) => ({ id: e.id, timestamp: e.ts })),
+    // Расшифровка `stuckDecrypt` не кончается; без расшифровки — заглушка.
+    mapEventToMessage: vi.fn(async (e: Ev, skipDecryption = false) =>
+      skipDecryption
+        ? { id: e.id, timestamp: e.ts, text: 'заглушка' }
+        : stuckDecrypt.has(e.id)
+          ? new Promise(() => {})
+          : { id: e.id, timestamp: e.ts, text: 'ok' }
+    ),
     enrichMessagesWithReactions: vi.fn(),
   }
   // Копия на устройстве: по умолчанию пуста — лента как есть.
@@ -80,6 +89,7 @@ function matrixReady(uiStore: { syncState: string }, rooms: ReturnType<typeof fa
 beforeEach(() => {
   vi.useFakeTimers()
   vi.clearAllMocks()
+  stuckDecrypt.clear()
   matrix.getClient.mockReturnValue(null)
   matrix.getRoom.mockReturnValue(null)
 })
@@ -126,6 +136,44 @@ describe('useMessageLoading: чат открыт до конца входа в M
     await second
     expect(messages['!b:host']?.map((m) => m.id)).toEqual(['$b'])
     expect(uiStore.isMessagesLoading).toBe(false)
+  })
+
+  it('сервер не отвечает на участников и историю — через 15 с видно то, что есть, и что не всё', async () => {
+    const { api, messages, uiStore } = setup()
+    const room = fakeRoom('!slow:host', [{ id: '$1', ts: 1 }])
+    // Сокет умер при смене сети: ответа не будет никогда.
+    room.loadMembersIfNeeded.mockImplementation(() => new Promise(() => {}))
+    client.paginateEventTimeline.mockImplementationOnce(() => new Promise(() => {}))
+    matrixReady(uiStore, [room])
+    const done = api.loadMessages('!slow:host')
+
+    await vi.advanceTimersByTimeAsync(14_999)
+    expect(uiStore.isMessagesLoading).toBe(true)
+    await vi.advanceTimersByTimeAsync(15_001)
+    await done
+    expect(messages['!slow:host']?.map((m) => m.id)).toEqual(['$1'])
+    expect(uiStore.isMessagesLoading).toBe(false)
+    expect(api.history['!slow:host']?.error).toBe('timeout')
+  })
+
+  it('расшифровка ждёт ключи дольше 8 с — на её месте пока заглушка, остальное видно', async () => {
+    const { api, messages, uiStore } = setup()
+    matrixReady(uiStore, [
+      fakeRoom('!keys:host', [
+        { id: '$ok', ts: 1 },
+        { id: '$stuck', ts: 2 },
+      ]),
+    ])
+    stuckDecrypt.add('$stuck')
+    const done = api.loadMessages('!keys:host')
+    await vi.advanceTimersByTimeAsync(8_000)
+    await done
+    expect(messages['!keys:host']?.map((m) => [m.id, (m as { text?: string }).text])).toEqual([
+      ['$ok', 'ok'],
+      ['$stuck', 'заглушка'],
+    ])
+    expect(uiStore.isMessagesLoading).toBe(false)
+    expect(api.history['!keys:host']?.error).toBeUndefined()
   })
 
   it('синк прошёл, а комнаты нет — не ждёт', async () => {

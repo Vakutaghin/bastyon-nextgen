@@ -1147,6 +1147,7 @@ export default {
       retention: 'Le serveur conserve les messages de cette discussion pendant {period}.',
       retentionDays: '{n} jour | {n} jours',
       loadFailed: 'Impossible de charger l’historique de la discussion.',
+      slow: 'Le serveur de discussion met trop de temps — voici ce qui a déjà été chargé.',
       roomMissing:
         'Le serveur de discussion n’a pas trouvé cette conversation : vous l’avez peut-être quittée, ou elle a été supprimée.',
       retry: 'Réessayer',

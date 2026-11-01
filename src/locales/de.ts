@@ -1143,6 +1143,7 @@ export default {
       retention: 'Der Server speichert die Nachrichten dieses Chats {period} lang.',
       retentionDays: '{n} Tag | {n} Tage',
       loadFailed: 'Der Chatverlauf konnte nicht geladen werden.',
+      slow: 'Der Chatserver antwortet nicht — angezeigt wird, was bisher geladen ist.',
       roomMissing:
         'Der Chatserver hat diese Unterhaltung nicht gefunden: Vielleicht hast du sie verlassen, oder sie wurde gelöscht.',
       retry: 'Erneut versuchen',
