@@ -1,6 +1,6 @@
 <template>
   <SC_Posts data-testid="media-post-list">
-    <PostCard v-for="post in posts" :key="postId(post)" :post="post" />
+    <PostCard v-for="post in posts" :key="postId(post)" :post="post" in-feed />
     <MediaFeedStatus
       :loading="loading"
       :error="error"

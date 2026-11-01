@@ -4120,6 +4120,8 @@ export default {
     queue: 'Queue',
     close: 'Close the player',
     closeQueue: 'Close the queue',
+    more: 'More',
+    openPlaylist: 'Open playlist',
     shuffle: 'Shuffle',
     repeatOff: 'Repeat off',
     repeatAll: 'Repeat all',

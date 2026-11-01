@@ -10,7 +10,15 @@
     <SC_Head>
       <div class="titles">
         <span class="label">{{ t('media.upNext') }}</span>
-        <span class="source">{{ queue.source?.title }}</span>
+        <router-link
+          v-if="queue.source?.path"
+          :to="queue.source.path"
+          class="source"
+          :title="t('media.openPlaylist')"
+          data-testid="up-next-source"
+          >{{ queue.source.title }}</router-link
+        >
+        <span v-else class="source">{{ queue.source?.title }}</span>
       </div>
       <SC_HeadButton
         type="button"
@@ -54,9 +62,15 @@
         <RepeatOneIcon v-if="queue.repeat === 'one'" />
         <RepeatIcon v-else />
       </SC_HeadButton>
-      <SC_HeadButton type="button" :aria-label="t('media.closeQueue')" @click="close">
-        <CloseOutlined />
-      </SC_HeadButton>
+      <!-- Закрыть очередь — через меню: крестик рядом с «Далее» нажимали случайно. -->
+      <Dropdown :trigger="['click']" placement="bottomRight">
+        <SC_HeadButton type="button" :aria-label="t('media.more')" data-testid="up-next-more">
+          <MoreOutlined />
+        </SC_HeadButton>
+        <template #overlay>
+          <Menu :items="moreItems" @click="onMore" />
+        </template>
+      </Dropdown>
     </SC_Head>
 
     <SC_List>
@@ -90,11 +104,13 @@
 // «Далее» на странице поста: очередь роликов (плейлист, «Сохранённые»),
 // следующий по концу ролика — через 5 секунд, которые можно отменить.
 
-import { onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from 'ant-design-vue'
+import { useRouter } from 'vue-router'
+import { Button, Dropdown, Menu } from 'ant-design-vue'
 import {
   CloseOutlined,
+  MoreOutlined,
   RepeatIcon,
   RepeatOneIcon,
   ShuffleIcon,
@@ -103,13 +119,29 @@ import {
 } from '@/components/icons'
 import { usePlayback } from '@/composables/use-playback'
 import { formatDuration } from '@/services/media/media-post'
+import { playlistMenuItems } from '@/b-components/media/mini-player/playlist-menu'
 import { SC_Countdown, SC_Head, SC_HeadButton, SC_List, SC_Row, SC_UpNext } from './up-next.styled'
 
 /** Секунд до следующего ролика. */
 const COUNTDOWN = 5
 
 const { t } = useI18n()
+const router = useRouter()
 const { queue, next, previous, jump } = usePlayback()
+
+/** Меню «⋯»: открыть плейлист, откуда очередь, и закрыть её. */
+const moreItems = computed(() =>
+  playlistMenuItems({
+    openLabel: queue.source?.path ? t('media.openPlaylist') : null,
+    closeLabel: t('media.closeQueue'),
+    closeIcon: CloseOutlined,
+  })
+)
+
+function onMore({ key }: { key: string | number }): void {
+  if (key === 'open' && queue.source?.path) void router.push(queue.source.path)
+  else if (key === 'close') close()
+}
 
 const countdown = ref<number | null>(null)
 let timer: ReturnType<typeof setInterval> | null = null

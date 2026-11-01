@@ -78,16 +78,36 @@
         >
           <AudioPlaylistIcon />
         </SC_Control>
-        <SC_Control type="button" class="secondary" :aria-label="t('media.close')" @click="close">
-          <CloseOutlined />
-        </SC_Control>
+        <!-- Закрыть — через меню: крестик рядом с «Далее» нажимали случайно. -->
+        <Dropdown :trigger="['click']" placement="topRight">
+          <SC_Control
+            type="button"
+            class="secondary"
+            :aria-label="t('media.more')"
+            data-testid="mini-player-more"
+          >
+            <MoreOutlined />
+          </SC_Control>
+          <template #overlay>
+            <Menu :items="moreItems" @click="onMore" />
+          </template>
+        </Dropdown>
       </SC_Controls>
     </SC_Body>
 
     <SC_Queue v-if="listOpen" data-testid="mini-player-queue">
       <SC_QueueHead>
         <SC_QueueTitle>
-          {{ queue.source?.title || t('media.queue') }}
+          <button
+            v-if="queue.source?.path"
+            type="button"
+            :title="t('media.openPlaylist')"
+            data-testid="mini-player-source"
+            @click="openSource"
+          >
+            {{ queue.source.title || t('media.queue') }}
+          </button>
+          <template v-else>{{ queue.source?.title || t('media.queue') }}</template>
         </SC_QueueTitle>
         <SC_Control
           type="button"
@@ -141,6 +161,7 @@ import {
   AudioPlaylistIcon,
   CloseOutlined,
   LoadingOutlined,
+  MoreOutlined,
   PauseIcon,
   PlayIcon,
   MusicIcon,
@@ -150,9 +171,10 @@ import {
   SkipBackIcon,
   SkipForwardIcon,
 } from '@/components/icons'
-import { Button } from 'ant-design-vue'
+import { Button, Dropdown, Menu } from 'ant-design-vue'
 import { formatDuration } from '@/services/media/media-post'
 import { acceptTorBypass } from '@/services/media/audio-engine'
+import { playlistMenuItems } from './playlist-menu'
 import { useViewport } from '@/composables/use-viewport'
 import { useMiniPlayer } from './use-mini-player'
 import {
@@ -177,6 +199,26 @@ import {
 const { t } = useI18n()
 const router = useRouter()
 const { queue, current, visible, state, toggle, seek, next, back, jump, close } = useMiniPlayer()
+
+/** Меню «⋯»: открыть плейлист, откуда очередь, и закрыть плеер. */
+const moreItems = computed(() =>
+  playlistMenuItems({
+    openLabel: queue.source?.path ? t('media.openPlaylist') : null,
+    closeLabel: t('media.close'),
+    closeIcon: CloseOutlined,
+  })
+)
+
+function onMore({ key }: { key: string | number }): void {
+  if (key === 'open') openSource()
+  else if (key === 'close') close()
+}
+
+/** Название очереди ведёт на сам плейлист (коллекцию, список, раздел). */
+function openSource(): void {
+  const path = queue.source?.path
+  if (path) void router.push(path)
+}
 
 const { isMobileOrTablet } = useViewport()
 const listOpen = ref(false)

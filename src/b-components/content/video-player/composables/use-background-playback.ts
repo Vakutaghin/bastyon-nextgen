@@ -1,7 +1,7 @@
 import { ref, watch, onBeforeUnmount, type Ref } from 'vue'
 import type Hls from 'hls.js'
 
-import { BackgroundMedia } from '@/plugins/background-media'
+import { BackgroundMedia, type BackgroundMediaQueueItem } from '@/plugins/background-media'
 import {
   appInBackground,
   backgroundMediaController,
@@ -19,6 +19,17 @@ interface Options {
   isPlaying: Ref<boolean>
   isAudio: Ref<boolean>
   getMetadata: () => { title: string; artist?: string; artworkUrl?: string }
+  /**
+   * Ролик — из очереди (плейлист на странице поста): что играть после него.
+   * Свёрнутое приложение следующий ролик само не включит — ExoPlayer
+   * переключает их сам.
+   */
+  queueTail?: () => BackgroundMediaQueueItem[]
+  /**
+   * Вернулись, а ExoPlayer ушёл вперёд по очереди на `advanced` роликов:
+   * открыть тот, на котором он остановился.
+   */
+  onNativeAdvanced?: (advanced: number, position: number, playing: boolean) => void
 }
 
 /**
@@ -113,6 +124,7 @@ export function useBackgroundPlayback(opts: Options) {
     if (!video || !url) return false
     nativeActive = true
     const payload = buildPayload()
+    const tail = opts.queueTail?.() ?? []
     video.pause()
     BackgroundMedia.playNative({
       ...payload,
@@ -120,6 +132,20 @@ export function useBackgroundPlayback(opts: Options) {
       position: video.currentTime,
       isPlaying: true,
       volume: video.muted ? 0 : video.volume,
+      ...(tail.length
+        ? {
+            queue: [
+              {
+                url,
+                title: payload.title,
+                artist: payload.artist,
+                ...(payload.artworkUrl ? { artworkUrl: payload.artworkUrl } : {}),
+                ...(payload.duration ? { durationMs: Math.round(payload.duration * 1000) } : {}),
+              },
+              ...tail,
+            ],
+          }
+        : {}),
     }).catch(() => {
       nativeActive = false
     })
@@ -145,6 +171,10 @@ export function useBackgroundPlayback(opts: Options) {
     if (!nativeActive) return
     nativeActive = false
     const state = await BackgroundMedia.stopNative().catch(() => null)
+    if (state?.active && (state.index ?? 0) > 0 && opts.onNativeAdvanced) {
+      opts.onNativeAdvanced(state.index!, state.position ?? 0, !!state.isPlaying)
+      return
+    }
     const video = resolveVideo()
     if (!video || !state?.active) return
     if (state.position !== undefined && Math.abs(video.currentTime - state.position) > 0.25) {

@@ -4097,6 +4097,8 @@ export default {
     queue: '재생 대기열',
     close: '플레이어 닫기',
     closeQueue: '대기열 닫기',
+    more: '더보기',
+    openPlaylist: '재생목록 열기',
     shuffle: '셔플',
     repeatOff: '반복 끔',
     repeatAll: '전체 반복',

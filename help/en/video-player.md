@@ -22,14 +22,14 @@ The player works like YouTube’s.
 
 - play and pause and sound — the volume slider slides out when you hover over the sound icon;
 - the time and the name of the current chapter;
-- the gear: **“Quality”** and **“Speed”**. Quality is **“Auto”** by default — the player picks it for your connection speed, and the menu shows which one it chose. Speed goes from 0.25 to 2, and **“Normal”** is 1;
+- the gear: **“Quality”** and **“Speed”**. Quality is **“Auto”** by default — the player picks it for your connection speed, and the menu shows which one it chose. Speed goes from 0.25 to 2, and **“Normal”** is 1. The chosen speed is remembered: every clip and track in the app plays at it until you change it;
 - picture-in-picture, if the system supports it, and fullscreen.
 
 Above the bar is the progress bar. Hover over it: the time of that spot appears above the cursor, and a click takes you there.
 
 **On a phone.** A tap shows or hides the buttons, and the clip keeps playing. Play and pause is the big button in the middle, settings are the gear at the top right, fullscreen is at the bottom right. A double tap on the left or right third of the clip jumps 10 seconds back or forward; keep tapping without a pause and every tap adds another 10 seconds. While you hold a finger on the clip, it plays twice as fast. In fullscreen a landscape clip turns sideways, and swiping down brings it back.
 
-Only one clip plays at a time: start another and the first one pauses. A clip you scroll off the screen pauses too.
+Only one clip plays at a time: start another and the first one pauses. In the feed, a clip you scroll off the screen pauses too. In an open post, the post window and a playlist it doesn't: you can read comments or scroll “Up next” while the clip plays.
 
 **Where you stopped.** If you close a clip longer than a minute and a half halfway through, next time it continues from the same place. The position is kept on this device.
 
@@ -72,7 +72,7 @@ On a video post’s page, under the clip, there is **“More from this author”
 
 ## On a phone
 
-In the Android app a clip or audio keeps playing when you minimise the app or turn off the screen. You can control it from the notification and the lock screen: pause, play, seeking. While the app is minimised, only the clip's sound plays, taken from the lightest quality: the picture is not visible anyway. When you minimise the app, the sound may pause for a second or two while it loads. When you come back, the video continues from the same spot.
+In the Android app a clip or audio keeps playing when you minimise the app or turn off the screen. You can control it from the notification and the lock screen: pause, play, seeking. While the app is minimised, only the clip's sound plays, taken from the lightest quality: the picture is not visible anyway. When you minimise the app, the sound may pause for a second or two while it loads. When you come back, the video continues from the same spot. A playlist keeps going with the screen off too: the next clips play one after another, and when you come back you see the one it stopped at.
 
 ## Views
 

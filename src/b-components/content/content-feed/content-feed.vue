@@ -90,6 +90,7 @@
           :key="`post-${post.id}`"
           v-memo="[post.id, post.likes, post.comments, post.shares]"
           :post="post"
+          in-feed
           @like="handleLike"
           @comment="handleComment"
           @share="handleShare"
@@ -111,6 +112,7 @@
           v-memo="[post.id, post.likes, post.comments, post.shares, post.isBoosted]"
           :post="post"
           :boosted="post.isBoosted"
+          in-feed
           @like="handleLike"
           @comment="handleComment"
           @share="handleShare"

@@ -4221,6 +4221,8 @@ export default {
     queue: 'Warteschlange',
     close: 'Player schließen',
     closeQueue: 'Warteschlange schließen',
+    more: 'Mehr',
+    openPlaylist: 'Playlist öffnen',
     shuffle: 'Zufällig',
     repeatOff: 'Wiederholen aus',
     repeatAll: 'Alle wiederholen',

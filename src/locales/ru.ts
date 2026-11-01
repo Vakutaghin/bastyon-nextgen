@@ -4108,6 +4108,8 @@ export default {
     queue: 'Очередь',
     close: 'Закрыть плеер',
     closeQueue: 'Закрыть очередь',
+    more: 'Ещё',
+    openPlaylist: 'Открыть плейлист',
     shuffle: 'Перемешать',
     repeatOff: 'Повтор выключен',
     repeatAll: 'Повторять всё',

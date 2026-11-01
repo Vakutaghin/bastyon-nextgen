@@ -229,6 +229,24 @@ export const SC_QueueTitle = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  /* Название ведёт на сам плейлист. */
+  button {
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  button:hover {
+    color: var(--ui-primary);
+    text-decoration: underline;
+  }
 `
 
 export const SC_QueueList = styled.ol`

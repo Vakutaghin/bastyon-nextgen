@@ -53,6 +53,12 @@ export const SC_Head = styled.div`
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  /* Название — ссылка на сам плейлист. */
+  a.source:hover {
+    color: var(--ui-primary);
+    text-decoration: underline;
+  }
 `
 
 export const SC_HeadButton = styled.button`

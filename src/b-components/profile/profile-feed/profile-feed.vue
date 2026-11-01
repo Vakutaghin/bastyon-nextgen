@@ -8,6 +8,7 @@
         :key="post.txid"
         :post="post"
         :author-override="authorOverride"
+        in-feed
       />
     </SC_FeedContent>
 

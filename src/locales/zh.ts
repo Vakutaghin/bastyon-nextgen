@@ -3947,6 +3947,8 @@ export default {
     queue: '播放队列',
     close: '关闭播放器',
     closeQueue: '关闭队列',
+    more: '更多',
+    openPlaylist: '打开播放列表',
     shuffle: '随机播放',
     repeatOff: '不循环',
     repeatAll: '列表循环',

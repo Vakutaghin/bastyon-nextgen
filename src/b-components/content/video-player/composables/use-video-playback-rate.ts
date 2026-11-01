@@ -1,14 +1,21 @@
-import { ref, type Ref } from 'vue'
+import { ref, watch, type Ref } from 'vue'
+import {
+  PLAYBACK_RATES,
+  playbackRate,
+  setPlaybackRate as saveRate,
+} from '@/services/media/playback-rate'
 import { resolveVideoElement, type ElementRefValue } from './utils'
 
+/**
+ * Скорость плеера — общая на всё приложение (services/media/playback-rate):
+ * новый плеер начинает с выбранной, смена в одном плеере доходит до всех.
+ */
 export function useVideoPlaybackRate(
   videoElement: Ref<ElementRefValue>,
   isPlaying: Ref<boolean>,
   startProgressAnimation: () => void
 ) {
-  // Состояние для управления скоростью воспроизведения
-  const playbackRate = ref(1.0) // Скорость воспроизведения (1.0 = нормальная)
-  const availablePlaybackRates = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+  const availablePlaybackRates = [...PLAYBACK_RATES]
   const showPlaybackRateNotification = ref(false) // Показывать уведомление о скорости
   let playbackRateNotificationTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -35,10 +42,9 @@ export function useVideoPlaybackRate(
    * Устанавливает скорость воспроизведения
    */
   const setPlaybackRate = (rate: number, showNotification = false) => {
+    saveRate(rate)
     const video = resolveVideoElement(videoElement)
     if (!video) return
-
-    playbackRate.value = rate
     video.playbackRate = rate
 
     // Анимация автоматически подхватит новую скорость через video.playbackRate
@@ -52,6 +58,12 @@ export function useVideoPlaybackRate(
       displayPlaybackRateNotification()
     }
   }
+
+  // Скорость сменили в другом плеере — этот играет так же.
+  watch(playbackRate, (rate) => {
+    const video = resolveVideoElement(videoElement)
+    if (video && video.playbackRate !== rate) video.playbackRate = rate
+  })
 
   /**
    * Увеличивает скорость воспроизведения на один шаг
@@ -96,6 +108,6 @@ export function useVideoPlaybackRate(
     increasePlaybackRate,
     decreasePlaybackRate,
     resetPlaybackRate,
-    formatPlaybackRate
+    formatPlaybackRate,
   }
 }

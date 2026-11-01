@@ -22,9 +22,9 @@ The artist is the author of the post: their tracks, albums and playlists are on 
 
 Tap a track — it plays in the mini player, followed by the rest of the list in order. On a computer the player sits in the lower left corner, on a phone it is a bar above the bottom panel, and it does not stop while you move around the app.
 
-- The buttons are the previous track, pause, next, the queue and closing the player. Previous in the middle of a track goes back to its start.
+- The buttons are the previous track, pause, next and the queue; closing the player is in the three-dot menu, so it isn't tapped by accident. Previous in the middle of a track goes back to its start.
 - Tap the title or the cover to open the track's post.
-- The queue holds the whole list: tap a track to jump to it; there are also **“Shuffle”** and repeat — off, the whole list or one track.
+- The queue holds the whole list: tap a track to jump to it; there are also **“Shuffle”** and repeat — off, the whole list or one track. The queue name leads to the playlist itself.
 - You can control the player from the keyboard, headphones and the lock screen.
 - Recordings longer than ten minutes — audiobooks, talks — continue where you stopped, even after a restart. The position is kept on this device.
 

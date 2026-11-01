@@ -4184,6 +4184,8 @@ export default {
     queue: 'Cola',
     close: 'Cerrar el reproductor',
     closeQueue: 'Cerrar la cola',
+    more: 'Más',
+    openPlaylist: 'Abrir lista',
     shuffle: 'Aleatorio',
     repeatOff: 'Repetir desactivado',
     repeatAll: 'Repetir todo',

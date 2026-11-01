@@ -4168,6 +4168,8 @@ export default {
     queue: 'Coda',
     close: 'Chiudi il lettore',
     closeQueue: 'Chiudi la coda',
+    more: 'Altro',
+    openPlaylist: 'Apri playlist',
     shuffle: 'Casuale',
     repeatOff: 'Ripetizione disattivata',
     repeatAll: 'Ripeti tutto',

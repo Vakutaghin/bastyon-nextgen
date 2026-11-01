@@ -90,6 +90,7 @@
             :chapters="chapters"
             :title="decodedTitle || post.author?.name || 'Bastyon'"
             :artist="post.author?.name || ''"
+            :pause-offscreen="inFeed"
             @ended="emit('media-ended')"
           />
 
@@ -388,6 +389,12 @@ const props = withDefaults(
     autoplayVideo?: boolean
     /** Карточка в окне поста (post-modal), а не в ленте или на странице. */
     inModal?: boolean
+    /**
+     * Карточка в ленте (главная, профиль, поиск, разделы постами): ролик,
+     * ушедший с экрана, встаёт на паузу. В отдельном посте, окне поста и
+     * плейлисте — нет.
+     */
+    inFeed?: boolean
   }>(),
   {
     maxLength: DEFAULT_MAX_TEXT_LENGTH,
@@ -397,6 +404,7 @@ const props = withDefaults(
     boosted: false,
     autoplayVideo: false,
     inModal: false,
+    inFeed: false,
   }
 )
 

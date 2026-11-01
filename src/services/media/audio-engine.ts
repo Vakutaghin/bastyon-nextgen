@@ -6,7 +6,7 @@
 // системный плеер (экран блокировки, наушники, уведомление Android) выходит
 // через backgroundMediaController, с кнопками «следующий» и «предыдущий».
 
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 import Hls from 'hls.js'
 
 import { getVideoSourcesFromUrl } from '@/helpers/api/peertube-url'
@@ -18,6 +18,7 @@ import {
   type MediaSessionPayload,
 } from '@/b-components/content/video-player/composables/background-media-controller'
 import { logger } from '@/services/logger'
+import { playbackRate } from '@/services/media/playback-rate'
 import { t } from '@/i18n'
 import type { QueueItem } from '@/stores/playback-queue-store'
 import { useTorStore } from '@/stores/tor-store'
@@ -109,6 +110,15 @@ function el(): HTMLAudioElement {
   if (element) return element
   const audio = document.createElement('audio')
   audio.preload = 'auto'
+  // Скорость общая с видеоплеерами; новый src сбрасывает её на default —
+  // поэтому и defaultPlaybackRate.
+  const applyRate = (rate: number): void => {
+    audio.defaultPlaybackRate = rate
+    audio.playbackRate = rate
+  }
+  applyRate(playbackRate.value)
+  watch(playbackRate, applyRate)
+  audio.addEventListener('loadedmetadata', () => applyRate(playbackRate.value))
   audio.addEventListener('play', () => {
     audioState.playing = true
     videoPlayerManager.pauseAllExcept(PLAYER_ID)

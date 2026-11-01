@@ -62,7 +62,7 @@ describe('useBackgroundPlayback: звук в фоне на Android', () => {
   })
   afterEach(() => vi.restoreAllMocks())
 
-  function mountPlayer() {
+  function mountPlayer(extra: Partial<Parameters<typeof useBackgroundPlayback>[0]> = {}) {
     return mount(
       defineComponent({
         setup() {
@@ -73,6 +73,7 @@ describe('useBackgroundPlayback: звук в фоне на Android', () => {
             isPlaying,
             isAudio: ref(false),
             getMetadata: () => ({ title: 'Ролик' }),
+            ...extra,
           })
           return () => h('div')
         },
@@ -110,6 +111,53 @@ describe('useBackgroundPlayback: звук в фоне на Android', () => {
     document.dispatchEvent(new Event('visibilitychange'))
     await flushPromises()
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('ролик из очереди: ExoPlayer получает и следующие; ушёл вперёд — открываем тот ролик', async () => {
+    const onNativeAdvanced = vi.fn()
+    const wrapper = mountPlayer({
+      queueTail: () => [{ url: 'https://pt.example/next.m3u8', title: 'Следующий' }],
+      onNativeAdvanced,
+    })
+    isPlaying.value = true
+    await flushPromises()
+    appInBackground.value = true
+    await flushPromises()
+    expect(m.playNative).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'https://pt.example/v.mp4',
+        queue: [
+          expect.objectContaining({ url: 'https://pt.example/v.mp4', title: 'Ролик' }),
+          { url: 'https://pt.example/next.m3u8', title: 'Следующий' },
+        ],
+      })
+    )
+
+    m.stopNative.mockResolvedValueOnce({
+      active: true,
+      position: 12,
+      isPlaying: true,
+      index: 1,
+    } as never)
+    vi.mocked(HTMLMediaElement.prototype.play).mockClear()
+    appInBackground.value = false
+    await flushPromises()
+    expect(onNativeAdvanced).toHaveBeenCalledWith(1, 12, true)
+    // Этот ролик уже доигран — сам не продолжает.
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('без очереди — один ролик, как раньше', async () => {
+    const wrapper = mountPlayer({ queueTail: () => [] })
+    isPlaying.value = true
+    await flushPromises()
+    appInBackground.value = true
+    await flushPromises()
+    expect(m.playNative).toHaveBeenCalledWith(
+      expect.not.objectContaining({ queue: expect.anything() })
+    )
     wrapper.unmount()
   })
 

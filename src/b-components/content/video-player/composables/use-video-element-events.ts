@@ -20,6 +20,8 @@ interface VideoElementEventsOptions {
   isEnded: Ref<boolean>
   isBuffering: Ref<boolean>
   isInBackground: Ref<boolean>
+  /** Ставить ли на паузу ролик, ушедший с экрана (только в ленте). */
+  pauseOffscreen?: () => boolean
   stopProgressAnimation: () => void
   updateDuration: () => void
   updateBuffered: () => void
@@ -166,6 +168,9 @@ export function useVideoElementEvents(opts: VideoElementEventsOptions) {
             // ним никуда не делась, пользователь её просто закрыл сверху и
             // ждёт, что ролик продолжит играть, пока он отвечает в чате.
             if (isInBackground.value || document.hidden || isPageOverlaid.value) return
+            // Отдельный пост, окно поста, плейлист: человек листает комментарии
+            // или «Далее», а ролик продолжает играть.
+            if (!opts.pauseOffscreen?.()) return
 
             const video = resolveVideoElement(videoElement)
             if (video && !video.paused) video.pause()

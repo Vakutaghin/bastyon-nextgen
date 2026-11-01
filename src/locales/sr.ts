@@ -4136,6 +4136,8 @@ export default {
     queue: 'Ред',
     close: 'Затвори плејер',
     closeQueue: 'Затвори ред',
+    more: 'Још',
+    openPlaylist: 'Отвори плејлисту',
     shuffle: 'Насумично',
     repeatOff: 'Понављање искључено',
     repeatAll: 'Понављај све',

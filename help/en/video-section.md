@@ -38,7 +38,7 @@ The three-dot button on a video:
 
 ## A playlist in a row
 
-Open a playlist or a private list and press **“Play all”** or **“Shuffle”** — the videos play one after another. An **“Up next”** panel with the list appears under the video: tap any to jump to it. When a video ends, the next starts in five seconds; you can cancel the countdown. The panel's buttons are the previous and next video, shuffle, repeat and closing the queue.
+Open a playlist or a private list and press **“Play all”** or **“Shuffle”** — the videos play one after another. An **“Up next”** panel with the list appears under the video: tap any to jump to it. When a video ends, the next starts in five seconds; you can cancel the countdown. The panel's buttons are the previous and next video, shuffle and repeat; closing the queue is in the three-dot menu, so it isn't tapped by accident. The playlist name on the panel leads to the playlist itself.
 
 ## See also
 

@@ -366,6 +366,7 @@ import { useVideoHls } from './composables/use-video-hls'
 import { useVideoResume } from './composables/use-video-resume'
 import { useVideoViews } from './composables/use-video-views'
 import { useBackgroundPlayback } from './composables/use-background-playback'
+import { useQueueHandoff } from './composables/use-queue-handoff'
 import { useVideoNotifications, type BezelIcon } from './composables/use-video-notifications'
 import { useVideoThumbnail } from './composables/use-video-thumbnail'
 import { useVideoSubtitles } from './composables/use-video-subtitles'
@@ -444,8 +445,17 @@ const props = withDefaults(
     chapters?: Chapter[]
     title?: string
     artist?: string
+    /** Пауза, когда ролик ушёл с экрана: только в ленте, не в посте и плейлисте. */
+    pauseOffscreen?: boolean
   }>(),
-  { autoplay: false, isAudio: false, chapters: () => [], title: '', artist: '' }
+  {
+    autoplay: false,
+    isAudio: false,
+    chapters: () => [],
+    title: '',
+    artist: '',
+    pauseOffscreen: false,
+  }
 )
 
 // Ролик доиграл — очередь проигрывания включает следующий (страница поста).
@@ -596,6 +606,9 @@ const { subtitleTracks } = useVideoSubtitles(toRef(props, 'videoUrl'))
 // (iOS / web), даунгрейд качества при сворачивании, синхронизация контролов
 // с lock screen. Singleton-контроллер гарантирует, что в каждый момент
 // только один плеер владеет media notification.
+// Ролик из очереди: свёрнутое приложение доигрывает и следующие (ExoPlayer).
+const queueHandoff = useQueueHandoff(() => props.videoUrl)
+
 const { isInBackground, refreshMetadata: backgroundRefreshMetadata } = useBackgroundPlayback({
   playerId,
   videoElement,
@@ -607,6 +620,8 @@ const { isInBackground, refreshMetadata: backgroundRefreshMetadata } = useBackgr
     artist: props.artist || '',
     artworkUrl: thumbnailUrl.value || undefined,
   }),
+  queueTail: queueHandoff.queueTail,
+  onNativeAdvanced: queueHandoff.onNativeAdvanced,
 })
 refreshMetadata = backgroundRefreshMetadata
 
@@ -620,6 +635,7 @@ const videoElementEvents = useVideoElementEvents({
   isEnded,
   isBuffering,
   isInBackground,
+  pauseOffscreen: () => props.pauseOffscreen,
   stopProgressAnimation,
   updateDuration,
   updateBuffered,

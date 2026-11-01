@@ -79,7 +79,12 @@
           </SC_ResultsList>
 
           <SC_ResultsList v-else>
-            <PostCard v-for="(p, i) in adaptedPosts" :key="p.txid || p.hash || i" :post="p" />
+            <PostCard
+              v-for="(p, i) in adaptedPosts"
+              :key="p.txid || p.hash || i"
+              :post="p"
+              in-feed
+            />
           </SC_ResultsList>
 
           <SC_LoadMoreWrapper v-if="canLoadMore">

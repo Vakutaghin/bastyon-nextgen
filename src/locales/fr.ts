@@ -4216,6 +4216,8 @@ export default {
     queue: "File d'attente",
     close: 'Fermer le lecteur',
     closeQueue: "Fermer la file d'attente",
+    more: 'Plus',
+    openPlaylist: 'Ouvrir la playlist',
     shuffle: 'Aléatoire',
     repeatOff: 'Répétition désactivée',
     repeatAll: 'Tout répéter',

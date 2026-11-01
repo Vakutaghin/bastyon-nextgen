@@ -15,6 +15,7 @@ import {
 } from '@/b-components/content/video-player/composables/background-media-controller'
 import { getVideoSourcesFromUrl } from '@/helpers/api/peertube-url'
 import * as engine from '@/services/media/audio-engine'
+import { playbackRate } from '@/services/media/playback-rate'
 import type { QueueItem } from '@/stores/playback-queue-store'
 import { logger } from '@/services/logger'
 import { watch } from 'vue'
@@ -40,12 +41,38 @@ async function streamUrl(item: QueueItem): Promise<string | null> {
   return url
 }
 
-/** Заранее — адреса следующих треков (кэш PeerTube и свой). */
-export function prefetchStreams(upcoming: readonly QueueItem[]): void {
+/**
+ * Заранее — адреса следующих в очереди (кэш PeerTube и свой): треков для
+ * мини-плеера, роликов и треков для очереди роликов (страница поста).
+ */
+export function prefetchStreams(upcoming: readonly QueueItem[], count = PREFETCH): void {
   if (!isAndroidNative) return
-  for (const item of upcoming.slice(0, PREFETCH)) {
-    if (item.type === 'audio' && !resolved.has(item.url)) void streamUrl(item).catch(() => null)
+  for (const item of upcoming.slice(0, count)) {
+    if (!resolved.has(item.url)) void streamUrl(item).catch(() => null)
   }
+}
+
+/**
+ * Хвост очереди для ExoPlayer — без ожидания сети: следующие подряд, чьи
+ * адреса уже известны (prefetchStreams), до первого неизвестного.
+ */
+export function resolvedTail(
+  upcoming: readonly QueueItem[],
+  limit = NATIVE_QUEUE - 1
+): BackgroundMediaQueueItem[] {
+  const tail: BackgroundMediaQueueItem[] = []
+  for (const item of upcoming) {
+    const url = resolved.get(item.url)
+    if (!url || tail.length >= limit) break
+    tail.push({
+      url,
+      title: item.title,
+      artist: item.artist,
+      ...(item.cover ? { artworkUrl: item.cover } : {}),
+      ...(item.duration ? { durationMs: Math.round(item.duration * 1000) } : {}),
+    })
+  }
+  return tail
 }
 
 export interface HandoffQueue {
@@ -121,6 +148,7 @@ export function useNativeHandoff(
         position,
         isPlaying: true,
         volume: audio.muted ? 0 : audio.volume,
+        playbackSpeed: playbackRate.value,
         queue: [
           {
             url: currentUrl,
