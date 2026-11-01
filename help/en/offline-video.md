@@ -16,6 +16,12 @@ While a video downloads, the button shows a ring with the percentage. Tap it to 
 
 You need to be signed in to download. A video that the server is still processing after upload can't be downloaded yet — the app will say so.
 
+## A whole collection or playlist
+
+A video playlist, an audio playlist and a personal list (“Saved”, “Watch later”, “My music”, your own playlist) have a **“Download all”** button next to **“Play all”**. The quality is asked once for all videos: each row shows how much they take together, and every video gets the chosen quality or the nearest lower one. If a quality is remembered, there is no question. Tracks are downloaded in the lightest variant.
+
+What is already downloaded is not downloaded again. A video that is still processing, or whose server isn’t answering right now, is skipped, and the app says how many were skipped. When everything from the list is in Downloads, the button says **“All downloaded”**.
+
 ## Downloads
 
 All downloaded videos are on the **“Downloads”** tab of the [Video section](video-section.md), tracks — on the same tab of the [Audio section](audio-section.md). It shows what is downloading and how much is left, why a download is waiting, and has **“Retry”**, **“Delete download”** and **“Delete all”** buttons.

@@ -4515,6 +4515,18 @@ export default {
     openPost: 'Abrir publicación',
     noNetwork: 'Sin red',
     downloadsLink: 'Descargas',
+    downloadAll: 'Descargar todo',
+    allDownloaded: 'Todo descargado',
+    allQueued: 'Todo en Descargas',
+    batchPreparing: 'Preparando: {done} de {total}',
+    batchQualityTitle: 'Calidad para {n} vídeo | Calidad para {n} vídeos',
+    batchStarted: '{n} vídeo en Descargas | {n} vídeos en Descargas',
+    batchStartedAudio: '{n} pista en Descargas | {n} pistas en Descargas',
+    batchSkipped:
+      '{n} más aún no se puede descargar: se está procesando o el servidor no responde | {n} más aún no se pueden descargar: se están procesando o el servidor no responde',
+    batchUnavailable:
+      'Ahora no se puede descargar nada: los servidores no responden o los vídeos aún se están procesando',
+    batchAllDone: 'Todo ya está en Descargas',
     emptyVideo:
       'No hay vídeos descargados. Pulsa «Descargar» bajo un vídeo — estará aquí incluso sin red.',
     emptyAudio:

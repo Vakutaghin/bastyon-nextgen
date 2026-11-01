@@ -127,6 +127,57 @@ test('скачать ролик → без сети он играет, пере�
   await expect(page.getByTestId('offline-downloads')).toContainText('Скачанных роликов нет')
 })
 
+test('«Скачать всё» у плейлиста: одно качество на всех, недоступный ролик — пропуск с объяснением', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'OPFS в эфемерном профиле WebKit недоступна')
+  test.setTimeout(120_000)
+  const DEAD = '2'.repeat(64)
+  const PLAYLIST = '3'.repeat(64)
+  await useMockNode(page, {
+    ...DATA,
+    posts: [
+      ...DATA.posts,
+      {
+        txid: DEAD,
+        address: ALICE.address,
+        message: 'Ролик на выключенном сервере',
+        caption: 'Недоступный ролик',
+        type: 'video',
+        url: 'peertube://dead.e2e.test/gone',
+      },
+    ],
+    collections: [
+      {
+        txid: PLAYLIST,
+        address: ALICE.address,
+        caption: 'В дорогу',
+        contentIds: [VIDEO, DEAD],
+        contentTypes: 201,
+      },
+    ],
+  })
+  await useMockPeerTube(page, { hls: true })
+  await open(page, `/collection/${PLAYLIST}`)
+  await signIn(page)
+
+  const all = page.getByTestId('offline-download-all')
+  await expect(all).toHaveText('Скачать всё', { timeout: 30_000 })
+  await all.click()
+  const sheet = page.getByRole('dialog', { name: 'Качество для 1 ролика' })
+  await expect(sheet).toBeVisible({ timeout: 30_000 })
+  await sheet.getByTestId('offline-quality-240').click()
+  await expect(page.getByText('В «Скачанном» 1 ролик')).toBeVisible()
+  await expect(page.getByText(/Ещё 1 пока не скачать/)).toBeVisible()
+
+  await goTo(page, '/video/downloads')
+  const card = page.getByTestId('offline-card')
+  await expect(card).toHaveCount(1)
+  await expect(card).toContainText('Ролик для дороги')
+  await expect(card).toHaveAttribute('data-status', 'done', { timeout: 60_000 })
+})
+
 test('профиль без OPFS (приватное окно Safari): «Скачать» честно говорит, что здесь нельзя', async ({
   page,
   browserName,

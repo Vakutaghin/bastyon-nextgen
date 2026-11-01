@@ -170,7 +170,7 @@ watch(
       <VideoUploadDialog />
       <VideoUploadsPanel />
       <!-- Скачанное: лист качества и окно ролика без сети — singleton, useOfflineVideosStore -->
-      <OfflineQualitySheet v-if="offlineVideos.sheet" />
+      <OfflineQualitySheet v-if="offlineVideos.sheet || offlineVideos.batchSheet" />
       <OfflineVideoModal v-if="offlineVideos.opened" />
       <!-- Mini-apps payment modal — singleton, управляется через payment-modal-controller -->
       <MiniAppPaymentModal />

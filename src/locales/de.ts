@@ -4553,6 +4553,18 @@ export default {
     openPost: 'Beitrag öffnen',
     noNetwork: 'Kein Netz',
     downloadsLink: 'Downloads',
+    downloadAll: 'Alle herunterladen',
+    allDownloaded: 'Alles heruntergeladen',
+    allQueued: 'Alles in „Downloads“',
+    batchPreparing: 'Wird vorbereitet: {done} von {total}',
+    batchQualityTitle: 'Qualität für {n} Video | Qualität für {n} Videos',
+    batchStarted: '{n} Video in „Downloads“ | {n} Videos in „Downloads“',
+    batchStartedAudio: '{n} Titel in „Downloads“ | {n} Titel in „Downloads“',
+    batchSkipped:
+      '{n} weiteres noch nicht ladbar: wird verarbeitet oder der Server antwortet nicht | {n} weitere noch nicht ladbar: werden verarbeitet oder der Server antwortet nicht',
+    batchUnavailable:
+      'Gerade lässt sich nichts herunterladen: Die Server antworten nicht oder die Videos werden noch verarbeitet',
+    batchAllDone: 'Alles ist schon in „Downloads“',
     emptyVideo:
       'Keine heruntergeladenen Videos. Tippe unter einem Video auf „Herunterladen“ — es ist dann auch ohne Netz hier.',
     emptyAudio:

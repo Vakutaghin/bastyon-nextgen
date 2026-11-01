@@ -1,6 +1,7 @@
 // «Скачать» откуда угодно: кнопка под роликом, меню карточки, меню плеера.
 // Спрашивает описание ролика, выбирает качество (у аудио — самое маленькое,
-// у видео — запомненное или лист выбора) и ставит в очередь.
+// у видео — запомненное или лист выбора) и ставит в очередь. «Скачать всё» у
+// коллекции и плейлиста — то же для пачки: качество одно на всех.
 
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -13,7 +14,11 @@ import { cachedMediaInfo } from '@/services/media/media-info'
 import { userAvatar, userName } from '@/services/user-names'
 import type { OfflineQuality, OfflineSource } from '@/services/offline-video/offline-job'
 import { formatBytes } from '@/services/offline-video/format-bytes'
-import { useOfflineVideosStore, type OfflineChoice } from '@/stores/offline-videos-store'
+import {
+  useOfflineVideosStore,
+  type OfflineBatch,
+  type OfflineChoice,
+} from '@/stores/offline-videos-store'
 
 /** Сверх размера ролика должно оставаться свободным (как у бэкендов). */
 export const OFFLINE_SPARE_BYTES = 200 * 1024 * 1024
@@ -53,23 +58,25 @@ export function useOfflineDownload() {
   const store = useOfflineVideosStore()
   const auth = useAuthStore()
   const busy = ref(false)
+  /** Готовится пачка: сколько описаний пришло из скольких; null — не готовится. */
+  const batchProgress = ref<{ done: number; total: number } | null>(null)
 
   /** Хватит ли места; нет — сказать сколько нужно. */
-  function roomFor(choice: OfflineChoice, quality: OfflineQuality): boolean {
-    if (choice.free === null || !quality.size) return true
-    if (choice.free >= quality.size + OFFLINE_SPARE_BYTES) return true
+  function fits(free: number | null, size: number): boolean {
+    if (free === null || !size) return true
+    if (free >= size + OFFLINE_SPARE_BYTES) return true
     appToast.error({
       message: t('offlineVideo.noSpace'),
       description: t('offlineVideo.noSpaceHint', {
-        need: formatBytes(quality.size + OFFLINE_SPARE_BYTES, locale.value),
-        free: formatBytes(choice.free, locale.value),
+        need: formatBytes(size + OFFLINE_SPARE_BYTES, locale.value),
+        free: formatBytes(free, locale.value),
       }),
     })
     return false
   }
 
   async function begin(choice: OfflineChoice, quality: OfflineQuality): Promise<boolean> {
-    if (!roomFor(choice, quality)) return false
+    if (!fits(choice.free, quality.size)) return false
     try {
       await store.start(choice, quality)
       appToast.success({ message: t('offlineVideo.started'), key: 'offline-started' })
@@ -122,5 +129,71 @@ export function useOfflineDownload() {
     void run(source)
   }
 
-  return { busy, download, begin }
+  /** Что встало в очередь и что пропущено; `audio` — пачка из треков. */
+  function reportMany(queued: number, skipped: number, audio: boolean): void {
+    if (!queued) {
+      appToast.error({ message: t('offlineVideo.batchUnavailable') })
+      return
+    }
+    const key = audio ? 'offlineVideo.batchStartedAudio' : 'offlineVideo.batchStarted'
+    appToast.success({
+      message: t(key, { n: queued }, queued),
+      description: skipped ? t('offlineVideo.batchSkipped', { n: skipped }, skipped) : undefined,
+      key: 'offline-started',
+    })
+  }
+
+  const isAudioBatch = (batch: OfflineBatch): boolean =>
+    batch.choices.every((c) => c.source.kind === 'audio')
+
+  /** Поставить пачку в выбранном качестве (у аудио — самое маленькое). */
+  async function beginMany(batch: OfflineBatch, height: number): Promise<boolean> {
+    if (!fits(batch.free, store.batchSize(batch, height))) return false
+    const { started, failed } = await store.startMany(batch, height)
+    reportMany(started + batch.claimed, batch.skipped + failed, isAudioBatch(batch))
+    return started + batch.claimed > 0
+  }
+
+  async function runMany(resolve: () => Promise<readonly OfflinePostLike[]>): Promise<void> {
+    await store.hydrate()
+    if (!store.available) {
+      appToast.info({ message: t('offlineVideo.notHere') })
+      return
+    }
+    batchProgress.value = { done: 0, total: 0 }
+    try {
+      const sources = (await resolve())
+        .map(offlineSourceFromPost)
+        .filter((s): s is OfflineSource => !!s)
+      const batch = await store.prepareMany(sources, (done, total) => {
+        batchProgress.value = { done, total }
+      })
+      if (!batch.choices.length) {
+        const audio = sources.every((s) => s.kind === 'audio')
+        if (batch.claimed || batch.skipped) reportMany(batch.claimed, batch.skipped, audio)
+        else appToast.info({ message: t('offlineVideo.batchAllDone') })
+        return
+      }
+      const pref = store.qualityPref
+      if (isAudioBatch(batch)) await beginMany(batch, 0)
+      else if (pref !== 'ask') await beginMany(batch, pref)
+      else store.openBatchSheet(batch)
+    } catch {
+      appToast.error({ message: t('offlineVideo.startFailed') })
+    } finally {
+      batchProgress.value = null
+    }
+  }
+
+  /** Скачать все ролики списка; `resolve` отдаёт их все. Без входа — сначала вход. */
+  function downloadAll(resolve: () => Promise<readonly OfflinePostLike[]>): void {
+    if (batchProgress.value) return
+    if (!auth.isUserAuthenticated) {
+      requireAuth(() => void runMany(resolve))
+      return
+    }
+    void runMany(resolve)
+  }
+
+  return { busy, download, begin, batchProgress, downloadAll, beginMany }
 }

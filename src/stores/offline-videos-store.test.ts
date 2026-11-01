@@ -246,6 +246,66 @@ describe('offline-videos-store', () => {
     expect(store.mineFor(URL1)).not.toBeNull()
   })
 
+  it('пачка: своё мимо, чужое — дописать себя, повторы один раз, недоступное и в обработке — пропуск', async () => {
+    const other = item({
+      id: 'o-144',
+      uuid: 'o',
+      peertubeUrl: 'peertube://h/o',
+      accounts: ['POther'],
+    })
+    const own = item({ id: 'm-144', uuid: 'm', peertubeUrl: 'peertube://h/m' })
+    const f = fake([other, own])
+    h.backend = f.backend
+    h.info.mockImplementation(async (_host: string, id: string) => {
+      if (id === 'busy') return videoInfo(2)
+      if (id === 'gone') throw new Error('down')
+      return videoInfo()
+    })
+    const store = useOfflineVideosStore()
+    await store.hydrate()
+    const src = (url: string) => ({ ...SOURCE, peertubeUrl: url })
+    const steps: string[] = []
+    const batch = await store.prepareMany(
+      [
+        src(URL1),
+        src(URL1),
+        src('peertube://h/m'),
+        src('peertube://h/o'),
+        src('peertube://h/busy'),
+        src('peertube://h/gone'),
+      ],
+      (done, total) => steps.push(`${done}/${total}`)
+    )
+    expect(batch.choices.map((c) => c.source.peertubeUrl)).toEqual([URL1])
+    expect(batch).toMatchObject({ claimed: 1, skipped: 2, free: 10_000_000_000 })
+    expect(batch.rows).toEqual([
+      { height: 144, size: 100 },
+      { height: 360, size: 300 },
+    ])
+    expect(steps[0]).toBe('0/3')
+    expect(steps[steps.length - 1]).toBe('3/3')
+    expect(store.mineFor('peertube://h/o')?.id).toBe('o-144')
+    expect(h.info).toHaveBeenCalledTimes(3)
+  })
+
+  it('пачка в очередь: у видео — ближайшее не выше выбранного, у аудио — самое маленькое', async () => {
+    const f = fake()
+    h.backend = f.backend
+    h.info.mockResolvedValue(videoInfo())
+    const store = useOfflineVideosStore()
+    await store.hydrate()
+    const batch = await store.prepareMany([
+      SOURCE,
+      { ...SOURCE, peertubeUrl: 'peertube://h/song/audio', kind: 'audio' as const },
+    ])
+    expect(store.batchSize(batch, 240)).toBe(100 + 100)
+    expect(store.batchSize(batch, 1080)).toBe(300 + 100)
+    expect(await store.startMany(batch, 1080)).toEqual({ started: 2, failed: 0 })
+    const heights = f.backend.enqueue.mock.calls.map(([, m]) => (m as OfflineMeta).height)
+    expect(heights).toEqual([360, 144])
+    expect(store.mine).toHaveLength(2)
+  })
+
   it('удалить у себя: общий файл остаётся другому, последний — стирается', async () => {
     const f = fake([item({ accounts: ['PMe', 'POther'] })])
     h.backend = f.backend

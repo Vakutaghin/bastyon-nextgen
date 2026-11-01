@@ -9,6 +9,7 @@
         <template #icon><ShuffleIcon /></template>
         {{ t('media.shuffle') }}
       </Button>
+      <OfflineDownloadAllButton :posts="posts" :resolve="all" :complete="!hasMore" />
       <SC_Count>{{ t('library.count', { n: ids.length }, ids.length) }}</SC_Count>
     </SC_Actions>
 
@@ -44,7 +45,8 @@
 
 <script setup lang="ts">
 // Личный список: видит только владелец, хранится в данных аккаунта сервера
-// чатов. Видео — сеткой, аудио — треками; «Воспроизвести все» и «Перемешать».
+// чатов. Видео — сеткой, аудио — треками; «Воспроизвести все», «Перемешать»
+// и «Скачать всё» — и то, что ещё не показано.
 
 import { computed, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -64,6 +66,7 @@ import type { QueueItem } from '@/stores/playback-queue-store'
 import VideoGrid from '../video-grid/video-grid.vue'
 import TrackList from '../track-list/track-list.vue'
 import MediaFeedStatus from '../media-feed-status/media-feed-status.vue'
+import OfflineDownloadAllButton from '@/b-components/offline-video/offline-download-all-button.vue'
 import { SC_Actions, SC_Count, SC_Private } from './library-list-view.styled'
 
 const props = defineProps<{ listId: string; kind: 'video' | 'audio' }>()
@@ -71,7 +74,7 @@ const props = defineProps<{ listId: string; kind: 'video' | 'audio' }>()
 const { t } = useI18n()
 const { library } = useMediaLibrary()
 const { queue, playAll } = usePlayback()
-const { ids, posts, info, loading, error, hasMore, loadMore, retry } = useLibraryList(
+const { ids, posts, info, loading, error, hasMore, loadMore, retry, all } = useLibraryList(
   toRef(props, 'listId')
 )
 

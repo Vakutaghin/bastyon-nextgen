@@ -24,6 +24,7 @@ import { getPeerTubeCaptions, getPeerTubeVideoInfo } from '@/helpers/api/peertub
 import { PeerTubeFetchError, parsePeerTubeUrl } from '@/helpers/api/peertube-url'
 import type { PeerTubeVideoInfo } from '@/helpers/api/peertube-url'
 import { offlineBackend } from '@/services/offline-video/backend'
+import { batchRows, mapLimit, type OfflineBatchRow } from '@/services/offline-video/offline-batch'
 import {
   buildOfflineJob,
   isProcessing,
@@ -106,6 +107,21 @@ export interface OfflineChoice {
   free: number | null
 }
 
+/** Пачка роликов (коллекция, плейлист) для листа выбора качества. */
+export interface OfflineBatch {
+  choices: OfflineChoice[]
+  rows: OfflineBatchRow[]
+  /** Свободно на диске, байт; null — не узнать. */
+  free: number | null
+  /** Уже были на устройстве у другого аккаунта — дописали себя. */
+  claimed: number
+  /** Ещё обрабатываются или сервер не ответил. */
+  skipped: number
+}
+
+/** Сколько описаний пачки разом спрашивать у серверов. */
+const BATCH_INFO_PARALLEL = 4
+
 export type OfflinePrepareResult =
   | { kind: 'ready'; choice: OfflineChoice }
   | { kind: 'processing' }
@@ -127,6 +143,8 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
 
   /** Лист выбора качества: что качать. */
   const sheet = shallowRef<OfflineChoice | null>(null)
+  /** Тот же лист для пачки роликов. */
+  const batchSheet = shallowRef<OfflineBatch | null>(null)
   /** Окно скачанного ролика. */
   const openedId = ref<string | null>(null)
   const opened = computed<OfflineItem | null>(() =>
@@ -316,6 +334,97 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     return item.meta.accounts?.includes(me) ? item : claim(item)
   }
 
+  /**
+   * Пачка роликов: своё скачанное — мимо, скачанное другим аккаунтом — дописать
+   * себя, остальное — описания с серверов, по BATCH_INFO_PARALLEL разом.
+   */
+  async function prepareMany(
+    sources: readonly OfflineSource[],
+    onProgress?: (done: number, total: number) => void
+  ): Promise<OfflineBatch> {
+    const b = await backend()
+    const seen = new Set<string>()
+    const todo: OfflineSource[] = []
+    let claimed = 0
+    for (const source of sources) {
+      const key = offlineVideoKey(source.peertubeUrl)
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      if (mineFor(source.peertubeUrl)) continue
+      const existing = itemFor(source.peertubeUrl)
+      if (existing) {
+        await claim(existing).then(
+          () => claimed++,
+          (e: unknown) => log.warn('batch claim failed', existing.id, e)
+        )
+        continue
+      }
+      todo.push(source)
+    }
+    let done = 0
+    onProgress?.(0, todo.length)
+    const free = todo.length
+      ? await b
+          .usage()
+          .then((u) => {
+            usage.value = u
+            return u.free
+          })
+          .catch(() => null)
+      : null
+    const prepared = await mapLimit(todo, BATCH_INFO_PARALLEL, async (source) => {
+      const parsed = parsePeerTubeUrl(source.peertubeUrl)
+      const info = parsed
+        ? await getPeerTubeVideoInfo(parsed.host, parsed.videoId).catch(() => null)
+        : null
+      onProgress?.(++done, todo.length)
+      if (!info || isProcessing(info)) return null
+      const qualities = offlineQualities(info)
+      return qualities.length ? { source, info, qualities, free } : null
+    })
+    const choices = prepared.filter((c): c is OfflineChoice => !!c)
+    return {
+      choices,
+      rows: batchRows(choices.map((c) => c.qualities)),
+      free,
+      claimed,
+      skipped: todo.length - choices.length,
+    }
+  }
+
+  /** Качество ролика пачки: у аудио — самое маленькое, иначе — ближайшее не выше. */
+  function batchQuality(choice: OfflineChoice, height: number): OfflineQuality | null {
+    return choice.source.kind === 'audio'
+      ? (choice.qualities[0] ?? null)
+      : pickQuality(choice.qualities, height)
+  }
+
+  /** Сколько займёт пачка в этом качестве, байт. */
+  function batchSize(batch: OfflineBatch, height: number): number {
+    return batch.choices.reduce((sum, c) => sum + (batchQuality(c, height)?.size ?? 0), 0)
+  }
+
+  /** Поставить пачку в очередь по одному; сколько встало и сколько нет. */
+  async function startMany(
+    batch: OfflineBatch,
+    height: number
+  ): Promise<{ started: number; failed: number }> {
+    let started = 0
+    let failed = 0
+    for (const choice of batch.choices) {
+      const quality = batchQuality(choice, height)
+      try {
+        if (!quality) throw new Error('offline_no_quality')
+        await start(choice, quality)
+        started++
+      } catch (e) {
+        log.warn('batch start failed', choice.source.peertubeUrl, e)
+        failed++
+      }
+    }
+    return { started, failed }
+  }
+
   async function claim(item: OfflineItem): Promise<OfflineItem> {
     const me = account.value
     if (!me || item.meta.accounts?.includes(me)) return item
@@ -447,6 +556,14 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     sheet.value = null
   }
 
+  function openBatchSheet(batch: OfflineBatch): void {
+    batchSheet.value = batch
+  }
+
+  function closeBatchSheet(): void {
+    batchSheet.value = null
+  }
+
   function openPlayer(id: string): void {
     openedId.value = id
   }
@@ -458,9 +575,12 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
   return {
     available,
     sheet,
+    batchSheet,
     opened,
     openSheet,
     closeSheet,
+    openBatchSheet,
+    closeBatchSheet,
     openPlayer,
     closePlayer,
     ready,
@@ -477,6 +597,10 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     prepare,
     autoQuality,
     start,
+    prepareMany,
+    batchQuality,
+    batchSize,
+    startMany,
     pause,
     resume,
     claim,

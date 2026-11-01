@@ -4423,6 +4423,17 @@ export default {
     openPost: '게시물 열기',
     noNetwork: '네트워크 없음',
     downloadsLink: '오프라인 저장',
+    downloadAll: '모두 저장',
+    allDownloaded: '모두 저장됨',
+    allQueued: '모두 오프라인 저장에 있음',
+    batchPreparing: '준비 중: {total}개 중 {done}개',
+    batchQualityTitle: '동영상 {n}개의 화질',
+    batchStarted: '오프라인 저장에 동영상 {n}개',
+    batchStartedAudio: '오프라인 저장에 트랙 {n}개',
+    batchSkipped: '{n}개는 아직 저장할 수 없습니다: 처리 중이거나 서버가 응답하지 않습니다',
+    batchUnavailable:
+      '지금은 저장할 수 없습니다: 서버가 응답하지 않거나 동영상이 아직 처리 중입니다',
+    batchAllDone: '모두 이미 오프라인 저장에 있습니다',
     emptyVideo:
       '저장한 동영상이 없습니다. 동영상 아래의 「저장」을 누르면 네트워크 없이도 여기서 볼 수 있습니다.',
     emptyAudio:

@@ -58,6 +58,20 @@ export function useLibraryList(listId: Ref<string>) {
     }
   }
 
+  /** Все посты списка, не только показанные: для «Скачать всё». */
+  async function all(): Promise<AdaptedPost[]> {
+    const missing = ids.value.filter((id) => !loaded.value.has(id))
+    if (missing.length) {
+      const items = await fetchCollectionItems(missing)
+      const next = new Map(loaded.value)
+      missing.forEach((id, i) => next.set(id, items[i] ?? null))
+      loaded.value = next
+    }
+    return filterBlocked(
+      ids.value.map((id) => loaded.value.get(id)).filter((p): p is AdaptedPost => !!p)
+    )
+  }
+
   function loadMore(): void {
     if (!hasMore.value || loading.value) return
     shown.value += PAGE
@@ -73,5 +87,5 @@ export function useLibraryList(listId: Ref<string>) {
   // Добавили или убрали — догрузить новое, не трогая уже показанное.
   watch(ids, () => void ensure(), { immediate: true })
 
-  return { ids, posts, info, loading, error, hasMore, loadMore, retry: ensure, postId }
+  return { ids, posts, info, loading, error, hasMore, loadMore, retry: ensure, all, postId }
 }

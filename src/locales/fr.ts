@@ -4554,6 +4554,18 @@ export default {
     openPost: 'Ouvrir la publication',
     noNetwork: 'Pas de réseau',
     downloadsLink: 'Téléchargements',
+    downloadAll: 'Tout télécharger',
+    allDownloaded: 'Tout est téléchargé',
+    allQueued: 'Tout est dans Téléchargements',
+    batchPreparing: 'Préparation : {done} sur {total}',
+    batchQualityTitle: 'Qualité pour {n} vidéo | Qualité pour {n} vidéos',
+    batchStarted: '{n} vidéo dans Téléchargements | {n} vidéos dans Téléchargements',
+    batchStartedAudio: '{n} piste dans Téléchargements | {n} pistes dans Téléchargements',
+    batchSkipped:
+      'Encore {n} impossible à télécharger pour l’instant : en cours de traitement ou le serveur ne répond pas | Encore {n} impossibles à télécharger pour l’instant : en cours de traitement ou le serveur ne répond pas',
+    batchUnavailable:
+      'Rien à télécharger pour l’instant : les serveurs ne répondent pas ou les vidéos sont encore en traitement',
+    batchAllDone: 'Tout est déjà dans Téléchargements',
     emptyVideo:
       'Aucune vidéo téléchargée. Touchez « Télécharger » sous une vidéo — elle sera ici même sans réseau.',
     emptyAudio:

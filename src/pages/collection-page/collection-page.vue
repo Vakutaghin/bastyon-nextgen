@@ -53,6 +53,7 @@
                 <template #icon><ShuffleIcon /></template>
                 {{ t('media.shuffle') }}
               </Button>
+              <OfflineDownloadAllButton v-if="kind !== 'posts'" :posts="livePosts" />
               <Button @click="share">
                 <template #icon><ShareAltOutlined /></template>
                 {{ t('collections.share') }}
@@ -132,6 +133,7 @@ import Avatar from '@/components/avatar/avatar.vue'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import VideoGrid from '@/b-components/media/video-grid/video-grid.vue'
 import TrackList from '@/b-components/media/track-list/track-list.vue'
+import OfflineDownloadAllButton from '@/b-components/offline-video/offline-download-all-button.vue'
 import { appToast } from '@/b-components/app-toast'
 import { useAuthStore } from '@/blockchain'
 import { useMediaLibrary } from '@/composables/use-media-library'

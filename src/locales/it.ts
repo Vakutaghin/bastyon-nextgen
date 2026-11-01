@@ -4498,6 +4498,18 @@ export default {
     openPost: 'Apri il post',
     noNetwork: 'Nessuna rete',
     downloadsLink: 'Download',
+    downloadAll: 'Scarica tutto',
+    allDownloaded: 'Tutto scaricato',
+    allQueued: 'Tutto in Download',
+    batchPreparing: 'Preparazione: {done} di {total}',
+    batchQualityTitle: 'Qualità per {n} video | Qualità per {n} video',
+    batchStarted: '{n} video in Download | {n} video in Download',
+    batchStartedAudio: '{n} brano in Download | {n} brani in Download',
+    batchSkipped:
+      'Altro {n} non ancora scaricabile: in elaborazione o il server non risponde | Altri {n} non ancora scaricabili: in elaborazione o il server non risponde',
+    batchUnavailable:
+      'Ora non si può scaricare nulla: i server non rispondono o i video sono ancora in elaborazione',
+    batchAllDone: 'È già tutto in Download',
     emptyVideo:
       'Nessun video scaricato. Tocca «Scarica» sotto un video — sarà qui anche senza rete.',
     emptyAudio:

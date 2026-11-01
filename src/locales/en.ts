@@ -4448,6 +4448,18 @@ export default {
     openPost: 'Open post',
     noNetwork: 'No network',
     downloadsLink: 'Downloads',
+    downloadAll: 'Download all',
+    allDownloaded: 'All downloaded',
+    allQueued: 'All in Downloads',
+    batchPreparing: 'Preparing: {done} of {total}',
+    batchQualityTitle: 'Quality for {n} video | Quality for {n} videos',
+    batchStarted: '{n} video in Downloads | {n} videos in Downloads',
+    batchStartedAudio: '{n} track in Downloads | {n} tracks in Downloads',
+    batchSkipped:
+      '{n} more can’t be downloaded yet: still processing or the server isn’t answering | {n} more can’t be downloaded yet: still processing or the server isn’t answering',
+    batchUnavailable:
+      'Nothing can be downloaded right now: the servers aren’t answering or the videos are still processing',
+    batchAllDone: 'Everything is already in Downloads',
     emptyVideo:
       'No downloaded videos. Tap “Download” under a video — it will be here even without a network.',
     emptyAudio:
