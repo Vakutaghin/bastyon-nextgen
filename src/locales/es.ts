@@ -3340,7 +3340,7 @@ export default {
     stop: 'Terminar el dictado (Esc)',
     starting: 'Encendiendo el micrófono…',
     preparing: 'Preparando el reconocimiento — ya puede hablar',
-    finishing: 'Terminando de transcribir… Haga clic para interrumpir',
+    finishing: 'Terminando de transcribir… Haga clic para empezar una nueva grabación',
     downloading: 'Descargando el modelo de voz — {percent} %',
     ready: 'La entrada de voz está lista: haga clic en el botón con barras junto al campo de texto',
     modal: {
@@ -3403,6 +3403,8 @@ export default {
       installed: 'descargado',
       download: 'Descargar',
       remove: 'Eliminar',
+      upgrade: 'Acelerar',
+      upgradeHint: 'Hay una versión más rápida de este modelo: descárgala en lugar de la actual',
       removeTitle: '¿Eliminar el modelo «{name}»?',
       removeContent: 'El archivo del modelo se borrará del disco. Podrá descargarlo de nuevo.',
       commandsTitle: 'Comandos de voz para la puntuación',

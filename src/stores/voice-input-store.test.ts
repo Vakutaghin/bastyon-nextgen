@@ -122,6 +122,40 @@ describe('voice input store', () => {
     expect(t.settle).toHaveBeenCalled()
   })
 
+  it('нажали, пока дописывается хвост: он не теряется, а новая запись начинается после него', async () => {
+    let next = 7
+    invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === 'asr_status') return status(['small'])
+      if (cmd === 'asr_start') return next++
+    })
+    const store = useVoiceInputStore()
+    const t = target()
+    store.register(t)
+    await store.start('field-1')
+    await store.toggle('field-1')
+    expect(store.phase).toBe('finishing')
+
+    // Второе нажатие во время хвоста — не отмена: хвост ещё дописывается.
+    await store.toggle('field-1')
+    expect(invoke).not.toHaveBeenCalledWith('asr_cancel', expect.anything())
+    emit('asr:text', { session: 7, seq: 3, text: 'хвост' })
+    expect(t.insert).toHaveBeenCalledWith('хвост', 3)
+    emit('asr:end', { session: 7, reason: 'stopped', error: null })
+    await flush()
+    await flush()
+    expect(invoke).toHaveBeenLastCalledWith('asr_start', expect.anything())
+    expect(store.session).toBe(8)
+
+    // Передумали (нажали ещё раз во время хвоста) — новой записи не будет.
+    await store.toggle('field-1')
+    await store.toggle('field-1')
+    await store.toggle('field-1')
+    emit('asr:end', { session: 8, reason: 'stopped', error: null })
+    await flush()
+    expect(store.phase).toBe('idle')
+    expect(store.restartFor).toBeNull()
+  })
+
   it('события, пришедшие раньше ответа asr_start, не теряются', async () => {
     const t = target()
     let resolveStart!: (id: number) => void

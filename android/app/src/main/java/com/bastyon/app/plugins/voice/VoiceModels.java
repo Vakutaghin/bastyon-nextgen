@@ -35,13 +35,26 @@ final class VoiceModels {
         final String sha256;
         final long size;
         final String baseUrl;
+        /**
+         * Прежний файл модели (q5_1): уже скачанный работает, пока человек не
+         * скачает нынешний; тогда удаляется. null — прежнего нет.
+         */
+        final String legacyFile;
+        final long legacySize;
 
         Spec(String id, String file, String sha256, long size, String baseUrl) {
+            this(id, file, sha256, size, baseUrl, null, 0);
+        }
+
+        Spec(String id, String file, String sha256, long size, String baseUrl,
+                String legacyFile, long legacySize) {
             this.id = id;
             this.file = file;
             this.sha256 = sha256;
             this.size = size;
             this.baseUrl = baseUrl;
+            this.legacyFile = legacyFile;
+            this.legacySize = legacySize;
         }
 
         String url() {
@@ -49,11 +62,17 @@ final class VoiceModels {
         }
     }
 
+    /**
+     * q8_0, как у компьютера (src-tauri/src/asr/models.rs): на процессоре
+     * телефона он считает быстрее q5_1, хоть файл и больше.
+     */
     static final Spec[] MODELS = {
-        new Spec("base", "ggml-base-q5_1.bin",
-                "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898", 59_707_625L, WHISPER_REPO),
-        new Spec("small", "ggml-small-q5_1.bin",
-                "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb", 190_085_487L, WHISPER_REPO),
+        new Spec("base", "ggml-base-q8_0.bin",
+                "c577b9a86e7e048a0b7eada054f4dd79a56bbfa911fbdacf900ac5b567cbb7d9", 81_768_585L, WHISPER_REPO,
+                "ggml-base-q5_1.bin", 59_707_625L),
+        new Spec("small", "ggml-small-q8_0.bin",
+                "49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f", 264_464_607L, WHISPER_REPO,
+                "ggml-small-q5_1.bin", 190_085_487L),
     };
 
     /** Детектор речи Silero: режет запись на фразы по паузам. */
@@ -88,15 +107,42 @@ final class VoiceModels {
         return new File(dir, spec.file);
     }
 
-    /** Скачан целиком: размер проверен при скачивании и не изменился. */
-    boolean isInstalled(Spec spec) {
+    /** Нынешний файл скачан целиком: размер проверен при скачивании и не изменился. */
+    boolean isCurrent(Spec spec) {
         File f = file(spec);
         return f.isFile() && f.length() == spec.size;
+    }
+
+    private boolean hasLegacy(Spec spec) {
+        if (spec.legacyFile == null) return false;
+        File f = new File(dir, spec.legacyFile);
+        return f.isFile() && f.length() == spec.legacySize;
+    }
+
+    /** Модель есть — нынешним файлом или прежним, который пока работает. */
+    boolean isInstalled(Spec spec) {
+        return isCurrent(spec) || hasLegacy(spec);
+    }
+
+    /** Есть только прежний файл: можно скачать более быстрый нынешний. */
+    boolean isUpgradable(Spec spec) {
+        return !isCurrent(spec) && hasLegacy(spec);
+    }
+
+    /** Файл, которым распознавать: нынешний, а пока его нет — прежний. */
+    File installedFile(Spec spec) {
+        return isUpgradable(spec) ? new File(dir, spec.legacyFile) : file(spec);
     }
 
     void remove(Spec spec) {
         //noinspection ResultOfMethodCallIgnored
         file(spec).delete();
+        removeLegacy(spec);
+    }
+
+    private void removeLegacy(Spec spec) {
+        //noinspection ResultOfMethodCallIgnored
+        if (spec.legacyFile != null) new File(dir, spec.legacyFile).delete();
     }
 
     /** Недокачанное с прошлого раза. */
@@ -175,6 +221,8 @@ final class VoiceModels {
             throw new ModelException("hash_mismatch: got " + actual);
         }
         if (!part.renameTo(dest)) throw new ModelException("download_failed: rename failed");
+        // Нынешний файл на месте — прежний больше не нужен.
+        removeLegacy(spec);
     }
 
     private static String hex(byte[] bytes) {

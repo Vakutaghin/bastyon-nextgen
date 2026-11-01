@@ -181,6 +181,10 @@ impl Engine {
             params.set_temperature_inc(0.0);
             // Зациклилась модель — не дописывать повтор до предела контекста.
             params.set_max_tokens(draft_max_tokens(samples.len()));
+        } else if !use_gpu() {
+            // Фраза на процессоре (телефон): не больше трёх пересчётов (0, 0,5,
+            // 1,0) вместо шести — сомнительная фраза не держит текст секундами.
+            params.set_temperature_inc(0.5);
         }
         params.set_language(Some(language));
         params.set_n_threads(threads());

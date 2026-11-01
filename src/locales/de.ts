@@ -3363,7 +3363,7 @@ export default {
     stop: 'Diktat beenden (Esc)',
     starting: 'Mikrofon wird eingeschaltet…',
     preparing: 'Erkennung wird vorbereitet — Sie können sprechen',
-    finishing: 'Das Gesagte wird fertig erkannt… Klicken zum Abbrechen',
+    finishing: 'Das Gesagte wird fertig erkannt… Klicken für eine neue Aufnahme',
     downloading: 'Sprachmodell wird geladen — {percent} %',
     ready:
       'Die Spracheingabe ist bereit: Klicken Sie auf die Schaltfläche mit den Balken neben dem Eingabefeld',
@@ -3428,6 +3428,9 @@ export default {
       installed: 'heruntergeladen',
       download: 'Herunterladen',
       remove: 'Entfernen',
+      upgrade: 'Beschleunigen',
+      upgradeHint:
+        'Eine schnellere Version dieses Modells ist verfügbar — statt der jetzigen herunterladen',
       removeTitle: 'Modell „{name}“ entfernen?',
       removeContent:
         'Die Modelldatei wird von der Festplatte gelöscht. Sie können sie erneut herunterladen.',

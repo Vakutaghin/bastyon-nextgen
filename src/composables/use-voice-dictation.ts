@@ -90,6 +90,24 @@ function placement(el: TextField, raw: string, lang: string, draft: DictationDra
   return { replacesDraft: at !== null, start, end, text, follow }
 }
 
+/**
+ * Черновик фразы — без точки в конце: whisper ставит её каждой гипотезе, и
+ * точка висела, пока человек ещё говорил. У фразы она остаётся — там конец
+ * предложения решён.
+ */
+export function withoutDraftPeriod(raw: string): string {
+  const text = raw.replace(/\s+$/, '')
+  return text.endsWith('.') && !text.endsWith('..') ? text.slice(0, -1) : text
+}
+
+/**
+ * Текст дописывается в конец — поле прокручивается за ним: setRangeText
+ * курсор не показывает, и новые строки уходили под нижний край поля.
+ */
+function revealEnd(el: TextField, at: number): void {
+  if (el instanceof HTMLTextAreaElement && at >= el.value.length) el.scrollTop = el.scrollHeight
+}
+
 /** Показать черновик фразы `seq` вместо прежнего. Возвращает черновик, который теперь в поле. */
 export function draftDictated(
   el: TextField,
@@ -99,10 +117,11 @@ export function draftDictated(
   draft: DictationDraft | null
 ): DictationDraft | null {
   if (el.disabled || el.readOnly) return draft
-  const { start, end, text, follow } = placement(el, raw, lang, draft)
+  const { start, end, text, follow } = placement(el, withoutDraftPeriod(raw), lang, draft)
   if (!text) return draft
   el.setRangeText(text, start, end, follow ? 'end' : 'preserve')
   el.dispatchEvent(new Event('input', { bubbles: true }))
+  if (follow) revealEnd(el, start + text.length)
   return { seq, start, text }
 }
 
@@ -130,6 +149,7 @@ export function insertDictated(
     try {
       if (document.execCommand('insertText', false, text)) {
         if (replacesDraft) rememberUndoCaret(el, before, start)
+        revealEnd(el, start + text.length)
         return
       }
     } catch {
@@ -138,6 +158,7 @@ export function insertDictated(
   }
   if (text) el.setRangeText(text, start, to, follow ? 'end' : 'preserve')
   el.dispatchEvent(new Event('input', { bubbles: true }))
+  if (text && follow) revealEnd(el, start + text.length)
 }
 
 export function useVoiceDictation(options: VoiceDictationOptions) {

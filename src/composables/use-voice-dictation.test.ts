@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { draftDictated, insertDictated } from './use-voice-dictation'
+import { draftDictated, insertDictated, withoutDraftPeriod } from './use-voice-dictation'
 
 function field(value: string, caret = value.length): HTMLTextAreaElement {
   const el = document.createElement('textarea')
@@ -121,5 +121,33 @@ describe('черновик по ходу речи', () => {
     el.disabled = true
     expect(draftDictated(el, 'ещё', 'ru', 0, null)).toBeNull()
     expect(el.value).toBe('Пост публикуется')
+  })
+})
+
+describe('черновик без точки и поле за текстом', () => {
+  it('точку, которую whisper ставит каждой гипотезе, черновик не показывает; фраза — с точкой', () => {
+    expect(withoutDraftPeriod('Привет, как дела.')).toBe('Привет, как дела')
+    expect(withoutDraftPeriod('Ну и дела... ')).toBe('Ну и дела...')
+    expect(withoutDraftPeriod('Правда?')).toBe('Правда?')
+    const el = field('')
+    const d = draftDictated(el, 'Встретимся в субботу.', 'ru', 0, null)
+    expect(el.value).toBe('Встретимся в субботу')
+    insertDictated(el, 'Встретимся в субботу.', 'ru', d)
+    expect(el.value).toBe('Встретимся в субботу.')
+  })
+
+  it('текст дописывается в конец — поле прокручивается вниз за ним', () => {
+    const el = field('строка\n'.repeat(20))
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, get: () => 900 })
+    el.scrollTop = 0
+    draftDictated(el, 'новая строка', 'ru', 0, null)
+    expect(el.scrollTop).toBe(900)
+
+    // Курсор посреди текста — поле не дёргаем.
+    const mid = field('начало конец', 6)
+    Object.defineProperty(mid, 'scrollHeight', { configurable: true, get: () => 900 })
+    mid.scrollTop = 0
+    draftDictated(mid, 'вставка', 'ru', 0, null)
+    expect(mid.scrollTop).toBe(0)
   })
 })

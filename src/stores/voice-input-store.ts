@@ -25,6 +25,8 @@ export interface VoiceModelInfo {
   /** Байт к скачиванию (вместе с детектором речи, если его ещё нет). */
   size: number
   installed: boolean
+  /** Работает прежний файл модели: можно скачать более быстрый нынешний. */
+  upgradable?: boolean
 }
 
 export interface VoiceStatus {
@@ -156,6 +158,8 @@ export const useVoiceInputStore = defineStore('voice-input', {
     /** Выбранная модель (для скачивания и диктовки). */
     model: loadModel(),
     phase: 'idle' as VoicePhase,
+    /** Нажали, пока дораспознаётся хвост: с этого поля — новая запись, когда он допишется. */
+    restartFor: null as string | null,
     session: null as number | null,
     /** Поле, которое сейчас диктует. */
     ownerId: null as string | null,
@@ -284,6 +288,9 @@ export const useVoiceInputStore = defineStore('voice-input', {
       this.speaking = false
       this.loading = false
       this.pending = 0
+      const restart = this.restartFor
+      this.restartFor = null
+      if (restart && targets.has(restart)) void this.start(restart)
     },
 
     reportError(error: unknown): void {
@@ -322,9 +329,14 @@ export const useVoiceInputStore = defineStore('voice-input', {
 
     /** Кнопка поля: начать, закончить или (если уже дораспознаёт) прервать. */
     async toggle(ownerId: string): Promise<void> {
+      if (this.phase === 'finishing') {
+        // Кнопка уже выглядит выключенной, хвост ещё распознаётся: нажали —
+        // новая запись начнётся, как только он допишется; ещё раз — передумали.
+        this.restartFor = this.restartFor === ownerId ? null : ownerId
+        return
+      }
       if (this.ownerId === ownerId && this.phase !== 'idle') {
-        if (this.phase === 'finishing') await this.cancel()
-        else await this.stop()
+        await this.stop()
         return
       }
       await this.start(ownerId)
@@ -413,6 +425,7 @@ export const useVoiceInputStore = defineStore('voice-input', {
     /** Прервать без хвоста: поле закрыли, или ждать распознавания не хотят. */
     async cancel(): Promise<void> {
       const session = this.session
+      this.restartFor = null
       this.finishSession()
       if (session !== null) await voiceInvoke('asr_cancel', { session }).catch(() => {})
     },

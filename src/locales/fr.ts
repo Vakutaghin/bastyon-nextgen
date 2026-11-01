@@ -3365,7 +3365,7 @@ export default {
     stop: 'Arrêter la dictée (Échap)',
     starting: 'Activation du micro…',
     preparing: 'Préparation de la reconnaissance — vous pouvez parler',
-    finishing: 'Transcription de la fin… Cliquez pour interrompre',
+    finishing: 'Transcription de la fin… Cliquez pour lancer un nouvel enregistrement',
     downloading: 'Téléchargement du modèle vocal — {percent} %',
     ready: 'La saisie vocale est prête : cliquez sur le bouton à barres à côté du champ de saisie',
     modal: {
@@ -3427,6 +3427,9 @@ export default {
       installed: 'téléchargé',
       download: 'Télécharger',
       remove: 'Supprimer',
+      upgrade: 'Accélérer',
+      upgradeHint:
+        'Une version plus rapide de ce modèle est disponible — la télécharger à la place de l’actuelle',
       removeTitle: 'Supprimer le modèle « {name} » ?',
       removeContent:
         'Le fichier du modèle sera supprimé du disque. Vous pourrez le télécharger à nouveau.',

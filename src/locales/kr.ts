@@ -3275,7 +3275,7 @@ export default {
     stop: '받아쓰기 끝내기 (Esc)',
     starting: '마이크를 켜는 중…',
     preparing: '인식을 준비하는 중 — 말씀하셔도 됩니다',
-    finishing: '말씀하신 내용을 마무리하는 중… 누르면 중단합니다',
+    finishing: '말씀하신 내용을 마무리하는 중… 누르면 새로 녹음합니다',
     downloading: '음성 모델 다운로드 중 — {percent}%',
     ready: '음성 입력이 준비되었습니다: 입력란 옆의 막대 버튼을 누르세요',
     modal: {
@@ -3335,6 +3335,8 @@ export default {
       installed: '다운로드됨',
       download: '다운로드',
       remove: '삭제',
+      upgrade: '빠르게',
+      upgradeHint: '이 모델의 더 빠른 버전이 있습니다. 현재 버전 대신 내려받으세요',
       removeTitle: '‘{name}’ 모델을 삭제할까요?',
       removeContent: '모델 파일이 디스크에서 삭제됩니다. 다시 다운로드할 수 있습니다.',
       commandsTitle: '문장 부호 음성 명령',

@@ -3309,7 +3309,7 @@ export default {
     stop: 'Stop dictation (Esc)',
     starting: 'Turning on the microphone…',
     preparing: 'Getting recognition ready — you can speak',
-    finishing: 'Finishing what you said… Click to stop',
+    finishing: 'Finishing what you said… Click to start a new recording',
     downloading: 'Downloading the speech model — {percent}%',
     ready: 'Voice input is ready: click the button with bars next to the text field',
     modal: {
@@ -3370,6 +3370,9 @@ export default {
       installed: 'downloaded',
       download: 'Download',
       remove: 'Remove',
+      upgrade: 'Speed up',
+      upgradeHint:
+        'A faster version of this model is available — download it instead of the current one',
       removeTitle: 'Remove the “{name}” model?',
       removeContent: 'The model file will be deleted from the disk. You can download it again.',
       commandsTitle: 'Voice commands for punctuation',

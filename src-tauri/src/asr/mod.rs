@@ -250,6 +250,9 @@ pub struct AsrModelInfo {
     id: &'static str,
     size: u64,
     installed: bool,
+    /// Работает прежний файл модели: нынешний (быстрее) можно скачать —
+    /// компьютер и сам скачает его в фоне.
+    upgradable: bool,
 }
 
 #[derive(Serialize)]
@@ -276,6 +279,7 @@ pub fn asr_status(mgr: State<'_, AsrManager>) -> AsrStatus {
                 id: m.id,
                 size: m.size + if mgr.paths.is_installed(&VAD_MODEL) { 0 } else { VAD_MODEL.size },
                 installed: installed.contains(&m.id),
+                upgradable: installed.contains(&m.id) && !mgr.paths.is_current(m),
             })
             .collect(),
         installing: mgr.installing.lock().unwrap_or_else(|p| p.into_inner()).clone(),
@@ -320,8 +324,9 @@ async fn install_model(
 
     let result = async {
         let client = crate::fetch::download_client(tor).await?;
-        let need_vad = !mgr.paths.is_installed(&VAD_MODEL);
-        let need_model = !mgr.paths.is_installed(spec);
+        let need_vad = !mgr.paths.is_current(&VAD_MODEL);
+        // Прежний файл модели работает, но качаем нынешний — он заменит его.
+        let need_model = !mgr.paths.is_current(spec);
         let total = if need_vad { VAD_MODEL.size } else { 0 } + if need_model { spec.size } else { 0 };
         let mut done: u64 = 0;
         let mut last_emit = Instant::now() - LEVEL_EVERY;
@@ -354,6 +359,8 @@ async fn install_model(
         if let Err(e) = mgr.paths.remember(&model) {
             log::warn!("[asr] models list: {e}");
         }
+        // Нынешний файл на месте — прежний больше не нужен.
+        mgr.paths.remove_orphans();
         Ok::<(), String>(())
     }
     .await;
@@ -377,10 +384,7 @@ pub fn asr_remove(mgr: State<'_, AsrManager>, model: String) -> Result<(), Strin
     if let Some(s) = mgr.session.lock().unwrap_or_else(|p| p.into_inner()).take() {
         let _ = s.cmd.send(SessionCmd::Cancel);
     }
-    let path = mgr.paths.file(spec);
-    if path.exists() {
-        std::fs::remove_file(&path).map_err(|e| format!("remove_failed: {e}"))?;
-    }
+    mgr.paths.remove(spec).map_err(|e| format!("remove_failed: {e}"))?;
     if let Err(e) = mgr.paths.forget(&model) {
         log::warn!("[asr] models list: {e}");
     }
@@ -431,7 +435,7 @@ pub fn asr_start(
     let session = Session {
         app: app.clone(),
         id,
-        model_file: mgr.paths.file(spec).to_string_lossy().to_string(),
+        model_file: mgr.paths.installed_file(spec).to_string_lossy().to_string(),
         vad_file: mgr.paths.file(&VAD_MODEL).to_string_lossy().to_string(),
         language: whisper_language(&language),
         context: prompt,

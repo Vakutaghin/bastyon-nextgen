@@ -16,6 +16,15 @@ pub struct ModelSpec {
     pub sha256: &'static str,
     pub size: u64,
     base_url: &'static str,
+    /// Прежний файл этой модели: уже скачанный — работает, пока на его место
+    /// в фоне не скачается нынешний (`outdated`), и только потом удаляется.
+    pub legacy: Option<LegacyFile>,
+}
+
+/// Файл модели прежнего формата: имя и размер (хэш проверялся при скачивании).
+pub struct LegacyFile {
+    pub file: &'static str,
+    pub size: u64,
 }
 
 impl ModelSpec {
@@ -32,20 +41,26 @@ const VAD_REPO: &str =
 /// Модели распознавания: многоязычные, квантованные. «small» — по умолчанию:
 /// на естественной русской речи сам расставляет точки и запятые, а на
 /// процессоре распознаёт быстрее, чем человек говорит.
+///
+/// base и small — в q8_0: на процессоре (ARM — телефон, Mac без видеокарты)
+/// он считает быстрее q5_1, хоть файл и больше: замер 01.11.2026 на M1, фраза
+/// 5 с — 0,88 против 0,96 с, черновик 2 с — 0,09 против 0,14 с, текст тот же.
 pub const MODELS: &[ModelSpec] = &[
     ModelSpec {
         id: "base",
-        file: "ggml-base-q5_1.bin",
-        sha256: "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898",
-        size: 59_707_625,
+        file: "ggml-base-q8_0.bin",
+        sha256: "c577b9a86e7e048a0b7eada054f4dd79a56bbfa911fbdacf900ac5b567cbb7d9",
+        size: 81_768_585,
         base_url: WHISPER_REPO,
+        legacy: Some(LegacyFile { file: "ggml-base-q5_1.bin", size: 59_707_625 }),
     },
     ModelSpec {
         id: "small",
-        file: "ggml-small-q5_1.bin",
-        sha256: "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb",
-        size: 190_085_487,
+        file: "ggml-small-q8_0.bin",
+        sha256: "49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f",
+        size: 264_464_607,
         base_url: WHISPER_REPO,
+        legacy: Some(LegacyFile { file: "ggml-small-q5_1.bin", size: 190_085_487 }),
     },
     ModelSpec {
         id: "turbo",
@@ -53,6 +68,7 @@ pub const MODELS: &[ModelSpec] = &[
         sha256: "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
         size: 574_041_195,
         base_url: WHISPER_REPO,
+        legacy: None,
     },
 ];
 
@@ -64,6 +80,7 @@ pub const VAD_MODEL: ModelSpec = ModelSpec {
     sha256: "2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987",
     size: 885_098,
     base_url: VAD_REPO,
+    legacy: None,
 };
 
 pub fn model_spec(id: &str) -> Option<&'static ModelSpec> {
@@ -84,12 +101,44 @@ impl AsrPaths {
         self.dir.join(spec.file)
     }
 
-    /// Файл лежит и совпадает по размеру: хэш проверен при скачивании, а
-    /// размер ловит файл, обрезанный уже на диске.
-    pub fn is_installed(&self, spec: &ModelSpec) -> bool {
-        std::fs::metadata(self.file(spec))
-            .map(|m| m.is_file() && m.len() == spec.size)
+    fn has_file(&self, file: &str, size: u64) -> bool {
+        std::fs::metadata(self.dir.join(file))
+            .map(|m| m.is_file() && m.len() == size)
             .unwrap_or(false)
+    }
+
+    /// Лежит нынешний файл модели и совпадает по размеру: хэш проверен при
+    /// скачивании, а размер ловит файл, обрезанный уже на диске.
+    pub fn is_current(&self, spec: &ModelSpec) -> bool {
+        self.has_file(spec.file, spec.size)
+    }
+
+    fn has_legacy(&self, spec: &ModelSpec) -> bool {
+        spec.legacy.as_ref().is_some_and(|l| self.has_file(l.file, l.size))
+    }
+
+    /// Модель есть — нынешним файлом или прежним, который пока работает.
+    pub fn is_installed(&self, spec: &ModelSpec) -> bool {
+        self.is_current(spec) || self.has_legacy(spec)
+    }
+
+    /// Файл, которым распознавать: нынешний, а пока его нет — прежний.
+    pub fn installed_file(&self, spec: &ModelSpec) -> PathBuf {
+        match &spec.legacy {
+            Some(l) if !self.is_current(spec) && self.has_legacy(spec) => self.dir.join(l.file),
+            _ => self.file(spec),
+        }
+    }
+
+    /// Удалить модель вместе с прежним файлом.
+    pub fn remove(&self, spec: &ModelSpec) -> std::io::Result<()> {
+        if let Some(l) = &spec.legacy {
+            let _ = std::fs::remove_file(self.dir.join(l.file));
+        }
+        match std::fs::remove_file(self.file(spec)) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e),
+            _ => Ok(()),
+        }
     }
 
     /// Установленные модели распознавания (без детектора речи — он идёт
@@ -150,15 +199,15 @@ impl AsrPaths {
         self.write_wanted(&ids)
     }
 
-    /// Скачанные человеком модели, которых сейчас нет: сменился закреплённый
-    /// файл модели или детектора речи.
+    /// Скачанные человеком модели без нынешнего файла: сменился закреплённый
+    /// файл модели или детектора речи. Прежний файл пока работает.
     pub fn outdated(&self) -> Vec<&'static str> {
-        let installed = self.installed_models();
+        let vad = self.is_current(&VAD_MODEL);
         self.wanted()
             .iter()
             .filter_map(|id| model_spec(id))
+            .filter(|m| !vad || !self.is_current(m))
             .map(|m| m.id)
-            .filter(|id| !installed.contains(id))
             .collect()
     }
 
@@ -168,7 +217,15 @@ impl AsrPaths {
         let Ok(entries) = std::fs::read_dir(&self.dir) else {
             return;
         };
-        let known: Vec<&str> = MODELS.iter().chain([&VAD_MODEL]).map(|m| m.file).collect();
+        // Прежний файл держим, пока нынешний не скачан: он ещё работает.
+        let mut known: Vec<&str> = MODELS.iter().chain([&VAD_MODEL]).map(|m| m.file).collect();
+        for m in MODELS {
+            if let Some(l) = &m.legacy {
+                if !self.is_current(m) {
+                    known.push(l.file);
+                }
+            }
+        }
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().to_string();
             if name.starts_with("ggml-") && name.ends_with(".bin") && !known.contains(&name.as_str()) {
@@ -265,6 +322,39 @@ mod tests {
         paths.remember("small").unwrap();
         paths.remember("small").unwrap();
         assert_eq!(paths.wanted(), vec!["small"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_legacy_file_works_until_the_current_one_is_downloaded() {
+        let dir = std::env::temp_dir().join(format!("asr-legacy-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let paths = AsrPaths::new(dir.clone());
+        let small = model_spec("small").unwrap();
+        let legacy = small.legacy.as_ref().unwrap();
+        std::fs::File::create(dir.join(legacy.file)).unwrap().set_len(legacy.size).unwrap();
+        std::fs::File::create(paths.file(&VAD_MODEL)).unwrap().set_len(VAD_MODEL.size).unwrap();
+        paths.init_wanted().unwrap();
+
+        // Скачанная до обновления q5_1 работает, а q8_0 качается в фоне.
+        assert_eq!(paths.installed_models(), vec!["small"]);
+        assert_eq!(paths.installed_file(small), dir.join(legacy.file));
+        assert_eq!(paths.outdated(), vec!["small"]);
+        paths.remove_orphans();
+        assert!(dir.join(legacy.file).exists(), "прежний файл держим, пока нет нынешнего");
+
+        // Нынешний скачался — распознаём им, прежний убирается.
+        std::fs::File::create(paths.file(small)).unwrap().set_len(small.size).unwrap();
+        assert_eq!(paths.installed_file(small), paths.file(small));
+        assert!(paths.outdated().is_empty());
+        paths.remove_orphans();
+        assert!(!dir.join(legacy.file).exists());
+
+        // «Удалить» стирает и нынешний, и прежний.
+        std::fs::File::create(dir.join(legacy.file)).unwrap().set_len(legacy.size).unwrap();
+        paths.remove(small).unwrap();
+        assert!(!paths.file(small).exists() && !dir.join(legacy.file).exists());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

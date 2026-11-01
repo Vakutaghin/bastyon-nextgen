@@ -5,15 +5,15 @@
     <SC_DictationButton
       ref="buttonRef"
       type="button"
-      :class="{ active, speaking }"
+      :class="{ active: recording, speaking }"
       :aria-label="tooltip"
-      :aria-pressed="active"
+      :aria-pressed="recording"
       :disabled="disabled"
       @mousedown.prevent
       @click="toggle"
     >
       <LoadingOutlined v-if="busy" spin />
-      <SC_Bars v-else-if="active" :class="{ loading }">
+      <SC_Bars v-else-if="recording" :class="{ loading }">
         <SC_Bar />
         <SC_Bar />
         <SC_Bar />
@@ -73,9 +73,12 @@ watch(
 // Поле отправили (сообщение в чате): диктовка кончается без хвоста — по той же причине.
 defineExpose({ cancel })
 
-const busy = computed(
-  () => installing.value || phase.value === 'starting' || phase.value === 'finishing'
-)
+// Дораспознавание хвоста после «стоп» — кнопка уже выключена: микрофон закрыт,
+// текст допишется сам. Раньше тут крутилось колесо, и казалось, что ввод не
+// остановился, пока не нажмёшь ещё раз.
+const busy = computed(() => installing.value || phase.value === 'starting')
+/** Запись идёт: полоски громкости; после «стоп» кнопка выглядит выключенной. */
+const recording = computed(() => active.value && phase.value !== 'finishing')
 
 const tooltip = computed<string>(() => {
   if (installing.value) return t('voiceInput.downloading', { percent: installPercent.value })

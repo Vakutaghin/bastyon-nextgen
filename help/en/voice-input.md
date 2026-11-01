@@ -10,8 +10,8 @@ How to dictate the text of a post or a message: recognition runs right on your c
 
 1. Put the cursor in the text field of a post or a chat message.
 2. Click the button with bars next to the smiley — **“Voice input”** — and speak.
-3. Words appear at the cursor as you speak, like on a phone keyboard. When you finish a phrase, the app recognizes it as a whole and puts the final text in its place — more accurate and with punctuation.
-4. To stop — the same button or the Esc key: **“Stop dictation (Esc)”**. On a phone, the same button. If no new word is recognized for 10 seconds, dictation turns itself off. Noise, music and talk nearby don’t keep it on: only words count.
+3. Words appear at the cursor as you speak, like on a phone keyboard, without a period at the end yet. When you finish a phrase, the app recognizes it as a whole and puts the final text in its place — more accurate and with punctuation. A long text scrolls by itself, so the last line stays visible.
+4. To stop — the same button or the Esc key: **“Stop dictation (Esc)”**. On a phone, the same button. The microphone turns off at once, and the app finishes the last phrase by itself in a second or two; press the button meanwhile and a new recording starts as soon as that phrase is in. If no new word is recognized for 10 seconds, dictation turns itself off. Noise, music and talk nearby don’t keep it on: only words count.
 5. When you send the message or publish the post, dictation turns off. What you see in the field is what gets sent; to keep dictating, press the button again.
 
 The last dictated phrase can be undone like normal typing: Ctrl+Z, on a Mac Cmd+Z.
@@ -22,15 +22,15 @@ Recognition needs a model, which is downloaded once. The first time you click, t
 
 | Model          | Size         | What it is like                                                                                                  |
 | -------------- | ------------ | ---------------------------------------------------------------------------------------------------------------- |
-| **“Fast”**     | about 60 MB  | answers faster but makes more mistakes                                                                           |
-| **“Accurate”** | about 190 MB | understands speech well and adds punctuation itself, recommended                                                 |
+| **“Fast”**     | about 80 MB  | answers faster but makes more mistakes                                                                           |
+| **“Accurate”** | about 260 MB | understands speech well and adds punctuation itself, recommended                                                 |
 | **“Best”**     | about 575 MB | the best quality, but noticeably slower on a computer without a powerful graphics card; not available on a phone |
 
 The more accurate the model, the slower it recognizes speech, so words appear in the field with a delay. This is most noticeable on phones. The note under the list of models says the same.
 
 The model is downloaded from Hugging Face, and the app checks that the file has not been swapped. If [Tor](tor.md) is on, the model downloads through Tor — this can take a few minutes.
 
-The recognition engine is built into the app and updates with it. If a new version of the app needs a different model file, it downloads by itself and the old one is removed.
+The recognition engine is built into the app and updates with it. If a new version of the app needs a different model file, on a computer it downloads by itself and the old one is removed once the new one is in place; you can keep dictating while it downloads. “Fast” and “Accurate” now come in a format that runs noticeably faster on a processor (especially the drafts while you speak). On a phone, the model downloaded earlier keeps working, and a **“Speed up”** button appears next to it in the settings — it downloads the new file in place of the old one.
 
 ## Punctuation by voice
 

@@ -3331,7 +3331,7 @@ export default {
     stop: 'Termina la dettatura (Esc)',
     starting: 'Accensione del microfono…',
     preparing: 'Preparazione del riconoscimento — puoi parlare',
-    finishing: 'Completo la trascrizione… Clicca per interrompere',
+    finishing: 'Completo la trascrizione… Clicca per iniziare una nuova registrazione',
     downloading: 'Scaricamento del modello vocale — {percent}%',
     ready: 'L’input vocale è pronto: clicca sul pulsante con le barre accanto al campo di testo',
     modal: {
@@ -3393,6 +3393,9 @@ export default {
       installed: 'scaricato',
       download: 'Scarica',
       remove: 'Rimuovi',
+      upgrade: 'Velocizza',
+      upgradeHint:
+        'È disponibile una versione più veloce di questo modello: scaricala al posto di quella attuale',
       removeTitle: 'Rimuovere il modello «{name}»?',
       removeContent: 'Il file del modello verrà eliminato dal disco. Potrai scaricarlo di nuovo.',
       commandsTitle: 'Comandi vocali per la punteggiatura',

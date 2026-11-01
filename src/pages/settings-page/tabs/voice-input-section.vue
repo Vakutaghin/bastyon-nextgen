@@ -44,9 +44,21 @@
               {{ t('voiceInput.modal.cancel') }}
             </Button>
           </template>
-          <Button v-else-if="m.installed" size="small" danger @click="onRemove(m.id)">
-            {{ t('voiceInput.settings.remove') }}
-          </Button>
+          <template v-else-if="m.installed">
+            <Button
+              v-if="m.upgradable"
+              size="small"
+              type="primary"
+              :disabled="!!store.install"
+              :title="t('voiceInput.settings.upgradeHint')"
+              @click="onInstall(m.id)"
+            >
+              {{ t('voiceInput.settings.upgrade') }}
+            </Button>
+            <Button size="small" danger @click="onRemove(m.id)">
+              {{ t('voiceInput.settings.remove') }}
+            </Button>
+          </template>
           <Button v-else size="small" :disabled="!!store.install" @click="onInstall(m.id)">
             {{ t('voiceInput.settings.download') }}
           </Button>

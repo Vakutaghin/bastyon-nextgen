@@ -105,6 +105,7 @@ public class VoiceInputPlugin extends Plugin {
             m.put("id", spec.id);
             m.put("size", spec.size + (vad ? 0 : VoiceModels.VAD.size));
             m.put("installed", models.isInstalled(spec));
+            m.put("upgradable", models.isUpgradable(spec));
             list.put(m);
         }
         JSObject ret = new JSObject();
@@ -134,7 +135,8 @@ public class VoiceInputPlugin extends Plugin {
         downloads.execute(() -> {
             try {
                 boolean needVad = !models.isInstalled(VoiceModels.VAD);
-                boolean needModel = !models.isInstalled(spec);
+                // Прежний файл модели работает, но качаем нынешний — он его заменит.
+                boolean needModel = !models.isCurrent(spec);
                 long total = (needVad ? VoiceModels.VAD.size : 0) + (needModel ? spec.size : 0);
                 List<VoiceModels.Spec> steps = new ArrayList<>();
                 if (needVad) steps.add(VoiceModels.VAD);
@@ -263,7 +265,7 @@ public class VoiceInputPlugin extends Plugin {
         int id;
         try {
             id = AsrNative.start(
-                    models.file(spec).getAbsolutePath(),
+                    models.installedFile(spec).getAbsolutePath(),
                     models.file(VoiceModels.VAD).getAbsolutePath(),
                     call.getString("language", "auto"),
                     call.getString("prompt", ""),

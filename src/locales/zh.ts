@@ -3157,7 +3157,7 @@ export default {
     stop: '结束听写（Esc）',
     starting: '正在打开麦克风…',
     preparing: '正在准备识别——可以开始说话',
-    finishing: '正在完成识别…点击可中断',
+    finishing: '正在完成识别…点击开始新的录音',
     downloading: '正在下载语音模型——{percent}%',
     ready: '语音输入已就绪：点击输入框旁带竖条的按钮',
     modal: {
@@ -3213,6 +3213,8 @@ export default {
       installed: '已下载',
       download: '下载',
       remove: '删除',
+      upgrade: '加速',
+      upgradeHint: '此模型有更快的版本，下载它以替换当前版本',
       removeTitle: '删除“{name}”模型？',
       removeContent: '模型文件将从磁盘删除，之后可以重新下载。',
       commandsTitle: '标点语音命令',
