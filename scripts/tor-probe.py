@@ -11,7 +11,9 @@
 meek; <транспорт>:<файл> — мосты из файла в каталоге бандла, по строке на мост
 (например webtunnel:webtunnel.txt). Без способов — probes moat snowflake obfs4
 meek direct. Через Tor сертификаты проверяются; напрямую (probes) — нет:
-там важно только, открывается ли адрес. Замеры 30.10.2026 из дата-центра в РФ — в описании коммита cb0b153a.
+там важно только, открывается ли адрес. Замеры 30.10.2026 из дата-центра в РФ — в описании коммита cb0b153a,
+01.11.2026 из дома в РФ (Windows, python -I tor-probe.py bundle out.json …) — в коммите, где auto_plan
+ставит Snowflake через AMP первым.
 """
 
 import json
@@ -333,7 +335,8 @@ def attempt(root, kind, bridges, cfg, max_seconds):
 
 
 def main():
-    root, out = sys.argv[1], sys.argv[2]
+    # tor запускается из <бандл>/tor, поэтому относительный путь к бандлу там уже не тот.
+    root, out = os.path.abspath(sys.argv[1]), sys.argv[2]
     kinds = sys.argv[3:] or ["probes", "moat", "snowflake", "obfs4", "meek", "direct"]
     results = {"started": time.strftime("%Y-%m-%d %H:%M:%S"), "results": []}
 

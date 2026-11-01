@@ -111,8 +111,20 @@ pub fn manual_candidate(kind: BridgeKind, custom: &[String], pt: &PtConfig) -> O
 /// Порядок попыток автоподбора. `moat` — ответ Moat (`None` — не дозвонились).
 /// После советов Moat — встроенные, которых в них не было, и Snowflake через
 /// AMP cache, если его не было среди советов; без мостов — в конце.
+///
+/// Moat молчит — значит, закрыт CDN77, через который он ходит. Через CDN77 ищет
+/// посредника и встроенный Snowflake, а встроенные obfs4 там, где закрыт CDN77,
+/// уже заблокированы. Поэтому тогда первым Snowflake через AMP cache, а meek
+/// (его домен на CDN77 открыт) раньше obfs4. Замеры из РФ: дата-центр 30.10,
+/// домашний провайдер 01.11.2026 — встроенный Snowflake дома встал на 10 %,
+/// obfs4 на 2 %, Snowflake через AMP подключился за 126 с, meek за 63 с.
 pub fn auto_plan(moat: Option<&MoatSettings>, pt: &PtConfig) -> Vec<Candidate> {
     let mut plan: Vec<Candidate> = Vec::new();
+    let builtins = if moat.is_none() {
+        ["snowflake", "meek", "obfs4"]
+    } else {
+        ["snowflake", "obfs4", "meek"]
+    };
     match moat {
         Some(s) if !s.bridges.is_empty() => {
             for b in &s.bridges {
@@ -130,7 +142,7 @@ pub fn auto_plan(moat: Option<&MoatSettings>, pt: &PtConfig) -> Vec<Candidate> {
         Some(_) => plan.push(Candidate::direct()),
         None => {}
     }
-    for kind in ["snowflake", "obfs4", "meek"] {
+    for kind in builtins {
         if !plan.iter().any(|c| c.transport == kind) {
             plan.extend(Candidate::builtin(kind, pt));
         }
@@ -139,6 +151,12 @@ pub fn auto_plan(moat: Option<&MoatSettings>, pt: &PtConfig) -> Vec<Candidate> {
             .any(|c| c.bridges.iter().any(|b| b.contains(" ampcache=")));
         if kind == "snowflake" && !has_amp {
             plan.push(snowflake_amp());
+        }
+    }
+    if moat.is_none() {
+        if let Some(i) = plan.iter().position(|c| *c == snowflake_amp()) {
+            let amp = plan.remove(i);
+            plan.insert(0, amp);
         }
     }
     if !plan.iter().any(|c| c.bridges.is_empty()) {
@@ -570,19 +588,24 @@ mod tests {
         );
     }
 
+    /// Moat молчит — CDN77 закрыт: Snowflake через AMP раньше встроенного,
+    /// meek раньше obfs4 (замер из дома в РФ 01.11.2026).
     #[test]
-    fn without_moat_builtins_come_before_direct() {
-        let plan = auto_plan(None, &PtConfig::fallback());
+    fn without_moat_amp_snowflake_first_and_meek_before_obfs4() {
+        let pt = PtConfig::fallback();
+        let plan = auto_plan(None, &pt);
         assert_eq!(
             transports(&plan),
-            ["snowflake", "snowflake", "obfs4", "meek", DIRECT]
+            ["snowflake", "snowflake", "meek", "obfs4", DIRECT]
         );
         assert!(plan[..4].iter().all(|c| !c.bridges.is_empty()));
+        assert_eq!(plan[0], snowflake_amp());
         assert_eq!(
-            plan[1].bridges.len(),
+            plan[0].bridges.len(),
             2,
             "both AMP lines pass the bridge check"
         );
+        assert_eq!(plan[1].bridges, pt.builtin("snowflake"));
     }
 
     /// Moat прислал Snowflake с AMP cache сам — второй такой же не нужен.
