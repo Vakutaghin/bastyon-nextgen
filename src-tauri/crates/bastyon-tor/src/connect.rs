@@ -5,6 +5,12 @@
 //! Tor Browser: сначала то, что сработало в прошлый раз, потом мосты, которые
 //! Moat советует для страны, потом встроенные. Застрявшая попытка уступает
 //! место следующей, сработавшая запоминается.
+//!
+//! Где Moat через meek недоступен (РФ), остаются медленные Snowflake и meek.
+//! Подключившись ими, приложение спрашивает Moat через сам Tor и кладёт его
+//! мосты (obfs4, WebTunnel) в запас: при следующем запуске они пробуются
+//! первыми. Из дома в РФ 01.11.2026 такой obfs4 подключился за 16 с, а
+//! Snowflake через AMP — за 126 с.
 
 use crate::bridges;
 use crate::moat::{self, BridgeSource, MoatSettings};
@@ -24,6 +30,11 @@ const POLL: Duration = Duration::from_millis(500);
 /// Транспорт упал столько раз — не запускается вовсе, ждать нечего.
 const PT_FAILURE_LIMIT: u32 = 3;
 const CACHE_FILE: &str = "connect-cache.json";
+/// После подключения сначала пусть уйдут запросы приложения, потом — к Moat.
+const SPARE_DELAY: Duration = Duration::from_secs(10);
+/// Запасные мосты не подключились — новые не раньше чем через сутки: Moat
+/// раздаёт мосты понемногу, и дёргать его на каждом запуске незачем.
+const SPARE_RETRY_AFTER: Duration = Duration::from_secs(24 * 60 * 60);
 
 /// meek тянет дескрипторы через CDN медленно: в замере 17.10.2026 он стоял
 /// на 50% больше двух минут и подключился на шестой.
@@ -171,40 +182,108 @@ pub fn auto_plan(moat: Option<&MoatSettings>, pt: &PtConfig) -> Vec<Candidate> {
     unique
 }
 
-#[derive(Serialize, Deserialize)]
+/// Кэш автоподбора на диске.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct CacheFile {
+    /// Что сработало в прошлый раз.
     candidate: Candidate,
+    /// Страна по данным Moat (через meek, по адресу).
     #[serde(default)]
     country: Option<String>,
+    /// Мосты, которые Moat выдал через Tor после подключения медленным
+    /// способом: при следующем запуске они пробуются первыми.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    spare: Vec<Candidate>,
+    /// Когда запасные в последний раз не подключились (секунды Unix): до
+    /// [`SPARE_RETRY_AFTER`] за новыми не ходим.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    spare_failed_at: Option<u64>,
 }
 
-/// То, что сработало в прошлый раз (только автоподбор). Строки проверяются
-/// заново: файл лежит на диске и мог быть изменён.
-fn load_cache(root: &Path) -> Option<(Candidate, Option<String>)> {
-    let raw = std::fs::read_to_string(root.join(CACHE_FILE)).ok()?;
-    let file: CacheFile = serde_json::from_str(&raw).ok()?;
-    let parsed = bridges::parse_lines(&file.candidate.bridges);
+/// Строки кандидата из файла проверяются заново: файл лежит на диске и мог
+/// быть изменён.
+fn checked(candidate: Candidate) -> Option<Candidate> {
+    let parsed = bridges::parse_lines(&candidate.bridges);
     if !parsed.rejected.is_empty() {
         return None;
     }
-    let mut candidate = file.candidate;
-    candidate.bridges = parsed.lines();
     if candidate.transport.is_empty() || candidate.transport.len() > 32 {
         return None;
     }
-    Some((candidate, file.country))
+    Some(Candidate {
+        transport: candidate.transport,
+        bridges: parsed.lines(),
+    })
 }
 
-fn save_cache(root: &Path, candidate: &Candidate, country: Option<&str>) {
-    let file = CacheFile {
-        candidate: candidate.clone(),
-        country: country.map(String::from),
-    };
-    if let Ok(json) = serde_json::to_string_pretty(&file) {
+/// То, что сработало в прошлый раз (только автоподбор), и запасные мосты.
+/// Испорченный запасной просто пропускается, испорченный основной — весь кэш.
+fn load_cache(root: &Path) -> Option<CacheFile> {
+    let raw = std::fs::read_to_string(root.join(CACHE_FILE)).ok()?;
+    let file: CacheFile = serde_json::from_str(&raw).ok()?;
+    Some(CacheFile {
+        candidate: checked(file.candidate)?,
+        country: file.country,
+        spare: file
+            .spare
+            .into_iter()
+            .filter_map(checked)
+            .filter(|c| !c.bridges.is_empty())
+            .collect(),
+        spare_failed_at: file.spare_failed_at,
+    })
+}
+
+fn save_cache(root: &Path, file: &CacheFile) {
+    if let Ok(json) = serde_json::to_string_pretty(file) {
         if let Err(e) = std::fs::write(root.join(CACHE_FILE), json) {
             log::warn!("[tor] cannot save {}: {}", CACHE_FILE, e);
         }
     }
+}
+
+/// Snowflake и meek пробиваются почти везде, но медленно: подключение через
+/// них — повод спросить у Moat мосты побыстрее.
+fn is_slow(candidate: &Candidate) -> bool {
+    candidate.transport == "snowflake" || candidate.transport.starts_with("meek")
+}
+
+/// Запасные из ответа Moat: мосты BridgeDB, кроме медленных — Snowflake и
+/// meek уже есть во встроенных.
+fn spare_from(settings: &MoatSettings) -> Vec<Candidate> {
+    settings
+        .bridges
+        .iter()
+        .filter(|b| b.source == BridgeSource::BridgeDb && !b.lines.is_empty())
+        .map(|b| Candidate {
+            transport: b.kind.clone(),
+            bridges: b.lines.clone(),
+        })
+        .filter(|c| !is_slow(c))
+        .collect()
+}
+
+/// Спрашивать ли Moat через Tor: подключились медленным способом, запасных
+/// нет, и прошлые запасные не подвели недавно.
+fn wants_spare(candidate: &Candidate, file: Option<&CacheFile>, now: u64) -> bool {
+    if !is_slow(candidate) {
+        return false;
+    }
+    match file {
+        Some(f) if !f.spare.is_empty() => false,
+        Some(CacheFile {
+            spare_failed_at: Some(at),
+            ..
+        }) => now.saturating_sub(*at) >= SPARE_RETRY_AFTER.as_secs(),
+        _ => true,
+    }
+}
+
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -257,18 +336,52 @@ async fn run_auto(mgr: &TorManager, gen: u64, pt: &PtConfig) {
         }
         st.keep_going = true;
     }
+    let root = &mgr.paths.root;
     let mut tried: Vec<Candidate> = Vec::new();
     let mut n: u8 = 0;
     let mut country: Option<String> = None;
+    let mut cache = load_cache(root);
 
-    if let Some((cached, cached_country)) = load_cache(&mgr.paths.root) {
-        country = cached_country;
+    if let Some(file) = cache.clone() {
+        country = file.country.clone();
         set_country(mgr, gen, country.clone()).await;
-        n += 1;
-        match attempt(mgr, gen, pt, &cached, n, true).await {
-            Outcome::Ready => return,
-            Outcome::Cancelled => return,
-            Outcome::Failed | Outcome::Stalled => tried.push(cached),
+        // Запасные — первыми: они быстрее способа, которым подключились тогда.
+        for spare in &file.spare {
+            n = n.saturating_add(1);
+            match attempt(mgr, gen, pt, spare, n, true).await {
+                Outcome::Ready => {
+                    let next = CacheFile {
+                        candidate: spare.clone(),
+                        country: country.clone(),
+                        spare: Vec::new(),
+                        spare_failed_at: None,
+                    };
+                    save_cache(root, &next);
+                    return;
+                }
+                Outcome::Cancelled => return,
+                Outcome::Failed | Outcome::Stalled => tried.push(spare.clone()),
+            }
+        }
+        if !file.spare.is_empty() {
+            let next = CacheFile {
+                spare: Vec::new(),
+                spare_failed_at: Some(now_secs()),
+                ..file.clone()
+            };
+            save_cache(root, &next);
+            cache = Some(next);
+        }
+        if !tried.contains(&file.candidate) {
+            n = n.saturating_add(1);
+            match attempt(mgr, gen, pt, &file.candidate, n, true).await {
+                Outcome::Ready => {
+                    after_ready(mgr, gen, &file.candidate, cache.as_ref());
+                    return;
+                }
+                Outcome::Cancelled => return,
+                Outcome::Failed | Outcome::Stalled => tried.push(file.candidate.clone()),
+            }
         }
     }
 
@@ -297,7 +410,14 @@ async fn run_auto(mgr: &TorManager, gen: u64, pt: &PtConfig) {
         n = n.saturating_add(1);
         match attempt(mgr, gen, pt, &candidate, n, true).await {
             Outcome::Ready => {
-                save_cache(&mgr.paths.root, &candidate, country.as_deref());
+                let next = CacheFile {
+                    candidate: candidate.clone(),
+                    country: country.clone(),
+                    spare: Vec::new(),
+                    spare_failed_at: cache.as_ref().and_then(|c| c.spare_failed_at),
+                };
+                save_cache(root, &next);
+                after_ready(mgr, gen, &candidate, Some(&next));
                 return;
             }
             Outcome::Cancelled => return,
@@ -311,6 +431,57 @@ async fn run_auto(mgr: &TorManager, gen: u64, pt: &PtConfig) {
     if still_ours(mgr, gen) {
         mgr.kill_child();
     }
+}
+
+/// Подключились медленным способом — в фоне за запасными мостами.
+fn after_ready(mgr: &TorManager, gen: u64, candidate: &Candidate, file: Option<&CacheFile>) {
+    if wants_spare(candidate, file, now_secs()) {
+        fetch_spare(mgr, gen, file.and_then(|f| f.country.clone()));
+    }
+}
+
+/// Мосты от Moat через подключённый Tor — в запас к следующему запуску.
+/// Страна — по данным Moat из кэша, иначе по часовому поясу.
+fn fetch_spare(mgr: &TorManager, gen: u64, country: Option<String>) {
+    let mgr = mgr.clone();
+    tokio::spawn(async move {
+        tokio::time::sleep(SPARE_DELAY).await;
+        let socks_port = {
+            let st = mgr.state.read().await;
+            if !still_ours(&mgr, gen) || st.status != TorStatus::Ready {
+                return;
+            }
+            st.socks_port
+        };
+        let country = country.or_else(|| moat::timezone_country().map(String::from));
+        let settings = match moat::via_tor(socks_port, country.as_deref()).await {
+            Ok(s) => s,
+            Err(e) => {
+                log::warn!("[tor] moat via tor unavailable: {}", e);
+                return;
+            }
+        };
+        if !still_ours(&mgr, gen) {
+            return;
+        }
+        let Some(mut file) = load_cache(&mgr.paths.root) else {
+            return;
+        };
+        let current = file.candidate.clone();
+        file.spare = spare_from(&settings)
+            .into_iter()
+            .filter(|c| *c != current)
+            .collect();
+        if file.spare.is_empty() {
+            return;
+        }
+        log::info!(
+            "[tor] spare bridges from moat via tor ({:?}): {:?}",
+            country,
+            file.spare.iter().map(|c| c.transport.as_str()).collect::<Vec<_>>()
+        );
+        save_cache(&mgr.paths.root, &file);
+    });
 }
 
 async fn set_country(mgr: &TorManager, gen: u64, country: Option<String>) {
@@ -651,8 +822,35 @@ mod tests {
             transport: "webtunnel".into(),
             bridges: vec![WEBTUNNEL.into()],
         };
-        save_cache(&dir, &candidate, Some("ru"));
-        assert_eq!(load_cache(&dir), Some((candidate, Some("ru".into()))));
+        let file = CacheFile {
+            candidate: candidate.clone(),
+            country: Some("ru".into()),
+            spare: vec![Candidate {
+                transport: "obfs4".into(),
+                bridges: vec![OBFS4.into()],
+            }],
+            spare_failed_at: Some(1),
+        };
+        save_cache(&dir, &file);
+        assert_eq!(load_cache(&dir), Some(file));
+
+        // Файл версии до запасных мостов.
+        let old = format!(
+            r#"{{"candidate":{{"transport":"webtunnel","bridges":["{WEBTUNNEL}"]}},"country":"ru"}}"#
+        );
+        std::fs::write(dir.join(CACHE_FILE), old).unwrap();
+        let loaded = load_cache(&dir).unwrap();
+        assert_eq!(loaded.candidate, candidate);
+        assert!(loaded.spare.is_empty() && loaded.spare_failed_at.is_none());
+
+        // Испорченный запасной пропускается, основной остаётся.
+        let bad_spare = format!(
+            r#"{{"candidate":{{"transport":"webtunnel","bridges":["{WEBTUNNEL}"]}},"spare":[{{"transport":"obfs4","bridges":["obfs4 1.2.3.4:443 cert=x\nControlPort 1"]}},{{"transport":"obfs4","bridges":[]}}]}}"#
+        );
+        std::fs::write(dir.join(CACHE_FILE), bad_spare).unwrap();
+        let loaded = load_cache(&dir).unwrap();
+        assert_eq!(loaded.candidate, candidate);
+        assert!(loaded.spare.is_empty(), "{:?}", loaded.spare);
 
         let tampered = r#"{"candidate":{"transport":"obfs4","bridges":["obfs4 1.2.3.4:443 cert=x\nControlPort 1"]}}"#;
         std::fs::write(dir.join(CACHE_FILE), tampered).unwrap();
@@ -662,12 +860,96 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    /// Ответ Moat для `ru`: в запас — WebTunnel и obfs4, без Snowflake.
+    #[test]
+    fn spare_keeps_fast_bridgedb_bridges_in_moat_order() {
+        let settings = MoatSettings {
+            country: Some("ru".into()),
+            bridges: vec![
+                MoatBridges {
+                    kind: "snowflake".into(),
+                    source: BridgeSource::BridgeDb,
+                    lines: vec![SNOWFLAKE_AMP[0].into()],
+                },
+                MoatBridges {
+                    kind: "webtunnel".into(),
+                    source: BridgeSource::BridgeDb,
+                    lines: vec![WEBTUNNEL.into()],
+                },
+                MoatBridges {
+                    kind: "obfs4".into(),
+                    source: BridgeSource::BridgeDb,
+                    lines: vec![OBFS4.into()],
+                },
+                MoatBridges {
+                    kind: "obfs4".into(),
+                    source: BridgeSource::BuiltIn,
+                    lines: vec![],
+                },
+                MoatBridges {
+                    kind: "meek-azure".into(),
+                    source: BridgeSource::BridgeDb,
+                    lines: vec![
+                        "meek_lite 192.0.2.2:2 url=https://x.example front=y.example".into(),
+                    ],
+                },
+            ],
+        };
+        let spare = spare_from(&settings);
+        assert_eq!(transports(&spare), ["webtunnel", "obfs4"]);
+        assert_eq!(spare[1].bridges, vec![OBFS4.to_string()]);
+    }
+
+    #[test]
+    fn moat_via_tor_only_after_a_slow_connection() {
+        let snowflake = snowflake_amp();
+        let meek = manual_candidate(BridgeKind::Meek, &[], &PtConfig::fallback()).unwrap();
+        let obfs4 = Candidate {
+            transport: "obfs4".into(),
+            bridges: vec![OBFS4.into()],
+        };
+        let day = SPARE_RETRY_AFTER.as_secs();
+        let file = |spare: Vec<Candidate>, failed: Option<u64>| CacheFile {
+            candidate: snowflake.clone(),
+            country: None,
+            spare,
+            spare_failed_at: failed,
+        };
+        assert!(wants_spare(&snowflake, None, 10));
+        assert!(wants_spare(&meek, Some(&file(vec![], None)), 10));
+        assert!(!wants_spare(&obfs4, None, 10), "fast already");
+        assert!(
+            !wants_spare(&Candidate::direct(), None, 10),
+            "no bridges needed"
+        );
+        assert!(
+            !wants_spare(&snowflake, Some(&file(vec![obfs4.clone()], None)), 10),
+            "spare already there"
+        );
+        assert!(
+            !wants_spare(
+                &snowflake,
+                Some(&file(vec![], Some(1_000))),
+                1_000 + day - 1
+            ),
+            "spare failed less than a day ago"
+        );
+        assert!(wants_spare(
+            &snowflake,
+            Some(&file(vec![], Some(1_000))),
+            1_000 + day
+        ));
+    }
+
     /// Живое подключение. Нужна копия бандла (каталог с `tor/` и `data/`),
     /// кэш автоподбора пишется в неё же:
     /// `BASTYON_TOR_ROOT=… [BASTYON_TOR_KIND=auto|snowflake|obfs4|meek|none]
-    /// [BASTYON_TOR_FAKE_CACHE=1] [BASTYON_TOR_STALL_SECS=30]
+    /// [BASTYON_TOR_FAKE_CACHE=1] [BASTYON_TOR_KEEP_CACHE=1]
+    /// [BASTYON_TOR_WAIT_SPARE=1] [BASTYON_TOR_STALL_SECS=30]
     /// cargo test -p bastyon-tor live_connect -- --ignored --nocapture`.
     /// `FAKE_CACHE` кладёт в кэш мёртвый мост — проверка перехода дальше.
+    /// `KEEP_CACHE` начинает с кэшем прошлого запуска (запасные — первыми),
+    /// `WAIT_SPARE` после подключения ждёт запасные мосты от Moat через Tor.
     #[tokio::test(flavor = "multi_thread")]
     #[ignore]
     async fn live_connect() {
@@ -675,16 +957,30 @@ mod tests {
             std::path::PathBuf::from(std::env::var("BASTYON_TOR_ROOT").expect("BASTYON_TOR_ROOT"));
         let kind_name = std::env::var("BASTYON_TOR_KIND").unwrap_or_else(|_| "auto".into());
         let kind: BridgeKind = serde_json::from_value(serde_json::json!(kind_name)).expect("kind");
-        let _ = std::fs::remove_file(root.join(CACHE_FILE));
+        if std::env::var("BASTYON_TOR_KEEP_CACHE").is_err() {
+            let _ = std::fs::remove_file(root.join(CACHE_FILE));
+        }
+        println!("cache at start: {:?}", load_cache(&root));
+        println!(
+            "timezone {:?} -> {:?}",
+            iana_time_zone::get_timezone(),
+            moat::timezone_country()
+        );
         if std::env::var("BASTYON_TOR_FAKE_CACHE").is_ok() {
             let dead = Candidate {
                 transport: "obfs4".into(),
                 bridges: vec!["obfs4 192.0.2.1:443 0123456789ABCDEF0123456789ABCDEF01234567 cert=AAAA iat-mode=0".into()],
             };
-            save_cache(&root, &dead, Some("zz"));
+            let file = CacheFile {
+                candidate: dead,
+                country: Some("zz".into()),
+                spare: Vec::new(),
+                spare_failed_at: None,
+            };
+            save_cache(&root, &file);
         }
 
-        let mgr = crate::testing::manager(crate::state::TorPaths::from_root(root));
+        let mgr = crate::testing::manager(crate::state::TorPaths::from_root(root.clone()));
         {
             let mut st = mgr.state.write().await;
             st.bridge_kind = kind;
@@ -694,7 +990,7 @@ mod tests {
             }
         }
         let gen = mgr.start_gen.fetch_add(1, Ordering::SeqCst) + 1;
-        let task = {
+        let mut task = {
             let mgr = mgr.clone();
             tokio::spawn(async move { supervise(&mgr, gen).await })
         };
@@ -717,9 +1013,38 @@ mod tests {
             }
             assert!(started.elapsed() < Duration::from_secs(900), "timed out");
         };
+        // Надзор пишет кэш, заметив Ready на своём опросе; раньше времени
+        // поднятое поколение он принял бы за остановку и ничего не записал.
+        let supervised = tokio::time::timeout(Duration::from_secs(10), &mut task)
+            .await
+            .is_ok();
+        if status == TorStatus::Ready && std::env::var("BASTYON_TOR_WAIT_SPARE").is_ok() {
+            let waited = Instant::now();
+            loop {
+                tokio::time::sleep(Duration::from_secs(1)).await;
+                let spare = load_cache(&root).map(|f| f.spare).unwrap_or_default();
+                if !spare.is_empty() || waited.elapsed() > SPARE_DELAY + Duration::from_secs(150) {
+                    println!(
+                        "{:>6.1}s spare: {:?}",
+                        started.elapsed().as_secs_f32(),
+                        spare
+                            .iter()
+                            .map(|c| (c.transport.as_str(), c.bridges.len()))
+                            .collect::<Vec<_>>()
+                    );
+                    break;
+                }
+            }
+        }
+        println!(
+            "cache at end: {:?}",
+            load_cache(&root).map(|f| (f.candidate.transport, f.spare.len(), f.spare_failed_at))
+        );
         mgr.start_gen.fetch_add(1, Ordering::SeqCst);
         mgr.kill_child();
-        let _ = task.await;
+        if !supervised {
+            let _ = task.await;
+        }
         assert_eq!(status, TorStatus::Ready);
     }
 }

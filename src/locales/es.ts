@@ -755,7 +755,7 @@ export default {
       moved: '{name}: {pos} de {total}',
       locked: 'Siempre en el menú: desde los ajustes se recupera lo oculto.',
       desktopOnly: 'Solo en la aplicación de escritorio.',
-      radioOnly: 'En la aplicación de escritorio y en Android.',
+      desktopAndAndroid: 'En la aplicación de escritorio y en Android.',
       noteNotifications:
         'Solo quita el icono: las notificaciones emergentes siguen; se desactivan en la pestaña «Notificaciones».',
       noteNodeControls:

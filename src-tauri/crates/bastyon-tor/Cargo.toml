@@ -12,6 +12,8 @@ publish = false
 base64 = "0.22"
 dashmap = "6"
 futures-util = "0.3"
+# Часовой пояс системы — подсказка страны для Moat через Tor (moat::via_tor).
+iana-time-zone = "0.1"
 log = "0.4"
 reqwest = { version = "0.12", default-features = false, features = ["json", "socks", "rustls-tls", "stream", "gzip", "brotli", "deflate"] }
 rustls-pki-types = "1"

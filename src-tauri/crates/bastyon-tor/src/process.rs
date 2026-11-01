@@ -142,7 +142,14 @@ fn apply_log_line(
         return Some(state.snapshot());
     }
 
-    let is_err = line.contains("[err]") || line.to_lowercase().contains("could not bind");
+    // Транспорт пересказывает свои ошибки строкой `[err] Managed proxy "…": …`,
+    // например `Error dialing` до одного из мостов. Для Tor это не конец: он
+    // идёт через другие мосты, а если не работает ни один, попытку снимет
+    // таймаут. Раньше такая строка проваливала попытку: из дома в РФ 01.11.2026
+    // WebTunnel бросался на 25 %, хотя второй его мост работал.
+    let from_transport = body.starts_with("Managed proxy \"");
+    let is_err = (line.contains("[err]") && !from_transport)
+        || line.to_lowercase().contains("could not bind");
     if is_err {
         // Bundle the last few warnings into the error message so the UI
         // shows the actual cause, not just `Reading config failed--see
@@ -156,7 +163,7 @@ fn apply_log_line(
     if is_pt_failure(line) {
         state.pt_failures += 1;
     }
-    if line.contains("[warn]") {
+    if line.contains("[warn]") || (from_transport && line.contains("[err]")) {
         recent_warns.push(body.to_string());
         if recent_warns.len() > 5 {
             recent_warns.remove(0);
@@ -377,5 +384,31 @@ mod tests {
         }
         assert_eq!(st.pt_failures, 2);
         assert_eq!(st.message.as_deref(), Some("Proxy Client: unable to connect OR connection"));
+    }
+
+    /// Ошибка транспорта до одного моста — не провал попытки (WebTunnel из
+    /// дома в РФ 01.11.2026: один мост из двух отвечал так, второй работал).
+    #[test]
+    fn transport_dial_error_does_not_fail_the_attempt() {
+        let mut st = bootstrapping(10);
+        st.keep_going = true;
+        let mut warns = Vec::new();
+        let line = "Nov 01 22:39:12.000 [err] Managed proxy \"pluggable_transports\\lyrebird.exe\": Error dialing: unrecognized reply";
+        assert!(apply_log_line(&mut st, 10, line, &mut warns).is_some());
+        assert!(!st.candidate_failed);
+        assert_eq!(st.status, TorStatus::Bootstrapping);
+        assert_eq!(st.pt_failures, 0);
+        assert_eq!(
+            st.message.as_deref(),
+            Some("Managed proxy \"pluggable_transports\\lyrebird.exe\": Error dialing: unrecognized reply")
+        );
+        // Ошибка самого Tor по-прежнему проваливает попытку.
+        apply_log_line(
+            &mut st,
+            10,
+            "[err] Reading config failed--see warnings above.",
+            &mut warns,
+        );
+        assert!(st.candidate_failed);
     }
 }

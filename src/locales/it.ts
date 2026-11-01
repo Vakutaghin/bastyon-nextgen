@@ -748,7 +748,7 @@ export default {
       moved: '{name} — {pos} di {total}',
       locked: 'Sempre nel menu: dalle impostazioni si recupera ciò che è nascosto.',
       desktopOnly: 'Solo nell’app per computer.',
-      radioOnly: 'Nell’app per computer e su Android.',
+      desktopAndAndroid: 'Nell’app per computer e su Android.',
       noteNotifications:
         'Toglie solo l’icona: le notifiche a comparsa restano, si disattivano nella scheda «Notifiche».',
       noteNodeControls:

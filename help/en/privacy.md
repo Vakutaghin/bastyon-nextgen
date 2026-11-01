@@ -53,9 +53,9 @@ Link previews in posts are built by a node: the node opens the page, not your de
 
 ## How to hide your IP address
 
-- The desktop app has built-in [Tor](tor.md): requests to nodes and to the chat go through it. Under Tor, images load on a click and also through Tor, while embedded players, mini apps and IPFS are turned off so as not to reveal your address.
+- The desktop app and the Android app have built-in [Tor](tor.md): requests to nodes and to the chat go through it. On Android the whole app goes through Tor. On a computer, images load on a click under Tor and also through Tor, while embedded players, mini apps and IPFS are turned off so as not to reveal your address.
 - In [Settings](settings.md) you can turn off **“Show embedded videos”** — then a post shows a link instead of a YouTube or Vimeo player — and **“Link previews”**.
-- In the browser and on the phone the app has no Tor — use a VPN or Tor Browser.
+- In the browser and on iPhone the app has no Tor — use a VPN or Tor Browser.
 
 ## On your device
 

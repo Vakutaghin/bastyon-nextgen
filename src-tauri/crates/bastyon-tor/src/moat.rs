@@ -6,9 +6,11 @@
 //! Там, где мосты нужны, bridges.torproject.org заблокирован, поэтому запрос
 //! идёт через meek: lyrebird поднимает локальный SOCKS и прячет соединение за
 //! обращением к CDN (domain fronting). TLS сквозной до bridges.torproject.org,
-//! CDN видит только фронт-домен. Страну сервер определяет по адресу клиента —
-//! поэтому через Tor её спрашивать нельзя: ответ был бы для страны выходного
-//! узла.
+//! CDN видит только фронт-домен. Страну сервер определяет по адресу клиента.
+//!
+//! Где закрыт и CDN meek (CDN77 в РФ, замер из дома 01.11.2026), Moat
+//! спрашивается через уже подключённый Tor ([`via_tor`]). Тогда сервер видит
+//! адрес выходного узла, и страну приложение называет само.
 
 use crate::bridges;
 use crate::pt_config::PtConfig;
@@ -17,7 +19,7 @@ use serde::Deserialize;
 use std::process::Stdio;
 use std::time::Duration;
 use thiserror::Error;
-use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader};
 use tokio_socks::tcp::Socks5Stream;
 
 const MOAT_HOST: &str = "bridges.torproject.org";
@@ -31,6 +33,11 @@ const PT_START_TIMEOUT: Duration = Duration::from_secs(15);
 /// Moat через meek отвечает за 2–20 с. Где отражатель закрыт (CDN77 в РФ,
 /// замер 30.10.2026), ждать дольше незачем: автоподбор тем временем стоит.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+/// Через Tor: новая цепочка, а подключение могло пройти по медленному мосту.
+const TOR_REQUEST_TIMEOUT: Duration = Duration::from_secs(90);
+/// Свой логин SOCKS — своя цепочка (IsolateSOCKSAuth в Tor по умолчанию):
+/// выходной узел запроса мостов не видит остальных запросов приложения.
+const TOR_ISOLATION: (&str, &str) = ("bastyon-moat", "moat");
 const MAX_RESPONSE: u64 = 1 << 20;
 /// Moat: «не удалось определить страну».
 pub const CODE_NO_COUNTRY: i64 = 406;
@@ -122,6 +129,64 @@ pub async fn settings_or_defaults(
     }
 }
 
+/// Мосты через подключённый Tor (`socks_port`). Moat увидит адрес выходного
+/// узла, поэтому страна передаётся явно: та, что Moat определил раньше через
+/// meek, или по часовому поясу ([`timezone_country`]). Страны нет или советов
+/// для неё нет — общие запасные из BridgeDB.
+pub async fn via_tor(socks_port: u16, country: Option<&str>) -> Result<MoatSettings, MoatError> {
+    if let Some(country) = country {
+        let body = serde_json::json!({ "transports": REQUEST_TRANSPORTS, "country": country });
+        match parse_settings(&request_via_tor(socks_port, "circumvention/settings", &body).await?) {
+            Ok(s) if !s.bridgedb_lines().is_empty() => return Ok(s),
+            Ok(_) | Err(MoatError::Api { .. }) => {}
+            Err(e) => return Err(e),
+        }
+    }
+    let body = serde_json::json!({ "transports": REQUEST_TRANSPORTS });
+    parse_settings(&request_via_tor(socks_port, "circumvention/defaults", &body).await?)
+}
+
+/// Страна по часовому поясу системы, если для неё у Moat есть советы.
+pub fn timezone_country() -> Option<&'static str> {
+    iana_time_zone::get_timezone()
+        .ok()
+        .and_then(|tz| country_for_timezone(&tz))
+}
+
+/// Только страны из `circumvention/countries` (ответ от 01.11.2026): для
+/// остальных Moat советов не даёт, и подсказка ничего не изменила бы.
+/// Зоны — из zone.tab и старые имена-синонимы.
+fn country_for_timezone(tz: &str) -> Option<&'static str> {
+    #[rustfmt::skip]
+    const ZONES: &[(&str, &[&str])] = &[
+        (
+            "ru",
+            &[
+                "Europe/Kaliningrad", "Europe/Moscow", "Europe/Kirov", "Europe/Volgograd",
+                "Europe/Astrakhan", "Europe/Saratov", "Europe/Ulyanovsk", "Europe/Samara",
+                "Asia/Yekaterinburg", "Asia/Omsk", "Asia/Novosibirsk", "Asia/Barnaul",
+                "Asia/Tomsk", "Asia/Novokuznetsk", "Asia/Krasnoyarsk", "Asia/Irkutsk",
+                "Asia/Chita", "Asia/Yakutsk", "Asia/Khandyga", "Asia/Vladivostok",
+                "Asia/Ust-Nera", "Asia/Magadan", "Asia/Sakhalin", "Asia/Srednekolymsk",
+                "Asia/Kamchatka", "Asia/Anadyr", "W-SU",
+            ],
+        ),
+        ("by", &["Europe/Minsk"]),
+        ("tm", &["Asia/Ashgabat", "Asia/Ashkhabad"]),
+        ("ir", &["Asia/Tehran", "Iran"]),
+        ("cn", &["Asia/Shanghai", "Asia/Urumqi", "Asia/Chongqing", "Asia/Chungking", "Asia/Harbin",
+            "Asia/Kashgar", "PRC"]),
+        ("hk", &["Asia/Hong_Kong", "Hongkong"]),
+        ("mm", &["Asia/Yangon", "Asia/Rangoon"]),
+        ("eg", &["Africa/Cairo", "Egypt"]),
+    ];
+    let tz = tz.trim();
+    ZONES
+        .iter()
+        .find(|(_, zones)| zones.contains(&tz))
+        .map(|(country, _)| *country)
+}
+
 async fn request(
     paths: &TorPaths,
     pt: &PtConfig,
@@ -129,17 +194,6 @@ async fn request(
     body: &serde_json::Value,
 ) -> Result<String, MoatError> {
     let meek = MeekClient::spawn(paths, pt).await?;
-    let body = serde_json::to_vec(body).map_err(|e| MoatError::BadResponse(e.to_string()))?;
-    let head = format!(
-        "POST {MOAT_PATH}/{procedure} HTTP/1.1\r\n\
-         Host: {MOAT_HOST}\r\n\
-         Content-Type: application/vnd.api+json\r\n\
-         Accept: application/json\r\n\
-         Content-Length: {}\r\n\
-         Connection: close\r\n\r\n",
-        body.len()
-    );
-
     let exchange = async {
         let user = meek_credentials(MOAT_TARGETS);
         // Адрес назначения meek не смотрит: отражатель сам ведёт к Moat.
@@ -151,31 +205,72 @@ async fn request(
         )
         .await?
         .into_inner();
-        let connector = crate::ws::build_rustls_connector().map_err(MoatError::Tls)?;
-        let name = rustls_pki_types::ServerName::try_from(MOAT_HOST)
-            .map_err(|e| MoatError::Tls(e.to_string()))?;
-        let mut tls = connector
-            .connect(name, stream)
-            .await
-            .map_err(|e| MoatError::Tls(e.to_string()))?;
-        tls.write_all(head.as_bytes()).await?;
-        tls.write_all(&body).await?;
-        tls.flush().await?;
-
-        let mut raw = Vec::new();
-        match (&mut tls).take(MAX_RESPONSE).read_to_end(&mut raw).await {
-            Ok(_) => {}
-            // Сервер закрыл соединение без close_notify — ответ уже целиком.
-            Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof && !raw.is_empty() => {}
-            Err(e) => return Err(e.into()),
-        }
-        parse_http_response(&raw)
+        post(stream, procedure, body).await
     };
     let result = tokio::time::timeout(REQUEST_TIMEOUT, exchange)
         .await
         .map_err(|_| MoatError::Timeout)?;
     drop(meek);
     result
+}
+
+/// Тот же запрос через SocksPort Tor: имя хоста разрешает Tor.
+async fn request_via_tor(
+    socks_port: u16,
+    procedure: &str,
+    body: &serde_json::Value,
+) -> Result<String, MoatError> {
+    let exchange = async {
+        let (user, password) = TOR_ISOLATION;
+        let stream = Socks5Stream::connect_with_password(
+            ("127.0.0.1", socks_port),
+            (MOAT_HOST, 443),
+            user,
+            password,
+        )
+        .await?
+        .into_inner();
+        post(stream, procedure, body).await
+    };
+    tokio::time::timeout(TOR_REQUEST_TIMEOUT, exchange)
+        .await
+        .map_err(|_| MoatError::Timeout)?
+}
+
+/// TLS до bridges.torproject.org и `POST /moat/<procedure>` поверх `stream`.
+async fn post<S>(stream: S, procedure: &str, body: &serde_json::Value) -> Result<String, MoatError>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
+    let body = serde_json::to_vec(body).map_err(|e| MoatError::BadResponse(e.to_string()))?;
+    let head = format!(
+        "POST {MOAT_PATH}/{procedure} HTTP/1.1\r\n\
+         Host: {MOAT_HOST}\r\n\
+         Content-Type: application/vnd.api+json\r\n\
+         Accept: application/json\r\n\
+         Content-Length: {}\r\n\
+         Connection: close\r\n\r\n",
+        body.len()
+    );
+    let connector = crate::ws::build_rustls_connector().map_err(MoatError::Tls)?;
+    let name = rustls_pki_types::ServerName::try_from(MOAT_HOST)
+        .map_err(|e| MoatError::Tls(e.to_string()))?;
+    let mut tls = connector
+        .connect(name, stream)
+        .await
+        .map_err(|e| MoatError::Tls(e.to_string()))?;
+    tls.write_all(head.as_bytes()).await?;
+    tls.write_all(&body).await?;
+    tls.flush().await?;
+
+    let mut raw = Vec::new();
+    match (&mut tls).take(MAX_RESPONSE).read_to_end(&mut raw).await {
+        Ok(_) => {}
+        // Сервер закрыл соединение без close_notify — ответ уже целиком.
+        Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof && !raw.is_empty() => {}
+        Err(e) => return Err(e.into()),
+    }
+    parse_http_response(&raw)
 }
 
 /// Аргументы meek передаются логином SOCKS5 (раздел 3.5 спецификации PT):
@@ -460,6 +555,65 @@ mod tests {
         assert_eq!(user, format!("targets={MOAT_TARGETS}"));
         assert!(user.len() <= 255);
         assert_eq!(meek_credentials("a=b;c\\d"), "targets=a\\=b\\;c\\\\d");
+    }
+
+    #[test]
+    fn timezone_hints_only_countries_with_advice() {
+        assert_eq!(country_for_timezone("Europe/Moscow"), Some("ru"));
+        assert_eq!(country_for_timezone("Asia/Novosibirsk"), Some("ru"));
+        assert_eq!(country_for_timezone("Europe/Minsk"), Some("by"));
+        assert_eq!(country_for_timezone("PRC"), Some("cn"));
+        assert_eq!(country_for_timezone("Asia/Tbilisi"), None);
+        assert_eq!(country_for_timezone("UTC"), None);
+        assert_eq!(country_for_timezone(""), None);
+    }
+
+    /// Запрос мостов идёт в SocksPort Tor: имя хоста, а не адрес (DNS тоже
+    /// через Tor), и свой логин — своя цепочка. Прямых соединений нет.
+    #[tokio::test]
+    async fn via_tor_goes_through_the_socks_port_with_its_own_login() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let server = tokio::spawn(async move {
+            let (mut s, _) = listener.accept().await.unwrap();
+            let mut greet = [0u8; 2];
+            s.read_exact(&mut greet).await.unwrap();
+            let mut methods = vec![0u8; greet[1] as usize];
+            s.read_exact(&mut methods).await.unwrap();
+            assert!(methods.contains(&2), "user/password offered");
+            s.write_all(&[5, 2]).await.unwrap();
+            let mut ver_len = [0u8; 2];
+            s.read_exact(&mut ver_len).await.unwrap();
+            let mut user = vec![0u8; ver_len[1] as usize];
+            s.read_exact(&mut user).await.unwrap();
+            let mut plen = [0u8; 1];
+            s.read_exact(&mut plen).await.unwrap();
+            let mut pass = vec![0u8; plen[0] as usize];
+            s.read_exact(&mut pass).await.unwrap();
+            s.write_all(&[1, 0]).await.unwrap();
+            let mut head = [0u8; 5];
+            s.read_exact(&mut head).await.unwrap();
+            assert_eq!(&head[..4], &[5, 1, 0, 3], "CONNECT by domain name");
+            let mut host = vec![0u8; head[4] as usize];
+            s.read_exact(&mut host).await.unwrap();
+            let mut dport = [0u8; 2];
+            s.read_exact(&mut dport).await.unwrap();
+            s.write_all(&[5, 0, 0, 1, 0, 0, 0, 0, 0, 0]).await.unwrap();
+            (
+                String::from_utf8(user).unwrap(),
+                String::from_utf8(host).unwrap(),
+                u16::from_be_bytes(dport),
+            )
+        });
+        // Сервер закрывает соединение после CONNECT — TLS не получится.
+        assert!(via_tor(port, Some("ru")).await.is_err());
+        let (user, host, dport) = server.await.unwrap();
+        assert_eq!(user, TOR_ISOLATION.0);
+        assert_eq!(host, MOAT_HOST);
+        assert_eq!(dport, 443);
     }
 
     #[test]

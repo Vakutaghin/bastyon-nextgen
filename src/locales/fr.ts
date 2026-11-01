@@ -762,7 +762,7 @@ export default {
       moved: '{name} — {pos} sur {total}',
       locked: 'Toujours dans le menu : c’est par les réglages qu’on retrouve ce qui est masqué.',
       desktopOnly: 'Uniquement dans l’application de bureau.',
-      radioOnly: 'Dans l’application de bureau et sur Android.',
+      desktopAndAndroid: 'Dans l’application de bureau et sur Android.',
       noteNotifications:
         'Retire seulement l’icône : les notifications contextuelles restent, on les désactive dans l’onglet « Notifications ».',
       noteNodeControls:

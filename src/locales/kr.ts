@@ -740,7 +740,7 @@ export default {
       moved: '{name} — {total}개 중 {pos}번째',
       locked: '항상 메뉴에 있습니다: 숨긴 항목은 설정에서 되돌립니다.',
       desktopOnly: '데스크톱 앱에서만 사용할 수 있습니다.',
-      radioOnly: '데스크톱 앱과 Android에서 사용할 수 있습니다.',
+      desktopAndAndroid: '데스크톱 앱과 Android에서 사용할 수 있습니다.',
       noteNotifications:
         '아이콘만 숨깁니다. 팝업 알림은 계속 표시되며 「알림」 탭에서 끌 수 있습니다.',
       noteNodeControls:

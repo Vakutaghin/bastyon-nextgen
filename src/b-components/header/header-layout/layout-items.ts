@@ -36,6 +36,7 @@ import {
   WalletOutlined,
 } from '@/components/icons'
 import { isTauriEnv } from '@/helpers/api/request-tor'
+import { isAndroidTor } from '@/helpers/tor/tor-bridge'
 import { isRadioSupported } from '@/mesh/radio/platform'
 import { useHeaderLayoutStore } from '@/stores/header-layout-store'
 import {
@@ -119,24 +120,28 @@ export function defaultMenuItems(): MenuItemId[] {
   return DEFAULT_MENU_LAYOUT.filter((e) => e.visible && !unavailableReason(e.id)).map((e) => e.id)
 }
 
-/** Значки, которые помещаются в тесную шапку телефона; остальное там — в боковом меню. */
-export const PHONE_HEADER_ITEMS: readonly HeaderItemId[] = ['notifications', 'theme']
+/**
+ * Значки, которые помещаются в тесную шапку телефона; остальное там — в боковом
+ * меню. Tor — тоже: на Android меню Tor больше негде открыть.
+ */
+export const PHONE_HEADER_ITEMS: readonly HeaderItemId[] = ['notifications', 'theme', 'tor']
 
 /**
- * Почему пункта здесь нет: i18n-ключ причины или null, если он есть. Tor, IPFS
- * и «Мои файлы» — своя нода, только в приложении для компьютера; радио mesh —
- * ещё и на Android.
+ * Почему пункта здесь нет: i18n-ключ причины или null, если он есть. IPFS и
+ * «Мои файлы» — своя нода, только в приложении для компьютера; Tor и радио
+ * mesh — ещё и на Android.
  */
 export function unavailableReason(
   id: HeaderItemId | MenuItemId | SidebarItemId | SidebarBlockId
 ): string | null {
   switch (id) {
-    case 'tor':
     case 'ipfs':
     case 'myFiles':
       return isTauriEnv() ? null : 'settings.layout.desktopOnly'
+    case 'tor':
+      return isTauriEnv() || isAndroidTor() ? null : 'settings.layout.desktopAndAndroid'
     case 'mesh':
-      return isRadioSupported() ? null : 'settings.layout.radioOnly'
+      return isRadioSupported() ? null : 'settings.layout.desktopAndAndroid'
     default:
       return null
   }

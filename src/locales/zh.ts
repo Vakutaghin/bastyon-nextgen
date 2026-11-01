@@ -702,7 +702,7 @@ export default {
       moved: '{name}：第 {pos} 项，共 {total} 项',
       locked: '始终在菜单中：隐藏的项目要通过设置找回。',
       desktopOnly: '仅在桌面应用中提供。',
-      radioOnly: '在桌面应用和 Android 上提供。',
+      desktopAndAndroid: '在桌面应用和 Android 上提供。',
       noteNotifications: '只隐藏图标：弹出通知仍会出现，可在“通知”标签页中关闭。',
       noteNodeControls: '只能通过这个图标开启或关闭。隐藏图标后它照常运行，但将无处控制。',
       noteMessenger:

@@ -383,8 +383,9 @@ export const useTorStore = defineStore('tor', {
     },
 
     /**
-     * Свежие мосты от Tor Project для страны пользователя (Moat через meek,
-     * без капчи) — для «Своих мостов». Бросает ошибку бэкенда как есть.
+     * Свежие мосты от Tor Project для страны пользователя (Moat без капчи:
+     * через подключённый Tor, иначе через meek) — для «Своих мостов». Бросает
+     * ошибку бэкенда как есть.
      */
     async requestBridges(): Promise<TorRequestedBridges> {
       if (!this.available) return { country: null, bridges: [] }

@@ -8,9 +8,9 @@ How to hide your IP address from nodes and chat servers: turn on Tor in the app,
 
 ## Turning it on
 
-Tor exists only in the desktop app. Click the Tor icon in the header and flip the switch. The first time, the app explains what goes through Tor — press **“Enable”**.
+Tor is in the desktop app and on Android; the browser and iPhone do not have it. Click the Tor icon in the header and flip the switch. The first time, the app explains what goes through Tor — press **“Enable”**.
 
-The first time, Tor is downloaded — about 20 MB. The app takes it from its own mirror on GitHub or, if it is not there, from the Tor Project site, and checks it against the checksum built into the app. When a new app version ships a newer Tor, the previous one keeps working: the new one downloads through it in the background and takes over the next time you turn Tor on. Then Tor connects to its network — the menu shows how far along it is and through which bridges, and once done, **“Connected to the Tor network”**.
+On a computer, Tor is downloaded the first time — about 20 MB. The app takes it from its own mirror on GitHub or, if it is not there, from the Tor Project site, and checks it against the checksum built into the app. When a new app version ships a newer Tor, the previous one keeps working: the new one downloads through it in the background and takes over the next time you turn Tor on. On Android, Tor is already built into the app. Then Tor connects to its network — the menu shows how far along it is and through which bridges, and once done, **“Connected to the Tor network”**.
 
 While Tor is connecting, the app waits and does not go online directly. If Tor cannot connect, requests are not sent at all: the app will not quietly bypass Tor. Tor, once on, also starts the next time you launch the app.
 
@@ -23,7 +23,7 @@ If your provider blocks Tor — as in Russia — bridges help to connect. In the
 - Snowflake — disguises Tor as a video call;
 - **“obfs4 (built-in)”** — well-known bridges that come with Tor. Where Tor is blocked seriously, these are blocked first;
 - **“meek (via CDN, slow)”** — disguises Tor as traffic to a large content delivery network. Slow, but gets through almost everywhere;
-- **“Custom bridges”** — paste bridges one per line: obfs4, WebTunnel, Snowflake, or meek. The **“Get bridges”** button asks the Tor Project for fresh bridges for your country. From Russia it usually cannot get through right now, for the same reason as automatic bridges — see “How automatic bridges work” below. The @GetBridgesBot Telegram bot and bridges.torproject.org also hand out bridges, but the site is blocked in Russia too. Lines that do not look like a bridge are skipped, and the app tells you how many.
+- **“Custom bridges”** — paste bridges one per line: obfs4, WebTunnel, Snowflake, or meek. The **“Get bridges”** button asks the Tor Project for fresh bridges for your country. If Tor is already connected, the request goes through it, so the button works even where the Tor Project is blocked, as in Russia. Without a connected Tor it usually cannot get through from Russia — see “How automatic bridges work” below. The @GetBridgesBot Telegram bot and bridges.torproject.org also hand out bridges, but the site is blocked in Russia. Lines that do not look like a bridge are skipped, and the app tells you how many.
 
 Press **“Apply”** — Tor restarts with the new bridges. While it restarts, requests wait for it and do not go out directly.
 
@@ -34,7 +34,9 @@ If the connection makes no progress for a long time, the menu warns that the met
 
 The app asks Moat, the Tor Project service that hands out bridges. The Tor Project site is blocked in Russia, so the request goes through meek: the provider sees traffic to a content delivery network, while the encryption runs end to end to the Tor Project. Moat works out the country from the IP address the request came from — just as when Tor Browser requests bridges — and the menu shows it.
 
-Sometimes Moat itself is out of reach: in Russia the content delivery network that meek goes through is blocked. Then the app waits for it no longer than half a minute and tries the built-in methods: first Snowflake through Google's AMP cache, then plain Snowflake, meek and obfs4. The Tor Project recommends Snowflake through the AMP cache for Russia, but Tor's built-in bridges do not include it — the app adds it. Plain Snowflake finds its proxy through the same blocked content delivery network, and where that network is blocked the built-in obfs4 bridges usually are too. From a home connection in Russia the first connection takes 2–3 minutes this way.
+Sometimes Moat itself is out of reach: in Russia the content delivery network that meek goes through is blocked. Then the app waits for it no longer than half a minute and tries the built-in methods: first Snowflake through Google's AMP cache, then plain Snowflake, meek and obfs4. The Tor Project recommends Snowflake through the AMP cache for Russia, but Tor's built-in bridges do not include it — the app adds it. Plain Snowflake finds its proxy through the same blocked content delivery network, and where that network is blocked the built-in obfs4 bridges usually are too. From a home connection in Russia the first connection takes one and a half to three minutes this way.
+
+Once connected over Snowflake or meek, the app asks the Tor Project, through Tor itself, for faster bridges — obfs4 and WebTunnel — and tries them first the next time. From a home connection in Russia the next connection then took 15 seconds instead of 47. Through Tor the Tor Project sees the exit relay’s address rather than yours, so the app names the country itself: the one the Tor Project detected earlier, or the one that matches the device’s time zone. If these bridges do not connect, the app goes back to the method that worked before and does not ask for new ones for a day.
 
 An attempt that makes no progress for a minute and a half gives way to the next one; meek, the slowest, gets four minutes. The app remembers the method that worked and tries it first next time, without asking Moat.
 
@@ -48,7 +50,9 @@ An attempt that makes no progress for a minute and a half gives way to the next 
 
 ## What bypasses Tor
 
-The app’s windows themselves cannot be routed entirely through Tor on every system, so whatever they would load directly is blocked while Tor is on:
+On Android the whole app goes through Tor: images, video, music and mini apps too. Only links bypass Tor there — they open in your regular browser.
+
+On a computer, the app’s windows themselves cannot be routed entirely through Tor on every system, so whatever they would load directly is blocked while Tor is on:
 
 - **images** do not show by themselves: press **“Load through Tor”** on an image, and it loads through Tor;
 - **videos** can be watched only directly: the app warns **“Video will bypass Tor”** — the PeerTube server will see your IP address — and plays the video after **“Watch bypassing Tor”**. Node requests and the chat stay in Tor. To watch a video without leaving Tor, download it: the download goes through Tor, and a downloaded video plays from the disk — see [Download to watch offline](offline-video.md);

@@ -757,7 +757,7 @@ export default {
       moved: '{name} — {pos} von {total}',
       locked: 'Immer im Menü: Darüber holt man Ausgeblendetes zurück.',
       desktopOnly: 'Nur in der Desktop-App.',
-      radioOnly: 'In der Desktop-App und unter Android.',
+      desktopAndAndroid: 'In der Desktop-App und unter Android.',
       noteNotifications:
         'Entfernt nur das Symbol: Pop-up-Benachrichtigungen bleiben, sie werden im Tab „Benachrichtigungen“ ausgeschaltet.',
       noteNodeControls:

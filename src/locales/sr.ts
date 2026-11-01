@@ -743,7 +743,7 @@ export default {
       moved: '{name} — {pos} од {total}',
       locked: 'Увек у менију: преко подешавања се враћа скривено.',
       desktopOnly: 'Само у апликацији за рачунар.',
-      radioOnly: 'У апликацији за рачунар и на Android-у.',
+      desktopAndAndroid: 'У апликацији за рачунар и на Android-у.',
       noteNotifications:
         'Уклања само икону: искачућа обавештења остају, искључују се на картици „Обавештења“.',
       noteNodeControls:

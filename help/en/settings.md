@@ -30,7 +30,7 @@ What stands in the header to the right of the search, what is in the avatar menu
 
 The switch on the right shows or hides an item. To change the order, drag a row by the handle on the left — with the mouse or a finger. From the keyboard: Tab to the handle, then the up and down arrow keys. Everything changes at once, there is nothing to save. **“Restore defaults”** under the list brings back the original set and order.
 
-Items that this version of the app does not have are shown with an explanation, and their switch does not turn on. Tor, IPFS and **“My files”** are only in the desktop app, **“Mesh networks”** — also on Android.
+Items that this version of the app does not have are shown with an explanation, and their switch does not turn on. IPFS and **“My files”** are only in the desktop app, Tor and **“Mesh networks”** — also on Android.
 
 What hiding an icon means:
 

@@ -744,7 +744,7 @@ export default {
       moved: '{name} — {pos} of {total}',
       locked: 'Always in the menu: hidden items are brought back through the settings.',
       desktopOnly: 'Only in the desktop app.',
-      radioOnly: 'In the desktop app and on Android.',
+      desktopAndAndroid: 'In the desktop app and on Android.',
       noteNotifications:
         'Removes only the icon: pop-up notifications stay; turn them off on the “Notifications” tab.',
       noteNodeControls:

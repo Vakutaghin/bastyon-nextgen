@@ -309,9 +309,30 @@ impl TorManager {
 
     /// «Получить мосты»: свежие мосты из BridgeDB для страны пользователя
     /// через Moat (без капчи) — для «Своих мостов». Страна без цензуры —
-    /// общие запасные. Нужен бандл с lyrebird (на компьютере его сначала
-    /// ставит обёртка).
+    /// общие запасные. Tor подключён — через него: meek к Moat там, где мосты
+    /// нужнее всего, закрыт (CDN77 в РФ). Иначе через meek; нужен бандл с
+    /// lyrebird (на компьютере его сначала ставит обёртка).
     pub async fn request_bridges(&self) -> Result<TorRequestedBridges, String> {
+        let (ready, socks_port, country) = {
+            let st = self.state.read().await;
+            (
+                st.status == TorStatus::Ready,
+                st.socks_port,
+                st.country.clone(),
+            )
+        };
+        if ready {
+            let country = country.or_else(|| moat::timezone_country().map(String::from));
+            match moat::via_tor(socks_port, country.as_deref()).await {
+                Ok(settings) => {
+                    return Ok(TorRequestedBridges {
+                        country: settings.country.clone(),
+                        bridges: bridges::parse_lines(&settings.bridgedb_lines()).lines(),
+                    })
+                }
+                Err(e) => log::warn!("[tor] moat via tor: {}, trying meek", e),
+            }
+        }
         let pt = PtConfig::load(&self.paths.pt_dir);
         let settings = moat::settings_or_defaults(&self.paths, &pt)
             .await
