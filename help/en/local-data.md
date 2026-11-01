@@ -19,9 +19,9 @@ Everything published is stored on the network. On the device the app keeps only 
 - **Saved chats** — if you turned saving on: encrypted with the account key, see [Chats saved on this device](chat-archive.md).
 - **Notifications** that have already arrived.
 - **The places where you stopped watching** videos.
-- **Downloaded videos and tracks** — if you downloaded any, see [Download to watch offline](offline-video.md). These are ordinary video files, they are not encrypted. They are never deleted on their own: you can delete them on the Downloads tab or in the settings, under **“Downloaded videos”**.
+- **Downloaded videos and tracks** — if you downloaded any, see [Download to watch offline](offline-video.md). These are ordinary video files, they are not encrypted. Only the videos downloaded automatically from subscriptions go away on their own — after a week, unless you tap **“Keep”**. Everything else you can delete on the Downloads tab or in the settings, under **“Downloaded videos”**.
 - **Web cache** — pictures, videos and pages the app has already downloaded.
-- In the desktop app also the [Tor](tor.md) and [IPFS](ipfs-module.md) programs, the [voice input](voice-input.md) models, the [video compression module](video-compression.md), the [mesh networks module](mesh.md) and your [files in IPFS](my-files.md). Which of them are downloaded and how much space they take is shown on the **“Modules”** tab in the settings; you can download or remove them there too.
+- The [voice input](voice-input.md) models, and in the desktop app also the [Tor](tor.md) and [IPFS](ipfs-module.md) programs, the [video compression module](video-compression.md), the [mesh networks module](mesh.md) and your [files in IPFS](my-files.md). Which of them are downloaded and how much space they take is shown on the **“Modules”** tab in the settings; you can download or remove them there too.
 
 ## The cache and its limit
 

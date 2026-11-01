@@ -40,6 +40,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useNotificationSettingsStore } from '@/stores'
 import { useUIStore } from '@/stores/ui-store'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
+import { isAndroidVoice } from '@/helpers/voice-input/voice-backend'
 import GeneralTab from './tabs/general-tab.vue'
 import LayoutTab from './tabs/layout-tab.vue'
 import NotificationsTab from './tabs/notifications-tab.vue'
@@ -74,14 +75,16 @@ export type T_SettingsTabKey =
   | 'whatsNew'
 
 // labelKey — ключ i18n; рендерим через t(), чтобы метки реактивно следовали за локалью.
-// Модули скачивает только приложение для компьютера.
+// Модули скачивает приложение для компьютера, а на Android — модели голосового ввода.
 const SETTINGS_TABS: { key: T_SettingsTabKey; labelKey: string }[] = [
   { key: 'general', labelKey: 'settings.tabs.general' },
   { key: 'layout', labelKey: 'settings.tabs.layout' },
   { key: 'notifications', labelKey: 'settings.tabs.notifications' },
   { key: 'chats', labelKey: 'settings.tabs.chats' },
   { key: 'system', labelKey: 'settings.tabs.system' },
-  ...(isTauri() ? [{ key: 'modules' as const, labelKey: 'settings.tabs.modules' }] : []),
+  ...(isTauri() || isAndroidVoice()
+    ? [{ key: 'modules' as const, labelKey: 'settings.tabs.modules' }]
+    : []),
   { key: 'privateKey', labelKey: 'settings.tabs.privateKey' },
   { key: 'blacklist', labelKey: 'settings.tabs.blacklist' },
   { key: 'appPermissions', labelKey: 'settings.tabs.appPermissions' },

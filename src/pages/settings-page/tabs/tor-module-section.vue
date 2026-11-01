@@ -1,7 +1,10 @@
 <template>
   <!-- Tor (десктоп): скачивается сам при первом включении кнопкой в шапке,
-       здесь — состояние и удаление. -->
-  <SC_ModuleCard v-if="tor.available && tor.installed !== null" data-testid="tor-module">
+       здесь — состояние и удаление. На Android он встроен — карточки нет. -->
+  <SC_ModuleCard
+    v-if="tor.available && !tor.builtin && tor.installed !== null"
+    data-testid="tor-module"
+  >
     <SC_ModuleHead>
       <SC_ModuleTitle>{{ t('settings.modules.tor.title') }}</SC_ModuleTitle>
       <SC_ModuleStatus>{{ statusLabel }}</SC_ModuleStatus>

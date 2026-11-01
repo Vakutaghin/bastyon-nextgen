@@ -71,4 +71,10 @@ describe('TorModuleSection', () => {
     await flushPromises()
     expect(text()).toContain('Удалить Tor?')
   })
+
+  it('на Android Tor встроен — карточки нет, удалять нечего', async () => {
+    useTorStore().builtin = true
+    await mountSection()
+    expect(document.body.querySelector('[data-testid="tor-module"]')).toBeNull()
+  })
 })

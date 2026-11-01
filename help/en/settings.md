@@ -58,7 +58,7 @@ Which events to show, sound and system notifications — see [Notifications](not
 
 ## Modules
 
-Only in the desktop app. The programs the app downloads when you ask, and how much disk space each one takes:
+The programs the app downloads when you ask, and how much disk space each one takes. The desktop app shows all the modules here, the Android app only **“Voice input”**:
 
 - **“IPFS module”** — **“Download and turn on”** or **“Remove module”**, see [The IPFS module](ipfs-module.md);
 - **“Tor”** — downloads by itself the first time you turn it on; you can remove it here while it is off, see [Tor](tor.md);
@@ -66,7 +66,7 @@ Only in the desktop app. The programs the app downloads when you ask, and how mu
 - **“Video compression module”** — see [Video compression](video-compression.md);
 - **“Mesh networks module”** — download, update or remove it, see [Chatting over radio](mesh.md).
 
-Under each module you can see how much space it takes and its version. Modules update together with the app: a new version downloads in the background and takes over at the next start, while the old one keeps working.
+Under each module you can see how much space it takes and its version. On a computer, modules update together with the app: a new version downloads in the background and takes over at the next start, while the old one keeps working. On a phone, the **“Speed up”** button next to a voice input model downloads its faster version.
 
 ## Security
 
