@@ -84,6 +84,11 @@ export interface OfflineMeta {
   authorDeleted?: number
   /** Когда последний раз проверяли, не удалён ли (мс). */
   checkedAt?: number
+  /**
+   * Скачано само — новый ролик подписок (мс). Через AUTO_KEEP_MS удаляется,
+   * если человек не нажал «Оставить» (тогда поля нет).
+   */
+  auto?: number
 }
 
 export interface OfflineItem {
@@ -159,6 +164,11 @@ export interface OfflineBackend {
   nativeUrl?(id: string): Promise<string | null>
   /** Только по Wi-Fi (Android). */
   setWifiOnly?(on: boolean): Promise<void>
+  /**
+   * Сеть сейчас безлимитная — Wi-Fi (Android). Нет метода — платформа не
+   * знает, смотрим `navigator.connection`.
+   */
+  unmetered?(): Promise<boolean>
   onProgress(cb: (p: OfflineProgress) => void): Promise<() => void>
   onChanged(cb: (e: OfflineChanged) => void): Promise<() => void>
 }

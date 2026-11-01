@@ -215,6 +215,11 @@ final class OfflineManager {
         else pauseActive(ERR_WIFI);
     }
 
+    /** Сеть сейчас безлимитная (Wi-Fi) — спрашивает страница перед загрузками подписок. */
+    boolean unmeteredNow() {
+        return currentlyUnmetered();
+    }
+
     private boolean networkAllowed() {
         return !wifiOnly || unmetered;
     }

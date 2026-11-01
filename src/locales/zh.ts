@@ -4277,6 +4277,11 @@ export default {
     batchSkipped: '另有 {n} 个暂时无法下载：仍在处理或服务器无响应',
     batchUnavailable: '现在无法下载：服务器无响应或视频仍在处理',
     batchAllDone: '全部已在“已下载”中',
+    autoSubs: '自动下载订阅的新视频',
+    autoSubsHint:
+      '应用打开且连接 Wi-Fi 时：每次最多下载 5 个新视频，使用默认画质（设为“每次询问”时为 360p）。一周后自动删除，除非点按“保留”。',
+    autoBadge: '自动下载 · {n} 天后删除',
+    keep: '保留',
     emptyVideo: '没有已下载的视频。点击视频下方的“下载”——没有网络时也能在这里观看。',
     emptyAudio: '没有已下载的音轨。点击音轨下方的“下载”——没有网络时也能在这里收听。',
     settingsTitle: '已下载的视频',

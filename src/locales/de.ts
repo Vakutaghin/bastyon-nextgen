@@ -4565,6 +4565,12 @@ export default {
     batchUnavailable:
       'Gerade lässt sich nichts herunterladen: Die Server antworten nicht oder die Videos werden noch verarbeitet',
     batchAllDone: 'Alles ist schon in „Downloads“',
+    autoSubs: 'Neue Videos aus Abos automatisch herunterladen',
+    autoSubsHint:
+      'Solange die App offen ist und WLAN besteht: bis zu 5 neue Videos auf einmal, in der Standardqualität (360p bei „Fragen“). Nach einer Woche werden sie gelöscht, außer du tippst auf „Behalten“.',
+    autoBadge:
+      'Automatisch geladen · wird in {n} Tag gelöscht | Automatisch geladen · wird in {n} Tagen gelöscht',
+    keep: 'Behalten',
     emptyVideo:
       'Keine heruntergeladenen Videos. Tippe unter einem Video auf „Herunterladen“ — es ist dann auch ohne Netz hier.',
     emptyAudio:

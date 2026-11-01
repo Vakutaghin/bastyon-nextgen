@@ -4527,6 +4527,12 @@ export default {
     batchUnavailable:
       'Ahora no se puede descargar nada: los servidores no responden o los vídeos aún se están procesando',
     batchAllDone: 'Todo ya está en Descargas',
+    autoSubs: 'Descargar automáticamente los vídeos nuevos de las suscripciones',
+    autoSubsHint:
+      'Mientras la app está abierta y hay Wi-Fi: hasta 5 vídeos nuevos a la vez, en la calidad predeterminada (360p si está en «Preguntar»). Se eliminan a la semana, salvo que pulses «Conservar».',
+    autoBadge:
+      'Descargado automáticamente · se elimina en {n} día | Descargado automáticamente · se elimina en {n} días',
+    keep: 'Conservar',
     emptyVideo:
       'No hay vídeos descargados. Pulsa «Descargar» bajo un vídeo — estará aquí incluso sin red.',
     emptyAudio:

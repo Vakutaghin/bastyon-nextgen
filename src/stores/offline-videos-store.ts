@@ -26,6 +26,17 @@ import type { PeerTubeVideoInfo } from '@/helpers/api/peertube-url'
 import { offlineBackend } from '@/services/offline-video/backend'
 import { batchRows, mapLimit, type OfflineBatchRow } from '@/services/offline-video/offline-batch'
 import {
+  AUTO_DEFAULT_HEIGHT,
+  AUTO_FIRST_WINDOW_MS,
+  AUTO_MAX_ITEMS,
+  AUTO_MIN_FREE_BYTES,
+  AUTO_PER_CHECK,
+  autoCandidates,
+  autoItems,
+  expiredAuto,
+} from '@/services/offline-video/offline-auto'
+import { onAppForeground } from '@/helpers/common/app-foreground'
+import {
   buildOfflineJob,
   isProcessing,
   offlineQualities,
@@ -42,6 +53,7 @@ import type {
   OfflineBackend,
   OfflineChanged,
   OfflineItem,
+  OfflineMeta,
   OfflineProgress,
   OfflineUsage,
 } from '@/services/offline-video/types'
@@ -63,6 +75,12 @@ export const OFFLINE_QUALITY_CHOICES: readonly OfflineQualityPref[] = [
 
 const QUALITY_KEY = 'offline:quality'
 const WIFI_ONLY_KEY = 'offline:wifi-only'
+const AUTO_KEY = 'offline:auto-subs'
+/** До какого поста подписок уже смотрели (мс) — у каждого аккаунта своё. */
+const autoSinceKey = (account: string): string => `offline:auto-since:${account}`
+/** Первая проверка подписок — когда запуск прошёл, потом раз в час. */
+const FIRST_AUTO_AFTER_MS = 90_000
+const AUTO_EVERY_MS = 60 * 60 * 1000
 /** Проверка «не удалил ли автор» — не чаще раза в сутки на ролик. */
 const CHECK_EVERY_MS = 24 * 60 * 60 * 1000
 /** Первая проверка — когда запуск уже прошёл. */
@@ -87,6 +105,33 @@ function readWifiOnly(): boolean {
   } catch {
     return true
   }
+}
+
+function readAutoSubs(): boolean {
+  try {
+    return localStorage.getItem(AUTO_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function readNumber(key: string): number | null {
+  try {
+    const n = Number(localStorage.getItem(key))
+    return Number.isFinite(n) && n > 0 ? n : null
+  } catch {
+    return null
+  }
+}
+
+/** Безлимитная ли сеть: на Android знает служба, иначе — `navigator.connection`. */
+async function unmeteredNetwork(backend: OfflineBackend): Promise<boolean> {
+  if (backend.unmetered) return backend.unmetered().catch(() => false)
+  const connection =
+    typeof navigator !== 'undefined'
+      ? (navigator as Navigator & { connection?: { type?: string; saveData?: boolean } }).connection
+      : undefined
+  return !(connection?.saveData || connection?.type === 'cellular')
 }
 
 function persist(key: string, value: string | null): void {
@@ -140,6 +185,8 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
   const usage = ref<OfflineUsage | null>(null)
   const qualityPref = ref<OfflineQualityPref>(readQualityPref())
   const wifiOnly = ref<boolean>(readWifiOnly())
+  /** Новые ролики подписок качаются сами. */
+  const autoSubs = ref<boolean>(readAutoSubs())
 
   /** Лист выбора качества: что качать. */
   const sheet = shallowRef<OfflineChoice | null>(null)
@@ -232,6 +279,12 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     })
     setTimeout(() => void checkDeletedAll(), FIRST_CHECK_AFTER_MS)
     setInterval(() => void checkDeletedAll(), CHECK_EVERY_MS)
+    // Новые ролики подписок: после запуска, раз в час, с вернувшейся сетью и
+    // при возвращении в приложение.
+    window.addEventListener('online', () => void runAuto())
+    setTimeout(() => void runAuto(), FIRST_AUTO_AFTER_MS)
+    setInterval(() => void runAuto(), AUTO_EVERY_MS)
+    onAppForeground(() => void runAuto())
     // Tor поднялся — продолжить то, что его ждало.
     void import('@/stores/tor-store')
       .then(({ useTorStore }) => {
@@ -309,8 +362,12 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     return pref === 'ask' ? null : pickQuality(choice.qualities, pref)
   }
 
-  /** Поставить в очередь выбранное качество. */
-  async function start(choice: OfflineChoice, quality: OfflineQuality): Promise<OfflineItem> {
+  /** Поставить в очередь выбранное качество; `extra` — поля meta сверх обычных (`auto`). */
+  async function start(
+    choice: OfflineChoice,
+    quality: OfflineQuality,
+    extra: Pick<OfflineMeta, 'auto'> = {}
+  ): Promise<OfflineItem> {
     const me = account.value
     if (!me) throw new Error('offline_needs_account')
     const b = await backend()
@@ -329,7 +386,7 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
       account: me,
       withPlaylist: b.kind === 'android',
     })
-    const item = await b.enqueue(job, meta)
+    const item = await b.enqueue(job, { ...meta, ...extra })
     put(item, item.id)
     return item.meta.accounts?.includes(me) ? item : claim(item)
   }
@@ -501,6 +558,81 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     usage.value = await b.usage().catch(() => usage.value)
   }
 
+  /** Скачанное само — оставить насовсем: неделя больше не считается. */
+  async function keep(id: string): Promise<void> {
+    put(await (await backend()).patchMeta(id, { auto: null }), id)
+  }
+
+  async function setAutoSubs(on: boolean): Promise<void> {
+    autoSubs.value = on
+    persist(AUTO_KEY, on ? '1' : null)
+    if (on) await runAuto()
+  }
+
+  let autoRunning: Promise<void> | null = null
+
+  /** Проверка подписок; идущая не запускается второй раз. */
+  function runAuto(now: number = Date.now()): Promise<void> {
+    autoRunning ??= autoCheck(now)
+      .catch((e: unknown) => log.warn('auto check failed', e))
+      .finally(() => {
+        autoRunning = null
+      })
+    return autoRunning
+  }
+
+  /**
+   * Убрать скачанное само, которому неделя (даже если загрузку подписок уже
+   * выключили), и поставить свежие ролики подписок: на безлимитной сети, в
+   * качестве по умолчанию (при «Спрашивать» — AUTO_DEFAULT_HEIGHT), не больше
+   * AUTO_PER_CHECK за раз и AUTO_MAX_ITEMS всего, пока свободно больше
+   * AUTO_MIN_FREE_BYTES. Ролик ещё в обработке — посмотрим в следующий раз.
+   */
+  async function autoCheck(now: number): Promise<void> {
+    await hydrate()
+    const b = backendRef
+    const me = account.value
+    if (!b || !me) return
+    for (const item of expiredAuto(items.values(), me, now)) {
+      await remove(item.id).catch((e: unknown) => log.warn('auto expire failed', item.id, e))
+    }
+    if (!autoSubs.value) return
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+    const room = Math.min(AUTO_PER_CHECK, AUTO_MAX_ITEMS - autoItems(items.values(), me).length)
+    if (room <= 0 || !(await unmeteredNetwork(b))) return
+
+    const sinceKey = autoSinceKey(me)
+    const since = readNumber(sinceKey) ?? now - AUTO_FIRST_WINDOW_MS
+    const { fetchSubscriptionVideos } = await import('@/services/offline-video/subscription-videos')
+    const videos = await fetchSubscriptionVideos(me)
+    const picked = autoCandidates(videos, {
+      since,
+      have: (url) => !!itemFor(url),
+      limit: room,
+    })
+    let next = Math.max(since, ...videos.map((v) => v.time))
+    const pref = qualityPref.value
+    for (const video of picked) {
+      const result = await prepare(video.source)
+      if (result.kind === 'processing') {
+        next = Math.min(next, video.time - 1)
+        continue
+      }
+      if (result.kind !== 'ready') continue
+      const quality = pickQuality(
+        result.choice.qualities,
+        pref === 'ask' ? AUTO_DEFAULT_HEIGHT : pref
+      )
+      if (!quality) continue
+      const free = result.choice.free
+      if (free !== null && free < quality.size + AUTO_MIN_FREE_BYTES) break
+      await start(result.choice, quality, { auto: now }).catch((e: unknown) =>
+        log.warn('auto start failed', video.source.peertubeUrl, e)
+      )
+    }
+    persist(sinceKey, String(next))
+  }
+
   function setQualityPref(pref: OfflineQualityPref): void {
     qualityPref.value = pref
     persist(QUALITY_KEY, pref === 'ask' ? null : String(pref))
@@ -589,6 +721,7 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     usage,
     qualityPref,
     wifiOnly,
+    autoSubs,
     mine,
     mineUsed,
     hydrate,
@@ -611,6 +744,9 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     refreshUsage,
     setQualityPref,
     setWifiOnly,
+    setAutoSubs,
+    keep,
+    runAuto,
     checkDeleted,
     checkDeletedAll,
     noteOpened,

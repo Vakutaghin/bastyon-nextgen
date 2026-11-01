@@ -22,6 +22,9 @@
         <SC_Deleted v-if="item.meta.authorDeleted" data-testid="offline-author-deleted">
           <DeleteOutlined /> {{ t('offlineVideo.authorDeleted') }}
         </SC_Deleted>
+        <SC_AutoBadge v-if="autoDaysLeft" data-testid="offline-auto-badge">
+          {{ t('offlineVideo.autoBadge', { n: autoDaysLeft }, autoDaysLeft) }}
+        </SC_AutoBadge>
       </SC_CardStatus>
       <SC_Progress v-if="showProgress" :value="received" :max="total || 1" />
       <SC_CardActions @click.stop>
@@ -43,6 +46,14 @@
         >
           {{ t('offlineVideo.retry') }}
         </Button>
+        <Button
+          v-if="autoDaysLeft"
+          size="small"
+          data-testid="offline-keep"
+          @click="store.keep(item.id)"
+        >
+          {{ t('offlineVideo.keep') }}
+        </Button>
         <Button size="small" danger data-testid="offline-remove" @click="store.remove(item.id)">
           {{ done ? t('offlineVideo.remove') : t('offlineVideo.cancel') }}
         </Button>
@@ -54,6 +65,8 @@
 <script setup lang="ts">
 // Карточка в «Скачанном»: обложка с диска, ход загрузки, причина паузы,
 // «Повторить» и «Удалить». Скачанный ролик открывается окном без сети.
+// Скачанное само (новое от подписок) — с пометкой, через сколько дней уйдёт,
+// и «Оставить».
 
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -62,10 +75,12 @@ import { DeleteOutlined, PlayCircleOutlined, SoundOutlined } from '@/components/
 import { formatDuration } from '@/services/media/media-post'
 import { userName } from '@/services/user-names'
 import type { OfflineItem } from '@/services/offline-video/types'
+import { AUTO_KEEP_MS } from '@/services/offline-video/offline-auto'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import { offlineStatusText } from './offline-status'
 import { useOfflineFile } from './use-offline-file'
 import {
+  SC_AutoBadge,
   SC_Card,
   SC_CardActions,
   SC_CardBody,
@@ -99,6 +114,13 @@ const authorName = computed(() =>
   userName(props.item.meta.author.address, props.item.meta.author.name)
 )
 const statusText = computed(() => offlineStatusText(t, locale.value, props.item, progress.value))
+/** Скачано само: сколько дней осталось до удаления (не меньше одного); 0 — оставлено. */
+const autoDaysLeft = computed(() => {
+  const auto = props.item.meta.auto
+  if (!auto) return 0
+  const left = auto + AUTO_KEEP_MS - Date.now()
+  return Math.max(1, Math.ceil(left / (24 * 60 * 60 * 1000)))
+})
 const statusClass = computed(() => {
   if (props.item.state.status === 'failed') return 'error'
   if (props.item.state.status === 'paused' && props.item.state.error) return 'warn'

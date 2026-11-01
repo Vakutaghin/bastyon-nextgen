@@ -9,9 +9,10 @@ import { useI18n } from 'vue-i18n'
 import { appToast } from '@/b-components/app-toast'
 import { requireAuth } from '@/composables/use-auth-gate'
 import { useAuthStore } from '@/blockchain/store/auth-store'
-import { mediaTitle } from '@/services/media/media-post'
-import { cachedMediaInfo } from '@/services/media/media-info'
-import { userAvatar, userName } from '@/services/user-names'
+import {
+  offlineSourceFromPost,
+  type OfflinePostLike,
+} from '@/services/offline-video/offline-source'
 import type { OfflineQuality, OfflineSource } from '@/services/offline-video/offline-job'
 import { formatBytes } from '@/services/offline-video/format-bytes'
 import {
@@ -23,35 +24,7 @@ import {
 /** Сверх размера ролика должно оставаться свободным (как у бэкендов). */
 export const OFFLINE_SPARE_BYTES = 200 * 1024 * 1024
 
-/** Поля поста, нужные для скачанного: карточка ленты и AdaptedPost подходят оба. */
-export interface OfflinePostLike {
-  type?: string
-  videoUrl?: string
-  txid?: string
-  hash?: string
-  id?: string | number
-  title?: string
-  content?: string
-  author?: { address?: string; name?: string; avatar?: string | null }
-}
-
-/** Что известно о посте — для показа скачанного без сети. */
-export function offlineSourceFromPost(post: OfflinePostLike): OfflineSource | null {
-  const url = post.videoUrl
-  const kind = post.type === 'video' || post.type === 'audio' ? post.type : null
-  if (!kind || !url?.startsWith('peertube://')) return null
-  const address = post.author?.address ?? ''
-  const avatar = address ? userAvatar(address, post.author?.avatar) : null
-  return {
-    peertubeUrl: url,
-    kind,
-    postId: String(post.txid || post.hash || post.id || '') || undefined,
-    title: mediaTitle({ title: post.title ?? '', content: post.content ?? '' }),
-    description: post.content || undefined,
-    author: { address, name: userName(address, post.author?.name), avatarUrl: avatar },
-    duration: cachedMediaInfo(url)?.duration ?? undefined,
-  }
-}
+export { offlineSourceFromPost, type OfflinePostLike }
 
 export function useOfflineDownload() {
   const { t, locale } = useI18n()

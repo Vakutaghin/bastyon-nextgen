@@ -31,6 +31,8 @@ import java.util.concurrent.Executors;
  *   nativePath({ id })          → { path? } — для ExoPlayer: playlist.m3u8, если
  *                                 он есть и годен, иначе video.mp4
  *   setWifiOnly({ on })
+ *   network()                   → { unmetered } — Wi-Fi или другая безлимитная
+ *                                 сеть: на ней «Новые ролики подписок» качаются сами
  * </pre>
  * События: {@code progress} {@code {id, received, total}} не чаще 4 раз в
  * секунду, {@code changed} {@code {id, item}} ({@code item: null} — удалён).
@@ -210,6 +212,15 @@ public class OfflineVideoPlugin extends Plugin {
             Boolean on = c.getBoolean("on", true);
             manager.setWifiOnly(on == null || on);
             c.resolve();
+        });
+    }
+
+    @PluginMethod
+    public void network(PluginCall call) {
+        work(call, c -> {
+            JSObject ret = new JSObject();
+            ret.put("unmetered", manager.unmeteredNow());
+            c.resolve(ret);
         });
     }
 }

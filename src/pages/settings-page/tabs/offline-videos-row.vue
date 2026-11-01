@@ -30,12 +30,27 @@
       </SC_DangerButton>
     </SC_CacheControls>
   </SC_CacheRow>
+  <SC_CacheRow v-if="store.available" data-testid="offline-auto-settings">
+    <SC_SystemLabel>
+      <SC_SystemTitle>{{ t('offlineVideo.autoSubs') }}</SC_SystemTitle>
+      <SC_SystemHint>{{ t('offlineVideo.autoSubsHint') }}</SC_SystemHint>
+    </SC_SystemLabel>
+    <SC_CacheControls>
+      <Switch
+        :checked="store.autoSubs"
+        :aria-label="t('offlineVideo.autoSubs')"
+        data-testid="offline-auto-subs"
+        @change="(v: SwitchValue) => store.setAutoSubs(Boolean(v))"
+      />
+    </SC_CacheControls>
+  </SC_CacheRow>
 </template>
 
 <script setup lang="ts">
 // «Скачанные видео» в «Локальных данных»: сколько занято, качество по
 // умолчанию, «Только по Wi-Fi» (Android) и «Удалить всё» — всё скачанное на
-// устройстве, у всех аккаунтов.
+// устройстве, у всех аккаунтов. Строкой ниже — «Новые ролики подписок»: сами
+// качаются на Wi-Fi и сами уходят через неделю.
 
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

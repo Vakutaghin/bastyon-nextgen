@@ -203,6 +203,16 @@ export const SC_Deleted = styled.span`
   font-size: 12px;
 `
 
+export const SC_AutoBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-bg-accented);
+  color: var(--ui-text-muted);
+  font-size: 12px;
+`
+
 export const SC_Progress = styled.progress`
   width: 100%;
   height: 4px;

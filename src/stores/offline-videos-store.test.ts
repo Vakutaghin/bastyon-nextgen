@@ -17,8 +17,12 @@ const h = vi.hoisted(() => ({
   auth: null as { getUserAddress: string | null; isUserAuthenticated: boolean } | null,
   info: vi.fn(),
   captions: vi.fn(async () => [] as unknown[]),
+  subscriptions: vi.fn(async (): Promise<unknown[]> => []),
 }))
 
+vi.mock('@/services/offline-video/subscription-videos', () => ({
+  fetchSubscriptionVideos: h.subscriptions,
+}))
 vi.mock('@/services/offline-video/backend', () => ({
   offlineBackend: async () => h.backend,
 }))
@@ -35,6 +39,7 @@ import { knownLocalCopy, resetOfflineLookup } from '@/services/offline-video/off
 import { useOfflineVideosStore } from './offline-videos-store'
 
 const UUID = 'aaaaaaaa-0000-4000-8000-000000000001'
+const DAY = 24 * 60 * 60 * 1000
 const URL1 = `peertube://peertube701.pocketnet.app/${UUID}`
 
 function meta(over: Partial<OfflineMeta> = {}): OfflineMeta {
@@ -149,6 +154,7 @@ describe('offline-videos-store', () => {
     resetOfflineLookup()
     h.auth = reactive({ getUserAddress: 'PMe', isUserAuthenticated: true })
     h.info.mockReset()
+    h.subscriptions.mockReset().mockResolvedValue([])
     h.captions.mockReset().mockResolvedValue([])
     localStorage.clear()
   })
@@ -304,6 +310,74 @@ describe('offline-videos-store', () => {
     const heights = f.backend.enqueue.mock.calls.map(([, m]) => (m as OfflineMeta).height)
     expect(heights).toEqual([360, 144])
     expect(store.mine).toHaveLength(2)
+  })
+
+  it('подписки сами: выключено — ничего не качает, но скачанное само старше недели уходит', async () => {
+    const now = 100 * DAY
+    const f = fake([
+      item({ id: 'old-360', uuid: 'old', peertubeUrl: 'peertube://h/old', auto: now - 7 * DAY }),
+      item({ id: 'kept-360', uuid: 'kept', peertubeUrl: 'peertube://h/kept' }),
+    ])
+    h.backend = f.backend
+    const store = useOfflineVideosStore()
+    await store.hydrate()
+    await store.runAuto(now)
+    expect([...store.items.keys()]).toEqual(['kept-360'])
+    expect(h.subscriptions).not.toHaveBeenCalled()
+  })
+
+  it('подписки сами: на Wi-Fi — свежие ролики в качестве по умолчанию, с пометкой; в обработке — в следующий раз', async () => {
+    const now = 100 * DAY
+    const f = fake()
+    const unmetered = vi.fn(async () => true)
+    h.backend = { ...f.backend, unmetered }
+    const sub = (id: string, ms: number) => ({
+      source: { ...SOURCE, peertubeUrl: `peertube://h/${id}` },
+      time: ms,
+      type: 'video',
+      videoUrl: `peertube://h/${id}`,
+      timestamp: new Date(ms).toISOString(),
+    })
+    h.subscriptions.mockResolvedValue([
+      sub('yesterday', now - 2 * DAY),
+      sub('busy', now - 2_000),
+      sub('fresh', now - 1_000),
+    ])
+    h.info.mockImplementation(async (_host: string, id: string) =>
+      id === 'busy' ? videoInfo(2) : { ...videoInfo(), uuid: id }
+    )
+    const store = useOfflineVideosStore()
+    await store.hydrate()
+    store.setQualityPref(240)
+
+    // Платная сеть — не трогаем.
+    unmetered.mockResolvedValueOnce(false)
+    await store.setAutoSubs(true)
+    expect(h.subscriptions).not.toHaveBeenCalled()
+
+    await store.runAuto(now)
+    const metas = f.backend.enqueue.mock.calls.map(([, m]) => m as OfflineMeta)
+    // Вчерашний — до окна первой проверки (сутки); 240 нет — ближайшее ниже, 144.
+    expect(metas.map((m) => [m.peertubeUrl, m.height, m.auto])).toEqual([
+      ['peertube://h/fresh', 144, now],
+    ])
+    expect(localStorage.getItem('offline:auto-since:PMe')).toBe(String(now - 2_001))
+
+    // Ролик обработался — следующая проверка его берёт, скачанное второй раз — нет.
+    h.info.mockImplementation(async (_host: string, id: string) => ({ ...videoInfo(), uuid: id }))
+    await store.runAuto(now + 60_000)
+    expect(f.backend.enqueue.mock.calls.map(([, m]) => (m as OfflineMeta).peertubeUrl)).toEqual([
+      'peertube://h/fresh',
+      'peertube://h/busy',
+    ])
+
+    // «Оставить» — пометки больше нет, через неделю не уйдёт.
+    const fresh = store.itemFor('peertube://h/fresh')!
+    await store.keep(fresh.id)
+    expect(store.items.get(fresh.id)?.meta.auto).toBeNull()
+    await store.runAuto(now + 30 * DAY)
+    expect(store.items.has(fresh.id)).toBe(true)
+    expect(store.itemFor('peertube://h/busy')).toBeNull()
   })
 
   it('удалить у себя: общий файл остаётся другому, последний — стирается', async () => {

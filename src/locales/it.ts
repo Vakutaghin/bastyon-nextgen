@@ -4510,6 +4510,12 @@ export default {
     batchUnavailable:
       'Ora non si può scaricare nulla: i server non rispondono o i video sono ancora in elaborazione',
     batchAllDone: 'È già tutto in Download',
+    autoSubs: 'Scarica automaticamente i nuovi video delle iscrizioni',
+    autoSubsHint:
+      'Finché l’app è aperta e c’è il Wi-Fi: fino a 5 video nuovi alla volta, nella qualità predefinita (360p se è impostato «Chiedi»). Dopo una settimana vengono eliminati, a meno che tu non tocchi «Tieni».',
+    autoBadge:
+      'Scaricato automaticamente · eliminato tra {n} giorno | Scaricato automaticamente · eliminato tra {n} giorni',
+    keep: 'Tieni',
     emptyVideo:
       'Nessun video scaricato. Tocca «Scarica» sotto un video — sarà qui anche senza rete.',
     emptyAudio:

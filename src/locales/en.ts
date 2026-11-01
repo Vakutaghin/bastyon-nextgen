@@ -4460,6 +4460,12 @@ export default {
     batchUnavailable:
       'Nothing can be downloaded right now: the servers aren’t answering or the videos are still processing',
     batchAllDone: 'Everything is already in Downloads',
+    autoSubs: 'Download new videos from subscriptions automatically',
+    autoSubsHint:
+      'While the app is open and on Wi-Fi: up to 5 fresh videos at a time, in the default quality (360p if it is set to “Ask”). They are deleted after a week unless you tap “Keep”.',
+    autoBadge:
+      'Downloaded automatically · deleted in {n} day | Downloaded automatically · deleted in {n} days',
+    keep: 'Keep',
     emptyVideo:
       'No downloaded videos. Tap “Download” under a video — it will be here even without a network.',
     emptyAudio:

@@ -64,6 +64,16 @@ By default videos download only over Wi-Fi: no Wi-Fi — the download waits and 
 
 In the web version videos are stored in the site storage and download while the tab is open; closed it — the download continues next time. Safari may erase site data by itself if the site isn't opened for a week and isn't installed as an app — for long-term storage the desktop or phone app is better. Without a network the web version won't open by itself: you can watch downloads offline in a tab opened beforehand.
 
+## New videos from subscriptions, automatically
+
+Turn on **“Download new videos from subscriptions automatically”** in the settings (below **“Downloaded videos”**), and fresh videos from the people you follow will be waiting in Downloads — like Smart downloads in YouTube.
+
+- The app checks the subscriptions feed while it is open: after launch, once an hour and when you come back to it. On the phone, a started download continues in the background.
+- Wi-Fi only: new videos are not downloaded over mobile data.
+- Up to 5 freshest videos at a time, up to 20 in total. The quality is the default from the settings, or 360p if it is set to **“Ask”**. If less than 2 GB would stay free on the disk, the app does not download.
+- A video that is still processing on the server is picked up at the next check.
+- The card of such a video is marked “Downloaded automatically” and shows in how many days it will be deleted: after a week it goes away by itself. Tap **“Keep”**, and it stays for good, like one downloaded by hand.
+
 ## Settings
 
 **“Settings”** → **“System”** → **“Local data”** → **“Downloaded videos”**: how much the downloads take and how much is free, the default quality (**“Ask”** or one of the qualities), on Android — **“Wi-Fi only”**. The **“Delete all”** button erases everything downloaded on the device by all accounts.

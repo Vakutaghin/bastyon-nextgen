@@ -4566,6 +4566,12 @@ export default {
     batchUnavailable:
       'Rien à télécharger pour l’instant : les serveurs ne répondent pas ou les vidéos sont encore en traitement',
     batchAllDone: 'Tout est déjà dans Téléchargements',
+    autoSubs: 'Télécharger automatiquement les nouvelles vidéos des abonnements',
+    autoSubsHint:
+      'Tant que l’app est ouverte et en Wi-Fi : jusqu’à 5 nouvelles vidéos à la fois, dans la qualité par défaut (360p si « Demander » est choisi). Elles sont supprimées au bout d’une semaine, sauf si vous appuyez sur « Garder ».',
+    autoBadge:
+      'Téléchargée automatiquement · supprimée dans {n} jour | Téléchargée automatiquement · supprimée dans {n} jours',
+    keep: 'Garder',
     emptyVideo:
       'Aucune vidéo téléchargée. Touchez « Télécharger » sous une vidéo — elle sera ici même sans réseau.',
     emptyAudio:

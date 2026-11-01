@@ -27,6 +27,7 @@ interface OfflineVideoPlugin {
   clear(): Promise<void>
   nativePath(o: { id: string }): Promise<{ path?: string }>
   setWifiOnly(o: { on: boolean }): Promise<void>
+  network(): Promise<{ unmetered?: boolean }>
   addListener(
     event: 'progress' | 'changed',
     cb: (payload: unknown) => void
@@ -68,6 +69,7 @@ export const androidBackend: OfflineBackend = {
     return `file://${path.split('/').map(encodeURIComponent).join('/')}`
   },
   setWifiOnly: (on) => OfflineVideo.setWifiOnly({ on }),
+  unmetered: async () => (await OfflineVideo.network()).unmetered !== false,
   onProgress: (cb) => listen<OfflineProgress>('progress', cb),
   onChanged: (cb) =>
     listen<OfflineChanged>('changed', (e) => cb({ id: e.id, item: e.item ?? null })),
