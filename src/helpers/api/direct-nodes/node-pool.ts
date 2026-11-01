@@ -33,6 +33,16 @@ const MAX_LAG = 2
 const FAILED_TTL_MS = 10 * 60_000
 const MAX_LEARNED = 300
 const PEERS_EVERY_MS = 60 * 60_000
+/** Молчали все — спросить их снова не раньше: сеть могла появиться (связь, VPN). */
+const RETRY_ALL_MS = 30_000
+
+/** Напрямую не ответила ни одна нода: сети нет или её режут. */
+export class NoDirectNodesError extends Error {
+  override readonly name = 'NoDirectNodesError'
+  constructor() {
+    super('No Pocketnet nodes answered directly')
+  }
+}
 
 export interface NodeProbe {
   host: string
@@ -131,6 +141,8 @@ let selecting: Promise<string[]> | null = null
 const failedAt = new Map<string, number>()
 /** Ноды, сменившие сертификат: до перезапуска не спрашиваем. */
 const rejected = new Set<string>()
+/** Когда в последний раз опросили ноды и не ответила ни одна. */
+let silentAt = 0
 
 function shuffled<T>(items: readonly T[]): T[] {
   const out = [...items]
@@ -143,13 +155,13 @@ function shuffled<T>(items: readonly T[]): T[] {
 
 function candidates(now: number): string[] {
   const stored = readStored()
-  const usable = (h: string) =>
-    !rejected.has(h) && now - (failedAt.get(h) ?? 0) > FAILED_TTL_MS && isPublicIpv4(h)
-  const first = stored.good.filter(usable)
-  const rest = shuffled([...SEEDS, ...stored.learned]).filter(
-    (h) => usable(h) && !first.includes(h)
+  const known = [...new Set([...stored.good, ...shuffled([...SEEDS, ...stored.learned])])].filter(
+    (h) => !rejected.has(h) && isPublicIpv4(h)
   )
-  return [...new Set([...first, ...rest])]
+  const fresh = known.filter((h) => now - (failedAt.get(h) ?? 0) > FAILED_TTL_MS)
+  // Не ответил никто — значит, молчала сеть, а не ноды: через полминуты
+  // спрашиваем всех снова, иначе «Повторить» десять минут ничего бы не давал.
+  return fresh.length || now - silentAt < RETRY_ALL_MS ? fresh : known
 }
 
 async function probe(host: string, signal: AbortSignal): Promise<NodeProbe | null> {
@@ -217,7 +229,11 @@ async function select(): Promise<string[]> {
     .slice(0, WORKING)
     .map((p) => p.host)
   connectionState.selectFailed = !hosts.length
-  if (!hosts.length) throw new Error('No Pocketnet nodes answered directly')
+  if (!hosts.length) {
+    // Спрашивать было некого — это не новое молчание, отсчёт не сдвигаем.
+    if (list.length) silentAt = Date.now()
+    throw new NoDirectNodesError()
+  }
   working = { hosts, at: Date.now() }
   writeStored({ good: hosts })
   publish()
@@ -278,6 +294,7 @@ export function resetDirectNodesForTests(): void {
   selecting = null
   failedAt.clear()
   rejected.clear()
+  silentAt = 0
   publish()
   try {
     globalThis.localStorage?.removeItem(STORAGE_KEY)

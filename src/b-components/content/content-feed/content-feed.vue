@@ -81,7 +81,11 @@
         </SC_FeedErrorColumn>
         <SC_FeedErrorColumn v-else>
           <ExclamationCircleOutlined :style="ICON_DANGER_30_MB" />
-          <p>{{ error }}</p>
+          <p>{{ feedErrorText(error) }}</p>
+          <SC_RetryButton type="primary" ghost @click="refetch">
+            <template #icon><ReloadOutlined /></template>
+            {{ t('postCard.retry') }}
+          </SC_RetryButton>
         </SC_FeedErrorColumn>
       </SC_FeedError>
       <template v-else-if="allPosts && allPosts.length > 0">
@@ -186,7 +190,7 @@ import {
 import { usePostsStore } from '@/stores/posts-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useModalStore } from '@/stores'
-import { useInfiniteFeed } from '@/composables/use-infinite-feed'
+import { feedErrorText, useInfiniteFeed } from '@/composables/use-infinite-feed'
 import { useBoostedFeed } from '@/composables/use-boosted-feed'
 import { isBoostSlot } from '@/helpers/content/boost'
 import { useSubscriptionHighlights } from '@/composables/use-subscription-highlights'

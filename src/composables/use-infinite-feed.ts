@@ -19,6 +19,18 @@ import {
   preloadLastCommentAuthors,
 } from './helpers/feed-enrichment'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
+import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
+import { t } from '@/i18n'
+
+/**
+ * Текст ошибки ленты. Не ответила ни одна нода — словами настроек
+ * подключения, а не технической строкой «No Pocketnet nodes answered directly».
+ */
+export function feedErrorText(err: unknown): string {
+  return err instanceof NoDirectNodesError
+    ? t('settings.network.statusNoNodes')
+    : extractErrorMessage(err)
+}
 
 /**
  * Параметры для useInfiniteFeed
@@ -264,11 +276,11 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       // старый catch никогда не срабатывал и лента залипала в «загружаю» (V35).
       const result = await refetch()
       if (result?.isError) {
-        loadMoreError.value = extractErrorMessage(result.error)
+        loadMoreError.value = feedErrorText(result.error)
         isLoadingMore.value = false
       }
     } catch (err) {
-      loadMoreError.value = extractErrorMessage(err)
+      loadMoreError.value = feedErrorText(err)
       isLoadingMore.value = false
     }
   }

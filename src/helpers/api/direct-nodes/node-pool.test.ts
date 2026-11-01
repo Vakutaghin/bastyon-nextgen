@@ -16,6 +16,7 @@ import {
   isPublicIpv4,
   learnNodes,
   markNodeDead,
+  NoDirectNodesError,
   resetDirectNodesForTests,
   type NodeProbe,
 } from './node-pool'
@@ -124,6 +125,25 @@ describe('directNodes', () => {
     h.call.mockRejectedValue(new NodePinMismatchError('x'))
     await expect(directNodes()).rejects.toThrow(/No Pocketnet nodes/)
     expect(connectionState.selectFailed).toBe(true)
+  })
+
+  it('молчали все — сразу не переспрашиваем, через полминуты спрашиваем всех снова', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(5_000_000)
+    try {
+      h.call.mockRejectedValue(new Error('offline'))
+      await expect(directNodes()).rejects.toBeInstanceOf(NoDirectNodesError)
+
+      h.call.mockClear()
+      await expect(directNodes()).rejects.toBeInstanceOf(NoDirectNodesError)
+      expect(h.call).not.toHaveBeenCalled()
+
+      // Связь появилась (включили VPN) — «Повторить» находит ноды, не дожидаясь десяти минут.
+      clock.mockReturnValue(5_000_000 + 31_000)
+      answerAll()
+      expect((await directNodes()).length).toBeGreaterThanOrEqual(3)
+    } finally {
+      clock.mockRestore()
+    }
   })
 
   it('соседи нод пополняют список; частные адреса отбрасываются', async () => {

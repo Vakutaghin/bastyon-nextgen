@@ -74,7 +74,9 @@ vi.mock('@/stores/ui-store', () => ({
   useUIStore: () => ({ language: 'ru', contentLanguage: 'ru' }),
 }))
 
-import { useInfiniteFeed } from './use-infinite-feed'
+import { feedErrorText, useInfiniteFeed } from './use-infinite-feed'
+import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
+import { t } from '@/i18n'
 import { buildFeedQueryByTab } from './helpers/feed-queries'
 
 type FeedApi = ReturnType<typeof useInfiniteFeed>
@@ -140,6 +142,18 @@ describe('useInfiniteFeed', () => {
     expect(feed.isLoadingMore.value).toBe(false)
     expect(feed.loadMoreError.value).toBe('node down')
     expect(feed.allPosts.value).toHaveLength(2)
+  })
+
+  it('no node answered directly: the error says so in words, not as the raw English error', async () => {
+    const feed = mountFeed()
+    await deliver(page('a', 'b'))
+    queryState.refetch.mockResolvedValueOnce({ isError: true, error: new NoDirectNodesError() })
+    await feed.loadMore()
+
+    expect(feed.loadMoreError.value).toBe(t('settings.network.statusNoNodes'))
+    expect(feedErrorText(new NoDirectNodesError())).not.toMatch(/Pocketnet nodes/)
+    // Остальные ошибки — их текстом, без «Error:» впереди.
+    expect(feedErrorText(new Error('node down'))).toBe('node down')
   })
 
   it('retries the failed page and clears the error on success (V35)', async () => {
