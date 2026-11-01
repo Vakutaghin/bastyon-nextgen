@@ -180,6 +180,47 @@ export const SC_QualityRow = styled(SC_ScaleRow)`
 `
 
 /** Сколько занято сейчас — под описанием. */
+/** Обычная outline-кнопка в строке с выбором: «Выбрать папку…». */
+export const SC_ActionButton = styled.button`
+  flex-shrink: 0;
+  background: transparent;
+  color: var(--ui-text);
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--ui-border-accented);
+  border-radius: var(--ui-radius-md);
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    background: var(--ui-bg-elevated);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.75;
+  }
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    min-height: 36px;
+  }
+`
+
+/** Путь папки со скачанным: длинный — переносится, а не раздвигает строку. */
+export const SC_LocationPath = styled.span`
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  color: var(--ui-text-muted);
+  overflow-wrap: anywhere;
+`
+
+export const SC_LocationWarn = styled.span`
+  font-size: 13px;
+  color: var(--ui-warning);
+`
+
 export const SC_CacheUsage = styled.span`
   font-size: 14px;
   color: var(--ui-text-highlighted);

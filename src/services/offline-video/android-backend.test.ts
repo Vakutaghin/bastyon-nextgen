@@ -15,6 +15,9 @@ const { plugin } = vi.hoisted(() => ({
     clear: vi.fn(),
     nativePath: vi.fn(),
     setWifiOnly: vi.fn(),
+    network: vi.fn(),
+    storage: vi.fn(),
+    moveStorage: vi.fn(),
     addListener: vi.fn(),
   },
 }))
@@ -27,7 +30,7 @@ vi.mock('@capacitor/core', () => ({
   },
 }))
 
-import { androidBackend } from './android-backend'
+import { androidBackend, fromAndroidStorage } from './android-backend'
 import type { OfflineItem, OfflineJob, OfflineMeta } from './types'
 
 const meta: OfflineMeta = {
@@ -110,6 +113,32 @@ describe('android offline backend', () => {
     expect(await androidBackend.usage()).toEqual({ used: 5, free: null })
     plugin.usage.mockResolvedValue({ used: 0, free: null })
     expect(await androidBackend.usage()).toEqual({ used: 0, free: null })
+  })
+
+  it('где хранить: память или карта; −1 — места не узнать; перенос — по имени тома', async () => {
+    expect(fromAndroidStorage({ current: 'internal', internalFree: 5, sd: null })).toEqual({
+      current: 'internal',
+      isDefault: true,
+      unavailable: null,
+      free: 5,
+      sd: null,
+    })
+    expect(
+      fromAndroidStorage({ current: 'sd', internalFree: 5, sd: { free: -1 }, sdUnavailable: false })
+    ).toMatchObject({ current: 'sd', isDefault: false, free: null, sd: { free: null } })
+    // Выбрана карта, а её нет — качается в память, выбор помечен недоступным.
+    expect(fromAndroidStorage({ current: 'internal', sdUnavailable: true })).toMatchObject({
+      isDefault: true,
+      unavailable: true,
+    })
+
+    plugin.moveStorage.mockResolvedValue({ current: 'sd', sd: { free: 9 } })
+    expect(await androidBackend.moveTo!('sd')).toMatchObject({ current: 'sd', free: 9 })
+    expect(plugin.moveStorage).toHaveBeenCalledWith({ target: 'sd' })
+    await androidBackend.moveTo!(null)
+    expect(plugin.moveStorage).toHaveBeenLastCalledWith({ target: 'internal' })
+    plugin.network.mockResolvedValue({ unmetered: false })
+    expect(await androidBackend.unmetered!()).toBe(false)
   })
 
   it('файлы — через перехват WebView, ExoPlayer — file://', async () => {

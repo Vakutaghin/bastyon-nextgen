@@ -58,6 +58,9 @@ final class OfflineManager {
 
         /** {@code item} — null, когда ролик удалён. */
         void onChanged(String id, @Nullable JSONObject item);
+
+        /** Перенос во внутреннюю память или на карту: сколько роликов уже на месте. */
+        default void onMoving(int done, int total) {}
     }
 
     /** Что качается сейчас — для уведомления службы. */
@@ -82,6 +85,10 @@ final class OfflineManager {
     private static final long NETWORK_SETTLE_MS = 2_000;
     private static final String PREFS = "bastyon_offline";
     private static final String KEY_WIFI_ONLY = "wifi_only";
+    /** Где скачанное: {@link OfflineLocation#INTERNAL} или {@link OfflineLocation#SD}. */
+    private static final String KEY_STORAGE = "storage";
+    /** Сколько ждать, пока загрузка встанет перед переносом. */
+    private static final long STOP_WAIT_MS = 30_000;
 
     static final String ERR_WIFI = "wifi";
     static final String ERR_QUOTA = "quota";
@@ -95,7 +102,12 @@ final class OfflineManager {
     }
 
     private final Context app;
-    final File root;
+    /** Папка со скачанным сейчас; меняет только перенос. */
+    private volatile File root;
+    /** Выбрана карта, а её нет на месте: качаем во внутреннюю. */
+    private volatile boolean sdUnavailable;
+    /** Идёт перенос: загрузки не запускаются, список не меняется. */
+    private volatile boolean moving;
     private final SharedPreferences prefs;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
@@ -116,10 +128,13 @@ final class OfflineManager {
         // окно настраивает Tor в MainActivity. Без этого «Tor включён» не был бы
         // прочитан, и загрузка ушла бы мимо него.
         if (!TorNetwork.available()) TorNetwork.init(app);
-        root = OfflineStore.root(app);
+        prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        File sd = OfflineLocation.SD.equals(prefs.getString(KEY_STORAGE, OfflineLocation.INTERNAL))
+                ? OfflineLocation.sdRoot(app) : null;
+        sdUnavailable = sd == null && OfflineLocation.SD.equals(prefs.getString(KEY_STORAGE, null));
+        root = sd != null ? sd : OfflineLocation.internalRoot(app);
         //noinspection ResultOfMethodCallIgnored
         root.mkdirs();
-        prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         wifiOnly = prefs.getBoolean(KEY_WIFI_ONLY, true);
         for (String id : OfflineStore.ids(root)) {
             File dir = dir(id);
@@ -142,6 +157,15 @@ final class OfflineManager {
 
     File dir(String id) {
         return OfflineStore.dir(root, id);
+    }
+
+    /** Папка со скачанным — для WebView и ExoPlayer. */
+    File root() {
+        return root;
+    }
+
+    private void notMoving() throws OfflineStore.OfflineException {
+        if (moving) throw new OfflineStore.OfflineException("moving");
     }
 
     void addListener(Listener l) {
@@ -248,6 +272,7 @@ final class OfflineManager {
 
     /** Запустить ждущий, если ничего не качается. */
     void pump() {
+        if (moving) return;
         List<String> changed = new ArrayList<>();
         synchronized (this) {
             while (running == null && !queue.isEmpty()) {
@@ -437,6 +462,7 @@ final class OfflineManager {
 
     /** Поставить в очередь. Уже есть — вернуть как есть (аккаунт допишет страница). */
     JSONObject enqueue(OfflineStore.Job job, JSONObject meta) throws OfflineStore.OfflineException {
+        notMoving();
         String invalid = job.validate();
         if (invalid != null) throw new OfflineStore.OfflineException(invalid);
         synchronized (this) {
@@ -488,6 +514,7 @@ final class OfflineManager {
     /** Продолжить приостановленное или упавшее (кнопка «Повторить»). */
     void resume(String id) throws OfflineStore.OfflineException {
         checkId(id);
+        notMoving();
         synchronized (this) {
             if (id.equals(runningId) || queue.contains(id)) return;
             File dir = dir(id);
@@ -519,6 +546,7 @@ final class OfflineManager {
     /** Удалить ролик или отменить загрузку (с недокачанным). */
     void remove(String id) throws OfflineStore.OfflineException {
         checkId(id);
+        notMoving();
         boolean removed;
         synchronized (this) {
             if (id.equals(runningId) && running != null) {
@@ -535,6 +563,7 @@ final class OfflineManager {
     /** Поля {@code meta.json}: аккаунты, «автор удалил», дата проверки. */
     JSONObject patchMeta(String id, JSONObject patch) throws OfflineStore.OfflineException {
         checkId(id);
+        notMoving();
         synchronized (this) {
             OfflineStore.patchMeta(dir(id), patch);
         }
@@ -563,6 +592,7 @@ final class OfflineManager {
 
     /** Стереть всё скачанное (выход из всех аккаунтов, «Удалить всё»). */
     void clear() throws OfflineStore.OfflineException {
+        notMoving();
         for (String id : OfflineStore.ids(root)) remove(id);
     }
 
@@ -587,6 +617,110 @@ final class OfflineManager {
             }
         }
         return video.getAbsolutePath();
+    }
+
+    // ─── Где лежит скачанное ──────────────────────────────────────────────
+
+    /**
+     * {@code {current, sd: {free} | null, internalFree, sdUnavailable}}: где
+     * сейчас, есть ли карта памяти и сколько свободно.
+     */
+    JSONObject storage() throws JSONException {
+        File internal = OfflineLocation.internalRoot(app);
+        File sd = OfflineLocation.sdRoot(app);
+        JSONObject ret = new JSONObject();
+        ret.put("current", internal.equals(root) ? OfflineLocation.INTERNAL : OfflineLocation.SD);
+        ret.put("internalFree", freeBytes(app.getFilesDir()));
+        if (sd != null) {
+            File volume = sd.getParentFile();
+            ret.put("sd", new JSONObject().put("free", freeBytes(volume != null ? volume : sd)));
+        } else {
+            ret.put("sd", JSONObject.NULL);
+        }
+        ret.put("sdUnavailable", sdUnavailable);
+        return ret;
+    }
+
+    /**
+     * Перенести скачанное во внутреннюю память или на карту. Загрузка на время
+     * встаёт и продолжается на новом месте. Ошибки: {@code moving},
+     * {@code busy}, {@code no_sd}, {@code no_space}, {@code target_busy},
+     * {@code io} — тогда всё остаётся как было.
+     */
+    void moveStorage(String target) throws OfflineStore.OfflineException {
+        File to = OfflineLocation.SD.equals(target) ? OfflineLocation.sdRoot(app)
+                : OfflineLocation.INTERNAL.equals(target) ? OfflineLocation.internalRoot(app) : null;
+        if (to == null) throw new OfflineStore.OfflineException(OfflineLocation.SD.equals(target) ? "no_sd" : "invalid");
+        File from = root;
+        if (to.equals(from)) {
+            prefs.edit().putString(KEY_STORAGE, target).apply();
+            sdUnavailable = false;
+            return;
+        }
+        List<String> resume = new ArrayList<>();
+        synchronized (this) {
+            if (moving) throw new OfflineStore.OfflineException("moving");
+            moving = true;
+            if (running != null && runningId != null) {
+                resume.add(runningId);
+                running.stop(OfflineDownloader.PAUSE, null);
+            }
+            resume.addAll(queue);
+            queue.clear();
+        }
+        try {
+            long until = SystemClock.elapsedRealtime() + STOP_WAIT_MS;
+            while (true) {
+                synchronized (this) {
+                    if (running == null) break;
+                }
+                if (SystemClock.elapsedRealtime() > until) throw new OfflineStore.OfflineException("busy");
+                SystemClock.sleep(100);
+            }
+            //noinspection ResultOfMethodCallIgnored
+            to.mkdirs();
+            if (!OfflineLocation.enoughSpace(OfflineStore.dirSize(from), freeBytes(to))) {
+                throw new OfflineStore.OfflineException("no_space");
+            }
+            OfflineLocation.moveItems(from, to, OfflineStore.ids(from), this::emitMoving);
+            root = to;
+            sdUnavailable = false;
+            prefs.edit().putString(KEY_STORAGE, target).apply();
+        } finally {
+            moving = false;
+            requeue(resume);
+        }
+    }
+
+    /** Остановленное переносом — снова в очередь, уже там, где теперь скачанное. */
+    private void requeue(List<String> ids) {
+        List<String> changed = new ArrayList<>();
+        synchronized (this) {
+            for (String id : ids) {
+                if (id.equals(runningId) || queue.contains(id)) continue;
+                File dir = dir(id);
+                OfflineStore.State st = OfflineStore.readState(dir);
+                if (st == null || OfflineStore.DONE.equals(st.status)) continue;
+                st.status = OfflineStore.QUEUED;
+                st.error = null;
+                if (writeStateQuietly(dir, st)) {
+                    queue.add(id);
+                    changed.add(id);
+                }
+            }
+        }
+        for (String id : changed) emitChanged(id);
+        pump();
+    }
+
+    private void emitMoving(int done, int total) {
+        for (Listener l : listeners) {
+            try {
+                l.onMoving(done, total);
+            } catch (RuntimeException e) {
+                Log.w(TAG, "moving listener: " + e);
+            }
+        }
     }
 
     // ─── События ──────────────────────────────────────────────────────────

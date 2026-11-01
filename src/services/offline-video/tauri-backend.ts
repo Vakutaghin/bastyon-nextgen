@@ -6,6 +6,8 @@ import type {
   OfflineBackend,
   OfflineChanged,
   OfflineItem,
+  OfflineLocation,
+  OfflineMoving,
   OfflineProgress,
   OfflineUsage,
 } from './types'
@@ -36,6 +38,9 @@ export const tauriBackend: OfflineBackend = {
     const { convertFileSrc } = await import('@tauri-apps/api/core')
     return convertFileSrc(`${id}/${file}`, SCHEME)
   },
+  location: () => call<OfflineLocation>('offline_location'),
+  moveTo: (to) => call<OfflineLocation>('offline_move', { to }),
+  onMoving: (cb) => listen<OfflineMoving>('offline://moving', cb),
   onProgress: (cb) => listen<OfflineProgress>('offline://progress', cb),
   onChanged: (cb) => listen<OfflineChanged>('offline://changed', cb),
 }

@@ -4466,6 +4466,31 @@ export default {
     autoBadge:
       'Downloaded automatically · deleted in {n} day | Downloaded automatically · deleted in {n} days',
     keep: 'Keep',
+    locationTitle: 'Where to keep',
+    locationHint:
+      'The folder with downloads. You can pick another disk: videos are moved, and downloads continue in the new place.',
+    locationHintAndroid:
+      'Phone memory or a memory card. Videos are moved, and downloads continue in the new place.',
+    chooseFolder: 'Choose folder…',
+    defaultFolder: 'Default folder',
+    phoneMemory: 'Phone memory',
+    sdCard: 'Memory card',
+    movingStart: 'Moving downloads…',
+    movingProgress: 'Moving: {done} of {total}',
+    moved: 'Downloads moved',
+    folderUnavailable:
+      'The folder {path} is unavailable: is the disk disconnected? Downloads there aren’t visible, new ones go to the default folder.',
+    sdUnavailable:
+      'The memory card is not inserted: downloads on it aren’t visible, new ones go to phone memory.',
+    moveError: {
+      noSpace: 'There isn’t enough space in the new place',
+      notWritable: 'This folder can’t be written to — choose another one',
+      insideCurrent: 'This folder is inside the current one — choose another one',
+      targetBusy: 'The new folder already has these videos',
+      busy: 'A download didn’t stop — try again',
+      noSd: 'No memory card found',
+      failed: 'Couldn’t move, everything stayed in place',
+    },
     emptyVideo:
       'No downloaded videos. Tap “Download” under a video — it will be here even without a network.',
     emptyAudio:

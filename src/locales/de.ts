@@ -4571,6 +4571,31 @@ export default {
     autoBadge:
       'Automatisch geladen · wird in {n} Tag gelöscht | Automatisch geladen · wird in {n} Tagen gelöscht',
     keep: 'Behalten',
+    locationTitle: 'Speicherort',
+    locationHint:
+      'Der Ordner mit den Downloads. Du kannst ein anderes Laufwerk wählen: Die Videos werden verschoben, Downloads laufen am neuen Ort weiter.',
+    locationHintAndroid:
+      'Telefonspeicher oder Speicherkarte. Die Videos werden verschoben, Downloads laufen am neuen Ort weiter.',
+    chooseFolder: 'Ordner wählen…',
+    defaultFolder: 'Standardordner',
+    phoneMemory: 'Telefonspeicher',
+    sdCard: 'Speicherkarte',
+    movingStart: 'Downloads werden verschoben…',
+    movingProgress: 'Wird verschoben: {done} von {total}',
+    moved: 'Downloads verschoben',
+    folderUnavailable:
+      'Der Ordner {path} ist nicht erreichbar: Ist das Laufwerk getrennt? Die Downloads dort sind nicht sichtbar, neue landen im Standardordner.',
+    sdUnavailable:
+      'Die Speicherkarte ist nicht eingelegt: Die Downloads darauf sind nicht sichtbar, neue landen im Telefonspeicher.',
+    moveError: {
+      noSpace: 'Am neuen Ort ist nicht genug Platz',
+      notWritable: 'In diesen Ordner kann nicht geschrieben werden — wähle einen anderen',
+      insideCurrent: 'Dieser Ordner liegt im aktuellen — wähle einen anderen',
+      targetBusy: 'Im neuen Ordner liegen schon diese Videos',
+      busy: 'Ein Download hat nicht angehalten — versuche es noch einmal',
+      noSd: 'Keine Speicherkarte gefunden',
+      failed: 'Verschieben fehlgeschlagen, alles ist an seinem Platz geblieben',
+    },
     emptyVideo:
       'Keine heruntergeladenen Videos. Tippe unter einem Video auf „Herunterladen“ — es ist dann auch ohne Netz hier.',
     emptyAudio:

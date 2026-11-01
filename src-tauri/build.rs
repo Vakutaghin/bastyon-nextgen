@@ -112,6 +112,8 @@ const COMMANDS: &[&str] = &[
   "offline_patch_meta",
   "offline_usage",
   "offline_clear",
+  "offline_location",
+  "offline_move",
 ];
 
 fn main() {

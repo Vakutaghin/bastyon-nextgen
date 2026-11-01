@@ -4533,6 +4533,31 @@ export default {
     autoBadge:
       'Descargado automáticamente · se elimina en {n} día | Descargado automáticamente · se elimina en {n} días',
     keep: 'Conservar',
+    locationTitle: 'Dónde guardar',
+    locationHint:
+      'La carpeta de descargas. Puedes elegir otro disco: los vídeos se trasladan y las descargas siguen en el nuevo lugar.',
+    locationHintAndroid:
+      'Memoria del teléfono o tarjeta de memoria. Los vídeos se trasladan y las descargas siguen en el nuevo lugar.',
+    chooseFolder: 'Elegir carpeta…',
+    defaultFolder: 'Carpeta predeterminada',
+    phoneMemory: 'Memoria del teléfono',
+    sdCard: 'Tarjeta de memoria',
+    movingStart: 'Trasladando las descargas…',
+    movingProgress: 'Trasladando: {done} de {total}',
+    moved: 'Descargas trasladadas',
+    folderUnavailable:
+      'La carpeta {path} no está disponible: ¿el disco está desconectado? Las descargas de allí no se ven, las nuevas van a la carpeta predeterminada.',
+    sdUnavailable:
+      'La tarjeta de memoria no está insertada: sus descargas no se ven, las nuevas van a la memoria del teléfono.',
+    moveError: {
+      noSpace: 'No hay espacio suficiente en el nuevo lugar',
+      notWritable: 'No se puede escribir en esta carpeta: elige otra',
+      insideCurrent: 'Esta carpeta está dentro de la actual: elige otra',
+      targetBusy: 'La nueva carpeta ya tiene estos vídeos',
+      busy: 'Una descarga no se detuvo: inténtalo de nuevo',
+      noSd: 'No se encontró ninguna tarjeta de memoria',
+      failed: 'No se pudo trasladar, todo se quedó en su sitio',
+    },
     emptyVideo:
       'No hay vídeos descargados. Pulsa «Descargar» bajo un vídeo — estará aquí incluso sin red.',
     emptyAudio:

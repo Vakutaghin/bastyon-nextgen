@@ -141,6 +141,30 @@ export interface OfflineUsage {
 /** Файлы ролика, которые бэкенд отдаёт странице. */
 export type OfflineFile = 'video.mp4' | 'thumb.jpg' | 'avatar.jpg' | `captions/${string}.vtt`
 
+/** Где лежит скачанное: папка на компьютере, память или карта на Android. */
+export interface OfflineLocation {
+  /** Папка (компьютер) — показать человеку. */
+  path?: string
+  /** Android: внутренняя память или карта. */
+  current?: 'internal' | 'sd'
+  /** Стандартное место: своя папка приложения или память телефона. */
+  isDefault: boolean
+  /**
+   * Выбранное место не подключено (диск, карта): новое качается в стандартное,
+   * а скачанное там не видно. Строка — путь папки, true — карта.
+   */
+  unavailable: string | boolean | null
+  /** Свободно там, где скачанное сейчас; null — не узнать. */
+  free: number | null
+  /** Android: карта вставлена — сколько на ней свободно; null — карты нет. */
+  sd?: { free: number | null } | null
+}
+
+export interface OfflineMoving {
+  done: number
+  total: number
+}
+
 export interface OfflineBackend {
   readonly kind: 'tauri' | 'android' | 'web'
   list(): Promise<OfflineItem[]>
@@ -169,6 +193,15 @@ export interface OfflineBackend {
    * знает, смотрим `navigator.connection`.
    */
   unmetered?(): Promise<boolean>
+  /** Где лежит скачанное (компьютер, Android); нет метода — выбрать нельзя (веб). */
+  location?(): Promise<OfflineLocation>
+  /**
+   * Перенести скачанное: компьютер — путь папки или null (стандартная),
+   * Android — 'internal' или 'sd'. Ошибка — код: `no_space`, `not_writable`,
+   * `inside_current`, `target_busy`, `busy`, `no_sd`, `moving`, `io`.
+   */
+  moveTo?(target: string | null): Promise<OfflineLocation>
+  onMoving?(cb: (p: OfflineMoving) => void): Promise<() => void>
   onProgress(cb: (p: OfflineProgress) => void): Promise<() => void>
   onChanged(cb: (e: OfflineChanged) => void): Promise<() => void>
 }

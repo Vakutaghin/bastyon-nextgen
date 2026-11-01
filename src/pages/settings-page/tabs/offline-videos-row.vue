@@ -30,6 +30,7 @@
       </SC_DangerButton>
     </SC_CacheControls>
   </SC_CacheRow>
+  <OfflineLocationRow v-if="store.available" />
   <SC_CacheRow v-if="store.available" data-testid="offline-auto-settings">
     <SC_SystemLabel>
       <SC_SystemTitle>{{ t('offlineVideo.autoSubs') }}</SC_SystemTitle>
@@ -49,8 +50,9 @@
 <script setup lang="ts">
 // «Скачанные видео» в «Локальных данных»: сколько занято, качество по
 // умолчанию, «Только по Wi-Fi» (Android) и «Удалить всё» — всё скачанное на
-// устройстве, у всех аккаунтов. Строкой ниже — «Новые ролики подписок»: сами
-// качаются на Wi-Fi и сами уходят через неделю.
+// устройстве, у всех аккаунтов. Ниже — «Где хранить» (своя папка, карта
+// памяти) и «Новые ролики подписок»: сами качаются на Wi-Fi и сами уходят
+// через неделю.
 
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -58,6 +60,7 @@ import { Capacitor } from '@capacitor/core'
 import { Modal, Switch } from 'ant-design-vue'
 import { formatBytes } from '@/services/offline-video/format-bytes'
 import { OFFLINE_QUALITY_CHOICES, useOfflineVideosStore } from '@/stores/offline-videos-store'
+import OfflineLocationRow from './offline-location-row.vue'
 import {
   SC_CacheControls,
   SC_CacheRow,

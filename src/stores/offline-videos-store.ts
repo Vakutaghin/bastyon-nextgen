@@ -53,7 +53,9 @@ import type {
   OfflineBackend,
   OfflineChanged,
   OfflineItem,
+  OfflineLocation,
   OfflineMeta,
+  OfflineMoving,
   OfflineProgress,
   OfflineUsage,
 } from '@/services/offline-video/types'
@@ -187,6 +189,12 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
   const wifiOnly = ref<boolean>(readWifiOnly())
   /** Новые ролики подписок качаются сами. */
   const autoSubs = ref<boolean>(readAutoSubs())
+  /** Где лежит скачанное; null — ещё не спрашивали или выбрать нельзя. */
+  const location = ref<OfflineLocation | null>(null)
+  /** Идёт перенос: сколько роликов уже на новом месте. */
+  const moving = ref<OfflineMoving | null>(null)
+  /** На этой платформе можно выбрать, где хранить. */
+  const canChooseLocation = ref(false)
 
   /** Лист выбора качества: что качать. */
   const sheet = shallowRef<OfflineChoice | null>(null)
@@ -312,6 +320,11 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
       available.value = true
       await backend.onChanged(onChanged)
       await backend.onProgress(onProgress)
+      canChooseLocation.value = !!backend.location && !!backend.moveTo
+      if (backend.onMoving)
+        await backend.onMoving((p) => {
+          if (moving.value) moving.value = p
+        })
       const list = await backend.list().catch((e: unknown) => {
         log.warn('list failed', e)
         return [] as OfflineItem[]
@@ -558,6 +571,39 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     usage.value = await b.usage().catch(() => usage.value)
   }
 
+  async function refreshLocation(): Promise<void> {
+    const b = backendRef ?? (await hydrate(), backendRef)
+    if (!b?.location) return
+    location.value = await b.location().catch(() => location.value)
+  }
+
+  /**
+   * Перенести скачанное (компьютер — папка или null, Android — 'internal' или
+   * 'sd'). Загрузки встают и продолжаются на новом месте. Ошибка — код бэкенда
+   * в `Error.message`.
+   */
+  async function moveTo(target: string | null): Promise<void> {
+    const b = await backend()
+    if (!b.moveTo || moving.value) return
+    moving.value = { done: 0, total: 0 }
+    try {
+      location.value = await b.moveTo(target)
+    } catch (e) {
+      throw new Error(typeof e === 'string' ? e : e instanceof Error ? e.message : 'io', {
+        cause: e,
+      })
+    } finally {
+      moving.value = null
+      // Список и место — заново: папки те же, но лежат теперь в другом месте.
+      const list = await b.list().catch(() => null)
+      if (list) {
+        for (const id of [...items.keys()]) if (!list.some((i) => i.id === id)) put(null, id)
+        for (const item of list) put(item, item.id)
+      }
+      await refreshUsage()
+    }
+  }
+
   /** Скачанное само — оставить насовсем: неделя больше не считается. */
   async function keep(id: string): Promise<void> {
     put(await (await backend()).patchMeta(id, { auto: null }), id)
@@ -722,6 +768,11 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     qualityPref,
     wifiOnly,
     autoSubs,
+    location,
+    moving,
+    canChooseLocation,
+    refreshLocation,
+    moveTo,
     mine,
     mineUsed,
     hydrate,

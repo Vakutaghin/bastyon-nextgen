@@ -12,7 +12,9 @@ import type {
   OfflineChanged,
   OfflineItem,
   OfflineJob,
+  OfflineLocation,
   OfflineMeta,
+  OfflineMoving,
   OfflineProgress,
 } from './types'
 
@@ -28,19 +30,44 @@ interface OfflineVideoPlugin {
   nativePath(o: { id: string }): Promise<{ path?: string }>
   setWifiOnly(o: { on: boolean }): Promise<void>
   network(): Promise<{ unmetered?: boolean }>
+  storage(): Promise<AndroidStorage>
+  moveStorage(o: { target: string }): Promise<AndroidStorage>
   addListener(
-    event: 'progress' | 'changed',
+    event: 'progress' | 'changed' | 'moving',
     cb: (payload: unknown) => void
   ): Promise<PluginListenerHandle>
 }
 
+/** Ответ `storage()` службы; −1 — свободное место не узнать. */
+interface AndroidStorage {
+  current?: 'internal' | 'sd'
+  internalFree?: number
+  sd?: { free?: number } | null
+  sdUnavailable?: boolean
+}
+
 const OfflineVideo = registerPlugin<OfflineVideoPlugin>('OfflineVideo')
+
+const bytes = (n: number | undefined): number | null => (typeof n === 'number' && n >= 0 ? n : null)
+
+/** Ответ службы — в общий вид. */
+export function fromAndroidStorage(s: AndroidStorage): OfflineLocation {
+  const current = s.current === 'sd' ? 'sd' : 'internal'
+  const sd = s.sd ? { free: bytes(s.sd.free) } : null
+  return {
+    current,
+    isDefault: current === 'internal',
+    unavailable: s.sdUnavailable ? true : null,
+    free: current === 'sd' ? (sd?.free ?? null) : bytes(s.internalFree),
+    sd,
+  }
+}
 
 /** Перехват WebView в MainActivity (OfflineWebViewClient). */
 const PREFIX = '/_offline_/'
 
 async function listen<T>(
-  event: 'progress' | 'changed',
+  event: 'progress' | 'changed' | 'moving',
   cb: (payload: T) => void
 ): Promise<() => void> {
   const handle = await OfflineVideo.addListener(event, (payload) => cb(payload as T))
@@ -70,6 +97,10 @@ export const androidBackend: OfflineBackend = {
   },
   setWifiOnly: (on) => OfflineVideo.setWifiOnly({ on }),
   unmetered: async () => (await OfflineVideo.network()).unmetered !== false,
+  location: async () => fromAndroidStorage(await OfflineVideo.storage()),
+  moveTo: async (target) =>
+    fromAndroidStorage(await OfflineVideo.moveStorage({ target: target ?? 'internal' })),
+  onMoving: (cb) => listen<OfflineMoving>('moving', cb),
   onProgress: (cb) => listen<OfflineProgress>('progress', cb),
   onChanged: (cb) =>
     listen<OfflineChanged>('changed', (e) => cb({ id: e.id, item: e.item ?? null })),

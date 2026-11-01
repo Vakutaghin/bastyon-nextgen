@@ -7,19 +7,23 @@
 //! страница и отдаёт готовое задание (`Job`).
 //!
 //! Папка — `app_local_data_dir/offline`, не Caches: кэш чистит система и
-//! программы-чистильщики, а скачанное человек ждёт найти и через месяц.
+//! программы-чистильщики, а скачанное человек ждёт найти и через месяц. Её
+//! можно сменить на свою, например на другом диске (location.rs): на время
+//! переноса загрузки встают и продолжаются уже на новом месте.
 //! Качается до двух роликов сразу, остальные ждут. Под Tor — только через Tor
 //! (`fetch::download_client`); Tor не готов — пауза с причиной, страница
 //! продолжит, когда он поднимется.
 
 pub mod download;
+mod location;
 pub mod protocol;
 mod space;
 pub mod store;
 
 use std::collections::{HashMap, VecDeque};
-use std::path::PathBuf;
-use std::sync::Mutex;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Mutex, RwLock};
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
@@ -39,10 +43,20 @@ const PROGRESS_EVERY: Duration = Duration::from_millis(250);
 
 const EVENT_PROGRESS: &str = "offline://progress";
 const EVENT_CHANGED: &str = "offline://changed";
+const EVENT_MOVING: &str = "offline://moving";
+/// Сколько ждать, пока загрузки встанут перед переносом.
+const STOP_WAIT: Duration = Duration::from_secs(30);
 const MAIN_WINDOW: &str = "main";
 
 pub struct OfflineManager {
-    root: PathBuf,
+    /// Папка со скачанным сейчас; меняет только перенос.
+    root: RwLock<PathBuf>,
+    /// `app_local_data_dir`: там стандартная папка и настройка своей.
+    base: PathBuf,
+    /// Своя папка из настройки, которой нет на месте (диск не подключён).
+    unavailable: Mutex<Option<PathBuf>>,
+    /// Идёт перенос: загрузки не запускаются, список не меняется.
+    moving: AtomicBool,
     inner: Mutex<Inner>,
 }
 
@@ -55,6 +69,26 @@ struct Inner {
 impl OfflineManager {
     fn lock(&self) -> std::sync::MutexGuard<'_, Inner> {
         self.inner.lock().unwrap_or_else(|p| p.into_inner())
+    }
+
+    fn root(&self) -> PathBuf {
+        self.root.read().unwrap_or_else(|p| p.into_inner()).clone()
+    }
+
+    fn default_root(&self) -> PathBuf {
+        self.base.join("offline")
+    }
+
+    fn moving(&self) -> bool {
+        self.moving.load(Ordering::SeqCst)
+    }
+
+    fn not_moving(&self) -> Result<(), String> {
+        if self.moving() {
+            Err("moving".into())
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -72,13 +106,15 @@ struct Changed<'a> {
     item: Option<Item>,
 }
 
-fn emit_changed(app: &AppHandle, root: &std::path::Path, id: &str) {
+fn emit_changed(app: &AppHandle, root: &Path, id: &str) {
     let item = store::read_item(root, id);
     let _ = app.emit_to(MAIN_WINDOW, EVENT_CHANGED, Changed { id, item });
 }
 
 pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    let root = app.path().app_local_data_dir()?.join("offline");
+    let base = app.path().app_local_data_dir()?;
+    let default = base.join("offline");
+    let (root, unavailable) = location::resolve(&default, location::read_config(&base));
     std::fs::create_dir_all(&root)?;
     let mut inner = Inner::default();
     for item in store::list(&root) {
@@ -96,7 +132,10 @@ pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     app.manage(OfflineManager {
-        root,
+        root: RwLock::new(root),
+        base,
+        unavailable: Mutex::new(unavailable),
+        moving: AtomicBool::new(false),
         inner: Mutex::new(inner),
     });
     let handle = app.clone();
@@ -110,13 +149,17 @@ pub fn init(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 /// Запустить ждущие, пока есть свободные места.
 fn pump(app: &AppHandle) {
     let mgr = app.state::<OfflineManager>();
+    if mgr.moving() {
+        return;
+    }
+    let root = mgr.root();
     let mut inner = mgr.lock();
     while inner.running.len() < PARALLEL {
         let Some(id) = inner.queue.pop_front() else { break };
         if inner.running.contains_key(&id) {
             continue;
         }
-        let dir = store::item_dir(&mgr.root, &id);
+        let dir = store::item_dir(&root, &id);
         let queued = store::read_state(&dir).is_some_and(|s| s.status == Status::Queued);
         if !queued {
             continue;
@@ -139,7 +182,7 @@ fn client_error_code(e: &str) -> &'static str {
 
 async fn run_task(app: AppHandle, id: String, mut rx: watch::Receiver<Signal>) {
     let mgr = app.state::<OfflineManager>();
-    let root = mgr.root.clone();
+    let root = mgr.root();
     let dir = store::item_dir(&root, &id);
     let mut state = store::read_state(&dir).unwrap_or_else(|| State::queued(0));
     let result = match store::read_job(&dir) {
@@ -219,7 +262,7 @@ fn finish(
     rx: &watch::Receiver<Signal>,
 ) {
     let mgr = app.state::<OfflineManager>();
-    let dir = store::item_dir(&mgr.root, id);
+    let dir = store::item_dir(&mgr.root(), id);
     {
         let mut inner = mgr.lock();
         inner.running.remove(id);
@@ -243,7 +286,7 @@ fn finish(
             }
         }
     }
-    emit_changed(app, &mgr.root, id);
+    emit_changed(app, &mgr.root(), id);
 }
 
 fn stop_or<F: FnOnce(&mut Inner)>(mgr: &OfflineManager, id: &str, signal: Signal, otherwise: F) {
@@ -265,7 +308,7 @@ fn checked_id(id: &str) -> Result<(), String> {
 
 #[tauri::command]
 pub fn offline_list(mgr: TauriState<'_, OfflineManager>) -> Vec<Item> {
-    store::list(&mgr.root)
+    store::list(&mgr.root())
 }
 
 /// Поставить в очередь. Уже есть — вернуть как есть (страница сама допишет
@@ -277,12 +320,13 @@ pub fn offline_enqueue(
     job: Job,
     meta: serde_json::Value,
 ) -> Result<Item, String> {
+    mgr.not_moving()?;
     job.validate()?;
     if !meta.is_object() {
         return Err("invalid_meta".into());
     }
-    let dir = store::item_dir(&mgr.root, &job.id);
-    if let Some(existing) = store::read_item(&mgr.root, &job.id) {
+    let dir = store::item_dir(&mgr.root(), &job.id);
+    if let Some(existing) = store::read_item(&mgr.root(), &job.id) {
         return Ok(existing);
     }
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
@@ -293,15 +337,15 @@ pub fn offline_enqueue(
     // meta.json последним: без него папку не видно в списке.
     store::write_meta(&dir, &meta).map_err(|e| e.to_string())?;
     mgr.lock().queue.push_back(job.id.clone());
-    emit_changed(&app, &mgr.root, &job.id);
+    emit_changed(&app, &mgr.root(), &job.id);
     pump(&app);
-    store::read_item(&mgr.root, &job.id).ok_or_else(|| "io".to_string())
+    store::read_item(&mgr.root(), &job.id).ok_or_else(|| "io".to_string())
 }
 
 #[tauri::command]
 pub fn offline_pause(app: AppHandle, mgr: TauriState<'_, OfflineManager>, id: String) -> Result<(), String> {
     checked_id(&id)?;
-    let root = mgr.root.clone();
+    let root = mgr.root();
     let mut changed = false;
     stop_or(&mgr, &id, Signal::Pause, |inner| {
         inner.queue.retain(|q| q != &id);
@@ -324,7 +368,8 @@ pub fn offline_pause(app: AppHandle, mgr: TauriState<'_, OfflineManager>, id: St
 #[tauri::command]
 pub fn offline_resume(app: AppHandle, mgr: TauriState<'_, OfflineManager>, id: String) -> Result<(), String> {
     checked_id(&id)?;
-    let dir = store::item_dir(&mgr.root, &id);
+    mgr.not_moving()?;
+    let dir = store::item_dir(&mgr.root(), &id);
     {
         let mut inner = mgr.lock();
         if inner.running.contains_key(&id) || inner.queue.contains(&id) {
@@ -343,7 +388,7 @@ pub fn offline_resume(app: AppHandle, mgr: TauriState<'_, OfflineManager>, id: S
         store::write_state(&dir, &state).map_err(|e| e.to_string())?;
         inner.queue.push_back(id.clone());
     }
-    emit_changed(&app, &mgr.root, &id);
+    emit_changed(&app, &mgr.root(), &id);
     pump(&app);
     Ok(())
 }
@@ -352,7 +397,8 @@ pub fn offline_resume(app: AppHandle, mgr: TauriState<'_, OfflineManager>, id: S
 #[tauri::command]
 pub fn offline_remove(app: AppHandle, mgr: TauriState<'_, OfflineManager>, id: String) -> Result<(), String> {
     checked_id(&id)?;
-    let root = mgr.root.clone();
+    mgr.not_moving()?;
+    let root = mgr.root();
     let mut removed = false;
     stop_or(&mgr, &id, Signal::Remove, |inner| {
         inner.queue.retain(|q| q != &id);
@@ -373,9 +419,10 @@ pub fn offline_patch_meta(
     patch: serde_json::Value,
 ) -> Result<Item, String> {
     checked_id(&id)?;
-    store::patch_meta(&store::item_dir(&mgr.root, &id), &patch)?;
-    emit_changed(&app, &mgr.root, &id);
-    store::read_item(&mgr.root, &id).ok_or_else(|| "not_found".to_string())
+    mgr.not_moving()?;
+    store::patch_meta(&store::item_dir(&mgr.root(), &id), &patch)?;
+    emit_changed(&app, &mgr.root(), &id);
+    store::read_item(&mgr.root(), &id).ok_or_else(|| "not_found".to_string())
 }
 
 #[derive(Serialize)]
@@ -386,7 +433,7 @@ pub struct Usage {
 
 #[tauri::command]
 pub async fn offline_usage(mgr: TauriState<'_, OfflineManager>) -> Result<Usage, String> {
-    let root = mgr.root.clone();
+    let root = mgr.root();
     tauri::async_runtime::spawn_blocking(move || Usage {
         used: crate::storage::dir_size(&root),
         free: space::free_bytes(&root),
@@ -398,11 +445,157 @@ pub async fn offline_usage(mgr: TauriState<'_, OfflineManager>) -> Result<Usage,
 /// Стереть всё скачанное (выход из всех аккаунтов, «Удалить всё»).
 #[tauri::command]
 pub fn offline_clear(app: AppHandle, mgr: TauriState<'_, OfflineManager>) -> Result<(), String> {
-    let ids: Vec<String> = store::list(&mgr.root).into_iter().map(|i| i.id).collect();
+    mgr.not_moving()?;
+    let ids: Vec<String> = store::list(&mgr.root()).into_iter().map(|i| i.id).collect();
     for id in ids {
         offline_remove(app.clone(), mgr.clone(), id)?;
     }
     Ok(())
+}
+
+/// Где лежит скачанное — для настроек.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Location {
+    path: String,
+    is_default: bool,
+    /// Своя папка, которой нет на месте: скачанное с неё не видно.
+    unavailable: Option<String>,
+    free: Option<u64>,
+}
+
+fn location_of(mgr: &OfflineManager) -> Location {
+    let root = mgr.root();
+    Location {
+        path: root.to_string_lossy().into_owned(),
+        is_default: root == mgr.default_root(),
+        unavailable: mgr
+            .unavailable
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_ref()
+            .map(|p| p.to_string_lossy().into_owned()),
+        free: space::free_bytes(&root),
+    }
+}
+
+#[tauri::command]
+pub async fn offline_location(app: AppHandle) -> Result<Location, String> {
+    tauri::async_runtime::spawn_blocking(move || location_of(&app.state::<OfflineManager>()))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Clone, Serialize)]
+struct Moving {
+    done: usize,
+    total: usize,
+}
+
+/// Остановить загрузки перед переносом. Возвращает, что качалось и ждало, —
+/// это вернётся в очередь после него, — и встало ли всё за STOP_WAIT.
+async fn stop_all(mgr: &OfflineManager) -> (Vec<String>, bool) {
+    let resume: Vec<String> = {
+        let mut inner = mgr.lock();
+        for tx in inner.running.values() {
+            let _ = tx.send(Signal::Pause);
+        }
+        let mut ids: Vec<String> = inner.running.keys().cloned().collect();
+        ids.extend(inner.queue.drain(..));
+        ids
+    };
+    let started = Instant::now();
+    while !mgr.lock().running.is_empty() {
+        if started.elapsed() > STOP_WAIT {
+            return (resume, false);
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    (resume, true)
+}
+
+/// Остановленное переносом — снова в очередь, уже там, где теперь скачанное.
+fn requeue(app: &AppHandle, ids: Vec<String>) {
+    let mgr = app.state::<OfflineManager>();
+    let root = mgr.root();
+    {
+        let mut inner = mgr.lock();
+        for id in ids {
+            let dir = store::item_dir(&root, &id);
+            let Some(mut state) = store::read_state(&dir) else { continue };
+            // Done — докачалось, пока вставало; ещё качается (не встало) — само продолжит.
+            if state.status == Status::Done || inner.running.contains_key(&id) {
+                continue;
+            }
+            state.status = Status::Queued;
+            state.error = None;
+            if store::write_state(&dir, &state).is_ok() && !inner.queue.contains(&id) {
+                inner.queue.push_back(id);
+            }
+        }
+    }
+    pump(app);
+}
+
+/// Перенести скачанное в папку `to` (в ней — подпапка `Bastyon offline`) или,
+/// без `to`, обратно в стандартную. Ошибки: `moving`, `busy`, `inside_current`,
+/// `not_writable`, `no_space`, `target_busy`, `io` — тогда всё остаётся как было.
+#[tauri::command]
+pub async fn offline_move(app: AppHandle, to: Option<String>) -> Result<Location, String> {
+    let mgr = app.state::<OfflineManager>();
+    let chosen = to.filter(|p| !p.trim().is_empty()).map(PathBuf::from);
+    let target = chosen
+        .as_ref()
+        .map_or_else(|| mgr.default_root(), |p| p.join(location::SUBDIR));
+    let current = mgr.root();
+    if target == current {
+        // Та же папка — разве что забыть недоступную, если выбрали стандартную.
+        if chosen.is_none() {
+            location::write_config(&mgr.base, None).map_err(|e| e.to_string())?;
+            *mgr.unavailable.lock().unwrap_or_else(|p| p.into_inner()) = None;
+        }
+        return Ok(location_of(&mgr));
+    }
+    if mgr.moving.swap(true, Ordering::SeqCst) {
+        return Err("moving".into());
+    }
+    let (resume, stopped) = stop_all(&mgr).await;
+    if !stopped {
+        mgr.moving.store(false, Ordering::SeqCst);
+        requeue(&app, resume);
+        return Err("busy".into());
+    }
+    let handle = app.clone();
+    let (from, dest) = (current.clone(), target.clone());
+    let moved = tauri::async_runtime::spawn_blocking(move || {
+        location::check_target(&from, &dest)?;
+        let ids: Vec<String> = store::list(&from).into_iter().map(|i| i.id).collect();
+        if !location::same_device(&from, &dest)
+            && !location::enough_space(crate::storage::dir_size(&from), space::free_bytes(&dest))
+        {
+            return Err("no_space".to_string());
+        }
+        location::move_items(&from, &dest, &ids, |done, total| {
+            let _ = handle.emit_to(MAIN_WINDOW, EVENT_MOVING, Moving { done, total });
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())
+    .and_then(|r| r);
+    if moved.is_ok() {
+        *mgr.root.write().unwrap_or_else(|p| p.into_inner()) = target.clone();
+        *mgr.unavailable.lock().unwrap_or_else(|p| p.into_inner()) = None;
+        if let Err(e) = location::write_config(&mgr.base, chosen.as_deref()) {
+            log::warn!("[offline] location config: {e}");
+        }
+        // Своя папка опустела — убрать её; стандартная остаётся.
+        if current != mgr.default_root() {
+            let _ = std::fs::remove_dir(&current);
+        }
+    }
+    mgr.moving.store(false, Ordering::SeqCst);
+    requeue(&app, resume);
+    moved.map(|()| location_of(&mgr))
 }
 
 /// Обработчик схемы `bastyon-offline://` для `register_asynchronous_uri_scheme_protocol`.
@@ -429,7 +622,7 @@ pub fn handle_protocol<R: tauri::Runtime>(
         );
         return;
     };
-    let root = mgr.root.clone();
+    let root = mgr.root();
     tauri::async_runtime::spawn_blocking(move || {
         responder.respond(protocol::respond(&root, &request));
     });

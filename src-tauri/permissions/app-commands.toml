@@ -113,4 +113,6 @@ permissions = [
   "allow-offline-patch-meta",
   "allow-offline-usage",
   "allow-offline-clear",
+  "allow-offline-location",
+  "allow-offline-move",
 ]

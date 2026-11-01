@@ -4516,6 +4516,31 @@ export default {
     autoBadge:
       'Scaricato automaticamente · eliminato tra {n} giorno | Scaricato automaticamente · eliminato tra {n} giorni',
     keep: 'Tieni',
+    locationTitle: 'Dove salvare',
+    locationHint:
+      'La cartella dei download. Puoi scegliere un altro disco: i video vengono spostati e i download continuano nel nuovo posto.',
+    locationHintAndroid:
+      'Memoria del telefono o scheda di memoria. I video vengono spostati e i download continuano nel nuovo posto.',
+    chooseFolder: 'Scegli cartella…',
+    defaultFolder: 'Cartella predefinita',
+    phoneMemory: 'Memoria del telefono',
+    sdCard: 'Scheda di memoria',
+    movingStart: 'Spostamento dei download…',
+    movingProgress: 'Spostamento: {done} di {total}',
+    moved: 'Download spostati',
+    folderUnavailable:
+      'La cartella {path} non è disponibile: il disco è scollegato? I download lì non si vedono, i nuovi vanno nella cartella predefinita.',
+    sdUnavailable:
+      'La scheda di memoria non è inserita: i suoi download non si vedono, i nuovi vanno nella memoria del telefono.',
+    moveError: {
+      noSpace: 'Nel nuovo posto non c’è abbastanza spazio',
+      notWritable: 'Non si può scrivere in questa cartella: scegline un’altra',
+      insideCurrent: 'Questa cartella è dentro quella attuale: scegline un’altra',
+      targetBusy: 'La nuova cartella contiene già questi video',
+      busy: 'Un download non si è fermato: riprova',
+      noSd: 'Nessuna scheda di memoria trovata',
+      failed: 'Spostamento non riuscito, tutto è rimasto al suo posto',
+    },
     emptyVideo:
       'Nessun video scaricato. Tocca «Scarica» sotto un video — sarà qui anche senza rete.',
     emptyAudio:

@@ -52,11 +52,15 @@ There are no time limits like in YouTube: a video won't disappear even if you st
 
 Videos are stored in the app's data folder — not in the cache the system cleans. Downloads run while the app is open, also when it's hidden in the tray.
 
+You can also keep downloads in a folder of your own, for example on another disk: **“Choose folder…”** in the **“Where to keep”** row of the settings (see below). The app moves all videos there (into a “Bastyon offline” subfolder); running downloads pause for the move and continue there. Everything is copied first, and only then the old copies are deleted: if the move fails, everything stays where it was. If the disk with that folder is disconnected, the app warns you and downloads into the default folder; **“Default folder”** moves the downloads back.
+
 With [Tor](tor.md) on, videos download only through Tor. That is also a way to watch a video under Tor without the “bypasses Tor” warning: download it — a downloaded video plays from the disk and doesn't go to the network. Through Tor downloads are slower; if Tor is still connecting, the download waits for it.
 
 ## On the phone
 
 Downloads run in the background with a “Downloading 34 %” notification and pause and cancel buttons — you don't have to keep the app open. Android 15 limits such background work to six hours a day: when the limit is used up, the download pauses and continues when you open the app.
+
+If the phone has a memory card, downloads can be kept on it: **“Memory card”** in the **“Where to keep”** row of the settings. Videos are moved, and downloads continue on the card; **“Phone memory”** moves them back. If the card is removed, the app warns you and downloads new videos into phone memory. The folder on the card belongs to the app: Android erases it when the app is uninstalled.
 
 By default videos download only over Wi-Fi: no Wi-Fi — the download waits and continues by itself when it appears. To download over mobile data too, turn off **“Wi-Fi only”** in the settings (see below). A minimized app also plays a downloaded track from the device.
 
@@ -76,7 +80,7 @@ Turn on **“Download new videos from subscriptions automatically”** in the se
 
 ## Settings
 
-**“Settings”** → **“System”** → **“Local data”** → **“Downloaded videos”**: how much the downloads take and how much is free, the default quality (**“Ask”** or one of the qualities), on Android — **“Wi-Fi only”**. The **“Delete all”** button erases everything downloaded on the device by all accounts.
+**“Settings”** → **“System”** → **“Local data”** → **“Downloaded videos”**: how much the downloads take and how much is free, the default quality (**“Ask”** or one of the qualities), on Android — **“Wi-Fi only”**. The **“Delete all”** button erases everything downloaded on the device by all accounts. The next row is **“Where to keep”**: your own folder on the computer, phone memory or a memory card on Android.
 
 ## Several accounts
 

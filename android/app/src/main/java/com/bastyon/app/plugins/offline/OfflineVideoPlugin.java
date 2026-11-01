@@ -33,9 +33,14 @@ import java.util.concurrent.Executors;
  *   setWifiOnly({ on })
  *   network()                   → { unmetered } — Wi-Fi или другая безлимитная
  *                                 сеть: на ней «Новые ролики подписок» качаются сами
+ *   storage()                   → { current: internal|sd, internalFree,
+ *                                   sd: { free } | null, sdUnavailable }
+ *   moveStorage({ target })     → то же, что storage(), после переноса во
+ *                                 внутреннюю память или на карту (событие moving)
  * </pre>
  * События: {@code progress} {@code {id, received, total}} не чаще 4 раз в
- * секунду, {@code changed} {@code {id, item}} ({@code item: null} — удалён).
+ * секунду, {@code changed} {@code {id, item}} ({@code item: null} — удалён),
+ * {@code moving} {@code {done, total}} — ход переноса.
  * Ошибки — код в сообщении и в {@code code}: {@code invalid_id},
  * {@code not_found}, {@code invalid_sources}, {@code invalid_extras},
  * {@code invalid_meta}, {@code invalid_patch}, {@code invalid_job}, {@code io}.
@@ -71,6 +76,14 @@ public class OfflineVideoPlugin extends Plugin {
             ev.put("id", id);
             ev.put("item", item != null ? item : JSONObject.NULL);
             notifyListeners("changed", ev);
+        }
+
+        @Override
+        public void onMoving(int done, int total) {
+            JSObject ev = new JSObject();
+            ev.put("done", done);
+            ev.put("total", total);
+            notifyListeners("moving", ev);
         }
     };
 
@@ -212,6 +225,19 @@ public class OfflineVideoPlugin extends Plugin {
             Boolean on = c.getBoolean("on", true);
             manager.setWifiOnly(on == null || on);
             c.resolve();
+        });
+    }
+
+    @PluginMethod
+    public void storage(PluginCall call) {
+        work(call, c -> c.resolve(obj(manager.storage())));
+    }
+
+    @PluginMethod
+    public void moveStorage(PluginCall call) {
+        work(call, c -> {
+            manager.moveStorage(c.getString("target", ""));
+            c.resolve(obj(manager.storage()));
         });
     }
 

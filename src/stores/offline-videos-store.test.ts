@@ -380,6 +380,57 @@ describe('offline-videos-store', () => {
     expect(store.itemFor('peertube://h/busy')).toBeNull()
   })
 
+  it('где хранить: перенос с ходом, список и место заново; ошибка — код, всё как было', async () => {
+    const f = fake([item()])
+    let moving: (p: { done: number; total: number }) => void = () => {}
+    let finish: (l: unknown) => void = () => {}
+    const there = {
+      path: '/Volumes/Disk/Bastyon offline',
+      isDefault: false,
+      unavailable: null,
+      free: 9,
+    }
+    const backend = {
+      ...f.backend,
+      location: vi.fn(async () => ({
+        path: '/app/offline',
+        isDefault: true,
+        unavailable: null,
+        free: 5,
+      })),
+      moveTo: vi.fn(() => new Promise((resolve) => (finish = resolve))),
+      onMoving: vi.fn(async (cb: typeof moving) => {
+        moving = cb
+        return () => {}
+      }),
+    }
+    h.backend = backend as unknown as OfflineBackend
+    const store = useOfflineVideosStore()
+    await store.hydrate()
+    expect(store.canChooseLocation).toBe(true)
+    await store.refreshLocation()
+    expect(store.location?.isDefault).toBe(true)
+
+    const done = store.moveTo('/Volumes/Disk')
+    await vi.waitFor(() => expect(store.moving).toEqual({ done: 0, total: 0 }))
+    moving({ done: 1, total: 1 })
+    expect(store.moving).toEqual({ done: 1, total: 1 })
+    finish(there)
+    await done
+    expect(backend.moveTo).toHaveBeenCalledWith('/Volumes/Disk')
+    expect(store.location).toEqual(there)
+    expect(store.moving).toBeNull()
+    expect(f.backend.list).toHaveBeenCalledTimes(2)
+    // Событие после переноса ход не показывает.
+    moving({ done: 1, total: 1 })
+    expect(store.moving).toBeNull()
+
+    backend.moveTo.mockImplementation(() => Promise.reject('no_space'))
+    await expect(store.moveTo(null)).rejects.toThrow('no_space')
+    expect(store.location).toEqual(there)
+    expect(store.moving).toBeNull()
+  })
+
   it('удалить у себя: общий файл остаётся другому, последний — стирается', async () => {
     const f = fake([item({ accounts: ['PMe', 'POther'] })])
     h.backend = f.backend

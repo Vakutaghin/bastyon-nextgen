@@ -1052,6 +1052,8 @@ pub fn run() {
       offline::offline_patch_meta,
       offline::offline_usage,
       offline::offline_clear,
+      offline::offline_location,
+      offline::offline_move,
     ])
     // Скачанные ролики: плеер и картинки берут их по id (offline/protocol.rs).
     .register_asynchronous_uri_scheme_protocol(offline::protocol::SCHEME, offline::handle_protocol)

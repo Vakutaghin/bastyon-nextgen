@@ -4572,6 +4572,31 @@ export default {
     autoBadge:
       'Téléchargée automatiquement · supprimée dans {n} jour | Téléchargée automatiquement · supprimée dans {n} jours',
     keep: 'Garder',
+    locationTitle: 'Emplacement',
+    locationHint:
+      'Le dossier des téléchargements. Vous pouvez choisir un autre disque : les vidéos sont déplacées et les téléchargements continuent au nouvel endroit.',
+    locationHintAndroid:
+      'Mémoire du téléphone ou carte mémoire. Les vidéos sont déplacées et les téléchargements continuent au nouvel endroit.',
+    chooseFolder: 'Choisir un dossier…',
+    defaultFolder: 'Dossier par défaut',
+    phoneMemory: 'Mémoire du téléphone',
+    sdCard: 'Carte mémoire',
+    movingStart: 'Déplacement des téléchargements…',
+    movingProgress: 'Déplacement : {done} sur {total}',
+    moved: 'Téléchargements déplacés',
+    folderUnavailable:
+      'Le dossier {path} est indisponible : le disque est-il débranché ? Les téléchargements qui s’y trouvent ne sont pas visibles, les nouveaux vont dans le dossier par défaut.',
+    sdUnavailable:
+      'La carte mémoire n’est pas insérée : ses téléchargements ne sont pas visibles, les nouveaux vont dans la mémoire du téléphone.',
+    moveError: {
+      noSpace: 'Pas assez d’espace au nouvel endroit',
+      notWritable: 'Impossible d’écrire dans ce dossier — choisissez-en un autre',
+      insideCurrent: 'Ce dossier est dans le dossier actuel — choisissez-en un autre',
+      targetBusy: 'Le nouveau dossier contient déjà ces vidéos',
+      busy: 'Un téléchargement ne s’est pas arrêté — réessayez',
+      noSd: 'Aucune carte mémoire trouvée',
+      failed: 'Déplacement impossible, tout est resté en place',
+    },
     emptyVideo:
       'Aucune vidéo téléchargée. Touchez « Télécharger » sous une vidéo — elle sera ici même sans réseau.',
     emptyAudio:
