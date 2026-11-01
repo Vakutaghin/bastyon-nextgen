@@ -17,14 +17,13 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { useAuthStore } from '@/blockchain'
 import type { ArticleContent, SharePostData } from '@/blockchain/core/actions/post-action'
-import { resolvePostOperationType } from '@/blockchain/core/actions/post-action'
 import { appToast } from '@/b-components/app-toast'
 import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 import { encodeArticleContent } from '@/helpers/content/article-codec'
 import { parsePoll } from '@/helpers/content/poll'
 import { haptic } from '@/helpers/common/haptics'
 import { uploadImages } from '@/services/image-upload-service'
-import { useModalStore, usePendingPostsStore, pendingPostDeadline } from '@/stores'
+import { useModalStore } from '@/stores'
 import { t } from '@/i18n'
 
 import {
@@ -38,6 +37,7 @@ import {
 } from './composer-source'
 import { firstLinkUrl, firstVideoUrl, parseVideoUrl } from './parse-video-url'
 import { sendPost } from './post-sender'
+import { trackPendingPost } from './pending-post'
 import { usePostImages } from './use-post-images'
 import { usePostTags } from './use-post-tags'
 import { usePostPoll } from './use-post-poll'
@@ -50,6 +50,7 @@ import {
   writeDraftImages,
 } from './post-draft'
 import { validatePost } from './validate-post'
+import { UPLOADING_VIDEO_POINTER } from './consts'
 
 /** Пауза перед записью черновика в IndexedDB: не писать на каждую букву подписи. */
 const DRAFT_SAVE_DELAY_MS = 400
@@ -76,7 +77,6 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const { locale } = useI18n()
   const authStore = useAuthStore()
   const modalStore = useModalStore()
-  const pendingPostsStore = usePendingPostsStore()
   const queryClient = useQueryClient()
 
   const mode = options.mode ?? 'create'
@@ -112,8 +112,17 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   )
   const prefillVideo = mode === 'create' && options.video?.pointer ? options.video : null
   const caption = ref(isEdit && prefill ? prefill.caption : (prefillVideo?.title ?? ''))
-  const { tags, tagInput, tagsFull, addTag, commitTagInput, removeTag, onTagBackspace, resetTags } =
-    usePostTags(isEdit && prefill ? prefill.tags : [])
+  const {
+    tags,
+    tagInput,
+    tagsFull,
+    postTags,
+    addTag,
+    commitTagInput,
+    removeTag,
+    onTagBackspace,
+    resetTags,
+  } = usePostTags(isEdit && prefill ? prefill.tags : [])
   const submitting = ref(false)
   // При правке сохраняем видимость и язык оригинала: раньше они сбрасывались
   // на дефолт, и пост «только подписчикам» после исправления опечатки
@@ -206,6 +215,12 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const effectiveVideoUrl = computed(() => uploadedVideoUrl.value || videoUrl.value)
   const parsedVideo = computed(() => parseVideoUrl(effectiveVideoUrl.value))
 
+  /** Своё видео грузится прямо сейчас: указателя ещё нет; «Опубликовать» дождётся его. */
+  const videoUploading = ref(false)
+  const setVideoUploading = (active: boolean): void => {
+    videoUploading.value = active
+  }
+
   /** Ссылка, которую автор убрал крестиком на карточке: её в `u` не кладём. */
   const dismissedLinkUrl = ref('')
   /** Обычная веб-ссылка из текста (как `linksFromText` старого клиента), если видео нет. */
@@ -226,9 +241,17 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     // При правке `u` оригинала лежит в uploadedVideoUrl (V36) — убираем и оттуда.
     if (uploadedVideoUrl.value === linkPreviewUrl.value) uploadedVideoUrl.value = ''
   }
-  /** peertube-видео/аудио требуют заголовок (caption) — показываем поле title. */
+  /** Своё видео ещё грузится: указателя нет, но пост уже с роликом. */
+  const videoPending = computed(() => videoUploading.value && !uploadedVideoUrl.value)
+  /**
+   * peertube-видео/аудио требуют заголовок (caption) — показываем поле title.
+   * И пока своё видео грузится: заголовок пишут, не дожидаясь загрузки.
+   */
   const needsCaption = computed(
-    () => parsedVideo.value.kind === 'peertube' || parsedVideo.value.kind === 'audio'
+    () =>
+      parsedVideo.value.kind === 'peertube' ||
+      parsedVideo.value.kind === 'audio' ||
+      videoPending.value
   )
 
   /** Аплоадер вызывает после успешной загрузки: подставить указатель в пост. */
@@ -239,11 +262,6 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     uploadedVideoUrl.value = ''
   }
 
-  /** Своё видео грузится прямо сейчас: публиковать нечего, указателя ещё нет. */
-  const videoUploading = ref(false)
-  const setVideoUploading = (active: boolean): void => {
-    videoUploading.value = active
-  }
   /** Видео загружено из композера (а не пришло с правкой): у него своя панель. */
   const hasUploadedVideo = computed(() => !isEdit && !!uploadedVideoUrl.value)
   /** Загрузка закончилась: указатель — в `u`, имя файла — заготовка заголовка. */
@@ -273,7 +291,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       return {
         caption: caption.value.trim(),
         articleContent: encodeArticleContent(articleContent.value ?? { blocks: [] }),
-        tags: tags.value,
+        tags: postTags.value,
         language: language.value,
         settings: { ...baseSettings.value, v: 'a', version: 2 },
         txidEdit: editId.value || undefined,
@@ -282,8 +300,9 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     return {
       message: message.value.trim(),
       caption: caption.value.trim(),
-      url: postUrl.value || undefined,
-      tags: tags.value,
+      // Пока видео грузится, проверяем пост как видео: заголовок обязателен.
+      url: postUrl.value || (videoPending.value ? UPLOADING_VIDEO_POINTER : undefined),
+      tags: postTags.value,
       images: base64List.value,
       poll: cleanedPoll.value,
       language: language.value,
@@ -299,10 +318,15 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const setArticleUploading = (active: boolean): void => {
     articleUploading.value = active
   }
+  /** «Опубликовать» нажали, пока видео грузилось: пост уйдёт, когда оно загрузится. */
+  const waitingForVideo = ref(false)
+  const cancelWaiting = (): void => {
+    waitingForVideo.value = false
+  }
   const canPublish = computed(
     () =>
       !submitting.value &&
-      !videoUploading.value &&
+      !waitingForVideo.value &&
       !articleUploading.value &&
       validationError.value === null
   )
@@ -482,6 +506,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     scheduledTime.value = 0
     uploadedVideoUrl.value = ''
     dismissedLinkUrl.value = ''
+    waitingForVideo.value = false
     clearImages()
     clearStoredDraft()
   }
@@ -497,7 +522,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     // (use-account-switch-reset форму закрывает, это — последний рубеж).
     if (authStore.getUserAddress !== ownAddress) return
 
-    if (videoUploading.value || articleUploading.value) return
+    if (articleUploading.value) return
 
     // Закоммитить недобитый ввод тега (пользователь не нажал Enter).
     commitTagInput()
@@ -505,6 +530,12 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     const error = validatePost(post.value)
     if (error) {
       appToast.error({ message: t(`postMsg.validation.${error}`) })
+      return
+    }
+    // Видео ещё грузится или его обложка не на сервере — пост уйдёт сам, когда
+    // всё будет готово: второй раз нажимать не нужно.
+    if (videoUploading.value) {
+      waitingForVideo.value = true
       return
     }
 
@@ -520,31 +551,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       const finalPost: SharePostData = { ...post.value, images: imageUrls }
       const txid = await sendPost(finalPost)
 
-      // Оптимистичная публикация: пост уже в мемпуле (есть txid), но ещё не в
-      // блокчейне. Кладём его в pending-слой, чтобы автор сразу увидел пост в
-      // своей ленте профиля с пометкой «не опубликовано» + в «песочных часах».
-      // Для edit не добавляем — это правка существующего поста, а не новый.
-      const myAddress = authStore.getUserAddress
-      if (!isEdit && myAddress) {
-        const now = Date.now()
-        const scheduledAt =
-          finalPost.settings?.t && finalPost.settings.t > 1
-            ? finalPost.settings.t * 1000
-            : undefined
-        pendingPostsStore.addPending({
-          id: txid,
-          address: myAddress,
-          caption: finalPost.caption ?? '',
-          message: typeof finalPost.message === 'string' ? finalPost.message : '',
-          images: imageUrls,
-          tags: finalPost.tags ?? [],
-          url: finalPost.url,
-          type: resolvePostOperationType(finalPost),
-          createdAt: now,
-          ...(scheduledAt ? { scheduledAt } : {}),
-          expiresAt: pendingPostDeadline(now, scheduledAt),
-        })
-      }
+      trackPendingPost(finalPost, txid)
 
       haptic('small')
       appToast.success({ message: t('postMsg.publishSuccess') })
@@ -561,6 +568,13 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       submitting.value = false
     }
   }
+
+  watch(videoUploading, (busy) => {
+    if (busy || !waitingForVideo.value) return
+    waitingForVideo.value = false
+    // Загрузка сорвалась или видео убрали — пост без него не отправляем.
+    if (uploadedVideoUrl.value) void publish()
+  })
 
   return {
     mode,
@@ -589,6 +603,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     setUploadedVideoUrl,
     clearUploadedVideoUrl,
     videoUploading,
+    waitingForVideo,
+    cancelWaiting,
     articleUploading,
     setArticleUploading,
     setVideoUploading,

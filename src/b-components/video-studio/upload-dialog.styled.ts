@@ -107,7 +107,7 @@ export const SC_PrimaryButton = styled.button`
   }
 
   &:disabled {
-    cursor: progress;
+    cursor: default;
     opacity: 0.6;
   }
 `
@@ -122,7 +122,44 @@ export const SC_GhostButton = styled.button`
   cursor: pointer;
   transition: color var(--transition-fast);
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: var(--ui-text-highlighted);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+`
+
+/** Сводка настроек поста «Все · Русский · Сразу»: раскрывает сами настройки. */
+export const SC_SettingsToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  background: transparent;
+  color: var(--ui-text-muted);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  padding: 4px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover:not(:disabled) {
+    color: var(--ui-text-highlighted);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
   }
 `

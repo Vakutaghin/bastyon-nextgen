@@ -12,6 +12,10 @@
  *
  * Загрузка принадлежит аккаунту, который её начал: идёт его ключами до конца,
  * даже если аккаунт переключили, но видна и доступна только ему (attach).
+ *
+ * Пост к ролику пишут в том же окне: текст, теги, настройки. «Опубликовать»
+ * можно нажать и во время загрузки — пост уйдёт сам, когда ролик загрузится,
+ * даже если окно свернули (publish).
  */
 
 import { defineStore } from 'pinia'
@@ -19,10 +23,19 @@ import { computed, ref } from 'vue'
 
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import type { KeyPair } from '@/blockchain/types/keys'
+import type { SharePostData } from '@/blockchain/core/actions/post-action'
+import { i18n, t } from '@/i18n'
+import { queryClient } from '@/query-client'
+import { appToast } from '@/b-components/app-toast'
+import { haptic } from '@/helpers/common/haptics'
 import {
   describeVideoUploadError,
   titleFromFileName,
 } from '@/b-components/content/post-composer/use-composer-video'
+import { sendPost } from '@/b-components/content/post-composer/post-sender'
+import { trackPendingPost } from '@/b-components/content/post-composer/pending-post'
+import { withTypedTag } from '@/b-components/content/post-composer/use-post-tags'
+import { UPLOADING_VIDEO_POINTER } from '@/b-components/content/post-composer/consts'
 import { uploadVideoToPeertube } from '@/services/peertube/peertube-video-service'
 import { PeertubeUploadError } from '@/services/peertube/peertube-upload'
 import {
@@ -57,6 +70,25 @@ export interface VideoUploadResult {
   isAudio: boolean
 }
 
+/** Пост к ролику, как его заполнили в окне загрузки (заголовок — `title` ролика). */
+export interface VideoPostDraft {
+  message: string
+  tags: string[]
+  /** Набранный, но не добавленный тег: с ним пост тоже уйдёт. */
+  tagInput: string
+  language: string
+  /** Видимость: '0' все, '1' подписчики, '2' зарегистрированные, '3' платные подписчики. */
+  visibility: string
+  /** Отложенная публикация: unix-секунды (0 — сразу). */
+  scheduledTime: number
+}
+
+/**
+ * «Опубликовать»: none — не нажимали; waiting — пост уйдёт, когда ролик
+ * загрузится; sending — уходит; error — не ушёл, причина в `postError`.
+ */
+export type VideoPostStatus = 'none' | 'waiting' | 'sending' | 'error'
+
 export interface VideoUploadJob {
   id: string
   /** Адрес аккаунта, начавшего загрузку. */
@@ -79,6 +111,9 @@ export interface VideoUploadJob {
   startedAt: number
   /** Обложка ролика. */
   cover?: VideoCoverState
+  post: VideoPostDraft
+  postStatus: VideoPostStatus
+  postError: string
 }
 
 interface UploadAuthor {
@@ -106,6 +141,7 @@ export interface VideoUploadsDeps {
   firstFrame: (file: File) => Promise<Blob | null>
   saveCover: typeof saveVideoCover
   serverCover: typeof getInstanceVideoCover
+  send: typeof sendPost
 }
 
 const defaultDeps = (): VideoUploadsDeps => ({
@@ -119,6 +155,7 @@ const defaultDeps = (): VideoUploadsDeps => ({
   firstFrame,
   saveCover: saveVideoCover,
   serverCover: getInstanceVideoCover,
+  send: sendPost,
 })
 
 /** Сколько ждать обложку, прежде чем сказать «Медиастудии», что ролик загружен. */
@@ -126,6 +163,9 @@ export const COVER_WAIT_MS = 30_000
 
 const isActive = (job: VideoUploadJob): boolean =>
   job.status === 'compressing' || job.status === 'uploading'
+
+/** Указатель-заглушка звука на время загрузки: только для проверки поста. */
+const UPLOADING_AUDIO_POINTER = `${UPLOADING_VIDEO_POINTER}/audio`
 
 export const useVideoUploadsStore = defineStore('video-uploads', () => {
   /** Загрузки текущего аккаунта. */
@@ -199,6 +239,16 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       result: null,
       startedAt: Date.now(),
       cover: cover?.state,
+      post: {
+        message: '',
+        tags: [],
+        tagInput: '',
+        language: i18n.global.locale.value,
+        visibility: '0',
+        scheduledTime: 0,
+      },
+      postStatus: 'none',
+      postError: '',
     })
     runtime.set(id, { author, file, uploadFile: null, controller: null, serverName: title, cover })
     cover?.begin(file)
@@ -259,6 +309,8 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       void commitTitle(id)
       rt.cover?.attach({ host: result.host, uuid: result.uuid }, { audio: result.isAudio })
       void afterCover(rt)
+      // «Опубликовать» нажали во время загрузки — пост уходит сейчас.
+      void sendJobPost(id)
     } catch (error) {
       if (rt.controller !== controller) return
       if (error instanceof PeertubeUploadError && error.cancelled) return
@@ -325,6 +377,8 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       dialogOpen.value = false
     }
     panelHidden.value = false
+    // Пост ждал, пока вернутся на аккаунт, загрузивший ролик.
+    for (const job of jobs.value) void sendJobPost(job.id)
   }
 
   /** Аккаунт ушёл с устройства: его загрузки отменяются, ключей больше нет. */
@@ -399,6 +453,12 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
    * COVER_WAIT_MS — ролик в списке важнее.
    */
   async function afterCover(rt: JobRuntime): Promise<void> {
+    await settleCover(rt)
+    serverChanges.value++
+  }
+
+  /** Обложка дошла до сервера или не смогла; зависший запрос — не дольше COVER_WAIT_MS. */
+  async function settleCover(rt: JobRuntime): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined
     await Promise.race([
       rt.cover?.flush(),
@@ -407,12 +467,85 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       }),
     ])
     clearTimeout(timer)
-    serverChanges.value++
   }
 
   /** Дождаться, пока обложка дойдёт до сервера (перед постом). */
   async function commitCover(id: string): Promise<void> {
     await runtime.get(id)?.cover?.flush()
+  }
+
+  /** Поправить пост к ролику: текст, теги, настройки. */
+  function updatePost(id: string, patch: Partial<VideoPostDraft>): void {
+    const job = find(id)
+    if (job && job.postStatus !== 'sending') Object.assign(job.post, patch)
+  }
+
+  /**
+   * Пост к ролику в виде для сети. Пока ролик грузится, вместо указателя —
+   * заглушка: по ней пост проверяется как видео или звук (заголовок обязателен).
+   */
+  function postFor(id: string): SharePostData | null {
+    const job = find(id)
+    if (!job) return null
+    const { post } = job
+    // Пробным аккаунтам видимость не ограничить — как в окне поста.
+    const trial = useAuthStore().getUserState?.trial === true
+    const settings: SharePostData['settings'] = { f: trial ? '0' : post.visibility }
+    if (post.scheduledTime > 1) settings.t = post.scheduledTime
+    const audio = runtime.get(id)?.file.type.startsWith('audio/') ?? false
+    return {
+      message: post.message.trim(),
+      caption: job.title.trim(),
+      url: job.result?.pointer ?? (audio ? UPLOADING_AUDIO_POINTER : UPLOADING_VIDEO_POINTER),
+      tags: withTypedTag(post.tags, post.tagInput),
+      images: [],
+      language: post.language,
+      settings,
+    }
+  }
+
+  /**
+   * «Опубликовать»: ролик загружен — пост уходит сразу, иначе — как только
+   * загрузится, хоть окно и свернули. Не ушёл — «Опубликовать» ещё раз.
+   */
+  function publish(id: string): void {
+    const job = find(id)
+    if (!job || job.postStatus === 'sending') return
+    job.postStatus = 'waiting'
+    job.postError = ''
+    void sendJobPost(id)
+  }
+
+  /** Передумали, пока ролик грузится: он загрузится, пост — нет. */
+  function cancelPublish(id: string): void {
+    const job = find(id)
+    if (job?.postStatus === 'waiting') job.postStatus = 'none'
+  }
+
+  async function sendJobPost(id: string): Promise<void> {
+    const job = find(id)
+    const rt = runtime.get(id)
+    if (!job || !rt || job.postStatus !== 'waiting' || job.status !== 'done' || !job.result) return
+    // Пост — от имени аккаунта, загрузившего ролик: выбран другой — ждём (attach).
+    if (useAuthStore().getUserAddress !== job.owner) return
+    job.postStatus = 'sending'
+    try {
+      // Название и обложка — на сервер раньше поста: в ленте сразу они.
+      await Promise.all([commitTitle(id), settleCover(rt)])
+      const post = postFor(id)!
+      const txid = await deps.send(post)
+      trackPendingPost(post, txid)
+      haptic('small')
+      appToast.success({ message: t('postMsg.publishSuccess') })
+      void queryClient.invalidateQueries({ queryKey: ['feed'] })
+      if (dialogJobId.value === id) dialogOpen.value = false
+      remove(id)
+    } catch (error) {
+      log.warn('post failed', error)
+      job.postStatus = 'error'
+      job.postError = error instanceof Error ? error.message : t('postMsg.errSendFailed')
+      appToast.error({ message: t('videoStudio.postFailed'), description: job.postError })
+    }
   }
 
   /** Подмена шагов — только для тестов. */
@@ -444,6 +577,10 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     setCover,
     retryCover,
     commitCover,
+    updatePost,
+    postFor,
+    publish,
+    cancelPublish,
     setDepsForTests,
   }
 })

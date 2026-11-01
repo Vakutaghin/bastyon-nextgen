@@ -25,7 +25,7 @@
       <SC_Row v-for="job in store.jobs" :key="job.id">
         <SC_RowMain type="button" @click="store.openDialog(job.id)">
           <SC_RowTitle>{{ job.title.trim() || job.fileName }}</SC_RowTitle>
-          <SC_RowStatus :class="{ error: job.status === 'error' }">{{
+          <SC_RowStatus :class="{ error: job.status === 'error' || job.postStatus === 'error' }">{{
             statusOf(job)
           }}</SC_RowStatus>
           <Progress
@@ -37,8 +37,13 @@
             stroke-color="var(--ui-primary)"
           />
         </SC_RowMain>
-        <SC_RowAction v-if="job.status === 'done'" type="button" @click="createPost(job)">
-          {{ t('videoStudio.createPost') }}
+        <!-- Пост к ролику пишут в его окне: «Опубликовать» открывает его. -->
+        <SC_RowAction
+          v-if="job.status === 'done' && job.postStatus !== 'sending'"
+          type="button"
+          @click="store.openDialog(job.id)"
+        >
+          {{ t('postComposer.publish') }}
         </SC_RowAction>
       </SC_Row>
     </SC_List>
@@ -53,7 +58,6 @@ import { Progress } from 'ant-design-vue'
 import { bcp47 } from '@/i18n'
 import { CaretDownOutlined, CaretUpOutlined, CloseOutlined } from '@/components/icons'
 import { useVideoUploadsStore, type VideoUploadJob } from '@/stores/video-uploads-store'
-import { useOpenComposerWithVideo } from './use-open-composer-with-video'
 import {
   SC_Panel,
   SC_PanelHeader,
@@ -69,7 +73,6 @@ import {
 
 const { t, locale } = useI18n()
 const store = useVideoUploadsStore()
-const openComposer = useOpenComposerWithVideo()
 
 const visible = computed(() => store.jobs.length > 0 && !store.dialogOpen && !store.panelHidden)
 
@@ -86,6 +89,16 @@ const percent = (value: number): string =>
   new Intl.NumberFormat(bcp47(locale.value), { style: 'percent' }).format(value / 100)
 
 function statusOf(job: VideoUploadJob): string {
+  if (job.postStatus === 'sending') return t('videoStudio.postSending')
+  if (job.postStatus === 'error') return t('videoStudio.postFailed')
+  const upload = uploadStatusOf(job)
+  // Пост ждёт загрузки — видно и в свёрнутой плашке.
+  return job.postStatus === 'waiting' && job.status !== 'error'
+    ? `${t('videoStudio.rowWaiting')} · ${upload}`
+    : upload
+}
+
+function uploadStatusOf(job: VideoUploadJob): string {
   switch (job.status) {
     case 'compressing':
       return job.waiting
@@ -98,13 +111,6 @@ function statusOf(job: VideoUploadJob): string {
     default:
       return job.error
   }
-}
-
-async function createPost(job: VideoUploadJob): Promise<void> {
-  if (!job.result) return
-  await Promise.all([store.commitTitle(job.id), store.commitCover(job.id)])
-  openComposer({ pointer: job.result.pointer, title: job.title.trim() })
-  store.dismiss(job.id)
 }
 
 // Веб: закрыть вкладку посреди загрузки — браузер переспросит.

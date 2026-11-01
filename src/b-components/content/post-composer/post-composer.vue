@@ -31,7 +31,8 @@
       </SC_ModeButton>
     </SC_ModeSwitch>
 
-    <!-- Заголовок статьи / видео (peertube-видео требует caption) -->
+    <!-- Заголовок статьи / видео (peertube-видео требует caption; у своего
+         видео — уже во время загрузки) -->
     <SC_TitleInput
       v-if="articleMode || needsCaption"
       :class="{ article: articleMode }"
@@ -271,11 +272,20 @@
         {{ hintText }}
       </SC_Hint>
       <SC_FooterActions>
+        <!-- Пост ждёт загрузки видео — передумать можно до того, как он уйдёт. -->
+        <Button v-if="waitingForVideo" type="text" @click="cancelWaiting">
+          {{ t('postComposer.cancelWaiting') }}
+        </Button>
         <!-- Черновик хранится целиком; «Очистить» стирает его вместе с формой. -->
-        <Button v-if="canReset" type="text" :disabled="submitting" @click="confirmReset">
+        <Button v-else-if="canReset" type="text" :disabled="submitting" @click="confirmReset">
           {{ t('postComposer.reset') }}
         </Button>
-        <Button type="primary" :loading="submitting" :disabled="!canPublish" @click="publish">
+        <Button
+          type="primary"
+          :loading="submitting || waitingForVideo"
+          :disabled="!canPublish && !waitingForVideo"
+          @click="publish"
+        >
           {{ publishLabel }}
         </Button>
       </SC_FooterActions>
@@ -295,7 +305,6 @@ import {
   SmileOutlined,
   VideoCameraAddOutlined,
 } from '@/components/icons'
-import { bcp47, LOCALE_NAMES, type Locale } from '@/i18n'
 
 import Button from '@/components/button'
 // Переиспользуем компактный пикер из формы комментария (общий список COMMON_EMOJIS).
@@ -339,6 +348,7 @@ import {
 } from './post-composer.styled'
 import { MAX_TAGS, VIDEO_ACCEPT } from './consts'
 import { usePostComposer } from './use-post-composer'
+import { postSettingsSummary } from './post-settings-summary'
 
 const props = defineProps<{
   mode?: ComposerMode
@@ -379,6 +389,8 @@ const {
   uploadedVideoUrl,
   clearUploadedVideoUrl,
   videoUploading,
+  waitingForVideo,
+  cancelWaiting,
   setVideoUploading,
   setArticleUploading,
   hasUploadedVideo,
@@ -420,7 +432,12 @@ const {
 
 // Пока идёт публикация, модалку закрывать нельзя: закрытая посреди отправки
 // она оставляла черновик, и повторная публикация давала дубль поста (S29).
-watch(submitting, (busy) => emit('busyChange', busy))
+// Пост ждёт загрузки видео — тоже: закрытое окно прервало бы загрузку, и пост
+// не ушёл бы; передумать — «Не публиковать».
+watch(
+  () => submitting.value || waitingForVideo.value,
+  (busy) => emit('busyChange', busy)
+)
 
 function confirmReset(): void {
   Modal.confirm({
@@ -495,30 +512,13 @@ function onVideoPicked(event: Event): void {
 // ── Настройки публикации: сводка и сами поля ───────────────────────────
 const settingsOpen = ref(false)
 
-const VISIBILITY_LABELS: Record<string, string> = {
-  '0': 'postComposer.visibilityAll',
-  '1': 'postComposer.visibilitySubscribers',
-  '2': 'postComposer.visibilityRegistered',
-  '3': 'postComposer.visibilityPaid',
-}
-
 /** «Все · Русский · Сразу» — что сейчас выбрано, одной строкой. */
-const settingsSummary = computed<string>(() => {
-  const when =
-    scheduledTime.value > 1
-      ? new Intl.DateTimeFormat(bcp47(locale.value), {
-          day: 'numeric',
-          month: 'short',
-          hour: '2-digit',
-          minute: '2-digit',
-        }).format(scheduledTime.value * 1000)
-      : t('postComposer.schedulePlaceholder')
-  return [
-    t(VISIBILITY_LABELS[visibility.value] ?? VISIBILITY_LABELS['0']!),
-    LOCALE_NAMES[language.value as Locale] ?? language.value,
-    when,
-  ].join(' · ')
-})
+const settingsSummary = computed<string>(() =>
+  postSettingsSummary(
+    { visibility: visibility.value, language: language.value, scheduledTime: scheduledTime.value },
+    locale.value
+  )
+)
 
 const onEditImage = (payload: { id: string; base64: string }): void => {
   replaceImage(payload.id, payload.base64)
@@ -600,14 +600,26 @@ const titlePlaceholder = computed(() =>
     : t('postComposer.videoTitlePlaceholder')
 )
 
-// Подсказка — ошибка валидации, когда уже что-то введено (счётчик тегов — в их строке).
+// Подсказка — почему «Опубликовать» серая, как только в посте что-то есть:
+// раньше её видел только тот, кто написал текст, а ролик с заголовком и без
+// тегов молча не публиковался.
 const hasContent = computed(
-  () => message.value.trim().length > 0 || (articleMode.value && !!articleContent.value)
+  () =>
+    message.value.trim().length > 0 ||
+    caption.value.trim().length > 0 ||
+    tags.value.length > 0 ||
+    tagInput.value.trim().length > 0 ||
+    images.value.length > 0 ||
+    pollActive.value ||
+    !!uploadedVideoUrl.value ||
+    videoUploading.value ||
+    (articleMode.value && !!articleContent.value)
 )
 const showError = computed(() => validationError.value !== null && hasContent.value)
-const hintText = computed(() =>
-  showError.value ? t(`postMsg.validation.${validationError.value}`) : ''
-)
+const hintText = computed(() => {
+  if (waitingForVideo.value) return t('postComposer.waitingForVideo')
+  return showError.value ? t(`postMsg.validation.${validationError.value}`) : ''
+})
 
 // Поле текста растёт по мере набора, как в ленте: без своей прокрутки.
 function autosize(): void {

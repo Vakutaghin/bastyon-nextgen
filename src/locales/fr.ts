@@ -3470,6 +3470,9 @@ export default {
     tagsPlaceholder: 'Ajouter des tags…',
     removeTag: 'Retirer le tag {tag}',
     publish: 'Publier',
+    waitingForVideo:
+      'La publication partira dès que la vidéo sera envoyée. Gardez cette fenêtre ouverte.',
+    cancelWaiting: 'Ne pas publier',
     reset: 'Effacer',
     resetConfirmTitle: 'Effacer le brouillon ?',
     resetConfirmText:
@@ -3731,14 +3734,24 @@ export default {
     statusQueued: 'En attente de compression',
     statusUploading: 'Envoi : {percent}',
     statusDone:
-      'La vidéo est en ligne. Le serveur prépare encore les autres qualités pendant quelques minutes, mais vous pouvez déjà créer la publication.',
+      'La vidéo est en ligne. Le serveur prépare encore les autres qualités pendant quelques minutes, mais vous pouvez déjà publier.',
     statusDoneAudio:
-      'Le son est en ligne. Le serveur le traite encore pendant quelques minutes, mais vous pouvez déjà créer la publication.',
+      'Le son est en ligne. Le serveur le traite encore pendant quelques minutes, mais vous pouvez déjà publier.',
     cancelUpload: 'Annuler l’envoi',
     minimize: 'Réduire',
     remove: 'Retirer',
     retry: 'Réessayer',
-    done: 'Terminé',
+    saveWithoutPost: 'Enregistrer sans publication',
+    textLabel: 'Description',
+    textPlaceholder: 'Texte de la publication sous la vidéo',
+    postWaiting:
+      'La publication partira une fois la vidéo envoyée. Vous pouvez réduire cette fenêtre.',
+    postQueued: 'La publication partira une fois la vidéo envoyée',
+    postSending: 'Publication en cours…',
+    postFailed: 'Publication non envoyée',
+    postFailedReason: 'Publication non envoyée : {error}',
+    cancelPublish: 'Ne pas publier',
+    rowWaiting: 'Publication après l’envoi',
     createPost: 'Créer une publication',
     panelTitle: 'Envois',
     expand: 'Déplier',

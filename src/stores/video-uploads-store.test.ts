@@ -10,6 +10,9 @@ const mocks = vi.hoisted(() => ({
   auth: { getKeyPair: { privateKey: 'k' } as unknown, getUserAddress: 'PMe' as string | null },
   openAuthModal: vi.fn(),
   ensureToken: vi.fn(async () => ({ access_token: 'AT' })),
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
+  track: vi.fn(),
 }))
 
 vi.mock('@/services/peertube/peertube-videos', async (importOriginal) => ({
@@ -17,9 +20,21 @@ vi.mock('@/services/peertube/peertube-videos', async (importOriginal) => ({
   // Обложка от видеосервера — без сети.
   getInstanceVideoCover: vi.fn(async () => null),
 }))
-vi.mock('@/i18n', () => ({ t: (k: string) => k }))
+vi.mock('@/i18n', () => ({
+  t: (k: string) => k,
+  i18n: { global: { locale: { value: 'ru' } } },
+}))
 vi.mock('@/blockchain/store/auth-store', () => ({ useAuthStore: () => mocks.auth }))
 vi.mock('./modal-store', () => ({ useModalStore: () => ({ openAuthModal: mocks.openAuthModal }) }))
+vi.mock('@/b-components/app-toast', () => ({
+  appToast: { success: mocks.toastSuccess, error: mocks.toastError, info: vi.fn() },
+}))
+vi.mock('@/helpers/common/haptics', () => ({ haptic: vi.fn() }))
+// Пост в сеть — через deps.send; здесь только чтобы не тянуть блокчейн.
+vi.mock('@/b-components/content/post-composer/post-sender', () => ({ sendPost: vi.fn() }))
+vi.mock('@/b-components/content/post-composer/pending-post', () => ({
+  trackPendingPost: mocks.track,
+}))
 vi.mock('@/services/peertube/peertube-auth', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/services/peertube/peertube-auth')>()),
   buildPeertubeSignature: () => ({ signature: 'sig' }),
@@ -27,6 +42,7 @@ vi.mock('@/services/peertube/peertube-auth', async (importOriginal) => ({
 }))
 
 import { PeertubeUploadError } from '@/services/peertube/peertube-upload'
+import { validatePost } from '@/b-components/content/post-composer/validate-post'
 import { COVER_WAIT_MS, useVideoUploadsStore } from './video-uploads-store'
 
 const file = (name = 'Отпуск 2026.mp4', size = 1000) =>
@@ -437,5 +453,136 @@ describe('video-uploads-store', () => {
 
     store.forgetAccount(null)
     expect(store.jobs).toHaveLength(0)
+  })
+
+  describe('пост к ролику', () => {
+    it('«Опубликовать» во время загрузки — пост уходит сам, когда ролик загрузился', async () => {
+      const store = useVideoUploadsStore()
+      const up = controllableUpload()
+      const send = vi.fn(async () => 'tx1')
+      store.setDepsForTests({ upload: up.upload as never, rename: vi.fn(), send })
+      const id = store.start(file())!
+      // Тег «море» набран, но не добавлен: с постом он тоже уходит.
+      store.updatePost(id, { message: ' Смотрите ', tags: ['отпуск'], tagInput: 'Море' })
+      store.publish(id)
+      expect(store.jobs[0]!.postStatus).toBe('waiting')
+      expect(send).not.toHaveBeenCalled()
+
+      up.finish()
+      await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1))
+      expect(send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          caption: 'Отпуск 2026',
+          message: 'Смотрите',
+          url: RESULT.pointer,
+          tags: ['отпуск', 'море'],
+          language: 'ru',
+          settings: { f: '0' },
+        })
+      )
+      await vi.waitFor(() => expect(store.jobs).toHaveLength(0))
+      expect(mocks.track).toHaveBeenCalledWith(
+        expect.objectContaining({ url: RESULT.pointer }),
+        'tx1'
+      )
+      expect(mocks.toastSuccess).toHaveBeenCalled()
+    })
+
+    it('ролик уже загружен — пост уходит сразу, но после обложки', async () => {
+      const store = useVideoUploadsStore()
+      let saved: () => void = () => {}
+      const send = vi.fn(async () => 'tx1')
+      store.setDepsForTests({
+        upload: vi.fn(async () => RESULT) as never,
+        rename: vi.fn(),
+        send,
+        firstFrame: async () => new Blob(['first'], { type: 'image/jpeg' }),
+        saveCover: vi.fn(() => new Promise<void>((resolve) => (saved = resolve))),
+      })
+      const id = store.start(file())!
+      await vi.waitFor(() => expect(store.jobs[0]!.cover?.status).toBe('saving'))
+      store.updatePost(id, { tags: ['отпуск'] })
+      store.openDialog(id)
+      store.publish(id)
+      await Promise.resolve()
+      expect(store.jobs[0]!.postStatus).toBe('sending')
+      expect(send).not.toHaveBeenCalled()
+      saved()
+      await vi.waitFor(() => expect(send).toHaveBeenCalled())
+      await vi.waitFor(() => expect(store.dialogOpen).toBe(false))
+    })
+
+    it('«Не публиковать» до конца загрузки — ролик загружается, пост не уходит', async () => {
+      const store = useVideoUploadsStore()
+      const up = controllableUpload()
+      const send = vi.fn(async () => 'tx1')
+      store.setDepsForTests({ upload: up.upload as never, rename: vi.fn(), send })
+      const id = store.start(file())!
+      store.updatePost(id, { tags: ['отпуск'] })
+      store.publish(id)
+      store.cancelPublish(id)
+      up.finish()
+      await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('done'))
+      await Promise.resolve()
+      expect(send).not.toHaveBeenCalled()
+      expect(store.jobs[0]!.postStatus).toBe('none')
+    })
+
+    it('сеть не приняла пост — причина видна, ролик остаётся, «Опубликовать» ещё раз', async () => {
+      const store = useVideoUploadsStore()
+      const send = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Суточный лимит постов исчерпан'))
+        .mockResolvedValueOnce('tx2')
+      store.setDepsForTests({ upload: vi.fn(async () => RESULT) as never, rename: vi.fn(), send })
+      const id = store.start(file())!
+      await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('done'))
+      store.updatePost(id, { tags: ['отпуск'] })
+      store.publish(id)
+      await vi.waitFor(() => expect(store.jobs[0]!.postStatus).toBe('error'))
+      expect(store.jobs[0]!.postError).toBe('Суточный лимит постов исчерпан')
+      expect(mocks.toastError).toHaveBeenCalled()
+
+      store.publish(id)
+      await vi.waitFor(() => expect(store.jobs).toHaveLength(0))
+      expect(send).toHaveBeenCalledTimes(2)
+    })
+
+    it('ролик загрузился под другим аккаунтом — пост ждёт, пока вернутся на автора', async () => {
+      const store = useVideoUploadsStore()
+      const up = controllableUpload()
+      const send = vi.fn(async () => 'tx1')
+      store.setDepsForTests({ upload: up.upload as never, rename: vi.fn(), send })
+      const id = store.start(file())!
+      store.updatePost(id, { tags: ['отпуск'] })
+      store.publish(id)
+
+      mocks.auth.getUserAddress = 'POther'
+      store.attach('POther')
+      up.finish()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(send).not.toHaveBeenCalled()
+
+      mocks.auth.getUserAddress = 'PMe'
+      store.attach('PMe')
+      await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1))
+      expect(store.jobs.find((j) => j.id === id)).toBeUndefined()
+    })
+
+    it('пока ролик грузится, пост проверяется как видео: без названия и тегов — нельзя', () => {
+      const store = useVideoUploadsStore()
+      store.setDepsForTests({ upload: (() => new Promise(() => {})) as never })
+      const id = store.start(file())!
+      expect(store.postFor(id)!.url).toMatch(/^peertube:\/\/uploading\//)
+      expect(validatePost(store.postFor(id)!)).toBe('tags')
+      store.updatePost(id, { tagInput: 'отпуск' })
+      expect(validatePost(store.postFor(id)!)).toBeNull()
+      store.updatePost(id, { message: 'Смотрите' })
+      store.setTitle(id, '  ')
+      expect(validatePost(store.postFor(id)!)).toBe('videoCaption')
+
+      const audio = store.start(new File(['x'], 'Песня.mp3', { type: 'audio/mpeg' }))!
+      expect(store.postFor(audio)!.url).toMatch(/\/audio$/)
+    })
   })
 })

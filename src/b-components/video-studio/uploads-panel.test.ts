@@ -1,6 +1,7 @@
 // Плашка «Загрузки»: видна на любой странице, пока что-то грузится или только
 // что загрузилось и окно свёрнуто; строка открывает окно этой загрузки,
-// «Создать пост» — у загруженных; закрыть — законченные уходят.
+// «Опубликовать» у загруженных — тоже (пост пишут в нём); пост, ждущий
+// загрузки, виден в строке; закрыть — законченные уходят.
 
 import type { CompressOutcome } from './compress-for-upload'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
@@ -9,15 +10,10 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 
 import { i18n, setI18nLocale } from '@/i18n'
 
-const mocks = vi.hoisted(() => ({ openComposer: vi.fn() }))
-
 vi.mock('@/services/peertube/peertube-videos', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/services/peertube/peertube-videos')>()),
   // Обложка от видеосервера — без сети.
   getInstanceVideoCover: vi.fn(async () => null),
-}))
-vi.mock('./use-open-composer-with-video', () => ({
-  useOpenComposerWithVideo: () => mocks.openComposer,
 }))
 vi.mock('@/blockchain/store/auth-store', () => ({
   useAuthStore: () => ({ getKeyPair: { privateKey: 'k' }, getUserAddress: 'PMe' }),
@@ -89,7 +85,7 @@ describe('UploadsPanel', () => {
     expect(rows[1]![1]).toMatch(/^Сжатие: 0\s?%$/)
   })
 
-  it('идёт загрузка и одна готова: заголовок, проценты, «Создать пост» у готовой', async () => {
+  it('идёт загрузка и одна готова: заголовок, проценты, «Опубликовать» у готовой', async () => {
     const store = useVideoUploadsStore()
     store.setDepsForTests({ upload: vi.fn().mockResolvedValue(RESULT), rename: vi.fn() })
     store.start(new File(['x'], 'Готовое.mp4', { type: 'video/mp4' }))
@@ -105,10 +101,27 @@ describe('UploadsPanel', () => {
     expect(rows[0]![1]).toMatch(/^Загрузка: 30\s?%$/)
     expect(rows[1]!.slice(0, 2)).toEqual(['Готовое', 'Загружено'])
 
-    button('Создать пост')!.click()
+    button('Опубликовать')!.click()
     await flushPromises()
-    expect(mocks.openComposer).toHaveBeenCalledWith({ pointer: RESULT.pointer, title: 'Готовое' })
-    expect(store.jobs.map((j) => j.title)).toEqual(['Грузится'])
+    expect(store.dialogOpen).toBe(true)
+    expect(store.dialogJobId).toBe(store.jobs[1]!.id)
+  })
+
+  it('пост ждёт загрузки — это видно в строке; не ушёл — тоже', async () => {
+    const store = useVideoUploadsStore()
+    store.setDepsForTests({ upload: () => new Promise(() => {}) })
+    const id = store.start(new File(['x'], 'Отпуск.mp4', { type: 'video/mp4' }))!
+    store.jobs[0]!.progress = 30
+    store.publish(id)
+    mountPanel()
+    await flushPromises()
+    const status = () => wrapper!.findAll('li span').map((s) => s.text())[1]
+    expect(status()).toMatch(/^Пост — после загрузки · Загрузка: 30\s?%$/)
+    expect(button('Опубликовать')).toBeUndefined()
+
+    store.jobs[0]!.postStatus = 'error'
+    await flushPromises()
+    expect(status()).toBe('Пост не опубликован')
   })
 
   it('строка открывает окно своей загрузки; «Закрыть» убирает законченные', async () => {

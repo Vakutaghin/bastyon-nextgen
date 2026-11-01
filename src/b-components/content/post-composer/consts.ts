@@ -23,3 +23,6 @@ export const URL_MIN_TEXT_LENGTH = 30
 
 /** Своё видео и аудио: MIME плюс расширения на случай пустого MIME (mkv и т. п.). */
 export const VIDEO_ACCEPT = 'video/*,audio/*,.mkv,.mov,.avi,.webm,.m4a,.flac,.ogg'
+
+/** Указатель на время загрузки своего видео: только для проверки поста, в сеть не уходит. */
+export const UPLOADING_VIDEO_POINTER = 'peertube://uploading/video'

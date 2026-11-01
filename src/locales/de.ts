@@ -3471,6 +3471,9 @@ export default {
     tagsPlaceholder: 'Tags hinzufügen…',
     removeTag: 'Tag {tag} entfernen',
     publish: 'Veröffentlichen',
+    waitingForVideo:
+      'Der Beitrag wird veröffentlicht, sobald das Video hochgeladen ist. Lassen Sie das Fenster offen.',
+    cancelWaiting: 'Nicht veröffentlichen',
     reset: 'Leeren',
     resetConfirmTitle: 'Entwurf leeren?',
     resetConfirmText:
@@ -3732,14 +3735,24 @@ export default {
     statusQueued: 'Wartet auf Komprimierung',
     statusUploading: 'Upload: {percent}',
     statusDone:
-      'Das Video ist hochgeladen. Der Server braucht noch einige Minuten für weitere Qualitäten, den Beitrag können Sie schon jetzt erstellen.',
+      'Das Video ist hochgeladen. Der Server braucht noch einige Minuten für weitere Qualitäten, den Beitrag können Sie schon jetzt veröffentlichen.',
     statusDoneAudio:
-      'Das Audio ist hochgeladen. Der Server braucht noch einige Minuten für die Verarbeitung, den Beitrag können Sie schon jetzt erstellen.',
+      'Das Audio ist hochgeladen. Der Server braucht noch einige Minuten für die Verarbeitung, den Beitrag können Sie schon jetzt veröffentlichen.',
     cancelUpload: 'Upload abbrechen',
     minimize: 'Minimieren',
     remove: 'Entfernen',
     retry: 'Erneut versuchen',
-    done: 'Fertig',
+    saveWithoutPost: 'Ohne Beitrag speichern',
+    textLabel: 'Beschreibung',
+    textPlaceholder: 'Text des Beitrags unter dem Video',
+    postWaiting:
+      'Der Beitrag wird veröffentlicht, sobald das Video hochgeladen ist. Sie können das Fenster minimieren.',
+    postQueued: 'Der Beitrag wird veröffentlicht, sobald das Video hochgeladen ist',
+    postSending: 'Beitrag wird veröffentlicht…',
+    postFailed: 'Beitrag nicht veröffentlicht',
+    postFailedReason: 'Beitrag nicht veröffentlicht: {error}',
+    cancelPublish: 'Nicht veröffentlichen',
+    rowWaiting: 'Beitrag nach dem Upload',
     createPost: 'Beitrag erstellen',
     panelTitle: 'Uploads',
     expand: 'Aufklappen',

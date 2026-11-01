@@ -30,7 +30,7 @@ Pick with the arrow keys and Enter or with the mouse, and `@name` goes into the 
 
 ## Tags
 
-A post cannot be published without tags: you need at least one, and you can add up to five. Start typing a tag under the text — popular tags appear; pick with the arrow keys or the mouse. The list stays open after a pick, so you can choose the next one right away. Enter, a comma or a space adds the tag; you do not need to type the hash sign. Only letters and digits stay in a tag, and capitals become lowercase. Backspace in the empty field removes the last tag, the cross removes any. The right end of the line shows how many of the five tags are set.
+A post cannot be published without tags: you need at least one, and you can add up to five. Start typing a tag under the text — popular tags appear; pick with the arrow keys or the mouse. The list stays open after a pick, so you can choose the next one right away. Enter, a comma or a space adds the tag, on a phone too; you do not need to type the hash sign. A typed but unconfirmed word already counts as a tag and goes out with the post. Only letters and digits stay in a tag, and capitals become lowercase. Backspace in the empty field removes the last tag, the cross removes any. The right end of the line shows how many of the five tags are set.
 
 Tags help people find the post: categories and feed filters work by them — see [Categories, tags and sorting](feed-filters.md).
 
@@ -44,13 +44,15 @@ To start over, use the **“Clear”** button next to **“Publish”**. The app
 
 ## Publishing
 
-Click **“Publish”**. If something is missing, the line to the left of the button tells you what:
+Click **“Publish”**. If something is missing, the button is greyed out, and the line to the left of it tells you what — as soon as the post has anything in it: text, a title, a video, an image or a tag:
 
 - **“A post cannot be empty”**;
 - **“Add at least one tag”** or **“Too many tags (maximum 5)”**;
 - **“Add more text to the link”**;
 - **“Add a title for the video”** — video and audio need a title;
 - **“Add a poll question”** or **“A poll needs at least 2 options”**.
+
+If your own video is still uploading, you can click “Publish” anyway: “The post goes out as soon as the video is uploaded. Keep this window open.” appears next to it, and the post goes out by itself — no second click needed. While it waits, the window does not close; changed your mind — **“Don't publish”**. More in [Uploading video and audio](video-upload.md#right-in-a-post).
 
 While the post is being published, a spinner turns on the button and the window is locked: fields, buttons and lists don't respond, and the window can't be closed. The post goes out exactly as it was when you clicked. If publishing fails, the window unlocks and everything you wrote is still there.
 

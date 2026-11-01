@@ -137,7 +137,15 @@ const focusInput = (): void => {
 }
 
 const onInput = (e: Event): void => {
-  emit('update:inputValue', (e.target as HTMLInputElement).value)
+  const input = e.target as HTMLInputElement
+  // Клавиатура Android не сообщает, какую клавишу нажали (keydown без key),
+  // и пробел с запятой оставались в поле: слова до них — уже теги.
+  const parts = input.value.split(/[\s,]+/)
+  const rest = parts.pop() ?? ''
+  for (const part of parts) if (part) emit('add', part)
+  // Поле могло не перерисоваться: значение в модели то же («» до пробела и после).
+  if (input.value !== rest) input.value = rest
+  emit('update:inputValue', rest)
   open.value = true
   activeIndex.value = NO_ACTIVE_SUGGESTION
 }

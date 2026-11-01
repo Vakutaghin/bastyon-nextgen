@@ -1,8 +1,10 @@
 // Окно загрузки, как в творческой студии YouTube: файл выбран — загрузка уже
 // идёт, окно можно свернуть; по состоянию — «Отменить»/«Свернуть»,
-// «Убрать»/«Повторить», «Готово»/«Создать пост». На компьютере с FFmpeg —
+// «Убрать»/«Повторить», «Сохранить без поста». На компьютере с FFmpeg —
 // «Сначала сжать на этом компьютере»; без него — скачать модуль сжатия.
-// У видео — обложка: первый кадр, свой кадр или картинка.
+// У видео — обложка: первый кадр, свой кадр или картинка. Пост пишут здесь
+// же — описание, теги, настройки — и «Опубликовать» одной кнопкой, хоть во
+// время загрузки: пост уйдёт сам, когда ролик загрузится.
 
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
@@ -14,7 +16,6 @@ const mocks = vi.hoisted(() => ({
   desktop: false,
   ffmpeg: true,
   supported: true,
-  openComposer: vi.fn(),
   toastInfo: vi.fn(),
   install: vi.fn(async () => {}),
   progress: null as ((e: { payload: { received: number; total: number } }) => void) | null,
@@ -48,10 +49,16 @@ vi.mock('@/services/peertube/peertube-videos', async (importOriginal) => ({
   // Обложка от видеосервера — без сети.
   getInstanceVideoCover: vi.fn(async () => null),
 }))
-vi.mock('./use-open-composer-with-video', () => ({
-  useOpenComposerWithVideo: () => mocks.openComposer,
+vi.mock('@/b-components/app-toast', () => ({
+  appToast: { info: mocks.toastInfo, success: vi.fn(), error: vi.fn() },
 }))
-vi.mock('@/b-components/app-toast', () => ({ appToast: { info: mocks.toastInfo } }))
+vi.mock('@/helpers/common/haptics', () => ({ haptic: vi.fn() }))
+// Подсказки тегов спрашивают ноду; здесь они не нужны.
+vi.mock('@/composables/use-rpc-query', async () => {
+  const { ref } = await import('vue')
+  return { useRpcQuery: () => ({ data: ref(null) }) }
+})
+vi.mock('@/b-components/content/post-composer/pending-post', () => ({ trackPendingPost: vi.fn() }))
 vi.mock('@/blockchain/store/auth-store', () => ({
   useAuthStore: () => ({ getKeyPair: { privateKey: 'k' }, getUserAddress: 'PMe' }),
 }))
@@ -81,6 +88,23 @@ async function settle(): Promise<void> {
   await flushPromises()
   await vi.dynamicImportSettled()
   await flushPromises()
+}
+
+/** Набрать в поле, как человек: значение и событие input. */
+function type(selector: string, value: string): void {
+  const field = document.body.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement
+  field.value = value
+  field.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+const hint = (): string =>
+  document.body.querySelector('[data-testid="video-post-hint"]')?.textContent?.trim() ?? ''
+
+const RESULT = {
+  pointer: 'peertube://pt.host/uuid1',
+  host: 'pt.host',
+  uuid: 'uuid1',
+  isAudio: false,
 }
 
 function pickFile(name: string, size = 1000, type = 'video/mp4'): void {
@@ -194,6 +218,16 @@ describe('UploadDialog', () => {
       error: '',
       result: null,
       startedAt: 0,
+      post: {
+        message: '',
+        tags: [],
+        tagInput: '',
+        language: 'ru',
+        visibility: '0',
+        scheduledTime: 0,
+      },
+      postStatus: 'none',
+      postError: '',
     })
     store.openDialog('j1')
     await flushPromises()
@@ -220,47 +254,130 @@ describe('UploadDialog', () => {
     expect(store.jobs).toHaveLength(0)
   })
 
-  it('сбой — причина и «Повторить»; готово — «Создать пост» с видео и названием', async () => {
+  it('сбой — причина и «Повторить»; готово — описание, теги и «Опубликовать» с видео и названием', async () => {
     const store = await open()
+    const send = vi.fn(async () => 'tx1')
     store.setDepsForTests({
-      upload: vi.fn().mockRejectedValueOnce(new Error('network timeout')).mockResolvedValueOnce({
-        pointer: 'peertube://pt.host/uuid1',
-        host: 'pt.host',
-        uuid: 'uuid1',
-        isAudio: false,
-      }),
+      upload: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('network timeout'))
+        .mockResolvedValueOnce(RESULT),
       rename: vi.fn(),
+      send,
     })
     const id = store.start(new File(['x'], 'Отпуск.mp4', { type: 'video/mp4' }))!
     store.openDialog(id)
     await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('error'))
     await flushPromises()
-    expect(button('Повторить')).toBeDefined()
     button('Повторить')!.click()
     await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('done'))
     await flushPromises()
     expect(text()).toContain('Видео загружено')
-    button('Создать пост')!.click()
+    // Чего не хватает — видно сразу, а не после нажатия.
+    expect(hint()).toBe('Добавьте хотя бы один тег')
+    expect(button('Опубликовать')!.disabled).toBe(true)
+
+    type('#video-studio-text', 'Лучшие моменты')
+    // Тег набран, Enter не нажат — всё равно считается.
+    type('input[aria-label="Добавьте теги…"]', 'отпуск')
     await flushPromises()
-    expect(mocks.openComposer).toHaveBeenCalledWith({
-      pointer: 'peertube://pt.host/uuid1',
-      title: 'Отпуск',
-    })
+    expect(hint()).toBe('')
+    expect(button('Опубликовать')!.disabled).toBe(false)
+    button('Опубликовать')!.click()
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1))
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        caption: 'Отпуск',
+        message: 'Лучшие моменты',
+        tags: ['отпуск'],
+        url: RESULT.pointer,
+      })
+    )
+    await vi.waitFor(() => expect(store.jobs).toHaveLength(0))
     expect(store.dialogOpen).toBe(false)
-    expect(store.jobs).toHaveLength(0)
   })
 
-  it('обложка видна в окне, а «Создать пост» ждёт, пока она дойдёт до сервера', async () => {
+  it('пробел после слова на телефоне — слово становится тегом', async () => {
+    const store = await open()
+    store.setDepsForTests({ upload: () => new Promise(() => {}) })
+    const id = store.start(new File(['x'], 'Отпуск.mp4', { type: 'video/mp4' }))!
+    store.openDialog(id)
+    await flushPromises()
+    type('input[aria-label="Добавьте теги…"]', 'море, горы ')
+    await flushPromises()
+    expect(store.jobs[0]!.post.tags).toEqual(['море', 'горы'])
+    expect(store.jobs[0]!.post.tagInput).toBe('')
+    expect(text()).toContain('#море')
+  })
+
+  it('«Опубликовать» во время загрузки — окно сворачивается, пост уходит сам, второй раз жать не нужно', async () => {
+    const store = await open()
+    let finish: (v: typeof RESULT) => void = () => {}
+    const send = vi.fn(async () => 'tx1')
+    store.setDepsForTests({
+      upload: vi.fn(() => new Promise<typeof RESULT>((resolve) => (finish = resolve))),
+      rename: vi.fn(),
+      send,
+    })
+    const id = store.start(new File(['x'], 'Отпуск.mp4', { type: 'video/mp4' }))!
+    store.openDialog(id)
+    await flushPromises()
+    type('input[aria-label="Добавьте теги…"]', 'отпуск')
+    await flushPromises()
+    button('Опубликовать')!.click()
+    await flushPromises()
+    expect(store.dialogOpen).toBe(false)
+    expect(mocks.toastInfo).toHaveBeenCalledWith({
+      message: 'Пост опубликуется, когда ролик загрузится',
+    })
+    expect(send).not.toHaveBeenCalled()
+
+    // Окно снова открыли — видно, что пост ждёт; передумать можно.
+    store.openDialog(id)
+    await flushPromises()
+    expect(hint()).toBe('Пост опубликуется, когда ролик загрузится. Окно можно свернуть.')
+    expect(button('Не публиковать')).toBeTruthy()
+    store.closeDialog()
+
+    finish(RESULT)
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(store.jobs).toHaveLength(0))
+  })
+
+  it('«Не публиковать» — ролик загружается, пост не уходит', async () => {
+    const store = await open()
+    store.setDepsForTests({ upload: () => new Promise(() => {}) })
+    const id = store.start(new File(['x'], 'Отпуск.mp4', { type: 'video/mp4' }))!
+    store.updatePost(id, { tags: ['отпуск'] })
+    store.publish(id)
+    store.openDialog(id)
+    await flushPromises()
+    button('Не публиковать')!.click()
+    await flushPromises()
+    expect(store.jobs[0]!.postStatus).toBe('none')
+    expect(button('Опубликовать')).toBeTruthy()
+  })
+
+  it('«Сохранить без поста» — окно закрывается, ролик остаётся в загрузках', async () => {
+    const store = await open()
+    store.setDepsForTests({ upload: vi.fn().mockResolvedValue(RESULT), rename: vi.fn() })
+    const id = store.start(new File(['x'], 'Отпуск.mp4', { type: 'video/mp4' }))!
+    store.openDialog(id)
+    await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('done'))
+    await flushPromises()
+    button('Сохранить без поста')!.click()
+    expect(store.dialogOpen).toBe(false)
+    expect(store.jobs.map((j) => j.id)).toEqual([id])
+  })
+
+  it('обложка видна в окне, а пост уходит, только когда она дошла до сервера', async () => {
     const store = await open()
     let saved: () => void = () => {}
+    const send = vi.fn(async () => 'tx1')
     store.setDepsForTests({
-      upload: vi.fn().mockResolvedValue({
-        pointer: 'peertube://pt.host/uuid1',
-        host: 'pt.host',
-        uuid: 'uuid1',
-        isAudio: false,
-      }),
+      upload: vi.fn().mockResolvedValue(RESULT),
       rename: vi.fn(),
+      send,
       firstFrame: async () => new Blob(['first'], { type: 'image/jpeg' }),
       saveCover: vi.fn(() => new Promise<void>((resolve) => (saved = resolve))),
     })
@@ -274,10 +391,13 @@ describe('UploadDialog', () => {
     expect(button('Загрузить картинку')).toBeUndefined()
     expect(text()).toContain('Загрузить картинку')
 
-    button('Создать пост')!.click()
+    store.updatePost(id, { tags: ['отпуск'] })
     await flushPromises()
-    expect(mocks.openComposer).not.toHaveBeenCalled()
+    button('Опубликовать')!.click()
+    await flushPromises()
+    expect(hint()).toBe('Публикую пост…')
+    expect(send).not.toHaveBeenCalled()
     saved()
-    await vi.waitFor(() => expect(mocks.openComposer).toHaveBeenCalled())
+    await vi.waitFor(() => expect(send).toHaveBeenCalled())
   })
 })

@@ -284,6 +284,9 @@ describe('usePostComposer', () => {
       const c = compose()
       c.onMessageInput(TEXT)
       c.tagInput.value = 'путешествия'
+      // Тег на экране набран — кнопка не серая, хотя Enter не нажимали.
+      expect(c.validationError.value).toBeNull()
+      expect(c.canPublish.value).toBe(true)
       await c.publish()
       expect(mocks.sendPost.mock.calls[0]![0].tags).toEqual(['путешествия'])
     })
@@ -461,15 +464,56 @@ describe('usePostComposer', () => {
       expect(c.parsedVideo.value.kind).toBe('youtube')
     })
 
-    it('своё видео: указатель в u, имя файла — заголовок, пока грузится — публиковать нельзя', async () => {
+    it('своё видео: «Опубликовать» во время загрузки — пост уйдёт сам, когда видео загрузится', async () => {
       const c = compose()
       fillValidPost(c)
       c.setVideoUploading(true)
-      expect(c.canPublish.value).toBe(false)
+      // Заголовок пишут, не дожидаясь загрузки; пост проверяется как видео.
+      expect(c.needsCaption.value).toBe(true)
+      expect(c.validationError.value).toBe('videoCaption')
+      c.onCaptionInput('Море')
+      expect(c.canPublish.value).toBe(true)
       await c.publish()
+      expect(c.waitingForVideo.value).toBe(true)
+      expect(c.canPublish.value).toBe(false)
       expect(mocks.sendPost).not.toHaveBeenCalled()
 
+      // Как у панели видео: сначала указатель, потом «больше не грузится».
+      c.onVideoUploaded({ pointer: 'peertube://host/uuid', title: 'море.mp4' })
+      expect(c.caption.value).toBe('Море')
       c.setVideoUploading(false)
+      await flush()
+      expect(mocks.sendPost).toHaveBeenCalledTimes(1)
+      expect(mocks.sendPost.mock.calls[0]![0]).toMatchObject({
+        url: 'peertube://host/uuid',
+        caption: 'Море',
+      })
+      expect(c.waitingForVideo.value).toBe(false)
+    })
+
+    it('видео не загрузилось или «Не публиковать», пока пост ждал, — пост не уходит', async () => {
+      const c = compose()
+      fillValidPost(c)
+      c.onCaptionInput('Море')
+      c.setVideoUploading(true)
+      await c.publish()
+      c.setVideoUploading(false)
+      await flush()
+      expect(mocks.sendPost).not.toHaveBeenCalled()
+      expect(c.waitingForVideo.value).toBe(false)
+
+      c.setVideoUploading(true)
+      await c.publish()
+      c.cancelWaiting()
+      c.onVideoUploaded({ pointer: 'peertube://host/uuid', title: 'море.mp4' })
+      c.setVideoUploading(false)
+      await flush()
+      expect(mocks.sendPost).not.toHaveBeenCalled()
+    })
+
+    it('своё видео: указатель в u, имя файла — заголовок, если его не написали', async () => {
+      const c = compose()
+      fillValidPost(c)
       c.onVideoUploaded({ pointer: 'peertube://host/uuid', title: 'море.mp4' })
       expect(c.caption.value).toBe('море.mp4')
       expect(c.needsCaption.value).toBe(true)

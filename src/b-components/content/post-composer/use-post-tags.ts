@@ -8,10 +8,22 @@ export function normalizeTag(raw: string): string {
   return raw.toLowerCase().replace(/[^0-9a-zа-яё]/gi, '')
 }
 
+/**
+ * Теги поста вместе с недописанным в поле: слово, после которого не нажали
+ * Enter, — тоже тег. Без этого «Опубликовать» оставалась серой, хотя тег на
+ * экране набран.
+ */
+export function withTypedTag(tags: readonly string[], typed: string): string[] {
+  const norm = normalizeTag(typed)
+  return norm && !tags.includes(norm) && tags.length < MAX_TAGS ? [...tags, norm] : [...tags]
+}
+
 export function usePostTags(initial: string[]) {
   const tags = ref<string[]>(initial)
   const tagInput = ref('')
   const tagsFull = computed(() => tags.value.length >= MAX_TAGS)
+  /** Теги, с которыми пост уйдёт: с набранным в поле. */
+  const postTags = computed(() => withTypedTag(tags.value, tagInput.value))
 
   const addTag = (raw: string): void => {
     const norm = normalizeTag(raw)
@@ -42,5 +54,15 @@ export function usePostTags(initial: string[]) {
     tagInput.value = ''
   }
 
-  return { tags, tagInput, tagsFull, addTag, commitTagInput, removeTag, onTagBackspace, resetTags }
+  return {
+    tags,
+    tagInput,
+    tagsFull,
+    postTags,
+    addTag,
+    commitTagInput,
+    removeTag,
+    onTagBackspace,
+    resetTags,
+  }
 }

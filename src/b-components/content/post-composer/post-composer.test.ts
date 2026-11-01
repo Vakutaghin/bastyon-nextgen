@@ -271,6 +271,26 @@ describe('окно поста во время публикации', () => {
     w.unmount()
   })
 
+  it('кнопка серая — причина видна и без текста; набранный тег без Enter её снимает', async () => {
+    // Ролик с заголовком, без текста и тегов: раньше кнопка молчала.
+    await writeDraftFields(ME, {
+      ...FIELDS,
+      tags: [],
+      caption: 'Закат над морем',
+      poll: { active: false, title: '', options: ['', ''] },
+      videoUrl: 'peertube://peertube101.pocketnet.app/0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a5b',
+    })
+    const w = await render()
+    const publishButton = () => w.findAll('button').find((b) => b.text() === 'Опубликовать')!
+    expect(w.text()).toContain('Добавьте хотя бы один тег')
+    expect(publishButton().attributes('disabled')).toBeDefined()
+
+    await w.find('input[aria-label="Добавьте теги…"]').setValue('закат')
+    expect(w.text()).not.toContain('Добавьте хотя бы один тег')
+    expect(publishButton().attributes('disabled')).toBeUndefined()
+    w.unmount()
+  })
+
   it('статья: редактор на время публикации только для чтения', async () => {
     await seedDraft({
       caption: 'Как мы ездили на море',
