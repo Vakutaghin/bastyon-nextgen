@@ -30,7 +30,8 @@
              эксплорер, справка и закреплённые приложения. -->
         <SC_DrawerPanel>
           <SC_DrawerSectionTitle>{{ t('sidebar.navigation') }}</SC_DrawerSectionTitle>
-          <SidebarTabs />
+          <!-- «Сообщить об ошибке» открывает чат, а не страницу: меню закрываем сами. -->
+          <SidebarTabs @tab-changed="close" />
         </SC_DrawerPanel>
 
         <!-- Пунктов аккаунта (профиль, кошельки, настройки…) здесь нет: они в

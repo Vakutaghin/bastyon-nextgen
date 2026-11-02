@@ -60,7 +60,7 @@ export const SC_Description = styled.div`
   overflow: hidden;
 `
 
-/** Обёртка превью-картинки: внутри TorImage (под Tor — заглушка, не <img>). */
+/** Обёртка превью-картинки (TorImage). */
 export const SC_Thumb = styled.div`
   width: 64px;
   height: 64px;
@@ -74,12 +74,5 @@ export const SC_Thumb = styled.div`
     height: 100%;
     object-fit: cover;
     display: block;
-  }
-
-  button {
-    min-height: 64px;
-    padding: 4px;
-    font-size: 10px;
-    border-radius: var(--ui-radius-md);
   }
 `

@@ -1057,6 +1057,8 @@ pub fn run() {
     ])
     // Скачанные ролики: плеер и картинки берут их по id (offline/protocol.rs).
     .register_asynchronous_uri_scheme_protocol(offline::protocol::SCHEME, offline::handle_protocol)
+    // Картинки при включённом Tor: окно само мимо Tor не ходит (tor::media).
+    .register_asynchronous_uri_scheme_protocol(tor::media::SCHEME, tor::media::handle_protocol)
     .setup(|app| {
       #[cfg(debug_assertions)]
       {

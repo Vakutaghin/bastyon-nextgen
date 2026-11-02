@@ -1,46 +1,71 @@
 <template>
-  <APopover v-model:open="authPopoverVisible" trigger="click" placement="bottom">
-    <template #content>
-      <SC_AuthPopoverContent>
-        <p>{{ t('postCard.authPrompt') }}</p>
-        <AButton type="primary" size="small" @click="openAuthModal">{{
-          t('postCard.login')
-        }}</AButton>
-      </SC_AuthPopoverContent>
-    </template>
-    <!-- Обёртка перехватывает клик до popover, чтобы решить — открывать его или сразу
-         засчитывать голос (через handleRatingClick). -->
-    <SC_InlineBlock @click.capture="handleRatingClick">
-      <SC_StarRating class="star-rating">
-        <template v-for="n in 5" :key="`star-${n}`">
-          <SC_StarWrapper
-            :class="{ disabled: disabled || isSubmitting || isOwnPost, readonly: hasVoted }"
-            :title="isOwnPost ? t('postCard.ratingOwnPost') : undefined"
-            @mouseenter="handleStarHover(n)"
-            @mouseleave="handleStarLeave"
-            @click="(e) => handleStarClick(n, e)"
-          >
-            <!-- Пустая контурная звезда (фон) — всегда видна. -->
-            <StarOutlined class="star-bg" :style="ICON_WARNING_TRACK" />
+  <SC_RatingRow>
+    <APopover v-model:open="authPopoverVisible" trigger="click" placement="bottom">
+      <template #content>
+        <SC_AuthPopoverContent>
+          <p>{{ t('postCard.authPrompt') }}</p>
+          <AButton type="primary" size="small" @click="openAuthModal">{{
+            t('postCard.login')
+          }}</AButton>
+        </SC_AuthPopoverContent>
+      </template>
+      <!-- Обёртка перехватывает клик до popover, чтобы решить — открывать его или сразу
+           засчитывать голос (через handleRatingClick). -->
+      <SC_InlineBlock @click.capture="handleRatingClick">
+        <SC_StarRating class="star-rating">
+          <template v-for="n in 5" :key="`star-${n}`">
+            <SC_StarWrapper
+              :class="{ disabled: disabled || isSubmitting || isOwnPost, readonly: hasVoted }"
+              :title="isOwnPost ? t('postCard.ratingOwnPost') : undefined"
+              @mouseenter="handleStarHover(n)"
+              @mouseleave="handleStarLeave"
+              @click="(e) => handleStarClick(n, e)"
+            >
+              <!-- Пустая контурная звезда (фон) — всегда видна. -->
+              <StarOutlined class="star-bg" :style="ICON_WARNING_TRACK" />
 
-            <!-- Полностью заполненная звезда поверх. -->
-            <SC_StarFilled v-if="displayRating >= n">
-              <StarFilled class="star-fill" :style="ICON_WARNING" />
-            </SC_StarFilled>
-          </SC_StarWrapper>
-        </template>
+              <!-- Полностью заполненная звезда поверх. -->
+              <SC_StarFilled v-if="displayRating >= n">
+                <StarFilled class="star-fill" :style="ICON_WARNING" />
+              </SC_StarFilled>
+            </SC_StarWrapper>
+          </template>
 
-        <span class="star-count">({{ optimisticAverageRating.toFixed(1) }})</span>
-        <span class="voters-count">
-          <UserOutlined />
-          {{ optimisticVotersCount }}
-        </span>
-      </SC_StarRating>
-    </SC_InlineBlock>
-  </APopover>
+          <span class="star-count">({{ optimisticAverageRating.toFixed(1) }})</span>
+        </SC_StarRating>
+      </SC_InlineBlock>
+    </APopover>
+
+    <!-- Число оценок — кто и как оценил, как в прежнем Bastyon. Вне окна входа:
+         смотреть можно и гостю. -->
+    <SC_VotersButton
+      v-if="optimisticVotersCount > 0"
+      type="button"
+      class="voters-count"
+      :title="t('postScores.open')"
+      :aria-label="t('postScores.openCount', { n: optimisticVotersCount }, optimisticVotersCount)"
+      data-testid="post-scores-open"
+      @click="scoresOpen = true"
+    >
+      <UserOutlined />
+      {{ optimisticVotersCount }}
+    </SC_VotersButton>
+    <span v-else class="voters-count">
+      <UserOutlined />
+      {{ optimisticVotersCount }}
+    </span>
+
+    <PostScoresModal
+      v-if="scoresMounted"
+      v-model:open="scoresOpen"
+      :txid="shareId"
+      :user-vote="userVote || optimisticRating || undefined"
+    />
+  </SC_RatingRow>
 </template>
 
 <script setup lang="ts">
+import { defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Popover as APopover, Button as AButton } from 'ant-design-vue'
 import { StarOutlined, StarFilled, UserOutlined } from '@/components/icons'
@@ -51,6 +76,8 @@ import {
   SC_StarWrapper,
   SC_StarFilled,
   SC_InlineBlock,
+  SC_RatingRow,
+  SC_VotersButton,
 } from './styled'
 import { ICON_WARNING, ICON_WARNING_TRACK } from '@/styles/icon-styles'
 
@@ -75,6 +102,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const {
+  optimisticRating,
   authPopoverVisible,
   isSubmitting,
   hasVoted,
@@ -88,4 +116,12 @@ const {
   handleRatingClick,
   openAuthModal,
 } = useStarRating(props, emit)
+
+// Окно «кто оценил» — отдельный чанк, грузится при первом открытии.
+const PostScoresModal = defineAsyncComponent(() => import('../post-scores/post-scores-modal.vue'))
+const scoresOpen = ref(false)
+const scoresMounted = ref(false)
+watch(scoresOpen, (open) => {
+  if (open) scoresMounted.value = true
+})
 </script>

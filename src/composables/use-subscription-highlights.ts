@@ -2,16 +2,18 @@
  * «Новое от подписок» наверху главной ленты — как в старом клиенте (lenta
  * `includesub`): вошедшему сначала непросмотренные посты тех, на кого он
  * подписан (первая страница `getsubscribesfeed`), потом плашка «Продолжить в
- * ленте подписок» и обычная лента. Просмотренными посты становятся, когда
- * человек пролистал их до плашки (`markSeen`), — при следующей загрузке ленты
- * их наверху уже нет (helpers/content/subscription-highlights).
+ * ленте подписок» и обычная лента. Только посты за последнюю неделю.
+ * Просмотренным пост становится, когда его карточка побыла на экране
+ * (`markPostSeen`), а вся подборка — когда пролистали до плашки (`markSeen`):
+ * при следующей загрузке ленты их наверху уже нет
+ * (helpers/content/subscription-highlights).
  *
  * Отдельный запрос, а не часть постраничной ленты: её страницы и «Новые посты»
  * идут по txid общей ленты и от подписок не зависят. Подборка держится, пока
  * ленту не обновят (`refetch`).
  */
 
-import { computed, watch } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { buildSubscriptionsFeedQuery } from './helpers/feed-queries'
@@ -23,6 +25,7 @@ import {
 import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
 import {
   loadSeen,
+  recentPosts,
   saveSeen,
   unseenPosts,
   widenSeen,
@@ -63,7 +66,7 @@ export function useSubscriptionHighlights(enabled: () => boolean) {
       })
       const contents = response?.data?.contents
       if (!contents?.length) return []
-      const posts = unseenPosts(extractPostsFromResponse(response), seenFor(me))
+      const posts = unseenPosts(recentPosts(extractPostsFromResponse(response)), seenFor(me))
       if (!posts.length) return []
       await preloadLastCommentAuthors(contents)
       await fetchAndMergeRepostOriginals(posts, contents)
@@ -87,11 +90,64 @@ export function useSubscriptionHighlights(enabled: () => boolean) {
     saveSeen(address.value, widenSeen(loadSeen(address.value), posts.value))
   }
 
+  /**
+   * Карточка поста из подборки побыла на экране. Раньше просмотренной
+   * считалась только вся подборка, когда долистали до плашки, — кто не
+   * долистал до двадцатого поста, видел те же посты наверху при каждом запуске.
+   */
+  function markPostSeen(post: { id: string | number }): void {
+    if (!address.value) return
+    saveSeen(address.value, widenSeen(loadSeen(address.value), [post]))
+  }
+
   /** «Обновить»: просмотренное с прошлого показа больше не наверху. */
   function refetch(): ReturnType<typeof refetchQuery> {
     seenAtShow = null
     return refetchQuery()
   }
 
-  return { posts, refetch, markSeen }
+  return { posts, refetch, markSeen, markPostSeen }
+}
+
+/**
+ * Сколько после показа ленты подборка ещё может встать над ней. Обычно обе
+ * приходят почти разом: у подборки на запрос-другой больше.
+ */
+export const HIGHLIGHTS_GRACE_MS = 1500
+
+/**
+ * Подборка пришла, когда лента уже на экране, — сверху её не вставляем: посты
+ * уезжали вниз сами, а под Tor подборка приходила через минуту и выглядела как
+ * чужая лента, подгрузившаяся сама (у многих в подписках только Bastyon_Team,
+ * его предлагала регистрация в старом клиенте). Такая подборка ждёт
+ * «Обновить» — `reset()`. Лента пропала с экрана (другая вкладка) — отсчёт
+ * заново.
+ */
+export function useLateArrivalGate(
+  feedShown: () => boolean,
+  arrived: () => boolean,
+  graceMs: number = HIGHLIGHTS_GRACE_MS
+): { deferred: Ref<boolean>; reset: () => void } {
+  let shownAt = 0
+  const deferred = ref(false)
+  watch(
+    feedShown,
+    (shown) => {
+      if (!shown) shownAt = 0
+      else if (!shownAt) shownAt = Date.now()
+    },
+    { immediate: true }
+  )
+  watch(
+    arrived,
+    (has) => {
+      if (has && shownAt && Date.now() - shownAt > graceMs) deferred.value = true
+    },
+    { immediate: true }
+  )
+  function reset(): void {
+    deferred.value = false
+    shownAt = 0
+  }
+  return { deferred, reset }
 }

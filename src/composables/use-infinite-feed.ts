@@ -12,7 +12,12 @@ import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useUIStore } from '@/stores/ui-store'
-import { buildFeedQueryByTab } from './helpers/feed-queries'
+import {
+  SPARSE_LANGUAGE_DEPTH,
+  buildFeedQueryByTab,
+  buildTopFeedQuery,
+  type FeedQueryContext,
+} from './helpers/feed-queries'
 import { prefetchMargin } from './use-load-more-sentinel'
 import {
   fetchAndMergeRepostOriginals,
@@ -21,6 +26,7 @@ import {
 } from './helpers/feed-enrichment'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
+import { isNodeTimeout } from '@/helpers/api/rpc-errors'
 import { t } from '@/i18n'
 
 /**
@@ -32,6 +38,15 @@ export function feedErrorText(err: unknown): string {
     ? t('settings.network.statusNoNodes')
     : extractErrorMessage(err)
 }
+
+/** Вкладки, у которых есть запасной путь через «Лучшее»: «Подписки», «Избранное» и «Обсуждаемое» — свои запросы. */
+const OWN_SOURCE_TABS = new Set([2, 6, 7])
+
+/**
+ * Сколько страниц подряд из одних уже показанных постов терпеть, прежде чем
+ * считать ленту законченной. Такая страница — не конец: идём дальше сами.
+ */
+const MAX_REPEATED_PAGES = 3
 
 /**
  * Параметры для useInfiniteFeed
@@ -83,6 +98,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
 
   // Отслеживаем текущий txid для запроса
   const currentTxidForQuery = ref<string>('')
+  /** Высота блока первой страницы — с ней просим следующие (`FeedQueryContext.height`). */
+  let feedHeight = 0
+  /** Нода не успела собрать ленту на этом языке — показываем лучшее за месяц (SPARSE_LANGUAGE_DEPTH). */
+  const sparseFallback = ref(false)
+  /** Страниц подряд, в которых не нашлось ничего нового. */
+  let repeatedPages = 0
 
   // Поколение ленты. Растёт при любом сбросе (смена фильтров/вкладки/языка).
   // Обработчик ответа держит паузу на `await` внутри — за это время фильтр мог
@@ -164,21 +185,47 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     )
   }
 
+  function feedContext(currentTxid: string, count: number): FeedQueryContext {
+    return {
+      currentTxid,
+      count,
+      lang: lang.value,
+      allTags: buildAllTags(),
+      contentTypes: buildContentTypes(),
+      userAddress: authStore.address || '',
+      topFirst: filtersStore.topFirst,
+      depth: filtersStore.topFeedDepth,
+      height: currentTxid === '' ? 0 : feedHeight,
+    }
+  }
+
+  /** Страница ленты; первая на редком языке, где нода не успела, — из «Лучшего» за месяц. */
+  async function fetchFeedPage(ctx: FeedQueryContext): Promise<GetHierarchicalStripResponse> {
+    const tab = Number(filtersStore.activeTab)
+    if (sparseFallback.value) {
+      return buildTopFeedQuery({ ...ctx, depth: SPARSE_LANGUAGE_DEPTH })
+    }
+    try {
+      return await buildFeedQueryByTab(tab, ctx)
+    } catch (err) {
+      const canFallBack =
+        ctx.currentTxid === '' && !ctx.topFirst && !OWN_SOURCE_TABS.has(tab) && ctx.lang !== ''
+      if (!canFallBack || !isNodeTimeout(err)) throw err
+      sparseFallback.value = true
+      return buildTopFeedQuery({ ...ctx, depth: SPARSE_LANGUAGE_DEPTH })
+    }
+  }
+
   // Запрос данных — все варианты вкладок диспатчатся в buildFeedQueryByTab.
   const { data, isLoading, error, refetch } = useQuery<GetHierarchicalStripResponse>({
     queryKey: queryKey,
     queryFn: async () => {
       const currentTxid = currentTxidForQuery.value
-      const response = await buildFeedQueryByTab(filtersStore.activeTab, {
-        currentTxid,
-        count: currentTxid === '' ? initialLimit : pageSize,
-        lang: lang.value,
-        allTags: buildAllTags(),
-        contentTypes: buildContentTypes(),
-        userAddress: authStore.address || '',
-        topFirst: filtersStore.topFirst,
-        depth: filtersStore.topFeedDepth,
-      })
+      // Первая страница — заново с обычной ленты: на этот раз нода может и успеть.
+      if (currentTxid === '') sparseFallback.value = false
+      const response = await fetchFeedPage(
+        feedContext(currentTxid, currentTxid === '' ? initialLimit : pageSize)
+      )
       await preloadLastCommentAuthors(response?.data?.contents)
       return response
     },
@@ -216,17 +263,22 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       if (generation !== feedGeneration.value) return
 
       let postsToEnrich: AdaptedPost[]
+      let nothingNew = false
       if (requestedTxid === '') {
         // Первая загрузка — заменяем все посты.
         lastNewPostsCheck = Date.now()
         allPosts.value = newPosts
         postsToEnrich = newPosts
+        feedHeight = Number(newData.data.height) || 0
+        repeatedPages = 0
       } else {
         // Последующие — добавляем к существующим, фильтруя дубликаты по id.
         const existingIds = new Set(allPosts.value.map((p) => String(p.id)))
         const uniqueNewPosts = newPosts.filter((p) => !existingIds.has(String(p.id)))
         allPosts.value = [...allPosts.value, ...uniqueNewPosts]
         postsToEnrich = uniqueNewPosts
+        nothingNew = uniqueNewPosts.length === 0
+        repeatedPages = nothingNew ? repeatedPages + 1 : 0
       }
 
       // Подгружаем оценки текущего юзера и проставляем myVal в allPosts (fire-and-forget).
@@ -241,7 +293,10 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
 
         // Если получили меньше постов, чем запрашивали, значит это последняя страница
         const expectedCount = requestedTxid === '' ? initialLimit : pageSize
-        hasMore.value = contents.length >= expectedCount && newLastTxid !== requestedTxid
+        hasMore.value =
+          contents.length >= expectedCount &&
+          newLastTxid !== requestedTxid &&
+          repeatedPages < MAX_REPEATED_PAGES
 
         if (hasMore.value) {
           lastTxid.value = newLastTxid
@@ -253,6 +308,10 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       loadMoreError.value = null
       isLoadingMore.value = false
       hasSettled.value = true
+
+      // Страница целиком из уже показанного: лента не выросла, и наблюдатель
+      // нового отчёта не пришлёт — следующую просим сами.
+      if (nothingNew && hasMore.value) void nextTick(() => loadMore())
     },
     { immediate: true }
   )
@@ -326,16 +385,10 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     if (!headId) return
     lastNewPostsCheck = Date.now()
     try {
-      const resp = await buildFeedQueryByTab(filtersStore.activeTab, {
-        currentTxid: '',
-        count: NEW_POSTS_PEEK,
-        lang: lang.value,
-        allTags: buildAllTags(),
-        contentTypes: buildContentTypes(),
-        userAddress: authStore.address || '',
-        topFirst: filtersStore.topFirst,
-        depth: filtersStore.topFeedDepth,
-      })
+      const ctx = feedContext('', NEW_POSTS_PEEK)
+      const resp = sparseFallback.value
+        ? await buildTopFeedQuery({ ...ctx, depth: SPARSE_LANGUAGE_DEPTH })
+        : await buildFeedQueryByTab(filtersStore.activeTab, ctx)
       const fresh = extractPostsFromResponse(resp)
       if (!fresh.length) return
       const idx = fresh.findIndex((p) => String(p.id) === headId)
@@ -501,6 +554,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     recheckLoadMore,
     /** Перезагрузка ленты с головы (кнопка «Обновить», подтверждение по WS) */
     refetch: refreshFeed,
+    /** Нода не успела собрать ленту на этом языке — показано лучшее за месяц. */
+    sparseFallback: computed(() => sparseFallback.value),
     /** Количество новых постов сверху (lentaunseen-lite); 0 — нет новых. */
     newPostsCount: computed(() => newPostsCount.value),
     /** Показать новые посты: перезагрузить голову ленты + сбросить счётчик. */

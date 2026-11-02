@@ -117,6 +117,7 @@ describe('useHeaderLayoutStore', () => {
       'miniApps',
       'topAccounts',
       'explorer',
+      'reportBug',
     ])
     expect(store.blocksLayout.map((e) => e.id)).toEqual(['categories', 'feedSettings', 'tags'])
     // Меню, сохранённое раньше, на месте; шапка — по-прежнему «по умолчанию».

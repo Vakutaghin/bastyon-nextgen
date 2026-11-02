@@ -106,7 +106,7 @@
             </UserMark>
             <SC_ItemBody>
               <SC_ItemPrimary>{{ u.name || u.address }}</SC_ItemPrimary>
-              <SC_ItemSecondary v-if="u.name">{{ u.address }}</SC_ItemSecondary>
+              <SC_ItemSecondary v-if="reputationOf(u)">{{ reputationOf(u) }}</SC_ItemSecondary>
             </SC_ItemBody>
           </SC_DropdownItem>
         </SC_DropdownSection>
@@ -161,6 +161,7 @@ import {
 } from '@/pages/block-explorer-page/components/explorer-search/use-explorer-search'
 import { recordVisit } from '@/pages/block-explorer-page/components/shared/use-search-history'
 import { shortenHash } from '@/pages/block-explorer-page/components/shared/format-explorer'
+import { searchUserReputation } from '@/pages/search-page/search-user-reputation'
 import { useSearchResults } from './use-search-results'
 import { useSearchRecent } from './use-search-recent'
 import { useSearchNavigation } from './use-search-navigation'
@@ -198,6 +199,11 @@ const queryRef = toRef(props, 'query')
 const showResults = computed(() => props.query.length >= MIN_QUERY_LENGTH)
 
 const { users, tags, posts, apps, isLoading, hasAny } = useSearchResults(queryRef)
+
+function reputationOf(user: { reputation?: number }): string {
+  const value = searchUserReputation(user)
+  return value === null ? '' : t('search.reputation', { n: value })
+}
 
 interface ExplorerSuggestion {
   kind: ExplorerEntityKind

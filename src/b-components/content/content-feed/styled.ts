@@ -46,6 +46,21 @@ export const SC_SubscriptionsDivider = styled.div`
   }
 `
 
+/** Строка над лентой: почему лента не обычная (редкий язык — лучшее за месяц). */
+export const SC_FeedNote = styled.p`
+  margin: 0 0 15px;
+  padding: 10px 14px;
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-elevated);
+  color: var(--ui-text-muted);
+  font-size: 14px;
+  line-height: calc(1.4 * var(--leading-scale));
+
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
+    margin-bottom: 10px;
+  }
+`
+
 export const SC_FeedErrorColumn = styled.div`
   display: flex;
   flex-direction: column;

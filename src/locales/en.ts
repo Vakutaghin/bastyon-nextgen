@@ -1055,6 +1055,8 @@ export default {
     explorerOpenBlock: 'Open block',
     explorerOpenTx: 'Open transaction',
     explorerOpenAddress: 'Open address',
+    /** Под ником в результатах поиска — вместо адреса. */
+    reputation: 'Reputation {n}',
   },
   messenger: {
     chatFallbackTitle: 'Chat',
@@ -2076,6 +2078,18 @@ export default {
       'If the author bothers you, block them: their posts and comments will disappear from your feeds.',
     close: 'Close',
   },
+  /** «Кто оценил» — окно по числу оценок под звёздами (post-scores-modal). */
+  postScores: {
+    title: 'Who rated',
+    titleCount: 'Who rated · {n}',
+    loading: 'Loading…',
+    error: 'Couldn’t load the ratings.',
+    empty: 'No ratings yet.',
+    open: 'Who rated',
+    openCount: 'Who rated: {n} rating | Who rated: {n} ratings',
+    sharesLabel: 'Shares of ratings from 5 to 1',
+    starsLabel: '{n} star | {n} stars',
+  },
   postCard: {
     unknownAuthor: 'Unknown author',
     videoTitle: 'Video',
@@ -2122,6 +2136,8 @@ export default {
     subscriptionsDividerCaption:
       'Above are new posts from people you follow. Below is the general feed.',
     subscriptionsDividerButton: 'Continue in “Subscriptions”',
+    sparseLanguageFeed:
+      'There are few posts in this language, and the node couldn’t build the feed in order in time, so here is the best of the month.',
     refreshFeed: 'Refresh feed',
     createPost: 'Create post',
     hideSidebar: 'Hide sidebar',
@@ -2363,10 +2379,6 @@ export default {
       'You have reached your limit for this action. Buy PKOIN and raise your reputation to increase your limits.',
   },
   torMedia: {
-    loadImage: 'Load through Tor',
-    loading: 'Loading through Tor…',
-    loadFailed: 'Failed to load through Tor',
-    retry: 'Retry',
     embedBlocked: 'Embeds are disabled while Tor is on: they would load directly, with your IP.',
     miniAppBlocked:
       'Mini-apps are unavailable while Tor is on: they load directly, bypassing Tor. Turn Tor off to open the app.',

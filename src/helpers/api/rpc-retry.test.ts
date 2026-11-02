@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('./node-selector', () => mocks)
 
-import { isLogicError, isTimeout500 } from './rpc-errors'
+import { isLogicError, isNodeTimeout, isTimeout500 } from './rpc-errors'
 import { retryWithBackoff } from './rpc-retry'
 
 const A = { host: 'a.pocketnet.app', port: 8899 }
@@ -110,7 +110,26 @@ describe('retryWithBackoff', () => {
         { servers: [A, B], request, protocolName: 'RPC', isLogicErrorThrowable: true }
       )
     ).resolves.toBe('ok')
-    expect(mocks.markProxyDead).toHaveBeenCalledWith(A)
+    // Прокси ответил — не успела нода за ним: он живой.
+    expect(mocks.markProxyDead).not.toHaveBeenCalled()
+    expect(mocks.markProxyAlive).toHaveBeenCalledWith(A)
+  })
+
+  it('нода не успевает раз за разом — после двух таких ответов перебор кончается', async () => {
+    const timeout = {
+      code: 500,
+      httpStatus: 500,
+      error: { message: '{"code":408,"message":"GetHistoricalFeed: sql request timeout"}' },
+    }
+    const request = vi.fn().mockRejectedValue(timeout)
+    const error = await retryWithBackoff(
+      {},
+      { servers: [A, B, C], request, protocolName: 'RPC', isLogicErrorThrowable: true }
+    ).catch((e: unknown) => e)
+    expect(request).toHaveBeenCalledTimes(2)
+    expect(mocks.markProxyDead).not.toHaveBeenCalled()
+    expect(isNodeTimeout(error)).toBe(true)
+    expect(isNodeTimeout(new Error('ECONNRESET'))).toBe(false)
   })
 
   it('HTTP-режим перебирает ноды и на логических ошибках', async () => {

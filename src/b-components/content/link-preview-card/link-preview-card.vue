@@ -51,7 +51,7 @@ import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { CloseOutlined, ZoomInOutlined } from '@/components/icons'
-import TorImage, { getTorImageUrl } from '@/components/tor-image'
+import TorImage from '@/components/tor-image'
 import type { LinkPreview } from '@/services/link-preview-service'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { useModalStore } from '@/stores/modal-store'
@@ -98,7 +98,7 @@ const rootEl = computed<HTMLElement | null>(() => {
 const { preview, loading } = useLinkPreviewCard(toRef(props, 'url'), rootEl, props.lazy)
 
 const imageFailed = ref(false)
-/** Картинка показана: под Tor — только после нажатия на заглушку TorImage. */
+/** Картинка пришла — по ней открывается просмотрщик. */
 const imageReady = ref(false)
 watch(
   () => props.url,
@@ -121,9 +121,9 @@ const card = computed<LinkPreview | null>(() => {
   return props.fallback && props.url && !loading.value ? { url: props.url } : null
 })
 
-/** Под Tor просмотрщику — blob уже загруженной картинки, прямой адрес заблокирован CSP. */
+/** Под Tor просмотрщик берёт картинку так же, через Tor (tor-media-proxy). */
 function openImage(): void {
   const image = card.value?.image
-  if (image) modalStore.openImageGallery([getTorImageUrl(image) ?? image], 0)
+  if (image) modalStore.openImageGallery([image], 0)
 }
 </script>

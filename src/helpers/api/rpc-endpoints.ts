@@ -27,6 +27,8 @@ export const rpcEndpoints = {
   /** Посты по точной ссылке `u` и типу — так находим аудио по ссылкам PeerTube. */
   searchLinks: 'searchlinks',
   getMostCommentedFeed: 'getmostcommentedfeed',
+  /** Кто и сколько звёзд поставил посту: адрес, имя, аватар, репутация, оценка. */
+  getPostScores: 'getpostscores',
 
   // Comment methods
   getComments: 'getcomments',

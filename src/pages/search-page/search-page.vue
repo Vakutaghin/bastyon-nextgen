@@ -60,7 +60,7 @@
               </UserMark>
               <SC_ItemBody>
                 <SC_ItemTitle>{{ u.name || u.address }}</SC_ItemTitle>
-                <SC_ItemSubtitle>{{ u.address }}</SC_ItemSubtitle>
+                <SC_ItemSubtitle v-if="reputationOf(u)">{{ reputationOf(u) }}</SC_ItemSubtitle>
               </SC_ItemBody>
             </SC_ResultItem>
           </SC_ResultsList>
@@ -146,6 +146,7 @@ import {
   SC_Empty,
   SC_LoadingState,
 } from './search-page.styled'
+import { searchUserReputation } from './search-user-reputation'
 
 const SETTING_KEY_LEFT_SIDEBAR_COLLAPSED = 'bastyonLeftSidebarCollapsed'
 
@@ -332,5 +333,10 @@ function avatarOf(u: unknown): string | null {
 function initialOf(name?: string, address?: string): string {
   const src = name || address || '?'
   return src[0]!.toUpperCase()
+}
+
+function reputationOf(user: SearchUserResult): string {
+  const value = searchUserReputation(user)
+  return value === null ? '' : t('search.reputation', { n: value })
 }
 </script>

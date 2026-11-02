@@ -30,6 +30,12 @@ export const SC_StarRating = styled.div`
     font-size: 14px;
     margin-left: 7px;
   }
+`
+
+/** Звёзды с окном входа и число оценок рядом — кнопка «кто оценил». */
+export const SC_RatingRow = styled.div`
+  display: inline-flex;
+  align-items: center;
 
   .voters-count {
     display: inline-flex;
@@ -43,6 +49,11 @@ export const SC_StarRating = styled.div`
       width: 15px;
       height: 15px;
     }
+  }
+
+  /* У кнопки поля внутри — на столько же ближе, чтобы число стояло на месте. */
+  button.voters-count {
+    margin-left: 7px;
   }
 `
 
@@ -139,5 +150,28 @@ export const SC_StarFilled = styled.div`
       color: var(--color-warning);
       stroke: currentcolor;
     }
+  }
+`
+
+/** Число оценок — кнопка «кто оценил»; выглядит как прежняя подпись. */
+export const SC_VotersButton = styled.button`
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  margin-right: -4px;
+  border-radius: var(--ui-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  transition: color var(--transition-quick);
+
+  &:hover {
+    color: var(--ui-text-highlighted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 1px;
   }
 `

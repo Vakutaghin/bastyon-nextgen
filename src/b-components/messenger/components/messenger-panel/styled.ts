@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS } from '@/styles/design-tokens'
+import { BREAKPOINTS, SHELL } from '@/styles/design-tokens'
 
 export const SC_MessengerContainer = styled.div`
   flex: 1;
@@ -38,6 +38,14 @@ export const SC_SidebarColumn = styled('div', sidebarProps)`
     width: 100%;
     display: ${(props) => (props.isHidden ? 'none' : 'flex')};
   }
+
+  /* Телефон боком — как телефон: открытый чат на всю ширину, список за
+     стрелкой «назад». Рядом со списком переписке оставалось 400 px, а по
+     высоте и так 360. */
+  ${() => SHELL.RAIL} & {
+    width: 100%;
+    display: ${(props) => (props.isHidden ? 'none' : 'flex')};
+  }
 `
 
 const chatProps = {
@@ -52,6 +60,11 @@ export const SC_ChatColumn = styled('div', chatProps)`
   position: relative;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
+    display: ${(props) => (props.isActive ? 'flex' : 'none')};
+    width: 100%;
+  }
+
+  ${() => SHELL.RAIL} & {
     display: ${(props) => (props.isActive ? 'flex' : 'none')};
     width: 100%;
   }
@@ -71,6 +84,11 @@ export const SC_SidebarHeader = styled.div`
   @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     padding-right: calc(var(--safe-right) + 64px);
   }
+
+  /* Телефон боком: список тоже во всю ширину, а высоты мало. */
+  ${() => SHELL.RAIL} & {
+    padding: 10px calc(var(--safe-right) + 64px) 10px 16px;
+  }
 `
 
 /** «Сообщения» и значок «догружается» рядом. */
@@ -84,11 +102,17 @@ export const SC_SidebarTitle = styled.div`
 /** Верхняя панель в активном чате (back-button + имя собеседника). */
 export const SC_ChatTopBar = styled.div`
   height: 56px;
+  flex-shrink: 0;
   border-bottom: 1px solid var(--ui-border);
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 16px;
+
+  /* Телефон боком: каждый пиксель высоты — переписке. */
+  ${() => SHELL.RAIL} & {
+    height: 48px;
+  }
 `
 
 export const SC_EmptyState = styled.div`
@@ -128,6 +152,10 @@ export const SC_MobileBackButton = styled.button`
   padding: 0;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
+    display: flex;
+  }
+
+  ${() => SHELL.RAIL} & {
     display: flex;
   }
 `

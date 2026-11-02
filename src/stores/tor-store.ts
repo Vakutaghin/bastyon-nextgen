@@ -13,6 +13,7 @@ import {
   type TorRoutingMode,
 } from '@/helpers/tor/tor-gate'
 import { isTorMediaPolicyApplied } from '@/helpers/tor/tor-media-policy'
+import { retryTorMedia } from '@/helpers/tor/tor-media-proxy'
 
 export type TorStatus = 'off' | 'installing' | 'starting' | 'bootstrapping' | 'ready' | 'failed'
 
@@ -258,6 +259,7 @@ export const useTorStore = defineStore('tor', {
     },
 
     applySnapshot(snap: TorStateSnapshot): void {
+      const becameReady = snap.status === 'ready' && this.status !== 'ready'
       this.status = snap.status
       this.bootstrapPct = snap.bootstrap_pct
       this.message = snap.message ?? null
@@ -270,6 +272,8 @@ export const useTorStore = defineStore('tor', {
       this.stalled = snap.stalled ?? false
       this.fetchingBridges = snap.fetching_bridges ?? false
       this.errorCode = snap.error_code ?? null
+      // Картинки, которые просили, пока Tor подключался, получили отказ — ещё раз.
+      if (becameReady && isTorMediaPolicyApplied()) retryTorMedia()
     },
 
     async enable(): Promise<void> {

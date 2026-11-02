@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { SHELL, VIEWPORT_HEIGHTS } from '@/styles/design-tokens'
 import { SC_UserStats } from '@/b-components/profile/profile-sidebar/styled'
 
 export const SC_ChatRoomContainer = styled.div`
@@ -475,6 +476,15 @@ export const SC_SearchRow = styled.div`
   padding: 8px 12px;
   border-bottom: 1px solid var(--ui-border);
   flex-shrink: 0;
+
+  /* Телефон боком с открытой клавиатурой: по высоте остаётся полторы сотни
+     пикселей, и строка поиска съедала треть того, что видно из переписки.
+     Пустая — прячется, пока клавиатура открыта; с запросом остаётся. */
+  @media (max-height: ${() => VIEWPORT_HEIGHTS.KEYBOARD_OPEN}) {
+    ${() => SHELL.RAIL} &:not(.searching) {
+      display: none;
+    }
+  }
 `
 
 export const SC_SearchIcon = styled.span`

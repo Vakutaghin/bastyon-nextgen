@@ -5,6 +5,7 @@
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import { favoritesAPI } from '@/db/apis/favorites-api'
+import { BLOCKS_PER_DAY } from '@/stores/filters-store-consts'
 import type {
   GetHierarchicalStripResponse,
   GetHierarchicalStripPost,
@@ -34,7 +35,25 @@ export interface FeedQueryContext {
   topFirst: boolean
   /** Окно для `gettopfeed` в БЛОКАХ цепочки (TIME_FILTER_DEPTH_MAP), не в днях. */
   depth: number
+  /**
+   * Высота блока, на которой собрана первая страница (`data.height` ответа), —
+   * для следующих страниц; 0 — первая страница, «от последнего блока». Как
+   * `fixedblock` старого клиента: без неё каждая страница собиралась заново на
+   * свежей высоте, к тому же на случайной ноде за прокси, и вместо продолжения
+   * приходили те же посты — на русской ленте к 8-й странице по 17–20 повторов
+   * из 20, лента переставала прирастать.
+   */
+  height?: number
 }
+
+/**
+ * Лента на редком языке (корейском, итальянском, сербском) ноде не по силам:
+ * постов на нём мало, и она перебирает тысячи блоков, пока SQL не упрётся в
+ * таймаут («GetHistoricalFeed: sql request timeout»), — у корейского так
+ * всегда (замер 02.11.2026). Тогда вместо ошибки — лучшее на этом языке за
+ * месяц (`gettopfeed` с этим окном в блоках), он отвечает за секунды.
+ */
+export const SPARSE_LANGUAGE_DEPTH = 30 * BLOCKS_PER_DAY
 
 /** Уникальный cachehash чтобы обойти серверный кэш для свежих данных. */
 const freshCacheHash = (): string =>
@@ -47,7 +66,7 @@ export async function buildHierarchicalStripQuery(
   return getByPRCWithAuth({
     method: rpcEndpoints.getHierarchicalStrip,
     parameters: [
-      0,
+      ctx.height ?? 0,
       ctx.currentTxid,
       ctx.count,
       ctx.lang,
@@ -78,7 +97,7 @@ export async function buildTopFeedQuery(
   return getByPRCWithAuth({
     method: rpcEndpoints.getTopFeed,
     parameters: [
-      0,
+      ctx.height ?? 0,
       ctx.currentTxid,
       ctx.count,
       ctx.lang,
@@ -107,7 +126,7 @@ export async function buildSubscriptionsFeedQuery(
   return getByPRCWithAuth({
     method: rpcEndpoints.getSubscribesFeed,
     parameters: [
-      0,
+      ctx.height ?? 0,
       ctx.currentTxid,
       ctx.count,
       '',
@@ -135,7 +154,7 @@ export async function buildMostCommentedFeedQuery(
   return getByPRCWithAuth({
     method: rpcEndpoints.getMostCommentedFeed,
     parameters: [
-      0,
+      ctx.height ?? 0,
       ctx.currentTxid,
       ctx.count,
       ctx.lang,

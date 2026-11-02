@@ -32,9 +32,9 @@ The feed, tags and recommendations are in the feed language: the app passes it t
 
 ## New from your subscriptions
 
-If you are signed in and follow someone, the **“Feed”** section starts with your subscriptions’ posts you have not seen yet — up to 20, as in the previous Bastyon app. Below them is a bar saying “Above are new posts from people you follow. Below is the general feed.” with the **“Continue in “Subscriptions””** button: it opens the **“Subscriptions”** section. The general feed follows, without those posts.
+If you are signed in and follow someone, the **“Feed”** section starts with your subscriptions’ posts from the last week you have not seen yet — up to 20, as in the previous Bastyon app. Below them is a bar saying “Above are new posts from people you follow. Below is the general feed.” with the **“Continue in “Subscriptions””** button: it opens the **“Subscriptions”** section. The general feed follows, without those posts.
 
-Once you have scrolled down to the bar, those posts count as seen: the next time the feed loads, only newer ones are at the top. With **“Best first”**, categories or tags turned on there is no such selection.
+A post counts as seen as soon as it has been on the screen, and the whole selection once you have scrolled down to the bar: the next time the feed loads, only newer ones are at the top. If the selection arrives when the feed is already on the screen (on a slow connection or through Tor, for example), it is not inserted at the top by itself — it appears after **“Refresh feed”**. With **“Best first”**, categories or tags turned on there is no such selection.
 
 ## Promoted posts
 

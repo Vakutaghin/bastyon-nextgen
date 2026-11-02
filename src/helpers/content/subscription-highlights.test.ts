@@ -3,7 +3,14 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { loadSeen, saveSeen, unseenPosts, widenSeen } from './subscription-highlights'
+import {
+  HIGHLIGHT_MAX_AGE_MS,
+  loadSeen,
+  recentPosts,
+  saveSeen,
+  unseenPosts,
+  widenSeen,
+} from './subscription-highlights'
 
 const posts = (...ids: number[]) => ids.map((id) => ({ id }))
 
@@ -32,5 +39,19 @@ describe('посты подписок: что уже видели', () => {
     expect(loadSeen('PA')).toEqual({ first: 20, last: 10 })
     expect(loadSeen('PB')).toEqual({ first: 5, last: 1 })
     expect(loadSeen('PC')).toBeNull()
+  })
+})
+
+describe('посты подписок: только свежие', () => {
+  it('старше недели — не «новое», без даты — тоже', () => {
+    const now = Date.parse('2026-11-02T12:00:00Z')
+    const at = (ms: number) => new Date(now - ms).toISOString()
+    const list = [
+      { id: 1, timestamp: at(60_000) },
+      { id: 2, timestamp: at(HIGHLIGHT_MAX_AGE_MS - 60_000) },
+      { id: 3, timestamp: at(HIGHLIGHT_MAX_AGE_MS + 60_000) },
+      { id: 4 },
+    ]
+    expect(recentPosts(list, now).map((p) => p.id)).toEqual([1, 2])
   })
 })

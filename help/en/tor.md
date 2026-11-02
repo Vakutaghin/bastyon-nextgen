@@ -52,9 +52,9 @@ An attempt that makes no progress for a minute and a half gives way to the next 
 
 On Android the whole app goes through Tor: images, video, music and mini apps too. Only links bypass Tor there — they open in your regular browser.
 
-On a computer, the app’s windows themselves cannot be routed entirely through Tor on every system, so whatever they would load directly is blocked while Tor is on:
+On a computer, the app’s windows themselves cannot be routed entirely through Tor on every system, so whatever they would load directly goes another way while Tor is on:
 
-- **images** do not show by themselves: press **“Load through Tor”** on an image, and it loads through Tor;
+- **images** — photos in posts, avatars, video and link previews — are loaded by the app itself through Tor and shown as usual. While Tor is connecting they are missing; once it connects they appear. Through Tor images load more slowly than directly;
 - **videos** can be watched only directly: the app warns **“Video will bypass Tor”** — the PeerTube server will see your IP address — and plays the video after **“Watch bypassing Tor”**. Node requests and the chat stay in Tor. To watch a video without leaving Tor, download it: the download goes through Tor, and a downloaded video plays from the disk — see [Download to watch offline](offline-video.md);
 - **music and podcasts** in the mini player also play only directly: instead of the track title you see “Audio will bypass Tor: the PeerTube server will see your IP address” and a **“Listen bypassing Tor”** button. Your consent lasts while the app is open;
 - **YouTube and other embeds** and **mini apps** are turned off;

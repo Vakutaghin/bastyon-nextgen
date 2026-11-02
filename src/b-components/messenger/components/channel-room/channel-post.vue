@@ -88,7 +88,6 @@ import {
   StarFilled,
 } from '@/components/icons'
 import { useModalStore } from '@/stores/modal-store'
-import { useTorMedia } from '@/composables/use-tor-media'
 import { formatClock, formatDateTimeFromString } from '@/helpers/common/date-formatter'
 import { getVideoThumbnailFromUrl } from '@/helpers/api/peertube-url'
 import { usePostRestriction } from '@/b-components/content/post-card/use-post-restriction'
@@ -152,11 +151,11 @@ const isVideo = computed<boolean>(
     !!embed.value
 )
 
-// Под Tor обложки не грузим: картинка с чужого сервера ушла бы мимо Tor.
-const { mediaBlocked } = useTorMedia()
+// Обложка под Tor тоже приходит: адрес у PeerTube спрашиваем через Tor, а
+// картинку окно берёт через свою схему (tor-media-proxy).
 const peertubeCover = ref<string | null>(null)
 watch(
-  () => (embed.value || mediaBlocked.value ? undefined : props.post.videoUrl),
+  () => (embed.value ? undefined : props.post.videoUrl),
   async (url) => {
     peertubeCover.value = null
     if (!url?.startsWith('peertube://')) return
@@ -171,7 +170,7 @@ watch(
 
 const coverFailed = ref(false)
 const videoCover = computed<string | undefined>(() => {
-  if (coverFailed.value || mediaBlocked.value) return undefined
+  if (coverFailed.value) return undefined
   if (embed.value?.kind === 'youtube')
     return `https://i.ytimg.com/vi/${embed.value.id}/hqdefault.jpg`
   return peertubeCover.value || undefined

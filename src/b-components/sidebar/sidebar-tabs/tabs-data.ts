@@ -109,4 +109,13 @@ export const tabsData: {
     active: false,
     disabled: false,
   },
+  // Не раздел, а действие: открывает чат с поддержкой.
+  {
+    id: 13,
+    key: 'reportBug',
+    labelKey: 'header.reportBug',
+    icon: 'BugOutlined',
+    active: false,
+    disabled: false,
+  },
 ]

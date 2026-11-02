@@ -49,7 +49,9 @@ vi.mock('./helpers/feed-enrichment', () => ({
 }))
 
 vi.mock('./helpers/feed-queries', () => ({
+  SPARSE_LANGUAGE_DEPTH: 43200,
   buildFeedQueryByTab: vi.fn(async () => ({ data: { contents: [] } })),
+  buildTopFeedQuery: vi.fn(async () => ({ data: { contents: [] } })),
 }))
 
 vi.mock('@/blockchain/store/auth-store', () => ({
@@ -77,7 +79,7 @@ vi.mock('@/stores/ui-store', () => ({
 import { feedErrorText, useInfiniteFeed } from './use-infinite-feed'
 import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
 import { t } from '@/i18n'
-import { buildFeedQueryByTab } from './helpers/feed-queries'
+import { buildFeedQueryByTab, buildTopFeedQuery } from './helpers/feed-queries'
 
 type FeedApi = ReturnType<typeof useInfiniteFeed>
 
@@ -129,6 +131,62 @@ beforeEach(() => {
 })
 
 describe('useInfiniteFeed', () => {
+  it('asks the next pages at the block height of the first one, like the old client', async () => {
+    const feed = mountFeed()
+    const strip = vi.mocked(buildFeedQueryByTab)
+    strip.mockClear()
+    await queryState.lastOptions!.queryFn!()
+    expect(strip.mock.lastCall![1].height).toBe(0)
+
+    await deliver({ data: { height: 4089777, contents: [{ txid: 'a' }, { txid: 'b' }] } })
+    await feed.loadMore()
+    await queryState.lastOptions!.queryFn!()
+    expect(strip.mock.lastCall![1]).toMatchObject({ currentTxid: 'b', height: 4089777 })
+  })
+
+  it('a page of nothing but repeats asks for the next by itself; three in a row end the feed', async () => {
+    const feed = mountFeed()
+    await deliver(page('a', 'b'))
+    await feed.loadMore()
+    expect(queryState.refetch).toHaveBeenCalledTimes(1)
+
+    await deliver(page('b', 'a'))
+    await nextTick()
+    expect(queryState.refetch).toHaveBeenCalledTimes(2)
+    expect(feed.hasMore.value).toBe(true)
+
+    await deliver(page('a', 'b'))
+    await nextTick()
+    expect(queryState.refetch).toHaveBeenCalledTimes(3)
+
+    await deliver(page('b', 'a'))
+    await nextTick()
+    expect(queryState.refetch).toHaveBeenCalledTimes(3)
+    expect(feed.hasMore.value).toBe(false)
+  })
+
+  it('a rare language the node cannot build in time: the best of the month instead of an error', async () => {
+    const feed = mountFeed()
+    const timeout = {
+      httpStatus: 500,
+      error: { message: '{"code":408,"message":"GetHistoricalFeed: sql request timeout"}' },
+    }
+    vi.mocked(buildFeedQueryByTab).mockRejectedValueOnce(timeout)
+    vi.mocked(buildTopFeedQuery).mockResolvedValueOnce(page('x', 'y') as never)
+
+    await expect(queryState.lastOptions!.queryFn!()).resolves.toEqual(page('x', 'y'))
+    expect(vi.mocked(buildTopFeedQuery).mock.lastCall![0]).toMatchObject({
+      lang: 'ru',
+      depth: 43200,
+    })
+    expect(feed.sparseFallback.value).toBe(true)
+
+    // Другая ошибка — обычная ошибка ленты, без подмены.
+    vi.mocked(buildFeedQueryByTab).mockRejectedValueOnce(new Error('node down'))
+    await expect(queryState.lastOptions!.queryFn!()).rejects.toThrow('node down')
+    expect(feed.sparseFallback.value).toBe(false)
+  })
+
   it('keeps the loaded feed and surfaces the reason when a page fails (V35)', async () => {
     const feed = mountFeed()
     await deliver(page('a', 'b'))

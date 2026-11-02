@@ -34,6 +34,28 @@ export interface RetryWithBackoffOptions<P, R> {
   stopAfterFailure?: () => Promise<boolean>
 }
 
+/**
+ * Ошибка в списке `allErrors`: объект ноды оборачиваем в Error, сохраняя текст
+ * и `httpStatus`, — по ним видно, что не успела нода (`isNodeTimeout`).
+ */
+function toError(error: unknown): Error {
+  if (error instanceof Error) return error
+  const shape = (error ?? {}) as {
+    message?: unknown
+    error?: { message?: unknown }
+    httpStatus?: unknown
+  }
+  const message = shape.message ?? shape.error?.message
+  const wrapped = new Error(typeof message === 'string' ? message : String(error)) as Error & {
+    httpStatus?: unknown
+  }
+  if (shape.httpStatus !== undefined) wrapped.httpStatus = shape.httpStatus
+  return wrapped
+}
+
+/** Сколько ответов «нода не успела» (HTTP-500 с timeout) терпеть, прежде чем сдаться. */
+const MAX_NODE_TIMEOUTS = 2
+
 export async function retryWithBackoff<P, R>(
   params: P,
   opts: RetryWithBackoffOptions<P, R>
@@ -47,6 +69,7 @@ export async function retryWithBackoff<P, R>(
   // Живая нода первой (с health-пингом на холодном старте), мёртвые в хвосте.
   const ordered = await orderedProxies(servers)
   const lastError: Error[] = []
+  let nodeTimeouts = 0
 
   for (const server of ordered) {
     try {
@@ -61,8 +84,17 @@ export async function retryWithBackoff<P, R>(
         throw error
       }
 
+      lastError.push(toError(error))
+      if (isTimeout500(error)) {
+        // Прокси ответил — не успела нода за ним (тяжёлый SQL: лента на редком
+        // языке). Прокси живой, а другой прокси спросит другую ноду — но не
+        // все подряд: на корейской ленте каждая думала 11–13 с, и запрос
+        // висел полторы минуты, а прокси помечались мёртвыми.
+        markProxyAlive(server)
+        if (++nodeTimeouts >= MAX_NODE_TIMEOUTS) break
+        continue
+      }
       markProxyDead(server)
-      lastError.push(error instanceof Error ? error : new Error(String(error)))
       if (stopAfterFailure && (await stopAfterFailure())) break
     }
   }

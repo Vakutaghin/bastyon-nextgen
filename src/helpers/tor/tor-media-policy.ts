@@ -5,11 +5,14 @@
  * API. `<img>`, `<video>`, `<iframe>` webview грузит сам — мимо Tor, с реальным
  * IP. Прокси webview (`proxy_url`) не настроен, поэтому честный вариант:
  * платформенно запретить автоматические загрузки картинок и фреймов через
- * CSP, а нужное грузить по клику через `torFetch` (`TorImage`).
+ * CSP. Картинки при этом идут через свою схему `bastyon-tor` — её отдаёт Rust
+ * через Tor (tor-media-proxy).
  *
  * Meta-CSP применяется с момента вставки и не снимается до перезагрузки
  * документа — отключение Tor перезагружает приложение (см. tor-store).
  */
+
+import { startTorMediaProxy } from './tor-media-proxy'
 
 export const TOR_MEDIA_META_ID = 'tor-media-policy'
 
@@ -18,13 +21,16 @@ export const TOR_MEDIA_CLASS = 'tor-media-blocked'
 
 /**
  * `'self'` — tauri://localhost / http://tauri.localhost; `asset:` — превью
- * транскодера через convertFileSrc; `blob:`/`data:` — TorImage, QR, локальные
- * файлы; `bastyon-offline:` — обложки и аватары скачанных роликов, с диска. Фреймы: только свои — YouTube, превью композера и мини-аппы под Tor
- * отключены и на уровне компонентов.
+ * транскодера через convertFileSrc; `blob:`/`data:` — QR, локальные файлы,
+ * картинки чата; `bastyon-offline:` — обложки и аватары скачанных роликов, с
+ * диска; `bastyon-tor:` — удалённые картинки через Tor. Фреймы: только свои —
+ * YouTube, превью композера и мини-аппы под Tor отключены и на уровне
+ * компонентов.
  */
 export const TOR_MEDIA_CSP =
   "img-src 'self' data: blob: asset: https://asset.localhost http://asset.localhost " +
-  'bastyon-offline: http://bastyon-offline.localhost; ' +
+  'bastyon-offline: http://bastyon-offline.localhost ' +
+  'bastyon-tor: http://bastyon-tor.localhost; ' +
   "frame-src 'self'"
 
 export function isTorMediaPolicyApplied(doc: Document | undefined = globalDocument()): boolean {
@@ -40,6 +46,7 @@ export function applyTorMediaPolicy(doc: Document | undefined = globalDocument()
   meta.content = TOR_MEDIA_CSP
   doc.head.appendChild(meta)
   doc.documentElement.classList.add(TOR_MEDIA_CLASS)
+  startTorMediaProxy(doc)
 }
 
 function globalDocument(): Document | undefined {

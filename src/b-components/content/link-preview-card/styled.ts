@@ -55,13 +55,6 @@ export const SC_Media = styled.div`
     object-fit: cover;
   }
 
-  /* Заглушка TorImage «Загрузить картинку» под Tor — на весь квадрат. */
-  button {
-    width: 100%;
-    height: 100%;
-    font-size: ${() => FONT_SIZE.SM};
-  }
-
   @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
     width: 80px;
   }

@@ -57,3 +57,13 @@ export function isTimeout500(error: unknown): boolean {
   }
   return false
 }
+
+/**
+ * Нода за прокси не успела ответить (HTTP-500 с timeout, обычно «sql request
+ * timeout») — сама по себе или в любой из попыток перебора прокси.
+ */
+export function isNodeTimeout(error: unknown): boolean {
+  if (isTimeout500(error)) return true
+  const all = (error as { allErrors?: unknown } | null)?.allErrors
+  return Array.isArray(all) && all.some(isTimeout500)
+}

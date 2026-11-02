@@ -94,6 +94,7 @@ export const SIDEBAR_ITEMS: Record<SidebarItemId, LayoutItemMeta> = {
   topAccounts: { labelKey: 'sidebarData.tabs.topAccounts', icon: TrophyOutlined },
   explorer: { labelKey: 'sidebarData.tabs.explorer', icon: BlockOutlined },
   help: { labelKey: 'sidebarData.tabs.help', icon: HelpBookIcon },
+  reportBug: { labelKey: 'header.reportBug', icon: BugOutlined },
 }
 
 export const SIDEBAR_BLOCKS: Record<SidebarBlockId, LayoutItemMeta> = {

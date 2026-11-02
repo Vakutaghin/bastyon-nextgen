@@ -14,6 +14,10 @@ You see your rating right away: the stars fill in and the average is recalculate
 
 You rate a post once: the rating cannot be changed or taken back.
 
+## Who rated
+
+Click the number of people who rated, next to the stars, and the **“Who rated”** window opens. At the top is how many gave five stars, four and so on down to one; below are the people with their rating and reputation: first those you follow, then by reputation. Click a person to open their profile. You can look without signing in.
+
 ## When you cannot rate
 
 If a rating cannot be given, the app tells you why:

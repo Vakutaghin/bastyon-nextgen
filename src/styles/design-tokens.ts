@@ -34,6 +34,14 @@ export const BREAKPOINT_VALUES = {
   WIDE_XL: 1920,
 } as const
 
+/**
+ * Высота окна. Ниже KEYBOARD_OPEN у телефона боком открыта клавиатура: от
+ * экрана в 360–390 px остаются полторы-две сотни.
+ */
+export const VIEWPORT_HEIGHTS = {
+  KEYBOARD_OPEN: '300px',
+} as const
+
 export const TRANSITIONS = {
   // QUICK — мгновенный визуальный отклик (hover/focus в block-explorer, settings, sidebar).
   // FAST — стандартные UI-переходы (открытие тостов, smooth-scrolling).

@@ -1050,6 +1050,7 @@ export default {
     explorerOpenBlock: '블록 열기',
     explorerOpenTx: '트랜잭션 열기',
     explorerOpenAddress: '주소 열기',
+    reputation: '평판 {n}',
   },
   messenger: {
     chatFallbackTitle: '채팅',
@@ -2059,6 +2060,17 @@ export default {
     sharkOnlyHint: '작성자가 불편하다면 차단하세요. 그 사람의 게시물과 댓글이 피드에서 사라집니다.',
     close: '닫기',
   },
+  postScores: {
+    title: '평가한 사람',
+    titleCount: '평가한 사람 · {n}',
+    loading: '불러오는 중…',
+    error: '평가를 불러오지 못했습니다.',
+    empty: '아직 평가가 없습니다.',
+    open: '평가한 사람',
+    openCount: '평가한 사람: 평가 {n}개',
+    sharesLabel: '5점부터 1점까지 평가 비율',
+    starsLabel: '별 {n}개',
+  },
   postCard: {
     unknownAuthor: '알 수 없는 작성자',
     videoTitle: '동영상',
@@ -2103,6 +2115,8 @@ export default {
     removeFromFavorites: '즐겨찾기에서 제거',
     subscriptionsDividerCaption: '위는 구독한 사람들의 새 게시물, 아래는 전체 피드입니다.',
     subscriptionsDividerButton: '“구독”에서 계속 보기',
+    sparseLanguageFeed:
+      '이 언어로 된 게시물이 적어 노드가 시간 안에 피드를 순서대로 만들지 못했습니다. 이번 달 인기 게시물을 보여 드립니다.',
     refreshFeed: '피드 새로고침',
     createPost: '게시물 작성',
     hideSidebar: '사이드바 숨기기',
@@ -2340,10 +2354,6 @@ export default {
       '이 작업의 한도에 도달했습니다. 한도를 늘리려면 PKOIN을 구매하고 평판을 높이세요.',
   },
   torMedia: {
-    loadImage: 'Tor로 불러오기',
-    loading: 'Tor로 불러오는 중…',
-    loadFailed: 'Tor로 불러오지 못했습니다',
-    retry: '다시 시도',
     embedBlocked: 'Tor가 켜져 있는 동안 임베드는 꺼집니다. 회원님의 IP로 직접 불러오기 때문입니다.',
     miniAppBlocked:
       'Tor가 켜져 있는 동안 미니 앱을 사용할 수 없습니다. 미니 앱은 Tor를 거치지 않고 직접 불러옵니다. 앱을 열려면 Tor를 끄세요.',

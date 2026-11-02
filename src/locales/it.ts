@@ -1062,6 +1062,7 @@ export default {
     explorerOpenBlock: 'Apri il blocco',
     explorerOpenTx: 'Apri la transazione',
     explorerOpenAddress: 'Apri l’indirizzo',
+    reputation: 'Reputazione {n}',
   },
   messenger: {
     chatFallbackTitle: 'Chat',
@@ -2088,6 +2089,17 @@ export default {
       "Se l'autore ti infastidisce, bloccalo: i suoi post e commenti spariranno dai tuoi feed.",
     close: 'Chiudi',
   },
+  postScores: {
+    title: 'Chi ha votato',
+    titleCount: 'Chi ha votato · {n}',
+    loading: 'Caricamento…',
+    error: 'Impossibile caricare le valutazioni.',
+    empty: 'Ancora nessuna valutazione.',
+    open: 'Chi ha votato',
+    openCount: 'Chi ha votato: {n} valutazione | Chi ha votato: {n} valutazioni',
+    sharesLabel: 'Quote delle valutazioni da 5 a 1',
+    starsLabel: '{n} stella | {n} stelle',
+  },
   postCard: {
     unknownAuthor: 'Autore sconosciuto',
     videoTitle: 'Video',
@@ -2135,6 +2147,8 @@ export default {
     subscriptionsDividerCaption:
       'Sopra: le novità delle persone che segui. Sotto: il feed generale.',
     subscriptionsDividerButton: 'Continua in «Iscrizioni»',
+    sparseLanguageFeed:
+      'In questa lingua ci sono pochi post e il nodo non è riuscito a comporre il feed in ordine in tempo: ecco il meglio del mese.',
     refreshFeed: 'Aggiorna il feed',
     createPost: 'Crea un post',
     hideSidebar: 'Nascondi la barra laterale',
@@ -2376,10 +2390,6 @@ export default {
       'Hai raggiunto il limite per questa azione. Acquista PKOIN e aumenta la tua reputazione per aumentare i limiti.',
   },
   torMedia: {
-    loadImage: 'Carica tramite Tor',
-    loading: 'Caricamento tramite Tor…',
-    loadFailed: 'Caricamento tramite Tor non riuscito',
-    retry: 'Riprova',
     embedBlocked:
       'I contenuti incorporati sono disattivati mentre Tor è attivo: verrebbero caricati direttamente, con il tuo IP.',
     miniAppBlocked:

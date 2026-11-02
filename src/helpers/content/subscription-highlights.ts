@@ -21,6 +21,25 @@ function numericIds(posts: readonly { id: string | number }[]): number[] {
   return posts.map((p) => Number(p.id)).filter((id) => Number.isFinite(id) && id > 0)
 }
 
+/**
+ * Старше этого посты подписок «новыми» не считаются. Иначе тому, кто подписан
+ * на одного-двух редко пишущих (у старых аккаунтов в подписках обычно
+ * Bastyon_Team — его предлагала регистрация), наверх ленты вставали посты
+ * за несколько месяцев: со стороны это выглядело как чужая лента вместо своей.
+ */
+export const HIGHLIGHT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+
+/** Свежие посты: не старше HIGHLIGHT_MAX_AGE_MS к `now`. */
+export function recentPosts<T extends { timestamp?: string }>(
+  posts: readonly T[],
+  now: number = Date.now()
+): T[] {
+  return posts.filter((p) => {
+    const time = p.timestamp ? Date.parse(p.timestamp) : NaN
+    return Number.isFinite(time) && now - time <= HIGHLIGHT_MAX_AGE_MS
+  })
+}
+
 /** Посты подписок, которых человек ещё не видел. */
 export function unseenPosts<T extends { id: string | number }>(
   posts: readonly T[],

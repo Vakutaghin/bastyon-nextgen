@@ -57,7 +57,7 @@ import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ZoomInOutlined } from '@/components/icons'
 import { useModalStore } from '@/stores/modal-store'
-import TorImage, { getTorImageUrl } from '@/components/tor-image'
+import TorImage from '@/components/tor-image'
 import {
   GRID_MAX_IMAGES,
   layoutImageGrid,
@@ -208,10 +208,8 @@ function cellStyle(tile: GridTile): Record<string, string> {
 
 function openImageGallery(index: number): void {
   if (props.images && props.images.length > 0) {
-    // Под Tor лайтбокс получает blob-URL уже загруженных через Tor картинок;
-    // незагруженные остаются заблокированными CSP — сначала клик по заглушке.
-    const images = props.images.map((u) => getTorImageUrl(u) ?? u)
-    modalStore.openImageGallery(images, index)
+    // Под Tor лайтбокс берёт картинки так же, через Tor (tor-media-proxy).
+    modalStore.openImageGallery(props.images, index)
   }
 }
 </script>

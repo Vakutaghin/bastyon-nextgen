@@ -1056,6 +1056,8 @@ export default {
     explorerOpenBlock: 'Открыть блок',
     explorerOpenTx: 'Открыть транзакцию',
     explorerOpenAddress: 'Открыть адрес',
+    /** Под ником в результатах поиска — вместо адреса. */
+    reputation: 'Репутация {n}',
   },
   messenger: {
     chatFallbackTitle: 'Чат',
@@ -2127,6 +2129,18 @@ export default {
     pause: 'Пауза',
     audioLoading: 'Загрузка аудио',
   },
+  /** «Кто оценил» — окно по числу оценок под звёздами (post-scores-modal). */
+  postScores: {
+    title: 'Кто оценил',
+    titleCount: 'Кто оценил · {n}',
+    loading: 'Загрузка…',
+    error: 'Не удалось загрузить оценки.',
+    empty: 'Оценок пока нет.',
+    open: 'Кто оценил',
+    openCount: 'Кто оценил: {n} оценка | Кто оценил: {n} оценки | Кто оценил: {n} оценок',
+    sharesLabel: 'Доли оценок от 5 до 1',
+    starsLabel: '{n} звезда | {n} звезды | {n} звёзд',
+  },
   postCard: {
     unknownAuthor: 'Неизвестный автор',
     videoTitle: 'Видео',
@@ -2170,6 +2184,8 @@ export default {
     removeFromFavorites: 'Убрать из избранного',
     subscriptionsDividerCaption: 'Выше — новое от тех, на кого вы подписаны. Дальше — общая лента.',
     subscriptionsDividerButton: 'Продолжить в ленте «Подписки»',
+    sparseLanguageFeed:
+      'На этом языке постов мало, и нода не успела собрать ленту по порядку — показано лучшее за месяц.',
     refreshFeed: 'Обновить ленту',
     createPost: 'Создать пост',
     hideSidebar: 'Скрыть боковую панель',
@@ -2359,10 +2375,6 @@ export default {
       'Вы достигли лимита для этого действия. Купите PKOIN и повысьте репутацию, чтобы увеличить лимиты.',
   },
   torMedia: {
-    loadImage: 'Загрузить через Tor',
-    loading: 'Загрузка через Tor…',
-    loadFailed: 'Не удалось загрузить через Tor',
-    retry: 'Повторить',
     embedBlocked:
       'Встраивание отключено при включённом Tor: оно загружалось бы напрямую, с вашим IP.',
     miniAppBlocked:

@@ -31,6 +31,8 @@ The **“Feed language”** field under the **“Best first”** switch chooses 
 
 The **“Subscriptions”** section, a person's page and their videos under a video are in all languages: you see the posts of the people you follow whatever language they write in.
 
+In languages with few posts (Korean, Italian, Serbian) the node sometimes cannot build the feed in order in time. Then, instead of an error, the app shows the best of the month in that language and says so above the feed. **“Refresh feed”** tries the regular feed again.
+
 ## Where it is remembered
 
 The selected categories, your own categories, the **“Best first”** switch and the **“Feed language”** are saved on this device and shared by all accounts on it. On another device you need to pick the filters again.

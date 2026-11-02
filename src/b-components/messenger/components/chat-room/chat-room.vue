@@ -53,7 +53,10 @@
     </template>
 
     <template v-else>
-      <SC_SearchRow v-if="messages && messages.length > 0">
+      <SC_SearchRow
+        v-if="messages && messages.length > 0"
+        :class="{ searching: !!searchQuery.trim() }"
+      >
         <SC_SearchIcon><SearchOutlined /></SC_SearchIcon>
         <SC_SearchInput
           v-model="searchQuery"

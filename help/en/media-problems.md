@@ -8,9 +8,9 @@ Why there is a button instead of an image, a video does not play or YouTube show
 
 ## Tor is on
 
-If [Tor](tor.md) is on in the desktop app, images, videos and embeds are blocked: they would load directly and reveal your IP address.
+If [Tor](tor.md) is on in the desktop app, videos and embeds do not load directly: they would reveal your IP address.
 
-- Instead of an image there is a **“Load through Tor”** button: press it, and the image loads through Tor.
+- Images and previews are loaded by the app through Tor. While Tor is connecting their place is empty; through Tor they load more slowly.
 - Before a video the player asks: **“Video will bypass Tor”**. Press **“Watch bypassing Tor”** if you agree that the video server will see your IP.
 - YouTube, Vimeo and other embeds are turned off: “Embeds are disabled while Tor is on: they would load directly, with your IP.”
 

@@ -13,8 +13,9 @@
  *   по умолчанию в меню: нужна редко, а место в шапке — самое дорогое;
  * - меню: вы — деньги — ваше содержимое — лимиты на него — связь — помощь и
  *   настройки. «Настройки» не скрываются: через них скрытое и возвращают;
- * - левая панель: разделы ленты, затем приложения и справка — как было до
- *   настройки; под разделами — порядок и язык ленты, категории, теги.
+ * - левая панель: разделы ленты, затем приложения, справка и «Сообщить об
+ *   ошибке» — на виду, чтобы о сбое было просто написать; под разделами —
+ *   порядок и язык ленты, категории, теги.
  */
 
 export type HeaderItemId =
@@ -54,6 +55,7 @@ export type SidebarItemId =
   | 'topAccounts'
   | 'explorer'
   | 'help'
+  | 'reportBug'
 
 /** Блоки под разделами: «Сначала лучшее» с языком ленты, категории, теги. */
 export type SidebarBlockId = 'feedSettings' | 'categories' | 'tags'
@@ -101,6 +103,7 @@ export const DEFAULT_SIDEBAR_LAYOUT: readonly LayoutEntry<SidebarItemId>[] = [
   { id: 'topAccounts', visible: true },
   { id: 'explorer', visible: true },
   { id: 'help', visible: true },
+  { id: 'reportBug', visible: true },
 ]
 
 export const DEFAULT_SIDEBAR_BLOCKS: readonly LayoutEntry<SidebarBlockId>[] = [

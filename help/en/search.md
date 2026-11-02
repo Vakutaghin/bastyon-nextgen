@@ -19,7 +19,7 @@ A few tricks:
 
 ## Results
 
-The results page has the **“Users”**, **“Posts”** and **“Tags”** tabs. The tabs appear when something is found in more than one section. At the bottom of the list there is **“Show more”** if there are more results.
+The results page has the **“Users”**, **“Posts”** and **“Tags”** tabs. The tabs appear when something is found in more than one section. At the bottom of the list there is **“Show more”** if there are more results. Under a person’s name is their reputation, which helps tell the real account from a namesake.
 
 Search covers the whole network, in any language. If nothing is found, try another word.
 

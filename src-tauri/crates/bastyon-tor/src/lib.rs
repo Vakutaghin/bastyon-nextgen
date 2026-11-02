@@ -136,6 +136,14 @@ pub struct TorFetchRequest {
     pub no_redirect: bool,
 }
 
+/// Картинка для окна приложения (схема `bastyon-tor` на компьютере).
+#[derive(Debug)]
+pub struct TorMediaResponse {
+    pub status: u16,
+    pub content_type: String,
+    pub body: Vec<u8>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct TorFetchResponse {
     pub status: u16,
@@ -526,6 +534,44 @@ impl TorManager {
         })
     }
 
+    /// GET картинки через Tor целиком в память — для окна приложения, которое
+    /// само мимо Tor ходить не должно. Только когда Tor готов (fail-closed) и
+    /// только к публичным адресам; больше `max_bytes` — ошибка, а не обрезок.
+    pub async fn fetch_media(
+        &self,
+        url: &str,
+        max_bytes: usize,
+        timeout: Duration,
+    ) -> Result<TorMediaResponse, String> {
+        if is_private_target(url) {
+            return Err(format!("tor media: private/loopback target rejected: {}", url));
+        }
+        let client = self.pick_client(false).await?;
+        let mut resp = client.get(url).timeout(timeout).send().await.map_err(err_string)?;
+        if resp.content_length().is_some_and(|len| len > max_bytes as u64) {
+            return Err(format!("tor media: larger than {} bytes", max_bytes));
+        }
+        let status = resp.status().as_u16();
+        let content_type = resp
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("")
+            .to_string();
+        let mut body = Vec::new();
+        while let Some(chunk) = resp.chunk().await.map_err(err_string)? {
+            if body.len() + chunk.len() > max_bytes {
+                return Err(format!("tor media: larger than {} bytes", max_bytes));
+            }
+            body.extend_from_slice(&chunk);
+        }
+        Ok(TorMediaResponse {
+            status,
+            content_type,
+            body,
+        })
+    }
+
     /// `id` генерирует JS и подписывается на события ДО вызова — иначе `open`
     /// и первые сообщения терялись (Tauri не буферизует события, V22).
     pub async fn ws_connect(&self, id: String, url: String) -> Result<(), String> {
@@ -683,6 +729,23 @@ mod tests {
         mgr.state.write().await.status = TorStatus::Ready;
         assert!(mgr.pick_client(false).await.is_ok());
         assert!(mgr.pick_client(true).await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn media_goes_only_through_tor_and_only_to_public_hosts() {
+        let mgr = testing::manager(TorPaths::from_root(std::env::temp_dir().join("tor-test")));
+        let timeout = Duration::from_secs(1);
+        mgr.state.write().await.status = TorStatus::Bootstrapping;
+        let err = mgr
+            .fetch_media("https://pocketnet.app:8092/i/a.jpg", 1024, timeout)
+            .await
+            .unwrap_err();
+        assert!(err.starts_with(TOR_NOT_READY), "{err}");
+        mgr.state.write().await.status = TorStatus::Ready;
+        for url in ["http://127.0.0.1:8080/x.png", "http://localhost/x.png", "file:///etc/passwd"] {
+            let err = mgr.fetch_media(url, 1024, timeout).await.unwrap_err();
+            assert!(err.contains("rejected"), "{url}: {err}");
+        }
     }
 
     #[tokio::test]

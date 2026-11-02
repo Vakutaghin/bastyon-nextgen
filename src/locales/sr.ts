@@ -1053,6 +1053,7 @@ export default {
     explorerOpenBlock: 'Отвори блок',
     explorerOpenTx: 'Отвори трансакцију',
     explorerOpenAddress: 'Отвори адресу',
+    reputation: 'Репутација {n}',
   },
   messenger: {
     chatFallbackTitle: 'Ћаскање',
@@ -2075,6 +2076,17 @@ export default {
       'Ако вам аутор смета, блокирајте га: његове објаве и коментари нестаће из ваших фидова.',
     close: 'Затвори',
   },
+  postScores: {
+    title: 'Ко је оценио',
+    titleCount: 'Ко је оценио · {n}',
+    loading: 'Учитавање…',
+    error: 'Оцене нису учитане.',
+    empty: 'Још нема оцена.',
+    open: 'Ко је оценио',
+    openCount: 'Ко је оценио: {n} оцена | Ко је оценио: {n} оцене | Ко је оценио: {n} оцена',
+    sharesLabel: 'Удео оцена од 5 до 1',
+    starsLabel: '{n} звездица | {n} звездице | {n} звездица',
+  },
   postCard: {
     unknownAuthor: 'Непознат аутор',
     videoTitle: 'Видео',
@@ -2120,6 +2132,8 @@ export default {
     removeFromFavorites: 'Уклони из омиљеног',
     subscriptionsDividerCaption: 'Изнад су новине од оних које пратите. Испод је општи фид.',
     subscriptionsDividerButton: 'Наставите у „Претплате“',
+    sparseLanguageFeed:
+      'На овом језику има мало објава и чвор није стигао да сложи фид редом — приказано је најбоље за месец.',
     refreshFeed: 'Освежи фид',
     createPost: 'Направи објаву',
     hideSidebar: 'Сакриј бочну траку',
@@ -2362,10 +2376,6 @@ export default {
       'Достигли сте ограничење за ову радњу. Купите PKOIN и повећајте репутацију да бисте повећали ограничења.',
   },
   torMedia: {
-    loadImage: 'Учитај кроз Tor',
-    loading: 'Учитавање кроз Tor…',
-    loadFailed: 'Учитавање кроз Tor није успело',
-    retry: 'Покушај поново',
     embedBlocked:
       'Уграђени садржаји су искључени док је Tor укључен: учитали би се директно, са вашом IP адресом.',
     miniAppBlocked:

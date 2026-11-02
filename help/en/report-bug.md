@@ -8,11 +8,11 @@ How to tell the developers about a problem and what to include so it can be foun
 
 ## Where the button is
 
-**“Report a bug”** is an item of the account menu: click your avatar in the header. It opens a [chat](messenger.md) with the Bastyon NextGen support account. Describe the problem there, like a regular message; you can attach a screenshot. The conversation is encrypted, like any private chat.
+**“Report a bug”** is the last section of the left panel (on a phone, in the menu behind the three lines) and an item of the account menu behind your avatar in the header. The button opens a [chat](messenger.md) with the Bastyon NextGen support account. Describe the problem there, like a regular message; you can attach a screenshot. The conversation is encrypted, like any private chat.
 
 If you report often, put the bug icon in the header: Settings → [“Header and panels”](settings.md#header-and-panels).
 
-The button works when you are signed in and the messenger is on.
+The report is sent from your account, so when you are not signed in the button asks you to sign in first and opens the chat afterwards. The messenger has to be on.
 
 ## App details
 

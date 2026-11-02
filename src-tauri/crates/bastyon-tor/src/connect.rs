@@ -945,11 +945,12 @@ mod tests {
     /// кэш автоподбора пишется в неё же:
     /// `BASTYON_TOR_ROOT=… [BASTYON_TOR_KIND=auto|snowflake|obfs4|meek|none]
     /// [BASTYON_TOR_FAKE_CACHE=1] [BASTYON_TOR_KEEP_CACHE=1]
-    /// [BASTYON_TOR_WAIT_SPARE=1] [BASTYON_TOR_STALL_SECS=30]
+    /// [BASTYON_TOR_WAIT_SPARE=1] [BASTYON_TOR_STALL_SECS=30] [BASTYON_TOR_MEDIA_URL=https://…]
     /// cargo test -p bastyon-tor live_connect -- --ignored --nocapture`.
     /// `FAKE_CACHE` кладёт в кэш мёртвый мост — проверка перехода дальше.
     /// `KEEP_CACHE` начинает с кэшем прошлого запуска (запасные — первыми),
-    /// `WAIT_SPARE` после подключения ждёт запасные мосты от Moat через Tor.
+    /// `WAIT_SPARE` после подключения ждёт запасные мосты от Moat через Tor,
+    /// `MEDIA_URL` — картинка через Tor, как её берёт окно (`fetch_media`).
     #[tokio::test(flavor = "multi_thread")]
     #[ignore]
     async fn live_connect() {
@@ -1034,6 +1035,18 @@ mod tests {
                     );
                     break;
                 }
+            }
+        }
+        if status == TorStatus::Ready {
+            if let Ok(url) = std::env::var("BASTYON_TOR_MEDIA_URL") {
+                let fetched = Instant::now();
+                let media = mgr.fetch_media(&url, 15 * 1024 * 1024, Duration::from_secs(60)).await;
+                println!(
+                    "{:>6.1}s media {:?} in {:.1}s",
+                    started.elapsed().as_secs_f32(),
+                    media.as_ref().map(|m| (m.status, m.content_type.clone(), m.body.len())),
+                    fetched.elapsed().as_secs_f32()
+                );
             }
         }
         println!(

@@ -3,6 +3,7 @@
 //! работает на Android (bastyon-tor-jni).
 
 pub mod installer;
+pub mod media;
 
 pub use bastyon_tor::{
     process, state, ws, BundleError, Emitter, Host, TorBridgesPayload, TorBridgesResult,

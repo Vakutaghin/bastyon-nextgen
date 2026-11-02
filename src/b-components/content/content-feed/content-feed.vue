@@ -62,6 +62,11 @@
       <!-- Сервисы (мини-приложения) — только над основной лентой. -->
       <MiniAppsShelf v-if="filtersStore.activeTab === 1" />
 
+      <!-- Нода не успела собрать ленту на этом языке — показано лучшее за месяц. -->
+      <SC_FeedNote v-if="sparseFallback && allPosts.length > 0" role="status">
+        {{ t('postCard.sparseLanguageFeed') }}
+      </SC_FeedNote>
+
       <SC_FeedLoading v-if="isLoading && allPosts.length === 0">
         <Spin :tip="t('postCard.loadingFeed')">
           <template #indicator>
@@ -92,6 +97,7 @@
         <PostCard
           v-for="post in renderedHead"
           :key="`post-${post.id}`"
+          :ref="(el) => observeHighlight(el, post)"
           v-memo="[post.id, post.likes, post.comments, post.shares]"
           :post="post"
           in-feed
@@ -193,7 +199,10 @@ import { useModalStore } from '@/stores'
 import { feedErrorText, useInfiniteFeed } from '@/composables/use-infinite-feed'
 import { useBoostedFeed } from '@/composables/use-boosted-feed'
 import { isBoostSlot } from '@/helpers/content/boost'
-import { useSubscriptionHighlights } from '@/composables/use-subscription-highlights'
+import {
+  useLateArrivalGate,
+  useSubscriptionHighlights,
+} from '@/composables/use-subscription-highlights'
 import { useBlockedAuthors } from '@/composables/use-blocked-authors'
 import type { AdaptedPost } from '@/composables/use-feed'
 import { isMobile } from '@mobile/utils/platform'
@@ -222,6 +231,7 @@ import {
   SC_RetryButton,
   SC_NewPostsPill,
   SC_SubscriptionsDivider,
+  SC_FeedNote,
 } from './styled'
 
 withDefaults(
@@ -259,6 +269,7 @@ const {
   refetch,
   newPostsCount,
   showNewPosts,
+  sparseFallback,
 } = useInfiniteFeed({
   initialLimit: 20,
   pageSize: 20,
@@ -283,6 +294,7 @@ const {
   posts: subscriptionPosts,
   refetch: refetchHighlights,
   markSeen: markSubscriptionsSeen,
+  markPostSeen: markSubscriptionPostSeen,
 } = useSubscriptionHighlights(
   () =>
     filtersStore.activeTab === 1 &&
@@ -291,8 +303,16 @@ const {
     filtersStore.selectedTags.length === 0
 )
 
+// Подборка, пришедшая к уже показанной ленте, ждёт «Обновить» (lateArrivalGate).
+const { deferred: highlightsDeferred, reset: resetHighlightsGate } = useLateArrivalGate(
+  () => allPosts.value.length > 0,
+  () => subscriptionPosts.value.length > 0
+)
+
 /** «Обновить» — заново и обычная лента, и продвигаемые, и посты подписок. */
 function refreshFeed(): void {
+  // Обновить попросили сами — подборке можно встать наверх.
+  resetHighlightsGate()
   if (showBoosted.value) {
     void refetchBoosted()
     void refetchHighlights()
@@ -322,6 +342,30 @@ function setDividerEl(el: unknown): void {
 
 type FeedItem = AdaptedPost & { isBoosted?: boolean; isDivider?: boolean }
 
+// Карточка из подборки дошла до середины экрана — пост просмотрен, наверху его
+// больше не будет.
+let highlightObserver: IntersectionObserver | null = null
+const highlightOf = new WeakMap<Element, FeedItem>()
+function observeHighlight(el: unknown, post: FeedItem): void {
+  const node = el && typeof el === 'object' && '$el' in el ? (el as { $el: unknown }).$el : el
+  if (!(node instanceof Element) || highlightOf.has(node)) return
+  if (typeof IntersectionObserver === 'undefined') return
+  highlightObserver ??= new IntersectionObserver(
+    (records) => {
+      for (const record of records) {
+        if (!record.isIntersecting) continue
+        const seen = highlightOf.get(record.target)
+        if (seen) markSubscriptionPostSeen(seen)
+        highlightObserver?.unobserve(record.target)
+      }
+    },
+    // Полоса посередине экрана: так считается и пост выше экрана.
+    { rootMargin: '-30% 0px -30% 0px', threshold: 0 }
+  )
+  highlightOf.set(node, post)
+  highlightObserver.observe(node)
+}
+
 /** Место плашки в общем списке: карточки отрисовываются по порядку, и она с ними. */
 const SUBSCRIPTIONS_DIVIDER = { id: 'subscriptions-divider', isDivider: true } as FeedItem
 
@@ -343,6 +387,7 @@ function isDeleted(post: FeedItem): boolean {
 
 /** Посты подписок сверху и плашка после них; пусто — подборки нет. */
 const subscriptionsHead = computed<FeedItem[]>(() => {
+  if (highlightsDeferred.value) return []
   const head = filterBlocked((subscriptionPosts.value as FeedItem[]).filter((p) => !isDeleted(p)))
   return head.length ? [...head, SUBSCRIPTIONS_DIVIDER] : []
 })
@@ -458,6 +503,7 @@ onUnmounted(() => {
   cancelRender?.()
   if (recheckTimer) clearTimeout(recheckTimer)
   dividerObserver?.disconnect()
+  highlightObserver?.disconnect()
 })
 
 async function onShowNewPosts(): Promise<void> {

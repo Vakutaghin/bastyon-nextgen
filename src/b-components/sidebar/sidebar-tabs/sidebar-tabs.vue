@@ -21,6 +21,7 @@
           <BlockOutlined v-else-if="tab.icon === 'BlockOutlined'" />
           <TrophyOutlined v-else-if="tab.icon === 'TrophyOutlined'" />
           <HelpBookIcon v-else-if="tab.icon === 'HelpBookIcon'" />
+          <BugOutlined v-else-if="tab.icon === 'BugOutlined'" />
           <AppstoreOutlined v-else />
           <SC_TabsLabel v-if="!collapsed">{{ t(tab.labelKey) }}</SC_TabsLabel>
         </SC_TabsItem>
@@ -48,6 +49,7 @@ import {
   MessageOutlined,
   AppstoreOutlined,
   BlockOutlined,
+  BugOutlined,
   HelpBookIcon,
   TrophyOutlined,
 } from '@/components/icons'
@@ -80,6 +82,8 @@ const tabsData = computed(() =>
  * справка. Сервисы первыми — черта над ними ничего не отделяет.
  */
 const SECTION_STARTS = new Set<SidebarItemId>(['miniApps'])
+
+const REPORT_BUG_TAB_ID = 13
 
 /** Раздел и его вкладки: `/video`, `/video/playlists`. */
 function isSectionPath(path: string, base: string): boolean {
@@ -115,7 +119,11 @@ watch(
  * Недоступна гостю только вкладка «Подписки». Нажатие на неё раньше ничего не
  * делало; теперь открывается окно входа, а после входа — сама вкладка.
  */
-function onTabClick(tab: { id: string | number; disabled: boolean }): void {
+function onTabClick(tab: { id: string | number; key: SidebarItemId; disabled: boolean }): void {
+  if (tab.key === 'reportBug') {
+    reportBug()
+    return
+  }
   if (!tab.disabled) {
     selectTab(tab.id)
     return
@@ -179,6 +187,21 @@ function updateUrlParam(mode: string | null): void {
   if (mode === null) delete query.feedMode
   else query.feedMode = mode
   void router.replace({ query })
+}
+
+/**
+ * «Сообщить об ошибке» — чат с поддержкой на весь экран; вкладка не
+ * выбирается. Отчёт уходит от аккаунта: гостю — сперва вход. Меню телефона
+ * закрывается по `tab-changed`.
+ */
+function reportBug(): void {
+  emit('tab-changed', REPORT_BUG_TAB_ID)
+  requireAuth(() => {
+    // Чат поддержки — модуль мессенджера: грузится по нажатию.
+    void import('@/b-components/header/header-report-bug/open-support-chat').then((m) =>
+      m.openSupportChat()
+    )
+  })
 }
 
 function selectTab(tabId: string | number): void {

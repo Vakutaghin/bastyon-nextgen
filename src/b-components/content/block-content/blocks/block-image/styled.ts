@@ -4,7 +4,7 @@ export const SC_BlockImage = styled.figure`
   margin: 1em 0;
   text-align: center;
 
-  /* Картинка — TorImage (под Tor заглушка вместо <img>), поэтому стили на figure. */
+  /* Картинка — TorImage, поэтому стили на figure. */
   img {
     max-width: 100%;
     height: auto;
