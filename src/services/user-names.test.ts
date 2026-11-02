@@ -41,6 +41,13 @@ describe('userName', () => {
     expect(getByPRC).not.toHaveBeenCalled()
   })
 
+  it('URL-кодированное имя раскодируется, как в старом клиенте', () => {
+    expect(userName(ALICE, { address: ALICE, name: 'Just%20Saying' })).toBe('Just Saying')
+    expect(userName(ALICE, '100%')).toBe('100%')
+    rememberUsers([{ address: BOB, name: 'Adrien%20Dufour' }])
+    expect(userName(BOB)).toBe('Adrien Dufour')
+  })
+
   it('адрес на месте имени за имя не считается: короткий адрес, потом ник', async () => {
     getByPRC.mockResolvedValue([{ address: ALICE, name: 'SergiyKir', i: 'https://x/a.jpg' }])
     const label = computed(() => userName(ALICE, ALICE))

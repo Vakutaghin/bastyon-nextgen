@@ -3,7 +3,7 @@
  */
 
 import { computed, type MaybeRefOrGetter, unref } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCall, rpcCallWithAuth } from '@/helpers/api/request'
 import { useRpcQueryWithAuth } from './use-rpc-query'
@@ -81,8 +81,16 @@ export function useUserProfile(address: string | null | undefined, enabled: bool
   })
 }
 
+/** Профилей за один запрос — как у подписей имён (services/user-names). */
+const PROFILES_BATCH = 50
+
 /**
- * Загружает профили нескольких пользователей
+ * Загружает профили нескольких пользователей — лёгкие (`getuserprofile
+ * [адреса, '1']`): имя, аватар, репутация, счётчики. В полном профиле ещё и
+ * все подписчики каждого: 50 полных профилей подписчиков весили 1,8 МБ, а у
+ * старых подписчиков Bastyon_Team нода на них отвечала «sql request timeout»
+ * (02.11.2026), и в окне подписчиков не было ни аватаров, ни репутации.
+ * Пачками по 50; не пришедшая пачка не прячет остальные.
  *
  * @param addresses - Массив адресов или ref/computed (реактивный список)
  * @param enabled - Включен ли запрос
@@ -95,16 +103,35 @@ export function useUserProfiles(addresses: MaybeRefOrGetter<string[]>, enabled: 
   const queryKey = computed(() => ['user', 'profiles', [...addressesRef.value].sort().join(',')])
   return useQuery<UserProfile[]>({
     queryKey,
-    queryFn: () => {
+    queryFn: async () => {
       const addrs = addressesRef.value
-      const params: T_RpcRequestParams = {
-        method: rpcEndpoints.getUserProfile,
-        parameters: [addrs],
-        options: { auth: false },
+      const batches: string[][] = []
+      for (let i = 0; i < addrs.length; i += PROFILES_BATCH) {
+        batches.push(addrs.slice(i, i + PROFILES_BATCH))
       }
-      return rpcCall<UserProfile[]>(params)
+      const results = await Promise.allSettled(
+        batches.map((batch) => {
+          const params: T_RpcRequestParams = {
+            method: rpcEndpoints.getUserProfile,
+            parameters: [batch, '1'],
+            options: { auth: false },
+          }
+          return rpcCall<UserProfile[]>(params)
+        })
+      )
+      const profiles = results.flatMap((r) =>
+        r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : []
+      )
+      if (!profiles.length) {
+        const failed = results.find((r) => r.status === 'rejected')
+        if (failed) throw failed.reason
+      }
+      return profiles
     },
     enabled: computed(() => enabled && addressesRef.value.length > 0),
+    // «Показать ещё» добавляет адреса — прежние аватары не пропадают, пока
+    // грузится новый срез.
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   })

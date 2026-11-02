@@ -6,12 +6,21 @@ export const SC_ExplorerTabs = styled.nav`
   display: flex;
   gap: 4px;
   border-bottom: 1px solid var(--ui-border);
+  /* Четыре вкладки на узком телефоне не помещаются — листаются вбок. */
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `
 
 export const SC_ExplorerTab = styled.a`
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
   padding: 10px 14px;
   margin-bottom: -1px;
   border-bottom: 2px solid transparent;

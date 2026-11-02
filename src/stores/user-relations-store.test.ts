@@ -1,4 +1,4 @@
-// Отношения с другими аккаунтами: блок-лист из getuserprofile и подписки из
+// Отношения с другими аккаунтами: блок-лист из getuserblockings и подписки из
 // getusersubscribes (с опечаткой adddress у ноды и разными видами private),
 // блокировка и подписки — сразу в интерфейсе и откат при отказе сети,
 // блокировка глушит и чат (S43), проверка «заблокировал ли меня автор» (#34)
@@ -54,6 +54,9 @@ function node(opts: {
 }) {
   mocks.rpcCall.mockImplementation(async (req: { method: string; parameters: unknown[] }) => {
     if (req.method === 'getusersubscribes') return opts.subscribes ?? []
+    if (req.method === 'getuserblockings') {
+      return opts.profiles?.[req.parameters[0] as string]?.blocking ?? []
+    }
     const addresses = (req.parameters[0] as string[]) ?? []
     return addresses.map((address) => ({ address, ...(opts.profiles?.[address] ?? {}) }))
   })

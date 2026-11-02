@@ -74,7 +74,7 @@ describe('getRegistrationStatus', () => {
     expect(await getRegistrationStatus()).toBe('registered')
     expect(_rpcCall).toHaveBeenCalledWith({
       method: 'getuserprofile',
-      parameters: [['PUserAddr']],
+      parameters: [['PUserAddr'], '1'],
       options: { auth: false },
     })
   })

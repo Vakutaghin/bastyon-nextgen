@@ -42,6 +42,8 @@ vi.mock('@/pages/block-explorer-page/block-page/block-page.vue', () => page)
 vi.mock('@/pages/block-explorer-page/tx-page/tx-page.vue', () => page)
 vi.mock('@/pages/block-explorer-page/address-page/address-page.vue', () => page)
 vi.mock('@/pages/block-explorer-page/network-page/network-page.vue', () => page)
+vi.mock('@/pages/block-explorer-page/stats-page/stats-page.vue', () => page)
+vi.mock('@/pages/block-explorer-page/wallets-page/wallets-page.vue', () => page)
 vi.mock('@/pages/search-page/search-page.vue', () => page)
 vi.mock('@/pages/mini-apps-page/mini-apps-page.vue', () => page)
 vi.mock('@/pages/mini-app-page/mini-app-page.vue', () => page)
@@ -60,6 +62,8 @@ describe('router: сопоставление путей', () => {
     ['/explorer/tx/abc123', 'explorer-tx'],
     ['/explorer/address/PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM', 'explorer-address'],
     ['/explorer/network', 'explorer-network'],
+    ['/explorer/stats', 'explorer-stats'],
+    ['/explorer/wallets', 'explorer-wallets'],
     ['/search', 'search'],
     ['/miniapps', 'miniapps'],
     ['/post/abc123', 'post'],

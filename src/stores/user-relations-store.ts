@@ -2,7 +2,8 @@
  * Отношения текущего пользователя с другими: блок-лист и подписки (follow).
  *
  * Источник истины — блокчейн:
- *   - блок-лист приходит в `getuserprofile(myAddress).blocking` (string[]);
+ *   - блок-лист — `getuserblockings(myAddress)`: в полном профиле он тоже есть,
+ *     но у крупных блогеров нода полный профиль не успевает собрать;
  *   - подписки — отдельным `getusersubscribes(myAddress)` (legacy psdk.subscribes.load).
  * Стор гидрируется из ноды при init() и оптимистично обновляется при
  * block()/unblock() и subscribe()/subscribePrivate()/unsubscribe(), которые шлют
@@ -20,6 +21,7 @@ import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCall } from '@/helpers/api/request'
+import { fetchUserBlockings } from '@/services/user-blockings'
 import {
   blockUser as blockUserTx,
   unblockUser as unblockUserTx,
@@ -27,7 +29,7 @@ import {
   subscribeUserPrivate as subscribeUserPrivateTx,
   unsubscribeUser as unsubscribeUserTx,
 } from '@/blockchain/core/actions/user-relations-action'
-import type { UserProfile, UserSubscribe } from '@/types/rpc-responses/user-get'
+import type { UserSubscribe } from '@/types/rpc-responses/user-get'
 import { onTransactionSettled } from '@/blockchain/core/transactions/broadcast-events'
 import { usePendingTransactionsStore } from '@/stores/pending-transactions-store'
 import { appToast } from '@/b-components/app-toast'
@@ -316,20 +318,13 @@ export const useUserRelationsStore = defineStore('userRelations', {
       return loading
     },
 
-    /** Перечитывает блок-лист текущего пользователя из getuserprofile. */
+    /** Перечитывает блок-лист текущего пользователя (getuserblockings). */
     async refresh(): Promise<void> {
       const address = useAuthStore().getUserAddress
       if (!address) return
       this.isLoading = true
       try {
-        const arr = await rpcCall<UserProfile[]>({
-          method: rpcEndpoints.getUserProfile,
-          parameters: [[address]],
-          options: { auth: false },
-        })
-        const me = Array.isArray(arr) ? (arr.find((p) => p?.address === address) ?? arr[0]) : null
-        const list = Array.isArray(me?.blocking) ? (me!.blocking as string[]) : []
-        const chain = new Set(list.filter((a): a is string => typeof a === 'string' && !!a))
+        const chain = new Set(await fetchUserBlockings(address))
         this.blocked = new Set(chain)
         // Поверх цепочки — блокировки, ждущие блока.
         channelsOf(this).blocks.reconcile((a) => chain.has(a))
@@ -417,7 +412,7 @@ export const useUserRelationsStore = defineStore('userRelations', {
 
     /**
      * Проверяет, заблокировал ли `authorAddress` текущего пользователя (#34).
-     * Результат кешируется (checkedAuthors), чтобы не дёргать getuserprofile повторно.
+     * Результат кешируется (checkedAuthors), чтобы не спрашивать ноду повторно.
      * Вызывать в момент реальной вовлечённости (фокус composer), а не на каждую карточку ленты.
      */
     async checkBannedBy(authorAddress: string): Promise<void> {
@@ -426,15 +421,7 @@ export const useUserRelationsStore = defineStore('userRelations', {
       if (this.checkedAuthors.has(authorAddress)) return
       this.checkedAuthors.add(authorAddress)
       try {
-        const arr = await rpcCall<UserProfile[]>({
-          method: rpcEndpoints.getUserProfile,
-          parameters: [[authorAddress]],
-          options: { auth: false },
-        })
-        const prof = Array.isArray(arr)
-          ? (arr.find((p) => p?.address === authorAddress) ?? arr[0])
-          : null
-        const blocking = Array.isArray(prof?.blocking) ? (prof!.blocking as string[]) : []
+        const blocking = await fetchUserBlockings(authorAddress)
         if (blocking.includes(me)) this.bannedBy.add(authorAddress)
       } catch (e) {
         this.checkedAuthors.delete(authorAddress) // разрешаем повтор при сетевой ошибке

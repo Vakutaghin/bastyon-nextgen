@@ -28,7 +28,6 @@ import type {
   GetBlockTransactionsResponse,
 } from '@/types/rpc-responses/get-transactions'
 import type { GetAddressInfoResponse } from '@/types/rpc-responses/get-address-info'
-import type { GetStatisticResponse } from '@/types/rpc-responses/get-statistic'
 
 const STALE_TIP = 10_000
 const STALE_FRESH = 30_000
@@ -189,46 +188,6 @@ export function useAddressInfo(address: MaybeRef<string>) {
     queryFn: () => fetchAddressInfo(unref(address)),
     enabled: computed(() => unref(address).length > 0),
     staleTime: STALE_FRESH,
-    refetchOnWindowFocus: false,
-  })
-}
-
-/**
- * Сетевая статистика по часам. `depth` — широкий лимит, `hours` — сколько последних
- * часов берём. Под капотом параметры nodе: [depth=9999999, hours=N].
- * staleTime длиннее, чем у tip — статистика по прошлым часам не меняется.
- */
-export function useStatsByHours(hours: MaybeRef<number> = 48) {
-  return useQuery<GetStatisticResponse>({
-    queryKey: ['explorer', 'stats-hours', hours] as const,
-    queryFn: () =>
-      getByPRC(
-        {
-          method: rpcEndpoints.getStatisticByHours,
-          parameters: [9_999_999, unref(hours)],
-          options: { auth: false },
-        },
-        getExplorerRpcConfig()
-      ) as Promise<GetStatisticResponse>,
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-  })
-}
-
-/** Сетевая статистика по дням. По умолчанию 30 дней. */
-export function useStatsByDays(days: MaybeRef<number> = 30) {
-  return useQuery<GetStatisticResponse>({
-    queryKey: ['explorer', 'stats-days', days] as const,
-    queryFn: () =>
-      getByPRC(
-        {
-          method: rpcEndpoints.getStatisticByDays,
-          parameters: [9_999_999, unref(days)],
-          options: { auth: false },
-        },
-        getExplorerRpcConfig()
-      ) as Promise<GetStatisticResponse>,
-    staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   })
 }

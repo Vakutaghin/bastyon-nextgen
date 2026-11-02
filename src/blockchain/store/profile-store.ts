@@ -88,9 +88,12 @@ export const useProfileStore = defineStore('profile', {
             cachehash,
             options: { auth: true },
           }) as Promise<GetUserStateResponse>,
+          // Лёгкий профиль (`'1'`): имя, аватар, счётчики. Полный несёт ещё всех
+          // подписчиков, у крупного блогера нода его не успевает собрать —
+          // и вошедший видел себя без имени и аватара (02.11.2026).
           getByPRCWithAuth({
             method: rpcEndpoints.getUserProfile,
-            parameters: [[address]],
+            parameters: [[address], '1'],
             cachehash,
             options: { auth: true },
           }) as Promise<GetUserProfileResponse>,
@@ -173,7 +176,7 @@ export const useProfileStore = defineStore('profile', {
     },
 
     /**
-     * Загружает профиль пользователя через getuserprofile
+     * Загружает лёгкий профиль пользователя через getuserprofile
      */
     async fetchUserProfile(targetAddress: Address): Promise<UserProfile | null> {
       if (!targetAddress) return null
@@ -184,7 +187,7 @@ export const useProfileStore = defineStore('profile', {
 
         const response = (await getByPRCWithAuth({
           method: rpcEndpoints.getUserProfile,
-          parameters: [[targetAddress]],
+          parameters: [[targetAddress], '1'],
           options: { auth: true },
         })) as GetUserProfileResponse
 

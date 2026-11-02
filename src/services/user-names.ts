@@ -26,6 +26,7 @@ import { t } from '@/i18n'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { safeDecode } from '@/helpers/content/safe-decode'
 
 /** Профиль в любом виде, в каком его присылает нода. */
 export interface ProfileLike {
@@ -94,7 +95,7 @@ export function rememberUsers(profiles: Iterable<ProfileLike | null | undefined>
     }
     const known = users.get(address)
     const badges = badgesOf(profile) ?? known?.badges
-    const name = typeof profile.name === 'string' ? profile.name.trim() : ''
+    const name = decodeName(profile.name)
     if (!name) {
       // Аккаунт без имени: запоминаем хотя бы бейджи.
       if (badges && !sameBadges(badges, known?.badges)) users.set(address, { ...known, badges })
@@ -228,9 +229,16 @@ export async function preloadUserNames(
 }
 
 /** Имя, пришедшее с данными: адрес на месте имени за имя не считается. */
+/**
+ * Имя из профиля. Нода отдаёт его как записано в транзакции, часть имён —
+ * URL-кодированными («Just%20Saying»): старый клиент их раскодировал.
+ */
+function decodeName(raw: unknown): string {
+  return typeof raw === 'string' ? safeDecode(raw).trim() : ''
+}
+
 function knownName(address: string, known: string | ProfileLike | null | undefined): string {
-  const raw = typeof known === 'string' ? known : known?.name
-  const name = typeof raw === 'string' ? raw.trim() : ''
+  const name = decodeName(typeof known === 'string' ? known : known?.name)
   return name && name !== address ? name : ''
 }
 

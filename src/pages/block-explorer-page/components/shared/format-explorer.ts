@@ -12,7 +12,11 @@ const PKOIN_LOCALE = 'en-US'
 export function formatExplorerPkoin(value: number | null | undefined, maxDecimals = 8): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—'
   if (value === 0) return '0'
-  const fixed = value.toFixed(maxDecimals).replace(/\.?0+$/, '')
+  // Хвостовые нули — только у дробной части: при 0 знаков «1000» становилось «1».
+  const fixed = value
+    .toFixed(maxDecimals)
+    .replace(/(\.\d*?)0+$/, '$1')
+    .replace(/\.$/, '')
   // Разделитель тысяч в целой части.
   const [int, frac] = fixed.split('.')
   const intWithSeparators = new Intl.NumberFormat(PKOIN_LOCALE).format(Number(int))

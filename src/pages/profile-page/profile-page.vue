@@ -217,24 +217,13 @@ async function fetchUserProfile(identifier: string): Promise<void> {
         void refreshOwnProfile(address)
       }
     } else {
-      const profileResponse = (await getByPRCWithAuth({
-        method: rpcEndpoints.getUserProfile,
-        parameters: [[address]],
-        options: { auth: false },
-      })) as { data?: UserProfile[] } | UserProfile[]
-
-      if (
-        !Array.isArray(profileResponse) &&
-        profileResponse?.data &&
-        profileResponse.data.length > 0
-      ) {
-        profile.value = profileResponse.data[0]
-      } else if (Array.isArray(profileResponse) && profileResponse.length > 0) {
-        // Legacy-формат: массив напрямую вместо { data: [...] }.
-        profile.value = profileResponse[0]
-      } else {
-        profile.value = { address, name: identifier, hash: '', id: 0 }
+      profile.value = (await requestProfile(address, true)) ?? {
+        address,
+        name: identifier,
+        hash: '',
+        id: 0,
       }
+      void loadPublicationCounts(address)
     }
 
     // Догружаем accSet (обложка, кастомные настройки аккаунта). Это опционально —
@@ -255,15 +244,43 @@ async function fetchUserProfile(identifier: string): Promise<void> {
   }
 }
 
+/**
+ * Профиль с ноды. Страница открывается по лёгкому (`'1'`): имя, аватар,
+ * счётчики. Полный несёт ещё всех подписчиков и подписки — у Bastyon_Team
+ * нода его не успевает собрать ни разу, у основателя это 2,8 МБ за 14 с
+ * (02.11.2026), и профиль крупного блогера не открывался.
+ */
+async function requestProfile(address: string, light: boolean): Promise<UserProfile | null> {
+  const response = (await getByPRCWithAuth({
+    method: rpcEndpoints.getUserProfile,
+    parameters: light ? [[address], '1'] : [[address]],
+    options: { auth: false },
+  })) as { data?: UserProfile[] } | UserProfile[]
+  // Legacy-формат: массив напрямую вместо { data: [...] }.
+  return (Array.isArray(response) ? response[0] : response?.data?.[0]) ?? null
+}
+
+/**
+ * Точное число публикаций — сумма `content` по типам, а он есть только в
+ * полном профиле: догружаем его фоном. Не пришёл — остаётся `postcnt`.
+ */
+async function loadPublicationCounts(address: string): Promise<void> {
+  try {
+    const full = await requestProfile(address, false)
+    // Пока шёл запрос, могли открыть другой профиль.
+    if (full?.content && userAddress.value === address && profile.value) {
+      profile.value = { ...profile.value, content: full.content }
+    }
+  } catch (e) {
+    console.warn('[profile] publication counts failed', e)
+  }
+}
+
 /** Свежий профиль с ноды — поверх снимка из auth-store (своя страница). */
 async function refreshOwnProfile(address: string): Promise<void> {
+  void loadPublicationCounts(address)
   try {
-    const response = (await getByPRCWithAuth({
-      method: rpcEndpoints.getUserProfile,
-      parameters: [[address]],
-      options: { auth: false },
-    })) as { data?: UserProfile[] } | UserProfile[]
-    const fresh = Array.isArray(response) ? response[0] : response?.data?.[0]
+    const fresh = await requestProfile(address, true)
     // Пока шёл запрос, могли открыть другой профиль.
     if (fresh && userAddress.value === address && profile.value) {
       // Пока правка профиля не в блоке, нода отдаёт прежние имя и аватар.

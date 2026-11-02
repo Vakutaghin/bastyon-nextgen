@@ -85,7 +85,8 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
       try {
         const result = await getByPRC({
           method: rpcEndpoints.getUserProfile,
-          parameters: [[...batch]],
+          // Лёгкие профили: имя, аватар и ключи шифрования (`k`) в них есть.
+          parameters: [[...batch], '1'],
           cachehash: Date.now().toString() + Math.random().toString(),
         })
 

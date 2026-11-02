@@ -1,5 +1,5 @@
 ---
-keywords: [explorer, blockchain explorer, block, transaction, txid, address, peers, node network, network map, nodes by country, proxy, thin client, thick client, full node, pruned node, diagnostics, on blockchain]
+keywords: [explorer, blockchain explorer, block, transaction, txid, address, statistics, charts, period, wallets, balances, large wallets, staking, emission, difficulty, new accounts, peers, node network, network map, nodes by country, proxy, thin client, thick client, full node, pruned node, diagnostics, on blockchain]
 ---
 
 # Blockchain explorer
@@ -8,14 +8,51 @@ How to look at the network’s blocks, transactions, addresses and the whole nod
 
 ## Overview
 
-Open **“Blockchain explorer”** in the left panel — or [straight from here](bastyon://explorer). The explorer runs on the same nodes as the rest of the app and does not redirect you anywhere. It has two tabs: **“Overview”** — blocks and transactions, **“Network”** — nodes, proxies and the network map.
+Open **“Blockchain explorer”** in the left panel — or [straight from here](bastyon://explorer). The explorer runs on the same nodes as the rest of the app and does not redirect you anywhere. It has four tabs:
+
+- **“Overview”** — blocks and transactions;
+- **“Statistics”** — network charts for the period you choose;
+- **“Wallets”** — large wallets with their balances, and active addresses;
+- **“Network”** — nodes, proxies and the network map.
 
 The **“Overview”** tab shows:
 
 - the latest block height, **“Emission”** — how many PKOIN are in circulation, **“Node version”**, and Net stake weight — how many coins everyone producing blocks holds in staking: the higher, the more secure the network;
-- **“Latest blocks”**. The live mark means new blocks arrive by themselves; offline means the connection is being restored;
-- **“Network activity”** — how many transactions there were over 48 hours or 30 days, by kind: content, ratings, subscriptions, accounts, moderation and other;
-- **“Active addresses”** — the addresses that appeared most often in recent blocks.
+- **“Network activity”** — how many transactions there were in the chosen period, by kind. The period is the same as on the [“Statistics”](#statistics) tab;
+- **“Latest blocks”**. The live mark means new blocks arrive by themselves; offline means the connection is being restored.
+
+## Statistics
+
+Above the charts is the period: **“48 h”**, **“7 d”**, **“30 d”**, **“6 mo”**, **“1 year”**, **“2 years”**, **“3 years”**, **“All time”** or **“Custom”** — “from” and “to” dates. Next to it is the chart step: hours, days, weeks or months, only those that suit the period. Weeks and months show the daily average, so an incomplete week does not dip. The app remembers the period you chose.
+
+- **“Network activity”** — transactions by kind: publications, comments, ratings, subscriptions, profiles, transfers and other (Barteron and post boosts).
+- **“Publications by kind”** — posts, videos, articles, audio, streams and collections.
+- **“Engagement”** — how many comments, post ratings and subscriptions there are per publication.
+- **“PKOIN transfers”** — coin transfers between wallets, without staking rewards.
+- **“New accounts”** — sign-ups by day and how many accounts the network has in total.
+- **“When the network is active”** — how many transactions there were in each hour of the week, in your local time.
+- **“PKOIN issued”** and **“Staking difficulty”** — from blocks picked evenly across the period. The higher the difficulty, the more coins are staking.
+
+The legend items under a chart are toggles: a click hides a kind or brings it back, a double-click leaves only that kind. Hover over a chart to see the values of every kind at that point; on the keyboard, use the left and right arrows. **“Table”** shows the same numbers without the chart.
+
+The node does not compute long periods in one go, so the app gathers them 10 days at a time — above the chart you can see how many parts have arrived, and the chart fills in as they come. A year takes about half a minute, **“All time”** a couple of minutes. Past days never change, and the app keeps them on the device: the second time, the same period opens at once. If a part did not arrive, **“Retry”** appears above the chart.
+
+<details>
+<summary>What the statistics do not include</summary>
+
+The nodes do not count every kind of transaction: unsubscribes, blocks and moderation are not in their statistics. The node returns the current day only once it is over. By the hour it returns no more than the last 7 days, so the “hours” step exists only for short periods. Accounts are also counted only for the last 7 days — **“New accounts”** and **“When the network is active”** always show the last week.
+
+</details>
+
+## Wallets
+
+**“Large wallets”** — wallets with their balances, largest first, with their share of all PKOIN issued. The green “staking” mark says how many of the last 100 blocks this wallet produced: in staking, the more coins a wallet has, the more often it gets a block. The **“active address”** mark means the address appeared often in recent blocks.
+
+The network has no complete list of all wallets by balance: Pocketnet nodes cannot return addresses ordered by balance. So the list holds the wallets that produced the latest blocks and the most active addresses. Wallets that do not stake — exchanges and cold storage, for example — are not in it. You can look up the balance of any address with the explorer search.
+
+The first time, the list takes about a minute to gather: the app asks about every block and every balance. Who produced a block never changes, and the app remembers it — next time only new blocks are checked.
+
+Below is **“Active addresses”**: the addresses that appeared most often in recent blocks.
 
 ## Search
 

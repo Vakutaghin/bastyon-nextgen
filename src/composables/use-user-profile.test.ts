@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   rpcCallWithAuth: vi.fn(),
 }))
 vi.mock('@tanstack/vue-query', () => ({
+  keepPreviousData: 'keep-previous',
   useQuery: (options: QueryOptions) => {
     mocks.query = options
     return { data: shallowRef(undefined) }
@@ -123,9 +124,26 @@ describe('профили', () => {
     useUserProfiles(() => list.addrs)
     expect(mocks.query!.queryKey.value).toEqual(['user', 'profiles', 'PA,PB'])
     await mocks.query!.queryFn()
-    expect(mocks.rpcCall.mock.lastCall![0].parameters).toEqual([['PB', 'PA']])
+    expect(mocks.rpcCall.mock.lastCall![0].parameters).toEqual([['PB', 'PA'], '1'])
     list.addrs = []
     expect(mocks.query!.enabled.value).toBe(false)
+  })
+
+  it('useUserProfiles: лёгкие профили пачками по 50, не пришедшая пачка не прячет остальные', async () => {
+    const addrs = Array.from({ length: 120 }, (_, i) => `P${i}`)
+    useUserProfiles(() => addrs)
+    mocks.rpcCall.mockReset()
+    mocks.rpcCall.mockImplementation(async ({ parameters }: { parameters: [string[]] }) => {
+      if (parameters[0][0] === 'P50') throw new Error('sql request timeout')
+      return parameters[0].map((address) => ({ address }))
+    })
+    const profiles = (await mocks.query!.queryFn()) as Array<{ address: string }>
+    expect(mocks.rpcCall.mock.calls.map((c) => c[0].parameters[0].length)).toEqual([50, 50, 20])
+    expect(mocks.rpcCall.mock.calls.every((c) => c[0].parameters[1] === '1')).toBe(true)
+    expect(profiles).toHaveLength(70)
+
+    mocks.rpcCall.mockRejectedValue(new Error('down'))
+    await expect(mocks.query!.queryFn()).rejects.toThrow('down')
   })
 
   it('состояние и текущий профиль следуют за сменой аккаунта (S5), только для вошедшего', () => {

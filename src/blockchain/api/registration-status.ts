@@ -72,7 +72,9 @@ export async function getRegistrationStatus(): Promise<RegistrationStatus> {
         Array<{ address?: string; id?: number; name?: string; hash?: string }>
       >({
         method: rpcEndpoints.getUserProfile,
-        parameters: [[address]], // getuserprofile принимает массив адресов в массиве параметров
+        // Лёгкий профиль (`'1'`): для проверки хватает, а полный несёт всех
+        // подписчиков — у крупных блогеров нода его не успевает собрать.
+        parameters: [[address], '1'],
         options: { auth: false },
       })
 

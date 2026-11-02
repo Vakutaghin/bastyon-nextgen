@@ -7,6 +7,13 @@ describe('formatExplorerPkoin', () => {
     expect(formatExplorerPkoin(1.0)).toBe('1')
   })
 
+  it('keeps zeros of the integer part with no decimals', () => {
+    expect(formatExplorerPkoin(1000, 0)).toBe('1,000')
+    expect(formatExplorerPkoin(1000.4, 0)).toBe('1,000')
+    expect(formatExplorerPkoin(120.5, 2)).toBe('120.5')
+    expect(formatExplorerPkoin(100, 2)).toBe('100')
+  })
+
   it('uses thousand separators in integer part', () => {
     expect(formatExplorerPkoin(1234567)).toBe('1,234,567')
     expect(formatExplorerPkoin(1234567.89)).toBe('1,234,567.89')

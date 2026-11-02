@@ -1,236 +1,60 @@
 <template>
-  <SC_StatsCard>
-    <SC_StatsHeader>
-      <SC_StatsTitleGroup>
-        <SC_StatsTitle>{{ t('explorerPage.statsTitle') }}</SC_StatsTitle>
-        <SC_StatsSubtitle>
-          {{ subtitle }}
-        </SC_StatsSubtitle>
-      </SC_StatsTitleGroup>
-      <SC_StatsToggle role="tablist">
-        <SC_StatsToggleBtn
-          type="button"
-          :class="{ active: granularity === 'hours' }"
-          @click="granularity = 'hours'"
-        >
-          {{ t('explorerPage.statsToggleHours') }}
-        </SC_StatsToggleBtn>
-        <SC_StatsToggleBtn
-          type="button"
-          :class="{ active: granularity === 'days' }"
-          @click="granularity = 'days'"
-        >
-          {{ t('explorerPage.statsToggleDays') }}
-        </SC_StatsToggleBtn>
-      </SC_StatsToggle>
-    </SC_StatsHeader>
-
-    <SC_StatsPlaceholder v-if="isLoading">{{ t('explorerPage.loading') }}</SC_StatsPlaceholder>
-    <SC_StatsPlaceholder v-else-if="error">{{ t('explorerPage.statsError') }}</SC_StatsPlaceholder>
-    <SC_StatsPlaceholder v-else-if="!points.length">{{
-      t('explorerPage.statsEmpty')
-    }}</SC_StatsPlaceholder>
-    <SC_ChartHost v-else ref="hostRef">
-      <svg ref="svgRef" :viewBox="`0 0 ${WIDTH} ${HEIGHT}`" preserveAspectRatio="none" />
-    </SC_ChartHost>
-
-    <SC_Legend v-if="points.length">
-      <SC_LegendItem v-for="cat in CATEGORIES" :key="cat.key">
-        <SC_LegendDot :style="{ background: cat.color }" />
-        <span>{{ t(cat.labelKey) }}</span>
-      </SC_LegendItem>
-    </SC_Legend>
-  </SC_StatsCard>
+  <SC_ActivityBlock>
+    <StatsPeriodBar />
+    <StatsChart
+      :title="t('explorerPage.statsTitle')"
+      :subtitle="subtitle"
+      :info="t('explorerStats.activityInfo')"
+      :points="activity.points.value"
+      :series="activity.series.value"
+      kind="stack"
+      :granularity="period.granularity.value"
+      :digits="perDay ? 1 : 0"
+      :unit-hint="perDay ? t('explorerStats.perDay') : ''"
+      :loading="stats.loading.value"
+      :progress="stats.progress.value"
+      :failed="stats.failed.value"
+      :error="stats.error.value"
+      :height="280"
+      @retry="stats.retry"
+    >
+      <template #tools>
+        <RouterLink v-slot="{ href, navigate }" custom :to="{ name: 'explorer-stats' }">
+          <SC_SectionLink :href="href" @click="navigate">{{
+            t('explorerStats.allStats')
+          }}</SC_SectionLink>
+        </RouterLink>
+      </template>
+    </StatsChart>
+  </SC_ActivityBlock>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, nextTick } from 'vue'
+// «Активность сети» на «Обзоре»: те же период и данные, что на вкладке
+// «Статистика», только один график.
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import * as d3 from 'd3'
-import { useStatsByHours, useStatsByDays } from '@/composables/use-block-explorer-queries'
-import { aggregateStats, sumTotals, type StatsPoint } from './aggregate-stats'
-import {
-  SC_StatsCard,
-  SC_StatsHeader,
-  SC_StatsTitleGroup,
-  SC_StatsTitle,
-  SC_StatsSubtitle,
-  SC_StatsToggle,
-  SC_StatsToggleBtn,
-  SC_ChartHost,
-  SC_Legend,
-  SC_LegendItem,
-  SC_LegendDot,
-  SC_StatsPlaceholder,
-} from './network-stats-chart.styled'
+import { RouterLink } from 'vue-router'
+import StatsChart from '../stats-chart/stats-chart.vue'
+import StatsPeriodBar from '../stats-period-bar/stats-period-bar.vue'
+import { ACTIVITY_SERIES } from '../../stats/stats-model'
+import { formatValue } from '../../stats/chart-format'
+import { useStatsCharts } from '../../stats/use-stats-charts'
+import { SC_SectionLink } from '../../block-explorer-page.styled'
+import { SC_ActivityBlock } from '../../stats-page/stats-page.styled'
 
 defineOptions({ name: 'NetworkStatsChart' })
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const { period, stats, perDay, days, total, chart } = useStatsCharts()
+const activity = chart(ACTIVITY_SERIES)
 
-const WIDTH = 1200
-const HEIGHT = 280
-const MARGIN = { top: 12, right: 12, bottom: 28, left: 44 }
-
-interface CategorySpec {
-  key: keyof Pick<
-    StatsPoint,
-    'content' | 'ratings' | 'subscriptions' | 'accounts' | 'moderation' | 'other'
-  >
-  labelKey: string
-  color: string
-}
-
-// Серии — разными цветами палитры. Оценки — зелёным «успехом», а не акцентом:
-// в светлой теме акцент синий и сливался бы с контентом (info).
-const CATEGORIES: CategorySpec[] = [
-  { key: 'content', labelKey: 'explorerPage.statsLegendContent', color: 'var(--ui-info)' },
-  { key: 'ratings', labelKey: 'explorerPage.statsLegendRatings', color: 'var(--ui-success)' },
-  {
-    key: 'subscriptions',
-    labelKey: 'explorerPage.statsLegendSubscriptions',
-    color: 'var(--ui-warning)',
-  },
-  { key: 'accounts', labelKey: 'explorerPage.statsLegendAccounts', color: 'var(--ui-violet)' },
-  { key: 'moderation', labelKey: 'explorerPage.statsLegendModeration', color: 'var(--ui-pink)' },
-  { key: 'other', labelKey: 'explorerPage.statsLegendOther', color: 'var(--ui-text-dimmed)' },
-]
-
-const granularity = ref<'hours' | 'days'>('hours')
-
-const hoursQuery = useStatsByHours(48)
-const daysQuery = useStatsByDays(30)
-
-const isLoading = computed(() =>
-  granularity.value === 'hours' ? hoursQuery.isLoading.value : daysQuery.isLoading.value
+const subtitle = computed(() =>
+  total.value
+    ? t('explorerStats.activitySubtitle', {
+        total: formatValue(total.value, locale.value),
+        perDay: formatValue(days.value ? total.value / days.value : 0, locale.value),
+      })
+    : ''
 )
-const error = computed(() =>
-  granularity.value === 'hours' ? hoursQuery.error.value : daysQuery.error.value
-)
-
-const points = computed<StatsPoint[]>(() => {
-  const q = granularity.value === 'hours' ? hoursQuery : daysQuery
-  return aggregateStats(q.data.value?.data)
-})
-
-const subtitle = computed(() => {
-  const n = points.value.length
-  const total = sumTotals(points.value)
-  if (!n) return ''
-  const unit =
-    granularity.value === 'hours'
-      ? t('explorerPage.statsUnitHours', { n })
-      : t('explorerPage.statsUnitDays', { n })
-  return t('explorerPage.statsSubtitle', { total: total.toLocaleString('en-US'), unit })
-})
-
-const svgRef = ref<SVGSVGElement | null>(null)
-const hostRef = ref<HTMLElement | null>(null)
-
-function renderChart() {
-  const svgEl = svgRef.value
-  const pts = points.value
-  if (!svgEl || !pts.length) return
-
-  const svg = d3.select(svgEl)
-  svg.selectAll('*').remove()
-
-  const innerW = WIDTH - MARGIN.left - MARGIN.right
-  const innerH = HEIGHT - MARGIN.top - MARGIN.bottom
-
-  const g = svg.append('g').attr('transform', `translate(${MARGIN.left}, ${MARGIN.top})`)
-
-  // X — индекс точки 0..N-1, шкала линейная для красивого area-плотного рисунка.
-  const x = d3
-    .scaleLinear()
-    .domain([0, pts.length - 1])
-    .range([0, innerW])
-
-  const stackKeys = CATEGORIES.map((c) => c.key)
-  const stackGen = d3
-    .stack<StatsPoint, string>()
-    .keys(stackKeys)
-    .value((d, key) => (d as unknown as Record<string, number>)[key] ?? 0)
-  const series = stackGen(pts)
-
-  const yMax = d3.max(series, (s) => d3.max(s, (p) => p[1])) ?? 0
-  const y = d3.scaleLinear().domain([0, yMax]).nice().range([innerH, 0])
-
-  const area = d3
-    .area<d3.SeriesPoint<StatsPoint>>()
-    .x((_, i) => x(i))
-    .y0((d) => y(d[0]))
-    .y1((d) => y(d[1]))
-    .curve(d3.curveMonotoneX)
-
-  const colorOf = (key: string) =>
-    CATEGORIES.find((c) => c.key === key)?.color ?? 'var(--ui-text-dimmed)'
-
-  g.selectAll('path.layer')
-    .data(series)
-    .join('path')
-    .attr('class', 'layer')
-    .attr('d', area)
-    // var() в SVG-атрибуте понимают не все движки — цвет через style.
-    .style('fill', (d) => colorOf(d.key as string))
-    .attr('fill-opacity', 0.85)
-    .attr('stroke', 'none')
-
-  // Y-axis с минимальной разметкой.
-  const yAxis = d3
-    .axisLeft(y)
-    .ticks(4)
-    .tickFormat((v) => d3.format('~s')(v as number))
-    .tickSize(-innerW)
-
-  g.append('g')
-    .attr('class', 'y-axis')
-    .call(yAxis)
-    .call((sel) => sel.select('.domain').remove())
-    // Цвета осей и сетки — из токенов темы (через style: в SVG-атрибуте var()
-    // поддерживается не везде). Светлая сетка #e9ecef в тёмной теме слепила (N39).
-    .call((sel) =>
-      sel.selectAll('text').style('fill', 'var(--color-text-secondary)').style('font-size', '11px')
-    )
-    .call((sel) =>
-      sel
-        .selectAll('line')
-        .style('stroke', 'var(--color-border-lighter)')
-        .attr('stroke-dasharray', '2,2')
-    )
-
-  // X-axis: «N{ч|д} назад» каждый ~6-й тик.
-  const step = Math.max(1, Math.ceil(pts.length / 6))
-  const xTickIdxs = pts.map((_, i) => i).filter((i) => i % step === 0 || i === pts.length - 1)
-
-  const xAxisG = g.append('g').attr('class', 'x-axis').attr('transform', `translate(0, ${innerH})`)
-
-  xAxisG
-    .selectAll('text.tick')
-    .data(xTickIdxs)
-    .join('text')
-    .attr('class', 'tick')
-    .attr('x', (i) => x(i))
-    .attr('y', 18)
-    .attr('text-anchor', 'middle')
-    .style('fill', 'var(--color-text-secondary)')
-    .style('font-size', '11px')
-    .text((i) => {
-      const fromEnd = pts.length - 1 - i
-      if (fromEnd === 0) return t('explorerPage.statsXTickNow')
-      const suffix =
-        granularity.value === 'hours'
-          ? t('explorerPage.statsUnitSuffixHours')
-          : t('explorerPage.statsUnitSuffixDays')
-      return `-${fromEnd}${suffix}`
-    })
-}
-
-onMounted(() => {
-  nextTick(renderChart)
-})
-
-watch([points, granularity], () => {
-  nextTick(renderChart)
-})
 </script>

@@ -24,6 +24,9 @@ const ExplorerAddressPage = () =>
   import('@/pages/block-explorer-page/address-page/address-page.vue')
 const ExplorerNetworkPage = () =>
   import('@/pages/block-explorer-page/network-page/network-page.vue')
+const ExplorerStatsPage = () => import('@/pages/block-explorer-page/stats-page/stats-page.vue')
+const ExplorerWalletsPage = () =>
+  import('@/pages/block-explorer-page/wallets-page/wallets-page.vue')
 const SearchPage = () => import('@/pages/search-page/search-page.vue')
 const TopAccountsPage = () => import('@/pages/top-accounts-page/top-accounts-page.vue')
 const MiniAppsPage = () => import('@/pages/mini-apps-page/mini-apps-page.vue')
@@ -142,6 +145,18 @@ const router = createRouter({
       name: 'explorer-network',
       component: ExplorerNetworkPage,
       meta: { titleKey: 'routes.explorer-network', helpTopic: 'explorer' },
+    },
+    {
+      path: '/explorer/stats',
+      name: 'explorer-stats',
+      component: ExplorerStatsPage,
+      meta: { titleKey: 'routes.explorer-stats', helpTopic: 'explorer' },
+    },
+    {
+      path: '/explorer/wallets',
+      name: 'explorer-wallets',
+      component: ExplorerWalletsPage,
+      meta: { titleKey: 'routes.explorer-wallets', helpTopic: 'explorer' },
     },
     // Прежняя страница «Пиры сети» — теперь вкладка «Сеть».
     { path: '/explorer/peers', redirect: { name: 'explorer-network' } },

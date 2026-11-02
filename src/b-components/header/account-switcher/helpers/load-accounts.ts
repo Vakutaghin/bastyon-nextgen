@@ -82,7 +82,8 @@ export async function loadAccounts(ctx: LoadAccountsContext): Promise<AccountDis
   try {
     const response = (await getByPRCWithAuth({
       method: rpcEndpoints.getUserProfile,
-      parameters: [addressesToFetch],
+      // Лёгкие профили: здесь нужны имя и аватар.
+      parameters: [addressesToFetch, '1'],
       cachehash: freshCacheHash(),
       options: { auth: false },
     })) as GetUserProfileResponse

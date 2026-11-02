@@ -48,7 +48,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import { BlockOutlined, ApartmentOutlined } from '@/components/icons'
+import { BlockOutlined, ApartmentOutlined, StatsIcon, WalletOutlined } from '@/components/icons'
 import { useNodeInfo } from '@/composables/use-block-explorer-queries'
 import { useExplorerWsUpdates } from '@/composables/use-explorer-ws-updates'
 import { formatTimeAgo } from '@/helpers/common/date-formatter'
@@ -68,6 +68,8 @@ const { t } = useI18n()
 
 const TABS = [
   { name: 'explorer', labelKey: 'explorerPage.tabOverview', icon: BlockOutlined },
+  { name: 'explorer-stats', labelKey: 'explorerPage.tabStats', icon: StatsIcon },
+  { name: 'explorer-wallets', labelKey: 'explorerPage.tabWallets', icon: WalletOutlined },
   { name: 'explorer-network', labelKey: 'explorerPage.tabNetwork', icon: ApartmentOutlined },
 ] as const
 

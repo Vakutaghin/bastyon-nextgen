@@ -52,8 +52,6 @@
 
       <NetworkStatsChart />
 
-      <TopAddressesCard />
-
       <SC_ExplorerGrid>
         <SC_SectionCard>
           <SC_SectionHeader>
@@ -145,7 +143,6 @@ import { RouterLink } from 'vue-router'
 import { useNodeInfo, useCoinInfo, useLastBlocks } from '@/composables/use-block-explorer-queries'
 import ExplorerHeader from './components/explorer-header/explorer-header.vue'
 import NetworkStatsChart from './components/network-stats-chart/network-stats-chart.vue'
-import TopAddressesCard from './components/top-addresses/top-addresses-card.vue'
 import HashLink from './components/shared/hash-link.vue'
 import InfoTooltip from './components/shared/info-tooltip.vue'
 import ExplorerError from './components/shared/explorer-error.vue'

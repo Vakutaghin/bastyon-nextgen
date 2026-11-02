@@ -6,6 +6,8 @@ export const rpcEndpoints = {
   getUserAddress: 'getuseraddress',
   getUserSubscribes: 'getusersubscribes',
   getUserSubscribers: 'getusersubscribers',
+  /** Кого адрес заблокировал — без полного профиля, где этот список лежит вместе со всеми подписчиками. */
+  getUserBlockings: 'getuserblockings',
   getRecommendedAccountByAddress: 'getrecommendedaccountbyaddress',
   getTopAccounts: 'gettopaccounts',
   searchUsers: 'searchusers',
