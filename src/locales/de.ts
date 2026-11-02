@@ -378,6 +378,7 @@ export default {
     apply: 'Übernehmen',
     cancel: 'Abbrechen',
     torBridges: 'Bridges',
+    networkHint: 'Wie Anfragen laufen, solange Tor aus ist.',
     torBridgesNone: 'Keine Bridges',
     torBridgesObfs4: 'obfs4 (integriert)',
     torBridgesCustom: 'Eigene Bridges',
@@ -3894,6 +3895,10 @@ export default {
     listen: 'Anhören',
     watchNamed: '„{name}“ ansehen',
     listenNamed: '„{name}“ anhören',
+    copyLink: 'Link kopieren',
+    postLinkCopied: 'Link zum Beitrag kopiert',
+    videoLinkCopied: 'Link zum Video auf dem Videoserver kopiert',
+    copyLinkFailed: 'Link konnte nicht kopiert werden',
     deleteTitle: 'Video löschen?',
     deletePosted:
       'Das Video wird vom Videoserver gelöscht. Beiträge damit behalten nur ihren Text – das Video spielt nicht mehr. Das lässt sich nicht rückgängig machen.',

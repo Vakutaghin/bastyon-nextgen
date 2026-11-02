@@ -38,17 +38,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Tooltip } from 'ant-design-vue'
 import { InfoCircleOutlined } from '@/components/icons'
-import {
-  connectionRoute,
-  setConnectionMode,
-  type ConnectionMode,
-} from '@/helpers/api/direct-nodes/connection-route'
-import { connectionState as state } from '@/helpers/api/direct-nodes/connection-state'
-import { useTorStore } from '@/stores/tor-store'
+import { connectionRoute } from '@/helpers/api/direct-nodes/connection-route'
+import { CONNECTION_MODES as MODES, useConnectionMode } from '@/composables/use-connection-mode'
 import {
   SC_ScaleButton,
   SC_ScaleRow,
@@ -63,23 +58,8 @@ import {
   SC_InfoButton,
 } from './connection-mode-section.styled'
 
-const MODES: readonly ConnectionMode[] = ['auto', 'proxy', 'direct']
-
 const { t } = useI18n()
-const tor = useTorStore()
-const torOn = computed(() => tor.wantsTor)
-
-const status = computed(() => {
-  if (torOn.value) return t('settings.network.statusTor')
-  if (state.route === null) return t('settings.network.statusChecking')
-  if (state.route === 'proxy') return t('settings.network.statusProxy')
-  if (state.selecting && !state.nodes) return t('settings.network.statusSearching')
-  if (!state.nodes && state.selectFailed) return t('settings.network.statusNoNodes')
-  if (!state.nodes) return t('settings.network.statusSearching')
-  return state.mode === 'auto'
-    ? t('settings.network.statusAutoDirect', { n: state.nodes })
-    : t('settings.network.statusDirect', { n: state.nodes })
-})
+const { state, torOn, status, setConnectionMode } = useConnectionMode()
 
 onMounted(() => {
   void connectionRoute().catch(() => {})

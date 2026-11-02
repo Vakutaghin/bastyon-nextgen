@@ -8,7 +8,7 @@ How to hide your IP address from nodes and chat servers: turn on Tor in the app,
 
 ## Turning it on
 
-Tor is in the desktop app and on Android; the browser and iPhone do not have it. Click the Tor icon in the header and flip the switch. The first time, the app explains what goes through Tor — press **“Enable”**.
+Tor is in the desktop app and on Android; the browser and iPhone do not have it. Click the Tor icon in the header and flip the switch. The block above it, **“Network connection”**, is about working without Tor: [proxy or direct to nodes](network.md#proxy-or-direct-to-nodes); while Tor is on, that choice has no effect. The first time, the app explains what goes through Tor — press **“Enable”**.
 
 On a computer, Tor is downloaded the first time — about 20 MB. The app takes it from its own mirror on GitHub or, if it is not there, from the Tor Project site, and checks it against the checksum built into the app. When a new app version ships a newer Tor, the previous one keeps working: the new one downloads through it in the background and takes over the next time you turn Tor on. On Android, Tor is already built into the app. Then Tor connects to its network — the menu shows how far along it is and through which bridges, and once done, **“Connected to the Tor network”**.
 

@@ -373,6 +373,7 @@ export default {
     apply: 'Apply',
     cancel: 'Cancel',
     torBridges: 'Bridges',
+    networkHint: 'How requests go while Tor is off.',
     torBridgesNone: 'No bridges',
     torBridgesObfs4: 'obfs4 (built-in)',
     torBridgesCustom: 'Custom bridges',
@@ -3820,6 +3821,10 @@ export default {
     listen: 'Listen',
     watchNamed: 'Watch “{name}”',
     listenNamed: 'Listen to “{name}”',
+    copyLink: 'Copy link',
+    postLinkCopied: 'Post link copied',
+    videoLinkCopied: 'Link to the video on the video server copied',
+    copyLinkFailed: 'Couldn’t copy the link',
     deleteTitle: 'Delete this video?',
     deletePosted:
       'The video will be deleted from the video server. Posts with it will keep only their text — the video will stop playing. This cannot be undone.',

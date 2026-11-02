@@ -377,6 +377,7 @@ export default {
     apply: 'Применить',
     cancel: 'Отмена',
     torBridges: 'Мосты',
+    networkHint: 'Как идут запросы, пока Tor выключен.',
     torBridgesNone: 'Без мостов',
     torBridgesObfs4: 'obfs4 (встроенные)',
     torBridgesCustom: 'Свои мосты',
@@ -3807,6 +3808,10 @@ export default {
     listen: 'Слушать',
     watchNamed: 'Смотреть «{name}»',
     listenNamed: 'Слушать «{name}»',
+    copyLink: 'Копировать ссылку',
+    postLinkCopied: 'Ссылка на пост скопирована',
+    videoLinkCopied: 'Ссылка на ролик на видеосервере скопирована',
+    copyLinkFailed: 'Не удалось скопировать ссылку',
     deleteTitle: 'Удалить ролик?',
     deletePosted:
       'Ролик удалится с видеосервера. В постах с ним останется только текст — видео перестанет играть. Отменить это нельзя.',

@@ -40,6 +40,9 @@ export const SC_TorMenu = styled.div`
   padding: 12px;
   min-width: 320px;
   max-width: 380px;
+  /* Подключение, Tor и мосты не помещаются на телефоне — меню прокручивается. */
+  max-height: calc(100dvh - 72px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -126,4 +129,16 @@ export const SC_TorInlineActions = styled.div`
 export const SC_TorWarning = styled.div`
   font-size: 12px;
   color: var(--ui-warning);
+`
+
+export const SC_NetBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+`
+
+export const SC_TorDivider = styled.div`
+  height: 1px;
+  background: var(--ui-border);
 `

@@ -378,6 +378,7 @@ export default {
     apply: 'Aplicar',
     cancel: 'Cancelar',
     torBridges: 'Puentes',
+    networkHint: 'Cómo van las solicitudes mientras Tor está apagado.',
     torBridgesNone: 'Sin puentes',
     torBridgesObfs4: 'obfs4 (integrados)',
     torBridgesCustom: 'Puentes propios',
@@ -3860,6 +3861,10 @@ export default {
     listen: 'Escuchar',
     watchNamed: 'Ver «{name}»',
     listenNamed: 'Escuchar «{name}»',
+    copyLink: 'Copiar enlace',
+    postLinkCopied: 'Enlace a la publicación copiado',
+    videoLinkCopied: 'Enlace al vídeo en el servidor de vídeo copiado',
+    copyLinkFailed: 'No se pudo copiar el enlace',
     deleteTitle: '¿Eliminar el vídeo?',
     deletePosted:
       'El vídeo se eliminará del servidor de vídeo. Las publicaciones con él conservarán solo su texto: el vídeo dejará de reproducirse. No se puede deshacer.',

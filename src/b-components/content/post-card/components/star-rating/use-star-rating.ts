@@ -127,6 +127,9 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
 
   const handleStarHover = (starNumber: number) => {
     if (props.disabled || isSubmitting.value || hasVoted.value) return
+    // Гость оценить не может: закрашенные звёзды выглядели поставленной
+    // оценкой, а на телефоне тап оставлял их закрашенными рядом с «Войдите».
+    if (!useAuthStore().isUserAuthenticated) return
     hoveredStar.value = starNumber
   }
 

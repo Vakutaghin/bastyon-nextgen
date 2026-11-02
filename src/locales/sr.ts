@@ -374,6 +374,7 @@ export default {
     apply: 'Примени',
     cancel: 'Откажи',
     torBridges: 'Мостови',
+    networkHint: 'Како иду захтеви док је Tor искључен.',
     torBridgesNone: 'Без мостова',
     torBridgesObfs4: 'obfs4 (уграђени)',
     torBridgesCustom: 'Сопствени мостови',
@@ -3814,6 +3815,10 @@ export default {
     listen: 'Слушај',
     watchNamed: 'Гледај „{name}”',
     listenNamed: 'Слушај „{name}”',
+    copyLink: 'Копирај линк',
+    postLinkCopied: 'Линк до објаве је копиран',
+    videoLinkCopied: 'Линк до видеа на видео-серверу је копиран',
+    copyLinkFailed: 'Линк није могао да се копира',
     deleteTitle: 'Обрисати снимак?',
     deletePosted:
       'Снимак ће бити обрисан са видео сервера. Објаве са њим задржаће само текст — снимак више неће радити. Ово се не може опозвати.',

@@ -373,6 +373,7 @@ export default {
     apply: '적용',
     cancel: '취소',
     torBridges: '브리지',
+    networkHint: 'Tor가 꺼져 있을 때 요청이 가는 방식입니다.',
     torBridgesNone: '브리지 없음',
     torBridgesObfs4: 'obfs4 (내장)',
     torBridgesCustom: '사용자 지정 브리지',
@@ -3782,6 +3783,10 @@ export default {
     listen: '듣기',
     watchNamed: '"{name}" 보기',
     listenNamed: '"{name}" 듣기',
+    copyLink: '링크 복사',
+    postLinkCopied: '게시물 링크를 복사했습니다',
+    videoLinkCopied: '동영상 서버의 동영상 링크를 복사했습니다',
+    copyLinkFailed: '링크를 복사하지 못했습니다',
     deleteTitle: '동영상을 삭제할까요?',
     deletePosted:
       '동영상이 동영상 서버에서 삭제됩니다. 이 동영상이 있는 게시물에는 글만 남고 동영상은 재생되지 않습니다. 되돌릴 수 없습니다.',

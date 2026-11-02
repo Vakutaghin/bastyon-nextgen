@@ -364,6 +364,7 @@ export default {
     apply: '应用',
     cancel: '取消',
     torBridges: '网桥',
+    networkHint: 'Tor 关闭时请求的连接方式。',
     torBridgesNone: '不使用网桥',
     torBridgesObfs4: 'obfs4（内置）',
     torBridgesCustom: '自定义网桥',
@@ -3640,6 +3641,10 @@ export default {
     listen: '收听',
     watchNamed: '观看“{name}”',
     listenNamed: '收听“{name}”',
+    copyLink: '复制链接',
+    postLinkCopied: '已复制帖子链接',
+    videoLinkCopied: '已复制视频服务器上的视频链接',
+    copyLinkFailed: '无法复制链接',
     deleteTitle: '删除视频？',
     deletePosted:
       '视频将从视频服务器删除。包含它的帖子只会保留文字，视频将无法播放。此操作无法撤销。',

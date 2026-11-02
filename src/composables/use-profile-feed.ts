@@ -12,6 +12,7 @@ import { useAuthStore } from '@/blockchain'
 import { usePendingPostsStore } from '@/stores'
 import { pendingPostToAdapted } from '@/composables/pending-post-adapter'
 import { buildCurrentUserAuthor } from '@/helpers/common/current-user-author'
+import { prefetchMargin } from '@/composables/use-load-more-sentinel'
 
 /** Сырой пост из API с минимальным набором полей, нужных для merge репостов. */
 interface RawRepostPost {
@@ -38,15 +39,14 @@ export interface UseProfileFeedOptions {
 /** Свой пост в блоке, а лента его ещё не отдала: как часто и как долго перезагружать. */
 const CONFIRMED_RETRY_MS = 15_000
 const CONFIRMED_RETRY_WINDOW_MS = 2 * 60_000
+/** Страница на экране — через столько наблюдатель уже сказал, где триггер. */
+const RECHECK_AFTER_PAGE_MS = 250
 
 /**
  * Infinite scroll для ленты профиля
  */
 export function useProfileFeed(options: UseProfileFeedOptions) {
   const { address, initialLimit = 10, pageSize = 10, threshold, lang = '' } = options
-
-  // Безопасное расстояние для подгрузки
-  const safeDistance = threshold ?? (typeof window !== 'undefined' ? window.innerHeight : 1000)
 
   const authStore = useAuthStore()
   const pendingPostsStore = usePendingPostsStore()
@@ -70,6 +70,9 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
   const isLoadingMore = ref(false)
   const loadMoreTrigger = ref<HTMLElement | null>(null)
   let intersectionObserver: IntersectionObserver | null = null
+  /** Триггер сейчас в зоне догрузки — по последнему отчёту наблюдателя. */
+  let triggerInZone = false
+  let recheckTimer: ReturnType<typeof setTimeout> | null = null
 
   // Текущий txid для запроса
   const currentTxidForQuery = ref<string>('')
@@ -278,6 +281,7 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
       intersectionObserver.disconnect()
       intersectionObserver = null
     }
+    triggerInZone = false
 
     const componentOrEl = loadMoreTrigger.value
     // Обработка случая, когда ref возвращает компонент, а не элемент
@@ -288,13 +292,14 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     intersectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          triggerInZone = entry.isIntersecting
           if (entry.isIntersecting && hasMore.value && !isLoadingMore.value && !isLoading.value) {
             loadMore()
           }
         })
       },
       {
-        rootMargin: `${safeDistance}px 0px`,
+        rootMargin: threshold === undefined ? prefetchMargin() : `${threshold}px 0px`,
         threshold: 0,
       }
     )
@@ -309,11 +314,27 @@ export function useProfileFeed(options: UseProfileFeedOptions) {
     if (intersectionObserver) {
       intersectionObserver.disconnect()
     }
+    if (recheckTimer) clearTimeout(recheckTimer)
   })
 
   watch([loadMoreTrigger, hasMore], () => {
     nextTick(setupIntersectionObserver)
   })
+
+  // Наблюдатель сообщает только о входе в зону и выходе из неё: короткая
+  // страница оставляет триггер в зоне, и без проверки после показа лента
+  // встала бы.
+  watch(
+    () => isLoading.value || isLoadingMore.value,
+    (busy) => {
+      if (busy) return
+      if (recheckTimer) clearTimeout(recheckTimer)
+      recheckTimer = setTimeout(() => {
+        recheckTimer = null
+        if (triggerInZone) void loadMore()
+      }, RECHECK_AFTER_PAGE_MS)
+    }
+  )
 
   // Свой пост попал в блок (pending-posts-store узнаёт от общего трекера) —
   // перезагрузить ленту с головы, чтобы он пришёл настоящим. Индекс ноды бывает

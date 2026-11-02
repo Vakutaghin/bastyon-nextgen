@@ -374,6 +374,7 @@ export default {
     apply: 'Applica',
     cancel: 'Annulla',
     torBridges: 'Bridge',
+    networkHint: 'Come passano le richieste finché Tor è spento.',
     torBridgesNone: 'Nessun bridge',
     torBridgesObfs4: 'obfs4 (integrati)',
     torBridgesCustom: 'Bridge personalizzati',
@@ -3848,6 +3849,10 @@ export default {
     listen: 'Ascolta',
     watchNamed: 'Guarda «{name}»',
     listenNamed: 'Ascolta «{name}»',
+    copyLink: 'Copia link',
+    postLinkCopied: 'Link al post copiato',
+    videoLinkCopied: 'Link al video sul server video copiato',
+    copyLinkFailed: 'Impossibile copiare il link',
     deleteTitle: 'Eliminare il video?',
     deletePosted:
       'Il video verrà eliminato dal server video. I post che lo contengono manterranno solo il testo: il video non si riprodurrà più. L’operazione è irreversibile.',

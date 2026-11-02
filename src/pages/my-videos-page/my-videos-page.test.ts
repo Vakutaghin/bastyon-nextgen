@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   openComposer: vi.fn(),
   publishing: new Set<string>(),
   fetchPost: vi.fn(async (txid: string) => ({ id: txid, title: 'Пост' })),
+  copy: vi.fn(async (_text: string) => true),
 }))
 
 vi.mock('@/b-components/video-uploader/utils/environment', () => ({
@@ -101,6 +102,7 @@ vi.mock('./use-server-videos', () => ({
   }),
 }))
 vi.mock('./fetch-video-post', () => ({ fetchVideoPost: mocks.fetchPost }))
+vi.mock('@/helpers/common/clipboard', () => ({ copyText: mocks.copy }))
 vi.mock('@/b-components/video-studio/use-open-composer-with-video', () => ({
   useOpenComposerWithVideo: () => mocks.openComposer,
 }))
@@ -133,6 +135,7 @@ vi.mock('./studio-player-modal.vue', () => ({
   }),
 }))
 
+import { publicPostUrl } from '@/helpers/common/share-origin'
 import { useModalStore } from '@/stores/modal-store'
 import { useVideoUploadsStore } from '@/stores/video-uploads-store'
 import MyVideosPage from './my-videos-page.vue'
@@ -428,5 +431,17 @@ describe('MyVideosPage', () => {
       pointer: 'peertube://pt.host/u1',
       title: 'Море',
     })
+  })
+
+  it('«⋯ → Копировать ссылку»: ссылка на самый свежий пост; ролик в обработке без поста — пункта нет', async () => {
+    await mountPage()
+    const busy = await openMenu('Горы')
+    expect(busy.some((item) => item.textContent?.includes('Копировать ссылку'))).toBe(false)
+    document.body.click()
+
+    const items = await openMenu('Лес')
+    items.find((item) => item.textContent?.includes('Копировать ссылку'))!.click()
+    await flushPromises()
+    expect(mocks.copy).toHaveBeenCalledWith(publicPostUrl('p3new'))
   })
 })

@@ -14,7 +14,7 @@ If nothing loads on any screen:
 
 - check your internet — open any website;
 - if [Tor](tor.md) is on, it may be the cause, see below;
-- if your provider blocks the Bastyon proxies (as is now the case in Russia), make sure **“Settings”** → **“System”** → **“Network connection”** is set to **“Auto”** or **“Direct to nodes”**, see [Proxy or direct to nodes](network.md#proxy-or-direct-to-nodes). This does not work in the browser: there you need a VPN;
+- if your provider blocks the Bastyon proxies (as is now the case in Russia), make sure **“Settings”** → **“System”** → **“Network connection”** (or the menu of the Tor icon in the header) is set to **“Auto”** or **“Direct to nodes”**, see [Proxy or direct to nodes](network.md#proxy-or-direct-to-nodes). This does not work in the browser: there you need a VPN;
 - if you are on a VPN or a corporate network, it may block the nodes: the proxies use port 8899 and live updates use 8099; directly, nodes answer on ports 38881 and 8887.
 
 ## Tor does not connect

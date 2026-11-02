@@ -28,7 +28,9 @@ Each clip shows:
 
 The button under the clip is **“Create post”** if there is no post yet, or **“Open post”** if there is. If there are several posts, the button shows their number, for example “Posts: 2”, and opens a list: pick the post by date and title.
 
-Click the cover to watch the clip or listen to the recording: it opens in a window with the same player as in the feed, even if there is no post with it yet. While the clip is being processed, the cover opens the clip window. The title opens the clip window; in the list, the whole row does. The **“More”** button with three dots holds **“Watch”** (for audio — **“Listen”**), the clip's **“Details”** and **“Statistics”**, **“Create post”** — one more post with a clip that is already in a post — and **“Delete”**.
+Click the cover to watch the clip or listen to the recording: it opens in a window with the same player as in the feed, even if there is no post with it yet. While the clip is being processed, the cover opens the clip window. The title opens the clip window; in the list, the whole row does. The **“More”** button with three dots holds **“Watch”** (for audio — **“Listen”**), **“Copy link”**, the clip's **“Details”** and **“Statistics”**, **“Create post”** — one more post with a clip that is already in a post — and **“Delete”**.
+
+**“Copy link”** puts a link you can send to anyone on the clipboard. If the clip is in a post, it is the link to the post, and with several posts — to the newest one. If there is no post, it is the link to the clip's page on the video server. While such a clip is being processed, the item is not there: the video server does not show it to others yet.
 
 For a clip on a video server that has been retired, the app takes the cover from its archive. If a cover does not load — the server does not answer or its certificate has expired — the app looks the clip up the way the player does, and if that fails too, it shows a clip icon instead of an empty picture.
 

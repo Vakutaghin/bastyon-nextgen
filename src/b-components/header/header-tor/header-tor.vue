@@ -14,6 +14,24 @@
 
     <template #overlay>
       <SC_TorMenu @click.stop @mousedown.stop>
+        <!-- Подключение без Tor — тот же выбор, что в «Настройки → Система».
+             С Tor он не действует, поэтому это отдельный блок над Tor. -->
+        <template v-if="direct">
+          <SC_NetBlock data-testid="header-connection-mode">
+            <SC_TorTitle>{{ t('settings.network.title') }}</SC_TorTitle>
+            <SC_TorHint>{{ t('header.networkHint') }}</SC_TorHint>
+            <Segmented
+              :value="net.mode"
+              :options="modeOptions"
+              :disabled="torOn"
+              size="small"
+              @change="onSelectMode"
+            />
+            <SC_TorStatusLine role="status">{{ netStatus }}</SC_TorStatusLine>
+          </SC_NetBlock>
+          <SC_TorDivider />
+        </template>
+
         <SC_TorRow>
           <SC_TorTitle>Tor</SC_TorTitle>
           <Switch :checked="enabled" :disabled="!available" @click="onToggleSwitch" />
@@ -93,7 +111,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Switch, Radio, Button, Modal } from 'ant-design-vue'
+import { Dropdown, Switch, Radio, Button, Modal, Segmented } from 'ant-design-vue'
 import type { RadioChangeEvent } from 'ant-design-vue'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import {
@@ -104,6 +122,12 @@ import {
 } from '@/components/icons'
 import { useTorStore, type TorBridgeKind } from '@/stores/tor-store'
 import { countryDisplayName, torTransportLabel } from '@/helpers/tor/tor-transport-label'
+import {
+  connectionRoute,
+  directAvailable,
+  type ConnectionMode,
+} from '@/helpers/api/direct-nodes/connection-route'
+import { CONNECTION_MODES, useConnectionMode } from '@/composables/use-connection-mode'
 import {
   SC_TorWrapper,
   SC_TorMenu,
@@ -120,6 +144,8 @@ import {
   SC_TorRadioColumn,
   SC_TorInlineActions,
   SC_TorWarning,
+  SC_NetBlock,
+  SC_TorDivider,
 } from './styled'
 
 const RadioGroup = Radio.Group
@@ -156,6 +182,23 @@ const {
 } = storeToRefs(tor)
 
 const visible = ref(false)
+
+/** Ноды напрямую — только в приложениях; в браузере блока нет. */
+const direct = directAvailable()
+const { state: net, torOn, status: netStatus, setConnectionMode } = useConnectionMode()
+const modeOptions = computed(() =>
+  CONNECTION_MODES.map((mode) => ({ value: mode, label: t(`settings.network.mode.${mode}`) }))
+)
+
+function onSelectMode(value: string | number): void {
+  setConnectionMode(value as ConnectionMode)
+}
+
+// Меню открыли — статус должен быть про текущий маршрут, а не «Проверка…».
+watch(visible, (open) => {
+  if (open && direct) void connectionRoute().catch(() => {})
+})
+
 const localUseBridges = ref(useBridges.value)
 const localKind = ref<TorBridgeKind>(bridgeKind.value)
 const localCustom = ref(customBridges.value)
@@ -264,7 +307,8 @@ const showProgress = computed<boolean>(
 )
 
 async function onTriggerClick(): Promise<void> {
-  if (!available.value) {
+  // Без Tor меню всё равно нужно, если есть выбор подключения.
+  if (!available.value && !direct) {
     Modal.info({
       title: t('header.torDesktopOnlyTitle'),
       content: t('header.torDesktopOnlyContent'),

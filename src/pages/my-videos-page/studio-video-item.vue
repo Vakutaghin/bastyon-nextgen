@@ -86,6 +86,7 @@ import { Button, Dropdown, Menu } from 'ant-design-vue'
 import {
   DeleteOutlined,
   EditOutlined,
+  LinkIcon,
   MoreOutlined,
   MusicIcon,
   PlayCircleOutlined,
@@ -94,9 +95,12 @@ import {
 } from '@/components/icons'
 import { formatDuration } from '@/b-components/video-uploader/utils/video-formatter'
 import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
+import { copyText } from '@/helpers/common/clipboard'
+import { appToast } from '@/b-components/app-toast'
 import { useThumbnailFallback } from '@/composables/use-thumbnail-fallback'
 import type { StudioView } from './studio-list'
 import { formatCompact, formatCount, formatStudioDate } from './studio-format'
+import { videoShareLink } from './studio-share'
 import type { ServerVideo } from './use-server-videos'
 import type { DetailsTab } from './video-details/video-details-modal.vue'
 import {
@@ -185,6 +189,8 @@ function onThumbClick(): void {
   else emit('details', 'details')
 }
 
+const shareLink = computed(() => videoShareLink(props.video))
+
 const menuItems = computed(() => [
   ...(playable.value
     ? [
@@ -194,6 +200,9 @@ const menuItems = computed(() => [
           icon: () => h(PlayCircleOutlined),
         },
       ]
+    : []),
+  ...(shareLink.value
+    ? [{ key: 'copy-link', label: t('mediaStudio.copyLink'), icon: () => h(LinkIcon) }]
     : []),
   { key: 'details', label: t('mediaStudio.tabDetails'), icon: () => h(EditOutlined) },
   { key: 'stats', label: t('mediaStudio.tabStats'), icon: () => h(StatsIcon) },
@@ -205,8 +214,24 @@ const menuItems = computed(() => [
   { key: 'remove', label: t('videoStudio.delete'), danger: true, icon: () => h(DeleteOutlined) },
 ])
 
+async function copyLink(): Promise<void> {
+  const link = shareLink.value
+  if (!link) return
+  if (await copyText(link.url)) {
+    appToast.success({
+      message: t(
+        link.kind === 'post' ? 'mediaStudio.postLinkCopied' : 'mediaStudio.videoLinkCopied'
+      ),
+      description: link.url,
+    })
+  } else {
+    appToast.error({ message: t('mediaStudio.copyLinkFailed') })
+  }
+}
+
 function onMenu({ key }: { key: string | number }): void {
   if (key === 'play') emit('play')
+  else if (key === 'copy-link') void copyLink()
   else if (key === 'details' || key === 'stats') emit('details', key)
   else if (key === 'create-post') emit('create-post')
   else if (key === 'remove') emit('remove')

@@ -13,6 +13,7 @@ import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useUIStore } from '@/stores/ui-store'
 import { buildFeedQueryByTab } from './helpers/feed-queries'
+import { prefetchMargin } from './use-load-more-sentinel'
 import {
   fetchAndMergeRepostOriginals,
   enrichWithUserScores,
@@ -40,7 +41,7 @@ export interface UseInfiniteFeedOptions {
   initialLimit?: number
   /** Количество постов для каждой последующей загрузки */
   pageSize?: number
-  /** Безопасное расстояние до конца в пикселях (по умолчанию 100vh) */
+  /** За сколько пикселей до конца просить страницу (по умолчанию PREFETCH_SCREENS экранов) */
   threshold?: number
   /** Язык контента. Если не задан — берётся реактивно из ui-store (фильтр языка ленты). */
   lang?: string
@@ -70,9 +71,6 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     }
   })
 
-  // Вычисляем безопасное расстояние (100vh по умолчанию)
-  const safeDistance = threshold ?? (typeof window !== 'undefined' ? window.innerHeight : 1000)
-
   // Состояние пагинации
   const allPosts = ref<ReturnType<typeof extractPostsFromResponse>>([])
   const lastTxid = ref<string>('')
@@ -80,6 +78,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   const isLoadingMore = ref(false)
   const loadMoreTrigger = ref<HTMLElement | null>(null)
   let intersectionObserver: IntersectionObserver | null = null
+  /** Триггер сейчас в зоне догрузки — по последнему отчёту наблюдателя. */
+  let triggerInZone = false
 
   // Отслеживаем текущий txid для запроса
   const currentTxidForQuery = ref<string>('')
@@ -378,6 +378,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       intersectionObserver.disconnect()
       intersectionObserver = null
     }
+    triggerInZone = false
 
     if (!loadMoreTrigger.value || !hasMore.value) {
       return
@@ -387,6 +388,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     intersectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          triggerInZone = entry.isIntersecting
           // Если элемент виден и есть еще посты для загрузки
           if (entry.isIntersecting && hasMore.value && !isLoadingMore.value && !isLoading.value) {
             loadMore()
@@ -396,13 +398,24 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       {
         // rootMargin создает "невидимую зону" перед элементом
         // Когда элемент входит в эту зону, срабатывает callback
-        rootMargin: `${safeDistance}px 0px`,
+        rootMargin: threshold === undefined ? prefetchMargin() : `${threshold}px 0px`,
         threshold: 0, // Срабатывает как только элемент входит в зону
       }
     )
 
     // Начинаем наблюдение за триггером
     intersectionObserver.observe(loadMoreTrigger.value)
+  }
+
+  /**
+   * Наблюдатель сообщает только о входе в зону и выходе из неё. Если страница
+   * короткая и триггер после неё так и остался в зоне, нового отчёта не будет
+   * и лента встанет. Вызывать, когда страница уже на экране.
+   */
+  const recheckLoadMore = (): void => {
+    if (triggerInZone && hasMore.value && !isLoadingMore.value && !isLoading.value) {
+      void loadMore()
+    }
   }
 
   /**
@@ -484,6 +497,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     loadMore,
     /** Повторить неудавшуюся догрузку страницы */
     retryLoadMore,
+    /** Догрузить, если после показанной страницы триггер остался в зоне */
+    recheckLoadMore,
     /** Перезагрузка ленты с головы (кнопка «Обновить», подтверждение по WS) */
     refetch: refreshFeed,
     /** Количество новых постов сверху (lentaunseen-lite); 0 — нет новых. */

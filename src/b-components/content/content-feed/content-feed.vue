@@ -254,6 +254,7 @@ const {
   hasMore,
   loadMoreError,
   retryLoadMore,
+  recheckLoadMore,
   loadMoreTrigger,
   refetch,
   newPostsCount,
@@ -261,7 +262,7 @@ const {
 } = useInfiniteFeed({
   initialLimit: 20,
   pageSize: 20,
-  threshold: undefined, // 100vh по умолчанию
+  threshold: undefined, // PREFETCH_SCREENS экранов до конца
   // lang не задаём — берётся из ui-store (язык приложения), реактивно.
   enabled: true,
 })
@@ -374,15 +375,18 @@ const displayedPosts = computed<FeedItem[]>(() => {
 // смонтированная разом, занимала главный поток телефона на полсекунды: новые
 // посты и картинки появлялись рывком, лента замирала. Карточка дорогая (каждый
 // styled-элемент — компонент Vue), поэтому порция — одна. Догрузка начинается
-// за экран до конца ленты, так что порции успевают.
+// за три экрана до конца ленты, так что порции успевают.
 //
 // Под мессенджером во весь экран ленты не видно, а кадры нужны чату: там
 // карточки монтируются по одной, когда поток свободен, и первая порция тоже.
 const FIRST_RENDER = 5
 const RENDER_STEP = 1
 const OVERLAID_RENDER_WAIT_MS = 1000
+/** Лента смонтирована — через столько наблюдатель уже сказал, где триггер. */
+const RECHECK_AFTER_RENDER_MS = 250
 const renderLimit = ref<number>(FIRST_RENDER)
 let cancelRender: (() => void) | null = null
+let recheckTimer: ReturnType<typeof setTimeout> | null = null
 
 const renderedPosts = computed<FeedItem[]>(() => displayedPosts.value.slice(0, renderLimit.value))
 
@@ -417,6 +421,17 @@ function renderMore(): void {
   const total = displayedPosts.value.length
   renderLimit.value = Math.min(total, renderLimit.value + RENDER_STEP)
   if (renderLimit.value < total) scheduleRender()
+  else scheduleRecheck()
+}
+
+// Короткая страница не уводит триггер из зоны догрузки: без проверки после
+// показа лента стояла бы, пока её не перезагрузят.
+function scheduleRecheck(): void {
+  if (recheckTimer) clearTimeout(recheckTimer)
+  recheckTimer = setTimeout(() => {
+    recheckTimer = null
+    recheckLoadMore()
+  }, RECHECK_AFTER_RENDER_MS)
 }
 
 watch(
@@ -426,6 +441,7 @@ watch(
     if (total === 0) renderLimit.value = FIRST_RENDER
     else if (!prev && isPageOverlaid.value) renderLimit.value = RENDER_STEP
     if (renderLimit.value < total) scheduleRender()
+    else if (total > 0) scheduleRecheck()
   },
   { immediate: true }
 )
@@ -440,6 +456,7 @@ watch(isPageOverlaid, () => {
 
 onUnmounted(() => {
   cancelRender?.()
+  if (recheckTimer) clearTimeout(recheckTimer)
   dividerObserver?.disconnect()
 })
 

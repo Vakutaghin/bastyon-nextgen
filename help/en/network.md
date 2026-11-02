@@ -16,7 +16,7 @@ Besides the nodes, the app talks to the [Matrix](glossary.md#matrix) chat server
 
 ## Proxy or direct to nodes
 
-In the desktop and Android apps, **“Settings”** → **“System”** → **“Network connection”** lets you choose how the app goes online:
+In the desktop and Android apps, **“Settings”** → **“System”** → **“Network connection”** lets you choose how the app goes online. The same switch is in the menu of the [Tor](tor.md) icon in the header, as a separate block above Tor:
 
 - **“Auto”** (the default) — through a proxy, and if none answers, for example because they are blocked, directly to nodes. While the app works directly, it checks the proxies every minute, when the network changes and when you come back to the app, and switches back as soon as a proxy answers. A failure while the app is in the background or has just been reopened does not count: the phone may have had no network then;
 - **“Proxy”** — only through proxies;

@@ -171,9 +171,11 @@ describe('useStarRating', () => {
     expect(mocks.sendUpvote).not.toHaveBeenCalled()
   })
 
-  it('гость: клик не гасится (откроется окно входа), транзакции нет', async () => {
+  it('гость: звёзды не закрашиваются, клик не гасится (откроется окно входа), транзакции нет', async () => {
     mocks.auth.isUserAuthenticated = false
     const { rating } = setup()
+    rating.handleStarHover(4)
+    expect(rating.displayRating.value).toBe(0)
     const event = click()
     const stop = vi.spyOn(event, 'stopPropagation')
     await rating.handleStarClick(5, event)

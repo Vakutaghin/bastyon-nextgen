@@ -270,6 +270,48 @@ describe('useInfiniteFeed', () => {
     await expect(request).resolves.toEqual({ data: { contents } })
   })
 
+  it('asks for a page three screens before the end; a short page that leaves the trigger in the zone is followed by the next one', async () => {
+    const observers: Array<{ report: IntersectionObserverCallback; margin?: string }> = []
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(report: IntersectionObserverCallback, init?: IntersectionObserverInit) {
+          observers.push({ report, margin: init?.rootMargin })
+        }
+        observe(): void {}
+        disconnect(): void {}
+      }
+    )
+    const inZone = (isIntersecting: boolean): void =>
+      observers[observers.length - 1]!.report(
+        [{ isIntersecting } as IntersectionObserverEntry],
+        {} as IntersectionObserver
+      )
+    try {
+      const feed = mountFeed()
+      await deliver(page('a', 'b'))
+      feed.loadMoreTrigger.value = document.createElement('div')
+      await nextTick()
+      await nextTick()
+      expect(observers[observers.length - 1]!.margin).toBe(`${window.innerHeight * 3}px 0px`)
+
+      inZone(true)
+      expect(queryState.refetch).toHaveBeenCalledTimes(1)
+      await deliver(page('c', 'd'))
+
+      // Наблюдатель молчит: триггер не выходил из зоны. Проверка после показа догружает.
+      feed.recheckLoadMore()
+      expect(queryState.refetch).toHaveBeenCalledTimes(2)
+      await deliver(page('e', 'f'))
+
+      inZone(false)
+      feed.recheckLoadMore()
+      expect(queryState.refetch).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('sends category and picked tags in lower case, like legacy', async () => {
     filtersStore.selectedCategories = ['c4', 'custom_x']
     filtersStore.allCategories = [{ id: 'c4', tags: ['криптовалюта'] }]
