@@ -12,8 +12,6 @@
       :digits="perDay ? 1 : 0"
       :unit-hint="perDay ? t('explorerStats.perDay') : ''"
       :loading="stats.loading.value"
-      :progress="stats.progress.value"
-      :failed="stats.failed.value"
       :error="stats.error.value"
       :height="280"
       @retry="stats.retry"

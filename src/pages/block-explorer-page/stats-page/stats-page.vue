@@ -163,8 +163,6 @@ const common = computed(() => ({
   granularity: period.granularity.value,
   unitHint: perDay.value ? t('explorerStats.perDay') : '',
   loading: stats.loading.value,
-  progress: stats.progress.value,
-  failed: stats.failed.value,
   error: stats.error.value,
   onRetry: stats.retry,
 }))

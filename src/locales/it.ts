@@ -1539,6 +1539,10 @@ export default {
     showChart: 'Grafico',
     showTable: 'Tabella',
     progress: 'Caricate {done} parti su {total}',
+    syncedAt: 'Dati al {date}',
+    refresh: 'Aggiorna',
+    syncHint:
+      'La cronologia della rete è salvata su questo dispositivo: periodi e intervallo personalizzato si costruiscono senza interrogare il nodo. «Aggiorna» scarica solo le novità.',
     partsFailed: 'Parti non caricate: {n}',
     retry: 'Riprova',
     error: 'Il nodo non ha risposto',

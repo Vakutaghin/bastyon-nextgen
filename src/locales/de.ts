@@ -1551,6 +1551,10 @@ export default {
     showChart: 'Diagramm',
     showTable: 'Tabelle',
     progress: '{done} von {total} Teilen geladen',
+    syncedAt: 'Daten vom {date}',
+    refresh: 'Aktualisieren',
+    syncHint:
+      'Der Netzwerkverlauf liegt auf diesem Gerät: Zeiträume und eigene Bereiche entstehen ohne Anfragen an den Knoten. „Aktualisieren“ lädt nur Neues nach.',
     partsFailed: 'Nicht geladene Teile: {n}',
     retry: 'Erneut versuchen',
     error: 'Der Knoten hat nicht geantwortet',

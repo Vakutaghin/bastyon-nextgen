@@ -77,17 +77,6 @@ export const SC_ToolButton = styled.button`
   }
 `
 
-export const SC_ChartNote = styled.div`
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: var(--ui-text-muted);
-  font-variant-numeric: tabular-nums;
-`
-
 export const SC_NoteButton = styled.button`
   padding: 0;
   font: inherit;

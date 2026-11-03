@@ -137,8 +137,11 @@ export const SC_StatCardValue = styled.div`
   font-variant-numeric: tabular-nums;
 `
 
+/** Строка держит высоту и пустой: подсказка появляется с данными и не сдвигает графики ниже. */
 export const SC_StatCardHint = styled.div`
   font-size: 12px;
+  line-height: 17px;
+  min-height: 17px;
   color: var(--ui-text-dimmed);
   margin-top: 4px;
 `

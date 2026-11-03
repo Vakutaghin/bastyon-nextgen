@@ -1555,6 +1555,10 @@ export default {
     showChart: 'Graphique',
     showTable: 'Tableau',
     progress: '{done} parties chargées sur {total}',
+    syncedAt: 'Données au {date}',
+    refresh: 'Actualiser',
+    syncHint:
+      'L’historique du réseau est conservé sur cet appareil : périodes et plage personnalisée sont construites sans interroger le nœud. « Actualiser » ne charge que le nouveau.',
     partsFailed: 'Parties non chargées : {n}',
     retry: 'Réessayer',
     error: "Le nœud n'a pas répondu",

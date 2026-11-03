@@ -21,18 +21,6 @@
       </SC_ChartTools>
     </SC_ChartHead>
 
-    <SC_ChartNote v-if="progress || failed" role="status" aria-live="polite">
-      <span v-if="progress">
-        {{ t('explorerStats.progress', { done: progress.done, total: progress.total }) }}
-      </span>
-      <template v-if="failed && !loading">
-        <span>{{ t('explorerStats.partsFailed', { n: failed }) }}</span>
-        <SC_NoteButton type="button" @click="emit('retry')">
-          {{ t('explorerStats.retry') }}
-        </SC_NoteButton>
-      </template>
-    </SC_ChartNote>
-
     <SC_ChartBody :class="{ refreshing: loading && points.length > 0 }">
       <SC_Placeholder v-if="!points.length && loading">{{
         t('explorerPage.loading')
@@ -134,7 +122,6 @@ import { useI18n } from 'vue-i18n'
 import InfoTooltip from '../shared/info-tooltip.vue'
 import type { ChartPoint, Granularity } from '../../stats/stats-model'
 import { formatPeriod, formatValue } from '../../stats/chart-format'
-import type { StatsProgress } from '../../stats/use-network-stats'
 import {
   drawHover,
   renderChart,
@@ -150,7 +137,6 @@ import {
   SC_ChartSubtitle,
   SC_ChartTools,
   SC_ToolButton,
-  SC_ChartNote,
   SC_NoteButton,
   SC_ChartBody,
   SC_Plot,
@@ -182,8 +168,6 @@ const props = withDefaults(
     /** Что значат числа, если не «штук за период»: «в среднем за сутки». */
     unitHint?: string
     loading?: boolean
-    progress?: StatsProgress | null
-    failed?: number
     error?: unknown
     emptyText?: string
     height?: number
@@ -196,7 +180,6 @@ const props = withDefaults(
     digits: 0,
     unitHint: '',
     loading: false,
-    failed: 0,
     emptyText: '',
     height: 260,
     zeroBased: true,

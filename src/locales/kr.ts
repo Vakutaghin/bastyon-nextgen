@@ -1517,6 +1517,10 @@ export default {
     showChart: '차트',
     showTable: '표',
     progress: '{total}개 중 {done}개 불러옴',
+    syncedAt: '{date} 기준 데이터',
+    refresh: '새로 고침',
+    syncHint:
+      '네트워크 기록은 이 기기에 저장됩니다. 기간과 사용자 지정 범위는 노드에 요청하지 않고 만들어집니다. 새로 고침은 새 데이터만 받아옵니다.',
     partsFailed: '불러오지 못한 부분: {n}개',
     retry: '다시 시도',
     error: '노드가 응답하지 않았습니다',

@@ -1,24 +1,13 @@
 /**
  * Статистика сети за выбранный период — для графиков эксплорера.
  *
- * Часы — один запрос (последние 168 ч), сутки — кусками по 10 (stats-source).
- * Куски приходят от свежих к старым, график дорисовывается по мере прихода.
- * Готовые куски живут в памяти до перезагрузки, законченные — ещё и в
- * IndexedDB. Не пришедший кусок спрашиваем ещё раз в конце; не пришёл и
- * тогда — график показывает дыру и предлагает повторить.
+ * Данные — из истории на устройстве (stats-sync): период и свой диапазон
+ * только выбирают из неё, сеть при переключении не спрашивается. Часы —
+ * последние 168 (столько отдаёт нода), сутки — за всё время.
  */
 
 import { computed, ref, shallowRef, watch, type Ref } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
-import { useNodeInfo } from '@/composables/use-block-explorer-queries'
-import {
-  DAY_BLOCKS,
-  HOUR_BLOCKS,
-  heightToTime,
-  hourToTime,
-  timeToHeight,
-  type ChainAnchor,
-} from './chain-time'
+import { DAY_BLOCKS, HOUR_BLOCKS, heightToTime, hourToTime, timeToHeight } from './chain-time'
 import {
   bucketsToPoints,
   groupPoints,
@@ -30,61 +19,20 @@ import {
 } from './stats-model'
 import type { PeriodRange } from './stats-period'
 import {
-  chunksFor,
-  fetchAccountsByHour,
-  fetchDayChunk,
   fetchDifficulty,
   fetchEmission,
-  fetchHours,
-  isChunkFinal,
   readHistory,
   runLimited,
   writeHistory,
 } from './stats-source'
+import { useChainTip, useStatsSync } from './stats-sync'
 
 const CONCURRENCY = 4
-const HOURS_TTL_MS = 5 * 60_000
-
-/** Куски суток, уже пришедшие за эту сессию. */
-const dayChunks = new Map<number, Buckets>()
-let hoursCache: { at: number; data: Promise<Buckets> } | null = null
-
-function loadHours(): Promise<Buckets> {
-  if (!hoursCache || Date.now() - hoursCache.at > HOURS_TTL_MS) {
-    const data = fetchHours(168)
-    hoursCache = { at: Date.now(), data }
-    data.catch(() => (hoursCache = null))
-  }
-  return hoursCache.data
-}
-
-const chunkKey = (k: number) => `day-chunk:${k}`
-
-/** Вершина цепочки [высота, время] — для перевода корзин во время. */
-export function useChainTip(): Ref<ChainAnchor | null> {
-  const { data } = useNodeInfo()
-  return computed<ChainAnchor | null>(() => {
-    const last = data.value?.data?.lastblock
-    return last?.height && last?.time ? [last.height, last.time] : null
-  })
-}
-
-export interface StatsProgress {
-  done: number
-  total: number
-}
 
 export function useNetworkStats(range: Ref<PeriodRange>, granularity: Ref<Granularity>) {
-  const tip = useChainTip()
+  const sync = useStatsSync()
+  const tip = sync.tip
   const source = computed<BucketKind>(() => (granularity.value === 'hour' ? 'hour' : 'day'))
-
-  const hours = shallowRef<Buckets | null>(null)
-  const days = shallowRef<Buckets>({})
-  const loading = ref(false)
-  const progress = ref<StatsProgress | null>(null)
-  const failed = ref(0)
-  const error = ref<unknown>(null)
-  let generation = 0
 
   /** Сутки ноды, которые покрывает период; недели и месяцы — с начала первого. */
   const dayWindow = computed(() => {
@@ -98,109 +46,35 @@ export function useNetworkStats(range: Ref<PeriodRange>, granularity: Ref<Granul
     }
   })
 
-  async function loadDays(gen: number): Promise<void> {
-    const { from, to } = dayWindow.value
-    const currentDay = tip.value
-      ? Math.floor(tip.value[0] / DAY_BLOCKS)
-      : Math.floor(timeToHeight(Date.now()) / DAY_BLOCKS)
-    const chunks = chunksFor(from, to)
-    const publish = () => {
-      if (gen !== generation) return
-      const merged: Buckets = {}
-      for (const k of chunks) Object.assign(merged, dayChunks.get(k) ?? {})
-      days.value = merged
-    }
-
-    let missing = chunks.filter((k) => !dayChunks.has(k) || !isChunkFinal(k, currentDay))
-    const stored = await readHistory<Buckets>(
-      missing.filter((k) => isChunkFinal(k, currentDay)).map(chunkKey)
-    )
-    for (const k of missing) {
-      const hit = stored.get(chunkKey(k))
-      if (hit) dayChunks.set(k, hit)
-    }
-    missing = missing.filter((k) => !stored.has(chunkKey(k)))
-    if (gen !== generation) return
-    publish()
-
-    progress.value = { done: chunks.length - missing.length, total: chunks.length }
-    const toStore = new Map<string, Buckets>()
-    const attempt = async (queue: number[]): Promise<number[]> => {
-      const left: number[] = []
-      await runLimited(queue, CONCURRENCY, async (k) => {
-        if (gen !== generation) return
-        try {
-          const data = await fetchDayChunk(k)
-          dayChunks.set(k, data)
-          if (isChunkFinal(k, currentDay)) toStore.set(chunkKey(k), data)
-          if (gen === generation && progress.value) progress.value.done += 1
-          publish()
-        } catch {
-          left.push(k)
-        }
-      })
-      return left
-    }
-    const stillMissing = await attempt(await attempt(missing))
-    void writeHistory(toStore)
-    if (gen !== generation) return
-    failed.value = stillMissing.length
-  }
-
-  async function load(): Promise<void> {
-    const gen = ++generation
-    loading.value = true
-    failed.value = 0
-    error.value = null
-    progress.value = null
-    try {
-      if (source.value === 'hour') hours.value = await loadHours()
-      else await loadDays(gen)
-    } catch (e) {
-      if (gen === generation) error.value = e
-    } finally {
-      if (gen === generation) {
-        loading.value = false
-        progress.value = null
-      }
-    }
-  }
-
-  watch(
-    () => [range.value.from, range.value.to, source.value, granularity.value],
-    () => void load(),
-    { immediate: true }
-  )
-
   /** Точки периода, сгруппированные по шагу графика. */
   const points = computed<StatsPoint[]>(() => {
     if (source.value === 'hour') {
-      const all = bucketsToPoints(hours.value, 'hour', tip.value)
+      const all = bucketsToPoints(sync.hours.value, 'hour', tip.value)
       return all.filter((p) => p.end > range.value.from && p.t < range.value.to)
     }
     const { from, to } = dayWindow.value
     const inWindow: Buckets = {}
-    for (const [day, counts] of Object.entries(days.value)) {
+    for (const [day, counts] of Object.entries(sync.days.value)) {
       const n = Number(day)
       if (n >= from && n <= to) inWindow[day] = counts
     }
     return groupPoints(bucketsToPoints(inWindow, 'day', tip.value), granularity.value, 'day')
   })
 
-  return { points, source, loading, progress, failed, error, retry: load }
+  // Пустой период во время синхронизации — «Загрузка», а не «нет данных»; с
+  // данными график не гасим: история докачивается минутами.
+  const loading = computed(() => sync.syncing.value && points.value.length === 0)
+  const error = computed(() => (points.value.length ? null : sync.error.value))
+
+  return { points, source, loading, error, retry: sync.refresh }
 }
 
 /** Активность за последние 7 суток по часам — для «Когда сеть активна». */
 export function useWeekHours() {
-  const tip = useChainTip()
-  const query = useQuery({
-    queryKey: ['explorer', 'stats-week-hours'] as const,
-    queryFn: loadHours,
-    staleTime: HOURS_TTL_MS,
-    refetchOnWindowFocus: false,
-  })
-  const points = computed(() => bucketsToPoints(query.data.value, 'hour', tip.value))
-  return { points, isLoading: query.isLoading, error: query.error }
+  const sync = useStatsSync()
+  const points = computed(() => bucketsToPoints(sync.hours.value, 'hour', sync.tip.value))
+  const isLoading = computed(() => sync.syncing.value && !sync.hours.value)
+  return { points, isLoading, error: sync.error }
 }
 
 export interface AccountsPoint {
@@ -214,15 +88,10 @@ export interface AccountsPoint {
 
 /** Аккаунты за последние 7 суток: всего и новые по часам. */
 export function useWeekAccounts() {
-  const tip = useChainTip()
-  const query = useQuery({
-    queryKey: ['explorer', 'stats-week-accounts'] as const,
-    queryFn: () => fetchAccountsByHour(168),
-    staleTime: 10 * 60_000,
-    refetchOnWindowFocus: false,
-  })
+  const sync = useStatsSync()
+  const tip = sync.tip
   const points = computed<AccountsPoint[]>(() => {
-    const data = query.data.value ?? {}
+    const data = sync.accounts.value ?? {}
     const hoursSorted = Object.keys(data)
       .map(Number)
       .filter((n) => Number.isFinite(n))
@@ -242,7 +111,8 @@ export function useWeekAccounts() {
     return out
   })
   const total = computed(() => points.value[points.value.length - 1]?.total ?? null)
-  return { points, total, isLoading: query.isLoading, error: query.error }
+  const isLoading = computed(() => sync.syncing.value && !sync.accounts.value)
+  return { points, total, isLoading, error: sync.error }
 }
 
 export interface ChainSample {

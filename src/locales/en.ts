@@ -1529,6 +1529,10 @@ export default {
     showChart: 'Chart',
     showTable: 'Table',
     progress: 'Loaded {done} of {total} parts',
+    syncedAt: 'Data as of {date}',
+    refresh: 'Refresh',
+    syncHint:
+      'Network history is kept on this device: periods and your own range are built without going to the node. Refresh fetches only what is new.',
     partsFailed: 'Parts not loaded: {n}',
     retry: 'Retry',
     error: 'The node did not respond',

@@ -66,13 +66,39 @@
         @change="(v: Dayjs | string | null) => pick('to', v)"
       />
     </SC_CustomRange>
+
+    <!-- Своя строка постоянной высоты: «Загружено x из y», дата и ошибки
+         сменяют друг друга, не сдвигая графики и таблицы под панелью. -->
+    <SC_SyncStatus role="status" aria-live="polite" :title="t('explorerStats.syncHint')">
+      <template v-if="sync.progress.value">
+        {{
+          t('explorerStats.progress', {
+            done: sync.progress.value.done,
+            total: sync.progress.value.total,
+          })
+        }}
+      </template>
+      <template v-else-if="sync.failed.value">
+        <span>{{ t('explorerStats.partsFailed', { n: sync.failed.value }) }}</span>
+        <SC_SyncButton type="button" @click="sync.refresh">
+          {{ t('explorerStats.retry') }}
+        </SC_SyncButton>
+      </template>
+      <template v-else-if="sync.syncedAt.value">
+        <span>{{ t('explorerStats.syncedAt', { date: syncedLabel }) }}</span>
+        <SC_SyncButton type="button" @click="sync.refresh">
+          {{ t('explorerStats.refresh') }}
+        </SC_SyncButton>
+      </template>
+    </SC_SyncStatus>
   </SC_PeriodBar>
 </template>
 
 <script setup lang="ts">
 // Период статистики: готовые отрезки, свой диапазон двумя календарями (один
 // двойной на телефоне не помещается) и шаг графика — только осмысленные для
-// периода. Выбор общий для «Обзора» и «Статистики» (use-stats-period).
+// периода. Выбор общий для «Обзора» и «Статистики» (use-stats-period). Под
+// ним — состояние истории на устройстве (stats-sync) с «Обновить».
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DatePicker } from 'ant-design-vue'
@@ -83,11 +109,14 @@ import { loadPickerLocale } from '@/components/date-time-picker/picker-locale'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, bcp47, type Locale } from '@/i18n'
 import { GENESIS_MS, PERIOD_PRESETS } from '../../stats/stats-period'
 import { useStatsPeriod } from '../../stats/use-stats-period'
+import { useStatsSync } from '../../stats/stats-sync'
 import {
   SC_PeriodBar,
   SC_Segmented,
   SC_SegmentButton,
   SC_CustomRange,
+  SC_SyncStatus,
+  SC_SyncButton,
 } from './stats-period-bar.styled'
 
 defineOptions({ name: 'StatsPeriodBar' })
@@ -97,6 +126,7 @@ const period = useStatsPeriod()
 period.refreshNow()
 
 const customOpen = ref(period.preset.value === 'custom')
+const sync = useStatsSync()
 
 const language = computed<Locale>(() =>
   (SUPPORTED_LOCALES as readonly string[]).includes(locale.value)
@@ -116,6 +146,15 @@ watch(
     }
   },
   { immediate: true }
+)
+
+const syncedLabel = computed(() =>
+  sync.syncedAt.value
+    ? new Intl.DateTimeFormat(bcp47(language.value), {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(sync.syncedAt.value)
+    : ''
 )
 
 const fromValue = computed(() => dayjs(period.range.value.from))

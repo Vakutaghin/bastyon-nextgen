@@ -1544,6 +1544,10 @@ export default {
     showChart: 'Gráfico',
     showTable: 'Tabla',
     progress: 'Cargadas {done} de {total} partes',
+    syncedAt: 'Datos al {date}',
+    refresh: 'Actualizar',
+    syncHint:
+      'El historial de la red se guarda en este dispositivo: los periodos y su propio rango se construyen sin consultar al nodo. «Actualizar» descarga solo lo nuevo.',
     partsFailed: 'Partes sin cargar: {n}',
     retry: 'Reintentar',
     error: 'El nodo no respondió',

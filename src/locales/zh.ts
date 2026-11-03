@@ -1462,6 +1462,10 @@ export default {
     showChart: '图表',
     showTable: '表格',
     progress: '已加载 {done}/{total} 部分',
+    syncedAt: '数据截至 {date}',
+    refresh: '刷新',
+    syncHint:
+      '网络历史保存在本设备上：各时间段和自定义范围无需请求节点即可生成。「刷新」只加载新数据。',
     partsFailed: '未加载的部分：{n}',
     retry: '重试',
     error: '节点没有响应',

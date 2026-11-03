@@ -86,3 +86,45 @@ export const SC_CustomRange = styled.div`
     }
   }
 `
+
+/** Строка своей высоты на всю ширину: смена текста не двигает то, что ниже. */
+export const SC_SyncStatus = styled.div`
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 20px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--ui-text-muted);
+  font-variant-numeric: tabular-nums;
+
+  > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`
+
+export const SC_SyncButton = styled.button`
+  flex-shrink: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ui-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+    border-radius: var(--ui-radius-xs);
+  }
+`
