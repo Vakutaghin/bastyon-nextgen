@@ -20,12 +20,40 @@ describe('шаблон установщика Windows', () => {
     expect(template.split('\n')[1]).toBe(`; tauri-cli ${cliVersion}`)
   })
 
-  it('MSI удаляется тихо, а не удалившийся не оставляет вторую копию', () => {
+  it('MSI удаляется тихо, а не удалившийся — вопросом, а не молчаливым откатом', () => {
     expect(template).toContain(
       'ExecWait \'"$SYSDIR\\msiexec.exe" /x $WixProductCode /passive /norestart\' $0'
     )
     expect(template).not.toContain('ReadRegStr $R1 HKLM "$R6" "UninstallString"')
-    expect(template).toMatch(/\$\{AndIf\} \$UpdateMode = 1[\s\S]{0,400}Quit/)
+    // «Повторить» — снова msiexec, «Пропустить» — ставим рядом, «Прервать» — прежняя версия.
+    expect(template).toMatch(
+      /MB_ABORTRETRYIGNORE[^\n]*"\$\(bastyonMsiNotRemoved\)"[^\n]*IDRETRY reinst_uninstall IDIGNORE reinst_done\n[\s\S]{0,400}Quit/
+    )
+  })
+
+  it('обновление поставленного для пользователя не трогает оставленный MSI', () => {
+    expect(template).toMatch(
+      /Function PageReinstall[\s\S]{0,400}\$UpdateMode = 1[\s\S]{0,200}Goto wix_loop_done[\s\S]*wix_loop:/
+    )
+  })
+
+  it('ждёт, пока закрывающееся приложение отпустит exe, а не падает на записи', () => {
+    const install = template.slice(template.indexOf('Section Install'))
+    const wait = install.indexOf('FileOpen $R8 "$INSTDIR\\${MAINBINARYNAME}.exe" a')
+    expect(wait).toBeGreaterThan(install.indexOf('CheckIfAppIsRunning'))
+    expect(wait).toBeLessThan(install.indexOf('File "${MAINBINARYSRCPATH}"'))
+    expect(install).toContain(
+      'Rename "$INSTDIR\\${MAINBINARYNAME}.exe" "$INSTDIR\\${MAINBINARYNAME}.exe.old"'
+    )
+    expect(template).toContain('Delete "$INSTDIR\\${MAINBINARYNAME}.exe.old" ; BASTYON')
+  })
+
+  it('свои строки — на каждом языке установщика', () => {
+    for (const language of bundle.windows.nsis.languages as string[]) {
+      expect(template).toContain(
+        `LangString bastyonMsiNotRemoved \${LANG_${language.toUpperCase()}}`
+      )
+    }
   })
 
   it('сборка берёт его и ставит для текущего пользователя, без MSI', () => {

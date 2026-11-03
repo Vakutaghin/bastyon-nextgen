@@ -12,7 +12,10 @@ Unicode true
 ; on every update) to this per-user installer. The stock template removes the
 ; MSI with its own UninstallString, which asks "Are you sure you want to
 ; uninstall this product?" in the middle of an update, and a "No" or a
-; cancelled UAC left two copies side by side.
+; cancelled UAC left two copies side by side. If the MSI still cannot be
+; removed (no administrator rights), the person chooses: ask again, install
+; next to it, or keep it. The update also waits for the closing app to let go
+; of its exe instead of stopping on "Error opening file for writing".
 ManifestDPIAware true
 ; Add in `dpiAwareness` `PerMonitorV2` to manifest for Windows 10 1607+ (note this should not affect lower versions since they should be able to ignore this and pick up `dpiAware` `true` set by `ManifestDPIAware true`)
 ; Currently undocumented on NSIS's website but is in the Docs folder of source tree, see
@@ -202,6 +205,14 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 Var ReinstallPageCheck
 Page custom PageReinstall PageLeaveReinstall
 Function PageReinstall
+  ; BASTYON: an update of the per-user install leaves an MSI copy alone: the
+  ; person kept it ("Ignore" in PageLeaveReinstall), and removing it would ask
+  ; for administrator rights on every update.
+  ${If} $UpdateMode = 1
+    ReadRegStr $R0 SHCTX "${UNINSTKEY}" "UninstallString"
+    ${IfThen} $R0 != "" ${|} Goto wix_loop_done ${|}
+  ${EndIf}
+
   ; Uninstall previous WiX installation if exists.
   ;
   ; A WiX installer stores the installation info in registry
@@ -390,12 +401,15 @@ Function PageLeaveReinstall
     ${If} $0 <> 0
     ${OrIf} ${FileExists} "$INSTDIR\${MAINBINARYNAME}.exe"
       ; BASTYON: an in-app update (/UPDATE) and the MSI was not removed (UAC
-      ; cancelled or msiexec failed). Do not install a second copy next to it:
-      ; start the old version again and quit; the app will offer the update
-      ; again.
+      ; cancelled, no administrator rights, msiexec failed). Before, the old
+      ; version silently started again, and the update "broke" every time.
+      ; Now the person chooses: Retry asks for the rights again, Ignore
+      ; installs the new version for this account next to the old one,
+      ; Abort starts the old version again.
       ${If} $WixMode = 1
       ${AndIf} $UpdateMode = 1
       ${AndIf} $0 <> 0
+        MessageBox MB_ICONEXCLAMATION|MB_ABORTRETRYIGNORE|MB_DEFBUTTON2 "$(bastyonMsiNotRemoved)" /SD IDABORT IDRETRY reinst_uninstall IDIGNORE reinst_done
         ReadRegStr $R1 HKCU "${MANUPRODUCTKEY}" "InstallDir"
         ${If} ${FileExists} "$R1${MAINBINARYNAME}.exe"
           Exec '"$R1${MAINBINARYNAME}.exe"'
@@ -512,6 +526,18 @@ FunctionEnd
 {{#each language_files}}
   !include "{{this}}"
 {{/each}}
+
+; BASTYON: the MSI was not removed during an update (PageLeaveReinstall). One
+; string per language in tauri.conf.json bundle.windows.nsis.languages; the
+; button names are Windows' own, in the system language. $0 is the msiexec code.
+LangString bastyonMsiNotRemoved ${LANG_ENGLISH} "The previous version of ${PRODUCTNAME} is installed for all users, and removing it needs administrator rights. Windows did not remove it (code $0).$\r$\n$\r$\nRetry: ask for the rights again.$\r$\nIgnore: install the new version for your account only; remove the previous one later in Settings > Apps.$\r$\nAbort: keep the previous version."
+LangString bastyonMsiNotRemoved ${LANG_RUSSIAN} "Прежняя версия ${PRODUCTNAME} установлена для всех пользователей, и для её удаления нужны права администратора. Windows её не удалила (код $0).$\r$\n$\r$\n«Повторить» — спросить права ещё раз.$\r$\n«Пропустить» — поставить новую версию только для вашей учётной записи, а прежнюю удалить позже в «Параметры → Приложения».$\r$\n«Прервать» — оставить прежнюю версию."
+LangString bastyonMsiNotRemoved ${LANG_GERMAN} "Die vorherige Version von ${PRODUCTNAME} ist für alle Benutzer installiert, und zum Entfernen sind Administratorrechte nötig. Windows hat sie nicht entfernt (Code $0).$\r$\n$\r$\nWiederholen: erneut nach den Rechten fragen.$\r$\nIgnorieren: die neue Version nur für Ihr Konto installieren; die vorherige später unter Einstellungen > Apps entfernen.$\r$\nAbbrechen: die vorherige Version behalten."
+LangString bastyonMsiNotRemoved ${LANG_SPANISH} "La versión anterior de ${PRODUCTNAME} está instalada para todos los usuarios y para quitarla se necesitan permisos de administrador. Windows no la quitó (código $0).$\r$\n$\r$\nReintentar: volver a pedir los permisos.$\r$\nOmitir: instalar la nueva versión solo para su cuenta; quite la anterior más tarde en Configuración > Aplicaciones.$\r$\nAnular: conservar la versión anterior."
+LangString bastyonMsiNotRemoved ${LANG_FRENCH} "La version précédente de ${PRODUCTNAME} est installée pour tous les utilisateurs, et sa suppression demande des droits d'administrateur. Windows ne l'a pas supprimée (code $0).$\r$\n$\r$\nRecommencer : redemander les droits.$\r$\nIgnorer : installer la nouvelle version pour votre compte seulement ; supprimez l'ancienne plus tard dans Paramètres > Applications.$\r$\nAbandonner : garder la version précédente."
+LangString bastyonMsiNotRemoved ${LANG_ITALIAN} "La versione precedente di ${PRODUCTNAME} è installata per tutti gli utenti e per rimuoverla servono i diritti di amministratore. Windows non l'ha rimossa (codice $0).$\r$\n$\r$\nRiprova: chiedere di nuovo i diritti.$\r$\nIgnora: installare la nuova versione solo per il tuo account; rimuovi la precedente più tardi in Impostazioni > App.$\r$\nInterrompi: mantenere la versione precedente."
+LangString bastyonMsiNotRemoved ${LANG_KOREAN} "이전 버전의 ${PRODUCTNAME}은(는) 모든 사용자용으로 설치되어 있어 제거하려면 관리자 권한이 필요합니다. Windows가 제거하지 못했습니다(코드 $0).$\r$\n$\r$\n다시 시도: 권한을 다시 요청합니다.$\r$\n무시: 새 버전을 내 계정에만 설치합니다. 이전 버전은 나중에 설정 > 앱에서 제거하세요.$\r$\n중단: 이전 버전을 유지합니다."
+LangString bastyonMsiNotRemoved ${LANG_SIMPCHINESE} "${PRODUCTNAME} 的旧版本是为所有用户安装的，删除它需要管理员权限。Windows 未能删除它（代码 $0）。$\r$\n$\r$\n重试：再次请求权限。$\r$\n忽略：仅为您的帐户安装新版本；稍后在“设置 > 应用”中删除旧版本。$\r$\n中止：保留旧版本。"
 
 Function .onInit
   ${GetOptions} $CMDLINE "/P" $PassiveMode
@@ -683,6 +709,31 @@ Section Install
 
   !insertmacro CheckIfAppIsRunning "${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
 
+  ; BASTYON: the app that started the update exits right after starting the
+  ; installer, a killed process lets go of its exe a moment later, and an
+  ; antivirus scan holds it longer still. `File` then stopped on "Error
+  ; opening file for writing" (Abort / Retry / Ignore), which read as missing
+  ; rights or files. Wait up to 10 s, then move the old exe aside: Windows
+  ; lets a running exe be renamed. The .old file goes with the next update.
+  Delete "$INSTDIR\${MAINBINARYNAME}.exe.old"
+  ${If} ${FileExists} "$INSTDIR\${MAINBINARYNAME}.exe"
+    StrCpy $R9 0
+    ${Do}
+      ClearErrors
+      FileOpen $R8 "$INSTDIR\${MAINBINARYNAME}.exe" a
+      ${IfNot} ${Errors}
+        FileClose $R8
+        ${Break}
+      ${EndIf}
+      IntOp $R9 $R9 + 1
+      ${If} $R9 >= 20
+        Rename "$INSTDIR\${MAINBINARYNAME}.exe" "$INSTDIR\${MAINBINARYNAME}.exe.old"
+        ${Break}
+      ${EndIf}
+      Sleep 500
+    ${Loop}
+  ${EndIf}
+
   ; Copy main executable
   File "${MAINBINARYSRCPATH}"
 
@@ -823,6 +874,7 @@ Section Uninstall
   ; Delete the app directory and its content from disk
   ; Copy main executable
   Delete "$INSTDIR\${MAINBINARYNAME}.exe"
+  Delete "$INSTDIR\${MAINBINARYNAME}.exe.old" ; BASTYON: see Section Install
 
   ; Delete resources
   {{#each resources}}
