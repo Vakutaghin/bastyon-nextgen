@@ -1,11 +1,10 @@
-// Построение RPC-запросов для разных типов ленты (вкладок): обычная hierarchical strip,
+// Построение RPC-запросов для разных типов ленты (вкладок): лента по дате,
 // подписки, избранное, обсуждаемое. Чистые функции без Vue-реактивности — принимают
 // контекст и возвращают Promise<GetHierarchicalStripResponse>.
 
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
 import { favoritesAPI } from '@/db/apis/favorites-api'
-import { BLOCKS_PER_DAY } from '@/stores/filters-store-consts'
 import type {
   GetHierarchicalStripResponse,
   GetHierarchicalStripPost,
@@ -46,25 +45,23 @@ export interface FeedQueryContext {
   height?: number
 }
 
-/**
- * Лента на редком языке (корейском, итальянском, сербском) ноде не по силам:
- * постов на нём мало, и она перебирает тысячи блоков, пока SQL не упрётся в
- * таймаут («GetHistoricalFeed: sql request timeout»), — у корейского так
- * всегда (замер 02.11.2026). Тогда вместо ошибки — лучшее на этом языке за
- * месяц (`gettopfeed` с этим окном в блоках), он отвечает за секунды.
- */
-export const SPARSE_LANGUAGE_DEPTH = 30 * BLOCKS_PER_DAY
-
 /** Уникальный cachehash чтобы обойти серверный кэш для свежих данных. */
 const freshCacheHash = (): string =>
   Date.now().toString(36) + Math.random().toString(36).substring(2)
 
-/** Default-вкладка: gethierarchicalstrip. */
-export async function buildHierarchicalStripQuery(
-  ctx: FeedQueryContext
+/**
+ * Лента по дате (`gethistoricalstrip`): посты от новых к старым, подряд.
+ * Раньше главная лента шла через `gethierarchicalstrip`: посты последних
+ * блоков нода расставляет по оценкам и рейтингу авторов, дальше — по дате.
+ * Следующая страница — от `currentTxid`, последнего поста предыдущей.
+ * `nodeTimeouts` — см. RpcOptions: пробному запросу хватает одной ноды.
+ */
+export async function buildHistoricalStripQuery(
+  ctx: FeedQueryContext,
+  nodeTimeouts?: number
 ): Promise<GetHierarchicalStripResponse> {
   return getByPRCWithAuth({
-    method: rpcEndpoints.getHierarchicalStrip,
+    method: rpcEndpoints.getHistoricalStrip,
     parameters: [
       ctx.height ?? 0,
       ctx.currentTxid,
@@ -79,7 +76,7 @@ export async function buildHierarchicalStripQuery(
       ctx.userAddress,
     ],
     cachehash: freshCacheHash(),
-    options: { ex: true },
+    options: { ex: true, nodeTimeouts },
     state: 1,
   }) as Promise<GetHierarchicalStripResponse>
 }
@@ -268,7 +265,7 @@ function favoritesResponse(posts: RawFavoritePost[]): GetHierarchicalStripRespon
 
 /**
  * Диспетчер запроса по типу вкладки. activeTab id:
- *   2 — подписки, 6 — избранное, 7 — обсуждаемое, остальное — hierarchical strip.
+ *   2 — подписки, 6 — избранное, 7 — обсуждаемое, остальное — лента по дате.
  *
  * На дефолтной и контентных вкладках (1, 3 video, 4 audio, 5 article) тоггл
  * «Сначала лучшее» (`ctx.topFirst`) переключает источник на `gettopfeed` (лента
@@ -283,5 +280,5 @@ export async function buildFeedQueryByTab(
   if (activeTab === 6) return buildFavoritesFeedQuery(ctx)
   if (activeTab === 7) return buildMostCommentedFeedQuery(ctx)
   if (ctx.topFirst) return buildTopFeedQuery(ctx)
-  return buildHierarchicalStripQuery(ctx)
+  return buildHistoricalStripQuery(ctx)
 }

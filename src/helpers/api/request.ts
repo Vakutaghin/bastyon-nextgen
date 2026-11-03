@@ -311,6 +311,7 @@ export async function getByPRC(
       isLogicErrorThrowable: true,
       protocolName: 'RPC',
       stopAfterFailure: fallback ? async () => !(await anyProxyAlive(proxies)) : undefined,
+      maxNodeTimeouts: params.options?.nodeTimeouts,
     })
   } catch (error) {
     if (fallback && proxiesUnreachable(error) && (await reportProxiesUnreachable())) {

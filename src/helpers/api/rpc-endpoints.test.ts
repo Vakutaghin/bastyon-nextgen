@@ -36,6 +36,7 @@ describe('getRpcPath', () => {
 
   it('uses /rpc-ex/ for feed methods', () => {
     expect(getRpcPath('gethierarchicalstrip')).toBe('/rpc-ex/gethierarchicalstrip')
+    expect(getRpcPath('gethistoricalstrip')).toBe('/rpc-ex/gethistoricalstrip')
     expect(getRpcPath('gettopfeed')).toBe('/rpc-ex/gettopfeed')
     expect(getRpcPath('getprofilefeed')).toBe('/rpc-ex/getprofilefeed')
     expect(getRpcPath('getsubscribesfeed')).toBe('/rpc-ex/getsubscribesfeed')

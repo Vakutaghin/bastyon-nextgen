@@ -8,6 +8,17 @@
         @change="filtersStore.toggleTopFirst()"
       />
     </SC_TopFirstWrapper>
+    <!-- «Новые посты сразу» — в ленте по дате; у «Сначала лучшее» наверху не новое. -->
+    <SC_TopFirstWrapper :title="t('sidebar.liveFeedHint')">
+      <SC_FeedLanguageLabel :for="liveFeedId">{{ t('sidebar.liveFeed') }}</SC_FeedLanguageLabel>
+      <ASwitch
+        :id="liveFeedId"
+        :checked="filtersStore.liveFeed"
+        :disabled="filtersStore.topFirst"
+        size="small"
+        @change="filtersStore.toggleLiveFeed()"
+      />
+    </SC_TopFirstWrapper>
     <!-- Язык ленты — свой; язык интерфейса (шапка, «Настройки») переключает и его. -->
     <SC_TopFirstWrapper>
       <SC_FeedLanguageLabel :for="feedLanguageId">
@@ -27,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-// «Сначала лучшее» и «Язык ленты» над категориями. Отдельный блок: в «Шапке и
+// «Сначала лучшее», «Новые посты сразу» и «Язык ленты» над категориями. Отдельный блок: в «Шапке и
 // панелях» его прячут и переставляют сам по себе.
 
 import { onMounted, useId } from 'vue'
@@ -50,6 +61,7 @@ const filtersStore = useFiltersStore()
 const uiStore = useUIStore()
 // Панель бывает дважды (левая и меню телефона) — id подписи у каждой свой.
 const feedLanguageId = useId()
+const liveFeedId = useId()
 
 const FEED_LANGUAGE_OPTIONS: SelectOption[] = SUPPORTED_LOCALES.map((value) => ({
   value,

@@ -5,7 +5,8 @@
  * композибла на ответ/ошибку: V35 (ошибка догрузки не вешает спиннер и не
  * стирает ленту), S16 (страница прошлого фильтра не доклеивается в новую
  * ленту), S17 («Обновить» идёт с головы, а не повторяет текущую страницу),
- * имена авторов последних комментариев догружаются до показа страницы.
+ * имена авторов последних комментариев догружаются до показа страницы,
+ * лента на редком языке по одному посту, «Новые посты сразу».
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -49,10 +50,27 @@ vi.mock('./helpers/feed-enrichment', () => ({
 }))
 
 vi.mock('./helpers/feed-queries', () => ({
-  SPARSE_LANGUAGE_DEPTH: 43200,
   buildFeedQueryByTab: vi.fn(async () => ({ data: { contents: [] } })),
-  buildTopFeedQuery: vi.fn(async () => ({ data: { contents: [] } })),
 }))
+
+// Лента по дате идёт через date-feed; здесь он прозрачен — отдаёт запрос
+// вкладки целой страницей. Редкий язык — свои тесты ниже и date-feed.test.ts.
+vi.mock('./helpers/date-feed', async () => {
+  const queries = await import('./helpers/feed-queries')
+  class SparseLanguageTimeout extends Error {
+    constructor(readonly first: boolean) {
+      super('timeout')
+    }
+  }
+  return {
+    SparseLanguageTimeout,
+    isSparseFeed: vi.fn(() => false),
+    fetchDatePage: vi.fn(async (ctx: { count: number }) => ({
+      response: await queries.buildFeedQueryByTab(1, ctx as never),
+      requested: ctx.count,
+    })),
+  }
+})
 
 vi.mock('@/blockchain/store/auth-store', () => ({
   useAuthStore: () => ({ address: '', isUserAuthenticated: false }),
@@ -61,6 +79,7 @@ vi.mock('@/blockchain/store/auth-store', () => ({
 const filtersStore = reactive({
   activeTab: 1,
   topFirst: false,
+  liveFeed: false,
   topFeedDepth: 10080,
   selectedCategories: [] as string[],
   selectedTags: [] as string[],
@@ -79,7 +98,8 @@ vi.mock('@/stores/ui-store', () => ({
 import { feedErrorText, useInfiniteFeed } from './use-infinite-feed'
 import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
 import { t } from '@/i18n'
-import { buildFeedQueryByTab, buildTopFeedQuery } from './helpers/feed-queries'
+import { buildFeedQueryByTab } from './helpers/feed-queries'
+import { SparseLanguageTimeout, fetchDatePage, isSparseFeed } from './helpers/date-feed'
 
 type FeedApi = ReturnType<typeof useInfiniteFeed>
 
@@ -128,6 +148,7 @@ beforeEach(() => {
   preloadAuthors.mockReset()
   preloadAuthors.mockImplementation(() => Promise.resolve())
   filtersStore.activeTab = 1
+  filtersStore.liveFeed = false
 })
 
 describe('useInfiniteFeed', () => {
@@ -165,26 +186,20 @@ describe('useInfiniteFeed', () => {
     expect(feed.hasMore.value).toBe(false)
   })
 
-  it('a rare language the node cannot build in time: the best of the month instead of an error', async () => {
+  it('a rare language: one post per request, with a note; a page of one is not the end', async () => {
     const feed = mountFeed()
-    const timeout = {
-      httpStatus: 500,
-      error: { message: '{"code":408,"message":"GetHistoricalFeed: sql request timeout"}' },
-    }
-    vi.mocked(buildFeedQueryByTab).mockRejectedValueOnce(timeout)
-    vi.mocked(buildTopFeedQuery).mockResolvedValueOnce(page('x', 'y') as never)
+    vi.mocked(fetchDatePage).mockResolvedValueOnce({ response: page('x'), requested: 1 } as never)
+    vi.mocked(isSparseFeed).mockReturnValueOnce(true)
+    await queryState.lastOptions!.queryFn!()
+    expect(feed.sparse.value).toBe(true)
 
-    await expect(queryState.lastOptions!.queryFn!()).resolves.toEqual(page('x', 'y'))
-    expect(vi.mocked(buildTopFeedQuery).mock.lastCall![0]).toMatchObject({
-      lang: 'ru',
-      depth: 43200,
-    })
-    expect(feed.sparseFallback.value).toBe(true)
+    await deliver(page('x'))
+    expect(feed.hasMore.value).toBe(true)
+  })
 
-    // Другая ошибка — обычная ошибка ленты, без подмены.
-    vi.mocked(buildFeedQueryByTab).mockRejectedValueOnce(new Error('node down'))
-    await expect(queryState.lastOptions!.queryFn!()).rejects.toThrow('node down')
-    expect(feed.sparseFallback.value).toBe(false)
+  it('the node found no next post in a rare language: words, not the SQL error', () => {
+    expect(feedErrorText(new SparseLanguageTimeout(true))).toBe(t('postCard.sparseLanguageNone'))
+    expect(feedErrorText(new SparseLanguageTimeout(false))).toBe(t('postCard.sparseLanguageGap'))
   })
 
   it('keeps the loaded feed and surfaces the reason when a page fails (V35)', async () => {
@@ -386,5 +401,99 @@ describe('useInfiniteFeed', () => {
       filtersStore.allCategories = []
       filtersStore.selectedTags = []
     }
+  })
+  describe('«Новые посты сразу»', () => {
+    const ids = (feed: FeedApi): string[] => feed.allPosts.value.map((p) => String(p.id))
+    const flush = async (): Promise<void> => {
+      for (let i = 0; i < 5; i++) await Promise.resolve()
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'setInterval'] })
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('new posts go on top one by one, the oldest of them first', async () => {
+      filtersStore.liveFeed = true
+      const feed = mountFeed()
+      await deliver(page('a', 'b'))
+      vi.mocked(buildFeedQueryByTab).mockResolvedValueOnce(page('n2', 'n1', 'a') as never)
+
+      window.dispatchEvent(new Event('focus'))
+      await flush()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(ids(feed)).toEqual(['n1', 'a', 'b'])
+      // Голову спросили от последнего блока, а не на высоте первой страницы.
+      expect(vi.mocked(fetchDatePage).mock.lastCall![0]).toMatchObject({
+        currentTxid: '',
+        height: 0,
+      })
+
+      await vi.advanceTimersByTimeAsync(1_500)
+      expect(ids(feed)).toEqual(['n2', 'n1', 'a', 'b'])
+      expect(feed.newPostsCount.value).toBe(0)
+    })
+
+    it('polls every half a minute and never in the best-first feed', async () => {
+      filtersStore.liveFeed = true
+      mountFeed()
+      await deliver(page('a', 'b'))
+      const peek = vi.mocked(fetchDatePage)
+      peek.mockClear()
+
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(peek).toHaveBeenCalledTimes(1)
+
+      filtersStore.topFirst = true
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(peek).toHaveBeenCalledTimes(1)
+      filtersStore.topFirst = false
+    })
+
+    it('more new posts than three pages: the pill instead of a gap in the feed', async () => {
+      filtersStore.liveFeed = true
+      const feed = mountFeed()
+      await deliver(page('a', 'b'))
+      let n = 0
+      // Каждый раз полная страница из 20 незнакомых: до показанного не дойти.
+      const fresh = (): unknown => page(...Array.from({ length: 20 }, () => `n${n++}`))
+      vi.mocked(buildFeedQueryByTab).mockImplementation(async () => fresh() as never)
+      try {
+        window.dispatchEvent(new Event('focus'))
+        await vi.waitFor(() => expect(feed.newPostsCount.value).toBe(60))
+        await vi.advanceTimersByTimeAsync(5_000)
+        expect(ids(feed)).toEqual(['a', 'b'])
+      } finally {
+        vi.mocked(buildFeedQueryByTab).mockImplementation(
+          async () => ({ data: { contents: [] } }) as never
+        )
+      }
+    })
+
+    it('a rare language: the head without a jump over a break, at most once in five minutes', async () => {
+      filtersStore.liveFeed = true
+      mountFeed()
+      vi.mocked(isSparseFeed).mockReturnValue(true)
+      try {
+        await queryState.lastOptions!.queryFn!()
+        await deliver(page('a', 'b'))
+        const peek = vi.mocked(fetchDatePage)
+        peek.mockClear()
+
+        window.dispatchEvent(new Event('focus'))
+        await flush()
+        expect(peek).toHaveBeenCalledTimes(1)
+        expect(peek.mock.lastCall![1]).toEqual({ jump: false })
+
+        window.dispatchEvent(new Event('focus'))
+        await vi.advanceTimersByTimeAsync(60_000)
+        expect(peek).toHaveBeenCalledTimes(1)
+      } finally {
+        vi.mocked(isSparseFeed).mockReturnValue(false)
+      }
+    })
   })
 })

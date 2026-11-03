@@ -21,6 +21,12 @@ export type RpcOptions = {
    * Для неидемпотентных запросов (sendrawtransactionwithmessage).
    */
   noFailover?: boolean
+  /**
+   * Сколько ответов «нода не успела» (HTTP-500 с timeout) терпеть, прежде чем
+   * сдаться; по умолчанию 2. 1 — для пробных запросов, у которых есть свой
+   * запасной путь (лента на редком языке).
+   */
+  nodeTimeouts?: number
   [key: string]: unknown
 }
 

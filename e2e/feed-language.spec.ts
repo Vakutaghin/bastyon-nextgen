@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 
@@ -14,11 +15,15 @@ const DATA: MockNodeData = {
   comments: [],
 }
 
-/** Языки, с которыми лента спрашивала ноду (`gethierarchicalstrip`, 4-й параметр). */
+/** «Что нового» этой версии уже видели (use-changelog.ts): окно не встанет поверх ленты. */
+const APP_VERSION = (JSON.parse(readFileSync('package.json', 'utf8')) as { version: string })
+  .version
+
+/** Языки, с которыми лента спрашивала ноду (`gethistoricalstrip`, 4-й параметр). */
 function watchFeedLanguages(page: Page): string[] {
   const langs: string[] = []
   page.on('request', (request) => {
-    if (!request.url().endsWith('/gethierarchicalstrip')) return
+    if (!request.url().endsWith('/gethistoricalstrip')) return
     try {
       const params = (request.postDataJSON() as { parameters?: unknown[] })?.parameters
       if (typeof params?.[3] === 'string') langs.push(params[3])
@@ -34,15 +39,12 @@ test('язык ленты меняет только ленту, язык из ш
   await page.setViewportSize({ width: 1400, height: 900 })
   const langs = watchFeedLanguages(page)
   await useMockNode(page, DATA)
-  await page.addInitScript(() => {
+  await page.addInitScript((version) => {
     if (!localStorage.getItem('bastyon_locale')) localStorage.setItem('bastyon_locale', 'ru')
-  })
+    localStorage.setItem('bastyonChangelogLastSeenVersion', version)
+  }, APP_VERSION)
   await page.goto('/')
   await page.waitForSelector('#app > *', { timeout: 30_000 })
-  await page
-    .getByRole('button', { name: 'Понятно' })
-    .click({ timeout: 5_000 })
-    .catch(() => {})
   await expect(page.getByText('Пост в ленте')).toBeVisible({ timeout: 30_000 })
   expect(langs.at(-1)).toBe('ru')
 

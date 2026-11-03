@@ -2246,7 +2246,11 @@ export default {
       'Above are new posts from people you follow. Below is the general feed.',
     subscriptionsDividerButton: 'Continue in “Subscriptions”',
     sparseLanguageFeed:
-      'There are few posts in this language, and the node couldn’t build the feed in order in time, so here is the best of the month.',
+      'Few people post in this language, so posts are found one at a time and the feed grows slowly.',
+    sparseLanguageNone:
+      'The node found no posts in this language — it looks like nobody has posted in it here yet.',
+    sparseLanguageGap:
+      'The node found no earlier posts in this language: there is too long a break before them.',
     refreshFeed: 'Refresh feed',
     createPost: 'Create post',
     hideSidebar: 'Hide sidebar',
@@ -2257,6 +2261,7 @@ export default {
     loading: 'Loading...',
     allPostsLoaded: 'All posts loaded',
     feedEmpty: 'Feed is empty',
+    feedEmptyLanguage: 'No posts in this language',
     newPosts: 'Show new posts ({n})',
     boosted: 'Promoted',
     visibility: {
@@ -2287,6 +2292,9 @@ export default {
   sidebar: {
     topFirst: 'Best first',
     feedLanguage: 'Feed language',
+    liveFeed: 'New posts live',
+    liveFeedHint:
+      'New posts appear at the top of the feed by themselves, one by one. Only in the feed by date, not with “Best first”.',
     categories: 'Categories',
     addCategory: 'Add category',
     resetFilter: 'Reset filter',

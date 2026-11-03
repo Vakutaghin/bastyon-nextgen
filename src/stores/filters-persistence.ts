@@ -10,6 +10,8 @@ export interface FiltersSnapshot {
   customCategories: Category[]
   selectedTags: string[]
   topFirst: boolean
+  /** «Новые посты сразу»: новые встают наверх ленты сами. */
+  liveFeed: boolean
 }
 
 /**
@@ -24,11 +26,15 @@ interface PersistedFilters {
   excludedCategories?: string[]
   selectedTags?: string[]
   topFirst?: boolean
+  liveFeed?: boolean
 }
 
 export async function loadFiltersFromSettings(): Promise<Partial<FiltersSnapshot>> {
   try {
-    const settings = (await settingsAPI.get(FILTERS_SETTINGS_KEY)) as PersistedFilters | null | undefined
+    const settings = (await settingsAPI.get(FILTERS_SETTINGS_KEY)) as
+      | PersistedFilters
+      | null
+      | undefined
     if (!settings) return {}
 
     const snapshot: Partial<FiltersSnapshot> = {}
@@ -51,6 +57,9 @@ export async function loadFiltersFromSettings(): Promise<Partial<FiltersSnapshot
     if (settings.topFirst !== undefined) {
       snapshot.topFirst = settings.topFirst
     }
+    if (typeof settings.liveFeed === 'boolean') {
+      snapshot.liveFeed = settings.liveFeed
+    }
     return snapshot
   } catch (e) {
     console.error('Failed to load filters settings:', e)
@@ -66,6 +75,7 @@ export async function saveFiltersToSettings(snapshot: FiltersSnapshot): Promise<
       customCategories: JSON.parse(JSON.stringify(snapshot.customCategories)),
       selectedTags: JSON.parse(JSON.stringify(snapshot.selectedTags)),
       topFirst: snapshot.topFirst,
+      liveFeed: snapshot.liveFeed,
     })
   } catch (e) {
     console.error('Failed to save filters settings:', e)

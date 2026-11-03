@@ -2275,7 +2275,11 @@ export default {
       'Oben: Neues von Personen, denen Sie folgen. Darunter: der allgemeine Feed.',
     subscriptionsDividerButton: 'Weiter in „Abonnements“',
     sparseLanguageFeed:
-      'In dieser Sprache gibt es wenige Beiträge, und der Knoten konnte den Feed nicht rechtzeitig der Reihe nach zusammenstellen – hier das Beste des Monats.',
+      'In dieser Sprache wird selten gepostet: Beiträge werden einzeln gesucht, deshalb wächst der Feed langsam.',
+    sparseLanguageNone:
+      'Der Knoten hat keine Beiträge in dieser Sprache gefunden – offenbar hat hier noch niemand darin gepostet.',
+    sparseLanguageGap:
+      'Der Knoten hat keine früheren Beiträge in dieser Sprache gefunden: Davor liegt eine zu lange Pause.',
     refreshFeed: 'Feed aktualisieren',
     createPost: 'Beitrag erstellen',
     hideSidebar: 'Seitenleiste ausblenden',
@@ -2286,6 +2290,7 @@ export default {
     loading: 'Wird geladen...',
     allPostsLoaded: 'Alle Beiträge geladen',
     feedEmpty: 'Der Feed ist leer',
+    feedEmptyLanguage: 'Keine Beiträge in dieser Sprache',
     newPosts: 'Neue Beiträge anzeigen ({n})',
     boosted: 'Beworben',
     visibility: {
@@ -2316,6 +2321,9 @@ export default {
   sidebar: {
     topFirst: 'Beste zuerst',
     feedLanguage: 'Sprache des Feeds',
+    liveFeed: 'Neue Beiträge sofort',
+    liveFeedHint:
+      'Neue Beiträge erscheinen von selbst oben im Feed, einer nach dem anderen. Nur im Feed nach Datum, nicht bei „Beste zuerst“.',
     categories: 'Kategorien',
     addCategory: 'Kategorie hinzufügen',
     resetFilter: 'Filter zurücksetzen',

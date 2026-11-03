@@ -1,6 +1,6 @@
 import styled from 'vue3-styled-components'
 
-/** «Сначала лучшее» и «Язык ленты» — порядок и язык ленты, над категориями. */
+/** «Сначала лучшее», «Новые посты сразу» и «Язык ленты» — над категориями. */
 export const SC_FeedSettings = styled.div`
   display: flex;
   flex-direction: column;

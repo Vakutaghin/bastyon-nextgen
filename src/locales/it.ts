@@ -2258,7 +2258,11 @@ export default {
       'Sopra: le novità delle persone che segui. Sotto: il feed generale.',
     subscriptionsDividerButton: 'Continua in «Iscrizioni»',
     sparseLanguageFeed:
-      'In questa lingua ci sono pochi post e il nodo non è riuscito a comporre il feed in ordine in tempo: ecco il meglio del mese.',
+      'In questa lingua si pubblica di rado: i post vengono cercati uno alla volta, quindi il feed cresce lentamente.',
+    sparseLanguageNone:
+      'Il nodo non ha trovato post in questa lingua: sembra che qui nessuno ci abbia ancora scritto.',
+    sparseLanguageGap:
+      'Il nodo non ha trovato post precedenti in questa lingua: prima c’è una pausa troppo lunga.',
     refreshFeed: 'Aggiorna il feed',
     createPost: 'Crea un post',
     hideSidebar: 'Nascondi la barra laterale',
@@ -2269,6 +2273,7 @@ export default {
     loading: 'Caricamento...',
     allPostsLoaded: 'Tutti i post sono stati caricati',
     feedEmpty: 'Il feed è vuoto',
+    feedEmptyLanguage: 'Nessun post in questa lingua',
     newPosts: 'Mostra i nuovi post ({n})',
     boosted: 'Promosso',
     visibility: {
@@ -2299,6 +2304,9 @@ export default {
   sidebar: {
     topFirst: 'Prima i migliori',
     feedLanguage: 'Lingua del feed',
+    liveFeed: 'Nuovi post subito',
+    liveFeedHint:
+      'I nuovi post compaiono da soli in cima al feed, uno alla volta. Solo nel feed per data, non con «Prima i migliori».',
     categories: 'Categorie',
     addCategory: 'Aggiungi categoria',
     resetFilter: 'Reimposta il filtro',

@@ -2153,7 +2153,9 @@ export default {
     removeFromFavorites: '取消收藏',
     subscriptionsDividerCaption: '上方是您关注的人的新帖子，下方是综合信息流。',
     subscriptionsDividerButton: '在“关注”中继续',
-    sparseLanguageFeed: '该语言的帖子很少，节点未能及时按顺序生成动态，因此显示本月最佳内容。',
+    sparseLanguageFeed: '该语言的帖子很少：帖子逐条查找，因此信息流加载较慢。',
+    sparseLanguageNone: '节点未找到该语言的帖子——看来这里还没有人用该语言发帖。',
+    sparseLanguageGap: '节点未找到该语言更早的帖子：在此之前的间隔太长。',
     refreshFeed: '刷新信息流',
     createPost: '发布帖子',
     hideSidebar: '隐藏侧边栏',
@@ -2164,6 +2166,7 @@ export default {
     loading: '加载中...',
     allPostsLoaded: '已加载全部帖子',
     feedEmpty: '信息流为空',
+    feedEmptyLanguage: '该语言暂无帖子',
     newPosts: '显示新帖子（{n}）',
     boosted: '推广',
     visibility: {
@@ -2193,6 +2196,9 @@ export default {
   sidebar: {
     topFirst: '最佳优先',
     feedLanguage: '信息流语言',
+    liveFeed: '新帖子即时显示',
+    liveFeedHint:
+      '新帖子会自动逐条出现在信息流顶部。仅适用于按日期排序的信息流，不适用于“最佳优先”。',
     categories: '分类',
     addCategory: '添加分类',
     resetFilter: '重置筛选',

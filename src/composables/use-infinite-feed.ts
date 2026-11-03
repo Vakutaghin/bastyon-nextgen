@@ -7,17 +7,21 @@
 
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import type { GetHierarchicalStripResponse } from '@/types/rpc-responses/get-hierarchical-strip'
+import type {
+  GetHierarchicalStripPost,
+  GetHierarchicalStripResponse,
+} from '@/types/rpc-responses/get-hierarchical-strip'
 import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useUIStore } from '@/stores/ui-store'
+import { buildFeedQueryByTab, type FeedQueryContext } from './helpers/feed-queries'
 import {
-  SPARSE_LANGUAGE_DEPTH,
-  buildFeedQueryByTab,
-  buildTopFeedQuery,
-  type FeedQueryContext,
-} from './helpers/feed-queries'
+  SparseLanguageTimeout,
+  fetchDatePage,
+  isSparseFeed,
+  type DatePage,
+} from './helpers/date-feed'
 import { prefetchMargin } from './use-load-more-sentinel'
 import {
   fetchAndMergeRepostOriginals,
@@ -26,7 +30,6 @@ import {
 } from './helpers/feed-enrichment'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
-import { isNodeTimeout } from '@/helpers/api/rpc-errors'
 import { t } from '@/i18n'
 
 /**
@@ -34,13 +37,17 @@ import { t } from '@/i18n'
  * подключения, а не технической строкой «No Pocketnet nodes answered directly».
  */
 export function feedErrorText(err: unknown): string {
-  return err instanceof NoDirectNodesError
-    ? t('settings.network.statusNoNodes')
-    : extractErrorMessage(err)
+  if (err instanceof NoDirectNodesError) return t('settings.network.statusNoNodes')
+  if (err instanceof SparseLanguageTimeout) {
+    return t(err.first ? 'postCard.sparseLanguageNone' : 'postCard.sparseLanguageGap')
+  }
+  return extractErrorMessage(err)
 }
 
-/** Вкладки, у которых есть запасной путь через «Лучшее»: «Подписки», «Избранное» и «Обсуждаемое» — свои запросы. */
+/** Вкладки со своим источником — не лента по дате: «Подписки», «Избранное», «Обсуждаемое». */
 const OWN_SOURCE_TABS = new Set([2, 6, 7])
+/** Где «Новые посты сразу»: ленты по дате — главная, подписки, видео, аудио, статьи. */
+const LIVE_TABS = new Set([1, 2, 3, 4, 5])
 
 /**
  * Сколько страниц подряд из одних уже показанных постов терпеть, прежде чем
@@ -100,8 +107,10 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   const currentTxidForQuery = ref<string>('')
   /** Высота блока первой страницы — с ней просим следующие (`FeedQueryContext.height`). */
   let feedHeight = 0
-  /** Нода не успела собрать ленту на этом языке — показываем лучшее за месяц (SPARSE_LANGUAGE_DEPTH). */
-  const sparseFallback = ref(false)
+  /** Ленту на этом языке нода целыми страницами не собирает — посты приходят по одному (date-feed.ts). */
+  const sparse = ref(false)
+  /** Сколько постов просили в последнем запросе: пришло меньше — лента кончилась. */
+  let requestedCount = initialLimit
   /** Страниц подряд, в которых не нашлось ничего нового. */
   let repeatedPages = 0
 
@@ -199,20 +208,17 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     }
   }
 
-  /** Страница ленты; первая на редком языке, где нода не успела, — из «Лучшего» за месяц. */
-  async function fetchFeedPage(ctx: FeedQueryContext): Promise<GetHierarchicalStripResponse> {
+  /** Страница ленты: по дате — через date-feed (редкий язык), остальное — своим запросом вкладки. */
+  async function fetchFeedPage(ctx: FeedQueryContext, jump = true): Promise<DatePage> {
     const tab = Number(filtersStore.activeTab)
-    if (sparseFallback.value) {
-      return buildTopFeedQuery({ ...ctx, depth: SPARSE_LANGUAGE_DEPTH })
+    if (ctx.topFirst || OWN_SOURCE_TABS.has(tab)) {
+      sparse.value = false
+      return { response: await buildFeedQueryByTab(tab, ctx), requested: ctx.count }
     }
     try {
-      return await buildFeedQueryByTab(tab, ctx)
-    } catch (err) {
-      const canFallBack =
-        ctx.currentTxid === '' && !ctx.topFirst && !OWN_SOURCE_TABS.has(tab) && ctx.lang !== ''
-      if (!canFallBack || !isNodeTimeout(err)) throw err
-      sparseFallback.value = true
-      return buildTopFeedQuery({ ...ctx, depth: SPARSE_LANGUAGE_DEPTH })
+      return await fetchDatePage(ctx, { jump })
+    } finally {
+      sparse.value = isSparseFeed(ctx)
     }
   }
 
@@ -221,13 +227,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     queryKey: queryKey,
     queryFn: async () => {
       const currentTxid = currentTxidForQuery.value
-      // Первая страница — заново с обычной ленты: на этот раз нода может и успеть.
-      if (currentTxid === '') sparseFallback.value = false
-      const response = await fetchFeedPage(
+      const page = await fetchFeedPage(
         feedContext(currentTxid, currentTxid === '' ? initialLimit : pageSize)
       )
-      await preloadLastCommentAuthors(response?.data?.contents)
-      return response
+      requestedCount = page.requested
+      await preloadLastCommentAuthors(page.response?.data?.contents)
+      return page.response
     },
     enabled: computed(() => enabled && (hasMore.value || currentTxidForQuery.value === '')),
     staleTime: 0,
@@ -292,9 +297,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
         const newLastTxid = lastPost?.txid || ''
 
         // Если получили меньше постов, чем запрашивали, значит это последняя страница
-        const expectedCount = requestedTxid === '' ? initialLimit : pageSize
         hasMore.value =
-          contents.length >= expectedCount &&
+          contents.length >= requestedCount &&
           newLastTxid !== requestedTxid &&
           repeatedPages < MAX_REPEATED_PAGES
 
@@ -367,32 +371,93 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     await refetch()
   }
 
-  /**
-   * Фоновая проверка «появились ли новые посты сверху». Тянет голову ленты тем же
-   * запросом (currentTxid='') и считает, сколько постов идёт ПЕРЕД текущей головой.
-   * Не мутирует ленту — только обновляет `newPostsCount` для пилюли.
-   */
+  // «Новые посты сразу» (filtersStore.liveFeed): голову ленты спрашиваем раз в
+  // LIVE_INTERVAL (блок в Pocketnet — минута), а новые посты ставим наверх по
+  // одному, через LIVE_STEP каждый, — видно, как они приходят. Только в лентах
+  // по дате: в «Лучшем» и «Обсуждаемом» наверху не новое. Новых больше, чем на
+  // LIVE_MAX_PAGES страницах (лента долго стояла в фоне), — пилюля, как без
+  // режима: иначе между ними и показанным осталась бы дыра.
+  const LIVE_INTERVAL = 30_000
+  const LIVE_STEP = 1_500
+  const LIVE_MAX_PAGES = 3
+  const liveMode = computed<boolean>(
+    () =>
+      filtersStore.liveFeed &&
+      !filtersStore.topFirst &&
+      LIVE_TABS.has(Number(filtersStore.activeTab))
+  )
+  /** Новые посты в очереди наверх — от старого к свежему. */
+  let liveQueue: AdaptedPost[] = []
+  let liveChecking = false
+  let liveTimer: ReturnType<typeof setInterval> | null = null
+  let liveStepTimer: ReturnType<typeof setTimeout> | null = null
+  let lastLiveStep = 0
+
+  /** Сколько постов брать с головы ленты за запрос, проверяя новые. */
   const NEW_POSTS_PEEK = 20
+  // На редком языке голову ищем перебором до ~10 с на ноде (date-feed.ts) —
+  // не чаще раза в пять минут, и с пилюлей, и в «Новых постах сразу».
+  const SPARSE_HEAD_GAP = 300_000
+  let lastSparseHeadCheck = 0
+  /** Пора ли снова спрашивать голову ленты; на редком языке — реже. */
+  function headCheckDue(): boolean {
+    if (!sparse.value) return true
+    if (Date.now() - lastSparseHeadCheck < SPARSE_HEAD_GAP) return false
+    lastSparseHeadCheck = Date.now()
+    return true
+  }
+
+  interface NewPosts {
+    /** От свежего к старому. */
+    posts: AdaptedPost[]
+    contents: GetHierarchicalStripPost[]
+    /** Дошли до уже показанного поста; false — новых больше, чем просмотрели страниц. */
+    complete: boolean
+  }
+
+  /**
+   * Посты новее показанных: от головы ленты страницами, пока не встретится
+   * уже показанный. Высота — текущая (0): у первой страницы она прежняя, и
+   * постов новее неё нода бы не отдала. Ленту не меняет.
+   */
+  async function collectNewPosts(maxPages: number): Promise<NewPosts> {
+    const known = new Set([...allPosts.value, ...liveQueue].map((p) => String(p.id)))
+    const result: NewPosts = { posts: [], contents: [], complete: true }
+    let cursor = ''
+    for (let i = 0; i < maxPages; i++) {
+      // Без прыжка через перерыв: за ним старые посты, а не новые.
+      const page = await fetchFeedPage({ ...feedContext(cursor, NEW_POSTS_PEEK), height: 0 }, false)
+      const list = extractPostsFromResponse(page.response)
+      for (const post of list) {
+        if (known.has(String(post.id))) return result
+        result.posts.push(post)
+      }
+      const raw = page.response?.data?.contents ?? []
+      result.contents.push(...raw)
+      cursor = raw[raw.length - 1]?.txid ?? ''
+      if (list.length < page.requested || !cursor) return result
+    }
+    result.complete = false
+    return result
+  }
+
+  /**
+   * Фоновая проверка «появились ли новые посты сверху» — для пилюли со
+   * счётчиком (`newPostsCount`). Ленту не меняет. В режиме «Новые посты
+   * сразу» вместо неё checkLive.
+   */
   // Возврат в окно или приложение тоже проверяет, но не чаще раза в минуту:
   // раньше лента запрашивалась на каждом переключении. В фоне не проверяем —
   // пилюлю там никто не видит, а телефон тратит сеть и батарею.
   const NEW_POSTS_MIN_GAP = 60_000
   const checkForNewPosts = async (): Promise<void> => {
-    if (!enabled || isLoading.value || isLoadingMore.value) return
+    if (liveMode.value || !enabled || isLoading.value || isLoadingMore.value) return
     if (typeof document !== 'undefined' && document.hidden) return
     if (Date.now() - lastNewPostsCheck < NEW_POSTS_MIN_GAP) return
-    const headId = String(allPosts.value[0]?.id ?? '')
-    if (!headId) return
+    if (!allPosts.value.length || !headCheckDue()) return
     lastNewPostsCheck = Date.now()
     try {
-      const ctx = feedContext('', NEW_POSTS_PEEK)
-      const resp = sparseFallback.value
-        ? await buildTopFeedQuery({ ...ctx, depth: SPARSE_LANGUAGE_DEPTH })
-        : await buildFeedQueryByTab(filtersStore.activeTab, ctx)
-      const fresh = extractPostsFromResponse(resp)
-      if (!fresh.length) return
-      const idx = fresh.findIndex((p) => String(p.id) === headId)
-      newPostsCount.value = idx === -1 ? fresh.length : idx
+      newPostsCount.value = (await collectNewPosts(1)).posts.length
     } catch {
       // Тихо игнорируем — фоновая проверка не должна шуметь.
     }
@@ -403,13 +468,90 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     await refreshFeed()
   }
 
+  const checkLive = async (): Promise<void> => {
+    if (!liveMode.value || !enabled || liveChecking || isLoading.value) return
+    if (typeof document !== 'undefined' && document.hidden) return
+    if (!allPosts.value.length || !headCheckDue()) return
+    const generation = feedGeneration.value
+    liveChecking = true
+    try {
+      const fresh = await collectNewPosts(LIVE_MAX_PAGES)
+      if (generation !== feedGeneration.value || !liveMode.value) return
+      if (!fresh.complete) {
+        newPostsCount.value = fresh.posts.length
+        return
+      }
+      if (!fresh.posts.length) return
+      await fetchAndMergeRepostOriginals(fresh.posts, fresh.contents)
+      await preloadLastCommentAuthors(fresh.contents)
+      if (generation !== feedGeneration.value) return
+      liveQueue.push(...fresh.posts.reverse())
+      stepLive()
+    } catch {
+      // Не вышло — спросим в следующий раз; фоновая проверка не шумит.
+    } finally {
+      liveChecking = false
+    }
+  }
+
+  /** Следующий пост из очереди — наверх ленты, не чаще раза в LIVE_STEP. */
+  function stepLive(): void {
+    if (liveStepTimer || !liveQueue.length) return
+    liveStepTimer = setTimeout(
+      () => {
+        liveStepTimer = null
+        lastLiveStep = Date.now()
+        const post = liveQueue.shift()
+        if (post && !allPosts.value.some((p) => String(p.id) === String(post.id))) {
+          allPosts.value = [post, ...allPosts.value]
+          if (authStore.address) enrichWithUserScores([post], allPosts.value, authStore.address)
+        }
+        stepLive()
+      },
+      Math.max(0, lastLiveStep + LIVE_STEP - Date.now())
+    )
+  }
+
+  function dropLiveQueue(): void {
+    liveQueue = []
+    if (liveStepTimer) clearTimeout(liveStepTimer)
+    liveStepTimer = null
+  }
+
+  // Лента сменилась или перезагружена — очередь относится к прошлой.
+  watch(feedGeneration, dropLiveQueue)
+
+  watch(
+    liveMode,
+    (on) => {
+      if (liveTimer) clearInterval(liveTimer)
+      liveTimer = null
+      if (!on || typeof window === 'undefined') {
+        dropLiveQueue()
+        return
+      }
+      newPostsCount.value = 0
+      liveTimer = setInterval(() => void checkLive(), LIVE_INTERVAL)
+      void checkLive()
+    },
+    { immediate: true }
+  )
+
+  /** Вернулись в окно или приложение — проверить сверху. */
+  const onReturn = (): void => {
+    if (typeof document !== 'undefined' && document.hidden) return
+    void checkForNewPosts()
+    void checkLive()
+  }
+
   // Периодическая проверка новых постов + при возврате фокуса на вкладку.
   const NEW_POSTS_INTERVAL = 90_000
   let newPostsTimer: ReturnType<typeof setInterval> | null = null
   onMounted(() => {
     if (typeof window !== 'undefined') {
       newPostsTimer = setInterval(() => void checkForNewPosts(), NEW_POSTS_INTERVAL)
-      window.addEventListener('focus', checkForNewPosts)
+      window.addEventListener('focus', onReturn)
+      document.addEventListener('visibilitychange', onReturn)
     }
   })
   onBeforeUnmount(() => {
@@ -417,8 +559,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       clearInterval(newPostsTimer)
       newPostsTimer = null
     }
+    if (liveTimer) clearInterval(liveTimer)
+    liveTimer = null
+    dropLiveQueue()
     if (typeof window !== 'undefined') {
-      window.removeEventListener('focus', checkForNewPosts)
+      window.removeEventListener('focus', onReturn)
+      document.removeEventListener('visibilitychange', onReturn)
     }
   })
 
@@ -554,8 +700,10 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     recheckLoadMore,
     /** Перезагрузка ленты с головы (кнопка «Обновить», подтверждение по WS) */
     refetch: refreshFeed,
-    /** Нода не успела собрать ленту на этом языке — показано лучшее за месяц. */
-    sparseFallback: computed(() => sparseFallback.value),
+    /** Ленту на этом языке нода целыми страницами не собирает — посты приходят по одному. */
+    sparse: computed(() => sparse.value),
+    /** «Новые посты сразу» действует на этой ленте: новые встают наверх сами. */
+    liveMode,
     /** Количество новых постов сверху (lentaunseen-lite); 0 — нет новых. */
     newPostsCount: computed(() => newPostsCount.value),
     /** Показать новые посты: перезагрузить голову ленты + сбросить счётчик. */

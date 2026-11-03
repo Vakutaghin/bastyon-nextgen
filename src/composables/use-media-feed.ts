@@ -14,13 +14,11 @@ import { useUIStore } from '@/stores/ui-store'
 import { useBlockedAuthors } from '@/composables/use-blocked-authors'
 import { extractPostsFromResponse, type AdaptedPost } from '@/composables/use-feed'
 import {
-  SPARSE_LANGUAGE_DEPTH,
-  buildHierarchicalStripQuery,
   buildSubscriptionsFeedQuery,
   buildTopFeedQuery,
   type FeedQueryContext,
 } from '@/composables/helpers/feed-queries'
-import { isNodeTimeout } from '@/helpers/api/rpc-errors'
+import { fetchDatePage } from '@/composables/helpers/date-feed'
 import { preloadLastCommentAuthors } from '@/composables/helpers/feed-enrichment'
 import { DEFAULT_TOP_FEED_DEPTH } from '@/stores/filters-store-consts'
 import { getByPRCWithAuth, rpcCall } from '@/helpers/api/request'
@@ -73,8 +71,6 @@ export function useMediaFeed(options: MediaFeedOptions) {
   let generation = 0
   /** Высота блока первой страницы — с ней следующие (FeedQueryContext.height). */
   let height = 0
-  /** «Свежее» на редком языке нода не собрала — лучшее за месяц. */
-  let sparse = false
 
   /** Только ролики или только треки этого раздела, без повторов и заблокированных. */
   const posts = computed<AdaptedPost[]>(() => {
@@ -103,27 +99,24 @@ export function useMediaFeed(options: MediaFeedOptions) {
     }
   }
 
-  /** «Свежее»; на редком языке, где нода не успела, — лучшее за месяц, как в ленте. */
-  async function freshPage(next: string): Promise<GetHierarchicalStripResponse> {
-    const ctx = context(next)
-    if (sparse) return buildTopFeedQuery({ ...ctx, depth: SPARSE_LANGUAGE_DEPTH })
-    try {
-      return await buildHierarchicalStripQuery(ctx)
-    } catch (e) {
-      if (next !== '' || !isNodeTimeout(e)) throw e
-      sparse = true
-      return buildTopFeedQuery({ ...ctx, depth: SPARSE_LANGUAGE_DEPTH })
-    }
+  /** «Свежее» — по дате, как лента; на редком языке — по одному посту (date-feed.ts). */
+  async function freshPage(next: string): Promise<Page> {
+    const page = await fetchDatePage(context(next))
+    return fromStrip(Promise.resolve(page.response), page.requested)
   }
 
-  async function fromStrip(request: Promise<GetHierarchicalStripResponse>): Promise<Page> {
+  /** `requested` — сколько постов просили: пришло меньше — дальше пусто. */
+  async function fromStrip(
+    request: Promise<GetHierarchicalStripResponse>,
+    requested = pageSize
+  ): Promise<Page> {
     const first = cursor === null
     const response = await request
     if (first) height = Number(response?.data?.height) || 0
     await preloadLastCommentAuthors(response?.data?.contents)
     const list = extractPostsFromResponse(response)
     const last = list[list.length - 1]
-    return { posts: list, next: list.length >= pageSize && last ? postId(last) : null }
+    return { posts: list, next: list.length >= requested && last ? postId(last) : null }
   }
 
   async function authorPage(next: string): Promise<Page> {
@@ -173,7 +166,7 @@ export function useMediaFeed(options: MediaFeedOptions) {
       case 'search':
         return searchPage(typeof next === 'number' ? next : 0)
       default:
-        return fromStrip(freshPage(String(next ?? '')))
+        return freshPage(String(next ?? ''))
     }
   }
 
@@ -207,7 +200,6 @@ export function useMediaFeed(options: MediaFeedOptions) {
     raw.value = []
     cursor = null
     height = 0
-    sparse = false
     hasMore.value = true
     loading.value = false
     error.value = false

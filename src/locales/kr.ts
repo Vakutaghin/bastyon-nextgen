@@ -2222,7 +2222,11 @@ export default {
     subscriptionsDividerCaption: '위는 구독한 사람들의 새 게시물, 아래는 전체 피드입니다.',
     subscriptionsDividerButton: '“구독”에서 계속 보기',
     sparseLanguageFeed:
-      '이 언어로 된 게시물이 적어 노드가 시간 안에 피드를 순서대로 만들지 못했습니다. 이번 달 인기 게시물을 보여 드립니다.',
+      '이 언어로 작성되는 게시물이 적어 하나씩 검색하므로 피드가 천천히 채워집니다.',
+    sparseLanguageNone:
+      '노드가 이 언어로 된 게시물을 찾지 못했습니다. 아직 이 언어로 작성된 게시물이 없는 것 같습니다.',
+    sparseLanguageGap:
+      '노드가 이 언어로 된 이전 게시물을 찾지 못했습니다. 그 앞의 공백이 너무 깁니다.',
     refreshFeed: '피드 새로고침',
     createPost: '게시물 작성',
     hideSidebar: '사이드바 숨기기',
@@ -2233,6 +2237,7 @@ export default {
     loading: '불러오는 중...',
     allPostsLoaded: '모든 게시물을 불러왔습니다',
     feedEmpty: '피드가 비어 있습니다',
+    feedEmptyLanguage: '이 언어로 된 게시물이 없습니다',
     newPosts: '새 게시물 보기({n})',
     boosted: '홍보',
     visibility: {
@@ -2262,6 +2267,9 @@ export default {
   sidebar: {
     topFirst: '인기순',
     feedLanguage: '피드 언어',
+    liveFeed: '새 게시물 바로 표시',
+    liveFeedHint:
+      '새 게시물이 피드 맨 위에 하나씩 자동으로 나타납니다. 날짜순 피드에서만 작동하며 «인기순»에서는 작동하지 않습니다.',
     categories: '카테고리',
     addCategory: '카테고리 추가',
     resetFilter: '필터 초기화',

@@ -62,8 +62,8 @@
       <!-- Сервисы (мини-приложения) — только над основной лентой. -->
       <MiniAppsShelf v-if="filtersStore.activeTab === 1" />
 
-      <!-- Нода не успела собрать ленту на этом языке — показано лучшее за месяц. -->
-      <SC_FeedNote v-if="sparseFallback && allPosts.length > 0" role="status">
+      <!-- На этом языке нода не собирает ленту страницами — посты приходят по одному. -->
+      <SC_FeedNote v-if="sparse && allPosts.length > 0" role="status">
         {{ t('postCard.sparseLanguageFeed') }}
       </SC_FeedNote>
 
@@ -155,7 +155,7 @@
       </template>
       <!-- «Пусто» только после того, как ответ разобран: иначе мигает между
            окончанием загрузки и раскладкой постов. -->
-      <Empty v-else-if="!isLoading && hasSettled" :description="t('postCard.feedEmpty')" />
+      <Empty v-else-if="!isLoading && hasSettled" :description="emptyText" />
     </SC_FeedContent>
 
     <SC_ScrollToTop
@@ -269,7 +269,7 @@ const {
   refetch,
   newPostsCount,
   showNewPosts,
-  sparseFallback,
+  sparse,
 } = useInfiniteFeed({
   initialLimit: 20,
   pageSize: 20,
@@ -555,6 +555,67 @@ const isServerError = computed<boolean>(() => {
 })
 
 const isFavoritesTab = computed<boolean>(() => filtersStore.activeTab === 6)
+
+// Лента по дате без фильтров пуста — значит, на этом языке постов нет.
+const emptyText = computed<string>(() =>
+  [1, 3, 4, 5].includes(Number(filtersStore.activeTab)) &&
+  !filtersStore.topFirst &&
+  filtersStore.selectedCategories.length === 0 &&
+  filtersStore.selectedTags.length === 0
+    ? t('postCard.feedEmptyLanguage')
+    : t('postCard.feedEmpty')
+)
+
+// Новый пост встал наверх («Новые посты сразу»): того, кто читает ниже, не
+// сдвигаем — карточка у него перед глазами остаётся на месте. Chromium и
+// Firefox держат её сами (overflow-anchor), а в WebKit — в приложении на
+// macOS и iOS — такой привязки нет, и карточку уносило на высоту нового
+// поста. Там держим сами PIN_FRAMES кадров: новая карточка дорастает и после
+// вставки (стили, картинки). Мгновенно — scroll-behavior: smooth из style.css
+// растянул бы поправку в рывок. Прокрутил человек сам — отпускаем. Наверху
+// ленты не держим — там новый пост и должен показаться.
+const NATIVE_SCROLL_ANCHORING =
+  typeof window !== 'undefined' && window.CSS?.supports?.('overflow-anchor', 'auto') === true
+const PIN_FRAMES = 60
+watch(
+  () => allPosts.value[0]?.id,
+  (head, prev) => {
+    if (NATIVE_SCROLL_ANCHORING || typeof window === 'undefined') return
+    if (prev === undefined || head === prev || window.scrollY < 1) return
+    if (!allPosts.value.some((p) => p.id === prev)) return
+    const anchor = firstVisibleCard()
+    if (!anchor) return
+    // Где карточка сейчас, до вставки, — туда её и вернём.
+    const top = anchor.getBoundingClientRect().top
+    void nextTick(() => pinCard(anchor, top))
+  },
+  { flush: 'pre' }
+)
+
+/** Держать карточку на месте `top` (px от верха окна), пока лента над ней дорастает. */
+function pinCard(card: Element, top: number): void {
+  let expected = window.scrollY
+  let frames = 0
+  const hold = (): void => {
+    if (Math.abs(window.scrollY - expected) >= 1 || !card.isConnected) return
+    const shift = card.getBoundingClientRect().top - top
+    if (Math.abs(shift) >= 1) window.scrollBy({ top: shift, behavior: 'instant' })
+    expected = window.scrollY
+    if (++frames < PIN_FRAMES) requestAnimationFrame(hold)
+  }
+  hold()
+}
+
+/** Первая карточка, видная на экране, — по ней держим прокрутку. */
+function firstVisibleCard(): Element | null {
+  const root = feedRootRef.value
+  const el = root && ((root as { $el?: HTMLElement }).$el ?? (root as HTMLElement))
+  if (!el) return null
+  for (const card of el.querySelectorAll('.post-card')) {
+    if (card.getBoundingClientRect().bottom > 0) return card
+  }
+  return null
+}
 
 // Плавающая кнопка «наверх» при прокрутке > 100vh —
 // центрируем относительно контентной части (SC_HomeMainContent).

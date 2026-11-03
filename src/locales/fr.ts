@@ -2276,7 +2276,11 @@ export default {
       'Ci-dessus : les nouveautés des personnes que vous suivez. Ci-dessous : le fil général.',
     subscriptionsDividerButton: 'Continuer dans « Abonnements »',
     sparseLanguageFeed:
-      'Il y a peu de publications dans cette langue et le nœud n’a pas eu le temps de construire le fil dans l’ordre : voici le meilleur du mois.',
+      'On publie rarement dans cette langue : les publications sont cherchées une par une, le fil grandit donc lentement.',
+    sparseLanguageNone:
+      'Le nœud n’a trouvé aucune publication dans cette langue : apparemment, personne n’y a encore publié ici.',
+    sparseLanguageGap:
+      'Le nœud n’a pas trouvé de publications plus anciennes dans cette langue : une trop longue pause les précède.',
     refreshFeed: 'Actualiser le fil',
     createPost: 'Créer une publication',
     hideSidebar: 'Masquer la barre latérale',
@@ -2287,6 +2291,7 @@ export default {
     loading: 'Chargement...',
     allPostsLoaded: 'Toutes les publications sont chargées',
     feedEmpty: 'Le fil est vide',
+    feedEmptyLanguage: 'Aucune publication dans cette langue',
     newPosts: 'Afficher les nouvelles publications ({n})',
     boosted: 'Sponsorisé',
     visibility: {
@@ -2318,6 +2323,9 @@ export default {
   sidebar: {
     topFirst: 'Les meilleurs d’abord',
     feedLanguage: 'Langue du fil',
+    liveFeed: 'Nouvelles publications en direct',
+    liveFeedHint:
+      'Les nouvelles publications s’ajoutent d’elles-mêmes en haut du fil, une par une. Seulement dans le fil par date, pas avec « Les meilleurs d’abord ».',
     categories: 'Catégories',
     addCategory: 'Ajouter une catégorie',
     resetFilter: 'Réinitialiser le filtre',

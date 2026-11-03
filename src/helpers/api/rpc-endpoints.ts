@@ -22,6 +22,8 @@ export const rpcEndpoints = {
   getTopFeed: 'gettopfeed',
   getBoostFeed: 'getboostfeed',
   getHierarchicalStrip: 'gethierarchicalstrip',
+  /** Лента по дате: посты от новых к старым подряд. */
+  getHistoricalStrip: 'gethistoricalstrip',
   getProfileFeed: 'getprofilefeed',
   getSubscribesFeed: 'getsubscribesfeed',
   /** Коллекции и плейлисты профиля (транзакции 220). */
@@ -80,6 +82,7 @@ const RPC_EX_METHODS = new Set<string>([
   rpcEndpoints.getTopFeed,
   rpcEndpoints.getBoostFeed,
   rpcEndpoints.getHierarchicalStrip,
+  rpcEndpoints.getHistoricalStrip,
   rpcEndpoints.getProfileFeed,
   rpcEndpoints.getSubscribesFeed,
   rpcEndpoints.getMostCommentedFeed,

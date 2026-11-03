@@ -53,10 +53,12 @@ export const useFiltersStore = defineStore('filters', {
       customCategories: [] as Category[], // Кастомные категории (сохраняются в IDB, создаются пользователем вручную)
       temporaryCategories: [] as Category[], // Временные категории (не сохраняются в IDB, создаются при клике на тег в посте, живут до перезагрузки)
       selectedTags: [] as string[],
-      // Дефолт OFF: главная лента остаётся проверенной gethierarchicalstrip
-      // (хронологическая). Включение тоггла «Сначала лучшее» переводит её на
-      // gettopfeed (лента «Лучшее») — opt-in, без сюрприза в дефолтном UX.
+      // Дефолт OFF: главная лента идёт по дате (gethistoricalstrip). Тоггл
+      // «Сначала лучшее» переводит её на gettopfeed (лента «Лучшее»).
       topFirst: false,
+      // «Новые посты сразу»: новые посты встают наверх ленты по дате сами,
+      // без пилюли «N новых постов» (use-infinite-feed, checkLive).
+      liveFeed: false,
       isInitialized: false,
       isInitializing: false,
     }
@@ -136,6 +138,7 @@ export const useFiltersStore = defineStore('filters', {
       if (snapshot.selectedCategories) this.selectedCategories = snapshot.selectedCategories
       if (snapshot.selectedTags) this.selectedTags = snapshot.selectedTags
       if (snapshot.topFirst !== undefined) this.topFirst = snapshot.topFirst
+      if (snapshot.liveFeed !== undefined) this.liveFeed = snapshot.liveFeed
 
       // «Космос» был только в NextGen, в legacy такой категории нет. Кто её
       // выбрал, получает ту же выборку своей категорией с тегом «космос».
@@ -157,6 +160,7 @@ export const useFiltersStore = defineStore('filters', {
         customCategories: this.customCategories,
         selectedTags: this.selectedTags,
         topFirst: this.topFirst,
+        liveFeed: this.liveFeed,
       })
     },
 
@@ -166,6 +170,12 @@ export const useFiltersStore = defineStore('filters', {
     toggleTopFirst() {
       this.topFirst = !this.topFirst
       this.saveSettings()
+    },
+
+    /** Переключает «Новые посты сразу». */
+    toggleLiveFeed() {
+      this.liveFeed = !this.liveFeed
+      void this.saveSettings()
     },
 
     /**
