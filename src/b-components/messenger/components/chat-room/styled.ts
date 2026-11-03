@@ -363,6 +363,13 @@ export const SC_CancelButton = styled.button`
 `
 
 /** Новый чат: собеседник увидит его, когда уйдёт первое сообщение. */
+/** Чат-приглашение до первого сообщения: занимает место переписки. */
+export const SC_InviteBody = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+`
+
 export const SC_FirstMessageHint = styled.div`
   padding: 16px 20px;
   color: var(--ui-text-muted);

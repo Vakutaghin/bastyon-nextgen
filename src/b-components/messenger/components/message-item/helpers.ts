@@ -33,6 +33,20 @@ export function formatMessageText(text: string): string {
 }
 
 /**
+ * Убирает пустые строки в начале и в конце сообщения: другие клиенты
+ * отправляют текст как есть, и под `white-space: pre-wrap` они раздувают
+ * пузырь. Отступ первой непустой строки и переносы внутри текста остаются.
+ * Хвост — без регулярки: `\n\s*$` на чужом тексте из тысяч переносов
+ * работает за квадрат.
+ */
+export function trimBlankLines(text: string): string {
+  const start = /^\s*\n/.exec(text)?.[0].length ?? 0
+  const body = text.trimEnd().length
+  const tailBreak = text.indexOf('\n', body)
+  return text.slice(start, tailBreak === -1 ? text.length : tailBreak)
+}
+
+/**
  * Сегмент текста сообщения: либо обычный текст (HTML-экранированный, с URL-ссылками),
  * либо распарсенная Бастион-ссылка под inline-embed.
  */
@@ -48,7 +62,8 @@ export type MessageSegment =
  *
  * Если bastyon-ссылок несколько — все попадают как embed-сегменты в исходном порядке.
  */
-export function formatMessageSegments(text: string): MessageSegment[] {
+export function formatMessageSegments(rawText: string): MessageSegment[] {
+  const text = trimBlankLines(rawText)
   if (!text) return []
 
   // Найти все Bastyon-ссылки и их позиции

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { formatMessageSegments, formatMessageText, extractFirstExternalUrl } from './helpers'
+import {
+  formatMessageSegments,
+  formatMessageText,
+  extractFirstExternalUrl,
+  trimBlankLines,
+} from './helpers'
 
 const TXID = 'a'.repeat(64)
 const TXID2 = 'f'.repeat(64)
@@ -17,7 +22,21 @@ describe('formatMessageText', () => {
   })
 })
 
+describe('trimBlankLines', () => {
+  it('drops blank lines at the start and the end only', () => {
+    expect(trimBlankLines('\n\n  \r\nhello\n\nworld\n \n\n')).toBe('hello\n\nworld')
+    expect(trimBlankLines('\n  indented\n')).toBe('  indented')
+    expect(trimBlankLines('plain')).toBe('plain')
+    expect(trimBlankLines('\n\n')).toBe('')
+  })
+})
+
 describe('formatMessageSegments', () => {
+  it('trims blank lines around the message', () => {
+    expect(formatMessageSegments('\n\nhi\n\n')).toEqual([{ kind: 'html', html: 'hi' }])
+    expect(formatMessageSegments('\n \n')).toEqual([])
+  })
+
   it('returns one html segment when no bastyon link present', () => {
     const segs = formatMessageSegments('hello world https://google.com')
     expect(segs).toHaveLength(1)

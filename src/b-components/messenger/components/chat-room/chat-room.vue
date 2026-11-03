@@ -3,7 +3,8 @@
     <!-- Чат с поддержкой: сведения о приложении одной кнопкой (закреплена над перепиской). -->
     <SupportReportBar v-if="!inviteMode && isSupportChat && activeRoomId" :chat-id="activeRoomId" />
 
-    <template v-if="inviteMode">
+    <!-- Растягивается до панели ввода: поле ввода внизу окна, как в переписке. -->
+    <SC_InviteBody v-if="inviteMode">
       <SC_PartnerInfoCard>
         <SC_PartnerHeader>
           <SC_PartnerAvatar>
@@ -43,7 +44,7 @@
       <SC_FirstMessageHint>
         {{ t('messenger.firstMessageHint', { name: partnerName }) }}
       </SC_FirstMessageHint>
-    </template>
+    </SC_InviteBody>
 
     <template v-else-if="isLoading">
       <SC_ChatRoomLoader>
@@ -332,6 +333,7 @@ import {
   SC_HoldHint,
   SC_CancelButton,
   SC_FirstMessageHint,
+  SC_InviteBody,
   SC_PartnerHeader,
   SC_PartnerAvatar,
   SC_PartnerName,
