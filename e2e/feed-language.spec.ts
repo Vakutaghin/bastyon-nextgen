@@ -49,9 +49,13 @@ test('язык ленты меняет только ленту, язык из ш
   expect(langs.at(-1)).toBe('ru')
 
   // Лента — на английском, интерфейс остаётся русским.
-  // Поле подписано «Язык ленты»; открывается нажатием на сам селект antd.
+  // Поле подписано «Язык ленты». Открывается и нажатием на стрелку: раньше
+  // она перехватывала нажатие, и список не открывался. Мышью в точку стрелки,
+  // а не click() по ней: тот сам выбрал бы элемент.
   await expect(page.getByLabel('Язык ленты')).toBeVisible()
-  await page.locator('.ant-select', { has: page.getByLabel('Язык ленты') }).click()
+  const field = page.locator('.ant-select', { has: page.getByLabel('Язык ленты') })
+  const box = (await field.locator('.ant-select-arrow').boundingBox())!
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
   await page.locator('.ant-select-item-option', { hasText: 'English' }).click()
   await expect.poll(() => langs.at(-1)).toBe('en')
   await expect(page.getByText('Сначала лучшее')).toBeVisible()
