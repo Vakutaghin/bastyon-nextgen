@@ -5,6 +5,7 @@
       :popup-class-name="SELECT_POPUP_CLASS"
       :get-popup-container="popupContainer"
       :menu-item-selected-icon="checkIcon"
+      transition-name=""
     >
       <template #suffixIcon><CaretDownOutlined /></template>
     </Select>
@@ -24,6 +25,8 @@ const p = withDefaults(defineProps<SelectProps>(), { disabled: undefined })
 
 const { Select, SC_Select, forwarded } = useSelect(p)
 
+// Список открывается сразу, без «slide-up» antd: с ним пункты проступали из
+// прозрачности только через ~0,2 с после нажатия (transition-name="").
 // Галочка у выбранного пункта, как у USelect. Пропом, а не слотом: слота
 // menuItemSelectedIcon antd работает, но в его типах нет.
 const checkIcon = h(CheckOutlined)

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
   HIGHLIGHT_MAX_AGE_MS,
+  inLanguage,
   loadSeen,
   recentPosts,
   saveSeen,
@@ -53,5 +54,19 @@ describe('посты подписок: только свежие', () => {
       { id: 4 },
     ]
     expect(recentPosts(list, now).map((p) => p.id)).toEqual([1, 2])
+  })
+})
+
+describe('посты подписок: язык ленты', () => {
+  it('наверх — только язык ленты и посты без языка', () => {
+    const list = [
+      { id: 1, language: 'ru' },
+      { id: 2, language: 'en' },
+      { id: 3 },
+      { id: 4, language: 'en' },
+    ]
+    expect(inLanguage(list, 'en').map((p) => p.id)).toEqual([2, 3, 4])
+    expect(inLanguage(list, 'ru').map((p) => p.id)).toEqual([1, 3])
+    expect(inLanguage(list, 'de').map((p) => p.id)).toEqual([3])
   })
 })

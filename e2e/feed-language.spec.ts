@@ -69,7 +69,9 @@ test('язык ленты меняет только ленту, язык из ш
   await expect(page.locator('.ant-select-selection-item[title="Deutsch"]')).toBeVisible()
 })
 
-test('подписки — на всех языках, общая лента и комментарии — на языке ленты', async ({ page }) => {
+test('подписки — на всех языках, общая лента, новое от подписок и комментарии — на языке ленты', async ({
+  page,
+}) => {
   test.setTimeout(120_000)
   await page.setViewportSize({ width: 1400, height: 900 })
   const BOB = 'PBobbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
@@ -93,6 +95,13 @@ test('подписки — на всех языках, общая лента и 
         message: 'Алиса пишет по-русски',
         language: 'ru',
         ago: 60,
+      },
+      {
+        txid: 'd'.repeat(64),
+        address: ALICE,
+        message: 'Alice writes in English',
+        language: 'en',
+        ago: 90,
       },
       {
         txid: 'b'.repeat(64),
@@ -129,14 +138,16 @@ test('подписки — на всех языках, общая лента и 
   await auth.getByRole('button', { name: 'Войти' }).click()
   await expect(auth).toBeHidden({ timeout: 30_000 })
 
-  // Лента на английском: русских постов Боба нет, новое от подписок — по-русски.
+  // Лента на английском: и новое от подписок наверху — только по-английски.
+  // Русский пост Алисы там раньше стоял первым, и лента «оставалась русской».
   // Подборка держится и после перезапроса всего, что идёт сразу за входом.
   const feed = page.locator('main')
   await expect(feed.getByText('Bob writes in English')).toBeVisible({ timeout: 30_000 })
   await expect(page.getByTestId('feed-subscriptions-divider')).toBeVisible({ timeout: 30_000 })
-  await expect(feed.getByText('Алиса пишет по-русски')).toBeVisible()
+  await expect(feed.getByText('Alice writes in English').first()).toBeVisible()
   await page.waitForTimeout(3_000)
-  await expect(feed.getByText('Алиса пишет по-русски')).toBeVisible()
+  await expect(feed.getByText('Alice writes in English').first()).toBeVisible()
+  await expect(feed.getByText('Алиса пишет по-русски')).toHaveCount(0)
   await expect(feed.getByText('Боб и по-русски')).toHaveCount(0)
   await expect.poll(() => comments.at(-1)).toBe('en')
 

@@ -11,11 +11,17 @@
  * Отдельный запрос, а не часть постраничной ленты: её страницы и «Новые посты»
  * идут по txid общей ленты и от подписок не зависят. Подборка держится, пока
  * ленту не обновят (`refetch`).
+ *
+ * Подписки спрашиваются на всех языках (с языком у редкого нода отвечает
+ * таймаутом), а наверх идут только посты на языке ленты: иначе после выбора
+ * English первый экран по-прежнему занимали русские посты подписок. Все
+ * языки — во вкладке «Подписки».
  */
 
 import { computed, ref, watch, type Ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useAuthStore } from '@/blockchain/store/auth-store'
+import { useUIStore } from '@/stores/ui-store'
 import { buildSubscriptionsFeedQuery } from './helpers/feed-queries'
 import {
   enrichWithUserScores,
@@ -24,6 +30,7 @@ import {
 } from './helpers/feed-enrichment'
 import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
 import {
+  inLanguage,
   loadSeen,
   recentPosts,
   saveSeen,
@@ -37,6 +44,7 @@ const PAGE = 20
 
 export function useSubscriptionHighlights(enabled: () => boolean) {
   const authStore = useAuthStore()
+  const uiStore = useUIStore()
   const address = computed(() => authStore.address || '')
   const active = computed(() => enabled() && !!address.value)
 
@@ -82,7 +90,9 @@ export function useSubscriptionHighlights(enabled: () => boolean) {
     if (posts?.length && address.value) enrichWithUserScores(posts, posts, address.value)
   })
 
-  const posts = computed<AdaptedPost[]>(() => (active.value ? (data.value ?? []) : []))
+  const posts = computed<AdaptedPost[]>(() =>
+    active.value ? inLanguage(data.value ?? [], uiStore.contentLanguage) : []
+  )
 
   /** Человек пролистал подборку: в следующий раз наверху только новое. */
   function markSeen(): void {
