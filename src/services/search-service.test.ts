@@ -3,7 +3,8 @@
 // пустым, а у немецкого и сербского выпадали буквы, в русском — «ё»);
 // параметры searchusers/search как у старого клиента; теги раскодируются;
 // высота блока для стабильной пагинации кешируется на 30 с и не
-// запрашивается дважды одновременно.
+// запрашивается дважды одновременно. Адрес или публичный ключ аккаунта
+// ищется не по имени, а профилем по адресу: searchusers на адрес пуст.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,6 +13,7 @@ vi.mock('@/helpers/api/request', () => ({ rpcCall: mocks.rpcCall, getByPRC: mock
 
 import {
   __resetBlockHeightCache,
+  accountAddressOf,
   getCurrentBlockHeight,
   sanitizeSearchQuery,
   searchPosts,
@@ -99,6 +101,52 @@ describe('поиск', () => {
     await expect(searchPosts('   ')).resolves.toEqual([])
     await expect(searchTags('%%')).resolves.toEqual([])
     expect(mocks.rpcCall).not.toHaveBeenCalled()
+  })
+
+  it('адрес аккаунта: лёгкий профиль по адресу вместо поиска по имени', async () => {
+    const ADDRESS = 'PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPy'
+    mocks.rpcCall.mockResolvedValue([{ address: ADDRESS, name: 'alice', reputation: 12 }])
+    await expect(searchUsers(` ${ADDRESS} `, { count: 5 })).resolves.toEqual([
+      { address: ADDRESS, name: 'alice', reputation: 12 },
+    ])
+    expect(mocks.rpcCall).toHaveBeenCalledWith({
+      method: 'getuserprofile',
+      parameters: [[ADDRESS], '1'],
+      options: { auth: false },
+    })
+
+    // Вторая страница «Показать ещё» — без повтора; адрес без аккаунта — пусто.
+    await expect(searchUsers(ADDRESS, { start: 10 })).resolves.toEqual([])
+    mocks.rpcCall.mockResolvedValue([])
+    await expect(searchUsers(ADDRESS)).resolves.toEqual([])
+    expect(mocks.rpcCall).toHaveBeenCalledTimes(2)
+  })
+
+  it('публичный ключ — тот же аккаунт, что и его адрес', async () => {
+    // Векторы из key-generation.test.ts: ключ и адрес одной мнемоники.
+    const KEY = '03538bedd425db67b3f68b1152235b56e4d938284dc31bb72648c2079b00f6101f'
+    expect(accountAddressOf(KEY)).toBe('PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPy')
+    expect(accountAddressOf(KEY.toUpperCase())).toBe('PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPy')
+    expect(
+      accountAddressOf('0265ae8ea93a32806d04c1d576353851d0fa0110ad5c3817a8d8aa898389f7f3c3')
+    ).toBe('PUUAaAByj6BEey5CSYxJoGXr1KishVyC3A')
+
+    mocks.rpcCall.mockResolvedValue([{ address: 'PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPy' }])
+    await searchUsers(KEY)
+    expect(mocks.rpcCall.mock.lastCall![0].parameters).toEqual([
+      ['PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPy'],
+      '1',
+    ])
+  })
+
+  it('не адрес и не ключ — поиск по имени', () => {
+    expect(accountAddressOf('bob')).toBeNull()
+    // Опечатка в адресе: контрольная сумма не сходится.
+    expect(accountAddressOf('PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPz')).toBeNull()
+    // Биткоин-адрес — чужая сеть.
+    expect(accountAddressOf('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2')).toBeNull()
+    // Хеш блока или транзакции (64 hex) — не ключ.
+    expect(accountAddressOf('a'.repeat(64))).toBeNull()
   })
 
   it('пользователи: не массив в ответе — пустой список', async () => {

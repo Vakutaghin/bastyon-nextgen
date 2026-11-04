@@ -14,8 +14,12 @@
  * Теперь буквой считается буква любого письма (вместе с диакритикой).
  */
 
+import { Buffer } from '@/blockchain/utils/buffer-polyfill'
 import { rpcCall, getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
+import { validateAddress } from '@/blockchain/core/addresses/address-validator'
+import { localHash160, toBase58Check } from '@/blockchain/core/addresses/address-hash-utils'
+import { POCKETNET_NETWORK } from '@/blockchain/constants/network'
 import type { SearchUsersData } from '@/types/rpc-responses/search-users'
 import type { SearchPostsData, SearchPost } from '@/types/rpc-responses/search-posts'
 import type { SearchTagsData, SearchTag } from '@/types/rpc-responses/search-tags'
@@ -99,14 +103,49 @@ export interface SearchPaging {
   fixedBlock?: number
 }
 
+/** Публичный ключ аккаунта в hex: сжатый, 33 байта — других у аккаунтов нет. */
+const PUBLIC_KEY_RE = /^0[23][0-9a-f]{64}$/i
+
+/**
+ * Адрес аккаунта из запроса: сам адрес или публичный ключ, из которого адрес
+ * получается так же, как при входе (hash160 → Base58Check с версией `P`).
+ * Остальное — `null`, это поиск по имени.
+ */
+export function accountAddressOf(query: string): string | null {
+  const value = query.trim()
+  if (PUBLIC_KEY_RE.test(value)) {
+    const hash = localHash160(Buffer.from(value, 'hex'))
+    return toBase58Check(hash, POCKETNET_NETWORK.pubKeyHash)
+  }
+  const check = validateAddress(value)
+  return check.isValid && check.type === 'p2pkh' ? value : null
+}
+
+/**
+ * Аккаунт по адресу. `searchusers` ищет только по имени и на адрес отвечает
+ * пустым списком, поэтому здесь — лёгкий профиль: имя, аватар, репутация.
+ * Нет профиля — адрес без аккаунта, в выдаче пусто.
+ */
+async function accountByAddress(address: string): Promise<SearchUsersData> {
+  const data = await rpcCall<SearchUsersData>({
+    method: rpcEndpoints.getUserProfile,
+    parameters: [[address], '1'],
+    options: { auth: false },
+  })
+  return Array.isArray(data) ? data.filter((u) => u?.address === address) : []
+}
+
 export async function searchUsers(
   query: string,
   paging: SearchPaging = {}
 ): Promise<SearchUsersData> {
+  const { start = 0, count = 10, fixedBlock = 0 } = paging
+
+  const address = accountAddressOf(query)
+  if (address) return start > 0 ? [] : accountByAddress(address)
+
   const value = sanitizeSearchQuery(query)
   if (!value) return []
-
-  const { start = 0, count = 10, fixedBlock = 0 } = paging
 
   const data = await rpcCall<SearchUsersData>({
     method: rpcEndpoints.searchUsers,
