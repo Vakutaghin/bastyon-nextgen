@@ -57,3 +57,38 @@ describe('usePostMedia.videoEmbeds', () => {
     ).toEqual([])
   })
 })
+
+describe('usePostMedia.videoLinkCards', () => {
+  const cardsOf = (fields: Partial<Post>) => usePostMedia(() => post(fields)).videoLinkCards.value
+  const embedsOf = (fields: Partial<Post>) =>
+    usePostMedia(() => post(fields)).videoEmbeds.value.length
+
+  it('пост без вложений — большой плеер, карточек нет', () => {
+    const fields = { type: 'share', content: 'смотрите https://youtu.be/dQw4w9WgXcQ' }
+    expect(embedsOf(fields)).toBe(1)
+    expect(cardsOf(fields)).toEqual([])
+  })
+
+  it('с картинкой — ролик карточкой ссылки, плеера нет', () => {
+    const fields = {
+      type: 'share',
+      images: ['https://h/pic.png'],
+      content: 'смотрите https://youtu.be/dQw4w9WgXcQ и https://vimeo.com/76979871',
+    }
+    expect(embedsOf(fields)).toBe(0)
+    expect(cardsOf(fields)).toEqual([
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://vimeo.com/76979871',
+    ])
+  })
+
+  it('со своим видео — ссылка на YouTube тоже карточкой', () => {
+    expect(
+      cardsOf({
+        type: 'video',
+        videoUrl: 'peertube://h/uuid',
+        content: 'оригинал: https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      })
+    ).toEqual(['https://www.youtube.com/watch?v=dQw4w9WgXcQ'])
+  })
+})

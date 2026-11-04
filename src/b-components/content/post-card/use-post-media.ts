@@ -1,5 +1,5 @@
-// Медиа-производные карточки поста: главы из тайм-кодов, эмбеды YouTube и Vimeo (кроме
-// постов с внутриплатформенным видео), ссылка под карточку превью и перемотка
+// Медиа-производные карточки поста: главы из тайм-кодов, эмбеды YouTube и Vimeo (у поста
+// со своими картинками или видео — карточкой ссылки), ссылка под карточку превью и перемотка
 // плеера по тайм-коду. Владеет ref'ом плеера. Вынесено из post-card.vue (аудит
 // крупных файлов 2026-08).
 import { computed, ref } from 'vue'
@@ -30,15 +30,35 @@ export function usePostMedia(getPost: () => Post) {
     return parseTimecodes(post.content)
   })
 
-  const videoEmbeds = computed<VideoEmbed[]>(() => {
+  /** Ролики YouTube и Vimeo из поста: ссылка `u`, текст, превью. */
+  const linkedVideos = computed<VideoEmbed[]>(() => {
     const post = getPost()
     if (!post) return []
-    // Не показываем эмбеды, если пост содержит внутриплатформенное видео —
-    // это привело бы к двум плеерам.
-    const hasInPlatformVideo = (post.type === 'video' || post.type === 'audio') && !!post.videoUrl
-    if (hasInPlatformVideo) return []
     return getVideoEmbeds(decodedUrl(post.videoUrl), post.content, post.preview)
   })
+
+  /** У поста своё вложение: картинки или ролик/трек с видеосервера. */
+  const hasAttachment = computed<boolean>(() => {
+    const post = getPost()
+    if (!post) return false
+    const ownMedia = (post.type === 'video' || post.type === 'audio') && !!post.videoUrl
+    return ownMedia || (post.images?.length ?? 0) > 0
+  })
+
+  /**
+   * Большой плеер — только когда у поста нет своего вложения. Со своим видео
+   * вышло бы два плеера, с картинками — два больших блока подряд.
+   */
+  const videoEmbeds = computed<VideoEmbed[]>(() => (hasAttachment.value ? [] : linkedVideos.value))
+
+  /**
+   * Ролик по ссылке у поста с вложением — аккуратной карточкой, как ссылка
+   * на обычный сайт: название, кадр, описание (раньше при своём видео ссылку
+   * было видно только в тексте, а при картинках под ними вставал плеер).
+   */
+  const videoLinkCards = computed<string[]>(() =>
+    hasAttachment.value ? linkedVideos.value.map((embed) => embed.watchUrl) : []
+  )
 
   /**
    * Обычная веб-ссылка поста (`u`) — под карточку превью. У видео свой плеер,
@@ -62,5 +82,12 @@ export function usePostMedia(getPost: () => Post) {
     }
   }
 
-  return { videoPlayerRef, chapters, videoEmbeds, linkPreviewUrl, handleSeekTimecode }
+  return {
+    videoPlayerRef,
+    chapters,
+    videoEmbeds,
+    videoLinkCards,
+    linkPreviewUrl,
+    handleSeekTimecode,
+  }
 }

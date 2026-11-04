@@ -113,6 +113,8 @@
 
         <!-- Ссылка поста (`u`): карточка с заголовком и картинкой страницы от ноды. -->
         <LinkPreviewCard v-if="linkPreviewUrl" :url="linkPreviewUrl" lazy />
+        <!-- YouTube и Vimeo у поста со своими картинками или видео — карточкой, не плеером. -->
+        <LinkPreviewCard v-for="url in videoLinkCards" :key="url" :url="url" lazy fallback />
 
         <PostCardPoll
           v-if="poll && postId"
@@ -433,9 +435,14 @@ const prefs = useAppPreferencesStore()
 const youtubeEmbeddable = canEmbedYoutube(
   typeof window !== 'undefined' ? window.location.protocol : undefined
 )
-const { videoPlayerRef, chapters, videoEmbeds, linkPreviewUrl, handleSeekTimecode } = usePostMedia(
-  () => props.post
-)
+const {
+  videoPlayerRef,
+  chapters,
+  videoEmbeds,
+  videoLinkCards,
+  linkPreviewUrl,
+  handleSeekTimecode,
+} = usePostMedia(() => props.post)
 
 // Просмотры ролика или прослушивания трека — с видеосервера, как в старом клиенте.
 const isPeerTubeMedia = computed<boolean>(
