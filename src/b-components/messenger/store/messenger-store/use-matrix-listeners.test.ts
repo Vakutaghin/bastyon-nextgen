@@ -4,6 +4,7 @@ type Handler = (...args: unknown[]) => unknown
 const handlers: Record<string, Handler> = {}
 const client = {
   getUserId: () => '@me:host',
+  retryImmediately: vi.fn(),
 }
 const markRoomRead = vi.fn(async (_roomId: string) => {})
 const notifyMessage = vi.fn()
@@ -32,6 +33,7 @@ vi.mock('../../services/matrix-service', () => ({
 
 import { registerMatrixListeners } from './use-matrix-listeners'
 import { resetAppSoundsForTests } from '@/services/app-sounds'
+import { resetAppForegroundForTests, setAppActiveForTests } from '@/helpers/common/app-foreground'
 
 const ROOM = '!room:host'
 
@@ -294,6 +296,28 @@ describe('registerMatrixListeners — sync', () => {
     expect(refreshUnreadCounts).toHaveBeenCalledTimes(2)
     handlers['sync']!('ERROR', 'SYNCING')
     expect(refreshUnreadCounts).toHaveBeenCalledTimes(2)
+  })
+
+  it('обрыв сразу после возврата в приложение — переподключение без паузы SDK', () => {
+    resetAppForegroundForTests()
+    client.retryImmediately.mockClear()
+    setup(null)
+    // Не уходило в фон — обрыв как обрыв, пауза SDK остаётся.
+    handlers['sync']!('RECONNECTING', 'SYNCING')
+    expect(client.retryImmediately).not.toHaveBeenCalled()
+
+    const now = Date.now()
+    setAppActiveForTests(false, now - 60_000)
+    setAppActiveForTests(true, now - 1_000)
+    handlers['sync']!('RECONNECTING', 'SYNCING')
+    expect(client.retryImmediately).toHaveBeenCalledTimes(1)
+
+    // Давно вернулись — снова с паузой.
+    setAppActiveForTests(false, now - 40_000)
+    setAppActiveForTests(true, now - 30_000)
+    handlers['sync']!('RECONNECTING', 'SYNCING')
+    expect(client.retryImmediately).toHaveBeenCalledTimes(1)
+    resetAppForegroundForTests()
   })
 })
 

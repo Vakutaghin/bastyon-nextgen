@@ -96,6 +96,9 @@ dependencies {
     implementation "androidx.media:media:$androidxMediaVersion"
     // Прокси WebView под Tor (plugins/tor/TorNetwork). Та же версия, что у Capacitor.
     implementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    // Запросы к серверу чатов (plugins/MatrixHttpPlugin) по HTTP/2: HttpURLConnection
+    // умеет только HTTP/1.1, и на мобильной сети каждый запрос ждал нового соединения.
+    implementation "com.squareup.okhttp3:okhttp:4.12.0"
     // Звук ролика, пока приложение свёрнуто или экран погашен: WebView в фоне
     // видео не играет (MediaPlaybackService). Только плеер и HLS.
     implementation "androidx.media3:media3-exoplayer:$media3Version"

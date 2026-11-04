@@ -23,6 +23,11 @@ import { SC_Activity, SC_ActivitySpinner, SC_ActivityText } from './styled'
 
 /** Короткие загрузки (список из кэша и ответ сервера через миг) не мигают значком. */
 const SHOW_DELAY_MS = 400
+/**
+ * Обрыв — дольше: телефон, вернувшись из фона, переподключается сам за
+ * полсекунды (MatrixHttpPlugin обрывает опрос на старом соединении).
+ */
+const RECONNECT_DELAY_MS = 1_500
 
 const props = defineProps<{ scope: 'list' | 'chat' }>()
 
@@ -46,10 +51,13 @@ watch(
       shown.value = next
       return
     }
-    timer = setTimeout(() => {
-      timer = null
-      shown.value = activity.value
-    }, SHOW_DELAY_MS)
+    timer = setTimeout(
+      () => {
+        timer = null
+        shown.value = activity.value
+      },
+      next === 'reconnecting' ? RECONNECT_DELAY_MS : SHOW_DELAY_MS
+    )
   },
   { immediate: true }
 )

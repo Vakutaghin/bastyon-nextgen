@@ -982,7 +982,7 @@ export const useMessengerStore = defineStore('messenger', () => {
   const listActivity = computed(() =>
     listActivityOf({
       authenticated: authStore.isUserAuthenticated,
-      syncError: uiStore.syncError,
+      syncError: uiStore.shownSyncError,
       syncState: uiStore.syncState,
       dialogsLoading: uiStore.isLoading,
     })
@@ -1053,13 +1053,14 @@ export const useMessengerStore = defineStore('messenger', () => {
     isChatsLoading: computed(
       () =>
         uiStore.dialogs.length === 0 &&
-        !uiStore.syncError &&
+        !uiStore.shownSyncError &&
         (!uiStore.dialogsLoadedOnce || uiStore.isLoading)
     ),
     syncState: computed(() => uiStore.syncState),
     chatFilter: computed(() => uiStore.chatFilter),
     groupInfoChatId: computed(() => uiStore.groupInfoChatId),
-    syncError: computed(() => uiStore.syncError),
+    /** Ошибка синка, когда она уже не мимолётная (SYNC_ERROR_GRACE_MS): красная полоса. */
+    syncError: computed(() => uiStore.shownSyncError),
     syncErrorDetail: computed(() => uiStore.syncErrorDetail),
     userProfiles: computed(() => profileCache.userProfiles),
     // ВАЖНО: `pcryptoService` инициализируется как `ref(null)`, поэтому при auto-unwrap

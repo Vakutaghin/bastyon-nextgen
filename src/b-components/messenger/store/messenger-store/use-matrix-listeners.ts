@@ -22,12 +22,16 @@ import {
 } from '../../helpers'
 import { notificationPreviewFor, senderDisplayName } from './notification-preview'
 import { syncErrorReason, type SyncErrorKind } from '../../lib/sync-error'
+import { msSinceForeground } from '@/helpers/common/app-foreground'
 import { markDeleted } from '../../lib/chat-history'
 import { archiveRedactIds } from '../../lib/archive-redact'
 import { SOUND_MAX_AGE } from '../consts'
 import type { MessengerStoreContext } from './types'
 
 const log = logger.scope('[MessengerStore]')
+
+/** Сколько после возврата в приложение переподключаемся без паузы SDK (мс). */
+const FOREGROUND_RETRY_WINDOW_MS = 10_000
 
 export interface MatrixListenerCallbacks {
   /** Полная (silent) перезагрузка диалогов — на 'PREPARED'. */
@@ -275,6 +279,13 @@ export function registerMatrixListeners(
     'sync',
     (state: string, prevState?: string | null, data?: { error?: unknown }) => {
       uiStore.syncState = state
+      // Вернулись в приложение, и опрос на старом соединении оборвался
+      // (MatrixHttpPlugin на Android обрывает его сам): SDK выждал бы 2–7 с
+      // перед проверкой связи. Только сразу после возврата: со сбоящим
+      // сервером SDK через три неудачи сам уходит в ERROR и паузы.
+      if (state === 'RECONNECTING' && msSinceForeground() < FOREGROUND_RETRY_WINDOW_MS) {
+        matrixService.getClient()?.retryImmediately?.()
+      }
       if (state === 'ERROR') {
         const reason = syncErrorReason(data?.error)
         const key = REASON_KEY[reason.kind]

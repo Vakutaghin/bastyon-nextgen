@@ -1,7 +1,7 @@
 // UI-состояние мессенджера: открытие/закрытие, полноэкранность, активный диалог, invite
 
 import { defineStore } from 'pinia'
-import { ref, computed, shallowRef } from 'vue'
+import { ref, computed, shallowRef, watch } from 'vue'
 
 import type { Dialog } from '../types'
 
@@ -21,6 +21,14 @@ export type ChatFilter = readonly ChatKind[]
  * полноэкранного мессенджера и после перезапуска.
  */
 const CHAT_FILTER_KEY = 'BST_MSG_CHAT_FILTER'
+
+/**
+ * Сколько ошибка синка держится, прежде чем встать красной полосой. Телефон,
+ * вернувшись из фона, теряет соединения: первый запрос падает, а через миг
+ * связь есть — полоса мигала на секунду. Пока не прошло, обрыв виден значком
+ * «Нет связи, переподключаюсь…» в шапке (lib/messenger-activity).
+ */
+export const SYNC_ERROR_GRACE_MS = 8_000
 
 /** Виды по порядку, без повторов; все три — это «Все». */
 function normalizeChatFilter(kinds: readonly string[]): ChatFilter {
@@ -74,6 +82,26 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
   }
   /** Техническая причина ошибки синка (HTTP-код, «fetch failed…») — для поддержки. */
   const syncErrorDetail = ref<string | null>(null)
+  /** Ошибка держится дольше SYNC_ERROR_GRACE_MS — её показывает полоса. */
+  const syncErrorSettled = ref(false)
+  let settleTimer: ReturnType<typeof setTimeout> | null = null
+  const unsettle = (): void => {
+    if (settleTimer) clearTimeout(settleTimer)
+    settleTimer = null
+    syncErrorSettled.value = false
+  }
+  watch(syncErrorText, (text) => {
+    if (!text) return unsettle()
+    if (syncErrorSettled.value || settleTimer) return
+    settleTimer = setTimeout(() => {
+      settleTimer = null
+      syncErrorSettled.value = true
+    }, SYNC_ERROR_GRACE_MS)
+  })
+  /** Ошибка синка для полосы: короткий обрыв её не показывает. */
+  const shownSyncError = computed<string | null>(() =>
+    syncErrorSettled.value ? syncError.value : null
+  )
   const isSyncStarted = ref(false)
   const isInitInProgress = ref(false)
 
@@ -230,6 +258,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     syncState.value = 'STOPPED'
     syncError.value = null
     syncErrorDetail.value = null
+    unsettle()
     isSyncStarted.value = false
     isInitInProgress.value = false
     groupInfoChatId.value = null
@@ -247,6 +276,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     dialogsLoadedOnce,
     syncState,
     syncError,
+    shownSyncError,
     syncErrorDetail,
     setSyncError,
     isSyncStarted,

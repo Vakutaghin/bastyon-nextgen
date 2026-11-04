@@ -81,7 +81,7 @@ vi.mock('./messenger-store/use-dialog-mapping', () => ({
 
 import { findExistingRoomByAddress } from '../room-helpers'
 import { useMessengerStore } from './messenger-store'
-import { useMessengerUiStore } from './messenger-ui-store'
+import { SYNC_ERROR_GRACE_MS, useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerChannelsStore } from './messenger-channels-store'
 
 type ChatFake = ReturnType<typeof makeChat>
@@ -324,11 +324,23 @@ describe('messenger-store: повтор входа в Matrix в фоне', () =>
     h.matrix.login.mockResolvedValueOnce(false)
 
     await store.initMatrix()
-    expect(store.syncError).toBe('appMsg.messenger.loginFailed')
+    // Повтор удался раньше, чем полоса встала: короткий сбой полосой не мигает.
+    expect(useMessengerUiStore().syncError).toBe('appMsg.messenger.loginFailed')
+    expect(store.syncError).toBeNull()
 
     await vi.advanceTimersByTimeAsync(5_000)
     expect(h.matrix.login).toHaveBeenCalledTimes(2)
+    expect(useMessengerUiStore().syncError).toBeNull()
+    await vi.advanceTimersByTimeAsync(SYNC_ERROR_GRACE_MS)
     expect(store.syncError).toBeNull()
+  })
+
+  it('вход не удаётся и дальше — полоса с причиной', async () => {
+    h.matrix.login.mockResolvedValue(false)
+
+    await store.initMatrix()
+    await vi.advanceTimersByTimeAsync(SYNC_ERROR_GRACE_MS)
+    expect(store.syncError).toBe('appMsg.messenger.loginFailed')
   })
 
   it('пауза между повторами растёт', async () => {
@@ -513,8 +525,11 @@ describe('messenger-store: каналы', () => {
     expect(store.isChatsLoading).toBe(true)
 
     // Сбой синка показывает баннер, загрузка не висит рядом с ним.
+    vi.useFakeTimers()
     useMessengerUiStore().syncError = 'нет связи'
+    await vi.advanceTimersByTimeAsync(SYNC_ERROR_GRACE_MS)
     expect(store.isChatsLoading).toBe(false)
+    vi.useRealTimers()
   })
 
   it('после первого синка список каналов — с сервера; выход из аккаунта его убирает', async () => {
