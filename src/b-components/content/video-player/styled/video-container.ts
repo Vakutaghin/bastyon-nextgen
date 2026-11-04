@@ -51,7 +51,7 @@ export const SC_VideoContainer = styled.div`
     max-width: min(100%, calc(min(var(--media-max-height), 600px) * var(--video-aspect, 16 / 9)));
   }
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     &.is-portrait {
       max-width: min(
         100%,

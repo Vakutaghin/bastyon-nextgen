@@ -612,9 +612,11 @@ const frameAspect = computed<number | null>(() => {
   return Math.min(aspect.value, 16 / 9)
 })
 const isPortrait = computed<boolean>(() => (frameAspect.value ?? 16 / 9) < 1)
-const frameStyle = computed<Record<string, string>>(() =>
-  frameAspect.value ? { '--video-aspect': String(frameAspect.value) } : {}
-)
+const frameStyle = computed<Record<string, string>>(() => {
+  const style: Record<string, string> = {}
+  if (frameAspect.value) style['--video-aspect'] = String(frameAspect.value)
+  return style
+})
 
 // Субтитры (PeerTube captions → blob <track>).
 const { subtitleTracks } = useVideoSubtitles(toRef(props, 'videoUrl'))

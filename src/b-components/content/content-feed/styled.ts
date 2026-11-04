@@ -86,7 +86,7 @@ export const SC_PullIndicator = styled.div`
   position: absolute;
   top: 0;
   left: 50%;
-  z-index: ${Z_INDEX.LOCAL_DROPDOWN};
+  z-index: ${() => Z_INDEX.LOCAL_DROPDOWN};
   width: 40px;
   height: 40px;
   margin-left: -20px;
@@ -112,7 +112,7 @@ export const SC_PullIndicator = styled.div`
   }
 
   &.refreshing {
-    transition: transform ${TRANSITIONS.FAST};
+    transition: transform ${() => TRANSITIONS.FAST};
   }
 
   &.refreshing svg {

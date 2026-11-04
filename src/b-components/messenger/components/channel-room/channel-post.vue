@@ -177,9 +177,11 @@ watch(
   },
   { immediate: true }
 )
-const coverStyle = computed<Record<string, string>>(() =>
-  coverAspect.value ? { '--video-aspect': String(coverAspect.value) } : {}
-)
+const coverStyle = computed<Record<string, string>>(() => {
+  const style: Record<string, string> = {}
+  if (coverAspect.value) style['--video-aspect'] = String(coverAspect.value)
+  return style
+})
 
 const coverFailed = ref(false)
 const videoCover = computed<string | undefined>(() => {
