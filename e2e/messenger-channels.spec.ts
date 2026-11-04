@@ -337,6 +337,31 @@ test('длинная лента: посты целиком, ролики отк�
   ).toBeVisible()
 })
 
+test('вертикальный ролик в канале — обложка целиком, рамка по ролику', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signIn(page, LONG_FEED)
+  await useMockPeerTube(page, { portrait: true })
+  await page.route('https://i.ytimg.com/**', (route) => route.abort())
+  await callStore(page, 'messenger-channels', 'setChannel', CAROL, true)
+  await callStore(page, 'messenger', 'openChannel', CAROL)
+
+  // Раньше рамка 16:9 с object-fit: cover — от вертикальной обложки
+  // оставалась полоса из середины. Теперь рамка вертикальная (не выше
+  // 560 px на телефоне), обложка — целиком.
+  const own = page.getByTestId('channel-video').filter({ hasNotText: 'YouTube' })
+  await expect(own.locator('img')).toHaveAttribute('src', /\/static\/thumbnails\//, {
+    timeout: 30_000,
+  })
+  await expect(own).toHaveClass(/has-aspect/)
+  const box = (await own.boundingBox())!
+  expect(box.height).toBeGreaterThan(box.width)
+  expect(box.height).toBeLessThanOrEqual(561)
+  expect(await own.locator('img').evaluate((img) => getComputedStyle(img).objectFit)).toBe(
+    'contain'
+  )
+})
+
 test.describe('на телефоне', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 

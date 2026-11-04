@@ -31,6 +31,8 @@
         role="button"
         tabindex="0"
         data-testid="channel-video"
+        :class="{ 'has-aspect': !!coverAspect }"
+        :style="coverStyle"
         :aria-label="t('messenger.channel.watchVideo')"
         @click.stop="open(true)"
         @keydown.enter.stop.prevent="open(true)"
@@ -89,7 +91,7 @@ import {
 } from '@/components/icons'
 import { useModalStore } from '@/stores/modal-store'
 import { formatClock, formatDateTimeFromString } from '@/helpers/common/date-formatter'
-import { getVideoThumbnailFromUrl } from '@/helpers/api/peertube-url'
+import { getVideoPosterFromUrl } from '@/helpers/api/peertube-url'
 import { usePostRestriction } from '@/b-components/content/post-card/use-post-restriction'
 import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
 import type { AdaptedPost } from '@/types/adapted-post'
@@ -154,18 +156,29 @@ const isVideo = computed<boolean>(
 // Обложка под Tor тоже приходит: адрес у PeerTube спрашиваем через Tor, а
 // картинку окно берёт через свою схему (tor-media-proxy).
 const peertubeCover = ref<string | null>(null)
+/**
+ * Пропорции ролика: рамка обложки по ним, и вертикальный ролик не режется
+ * до полосы 16:9. Неизвестны (YouTube, старый ролик) — рамка 16:9.
+ */
+const coverAspect = ref<number | null>(null)
 watch(
   () => (embed.value ? undefined : props.post.videoUrl),
   async (url) => {
     peertubeCover.value = null
+    coverAspect.value = null
     if (!url?.startsWith('peertube://')) return
     try {
-      peertubeCover.value = await getVideoThumbnailFromUrl(url)
+      const poster = await getVideoPosterFromUrl(url)
+      peertubeCover.value = poster.url
+      if (props.post.type !== 'audio') coverAspect.value = poster.aspectRatio
     } catch {
       /* без обложки — тёмная рамка со значком */
     }
   },
   { immediate: true }
+)
+const coverStyle = computed<Record<string, string>>(() =>
+  coverAspect.value ? { '--video-aspect': String(coverAspect.value) } : {}
 )
 
 const coverFailed = ref(false)

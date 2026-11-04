@@ -31,6 +31,15 @@ export const SC_ThumbLink = styled.a`
   &:hover img {
     transform: scale(1.03);
   }
+
+  /* Вертикальная обложка — целиком на чёрном, как ролик в плеере. */
+  &.portrait {
+    background: var(--color-black);
+  }
+
+  &.portrait img {
+    object-fit: contain;
+  }
 `
 
 export const SC_ThumbFallback = styled.span`

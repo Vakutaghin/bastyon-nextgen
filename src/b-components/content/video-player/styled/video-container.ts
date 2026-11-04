@@ -1,5 +1,6 @@
 // @ts-expect-error vue3-styled-components types
 import styled, { keyframes } from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 const pulse = keyframes`
   50% {
@@ -22,15 +23,16 @@ export const SC_VideoSkeleton = styled.div`
 export const SC_VideoContainer = styled.div`
   position: relative;
   width: 100%;
-  /* Не выше экрана под шапкой (--media-max-height): у телефона боком ролик во
-     всю ширину выходил выше экрана. Пропорции те же, по центру. */
-  max-width: min(100%, calc(var(--media-max-height) * 16 / 9));
+  /* Рамка — по пропорциям ролика (--video-aspect из плеера), пока они не
+     известны — 16:9. Не выше экрана под шапкой (--media-max-height): у
+     телефона боком ролик во всю ширину выходил выше экрана. По центру. */
+  max-width: min(100%, calc(var(--media-max-height) * var(--video-aspect, 16 / 9)));
   /* Под роликом чёрное, как у YouTube: полосы по краям вертикального видео. */
   background-color: var(--color-black);
   border-radius: var(--post-media-radius, var(--ui-radius-lg));
   overflow: hidden;
   margin: 0 auto 15px;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--video-aspect, 16 / 9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,6 +42,25 @@ export const SC_VideoContainer = styled.div`
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+
+  /* Вертикальный ролик на компьютере — не во всю высоту окна, лента остаётся
+     лентой. На телефоне и планшете — до высоты экрана, как в Reels: между
+     шапкой и нижней панелью разделов, она не закрывает низ ролика. Выше
+     правил полного экрана: там max-width: none должен перебить. */
+  &.is-portrait {
+    max-width: min(100%, calc(min(var(--media-max-height), 600px) * var(--video-aspect, 16 / 9)));
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    &.is-portrait {
+      max-width: min(
+        100%,
+        calc(
+          (var(--media-max-height) - var(--bottom-nav-height-total)) * var(--video-aspect, 16 / 9)
+        )
+      );
+    }
+  }
 
   &:fullscreen {
     width: 100vw;

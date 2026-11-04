@@ -46,6 +46,8 @@ export interface PeerTubeVideoInfo {
   isLive?: boolean
   /** Сколько смотрят прямой эфир сейчас. */
   viewers?: number
+  /** Ширина к высоте: у вертикального ролика меньше 1, у аудио — 1. */
+  aspectRatio?: number | null
 }
 
 const PEERTUBE_FETCH_TIMEOUT_MS = 10_000

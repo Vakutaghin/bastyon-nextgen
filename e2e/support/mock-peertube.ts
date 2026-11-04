@@ -31,6 +31,10 @@ export interface MockPeerTubeOptions {
   hlsBreaksAfter?: number
   /** Просмотры ролика в описании (`views`). */
   views?: number
+  /** Вертикальный ролик 144×256: `aspectRatio` в описании, обложка и файл того же вида. */
+  portrait?: boolean
+  /** Описание без `aspectRatio`, как у старых роликов: пропорции — только по обложке. */
+  noAspectRatio?: boolean
 }
 
 export interface MockPeerTube {
@@ -80,6 +84,7 @@ export async function useMockPeerTube(
     name: 'Тестовый ролик',
     duration: 30,
     views: options.views,
+    ...(options.noAspectRatio ? {} : { aspectRatio: options.portrait ? 0.5625 : 1.775 }),
     thumbnailPath: `/static/thumbnails/${VIDEO_ID}.jpg`,
     streamingPlaylists: options.hls
       ? [
@@ -121,10 +126,15 @@ export async function useMockPeerTube(
     route.fulfill({ json: { total: 0, data: [] } })
   )
   await page.route(`https://${host}/static/thumbnails/${VIDEO_ID}.jpg`, (route) =>
-    route.fulfill({ path: fixture('test-video.jpg'), contentType: 'image/jpeg' })
+    route.fulfill({
+      path: fixture(options.portrait ? 'test-video-portrait.jpg' : 'test-video.jpg'),
+      contentType: 'image/jpeg',
+    })
   )
 
-  const video = readFileSync(fixture('test-video.mp4'))
+  const video = readFileSync(
+    fixture(options.portrait ? 'test-video-portrait.mp4' : 'test-video.mp4')
+  )
   await page.route(`https://${host}/static/web-videos/${VIDEO_ID}-240.mp4`, (route) => {
     mock.requests.mp4 += 1
     return fulfillVideo(route, video)

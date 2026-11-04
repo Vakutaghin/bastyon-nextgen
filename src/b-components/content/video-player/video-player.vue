@@ -11,7 +11,9 @@
       'pointer-mode': pointerMode,
       'touch-ui': touchUi,
       'menu-open': isQualityMenuOpen,
+      'is-portrait': isPortrait,
     }"
+    :style="frameStyle"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @mousemove="handleMouseMove"
@@ -590,6 +592,7 @@ let refreshMetadata: () => void = () => {}
 const {
   thumbnailUrl,
   isThumbnailLoaded,
+  aspect,
   loadThumbnail,
   handleThumbnailLoad,
   handleThumbnailError,
@@ -598,6 +601,20 @@ const {
   getThumbnailStyle,
   getVideoStyle,
 } = useVideoThumbnail(videoElement, toRef(props, 'videoUrl'), () => refreshMetadata())
+
+/**
+ * Рамка по пропорциям ролика: вертикальный не сжимается в узкую полосу внутри
+ * 16:9. Шире 16:9 — рамка 16:9 с полосами, как у YouTube; у аудио рамка всегда
+ * 16:9 (под визуализацию), сервер отдаёт ему 1.
+ */
+const frameAspect = computed<number | null>(() => {
+  if (props.isAudio || !aspect.value) return null
+  return Math.min(aspect.value, 16 / 9)
+})
+const isPortrait = computed<boolean>(() => (frameAspect.value ?? 16 / 9) < 1)
+const frameStyle = computed<Record<string, string>>(() =>
+  frameAspect.value ? { '--video-aspect': String(frameAspect.value) } : {}
+)
 
 // Субтитры (PeerTube captions → blob <track>).
 const { subtitleTracks } = useVideoSubtitles(toRef(props, 'videoUrl'))

@@ -4,12 +4,22 @@
 // метаданные видео, и отдаёт inline-стили обёртки/превью/видео (contain vs
 // cover в зависимости от соотношения сторон). Раньше эта логика была инлайн
 // в video-player.vue.
+//
+// Пропорции ролика (`aspect`) — для рамки плеера: вертикальный ролик в рамке
+// 16:9 выходил узкой полосой посередине. Точнее всего — по самому ролику,
+// до запуска — из описания на сервере, у старых роликов — по обложке.
 
-import { ref, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 
-import { getVideoThumbnailFromUrl } from '@/helpers/api/peertube-url'
+import { getVideoPosterFromUrl } from '@/helpers/api/peertube-url'
 import { ASPECT_RATIO_CONTAIN_THRESHOLD } from '../consts'
 import { resolveVideoElement } from './utils'
+
+/**
+ * Известные пропорции роликов: плеер, смонтированный заново (лента вернулась
+ * к посту), сразу строит нужную рамку, а не 16:9 до ответа сервера.
+ */
+const knownAspect = new Map<string, number>()
 
 interface AspectRatio {
   width: number
@@ -26,11 +36,34 @@ export function useVideoThumbnail(
   const isThumbnailLoaded = ref(false)
   const thumbnailAspectRatio = ref<AspectRatio | null>(null)
   const videoAspectRatio = ref<AspectRatio | null>(null)
+  /** Пропорции из описания ролика на сервере. */
+  const serverAspect = ref<number | null>(null)
+
+  /** Ширина к высоте: по ролику, по описанию, по обложке; `null` — неизвестно. */
+  const aspect = computed<number | null>(() => {
+    const fromVideo = videoAspectRatio.value
+    if (fromVideo) return fromVideo.width / fromVideo.height
+    if (serverAspect.value) return serverAspect.value
+    const fromThumb = thumbnailAspectRatio.value
+    if (fromThumb) return fromThumb.width / fromThumb.height
+    return knownAspect.get(videoUrl.value) ?? null
+  })
+
+  function remember(ratio: number): void {
+    if (Number.isFinite(ratio) && ratio > 0) knownAspect.set(videoUrl.value, ratio)
+  }
 
   function loadThumbnail(): void {
-    getVideoThumbnailFromUrl(videoUrl.value)
-      .then((url) => {
-        thumbnailUrl.value = url
+    serverAspect.value = null
+    thumbnailAspectRatio.value = null
+    videoAspectRatio.value = null
+    const url = videoUrl.value
+    getVideoPosterFromUrl(url)
+      .then((poster) => {
+        if (url !== videoUrl.value) return
+        thumbnailUrl.value = poster.url
+        serverAspect.value = poster.aspectRatio
+        if (poster.aspectRatio) remember(poster.aspectRatio)
       })
       .catch(() => {
         // Превью не критично: невалидный URL / PeerTube 5xx — просто
@@ -52,6 +85,7 @@ export function useVideoThumbnail(
         height: img.naturalHeight,
         useContain,
       }
+      if (!serverAspect.value) remember(aspectRatio)
     }
   }
 
@@ -79,6 +113,7 @@ export function useVideoThumbnail(
       height: videoHeight,
       useContain,
     }
+    remember(aspectRatio)
   }
 
   function getVideoWrapperStyle(): Record<string, string> {
@@ -102,6 +137,7 @@ export function useVideoThumbnail(
     isThumbnailLoaded,
     thumbnailAspectRatio,
     videoAspectRatio,
+    aspect,
     loadThumbnail,
     handleThumbnailLoad,
     handleThumbnailError,

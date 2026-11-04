@@ -130,20 +130,40 @@ export function getVideoThumbnailUrl(videoInfo: PeerTubeVideoInfo, host: string)
   return null
 }
 
+/** Обложка ролика и его пропорции из того же описания. */
+export interface VideoPoster {
+  url: string | null
+  /** Ширина к высоте; `null` — сервер не знает (старый ролик) или ролик скачан. */
+  aspectRatio: number | null
+}
+
 /**
- * Получает URL превьюшки напрямую из PeerTube URL (parser + API + thumbnail extract).
+ * Обложка и пропорции ролика из PeerTube URL (parser + API). По пропорциям
+ * плеер строит рамку до запуска: вертикальный ролик — вертикальной рамкой.
  * Бросает Error если URL неверный или видео не найдено.
  */
-export async function getVideoThumbnailFromUrl(peertubeUrl: string): Promise<string | null> {
+export async function getVideoPosterFromUrl(peertubeUrl: string): Promise<VideoPoster> {
   const parsed = parsePeerTubeUrl(peertubeUrl)
   if (!parsed) throw new Error(`Invalid PeerTube URL: ${peertubeUrl}`)
 
   // Скачанный ролик — обложка с диска, без сети.
   const local = await offlineFileUrl(peertubeUrl, 'thumb.jpg')
-  if (local) return local
+  if (local) return { url: local, aspectRatio: null }
 
   const videoInfo = await getPeerTubeVideoInfo(parsed.host, parsed.videoId)
-  return getVideoThumbnailUrl(videoInfo, videoInfo.servedBy ?? parsed.host)
+  const ratio = Number(videoInfo.aspectRatio)
+  return {
+    url: getVideoThumbnailUrl(videoInfo, videoInfo.servedBy ?? parsed.host),
+    aspectRatio: Number.isFinite(ratio) && ratio > 0 ? ratio : null,
+  }
+}
+
+/**
+ * Получает URL превьюшки напрямую из PeerTube URL (parser + API + thumbnail extract).
+ * Бросает Error если URL неверный или видео не найдено.
+ */
+export async function getVideoThumbnailFromUrl(peertubeUrl: string): Promise<string | null> {
+  return (await getVideoPosterFromUrl(peertubeUrl)).url
 }
 
 /**

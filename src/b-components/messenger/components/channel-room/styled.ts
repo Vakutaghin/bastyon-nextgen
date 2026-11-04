@@ -190,10 +190,16 @@ export const SC_PostMedia = styled.div`
   }
 `
 
-/** Обложка ролика 16:9 со значком ▶: лента не прыгает, пока грузится картинка. */
+/**
+ * Обложка ролика со значком ▶: рамка 16:9, пока не пришли пропорции ролика,
+ * тогда — по ним (--video-aspect), но не выше --media-max-height. Обложка с
+ * известными пропорциями целиком, по бокам чёрное: вертикальный ролик не
+ * режется до полосы. Обложку YouTube (4:3 с полосами) — обрезаем по рамке.
+ */
 export const SC_PostVideo = styled(SC_PostMedia)`
   position: relative;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--video-aspect, 16 / 9);
+  max-height: var(--media-max-height);
   overflow: hidden;
   background: ${() => COLORS.BLACK};
 
@@ -202,6 +208,10 @@ export const SC_PostVideo = styled(SC_PostMedia)`
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  &.has-aspect img {
+    object-fit: contain;
   }
 
   &:focus-visible {

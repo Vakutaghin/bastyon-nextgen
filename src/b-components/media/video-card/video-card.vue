@@ -1,8 +1,15 @@
 <template>
   <SC_Card :class="{ current }" data-testid="video-card">
     <router-link v-slot="{ href }" :to="to" custom>
-      <SC_ThumbLink :href="href" :aria-label="title" @click="onOpen">
-        <img v-if="thumbSrc" :src="thumbSrc" alt="" loading="lazy" @error="onThumbError" />
+      <SC_ThumbLink :href="href" :aria-label="title" :class="{ portrait }" @click="onOpen">
+        <img
+          v-if="thumbSrc"
+          :src="thumbSrc"
+          alt=""
+          loading="lazy"
+          @load="onThumbLoad"
+          @error="onThumbError"
+        />
         <SC_ThumbFallback v-else><PlayCircleOutlined /></SC_ThumbFallback>
         <SC_Duration v-if="duration">{{ duration }}</SC_Duration>
         <SC_Badge v-if="badge">{{ badge }}</SC_Badge>
@@ -32,7 +39,7 @@
 // длительность, название, автор, просмотры и дата. Нажатие открывает окно
 // поста, где ролик сразу играет, — или, если задан `@play`, запускает очередь.
 
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PlayCircleOutlined } from '@/components/icons'
 import Avatar from '@/components/avatar/avatar.vue'
@@ -86,6 +93,12 @@ const { src: thumbSrc, onError: onThumbError } = useThumbnailFallback(
   () => cover.value,
   () => props.post.videoUrl
 )
+/** Обложка вертикального ролика — целиком, с полосами, а не полоса из середины. */
+const portrait = ref(false)
+function onThumbLoad(e: Event): void {
+  const img = e.target as HTMLImageElement
+  portrait.value = img.naturalHeight > img.naturalWidth
+}
 const duration = computed(() => formatDuration(props.info?.duration))
 const avatar = computed(() => props.post.author?.avatar || undefined)
 const authorPath = computed(() => `/${props.post.author?.name || props.post.author?.address || ''}`)
