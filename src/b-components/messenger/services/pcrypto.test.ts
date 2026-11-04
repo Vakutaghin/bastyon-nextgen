@@ -7,7 +7,7 @@
 // путь (PcryptoService.decryptEvent) достаёт исходный текст из ровно такого
 // content — то есть отправка и приём совместимы между собой и с legacy-форматом.
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { Buffer } from 'buffer'
 
 import { PcryptoService, type User } from './pcrypto'
@@ -119,6 +119,20 @@ describe('pcrypto: ключ одного собеседника', () => {
     const key = await inner.aeskey(77, group, 'member3:matrix')
     expect(key!.toString('hex')).toBe(all['member3']!.toString('hex'))
     await expect(inner.aeskey(77, group, 'nobody')).resolves.toBeNull()
+  })
+
+  it('пачка расшифровок одного блока считает ключ один раз', async () => {
+    const fresh = new PcryptoService(me, '@member0:matrix.pocketnet.app')
+    const freshInner = fresh as unknown as Internals & {
+      eaa: { shared: (...args: unknown[]) => Buffer | null }
+    }
+    const shared = vi.spyOn(freshInner.eaa, 'shared')
+    const keys = await Promise.all(
+      Array.from({ length: 20 }, () => freshInner.aeskey(91, group, 'member2'))
+    )
+    expect(shared).toHaveBeenCalledTimes(1)
+    expect(new Set(keys.map((k) => k!.toString('hex'))).size).toBe(1)
+    expect(keys[0]!.toString('hex')).toBe(inner.eaa.aeskeys(91, group)['member2']!.toString('hex'))
   })
 
   it('другой блок — другой ключ (кэш не путает)', async () => {

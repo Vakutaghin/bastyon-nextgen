@@ -131,8 +131,10 @@
           <SC_ReactionEmojiIcon>😀</SC_ReactionEmojiIcon>
         </SC_ReactionButton>
 
+        <!-- Меню antd монтируется при первом нажатии: в каждой строке ленты оно
+             стоило дороже самого сообщения, а открывают его редко. -->
         <APopover
-          v-if="canShowActions"
+          v-if="canShowActions && actionsMounted"
           v-model:open="actionsOpen"
           trigger="click"
           placement="topRight"
@@ -161,6 +163,16 @@
             <MoreOutlined />
           </SC_ActionsButton>
         </APopover>
+        <SC_ActionsButton
+          v-else-if="canShowActions"
+          type="button"
+          data-testid="message-actions"
+          :title="t('messenger.actions')"
+          :aria-label="t('messenger.actions')"
+          @click.stop="openActions"
+        >
+          <MoreOutlined />
+        </SC_ActionsButton>
       </SC_MessageTime>
 
       <Teleport to="body">
@@ -192,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Popover, Modal } from 'ant-design-vue'
@@ -483,6 +495,13 @@ const {
 
 // --- Действия над сообщением (ответ / удаление) ---
 const actionsOpen = ref(false)
+/** Меню уже нажимали — antd Popover смонтирован (см. шаблон). */
+const actionsMounted = ref(false)
+async function openActions(): Promise<void> {
+  actionsMounted.value = true
+  await nextTick()
+  actionsOpen.value = true
+}
 /** Реальное (отправленное) сообщение с matrix event-id ($...), не temp/pending. */
 const isRealMessage = computed<boolean>(
   () => typeof props.message.id === 'string' && props.message.id.startsWith('$')

@@ -3,6 +3,7 @@
 
 import { reactive, ref } from 'vue'
 
+import { yieldToMain } from '@/helpers/common/yield-to-main'
 import { matrixService } from '../../services/matrix-service'
 import { getRoomTimelineEvents, isMessageEvent } from '../../helpers'
 import { earliestServerTs, isNotFoundError } from '../../lib/archive-merge'
@@ -233,6 +234,9 @@ export function useMessageLoading(
         const incomplete = !joined.done || !members.done || slow
         const mapped = await Promise.all(timelineOf(room).map((e) => mapForOpen(e)))
         const list = mapped.filter((m): m is Message => Boolean(m))
+        // Расшифровки дочитываются цепочкой микрозадач, и отрисовка ленты шла
+        // с ними одной длинной задачей: между ними — передышка вводу.
+        await yieldToMain()
 
         // Пока грузилась история, по WS могло прийти новое сообщение (и на него
         // уже ушёл read-receipt). Голое присваивание снимка затирало его —

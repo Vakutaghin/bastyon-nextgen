@@ -236,6 +236,12 @@ export class PcryptoService {
 
   /** Ключи собеседников: (хэши участников, ключи собеседника) → общий ключ. */
   private keyCache = new Map<string, Buffer>()
+  /**
+   * Ключи, которые считаются прямо сейчас. Чат открывается пачкой расшифровок
+   * (Promise.all), и все сообщения одного блока раньше промахивались мимо
+   * кэша разом — каждое считало тот же ключ заново.
+   */
+  private keyInflight = new Map<string, Promise<Buffer | null>>()
 
   /**
    * Общий ключ с одним собеседником — то же, что `aeskeys(block, users)[keyindex]`
@@ -255,7 +261,26 @@ export class PcryptoService {
     const cacheKey = `${hashes.map((h) => Buffer.from(h).toString('hex')).join('')}|${user.keys.join(',')}`
     const known = this.keyCache.get(cacheKey)
     if (known) return known
+    const pending = this.keyInflight.get(cacheKey)
+    if (pending) return pending
 
+    const job = this.deriveKey(hashes, user, block, users, keyindex, cacheKey)
+    this.keyInflight.set(cacheKey, job)
+    try {
+      return await job
+    } finally {
+      this.keyInflight.delete(cacheKey)
+    }
+  }
+
+  private async deriveKey(
+    hashes: Uint8Array[],
+    user: User,
+    block: number,
+    users: User[],
+    keyindex: string,
+    cacheKey: string
+  ): Promise<Buffer | null> {
     await breathe()
     const key = this.eaa.shared(hashes, user, new Uint8Array(this.eaa.current(hashes)))
     // Точка на бесконечности: прежний путь тогда искал другой id — так и здесь.

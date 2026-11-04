@@ -119,6 +119,7 @@
         :seen-ids="seenIds"
         :history="searchQuery.trim() ? null : store.activeHistory"
         :loading="isLoading"
+        :window-key="searchQuery.trim()"
         @load-more="emit('load-more')"
         @reply="onReplyTo"
         @retry="retryHistory"

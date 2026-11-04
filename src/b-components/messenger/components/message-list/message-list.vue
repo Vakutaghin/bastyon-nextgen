@@ -15,10 +15,10 @@
       :history="history"
       @retry="emit('retry')"
     />
-    <template v-for="row in rows" :key="row.kind === 'message' ? row.message.id : row.id">
+    <template v-for="row in shownRows" :key="rowKey(row)">
       <!-- Граница: выше — то, что сервер уже стёр, а устройство сохранило. -->
       <SC_ArchiveDivider
-        v-if="(row.kind === 'message' ? row.message.id : row.id) === archiveBoundary"
+        v-if="rowKey(row) === archiveBoundary"
         role="separator"
         data-testid="archive-divider"
       >
@@ -26,6 +26,7 @@
       </SC_ArchiveDivider>
       <MessageItem
         v-if="row.kind === 'message'"
+        data-row
         :message="row.message"
         :show-name="isFirstInGroup(row.index)"
         :show-avatar="isFirstInGroup(row.index)"
@@ -33,7 +34,7 @@
         @reply="emit('reply', $event)"
       />
       <!-- Удалённое сообщение — отметка, кто удалил: раньше оно пропадало без следа. -->
-      <SC_DeletedMark v-else data-testid="deleted-mark">
+      <SC_DeletedMark v-else data-row data-testid="deleted-mark">
         {{ deletedText(row) }} ·
         <time :datetime="new Date(row.at).toISOString()">{{ formatMessageTime(row.at) }}</time>
       </SC_DeletedMark>
@@ -55,6 +56,7 @@ import { formatMessageTime } from '@/helpers/common/date-formatter'
 import type { Message } from '../../types'
 import { chatUserName } from '../../helpers'
 import { historyRows, type ChatHistory, type HistoryRow } from '../../lib/chat-history'
+import { useRowWindow } from './use-row-window'
 import { useMessengerStore } from '../../store'
 import MessageItem from '../message-item/message-item.vue'
 import ChatHistoryNote from '../chat-history-note/chat-history-note.vue'
@@ -75,12 +77,15 @@ const props = withDefaults(
     history?: ChatHistory | null
     /** История ещё грузится, а на экране то, что уже есть. */
     loading?: boolean
+    /** Сменился — другая лента (поиск по чату): снова только последние строки. */
+    windowKey?: string
   }>(),
   {
     messages: () => [],
     seenIds: () => new Set<string>(),
     history: null,
     loading: false,
+    windowKey: '',
   }
 )
 
@@ -94,6 +99,17 @@ const { t } = useI18n()
 const store = useMessengerStore()
 
 const rows = computed<HistoryRow[]>(() => historyRows(props.messages))
+const rowKey = (row: HistoryRow): string => (row.kind === 'message' ? row.message.id : row.id)
+
+// Рисуются последние строки, старые — по мере прокрутки к началу (use-row-window).
+const {
+  shown: shownRows,
+  hidden: hiddenRows,
+  showMore,
+} = useRowWindow(rows, rowKey, () => {
+  const chatId = props.messages[props.messages.length - 1]?.chatId ?? ''
+  return `${chatId}|${props.windowKey}`
+})
 
 /** Граница стёртого сервером стоит после всех сообщений: на сервере их нет совсем. */
 const ARCHIVE_TAIL = 'archive-tail'
@@ -136,9 +152,30 @@ async function scrollToBottom(): Promise<void> {
   if (el) el.scrollTop = el.scrollHeight
 }
 
+/**
+ * Дорисовать строки сверху так, чтобы то, что на экране, осталось на месте:
+ * прокрутка сдвигается на столько, на сколько уехала верхняя нарисованная
+ * строка (якорь браузера у ленты выключен). По offsetTop, а не по
+ * getBoundingClientRect: окно мессенджера раскрывается с transform: scale,
+ * и экранные пиксели тогда не равны пикселям прокрутки.
+ */
+async function revealOlder(): Promise<void> {
+  const el = getListEl()
+  const anchor = el?.querySelector<HTMLElement>('[data-row]') ?? null
+  const before = anchor?.offsetTop ?? 0
+  showMore()
+  await nextTick()
+  if (el && anchor?.isConnected) el.scrollTop += anchor.offsetTop - before
+}
+
 function checkAndLoadMore(): void {
   const el = getListEl()
   if (el && el.scrollHeight <= el.clientHeight + 100) {
+    // Не заполнили экран нарисованным — сначала дорисовать, потом к серверу.
+    if (hiddenRows.value > 0) {
+      void revealOlder().then(() => setTimeout(checkAndLoadMore, 0))
+      return
+    }
     emit('load-more')
   }
 }
@@ -193,9 +230,20 @@ watch(
 
 let lastScrollTime = 0
 
+let revealing = false
+
 function handleScroll(e: Event): void {
   const target = e.target as HTMLElement
   if (target.scrollTop < 200) {
+    // Выше ещё есть нарисованное не всё — дорисовываем, к серверу не ходим.
+    if (hiddenRows.value > 0) {
+      if (revealing) return
+      revealing = true
+      void revealOlder().finally(() => {
+        revealing = false
+      })
+      return
+    }
     const now = Date.now()
     if (now - lastScrollTime > 500) {
       console.error('[MessageList] Load more triggered (emit load-more)')
