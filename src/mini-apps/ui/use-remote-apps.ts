@@ -67,8 +67,13 @@ export function useRemoteApps(opts: UseRemoteAppsOptions = {}) {
   /** Следующая страница, загруженная заранее. */
   const ahead = ref<RemoteAppEntry[]>([])
   const aheadState = ref<AheadState>('idle')
-  /** Смещение следующего запроса — по записям ноды, а не по прошедшим нормализацию. */
-  let nextOffset = 0
+  /**
+   * Номер следующей страницы. Нода считает `pageStart` страницами: раньше сюда
+   * шло смещение в записях (20), нода отвечала пустой страницей, и каталог
+   * кончался на первых двадцати — новые приложения, у которых рейтинг ещё
+   * низкий (Vakka VPN, Bastyon Freelance), в «Сервисы» не попадали.
+   */
+  let nextPage = 0
   /** Нода отдала неполную страницу — дальше ничего нет. */
   let endReached = false
   /** Поколение выдачи: смена поиска или раздела отменяет ответы старых запросов. */
@@ -96,11 +101,11 @@ export function useRemoteApps(opts: UseRemoteAppsOptions = {}) {
   const getLoader = (): Promise<RemoteAppsLoader> =>
     opts.rpc ? Promise.resolve(new RemoteAppsLoader(opts.rpc)) : getCatalogLoader()
 
-  const fetchPage = async (offset: number) => {
+  const fetchPage = async (page: number) => {
     const loader = await getLoader()
     const category = activeCategory.value
     return loader.load({
-      pageStart: offset,
+      pageStart: page,
       pageSize,
       search: search.value,
       tags: category ? categoryQueryTags(category) : [],
@@ -126,9 +131,9 @@ export function useRemoteApps(opts: UseRemoteAppsOptions = {}) {
     const collected: RemoteAppEntry[] = []
     try {
       for (let i = 0; i < MAX_SKIPPED_PAGES && !endReached; i++) {
-        const page = await fetchPage(nextOffset)
+        const page = await fetchPage(nextPage)
         if (gen !== generation) return
-        nextOffset += page.rawCount
+        nextPage += 1
         if (!page.hasMore) endReached = true
         accumulateCategories(page.apps)
         const seen = new Set([...items.value, ...collected].map((a) => a.id))
@@ -153,14 +158,14 @@ export function useRemoteApps(opts: UseRemoteAppsOptions = {}) {
     error.value = null
     ahead.value = []
     aheadState.value = 'idle'
-    nextOffset = 0
+    nextPage = 0
     endReached = false
     try {
       const page = await fetchPage(0)
       if (gen !== generation) return
       accumulateCategories(page.apps)
       items.value = page.apps
-      nextOffset = page.rawCount
+      nextPage = 1
       endReached = !page.hasMore
     } catch (e) {
       if (gen !== generation) return

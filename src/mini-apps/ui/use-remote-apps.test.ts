@@ -9,7 +9,11 @@ import { useRemoteApps, type UseRemoteAppsOptions } from './use-remote-apps'
 
 const app = (i: number) => ({ id: `app${i}.app`, name: `App ${i}`, scope: `a${i}.com` })
 
-/** Нода с `total` приложениями; `fail` — номера запросов (с нуля), которые падают. */
+/**
+ * Нода с `total` приложениями; `fail` — номера запросов (с нуля), которые
+ * падают. `pageStart` у ноды — номер страницы, не смещение (сверено с
+ * mainnet 04.11.2026: `pageStart: 1` — записи 21–40, `pageStart: 20` — пусто).
+ */
 function node(total: number, fail: number[] = []) {
   let call = 0
   return vi.fn(async (_method: string, params: unknown) => {
@@ -23,7 +27,7 @@ function node(total: number, fail: number[] = []) {
     const all = Array.from({ length: total }, (_, i) => app(i)).filter(
       (a) => !search || a.name.includes(search)
     )
-    return all.slice(pageStart, pageStart + pageSize)
+    return all.slice(pageStart * pageSize, (pageStart + 1) * pageSize)
   })
 }
 
@@ -57,6 +61,18 @@ describe('useRemoteApps', () => {
     await settle()
     expect(api.items.value).toHaveLength(4)
     expect(api.hasMore.value).toBe(false)
+  })
+
+  it('каталог на 23 приложения: вторая страница — pageStart 1, все 23 в выдаче', async () => {
+    // Раньше вторым запросом шло смещение 20, нода отвечала пустой страницей,
+    // и три последних по рейтингу приложения в «Сервисах» не появлялись.
+    const rpc = node(23)
+    const api = setup({ rpc, pageSize: 20 })
+    await vi.waitFor(() => expect(api.hasMore.value).toBe(true))
+    await api.loadMore()
+    expect(api.items.value).toHaveLength(23)
+    expect(api.items.value[api.items.value.length - 1]!.id).toBe('app22.app')
+    expect(rpc.mock.calls.map((c) => (c[1] as { pageStart: number }).pageStart)).toEqual([0, 1])
   })
 
   it('следующая страница уже загружена: кнопка видна, нажатие добавляет сразу и грузит дальше', async () => {

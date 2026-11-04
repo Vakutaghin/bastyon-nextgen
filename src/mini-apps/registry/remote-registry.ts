@@ -38,6 +38,10 @@ export interface RemoteAppEntry {
 }
 
 export interface LoadRemoteAppsParams {
+  /**
+   * Номер страницы, а не смещение: нода на `pageStart: 1` отдаёт записи
+   * с 21-й по 40-ю (pageSize 20), а на `pageStart: 20` — пустую страницу.
+   */
   pageStart?: number
   pageSize?: number
   /** Свободная подстрока для фильтра по name/description/address. */
@@ -57,9 +61,8 @@ export interface RemoteAppsPage {
   /** Запрошенные параметры — для дебага. */
   params: Required<Omit<LoadRemoteAppsParams, 'topHeight'>> & { topHeight?: number }
   /**
-   * Сколько записей отдала нода, включая отброшенные нормализацией. По нему
-   * считается смещение следующей страницы: по `apps.length` страницы
-   * наезжали друг на друга.
+   * Сколько записей отдала нода, включая отброшенные нормализацией: по нему,
+   * а не по `apps.length`, видно, полная ли страница.
    */
   rawCount: number
   /** Грубая эвристика: если нода отдала меньше pageSize — больше страниц нет. */
