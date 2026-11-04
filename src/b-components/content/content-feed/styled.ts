@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 import Button from '@/components/button/button.vue'
 
 export const SC_NewPostsPill = styled.button`
@@ -72,7 +72,52 @@ export const SC_RetryButton = styled(Button)`
 `
 
 export const SC_Feed = styled.div`
+  position: relative;
   width: 100%;
+`
+
+/**
+ * Кружок «протяни, чтобы обновить»: выезжает сверху ленты за пальцем
+ * (--pull-offset), проявляется (--pull-opacity), стрелка поворачивается
+ * (--pull-turn); дотянули до порога —
+ * цвета темы, отпустили — крутится, пока идёт обновление.
+ */
+export const SC_PullIndicator = styled.div`
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: ${Z_INDEX.LOCAL_DROPDOWN};
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-bg-elevated);
+  color: var(--ui-text-muted);
+  box-shadow: var(--ui-shadow-lg);
+  font-size: 18px;
+  opacity: var(--pull-opacity, 1);
+  transform: translateY(calc(var(--pull-offset, 0px) - 44px));
+  pointer-events: none;
+
+  svg {
+    transform: rotate(var(--pull-turn, 0deg));
+  }
+
+  &.armed,
+  &.refreshing {
+    color: var(--ui-primary);
+  }
+
+  &.refreshing {
+    transition: transform ${TRANSITIONS.FAST};
+  }
+
+  &.refreshing svg {
+    transform: none;
+  }
 `
 
 export const SC_FeedHeader = styled.div`

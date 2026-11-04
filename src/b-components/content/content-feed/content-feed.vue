@@ -1,5 +1,16 @@
 <template>
   <SC_Feed ref="feedRootRef">
+    <!-- Обновление протягиванием вниз (телефон): кружок выезжает за пальцем. -->
+    <SC_PullIndicator
+      v-if="pull.offset.value > 0 || pull.refreshing.value"
+      :class="{ armed: pull.armed.value, refreshing: pull.refreshing.value }"
+      :style="pullStyle"
+      role="status"
+      data-testid="pull-to-refresh"
+      :aria-label="t('postCard.refreshFeed')"
+    >
+      <ReloadOutlined :spin="pull.refreshing.value" />
+    </SC_PullIndicator>
     <SC_FeedHeader>
       <SC_FeedHeaderLeft>
         <!-- Боковых панелей на телефоне и планшете нет — нет и кнопок для них. -->
@@ -208,6 +219,7 @@ import type { AdaptedPost } from '@/composables/use-feed'
 import { isMobile } from '@mobile/utils/platform'
 import { useViewport } from '@/composables/use-viewport'
 import { isPageOverlaid } from '@/composables/use-page-overlay'
+import { PULL_THRESHOLD, usePullToRefresh } from '@/composables/use-pull-to-refresh'
 import PostCard from '@/b-components/content/post-card/post-card.vue'
 import MiniAppsShelf from '@/mini-apps/ui/mini-apps-shelf.vue'
 import Button from '@/components/button/button.vue'
@@ -232,6 +244,7 @@ import {
   SC_NewPostsPill,
   SC_SubscriptionsDivider,
   SC_FeedNote,
+  SC_PullIndicator,
 } from './styled'
 
 withDefaults(
@@ -310,15 +323,28 @@ const { deferred: highlightsDeferred, reset: resetHighlightsGate } = useLateArri
 )
 
 /** «Обновить» — заново и обычная лента, и продвигаемые, и посты подписок. */
-function refreshFeed(): void {
+function refreshFeed(): Promise<unknown> {
   // Обновить попросили сами — подборке можно встать наверх.
   resetHighlightsGate()
-  if (showBoosted.value) {
-    void refetchBoosted()
-    void refetchHighlights()
-  }
-  void refetch()
+  const jobs: Promise<unknown>[] = [refetch()]
+  if (showBoosted.value) jobs.push(refetchBoosted(), refetchHighlights())
+  return Promise.all(jobs)
 }
+
+// Протянули ленту вниз в самом верху — то же «Обновить ленту».
+const pull = usePullToRefresh({
+  root: () => {
+    const root = feedRootRef.value
+    return root && ((root as { $el?: HTMLElement }).$el ?? (root as HTMLElement))
+  },
+  refresh: refreshFeed,
+  disabled: () => isPageOverlaid.value,
+})
+const pullStyle = computed<Record<string, string>>(() => ({
+  '--pull-offset': `${pull.offset.value}px`,
+  '--pull-opacity': String(Math.min(1, pull.offset.value / 32)),
+  '--pull-turn': `${(pull.offset.value / PULL_THRESHOLD) * 270}deg`,
+}))
 
 /** «Продолжить в ленте подписок» — вкладка «Подписки», как из меню. */
 function openSubscriptions(): void {
