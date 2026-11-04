@@ -44,11 +44,22 @@
         />
       </SC_Grid>
 
-      <SC_LoadMore v-if="hasMore">
+      <!-- Подгрузка при прокрутке. Метка заново после каждой страницы: иначе
+           видимая метка второй раз не сработает. -->
+      <SC_LoadMoreSentinel
+        v-if="hasMore && !loadMoreFailed && !isLoading"
+        ref="loadMoreSentinel"
+        data-testid="miniapps-load-more-sentinel"
+        aria-hidden="true"
+      />
+      <SC_LoadMore v-if="loadMoreFailed">
         <SC_LoadMoreBtn type="button" :disabled="isLoading" @click="loadMore">
           {{ isLoading ? t('miniapps.loading') : t('miniapps.loadMore') }}
         </SC_LoadMoreBtn>
       </SC_LoadMore>
+      <SC_LoadMoreStatus v-else-if="isLoadingMore" role="status">
+        {{ t('miniapps.loading') }}
+      </SC_LoadMoreStatus>
     </SC_Section>
     <SC_Empty v-else-if="isLoading">{{ t('miniapps.loading') }}</SC_Empty>
 
@@ -121,6 +132,7 @@ import {
   type MiniAppCategoryId,
 } from '@/mini-apps/catalog/categories'
 import { useRemoteApps } from './use-remote-apps'
+import { useLoadMoreSentinel, type SentinelRef } from '@/composables/use-load-more-sentinel'
 import CardItem from './mini-apps-grid-card.vue'
 import SideloadModal from './sideload-modal.vue'
 import InputSearch from '@/components/input-search/input-search.vue'
@@ -136,6 +148,8 @@ import {
   SC_Grid,
   SC_LoadMore,
   SC_LoadMoreBtn,
+  SC_LoadMoreStatus,
+  SC_LoadMoreSentinel,
   SC_Empty,
   SC_Error,
   SC_Footer,
@@ -163,12 +177,17 @@ const {
   items: remoteItems,
   hasMore,
   isLoading,
+  isLoadingMore,
+  loadMoreFailed,
   error,
   loadMore,
   activeCategory,
   availableCategories,
   toggleCategory,
 } = useRemoteApps({ isHidden: (entry) => persistedIds.value.has(entry.id) })
+
+const loadMoreSentinel: SentinelRef = ref(null)
+useLoadMoreSentinel(loadMoreSentinel, () => void loadMore())
 
 const matchesSearch = (...texts: string[]): boolean => {
   if (!search.value) return true

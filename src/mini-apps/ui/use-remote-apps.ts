@@ -10,10 +10,11 @@
  *
  * Дебаунс на ввод поиска — 400 мс (как в legacy).
  *
- * Следующая страница грузится сразу за текущей, и «Загрузить ещё» видно, только
- * если в ней есть что показать: раньше кнопка была при любой полной странице, и
- * когда приложений было ровно на страницу (или дальше шли одни установленные,
- * которые сетка прячет), нажатие не добавляло ничего.
+ * Следующая страница грузится сразу за текущей, а сетка добавляет её сама, когда
+ * до конца каталога долистали (кнопку «Загрузить ещё» внизу длинной страницы
+ * не видели). Дозагрузка есть, только если в странице есть что показать: не при
+ * ровно одной странице приложений и не когда дальше одни установленные, которые
+ * сетка прячет. Не загрузилась — сама не повторяет: кнопка повтора.
  */
 
 import { computed, onMounted, ref, watch } from 'vue'
@@ -80,10 +81,14 @@ export function useRemoteApps(opts: UseRemoteAppsOptions = {}) {
   let generation = 0
 
   /** Есть что дозагрузить: следующая страница с видимыми приложениями уже здесь
-   *  (или её не удалось загрузить — тогда кнопка повторит попытку). */
+   *  (или её не удалось загрузить — тогда `loadMore` повторит попытку). */
   const hasMore = computed<boolean>(
     () => aheadState.value === 'ready' || aheadState.value === 'error'
   )
+  /** Следующая страница ещё идёт от ноды. */
+  const isLoadingMore = computed<boolean>(() => aheadState.value === 'loading')
+  /** Следующая страница не загрузилась: повторить — по кнопке, не по прокрутке. */
+  const loadMoreFailed = computed<boolean>(() => aheadState.value === 'error')
 
   /** Разделы для чипов фильтра — в порядке MINI_APP_CATEGORIES. */
   const availableCategories = computed<MiniAppCategoryId[]>(() =>
@@ -230,6 +235,8 @@ export function useRemoteApps(opts: UseRemoteAppsOptions = {}) {
     items,
     hasMore,
     isLoading,
+    isLoadingMore,
+    loadMoreFailed,
     error,
     loadMore,
     refresh,

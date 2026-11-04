@@ -247,6 +247,19 @@ export const SC_LoadMoreBtn = styled.button`
   }
 `
 
+/** Метка подгрузки под сеткой: показалась — следующая страница каталога. */
+export const SC_LoadMoreSentinel = styled.div`
+  height: 1px;
+`
+
+/** «Загрузка…» под сеткой, пока идёт следующая страница каталога. */
+export const SC_LoadMoreStatus = styled.div`
+  margin: 20px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+`
+
 export const SC_Empty = styled.div`
   padding: 40px 16px;
   text-align: center;

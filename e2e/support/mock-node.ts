@@ -107,6 +107,17 @@ export interface MockNodeData {
   boosts?: { txid: string; boost: number }[]
   /** Сеть нод для вкладки «Сеть» «Блокчейн-обозревателя». */
   network?: MockNetwork
+  /** Каталог мини-приложений (`getapps`), в порядке выдачи. */
+  apps?: MockApp[]
+}
+
+/** Мини-приложение каталога в плоском формате, который понимает `remote-registry`. */
+export interface MockApp {
+  id: string
+  name: string
+  scope: string
+  description?: string
+  tags?: string[]
 }
 
 /** Сеть нод: кто с кем соединён и кто в пуле прокси. */
@@ -477,6 +488,14 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
       return { height: HEIGHT, boosts: data.boosts ?? [] }
     case 'getnodeinfo':
       return { lastblock: { height: HEIGHT } }
+    case 'getapps': {
+      // Параметры здесь — объект, а `pageStart` — номер страницы, не смещение.
+      const { pageStart = 0, pageSize = 20 } = params as unknown as {
+        pageStart?: number
+        pageSize?: number
+      }
+      return (data.apps ?? []).slice(pageStart * pageSize, (pageStart + 1) * pageSize)
+    }
     default:
       return []
   }

@@ -1,6 +1,7 @@
-// Каталог «Сервисов»: следующая страница грузится сразу за текущей, и
-// «Загрузить ещё» видно, только когда в ней есть что показать — не при
+// Каталог «Сервисов»: следующая страница грузится сразу за текущей, сетка
+// добавляет её при прокрутке — только когда в ней есть что показать: не при
 // ровно одной странице приложений и не когда дальше одни установленные.
+// Не загрузилась — сама не повторяет, повтор по кнопке.
 
 import { defineComponent, h } from 'vue'
 import { mount, type VueWrapper } from '@vue/test-utils'
@@ -54,7 +55,7 @@ afterEach(() => {
 })
 
 describe('useRemoteApps', () => {
-  it('ровно одна страница приложений — кнопки нет, хотя страница полная', async () => {
+  it('ровно одна страница приложений — дозагружать нечего, хотя страница полная', async () => {
     const rpc = node(4)
     const api = setup({ rpc, pageSize: 4 })
     await vi.waitFor(() => expect(rpc).toHaveBeenCalledTimes(2))
@@ -75,7 +76,7 @@ describe('useRemoteApps', () => {
     expect(rpc.mock.calls.map((c) => (c[1] as { pageStart: number }).pageStart)).toEqual([0, 1])
   })
 
-  it('следующая страница уже загружена: кнопка видна, нажатие добавляет сразу и грузит дальше', async () => {
+  it('следующая страница уже загружена: дозагрузка добавляет её сразу и грузит дальше', async () => {
     const rpc = node(10)
     const api = setup({ rpc, pageSize: 4 })
     await vi.waitFor(() => expect(api.hasMore.value).toBe(true))
@@ -94,7 +95,7 @@ describe('useRemoteApps', () => {
     expect(api.hasMore.value).toBe(false)
   })
 
-  it('дальше только установленные — листает их, а если показать нечего, кнопки нет', async () => {
+  it('дальше только установленные — листает их, а если показать нечего, дозагрузки нет', async () => {
     const installed = new Set(['app4.app', 'app5.app', 'app6.app', 'app7.app', 'app8.app'])
     const rpc = node(9)
     const api = setup({ rpc, pageSize: 4, isHidden: (e) => installed.has(e.id) })
@@ -103,7 +104,7 @@ describe('useRemoteApps', () => {
     expect(api.hasMore.value).toBe(false)
   })
 
-  it('за страницей из установленных есть новые — кнопка есть, нажатие их показывает', async () => {
+  it('за страницей из установленных есть новые — дозагрузка их показывает', async () => {
     const installed = new Set(['app4.app', 'app5.app', 'app6.app', 'app7.app'])
     const rpc = node(10)
     const api = setup({ rpc, pageSize: 4, isHidden: (e) => installed.has(e.id) })
@@ -112,16 +113,36 @@ describe('useRemoteApps', () => {
     expect(api.items.value.some((a) => a.id === 'app8.app')).toBe(true)
   })
 
-  it('следующая страница не загрузилась — кнопка остаётся и повторяет попытку', async () => {
+  it('следующая страница не загрузилась — сама не повторяет, кнопка повторяет попытку', async () => {
     const rpc = node(6, [1])
     const api = setup({ rpc, pageSize: 4 })
-    await vi.waitFor(() => expect(api.hasMore.value).toBe(true))
+    await vi.waitFor(() => expect(api.loadMoreFailed.value).toBe(true))
+    expect(api.hasMore.value).toBe(true)
+    expect(api.isLoadingMore.value).toBe(false)
     expect(api.items.value).toHaveLength(4)
 
     await api.loadMore()
+    expect(api.loadMoreFailed.value).toBe(false)
     expect(api.items.value).toHaveLength(6)
     await settle()
     expect(api.hasMore.value).toBe(false)
+  })
+
+  it('пока следующая страница идёт от ноды — «Загрузка…», пришла — дозагрузка', async () => {
+    const answer = node(6)
+    let release!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const rpc = vi.fn(async (method: string, params: unknown) => {
+      if ((params as { pageStart: number }).pageStart === 1) await held
+      return answer(method, params)
+    })
+    const api = setup({ rpc, pageSize: 4 })
+    await vi.waitFor(() => expect(api.isLoadingMore.value).toBe(true))
+    expect(api.hasMore.value).toBe(false)
+
+    release()
+    await vi.waitFor(() => expect(api.hasMore.value).toBe(true))
+    expect(api.isLoadingMore.value).toBe(false)
   })
 
   it('поиск сменился, пока грузилась страница вперёд — старый ответ не попадает в выдачу', async () => {
