@@ -86,8 +86,11 @@ export const SC_UploadProgress = styled.span`
   color: var(--color-blue-gray);
 `
 
+/* Цифры одной ширины: время по ходу не дёргает пузырь; место — и под пустую подпись. */
 export const SC_TimeLabel = styled.div`
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  min-width: 4ch;
   color: var(--color-blue-gray);
   user-select: none;
   flex-shrink: 0;

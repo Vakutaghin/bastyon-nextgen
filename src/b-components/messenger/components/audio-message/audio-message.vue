@@ -1,5 +1,5 @@
 <template>
-  <SC_AudioMessage>
+  <SC_AudioMessage data-testid="audio-message">
     <SC_PlayButton
       v-if="isLoadingWave || isBlocked"
       :disabled="true"
@@ -28,7 +28,7 @@
         </SC_SpinnerRow>
       </SC_WaveSpinnerOverlay>
     </SC_WaveContainer>
-    <SC_TimeLabel>{{ timeLabel }}</SC_TimeLabel>
+    <SC_TimeLabel data-testid="audio-time">{{ timeLabel }}</SC_TimeLabel>
     <SC_Error v-if="hasError">{{ hasError }}</SC_Error>
   </SC_AudioMessage>
 </template>
@@ -72,12 +72,14 @@ const playback = useAudioPlayback({
   message: props.message,
   computeWaveform: async (blob) => {
     try {
-      const bars = await decoding.decodeWaveform(blob, BAR_COUNT)
+      const { bars, duration } = await decoding.decodeWaveform(blob, BAR_COUNT)
       waveform.setBars(bars)
+      return duration
     } catch (e) {
       // Если декод упал — оставляем плоскую волну, UI продолжит работать.
       waveform.setBars(Array.from({ length: BAR_COUNT }, () => 0.2))
       console.error('[AudioMessage] Failed to decode audio for waveform:', e)
+      return null
     }
   },
   decryptAudioData: (blob, message) => store.decryptAudioData(blob, message),
@@ -89,7 +91,7 @@ const {
   currentTime,
   isLoadingWave,
   hasError,
-  showDurationMode,
+  showsPosition,
   togglePlay,
   seekAt,
 } = playback
@@ -111,9 +113,7 @@ const isBlocked = computed<boolean>(
   () => !isMeshTransport(props.message.transport) && props.message.status !== 'sent'
 )
 
-const timeLabel = computed<string>(() => {
-  const secs = isPlaying.value || !showDurationMode.value ? currentTime.value : duration.value
-  const total = Math.max(0, Math.floor(secs))
+function clock(total: number): string {
   const h = Math.floor(total / 3600)
   const m = Math.floor((total % 3600) / 60)
   const s = total % 60
@@ -121,6 +121,16 @@ const timeLabel = computed<string>(() => {
     return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
   }
   return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+// Как в Telegram: до прослушивания — длительность, с первого нажатия — где
+// играет или где остановили. Длительность округляем (запись на 4,98 с — «0:05»),
+// позицию — вниз, как идут часы. Пока длительность не известна (событие
+// прежнего Bastyon без неё, файл ещё грузится) — пусто, а не «0:00».
+const timeLabel = computed<string>(() => {
+  if (showsPosition.value) return clock(Math.floor(currentTime.value))
+  if (duration.value <= 0) return ''
+  return clock(Math.max(1, Math.round(duration.value)))
 })
 
 function onSeekByClick(evt: MouseEvent): void {

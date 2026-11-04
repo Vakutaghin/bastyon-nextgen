@@ -3,7 +3,8 @@
  *
  * Алгоритм: WebAudio decodeAudioData → берём канал 0 → делим на barCount
  * сегментов → peak в каждом (max-pooling). Финальная нормализация — power(0.8)
- * для визуального сглаживания.
+ * для визуального сглаживания. Заодно отдаём длительность звука: у записи
+ * MediaRecorder в файле её может не быть, и `<audio>` тогда сообщает Infinity.
  *
  * См. CODE_AUDIT.md §1.
  */
@@ -11,8 +12,14 @@ import { ref, type Ref } from 'vue'
 
 const SAMPLE_SMOOTHING_POWER = 0.8
 
+export interface DecodedWave {
+  bars: number[]
+  /** Длительность звука, с. */
+  duration: number
+}
+
 export interface AudioDecoding {
-  decodeWaveform: (blob: Blob, barCount: number) => Promise<number[]>
+  decodeWaveform: (blob: Blob, barCount: number) => Promise<DecodedWave>
   /** Закрыть AudioContext (вызывать в onBeforeUnmount). */
   close: () => Promise<void>
   /** Текущий context — наружу нужен ровно для cleanup-проверки в тестах. */
@@ -22,7 +29,7 @@ export interface AudioDecoding {
 export function useAudioDecoding(): AudioDecoding {
   const audioContext = ref<AudioContext | null>(null)
 
-  async function decodeWaveform(blob: Blob, barCount: number): Promise<number[]> {
+  async function decodeWaveform(blob: Blob, barCount: number): Promise<DecodedWave> {
     if (!audioContext.value) {
       const Ctx =
         window.AudioContext ||
@@ -47,7 +54,7 @@ export function useAudioDecoding(): AudioDecoding {
       // Степень 0.8 чуть сглаживает экстремумы — визуально приятнее.
       result.push(Math.pow(peak, SAMPLE_SMOOTHING_POWER))
     }
-    return result
+    return { bars: result, duration: decoded.duration }
   }
 
   async function close(): Promise<void> {

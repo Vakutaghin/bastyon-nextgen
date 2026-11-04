@@ -83,7 +83,8 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
         info: {
           mimetype: blob.type || 'audio/webm',
           size: blob.size,
-          duration: meta?.duration || 0,
+          // Как в событии Matrix — в миллисекундах.
+          duration: meta?.duration ? Math.round(meta.duration * 1000) : 0,
           uploadProgress: 0,
         },
         rawContent: null,
