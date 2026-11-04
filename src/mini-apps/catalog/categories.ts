@@ -76,19 +76,6 @@ export const MINI_APP_CATEGORIES: readonly MiniAppCategory[] = [
   { id: 'tools', tags: ['tools', 'инструменты', 'bastyon', 'explorer'] },
 ]
 
-/**
- * Разделы встроенных приложений: тегов у них нет. Ключ — id из
- * `registry/built-in.ts`.
- */
-export const BUILT_IN_CATEGORIES: Readonly<Record<string, MiniAppCategoryId>> = {
-  'wpkoin.app': 'finance',
-  'swipelux.app': 'finance',
-  'p2p.pkoin.app': 'finance',
-  'barteron.pocketnet.app': 'community',
-  'app.pocketnet.docs': 'tools',
-  'app.pocketnet.blockexplorer': 'tools',
-}
-
 export function categoryById(id: MiniAppCategoryId): MiniAppCategory {
   return MINI_APP_CATEGORIES.find((c) => c.id === id)!
 }

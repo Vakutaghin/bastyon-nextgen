@@ -11,10 +11,7 @@ Mini apps inside Bastyon — music and radio, video, games, learning, PKOIN exch
 - **“Services”** in the header, next to search, and in the left panel; on a phone, **“Services”** in the bottom bar.
 - The **“Services”** shelf above the feed: the most popular apps in one row; **“All services”** leads to the catalog. If you do not need the shelf, press the cross — **“Hide from the feed”**. You can bring it back at the bottom of the Services page: **“Show services in the feed”**. While [Tor](tor.md) is on, there is no shelf.
 
-The **“Services”** page has two sections:
-
-- **“Popular”** — apps developers have published on the Bastyon network, the ones users rate higher first;
-- **“Built into Bastyon”** — apps that come with Bastyon: Barteron, WPKOIN, Swipelux, PKOIN Exchange, Block Explorer and the Bastyon documentation.
+The **“Services”** page has the **“Popular”** section — apps developers have published on the Bastyon network, the ones users rate higher first.
 
 If you loaded an app of your own, it is in the **“Your apps”** section, see [Your own mini app](mini-apps-dev.md).
 
@@ -34,7 +31,7 @@ The star on a card is **“Add to favorites”**: the app appears in the left pa
 
 ## Deleting
 
-Only an app you loaded yourself can be deleted: **“Delete”** on its card. All permissions granted to it are deleted with it. Apps that come with Bastyon cannot be deleted, and catalog apps are not installed in the first place.
+Only an app you loaded yourself can be deleted: **“Delete”** on its card. All permissions granted to it are deleted with it. Catalog apps are not installed in the first place.
 
 ## Who makes them
 

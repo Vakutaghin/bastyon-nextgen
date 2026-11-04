@@ -4,7 +4,7 @@
       <InputSearch v-model:value="search" :placeholder="t('miniapps.searchPlaceholder')" />
     </SC_Search>
 
-    <SC_Categories v-if="categoryChips.length > 0">
+    <SC_Categories v-if="availableCategories.length > 0">
       <SC_CategoryChip
         :class="{ active: activeCategory === null }"
         type="button"
@@ -13,7 +13,7 @@
         {{ t('miniapps.allCategories') }}
       </SC_CategoryChip>
       <SC_CategoryChip
-        v-for="id in categoryChips"
+        v-for="id in availableCategories"
         :key="id"
         :class="{ active: activeCategory === id }"
         type="button"
@@ -63,24 +63,6 @@
     </SC_Section>
     <SC_Empty v-else-if="isLoading">{{ t('miniapps.loading') }}</SC_Empty>
 
-    <!-- Встроенные в Bastyon -->
-    <SC_Section v-if="filteredBuiltIn.length > 0">
-      <SC_SectionTitle>{{ t('miniapps.sectionBuiltIn') }}</SC_SectionTitle>
-      <SC_Grid>
-        <CardItem
-          v-for="app in filteredBuiltIn"
-          :key="'i:' + app.manifest.id"
-          :id="app.manifest.id"
-          :name="app.manifest.name"
-          :description="installedDescription(app)"
-          :icon="app.icon"
-          :is-fav="favStore.isFavorite(app.manifest.id)"
-          @open="openInstalled(app.manifest.id)"
-          @toggle-favorite="toggleFavInstalled(app)"
-        />
-      </SC_Grid>
-    </SC_Section>
-
     <!-- Загруженные самим пользователем (S51) -->
     <SC_Section v-if="filteredLocal.length > 0">
       <SC_SectionTitle>{{ t('miniapps.sectionLocal') }}</SC_SectionTitle>
@@ -90,7 +72,7 @@
           :key="'l:' + app.manifest.id"
           :id="app.manifest.id"
           :name="app.manifest.name"
-          :description="installedDescription(app)"
+          :description="localDescription(app)"
           :icon="app.icon"
           :is-fav="favStore.isFavorite(app.manifest.id)"
           :can-delete="true"
@@ -126,11 +108,6 @@ import { Modal } from 'ant-design-vue'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { useFavoriteMiniAppsStore } from '@/mini-apps/store/favorites-store'
 import { useServicesShelfStore } from '@/mini-apps/store/shelf-store'
-import {
-  BUILT_IN_CATEGORIES,
-  MINI_APP_CATEGORIES,
-  type MiniAppCategoryId,
-} from '@/mini-apps/catalog/categories'
 import { useRemoteApps } from './use-remote-apps'
 import { useLoadMoreSentinel, type SentinelRef } from '@/composables/use-load-more-sentinel'
 import CardItem from './mini-apps-grid-card.vue'
@@ -157,7 +134,7 @@ import {
 } from './mini-apps-grid.styled'
 
 const router = useRouter()
-const { t, te, locale } = useI18n()
+const { t, locale } = useI18n()
 const appsStore = useAppsStore()
 const favStore = useFavoriteMiniAppsStore()
 const shelfStore = useServicesShelfStore()
@@ -168,8 +145,9 @@ onMounted(() => {
   void shelfStore.load()
 })
 
-// «Установленные» = built-in + local. Каталог не должен повторно показывать их,
-// но remote-session app (открытая через каталог в этой сессии) пусть остаётся в каталоге.
+// «Установленные» = built-in + local. Каталог их не повторяет, а встроенные на
+// странице не показываются вовсе. Remote-session app (открытая через каталог в
+// этой сессии) остаётся в каталоге.
 const persistedIds = computed(() => new Set(appsStore.forGrid.map((a) => a.manifest.id)))
 
 const {
@@ -195,53 +173,27 @@ const matchesSearch = (...texts: string[]): boolean => {
   return texts.some((text) => text.toLowerCase().includes(q))
 }
 
-/** Описание встроенного — своё, короткое: в их манифестах тексты не про них. */
-const BUILT_IN_DESCRIPTION_KEYS: Readonly<Record<string, string>> = {
-  'barteron.pocketnet.app': 'barteron',
-  'app.pocketnet.docs': 'docs',
-  'app.pocketnet.blockexplorer': 'blockExplorer',
-  'p2p.pkoin.app': 'pkoinExchange',
-  'swipelux.app': 'swipelux',
-  'wpkoin.app': 'wpkoin',
-}
-
-function installedDescription(app: InstalledApp): string {
-  const key = BUILT_IN_DESCRIPTION_KEYS[app.manifest.id]
-  if (key && te(`miniapps.builtInDescriptions.${key}`)) {
-    return t(`miniapps.builtInDescriptions.${key}`)
-  }
+function localDescription(app: InstalledApp): string {
   const lang = String(locale.value).slice(0, 2)
   return app.manifest.descriptions[lang] || app.manifest.description || ''
 }
 
-const visibleInstalled = computed(() =>
-  appsStore.forGrid.filter((app) => {
-    if (!matchesSearch(app.manifest.name, installedDescription(app))) return false
-    if (!activeCategory.value) return true
-    return BUILT_IN_CATEGORIES[app.manifest.id] === activeCategory.value
-  })
+/** Загруженные самим пользователем. Разделов у них нет: видны, пока раздел не выбран. */
+const filteredLocal = computed(() =>
+  appsStore.forGrid.filter(
+    (app) =>
+      app.source === 'local' &&
+      !activeCategory.value &&
+      matchesSearch(app.manifest.name, localDescription(app))
+  )
 )
-const filteredBuiltIn = computed(() => visibleInstalled.value.filter((a) => a.source !== 'local'))
-const filteredLocal = computed(() => visibleInstalled.value.filter((a) => a.source === 'local'))
-
-const CATEGORY_ORDER = MINI_APP_CATEGORIES.map((c) => c.id)
-
-/** Чипы: разделы, где есть приложения каталога или встроенные. */
-const categoryChips = computed<MiniAppCategoryId[]>(() => {
-  const ids = new Set<MiniAppCategoryId>(availableCategories.value)
-  for (const app of appsStore.forGrid) {
-    const id = BUILT_IN_CATEGORIES[app.manifest.id]
-    if (id) ids.add(id)
-  }
-  return [...ids].sort((a, b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b))
-})
 
 const filteredRemote = computed(() =>
   remoteItems.value.filter((e) => !persistedIds.value.has(e.id))
 )
 
 const nothingShown = computed(
-  () => !isLoading.value && filteredRemote.value.length === 0 && visibleInstalled.value.length === 0
+  () => !isLoading.value && filteredRemote.value.length === 0 && filteredLocal.value.length === 0
 )
 
 const openInstalled = (appId: string) => {

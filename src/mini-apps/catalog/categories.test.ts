@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { BUILT_IN_APPS } from '@/mini-apps/registry/built-in'
 import {
-  BUILT_IN_CATEGORIES,
   MINI_APP_CATEGORIES,
   categoriesOfTags,
   categoryQueryTags,
@@ -34,10 +32,6 @@ describe('разделы каталога', () => {
         seen.add(tag)
       }
     }
-  })
-
-  it('у каждого встроенного приложения есть раздел', () => {
-    for (const app of BUILT_IN_APPS) expect(BUILT_IN_CATEGORIES[app.id], app.id).toBeTruthy()
   })
 
   it('VPN не попадает на полку в ленте', () => {
