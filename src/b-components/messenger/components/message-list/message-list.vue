@@ -1,5 +1,9 @@
 <template>
-  <SC_MessageList ref="listRef" @scroll="handleScroll">
+  <SC_MessageList ref="listRef" data-testid="message-list" @scroll="handleScroll">
+    <SC_HistoryLoading v-if="loading" role="status" data-testid="history-loading">
+      <SC_HistoryLoadingSpinner aria-hidden="true" />
+      {{ t('messenger.loadingMessages') }}
+    </SC_HistoryLoading>
     <!-- Лента долистана до начала (или не загрузилась): откуда у чата такая история.
          У пустого чата пометку показывает сама комната. -->
     <ChatHistoryNote
@@ -55,7 +59,12 @@ import { useMessengerStore } from '../../store'
 import MessageItem from '../message-item/message-item.vue'
 import ChatHistoryNote from '../chat-history-note/chat-history-note.vue'
 import { SC_DeletedMark } from '../chat-history-note/styled'
-import { SC_ArchiveDivider, SC_MessageList } from './styled'
+import {
+  SC_ArchiveDivider,
+  SC_HistoryLoading,
+  SC_HistoryLoadingSpinner,
+  SC_MessageList,
+} from './styled'
 
 const props = withDefaults(
   defineProps<{
@@ -64,11 +73,14 @@ const props = withDefaults(
     seenIds?: ReadonlySet<string>
     /** Что известно об истории чата (lib/chat-history); у mesh-чатов нет. */
     history?: ChatHistory | null
+    /** История ещё грузится, а на экране то, что уже есть. */
+    loading?: boolean
   }>(),
   {
     messages: () => [],
     seenIds: () => new Set<string>(),
     history: null,
+    loading: false,
   }
 )
 

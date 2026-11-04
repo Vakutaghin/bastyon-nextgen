@@ -42,14 +42,31 @@ export function useMessageDecryption(ctx: ChatContext, chatCrypto: ChatCrypto) {
     getCurrentBlockHeight,
   } = chatCrypto
 
-  const tryDecrypt = async (event: MxEvent): Promise<string | null> => {
+  /**
+   * Расшифровки, которые сейчас идут: открытие чата показывает известное сразу
+   * и пересобирает ленту после ответа сервера — второй проход ждёт тот же
+   * результат, а не считает заново.
+   */
+  const inflight = new Map<string, Promise<string | null>>()
+
+  const tryDecrypt = (event: MxEvent): Promise<string | null> => {
     const eventId = getEventId(event)
-    if (!pcryptoService.value) return null
+    if (!pcryptoService.value) return Promise.resolve(null)
 
     // Кэш: один раз расшифровали — больше не считаем.
     if (eventId && decryptionCache.has(eventId)) {
-      return decryptionCache.get(eventId)!
+      return Promise.resolve(decryptionCache.get(eventId)!)
     }
+    if (!eventId) return decryptEvent(event, eventId)
+    const running = inflight.get(eventId)
+    if (running) return running
+    const job = decryptEvent(event, eventId).finally(() => inflight.delete(eventId))
+    inflight.set(eventId, job)
+    return job
+  }
+
+  const decryptEvent = async (event: MxEvent, eventId: string): Promise<string | null> => {
+    if (!pcryptoService.value) return null
 
     const content = copyContent(getEventContent(event))
     const isEncryptedType = getEventType(event) === 'm.room.encrypted'

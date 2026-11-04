@@ -7,6 +7,34 @@ export const SC_MessageList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  /* Сообщения прижаты к полю ввода, как в переписке: отправленное, пока
+     история грузится, встаёт внизу, а не под шапкой. */
+  & > :first-child {
+    margin-top: auto;
+  }
+`
+
+/** История ещё грузится: строка над тем, что уже на экране. */
+export const SC_HistoryLoading = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-shrink: 0;
+  color: var(--ui-text-dimmed);
+  font-size: 12px;
+  line-height: calc(1.4 * var(--leading-scale));
+`
+
+export const SC_HistoryLoadingSpinner = styled.span`
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ui-border);
+  border-top-color: var(--color-text-secondary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite; /* @keyframes spin — глобально в style.css */
 `
 
 /** Граница сохранённого на устройстве: черта с подписью посередине. */

@@ -104,7 +104,10 @@ test('галочки у своего последнего сообщения в 
   )
   await expect(sent).not.toContainText('Вы:')
 
-  await expect(row(page, 'Отправляется').getByTestId('last-mark')).toHaveText('…')
+  // Ещё не ушло — часы.
+  const sending = row(page, 'Отправляется').getByTestId('last-mark')
+  await expect(sending).toHaveAttribute('data-mark', '…')
+  await expect(sending.locator('svg[data-pending]')).toHaveCount(1)
   await expect(row(page, 'Не ушло').getByTestId('last-mark')).toHaveAttribute(
     'title',
     'Не отправлено'

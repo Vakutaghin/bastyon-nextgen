@@ -2,7 +2,21 @@
   <!-- Галочки рисуем, а не символом «✓✓»: у шрифтов между двумя «✓» разный и
        большой зазор. Как в Telegram, вторая заходит на первую — её короткий
        штрих начинается от длинного штриха первой. -->
-  <span v-if="mark === '…'">…</span>
+  <!-- Ещё не ушло: часы, как в Telegram, — «…» у времени не читалось как
+       «не отправлено». -->
+  <svg
+    v-if="mark === '…'"
+    viewBox="0 0 11 11"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.2"
+    stroke-linecap="round"
+    aria-hidden="true"
+    data-pending
+  >
+    <circle cx="5.5" cy="5.5" r="4.6" />
+    <path d="M5.5 2.9v2.8l1.8 1.1" />
+  </svg>
   <svg
     v-else
     :viewBox="double ? '0 0 15 11' : '0 0 11 11'"

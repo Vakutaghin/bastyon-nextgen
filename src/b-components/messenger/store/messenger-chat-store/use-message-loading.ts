@@ -16,6 +16,7 @@ import {
 import type { Message } from '../../types'
 import {
   HISTORY_STEP_TIMEOUT,
+  KNOWN_DECRYPT_TIMEOUT,
   MESSAGES_PER_PAGE,
   OPEN_DECRYPT_TIMEOUT,
   ROOM_WAIT_TIMEOUT,
@@ -99,6 +100,47 @@ export function useMessageLoading(
    * чат, который ещё ждал комнату, снимал загрузку у чата, открытого после него.
    */
   let loadSeq = 0
+  /** Чаты, которые сейчас открываются (→ номер загрузки): подгрузка выше ждёт, пока лента соберётся. */
+  const opening = new Map<string, number>()
+
+  /**
+   * События ленты комнаты без local-echo matrix-js-sdk (id вида `~…`): они
+   * попадают в IndexedDB-стор и возвращаются при следующем запуске, сообщение
+   * висит навсегда без ответа/удаления — действия требуют `$`-id. Своё только
+   * что отправленное показывает наш оптимистичный слой, терять нечего (N19).
+   */
+  const timelineOf = (room: MxRoom): MxEvent[] =>
+    getRoomTimelineEvents(room).filter((e) => {
+      const id = typeof e?.getId === 'function' ? e.getId() : e?.event_id
+      return typeof id !== 'string' || !id.startsWith('~')
+    })
+
+  /**
+   * Пока сервер листает историю, показываем то, что уже есть на устройстве:
+   * ленту комнаты из синка. Раньше до конца загрузки чат был закрыт
+   * заставкой, и отправленное в это время пропадало из виду. Только если всё
+   * расшифровалось быстро (из кэша): лента из заглушек хуже загрузки. Идёт
+   * рядом с запросами к серверу и не трогает ленту, которая уже с сервера.
+   */
+  const showKnown = async (chatId: string, room: MxRoom, seq: number) => {
+    const fromServer = () => !!messages[chatId]?.some((m) => m.id.startsWith('$'))
+    if (fromServer()) return
+    const events = timelineOf(room)
+    if (!events.length) return
+    const quick = await within(
+      Promise.all(events.map((e) => mapEventToMessage(e))),
+      KNOWN_DECRYPT_TIMEOUT
+    )
+    if (!quick.done || seq !== loadSeq || uiStore.activeChatId !== chatId) return
+    if (opening.get(chatId) !== seq || fromServer()) return
+    const list = keepPending(
+      quick.value.filter((m): m is Message => Boolean(m)),
+      messages[chatId]
+    )
+    const client = matrixService.getClient()
+    if (client) enrichMessagesWithReactions(room, list, client.getUserId() || '')
+    messages[chatId] = list
+  }
 
   /**
    * Листаем назад, пока на экране не наберётся сообщений или не кончится
@@ -169,12 +211,14 @@ export function useMessageLoading(
     const seq = ++loadSeq
     uiStore.activeChatId = chatId
     uiStore.isMessagesLoading = true
+    opening.set(chatId, seq)
     try {
       const room = await waitForRoom(chatId)
       ensurePcryptoInitialized()
       if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
 
       if (room) {
+        void showKnown(chatId, room, seq)
         // Если по комнате висит приглашение — вступаем при открытии. Иначе
         // последующая отправка падает с M_FORBIDDEN («not in room»), а состояние
         // комнаты (участники/история) подгружается не полностью.
@@ -187,16 +231,7 @@ export function useMessageLoading(
         )
         const { exhausted, slow } = await paginateRoomHistory(room)
         const incomplete = !joined.done || !members.done || slow
-        // Local-echo события matrix-js-sdk (id вида `~…`) попадают в
-        // IndexedDB-стор и возвращаются при следующем запуске: сообщение висит
-        // навсегда без ответа/удаления, потому что действия требуют `$`-id.
-        // Своё только что отправленное сообщение показывает наш собственный
-        // оптимистичный слой, так что терять нечего (N19).
-        const timelineEvents = getRoomTimelineEvents(room).filter((e) => {
-          const id = typeof e?.getId === 'function' ? e.getId() : e?.event_id
-          return typeof id !== 'string' || !id.startsWith('~')
-        })
-        const mapped = await Promise.all(timelineEvents.map((e) => mapForOpen(e)))
+        const mapped = await Promise.all(timelineOf(room).map((e) => mapForOpen(e)))
         const list = mapped.filter((m): m is Message => Boolean(m))
 
         // Пока грузилась история, по WS могло прийти новое сообщение (и на него
@@ -234,12 +269,14 @@ export function useMessageLoading(
       // Раньше чат просто оставался пустым — теперь видно, что история не загрузилась.
       noteHistory(chatId, matrixService.getRoom(chatId), e)
     } finally {
+      if (opening.get(chatId) === seq) opening.delete(chatId)
       if (seq === loadSeq) uiStore.isMessagesLoading = false
     }
   }
 
   const loadMoreMessages = async (chatId: string) => {
-    if (!chatId || isLoadingMore.value) return
+    // Открытие чата само листает историю и пересобирает ленту целиком.
+    if (!chatId || isLoadingMore.value || opening.has(chatId)) return
     const room = matrixService.getRoom(chatId)
     if (!room) return
 
@@ -264,11 +301,7 @@ export function useMessageLoading(
       let archiveMore = false
 
       if (added || (exhausted && history[chatId]?.archiveMore)) {
-        const timelineEvents = getRoomTimelineEvents(room).filter((e) => {
-          const id = typeof e?.getId === 'function' ? e.getId() : e?.event_id
-          return typeof id !== 'string' || !id.startsWith('~')
-        })
-        const mapped = await Promise.all(timelineEvents.map((e) => mapEventToMessage(e)))
+        const mapped = await Promise.all(timelineOf(room).map((e) => mapEventToMessage(e)))
         const list = keepPending(
           mapped.filter((m): m is Message => Boolean(m)),
           messages[chatId]

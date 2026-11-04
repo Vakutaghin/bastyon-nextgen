@@ -46,7 +46,9 @@
       </SC_FirstMessageHint>
     </SC_InviteBody>
 
-    <template v-else-if="isLoading">
+    <!-- Заставка — только пока показать нечего. Отправленное за это время
+         встаёт в ленту внизу, история догружается над ним. -->
+    <template v-else-if="isLoading && !messages?.length">
       <SC_ChatRoomLoader>
         <SC_ChatRoomSpinner />
         <SC_ChatRoomLoaderText>{{ t('messenger.loadingMessages') }}</SC_ChatRoomLoaderText>
@@ -116,6 +118,7 @@
         :messages="displayedMessages"
         :seen-ids="seenIds"
         :history="searchQuery.trim() ? null : store.activeHistory"
+        :loading="isLoading"
         @load-more="emit('load-more')"
         @reply="onReplyTo"
         @retry="retryHistory"

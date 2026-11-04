@@ -16,6 +16,8 @@ import { getAddressFromMatrixId, getMatrixId, isTetatetchat } from '../../helper
 import { getPartnerMatrixId } from '../../room-helpers'
 import type { Message } from '../../types'
 import { markDeleted } from '../../lib/chat-history'
+import { within } from '../../lib/within'
+import { ROOM_WAIT_TIMEOUT, SEND_ORDER_WAIT } from '../consts'
 import { pushOptimistic } from './media-sending-helpers'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
@@ -208,6 +210,44 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
   }
 
   /**
+   * Комната для отправки. Чат открывается из списка прошлого запуска раньше,
+   * чем клиент войдёт и узнает о комнатах, — и написанное сразу падало с
+   * «Room not found». Ждём первого синка, как и загрузка истории.
+   */
+  const roomForSend = async (chatId: string): Promise<MxRoom | null> => {
+    const deadline = Date.now() + ROOM_WAIT_TIMEOUT
+    for (;;) {
+      const room = matrixService.getRoom(chatId)
+      if (room) return room
+      const synced =
+        !!matrixService.getClient() &&
+        (uiStore.syncState === 'PREPARED' || uiStore.syncState === 'SYNCING')
+      if (synced || Date.now() > deadline) return null
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
+  }
+
+  /** Хвост очереди отправки каждого чата. */
+  const sendQueues = new Map<string, Promise<unknown>>()
+
+  /**
+   * Сообщения чата уходят по очереди — в том порядке, в каком их написали.
+   * Шифрование у каждого своё по времени: без очереди второе, написанное
+   * следом, могло обогнать первое. Зависшее не держит остальных дольше
+   * SEND_ORDER_WAIT.
+   */
+  const inOrder = <T>(chatId: string, job: () => Promise<T>): Promise<T> => {
+    const prev = sendQueues.get(chatId)
+    const run = prev ? within(prev, SEND_ORDER_WAIT).then(job) : job()
+    const tail = run.catch(() => {})
+    sendQueues.set(chatId, tail)
+    void tail.then(() => {
+      if (sendQueues.get(chatId) === tail) sendQueues.delete(chatId)
+    })
+    return run
+  }
+
+  /**
    * Базовая отправка текста: тет-а-тет → per-user pcrypto (E2E), группа →
    * протокол общего ключа. Сырой `m.text` не отправляется НИКОГДА (см. P0-2).
    * `extraContent` — relation-метаданные (m.relates_to для ответа) подмешиваются
@@ -219,6 +259,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     extraContent?: Record<string, unknown>,
     txnId: string = matrixService.makeTxnId()
   ) => {
+    await roomForSend(chatId)
     // Если нас лишь пригласили в комнату — вступаем перед отправкой, иначе
     // Matrix вернёт M_FORBIDDEN («not in room»). Идемпотентно для joined-комнат.
     await matrixService.joinIfInvited(chatId)
@@ -288,7 +329,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     pushOptimistic(messages, chatId, optimistic)
 
     try {
-      const res = await sendTextContent(chatId, text, undefined, txnId)
+      const res = await inOrder(chatId, () => sendTextContent(chatId, text, undefined, txnId))
       markSent(chatId, localId, res?.event_id)
     } catch (e) {
       console.error('[ChatStore] Ошибка отправки сообщения:', e)
