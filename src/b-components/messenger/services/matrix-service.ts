@@ -331,15 +331,25 @@ export class MatrixService {
       const room = this.client.getRoom?.(roomId)
       const membership = room?.getMyMembership?.()
       if (membership !== 'invite') return
-      await this.client.joinRoom?.(roomId)
-      // Историю листать — только когда синк принёс вступление. Иначе события
-      // вступления приходят листанием раньше синка, синк потом отбрасывает их
-      // как повторы, и комната остаётся с состоянием приглашения: без
-      // участников, ролей и ключа группы (первые сообщения не расшифровывались).
-      await MatrixService.waitForJoin(() => this.client?.getRoom?.(roomId))
+      await this.acceptInvite(roomId)
     } catch (e) {
       console.warn('[matrix] joinIfInvited failed:', e)
     }
+  }
+
+  /**
+   * Принять приглашение: вступить и дождаться, пока синк это отметит.
+   * Ошибку сервера бросает (пригласивший вышел, приглашение отозвано);
+   * false — сервер принял, а синк за 15 с вступление не принёс.
+   */
+  public async acceptInvite(roomId: string): Promise<boolean> {
+    if (!this.client) throw new Error('Client not initialized')
+    await this.client.joinRoom(roomId)
+    // Историю листать — только когда синк принёс вступление. Иначе события
+    // вступления приходят листанием раньше синка, синк потом отбрасывает их
+    // как повторы, и комната остаётся с состоянием приглашения: без
+    // участников, ролей и ключа группы (первые сообщения не расшифровывались).
+    return MatrixService.waitForJoin(() => this.client?.getRoom?.(roomId))
   }
 
   /** Ждёт, пока синк отметит вступление в комнату; не дождался — идём дальше. */

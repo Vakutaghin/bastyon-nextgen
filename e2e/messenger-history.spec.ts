@@ -172,6 +172,19 @@ test('приглашения и удалённое в списке чатов', 
   await expect(row('Сообщение удалено')).toContainText('bob_ng')
 })
 
+test('приглашение открывается окном «Принять / Отклонить», а не полем ввода', async ({ page }) => {
+  await signedInWithDialogs(page)
+  await selectChat(page, '!group-invite:matrix.pocketnet.app')
+
+  const invite = page.getByTestId('chat-invite')
+  await expect(invite).toContainText('bob_ng приглашает вас в группу «Книжный клуб»', {
+    timeout: 30_000,
+  })
+  await expect(invite.getByRole('button', { name: 'Принять' })).toBeVisible()
+  await expect(invite.getByRole('button', { name: 'Отклонить' })).toBeVisible()
+  await expect(page.getByPlaceholder('Введите сообщение...')).toHaveCount(0)
+})
+
 test('в переписке: кто удалил, нерасшифрованное, начало чата', async ({ page }) => {
   await signedInWithDialogs(page)
   await selectChat(page, DM)

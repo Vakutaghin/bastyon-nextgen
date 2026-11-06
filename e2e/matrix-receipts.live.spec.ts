@@ -56,7 +56,7 @@ test('собеседник прочитал — у отправителя «✓�
 
   // Боб открывает чат сразу после перезагрузки страницы: приглашение
   // принимается, сообщение прочитано, кэш синка поднялся.
-  await openChatWith(b, alice!, false)
+  await openChatWith(b, alice!, false, { invited: true })
   await expect(b.getByText('Привет, Боб')).toBeVisible({ timeout: 90_000 })
   await expect(aliceMark).toHaveAttribute('title', 'Прочитано', { timeout: 60_000 })
   await expect(aliceMark).toHaveAttribute('data-mark', '✓✓')

@@ -75,7 +75,7 @@ test('«печатает», «записывает голосовое» и «в 
 
   await openChatWith(a, bob!, true)
   await send(a, 'привет')
-  await openChatWith(b, alice!, false)
+  await openChatWith(b, alice!, false, { invited: true })
   await expect(b.getByText('привет')).toBeVisible({ timeout: 60_000 })
 
   const input = a.getByPlaceholder('Введите сообщение...')

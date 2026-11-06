@@ -1045,6 +1045,7 @@ export default {
     selectChatHint: '选择一个聊天开始发消息',
     firstMessageHint: '发送第一条消息后，{name} 才会看到这个聊天。',
     startChatFailed: '无法创建聊天。请检查网络后重试。',
+    deleteChatFailed: '无法删除聊天。请检查网络后重试。',
     archive: {
       localOnly: '已保存在此设备上：服务器上已没有这条消息',
       deleteLocalOnly:
@@ -1088,6 +1089,20 @@ export default {
       undecryptable: '无法解密消息',
       invitePreview: '聊天邀请',
       inviteGroupPreview: '{name}：群组邀请',
+    },
+    invite: {
+      title: '{name} 邀请你加入聊天',
+      titleNoInviter: '你被邀请加入聊天',
+      titleGroup: '{name} 邀请你加入群组“{group}”',
+      titleGroupNoInviter: '你被邀请加入群组“{group}”',
+      hint: '接受邀请后即可查看消息。拒绝的邀请会从聊天列表中消失。',
+      accept: '接受',
+      decline: '拒绝',
+      accepting: '正在接受邀请…',
+      failed: '无法接受邀请。请检查网络后重试。',
+      gone: '无法加入：邀请人已离开聊天或撤回了邀请。',
+      remove: '从列表中移除',
+      declineFailed: '无法拒绝邀请。请检查网络后重试。',
     },
     inputPlaceholder: '输入消息...',
     typing: '正在输入…',

@@ -74,6 +74,7 @@ export interface MxRoom {
   }
   getLiveTimeline?: () => MxTimeline
   loadMembersIfNeeded?: () => Promise<unknown>
+  getMyMembership?: () => string
 }
 
 /**

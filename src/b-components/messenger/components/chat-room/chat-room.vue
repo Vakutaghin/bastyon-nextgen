@@ -1,7 +1,10 @@
 <template>
   <SC_ChatRoomContainer ref="containerRef" :style="isDragging ? DRAG_STYLE : undefined">
     <!-- Чат с поддержкой: сведения о приложении одной кнопкой (закреплена над перепиской). -->
-    <SupportReportBar v-if="!inviteMode && isSupportChat && activeRoomId" :chat-id="activeRoomId" />
+    <SupportReportBar
+      v-if="!inviteMode && !pendingInvite && isSupportChat && activeRoomId"
+      :chat-id="activeRoomId"
+    />
 
     <!-- Растягивается до панели ввода: поле ввода внизу окна, как в переписке. -->
     <SC_InviteBody v-if="inviteMode">
@@ -45,6 +48,14 @@
         {{ t('messenger.firstMessageHint', { name: partnerName }) }}
       </SC_FirstMessageHint>
     </SC_InviteBody>
+
+    <!-- Нас пригласили: принять или отклонить. До вступления ленты нет. -->
+    <ChatInvite
+      v-else-if="pendingInvite && activeRoomId"
+      :chat-id="activeRoomId"
+      :dialog="store.activeDialog"
+      :inviter-id="pendingInvite.by"
+    />
 
     <!-- Заставка — только пока показать нечего. Отправленное за это время
          встаёт в ленту внизу, история догружается над ним. -->
@@ -153,7 +164,7 @@
       @toggle="activeRoomId && store.toggleMeshRoute(activeRoomId)"
     />
 
-    <SC_ChatInputBar ref="inputAreaRef">
+    <SC_ChatInputBar v-if="!pendingInvite" ref="inputAreaRef">
       <!-- RECORDING STATE: с первого касания, не дожидаясь микрофона. -->
       <template v-if="isRecording">
         <SC_RecordingTimer data-testid="voice-timer" :class="{ live: isCapturing }">{{
@@ -301,6 +312,7 @@ import { useReadReceipts } from './use-read-receipts'
 import { useBlockUser } from './use-block-user'
 import MessageList from '../message-list/message-list.vue'
 import ChatHistoryNote from '../chat-history-note/chat-history-note.vue'
+import ChatInvite from '../chat-invite/chat-invite.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import VoiceInputButton from '@/b-components/voice-input/voice-input-button.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
@@ -411,6 +423,14 @@ const { t, locale } = useI18n()
 // Активная комната + typing-индикатор собеседника.
 const activeRoomId = computed<string | null>(() => uiStore.activeChatId)
 const isGroupChat = computed<boolean>(() => !!store.activeDialog?.group)
+// Приглашение, ещё не принятое: из списка или, если списка ещё нет, из комнаты.
+const pendingInvite = computed<{ by: string } | null>(() => {
+  if (props.inviteMode) return null
+  const invite = store.activeDialog?.invite
+  if (invite) return invite
+  const by = store.activeHistory?.invitedBy
+  return by ? { by } : null
+})
 const { isTyping, typingName } = useTypingIndicator(activeRoomId)
 const { recordingName } = useRecordingIndicator(activeRoomId)
 const privacy = useMessengerPrivacyStore()
@@ -617,7 +637,8 @@ const { available: canShareMesh, shareAddress: shareMeshAddress } = useMeshShare
 const meshRoute = computed(() => store.activeMeshRoute)
 
 async function handlePickFiles(files: File[]): Promise<void> {
-  if (!store.activeChatId) return
+  // До принятия приглашения отправлять некуда: файл, брошенный на чат, не вступает за вас.
+  if (!store.activeChatId || pendingInvite.value) return
   for (const file of files) {
     if (tooLargeForChat(file, canSendIpfs)) continue
     if (file.type.startsWith('image/')) {

@@ -73,7 +73,7 @@ test('собеседник уже входил в чат — первое соо
   const b = await signedIn(browser, bob!, data)
 
   await sendFirst(a, bob!, 'Привет, это первое')
-  await openChatWith(b, alice!, false)
+  await openChatWith(b, alice!, false, { invited: true })
   await expect(b.getByText('Привет, это первое')).toBeVisible({ timeout: 90_000 })
   await expect(b.getByText(UNREADABLE)).toHaveCount(0)
 
@@ -94,7 +94,7 @@ test('собеседник ещё ни разу не входил в чат — 
   await sendFirst(a, bob!, 'Привет до твоего первого входа')
 
   const b = await signedIn(browser, bob!, data)
-  await openChatWith(b, alice!, false)
+  await openChatWith(b, alice!, false, { invited: true })
   await expect(b.getByText('Привет до твоего первого входа')).toBeVisible({ timeout: 90_000 })
   await expect(b.getByText(UNREADABLE)).toHaveCount(0)
 })

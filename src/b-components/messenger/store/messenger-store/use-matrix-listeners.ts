@@ -261,8 +261,19 @@ export function registerMatrixListeners(
   // членство (вступил, вышел на другом устройстве) и новое название группы.
   const reloadDialogs = (): void => scheduleLoadDialogs()
   matrixService.on('Room', reloadDialogs)
-  matrixService.on('Room.myMembership', reloadDialogs)
   matrixService.on('Room.name', reloadDialogs)
+  matrixService.on(
+    'Room.myMembership',
+    (room?: { roomId?: string }, membership?: string, prevMembership?: string) => {
+      reloadDialogs()
+      // Приглашение приняли — в окне чата или на другом устройстве. У открытого
+      // чата до этого не было ленты: у приглашённого её нет. Теперь — история.
+      const roomId = room?.roomId
+      if (!roomId || membership !== 'join' || prevMembership !== 'invite') return
+      if (uiStore.activeChatId !== roomId) return
+      void chatStore.loadMessages(roomId).then(() => markRoomRead(roomId))
+    }
+  )
 
   // Синк пришёл с разрывом: SDK начал ленту комнаты заново, пропущенное —
   // только на сервере, копия догрузит его сама.

@@ -805,8 +805,36 @@ export const useMessengerStore = defineStore('messenger', () => {
         if (removedDialog) uiStore.restoreDialog(removedDialog, removedIndex)
         if (removedMessages) chatStore.messages[chatId] = removedMessages
         if (wasActive) uiStore.setActiveChatId(chatId)
+        appToast.error({
+          message: t(
+            removedDialog?.invite ? 'messenger.invite.declineFailed' : 'messenger.deleteChatFailed'
+          ),
+        })
       })
   }
+
+  /**
+   * Принять приглашение в чат (окно chat-invite). Историю загрузит обработчик
+   * вступления (use-matrix-listeners) — так же, как при вступлении на другом
+   * устройстве. Ошибку сервера бросаем: окно скажет, почему вступить нельзя.
+   */
+  const acceptInvite = async (chatId: string): Promise<void> => {
+    if (!matrixService.getRoom(chatId)) await waitForFirstSync()
+    const joined = await matrixService.acceptInvite(chatId)
+    // Обработчик не сработал (синк принёс комнату сразу вступившей) — окно
+    // приглашения иначе так и стояло бы с «Приглашение принимается…».
+    if (
+      joined &&
+      uiStore.activeChatId === chatId &&
+      !uiStore.isMessagesLoading &&
+      chatStore.history[chatId]?.invitedBy
+    ) {
+      await chatStore.loadMessages(chatId)
+    }
+  }
+
+  /** Отклонить приглашение: выйти из комнаты и забыть её, как прежний клиент. */
+  const declineInvite = (chatId: string): void => deleteDialog(chatId)
 
   /**
    * «Без звука» для чата: правило уведомлений на сервере, общее с прежним
@@ -1107,6 +1135,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     initMatrix,
     retrySync,
     deleteDialog,
+    acceptInvite,
+    declineInvite,
     /** Можно удалять у всех и чужие сообщения: уровень прав в комнате (lib/redaction-rights). */
     canDeleteOthers: (chatId: string): boolean =>
       canRedactOthers(matrixService.getRoom(chatId), matrixService.getClient()?.getUserId() ?? ''),

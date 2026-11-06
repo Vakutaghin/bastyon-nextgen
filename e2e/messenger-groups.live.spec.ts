@@ -112,6 +112,11 @@ test('группа видна в списке, у неё участники, «�
   // У Боба есть и личный чат: в «Переписках» он рядом с группами.
   await openChatWith(b, alice!, true)
   await send(b, 'Привет, это личное')
+  // Чат создаётся первым сообщением и открывается, когда комната готова: Esc
+  // раньше этого закрывал окно, а потом оно снова открывалось с чатом, а не списком.
+  await expect(b.getByTitle(/^(Прочитано|Отправлено, ещё не прочитано)$/).last()).toBeVisible({
+    timeout: 60_000,
+  })
   await b.keyboard.press('Escape')
 
   const BOB = matrixId(bob!.address)
@@ -124,7 +129,7 @@ test('группа видна в списке, у неё участники, «�
     moderators: [BOB],
   })
   // Группа на двоих — всё равно группа.
-  await createLegacyGroup(a, { name: 'Дуэт', invite: [BOB] })
+  const duo = await createLegacyGroup(a, { name: 'Дуэт', invite: [BOB] })
 
   await messenger(a, club)
   await send(a, 'Первая глава прочитана')
@@ -163,6 +168,13 @@ test('группа видна в списке, у неё участники, «�
 
   // --- Открытая группа: шапка и окно участников ---
   await clubRow.click()
+  // Приглашение в группу принимают в окне чата: само оно больше не принимается.
+  const invite = b.getByTestId('chat-invite')
+  await expect(invite).toContainText('alice_e2e приглашает вас в группу «Книжный клуб»', {
+    timeout: 60_000,
+  })
+  expect((await roomState(b, club)).membership).toBe('invite')
+  await invite.getByTestId('invite-accept').click()
   const title = b.getByRole('button', { name: 'Участники и настройки группы: Книжный клуб' })
   await expect(title).toBeVisible({ timeout: 60_000 })
   // Вступил — состав полный.
@@ -251,4 +263,15 @@ test('группа видна в списке, у неё участники, «�
   await expect(clubRow).toHaveCount(0, { timeout: 30_000 })
   // На сервере Боб вышел; комната забыта.
   await expect.poll(async () => (await roomState(b, club)).membership).not.toBe('join')
+
+  // --- Отклонить приглашение: «Дуэт» уходит из списка, в комнату Боб не вступил ---
+  const duoRow = b.locator('[data-testid=chat-row][data-group]').filter({ hasText: 'Дуэт' })
+  await duoRow.click()
+  await expect(b.getByTestId('chat-invite')).toBeVisible({ timeout: 60_000 })
+  await b.getByTestId('invite-decline').click()
+  await expect(duoRow).toHaveCount(0, { timeout: 30_000 })
+  // Отказ дошёл до сервера: Боб вышел (комната забыта или ещё видна вышедшей).
+  await expect
+    .poll(async () => [null, 'leave'].includes((await roomState(b, duo)).membership))
+    .toBe(true)
 })

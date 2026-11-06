@@ -75,6 +75,7 @@ function setup(
     enrichMessagesWithReactions: vi.fn(),
     adoptLocalEcho: vi.fn(async () => {}),
     noteReceipt: vi.fn(),
+    loadMessages: vi.fn(async () => {}),
     watchUndecrypted: vi.fn(),
     retryUndecrypted: vi.fn(),
   }
@@ -328,6 +329,23 @@ describe('Room.receipt', () => {
     handlers['Room.myMembership']!({ roomId: ROOM }, 'join', 'invite')
     handlers['Room.name']!({ roomId: ROOM })
     expect(scheduleLoadDialogs).toHaveBeenCalledTimes(3)
+  })
+
+  it('приняли приглашение открытого чата — загружается история', async () => {
+    const { chatStore } = setup(ROOM)
+    markRoomRead.mockClear()
+    handlers['Room.myMembership']!({ roomId: ROOM }, 'join', 'invite')
+    expect(chatStore.loadMessages).toHaveBeenCalledWith(ROOM)
+    await Promise.resolve()
+    expect(markRoomRead).toHaveBeenCalledWith(ROOM)
+  })
+
+  it('вступление в другой чат или не по приглашению историю не трогает', () => {
+    const { chatStore } = setup(ROOM)
+    handlers['Room.myMembership']!({ roomId: '!other:host' }, 'join', 'invite')
+    handlers['Room.myMembership']!({ roomId: ROOM }, 'join', undefined)
+    handlers['Room.myMembership']!({ roomId: ROOM }, 'invite', undefined)
+    expect(chatStore.loadMessages).not.toHaveBeenCalled()
   })
 
   it('квитанция о прочтении пересчитывает галочки своей комнаты', () => {

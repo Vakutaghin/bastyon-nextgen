@@ -1103,6 +1103,7 @@ export default {
     selectChatHint: 'Scegli una chat per iniziare a scrivere',
     firstMessageHint: 'Scrivi il primo messaggio: {name} vedrà la chat quando sarà inviato.',
     startChatFailed: 'Impossibile creare la chat. Controlla la connessione e riprova.',
+    deleteChatFailed: 'Impossibile eliminare la chat. Controlla la connessione e riprova.',
     archive: {
       localOnly: 'Salvato su questo dispositivo: il server non ha più questo messaggio',
       deleteLocalOnly:
@@ -1148,6 +1149,20 @@ export default {
       undecryptable: 'Impossibile decifrare il messaggio',
       invitePreview: 'Invito alla chat',
       inviteGroupPreview: '{name}: invito a un gruppo',
+    },
+    invite: {
+      title: '{name} ti invita in una chat',
+      titleNoInviter: 'Sei stato invitato in una chat',
+      titleGroup: '{name} ti invita nel gruppo «{group}»',
+      titleGroupNoInviter: 'Sei stato invitato nel gruppo «{group}»',
+      hint: 'I messaggi si apriranno quando accetti l’invito. Un invito rifiutato scompare dalle tue chat.',
+      accept: 'Accetta',
+      decline: 'Rifiuta',
+      accepting: 'Accettazione dell’invito…',
+      failed: 'Impossibile accettare l’invito. Controlla la connessione e riprova.',
+      gone: 'Non puoi più entrare: chi ti ha invitato ha lasciato la chat o ha ritirato l’invito.',
+      remove: 'Rimuovi dall’elenco',
+      declineFailed: 'Impossibile rifiutare l’invito. Controlla la connessione e riprova.',
     },
     inputPlaceholder: 'Scrivi un messaggio...',
     typing: 'sta scrivendo…',

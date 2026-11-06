@@ -1091,6 +1091,7 @@ export default {
     selectChatHint: '대화를 시작하려면 채팅을 선택하세요',
     firstMessageHint: '첫 메시지를 보내면 {name} 님에게 채팅이 표시됩니다.',
     startChatFailed: '채팅을 만들 수 없습니다. 연결을 확인하고 다시 시도하세요.',
+    deleteChatFailed: '채팅을 삭제할 수 없습니다. 연결을 확인하고 다시 시도하세요.',
     archive: {
       localOnly: '이 기기에 저장됨: 서버에는 더 이상 이 메시지가 없습니다',
       deleteLocalOnly:
@@ -1135,6 +1136,20 @@ export default {
       undecryptable: '메시지를 복호화할 수 없습니다',
       invitePreview: '채팅 초대',
       inviteGroupPreview: '{name}: 그룹 초대',
+    },
+    invite: {
+      title: '{name} 님이 채팅에 초대했습니다',
+      titleNoInviter: '채팅에 초대받았습니다',
+      titleGroup: '{name} 님이 “{group}” 그룹에 초대했습니다',
+      titleGroupNoInviter: '“{group}” 그룹에 초대받았습니다',
+      hint: '초대를 수락하면 메시지가 열립니다. 거절한 초대는 채팅 목록에서 사라집니다.',
+      accept: '수락',
+      decline: '거절',
+      accepting: '초대를 수락하는 중…',
+      failed: '초대를 수락할 수 없습니다. 연결을 확인하고 다시 시도하세요.',
+      gone: '참여할 수 없습니다. 초대한 사람이 채팅을 나갔거나 초대를 취소했습니다.',
+      remove: '목록에서 제거',
+      declineFailed: '초대를 거절할 수 없습니다. 연결을 확인하고 다시 시도하세요.',
     },
     inputPlaceholder: '메시지 입력...',
     typing: '입력 중…',

@@ -157,7 +157,7 @@ test('копия у обоих, удаление чужого, стёртое с
   await send(a, 'Раз')
   await expect(a.getByText('Раз')).toBeVisible({ timeout: 60_000 })
   await send(a, 'Два')
-  await openChatWith(b, alice!, false)
+  await openChatWith(b, alice!, false, { invited: true })
   await expect(b.getByText('Два')).toBeVisible({ timeout: 90_000 })
   await expect(b.getByText('Раз')).toBeVisible({ timeout: 60_000 })
   await send(b, 'Три')

@@ -176,6 +176,25 @@ describe('useMessageLoading: чат открыт до конца входа в M
     expect(api.history['!keys:host']?.error).toBeUndefined()
   })
 
+  it('приглашение не принимается само: ленты нет, видно, кто пригласил', async () => {
+    const { api, messages, uiStore } = setup()
+    const invited = {
+      ...fakeRoom('!inv:host', []),
+      getMyMembership: () => 'invite',
+      getMember: () => ({
+        events: { member: { getSender: () => '@bob:host', getTs: () => 1000 } },
+      }),
+    }
+    matrixReady(uiStore, [invited])
+    await api.loadMessages('!inv:host')
+
+    expect(matrix.joinIfInvited).not.toHaveBeenCalled()
+    expect(client.paginateEventTimeline).not.toHaveBeenCalled()
+    expect(messages['!inv:host']).toEqual([])
+    expect(api.history['!inv:host']?.invitedBy).toBe('@bob:host')
+    expect(uiStore.isMessagesLoading).toBe(false)
+  })
+
   it('синк прошёл, а комнаты нет — не ждёт', async () => {
     const { api, messages, uiStore } = setup()
     matrixReady(uiStore, [])

@@ -218,20 +218,21 @@ export function useMessageLoading(
       ensurePcryptoInitialized()
       if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
 
-      if (room) {
+      if (room?.getMyMembership?.() === 'invite') {
+        // Приглашение принимают или отклоняют в окне чата (chat-invite): молча
+        // вступать в чужой чат нельзя, а до вступления ленты у комнаты нет.
+        messages[chatId] = []
+        noteHistory(chatId, room)
+      } else if (room) {
         void showKnown(chatId, room, seq)
-        // Если по комнате висит приглашение — вступаем при открытии. Иначе
-        // последующая отправка падает с M_FORBIDDEN («not in room»), а состояние
-        // комнаты (участники/история) подгружается не полностью.
         // Каждый запрос — не дольше HISTORY_STEP_TIMEOUT: сокет, умерший при
         // смене сети, держал «Загрузка сообщений…» бесконечно.
-        const joined = await within(matrixService.joinIfInvited(chatId), HISTORY_STEP_TIMEOUT)
         const members = await within(
           Promise.resolve(room.loadMembersIfNeeded?.()),
           HISTORY_STEP_TIMEOUT
         )
         const { exhausted, slow } = await paginateRoomHistory(room)
-        const incomplete = !joined.done || !members.done || slow
+        const incomplete = !members.done || slow
         const mapped = await Promise.all(timelineOf(room).map((e) => mapForOpen(e)))
         const list = mapped.filter((m): m is Message => Boolean(m))
         // Расшифровки дочитываются цепочкой микрозадач, и отрисовка ленты шла

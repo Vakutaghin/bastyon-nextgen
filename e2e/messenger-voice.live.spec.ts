@@ -118,7 +118,7 @@ test('голосовое: держать, замок, отмена, коротк
 
   await openChatWith(a, bob!, true)
   await send(a, 'привет')
-  await openChatWith(b, alice!, false)
+  await openChatWith(b, alice!, false, { invited: true })
   await expect(b.getByText('привет')).toBeVisible({ timeout: 60_000 })
 
   const mic = a.getByRole('button', { name: 'Записать голосовое сообщение' })

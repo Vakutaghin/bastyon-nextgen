@@ -1113,6 +1113,8 @@ export default {
       'Schreib die erste Nachricht — {name} sieht den Chat, sobald sie gesendet ist.',
     startChatFailed:
       'Der Chat konnte nicht erstellt werden. Prüfe die Verbindung und versuche es erneut.',
+    deleteChatFailed:
+      'Der Chat konnte nicht gelöscht werden. Prüfe die Verbindung und versuche es erneut.',
     archive: {
       localOnly: 'Auf diesem Gerät gespeichert: Auf dem Server gibt es die Nachricht nicht mehr',
       deleteLocalOnly:
@@ -1159,6 +1161,22 @@ export default {
       undecryptable: 'Nachricht konnte nicht entschlüsselt werden',
       invitePreview: 'Einladung zum Chat',
       inviteGroupPreview: '{name}: Einladung in eine Gruppe',
+    },
+    invite: {
+      title: '{name} lädt dich in einen Chat ein',
+      titleNoInviter: 'Du wurdest in einen Chat eingeladen',
+      titleGroup: '{name} lädt dich in die Gruppe „{group}“ ein',
+      titleGroupNoInviter: 'Du wurdest in die Gruppe „{group}“ eingeladen',
+      hint: 'Die Nachrichten öffnen sich, sobald du die Einladung annimmst. Eine abgelehnte Einladung verschwindet aus deinen Chats.',
+      accept: 'Annehmen',
+      decline: 'Ablehnen',
+      accepting: 'Einladung wird angenommen…',
+      failed:
+        'Die Einladung konnte nicht angenommen werden. Prüfe die Verbindung und versuche es erneut.',
+      gone: 'Beitreten ist nicht mehr möglich: Die einladende Person hat den Chat verlassen oder die Einladung zurückgezogen.',
+      remove: 'Aus der Liste entfernen',
+      declineFailed:
+        'Die Einladung konnte nicht abgelehnt werden. Prüfe die Verbindung und versuche es erneut.',
     },
     inputPlaceholder: 'Nachricht eingeben...',
     typing: 'schreibt…',

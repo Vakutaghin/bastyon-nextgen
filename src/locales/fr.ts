@@ -1117,6 +1117,7 @@ export default {
     firstMessageHint:
       'Écrivez le premier message : {name} verra la discussion une fois qu’il sera envoyé.',
     startChatFailed: 'Impossible de créer la discussion. Vérifiez la connexion et réessayez.',
+    deleteChatFailed: 'Impossible de supprimer la discussion. Vérifiez la connexion et réessayez.',
     archive: {
       localOnly: 'Enregistré sur cet appareil : le serveur n’a plus ce message',
       deleteLocalOnly:
@@ -1163,6 +1164,20 @@ export default {
       undecryptable: 'Impossible de déchiffrer le message',
       invitePreview: 'Invitation à discuter',
       inviteGroupPreview: '{name} : invitation à un groupe',
+    },
+    invite: {
+      title: '{name} vous invite à une discussion',
+      titleNoInviter: 'Vous êtes invité à une discussion',
+      titleGroup: '{name} vous invite dans le groupe « {group} »',
+      titleGroupNoInviter: 'Vous êtes invité dans le groupe « {group} »',
+      hint: 'Les messages s’ouvriront une fois l’invitation acceptée. Une invitation refusée disparaît de vos discussions.',
+      accept: 'Accepter',
+      decline: 'Refuser',
+      accepting: 'Acceptation de l’invitation…',
+      failed: 'Impossible d’accepter l’invitation. Vérifiez la connexion et réessayez.',
+      gone: 'Impossible de rejoindre : la personne qui vous a invité a quitté la discussion ou retiré l’invitation.',
+      remove: 'Retirer de la liste',
+      declineFailed: 'Impossible de refuser l’invitation. Vérifiez la connexion et réessayez.',
     },
     inputPlaceholder: 'Écrivez un message...',
     typing: 'écrit…',
