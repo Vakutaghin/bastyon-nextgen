@@ -1,6 +1,7 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 /** Контейнер всей страницы — повторяет SC_HomeWork: flex с сайдбаром слева. */
 export const SC_SearchWork = styled.div`
@@ -70,6 +71,7 @@ export const SC_QueryHint = styled.span`
 `
 
 export const SC_Tabs = styled.div`
+  ${noSelect}
   display: flex;
   gap: 4px;
   border-bottom: 1px solid var(--color-border-light);
@@ -102,6 +104,7 @@ export const SC_ResultsList = styled.div`
 `
 
 export const SC_ResultItem = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   gap: 12px;

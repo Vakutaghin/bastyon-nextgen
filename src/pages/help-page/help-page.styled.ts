@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 // Брейкпоинт — функцией: строка в шаблоне styled не проходит проверку типов.
 
@@ -94,6 +95,7 @@ export const SC_Layout = styled.div`
 `
 
 export const SC_Nav = styled.aside`
+  ${noSelect}
   position: sticky;
   top: calc(var(--header-height-total) + 16px);
   display: flex;

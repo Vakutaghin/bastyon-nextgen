@@ -1,6 +1,8 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_PostHeader = styled.div`
+  ${noSelect}
   display: flex;
   justify-content: space-between;
   align-items: flex-start;

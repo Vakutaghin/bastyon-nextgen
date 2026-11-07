@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 /** Пометка об истории чата: по центру, мелко, как служебные строки мессенджеров. */
 export const SC_HistoryNote = styled.div`
@@ -48,6 +49,7 @@ export const SC_HistoryRetry = styled.button`
 
 /** «Вы удалили сообщение · 14:30» — строка ленты вместо удалённого. */
 export const SC_DeletedMark = styled.div`
+  ${noSelect}
   align-self: center;
   padding: 2px 10px;
   border-radius: var(--ui-radius-full);

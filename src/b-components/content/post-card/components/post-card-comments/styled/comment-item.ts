@@ -1,5 +1,6 @@
 import styled, { css } from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 /**
  * Общее у корневого комментария и ответа: аватар слева, содержимое справа.
@@ -99,6 +100,7 @@ export const SC_CommentItem = styled.div`
 `
 
 export const SC_CommentAuthor = styled.div`
+  ${noSelect}
   font-weight: 500;
   font-size: 14px;
   color: var(--ui-text-highlighted);
@@ -140,6 +142,7 @@ export const SC_CommentContent = styled.div`
 `
 
 export const SC_CommentMeta = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   justify-content: space-between;

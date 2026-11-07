@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_InlineBlock = styled.div`
   display: inline-block;
@@ -20,6 +21,7 @@ export const SC_AuthPopoverContent = styled.div`
 `
 
 export const SC_StarRating = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   gap: 5px;

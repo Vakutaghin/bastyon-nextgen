@@ -1,11 +1,13 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS, Z_INDEX } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 /**
  * На компьютере — карточка в левом нижнем углу: справа внизу мессенджер. На
  * телефоне — полоса над нижней панелью во всю ширину.
  */
 export const SC_MiniPlayer = styled.div`
+  ${noSelect}
   position: fixed;
   left: 14px;
   bottom: 14px;

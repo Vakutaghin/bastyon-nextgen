@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 /** Окно не выше экрана: прокручивается список, шапка группы остаётся. */
 export const SC_GroupBody = styled.div`
@@ -71,6 +72,7 @@ export const SC_ActionBtn = styled.button`
 `
 
 export const SC_MembersHead = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   gap: 8px;
@@ -110,6 +112,7 @@ export const SC_MembersEmpty = styled.div`
 `
 
 export const SC_MemberList = styled.div`
+  ${noSelect}
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;

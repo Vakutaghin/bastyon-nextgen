@@ -1,6 +1,7 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 import Button from '@/components/button/button.vue'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_NewPostsPill = styled.button`
   display: flex;
@@ -28,6 +29,7 @@ export const SC_NewPostsPill = styled.button`
 
 /** Плашка после постов подписок: «Продолжить в ленте подписок». */
 export const SC_SubscriptionsDivider = styled.div`
+  ${noSelect}
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -121,6 +123,7 @@ export const SC_PullIndicator = styled.div`
 `
 
 export const SC_FeedHeader = styled.div`
+  ${noSelect}
   display: flex;
   justify-content: space-between;
   align-items: center;

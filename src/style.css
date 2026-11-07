@@ -833,6 +833,68 @@ a:active {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   Выделение текста — как в приложении, а не на странице. Кнопки, вкладки,
+   пункты меню, навигация и элементы antd не выделяются протяжкой мыши и
+   долгим нажатием. Контейнеры оболочки на div (список чатов, боковые панели,
+   шапки и действия карточек) закрывает `noSelect` из
+   src/styles/chrome-styles.ts. Текст, который читают и копируют (посты,
+   сообщения, комментарии, профиль, адреса, хеши), выделяется как раньше.
+   :where() обнуляет специфичность — компонент вернёт выделение своим
+   `user-select: text`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:where(
+  button,
+  [role='button'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='option'],
+  [role='switch'],
+  [role='slider'],
+  label,
+  summary,
+  nav,
+  svg,
+  .ant-btn,
+  .ant-tabs-nav,
+  .ant-menu,
+  .ant-dropdown-menu,
+  .ant-select-selector,
+  .ant-select-item,
+  .ant-segmented,
+  .ant-switch,
+  .ant-radio-wrapper,
+  .ant-checkbox-wrapper,
+  .ant-pagination,
+  .ant-slider,
+  .ant-picker-panel,
+  .ant-collapse-header,
+  .ant-modal-header,
+  .ant-modal-close,
+  .ant-drawer-header,
+  .ant-tooltip,
+  .ant-badge,
+  .vel-modal
+) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Поля ввода выделяются и внутри оболочки. На iOS поле внутри
+   `user-select: none` иначе не даёт ни выделить, ни набрать текст. */
+:where(input, textarea, [contenteditable]:not([contenteditable='false'])) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Без серой вспышки по нажатию в Android WebView: отклик на нажатие — свой
+   у каждой кнопки (:hover/:active). */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Иконки — Lucide в обёртке вида antd (src/components/icons). Размер задаёт
    font-size (svg 1em), цвет — currentColor.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -887,16 +949,6 @@ a:active {
 /* ═══════════════════════════════════════════════════════════════════════════
    Utility classes
    ═══════════════════════════════════════════════════════════════════════════ */
-
-.unselectable {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
 
 .blur {
   -webkit-filter: blur(10px);

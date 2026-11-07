@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_ProfileSidebar = styled.div`
   width: 280px;
@@ -22,6 +23,7 @@ export const SC_ProfileSidebar = styled.div`
 `
 
 export const SC_UserAvatar = styled.div`
+  ${noSelect}
   width: 120px;
   height: 120px;
   border-radius: 50%;
@@ -63,6 +65,7 @@ export const SC_UserName = styled.h2`
 
 /** По центру: у кнопок-счётчиков есть поле, у репутации нет, и подписи стояли вразнобой. */
 export const SC_UserStats = styled.div`
+  ${noSelect}
   display: flex;
   flex-direction: row;
   align-items: center;

@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_NotificationsWrapper = styled.div`
   display: flex;
@@ -17,6 +18,7 @@ export const SC_NotificationsWrapper = styled.div`
 `
 
 export const SC_NotificationsMenu = styled.div`
+  ${noSelect}
   background: var(--ui-bg);
   border-radius: var(--ui-radius-md);
   box-shadow:

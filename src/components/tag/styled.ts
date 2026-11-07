@@ -1,8 +1,10 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 // Тег в оформлении Nuxt UI — нейтральный бейдж (UBadge, soft): подложка
 // elevated, 12px/500, радиус 6. Акцентом — только выбранный.
 export const SC_Tag = styled.div`
+  ${noSelect}
   .ant-tag {
     display: inline-flex;
     align-items: center;

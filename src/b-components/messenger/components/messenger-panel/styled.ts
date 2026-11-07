@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS, SHELL } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_MessengerContainer = styled.div`
   flex: 1;
@@ -28,6 +29,7 @@ const sidebarProps = {
 }
 
 export const SC_SidebarColumn = styled('div', sidebarProps)`
+  ${noSelect}
   width: 320px;
   border-right: 1px solid var(--ui-border);
   display: flex;
@@ -101,6 +103,7 @@ export const SC_SidebarTitle = styled.div`
 
 /** Верхняя панель в активном чате (back-button + имя собеседника). */
 export const SC_ChatTopBar = styled.div`
+  ${noSelect}
   height: 56px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--ui-border);
@@ -116,6 +119,7 @@ export const SC_ChatTopBar = styled.div`
 `
 
 export const SC_EmptyState = styled.div`
+  ${noSelect}
   flex: 1;
   display: flex;
   align-items: center;

@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_List = styled.ol`
   margin: 0;
@@ -9,6 +10,7 @@ export const SC_List = styled.ol`
 `
 
 export const SC_Track = styled.li`
+  ${noSelect}
   display: flex;
   align-items: center;
   gap: 12px;

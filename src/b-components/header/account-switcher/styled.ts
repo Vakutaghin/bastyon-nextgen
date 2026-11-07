@@ -1,6 +1,8 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_AccountSwitcher = styled.div`
+  ${noSelect}
   padding: 20px 0;
 `
 

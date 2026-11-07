@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_CommentsPreview = styled.div`
   display: flex;
@@ -48,6 +49,7 @@ export const SC_ShowCommentsBtnCollapse = styled(SC_ShowCommentsBtn)`
 `
 
 export const SC_CommentsActionsRow = styled.div`
+  ${noSelect}
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -69,6 +71,7 @@ export const SC_CommentsLoading = styled.div`
 `
 
 export const SC_CommentsSortRow = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   gap: 8px;

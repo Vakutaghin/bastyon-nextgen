@@ -1,6 +1,7 @@
 import styled from 'vue3-styled-components'
 import Card from '@/components/card/card.vue'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_PostCard = styled(Card)`
   margin-bottom: 15px;
@@ -25,6 +26,7 @@ export const SC_PostMedia = styled.div`
 
 /** Метка «Продвигаемое» для бустнутых постов, вплетённых в ленту. */
 export const SC_BoostedBadge = styled.div`
+  ${noSelect}
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -41,6 +43,7 @@ export const SC_BoostedBadge = styled.div`
 
 /** Бейдж оптимистичного поста: транзакция в мемпуле, ещё не в блокчейне. */
 export const SC_PendingBadge = styled.div`
+  ${noSelect}
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -92,6 +95,7 @@ export const SC_TxFailedDismiss = styled.button`
 
 /** Пометка «Для подписчиков» и т. п. — у поста с ограниченной видимостью. */
 export const SC_VisibilityBadge = styled.div`
+  ${noSelect}
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -225,6 +229,7 @@ export const SC_PostActionBtn = styled.button`
 `
 
 export const SC_PostActions = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   /* Своих кнопок у поста бывает больше (изменить, удалить) — лишнее уходит на
@@ -368,6 +373,7 @@ export const SC_RepostInnerCard = styled.div`
 
 /** Блок «автор оригинала» внутри карточки репоста: аватар, имя, дата — как в шапке поста */
 export const SC_RepostOriginalAuthor = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   gap: 11px;

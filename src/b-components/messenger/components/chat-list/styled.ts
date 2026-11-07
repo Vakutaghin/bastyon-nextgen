@@ -1,7 +1,9 @@
 import styled from 'vue3-styled-components'
 import { nuxtField } from '@/styles/field-styles'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_ChatListRoot = styled.div`
+  ${noSelect}
   flex: 1;
   display: flex;
   flex-direction: column;

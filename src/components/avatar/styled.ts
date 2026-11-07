@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 // Аватар в оформлении Nuxt UI (UAvatar): круг без рамки, инициалы 500-м
 // начертанием. Значок «ждёт регистрации» — точка с кольцом цвета фона, как
@@ -6,6 +7,7 @@ import styled from 'vue3-styled-components'
 export const SC_Avatar = styled.div<{
   shape?: 'circle' | 'square'
 }>`
+  ${noSelect}
   position: relative;
   border-radius: ${(p) => (p.shape === 'square' ? 'var(--ui-radius-sm)' : '50%')};
   overflow: visible;

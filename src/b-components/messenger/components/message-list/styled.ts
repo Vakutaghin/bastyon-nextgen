@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_MessageList = styled.div`
   flex: 1;
@@ -21,6 +22,7 @@ export const SC_MessageList = styled.div`
 
 /** История ещё грузится: строка над тем, что уже на экране. */
 export const SC_HistoryLoading = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43,6 +45,7 @@ export const SC_HistoryLoadingSpinner = styled.span`
 
 /** Граница сохранённого на устройстве: черта с подписью посередине. */
 export const SC_ArchiveDivider = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   gap: 8px;

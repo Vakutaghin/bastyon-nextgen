@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { TRANSITIONS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_List = styled.div`
   display: flex;
@@ -11,6 +12,7 @@ export const SC_List = styled.div`
 `
 
 export const SC_Row = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   gap: 12px;

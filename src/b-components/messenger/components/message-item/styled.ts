@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_MessageItem = styled.div`
   max-width: 80%;
@@ -41,6 +42,7 @@ export const SC_ReactionCount = styled.span`
 `
 
 export const SC_MessageTime = styled.span`
+  ${noSelect}
   font-size: 12px;
   opacity: 0.7;
   display: block;
@@ -65,6 +67,7 @@ export const SC_MessageRow = styled.div`
 
 /** Слот для аватарки слева от чужого сообщения. Сохраняет место даже когда аватарка пустая, чтобы пузыри стояли ровно. */
 export const SC_AvatarSlot = styled.div`
+  ${noSelect}
   flex: 0 0 auto;
   width: 32px;
   height: 32px;
@@ -74,6 +77,7 @@ export const SC_AvatarSlot = styled.div`
 `
 
 export const SC_MessageMeta = styled.div`
+  ${noSelect}
   font-size: 12px;
   opacity: 0.7;
   display: flex;
@@ -83,6 +87,7 @@ export const SC_MessageMeta = styled.div`
 `
 
 export const SC_ReactionsRow = styled.div`
+  ${noSelect}
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -236,6 +241,7 @@ export const SC_LocalOnlyMark = styled.span`
 
 /** Цитата сообщения, на которое отвечают (показывается над текстом). */
 export const SC_ReplyQuote = styled.div`
+  ${noSelect}
   display: block;
   margin-bottom: 4px;
   padding: 4px 8px;

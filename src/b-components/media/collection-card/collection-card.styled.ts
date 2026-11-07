@@ -1,6 +1,8 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_Card = styled.a`
+  ${noSelect}
   display: flex;
   flex-direction: column;
   gap: 6px;

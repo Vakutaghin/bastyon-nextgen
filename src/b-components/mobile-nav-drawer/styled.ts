@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 const overlayProps = { isOpen: Boolean }
 
@@ -15,6 +16,7 @@ export const SC_Backdrop = styled('div', overlayProps)`
 `
 
 export const SC_Drawer = styled('aside', overlayProps)`
+  ${noSelect}
   position: fixed;
   top: 0;
   bottom: 0;

@@ -1,5 +1,6 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_TopWork = styled.div`
   display: flex;
@@ -70,6 +71,7 @@ export const SC_FilterHint = styled.span`
 
 /** Строка: ссылка на профиль и рядом кнопка подписки. */
 export const SC_TopItem = styled.li`
+  ${noSelect}
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--ui-border);

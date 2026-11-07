@@ -1,7 +1,9 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_RightSidebar = styled.aside`
+  ${noSelect}
   width: 280px;
   min-width: 280px;
   max-height: calc(100vh - var(--header-height-total) - 8px);

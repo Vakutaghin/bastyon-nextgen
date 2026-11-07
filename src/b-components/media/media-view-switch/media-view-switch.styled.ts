@@ -1,7 +1,9 @@
 import styled from 'vue3-styled-components'
+import { noSelect } from '@/styles/chrome-styles'
 
 /** Две кнопки-иконки, выбранная — на подложке (как вид в «Медиастудии»). */
 export const SC_ViewSwitch = styled.div`
+  ${noSelect}
   display: inline-flex;
   flex: none;
   padding: 2px;

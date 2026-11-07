@@ -1,7 +1,9 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_LeftSidebar = styled.aside`
+  ${noSelect}
   width: 280px;
   min-width: 280px;
   /* Во всю высоту окна: строка версии стоит внизу, а не сразу под тегами. */

@@ -1,6 +1,7 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 import { BREAKPOINTS } from '@/styles/design-tokens'
+import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_ChannelRoom = styled.div`
   display: flex;
@@ -33,6 +34,7 @@ export const SC_ChannelFeed = styled.div`
 
 /** Дата над постами одного дня — как в ленте сообщений мессенджеров. */
 export const SC_DayDivider = styled.div`
+  ${noSelect}
   align-self: center;
   margin: 8px 0 2px;
 
@@ -49,6 +51,7 @@ export const SC_DayDivider = styled.div`
 
 /** Черта перед первым непрочитанным постом. */
 export const SC_NewDivider = styled.div`
+  ${noSelect}
   display: flex;
   align-items: center;
   gap: 8px;
