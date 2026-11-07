@@ -1,6 +1,8 @@
 // Отправка медиа-вложений (аудио/изображения/видео/файлы): оптимистичное
 // сообщение → шифрование per-message ключом → загрузка через matrixService.
-// Текстовые сообщения и реакции — в use-message-sending.
+// В публичную группу и группу от 50 участников вложение уходит открыто, как
+// у прежнего клиента и как текст (encryption-rule). Текстовые сообщения и
+// реакции — в use-message-sending.
 
 import { matrixService } from '../../services/matrix-service'
 import { registerLocalMedia, releaseLocalMedia } from '../../services/local-media'
@@ -12,6 +14,7 @@ import { DEFAULT_ENCRYPTION_BLOCK } from '../consts'
 import type { Message } from '../../types'
 import type { ChatContext } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
+import { roomEncrypts } from './encryption-rule'
 import {
   createProgressHandler,
   makeTempId,
@@ -26,6 +29,14 @@ import {
 /** Больше в чат не отправить: чат-сервер не примет. Больше файла — через IPFS. */
 export const IMAGE_SIZE_LIMIT_BYTES = 100 * 1024 * 1024
 export const FILE_SIZE_LIMIT_BYTES = 25 * 1024 * 1024
+
+/** Что загрузить: файл как есть или зашифрованный, с ключами для участников. */
+interface SealedMedia {
+  blob: Blob
+  size: number
+  secrets?: Awaited<ReturnType<typeof wrapKeyForRoom>>
+  block?: number
+}
 
 export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
   const { messages, currentUser, uiStore } = ctx
@@ -56,6 +67,25 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     if (!room) throw new Error('Room not found')
     await room.loadMembersIfNeeded?.()
     return room
+  }
+
+  /**
+   * Фото, видео, файл: шифруем случайным ключом, ключ — участникам. В открытую
+   * группу — файл как есть: ключи на сотни человек прежний клиент не делал, и
+   * его участники открытое вложение и ждут.
+   */
+  const sealForRoom = async (
+    room: NonNullable<ReturnType<typeof matrixService.getRoom>>,
+    timestamp: number,
+    file: Blob
+  ): Promise<SealedMedia> => {
+    const memberIds = getOrderedMemberIds(room, timestamp)
+    if (!roomEncrypts(room, memberIds)) return { blob: file, size: file.size }
+    const users = await collectPcryptoUsers(memberIds)
+    const block = await pickRoomBlock(room)
+    const { encryptedBlob, secretStr } = await encryptBlobWithRandomKey(file)
+    const secrets = await wrapKeyForRoom(pcryptoService.value!, secretStr, users, block)
+    return { blob: encryptedBlob, size: encryptedBlob.size, secrets, block }
   }
 
   const sendAudio = async (
@@ -97,32 +127,31 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
       const room = await prepareRoom(chatId)
       const onProgress = createProgressHandler(messages, chatId, tempId)
 
-      // Шифрование
       const memberIds = getOrderedMemberIds(room, now)
-      const users = await collectPcryptoUsers(memberIds)
+      const audio = {
+        name: meta?.name || 'voice-message',
+        mimetype: blob.type || 'audio/webm',
+        duration: meta?.duration || 0,
+      }
 
-      const isDirect = isTetatetchat(room)
-      const block = isDirect
-        ? DEFAULT_ENCRYPTION_BLOCK
-        : (await getCurrentBlockHeight()) || DEFAULT_ENCRYPTION_BLOCK
+      if (roomEncrypts(room, memberIds)) {
+        const users = await collectPcryptoUsers(memberIds)
+        const block = isTetatetchat(room)
+          ? DEFAULT_ENCRYPTION_BLOCK
+          : (await getCurrentBlockHeight()) || DEFAULT_ENCRYPTION_BLOCK
 
-      const { encryptedBlob, secretStr } = await encryptAudioBlob(blob)
-      const version = 2
-      const secrets = await pcryptoService.value!.encryptKey(secretStr, users, block, version)
+        const { encryptedBlob, secretStr } = await encryptAudioBlob(blob)
+        const version = 2
+        const secrets = await pcryptoService.value!.encryptKey(secretStr, users, block, version)
 
-      await matrixService.sendAudio(
-        chatId,
-        {
-          blob: encryptedBlob,
-          name: meta?.name || 'voice-message',
-          mimetype: blob.type || 'audio/webm',
-          duration: meta?.duration || 0,
-          size: encryptedBlob.size,
-          secrets,
-          block,
-        },
-        onProgress
-      )
+        await matrixService.sendAudio(
+          chatId,
+          { ...audio, blob: encryptedBlob, size: encryptedBlob.size, secrets, block },
+          onProgress
+        )
+      } else {
+        await matrixService.sendAudio(chatId, { ...audio, blob, size: blob.size }, onProgress)
+      }
 
       // Удаляем оптимистичное сообщение
       removeOptimistic(messages, chatId, tempId)
@@ -167,25 +196,11 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
 
       const onProgress = createProgressHandler(messages, chatId, tempId)
 
-      const memberIds = getOrderedMemberIds(room, now)
-      const users = await collectPcryptoUsers(memberIds)
-      const block = await pickRoomBlock(room)
-
-      const { encryptedBlob, secretStr } = await encryptBlobWithRandomKey(file)
-      const secrets = await wrapKeyForRoom(pcryptoService.value!, secretStr, users, block)
+      const sealed = await sealForRoom(room, now, file)
 
       await matrixService.sendImage(
         chatId,
-        {
-          blob: encryptedBlob,
-          name: fileName,
-          mimetype,
-          width: dims?.w,
-          height: dims?.h,
-          size: encryptedBlob.size,
-          secrets,
-          block,
-        },
+        { ...sealed, name: fileName, mimetype, width: dims?.w, height: dims?.h },
         onProgress
       )
 
@@ -236,37 +251,27 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
 
       const onProgress = createProgressHandler(messages, chatId, tempId)
 
-      const memberIds = getOrderedMemberIds(room, now)
-      const users = await collectPcryptoUsers(memberIds)
-      const block = await pickRoomBlock(room)
-
-      const [posterMxcUrl, encryptedVideo] = await Promise.all([
+      const [posterMxcUrl, sealed] = await Promise.all([
         posterBlob
           ? matrixService
               .uploadContent(posterBlob, { name: 'poster.jpg', type: 'image/jpeg' })
               .catch(() => null)
           : Promise.resolve(null),
-        encryptBlobWithRandomKey(file),
+        sealForRoom(room, now, file),
       ])
-
-      const { encryptedBlob, secretStr } = encryptedVideo
-      const secrets = await wrapKeyForRoom(pcryptoService.value!, secretStr, users, block)
 
       await matrixService.sendVideo(
         chatId,
         {
-          blob: encryptedBlob,
+          ...sealed,
           name: fileName,
           mimetype,
           duration,
           width: w || undefined,
           height: h || undefined,
-          size: encryptedBlob.size,
           thumbnailUrl: posterMxcUrl || undefined,
           thumbnailMimetype: posterBlob?.type || 'image/jpeg',
           thumbnailSize: posterBlob?.size,
-          secrets,
-          block,
         },
         onProgress
       )
@@ -312,25 +317,9 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
 
       const onProgress = createProgressHandler(messages, chatId, tempId)
 
-      const memberIds = getOrderedMemberIds(room, now)
-      const users = await collectPcryptoUsers(memberIds)
-      const block = await pickRoomBlock(room)
+      const sealed = await sealForRoom(room, now, file)
 
-      const { encryptedBlob, secretStr } = await encryptBlobWithRandomKey(file)
-      const secrets = await wrapKeyForRoom(pcryptoService.value!, secretStr, users, block)
-
-      await matrixService.sendFile(
-        chatId,
-        {
-          blob: encryptedBlob,
-          name: fileName,
-          mimetype,
-          size: encryptedBlob.size,
-          secrets,
-          block,
-        },
-        onProgress
-      )
+      await matrixService.sendFile(chatId, { ...sealed, name: fileName, mimetype }, onProgress)
 
       removeOptimistic(messages, chatId, tempId)
     } catch (e) {

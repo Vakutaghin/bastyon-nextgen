@@ -1,8 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
 
-const { room, matrix } = vi.hoisted(() => {
-  const room = { roomId: '!c:host', loadMembersIfNeeded: vi.fn(async () => {}) }
+const { room, matrix, chat } = vi.hoisted(() => {
+  const room = {
+    roomId: '!c:host',
+    loadMembersIfNeeded: vi.fn(async () => {}),
+    getJoinRule: vi.fn(() => 'invite'),
+  }
+  /** Личный ли чат — подменяет isTetatetchat. */
+  const chat = { direct: true }
   type Send = (
     chatId: string,
     data: unknown,
@@ -18,7 +24,7 @@ const { room, matrix } = vi.hoisted(() => {
     sendFile: vi.fn(send()),
     uploadContent: vi.fn(async () => 'mxc://poster'),
   }
-  return { room, matrix }
+  return { room, matrix, chat }
 })
 
 vi.mock('../../services/matrix-service', () => ({ matrixService: matrix }))
@@ -36,11 +42,13 @@ vi.mock('../../services/media-metadata', () => ({
   extractImageDimensions: vi.fn(async () => ({ w: 10, h: 20 })),
   extractVideoMetadata: vi.fn(async () => ({ duration: 1.5, w: 30, h: 40, posterBlob: null })),
 }))
-vi.mock('../../helpers', () => ({ isTetatetchat: () => true }))
+vi.mock('../../helpers', () => ({ isTetatetchat: () => chat.direct }))
 
 import { useMediaSending } from './use-media-sending'
+import { encryptAudioBlob } from '../../services/encryption-service'
+import { encryptBlobWithRandomKey } from '../../services/media-encrypt'
 
-function setup() {
+function setup(memberIds: string[] = ['@me:host', '@peer:host']) {
   const messages: Record<string, { id: string; type?: string; status: string; url?: string }[]> = {}
   const ctx = {
     messages,
@@ -51,7 +59,7 @@ function setup() {
     ensurePcryptoInitialized: vi.fn(),
     waitForPcrypto: vi.fn(),
     pcryptoService: ref({ encryptKey: vi.fn(async () => ({ audio: true })) }),
-    getOrderedMemberIds: vi.fn(() => ['@me:host', '@peer:host']),
+    getOrderedMemberIds: vi.fn(() => memberIds),
     collectPcryptoUsers: vi.fn(async () => []),
     getCurrentBlockHeight: vi.fn(async () => 100),
     pickRoomBlock: vi.fn(async () => 42),
@@ -63,6 +71,8 @@ function setup() {
 beforeEach(() => {
   vi.clearAllMocks()
   matrix.getRoom.mockReturnValue(room)
+  room.getJoinRule.mockReturnValue('invite')
+  chat.direct = true
   vi.stubGlobal('URL', {
     ...URL,
     createObjectURL: vi.fn(() => 'blob:local'),
@@ -159,5 +169,66 @@ describe('useMediaSending', () => {
     await api.sendFile('!c:host', big)
     expect(matrix.getRoom).not.toHaveBeenCalled()
     expect(messages['!c:host']).toBeUndefined()
+  })
+
+  // ─── Открытые группы: вложения без шифрования, как у прежнего клиента ──────
+
+  const members = (n: number) => Array.from({ length: n }, (_, i) => `@u${i}:host`)
+
+  it('публичная группа: фото уходит как есть, без ключей', async () => {
+    chat.direct = false
+    room.getJoinRule.mockReturnValue('public')
+    const { api, chatCrypto } = setup(members(3))
+    const file = new Blob(['img'], { type: 'image/png' })
+    await api.sendImage('!c:host', file)
+    const data = matrix.sendImage.mock.calls[0]![1] as Record<string, unknown>
+    expect(data.blob).toBe(file)
+    expect(data.size).toBe(file.size)
+    expect(data).not.toHaveProperty('secrets')
+    expect(data).not.toHaveProperty('block')
+    expect(encryptBlobWithRandomKey).not.toHaveBeenCalled()
+    expect(chatCrypto.collectPcryptoUsers).not.toHaveBeenCalled()
+  })
+
+  it('группа от 50 участников: файл и видео уходят открыто', async () => {
+    chat.direct = false
+    const { api } = setup(members(50))
+    const file = new Blob(['f'])
+    await api.sendFile('!c:host', file, { name: 'a.txt' })
+    await api.sendVideo('!c:host', file)
+    const sentFile = matrix.sendFile.mock.calls[0]![1] as Record<string, unknown>
+    const sentVideo = matrix.sendVideo.mock.calls[0]![1] as Record<string, unknown>
+    expect(sentFile.blob).toBe(file)
+    expect(sentFile).not.toHaveProperty('secrets')
+    expect(sentVideo.blob).toBe(file)
+    expect(sentVideo).not.toHaveProperty('secrets')
+    expect(encryptBlobWithRandomKey).not.toHaveBeenCalled()
+  })
+
+  it('публичная группа: голосовое уходит открыто', async () => {
+    chat.direct = false
+    room.getJoinRule.mockReturnValue('public')
+    const { api } = setup(members(3))
+    const voice = new Blob(['a'], { type: 'audio/webm' })
+    await api.sendAudio('!c:host', voice, { duration: 3 })
+    const data = matrix.sendAudio.mock.calls[0]![1] as Record<string, unknown>
+    expect(data.blob).toBe(voice)
+    expect(data).toMatchObject({ duration: 3, size: voice.size, mimetype: 'audio/webm' })
+    expect(data).not.toHaveProperty('secrets')
+    expect(encryptAudioBlob).not.toHaveBeenCalled()
+  })
+
+  it('закрытая группа до 50 участников: вложения по-прежнему шифруются', async () => {
+    chat.direct = false
+    const { api, chatCrypto } = setup(members(49))
+    await api.sendFile('!c:host', new Blob(['f']), { name: 'a.txt' })
+    await api.sendAudio('!c:host', new Blob(['a']), { duration: 1 })
+    expect(matrix.sendFile).toHaveBeenCalledWith(
+      '!c:host',
+      expect.objectContaining({ block: 42, secrets: { wrapped: true } }),
+      expect.any(Function)
+    )
+    // Голосовое группы — блок от текущей высоты.
+    expect(chatCrypto.pcryptoService.value.encryptKey).toHaveBeenCalledWith('S', [], 100, 2)
   })
 })

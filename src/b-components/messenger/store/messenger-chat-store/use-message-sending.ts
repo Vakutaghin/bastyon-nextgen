@@ -17,7 +17,8 @@ import { getPartnerMatrixId } from '../../room-helpers'
 import type { Message } from '../../types'
 import { markDeleted } from '../../lib/chat-history'
 import { within } from '../../lib/within'
-import { GROUP_ENCRYPTION_MEMBER_LIMIT, ROOM_WAIT_TIMEOUT, SEND_ORDER_WAIT } from '../consts'
+import { ROOM_WAIT_TIMEOUT, SEND_ORDER_WAIT } from '../consts'
+import { groupCanBeEncrypted } from './encryption-rule'
 import { pushOptimistic } from './media-sending-helpers'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
@@ -57,23 +58,7 @@ export class RecipientProfilesUnavailableError extends Error {
   }
 }
 
-/**
- * Шифровать ли группу — правило прежнего клиента (bastyon-chat,
- * `pcrypto.canBeEncrypt`): публичную группу и группу от 50 участников он не
- * шифрует, сообщения в них идут обычным `m.text`, и все клиенты так их и
- * читают. Раньше NextGen шифровал любую группу общим ключом на всех участников:
- * в чатах на сотни человек это не работало, а один участник без ключей запирал
- * группу для всех.
- *
- * Комнату, где участник один я, прежний клиент тоже не шифрует, а здесь она
- * шифруется: так выглядит и личный чат, куда собеседник ещё не пришёл или
- * откуда вышел (`isTetatetchat` узнаёт личный чат по двум участникам), и
- * открытый текст ушёл бы туда, где его ждут зашифрованным.
- */
-export function groupCanBeEncrypted(room: MxRoom, memberCount: number): boolean {
-  if (room.getJoinRule?.() === 'public') return false
-  return memberCount < GROUP_ENCRYPTION_MEMBER_LIMIT
-}
+export { groupCanBeEncrypted }
 
 export class PkoinMessageDeliveryError extends Error {
   constructor(
