@@ -2440,6 +2440,9 @@ export default {
     feemodeReceiverPays: 'paga il destinatario',
     errorAuthRequired: 'È necessario accedere',
     errorInsufficientFunds: 'Fondi insufficienti per il pagamento, commissione inclusa',
+    txNotSignedIn: 'Accedi perché l’app possa pubblicarlo a tuo nome.',
+    txNoCoins:
+      'Non ci sono monete per la commissione di rete. Ricarica il portafoglio o attendi la conferma della transazione precedente.',
     errorPaymentFailed: 'Impossibile inviare il pagamento',
   },
   comments: {

@@ -5,7 +5,7 @@
  */
 
 import { logger } from '@/services/logger'
-import type { IncomingMessage, OutgoingMessage, RpcError } from '../types/messages'
+import type { IncomingMessage, OutgoingMessage, RpcError, RpcErrorBody } from '../types/messages'
 import type { AppId, InstalledApp } from '../types/app'
 import type { AppOriginResolver } from './origin-guard'
 import type { FetchRequest, FetchResponse, Payload } from '../types/messages'
@@ -39,6 +39,8 @@ export interface BridgeOptions {
 
   /** Таймаут на RPC. Default — {@link DEFAULT_RPC_TIMEOUT_MS}. */
   rpcTimeoutMs?: number
+  /** Свой таймаут действия (окно оплаты, выбор фото); undefined — общий. */
+  rpcTimeoutFor?: (action: string) => number | undefined
 }
 
 export interface AppConnection {
@@ -94,7 +96,20 @@ export function getMsgExtra(msg: IncomingMessage): string {
   }
 }
 
+/**
+ * Ошибка, которую приложение получает строкой, как от прежнего клиента:
+ * Barteron отличает отмену платежа по `error === 'cancel'`, а объект с
+ * `message: 'cancel'` принимал за сбой.
+ */
+export class LegacyRpcError extends Error {
+  constructor(public readonly raw: string) {
+    super(raw)
+    this.name = 'LegacyRpcError'
+  }
+}
+
 export function normalizeError(err: unknown, signal: AbortSignal): RpcError['error'] {
+  if (err instanceof LegacyRpcError) return err.raw
   if (signal.aborted) {
     return {
       message: 'rpc_timeout',
@@ -103,7 +118,7 @@ export function normalizeError(err: unknown, signal: AbortSignal): RpcError['err
     }
   }
   if (err instanceof Error) {
-    const out: RpcError['error'] = {
+    const out: RpcErrorBody = {
       message: err.message || 'unknown error',
       name: err.name,
       // Стек — это внутренности хоста (пути к модулям, имена приватных функций);

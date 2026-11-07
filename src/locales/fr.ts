@@ -2459,6 +2459,9 @@ export default {
     feemodeReceiverPays: 'payés par le destinataire',
     errorAuthRequired: 'Connexion requise',
     errorInsufficientFunds: 'Fonds insuffisants pour le paiement, frais compris',
+    txNotSignedIn: 'Connectez-vous pour que l’application puisse publier ceci en votre nom.',
+    txNoCoins:
+      'Aucune pièce pour les frais du réseau. Approvisionnez le portefeuille ou attendez la confirmation de la transaction précédente.',
     errorPaymentFailed: 'Impossible d’envoyer le paiement',
   },
   comments: {

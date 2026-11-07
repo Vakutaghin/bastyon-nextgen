@@ -41,7 +41,7 @@ export const ActionSchemas = {
   registration: EmptySchema,
   opensettings: EmptySchema,
   geolocation: EmptySchema,
-  getaction: EmptySchema,
+  getaction: z.object({ id: z.string().max(100).optional() }).optional(),
   getactions: EmptySchema,
   registerForNotifications: EmptySchema,
   'mobile.camera': EmptySchema,

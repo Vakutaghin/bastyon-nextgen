@@ -23,7 +23,8 @@ export async function handleRpc(
   const ctrl = new AbortController()
   state.inflight.set(inflightKey, ctrl)
 
-  const timeoutMs = state.opts.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS
+  const timeoutMs =
+    state.opts.rpcTimeoutFor?.(action) ?? state.opts.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS
   const timer = setTimeout(() => {
     ctrl.abort(new Error('rpc_timeout'))
   }, timeoutMs)

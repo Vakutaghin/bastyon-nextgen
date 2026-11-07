@@ -121,7 +121,7 @@ describe('content actions', () => {
     await reg.execute('share', TEST_APP, { path: 'post/123' }, new AbortController().signal)
     expect(share).toHaveBeenCalledWith(
       { path: 'post/123', url: undefined, sharing: undefined },
-      { onBastyon: false }
+      { onBastyon: false, appId: TEST_APP.manifest.id }
     )
   })
 
@@ -136,7 +136,7 @@ describe('content actions', () => {
     )
     expect(share).toHaveBeenCalledWith(
       { path: 'post/123', url: undefined, sharing: undefined },
-      { onBastyon: true }
+      { onBastyon: true, appId: TEST_APP.manifest.id }
     )
   })
 
@@ -151,24 +151,28 @@ describe('content actions', () => {
 
   // ─── pending actions ─────────────────────────────────────────────────────
 
-  it('getaction returns first pending action or null', async () => {
-    const { reg } = setup({
-      getPendingActions: vi.fn(() => [{ txid: 'a' }, { txid: 'b' }]),
-    })
-    const r = await reg.execute('getaction', TEST_APP, undefined, new AbortController().signal)
-    expect(r).toEqual({ txid: 'a' })
-  })
-
-  it('getaction returns null on empty', async () => {
-    const { reg } = setup({ getPendingActions: vi.fn(() => []) })
+  it('getaction без id — null, как у прежнего клиента (SDK id не шлёт)', async () => {
+    const getAppAction = vi.fn(async () => ({ id: 'x' }))
+    const { reg } = setup({ getAppAction })
     const r = await reg.execute('getaction', TEST_APP, undefined, new AbortController().signal)
     expect(r).toBeNull()
+    expect(getAppAction).not.toHaveBeenCalled()
   })
 
-  it('getactions returns full list', async () => {
-    const list = [{ txid: 'a' }, { txid: 'b' }]
-    const { reg } = setup({ getPendingActions: vi.fn(() => list) })
+  it('getaction с id — действие этого приложения', async () => {
+    const getAppAction = vi.fn(async () => ({ id: 'x', transaction: 'tx' }))
+    const { reg } = setup({ getAppAction })
+    const r = await reg.execute('getaction', TEST_APP, { id: 'x' }, new AbortController().signal)
+    expect(r).toEqual({ id: 'x', transaction: 'tx' })
+    expect(getAppAction).toHaveBeenCalledWith(TEST_APP.manifest.id, 'x')
+  })
+
+  it('getactions — действия этого приложения', async () => {
+    const list = [{ id: 'a' }, { id: 'b' }]
+    const getAppActions = vi.fn(async () => list)
+    const { reg } = setup({ getAppActions })
     const r = await reg.execute('getactions', TEST_APP, undefined, new AbortController().signal)
     expect(r).toEqual(list)
+    expect(getAppActions).toHaveBeenCalledWith(TEST_APP.manifest.id)
   })
 })

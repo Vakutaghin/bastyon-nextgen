@@ -48,21 +48,43 @@ describe('createContentMethods.share', () => {
     expect(router.push).toHaveBeenCalledWith({ path: '/', query: { share: 'https://x.io/p' } })
   })
 
-  it('onBastyon: строит url из data.path относительно origin (срезает ведущие слэши)', async () => {
+  it('путь мини-приложения — ссылка application?id=…&p=<hex> на публичном адресе', async () => {
     vi.stubGlobal('window', { location: { origin: 'https://b.io', href: 'https://b.io/cur' } })
-    await createContentMethods({ router }).share({ path: '//foo/bar' }, { onBastyon: true })
+    await createContentMethods({ router }).share(
+      { path: '//barter/abc' },
+      { onBastyon: true, appId: 'barteron.pocketnet.app' }
+    )
     expect(router.push).toHaveBeenCalledWith({
       path: '/',
-      query: { share: 'https://b.io/foo/bar' },
+      query: { share: 'https://b.io/application?id=barteron.pocketnet.app&p=6261727465722f616263' },
     })
   })
 
-  it('onBastyon: без url/path — использует window.location.href', async () => {
-    vi.stubGlobal('window', { location: { origin: 'https://b.io', href: 'https://b.io/cur' } })
-    await createContentMethods({ router }).share({}, { onBastyon: true })
+  it('из приложения (http://tauri.localhost) — ссылка на bastyon.com, а не на себя', async () => {
+    vi.stubEnv('DEV', false)
+    vi.stubGlobal('window', {
+      location: { origin: 'http://tauri.localhost', href: 'http://tauri.localhost/app/x' },
+    })
+    await createContentMethods({ router }).share(
+      { path: 'item/1' },
+      { onBastyon: true, appId: 'x.app' }
+    )
     expect(router.push).toHaveBeenCalledWith({
       path: '/',
-      query: { share: 'https://b.io/cur' },
+      query: { share: 'https://bastyon.com/application?id=x.app&p=6974656d2f31' },
+    })
+    vi.unstubAllEnvs()
+  })
+
+  it('bastyon://-ссылка из SDK (get.applink) — тот же адрес на публичном origin', async () => {
+    vi.stubGlobal('window', { location: { origin: 'https://b.io', href: 'https://b.io/cur' } })
+    await createContentMethods({ router }).share(
+      { url: 'bastyon://application?id=x.app&p=6974656d' },
+      { onBastyon: true }
+    )
+    expect(router.push).toHaveBeenCalledWith({
+      path: '/',
+      query: { share: 'https://b.io/application?id=x.app&p=6974656d' },
     })
   })
 
@@ -114,12 +136,5 @@ describe('createContentMethods.openComplain', () => {
       createContentMethods({ router }).openComplain({ txid: 'x' } as never)
     ).rejects.toThrow('complain:notsupported')
     expect(router.push).not.toHaveBeenCalled()
-  })
-})
-
-describe('createContentMethods.getPendingActions', () => {
-  it('возвращает пустой массив', () => {
-    const router = makeRouter()
-    expect(createContentMethods({ router }).getPendingActions()).toEqual([])
   })
 })

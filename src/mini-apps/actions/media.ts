@@ -15,7 +15,7 @@
  */
 
 import { ActionSchemas } from './_schema'
-import type { ActionDefinition, ActionMap } from './types'
+import { USER_WAIT_TIMEOUT_MS, type ActionDefinition, type ActionMap } from './types'
 
 /** Максимум картинок за один images.upload (legacy index.js:941). */
 const MAX_UPLOAD_IMAGES = 10
@@ -24,6 +24,8 @@ const mobileCamera: ActionDefinition<unknown, { images: Array<{ image: string }>
   schema: ActionSchemas['mobile.camera'],
   permissions: ['mobilecamera'],
   rateLimitClass: 'normal',
+  // Человек снимает или выбирает фото — дольше 30 с общего тайм-аута.
+  timeoutMs: USER_WAIT_TIMEOUT_MS,
   handler: async ({ host }) => host.takePhoto(),
 }
 
@@ -32,6 +34,9 @@ const imagesUpload: ActionDefinition<unknown, Array<{ url?: string; error?: stri
   authorization: true,
   permissions: [],
   rateLimitClass: 'normal',
+  // До 10 фото на медленной сети — дольше 30 с; по тайм-ауту объявление
+  // осталось бы без картинок, хотя они загрузились.
+  timeoutMs: USER_WAIT_TIMEOUT_MS,
   handler: async ({ data, host }) => {
     const raw = (data as { images?: unknown })?.images
     const images = Array.isArray(raw) ? (raw as string[]) : []

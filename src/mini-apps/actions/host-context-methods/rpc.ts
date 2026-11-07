@@ -52,8 +52,13 @@ export function createRpcMethods(deps: RpcDeps): RpcMethods {
         parameters: [auth.address],
         options: { auth: false },
       })
-      const data = unwrapRpcResponse<Record<string, unknown>>(raw)
-      return data ?? {}
+      const data = unwrapRpcResponse<Record<string, unknown>>(raw) ?? {}
+      // Прежний клиент отдавал `{total, actual, tempbalance}` (actualBalance), и
+      // приложения читают их: кошелёк Barteron показывает `balance.actual` — у
+      // нас там был 0. Поля getaddressinfo остаются рядом.
+      const balance = Number(data.balance)
+      if (!Number.isFinite(balance)) return data
+      return { ...data, total: balance, actual: balance, tempbalance: 0 }
     },
 
     getCurrentBlockHeight: async () => {

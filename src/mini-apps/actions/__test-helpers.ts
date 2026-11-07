@@ -83,7 +83,9 @@ export function makeMockHost(overrides: Partial<HostContext> = {}): HostContext 
     removeVideo: vi.fn(async () => {}),
     share: vi.fn(async () => {}),
     openComplain: vi.fn(async () => {}),
-    getPendingActions: vi.fn(() => []),
+    getAppActions: vi.fn(async () => []),
+    getAppAction: vi.fn(async () => null),
+    sendAppTransaction: vi.fn(async () => ({ id: 'act-1', transaction: 'f'.repeat(64) })),
     // 5.7
     chatOpenRoom: vi.fn(async () => {}),
     chatGetOrCreateRoom: vi.fn(async () => {

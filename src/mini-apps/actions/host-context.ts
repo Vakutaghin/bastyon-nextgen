@@ -25,6 +25,8 @@ import { createMediaMethods } from './host-context-methods/media'
 import { createCurrencyMethods } from './host-context-methods/currency'
 import { createMediaUploadMethods } from './host-context-methods/media-upload'
 import { createChatMethods } from './host-context-methods/chat'
+import { createAppTxMethods } from './host-context-methods/app-tx'
+import type { LegacyTxObject } from '../tx/legacy-objects'
 
 export type HostDevice = 'browser' | 'capacitor_ios' | 'capacitor_android' | 'tauri' | 'electron'
 
@@ -130,8 +132,16 @@ export interface HostContext {
    * MVP: возвращает `{rejected: true, reason: 'not_implemented'}` пока не
    * подключим реальный wallet/payment UI nextgen.
    */
-  /** `appName` показывается в модале — пользователь видит, кто просит денег (N22). */
-  openPaymentDialog(payment: unknown, appName?: string): Promise<Record<string, unknown>>
+  /**
+   * `appName` показывается в модале — пользователь видит, кто просит денег (N22).
+   * `appId` — чьим действием записать отправленный платёж.
+   */
+  openPaymentDialog(
+    payment: unknown,
+    appName?: string,
+    appId?: string,
+    signal?: AbortSignal
+  ): Promise<Record<string, unknown>>
   /**
    * Открывает закодированный платёж по `ext` хэшу. Эквивалент `sdk.ext(payment)`.
    * MVP: throws `not_implemented`.
@@ -151,12 +161,27 @@ export interface HostContext {
    */
   share(
     data: { path?: string; url?: string; sharing?: unknown },
-    opts?: { onBastyon?: boolean }
+    /** `appId` — чьей страницей поделиться, если пришёл только `path`. */
+    opts?: { onBastyon?: boolean; appId?: string }
   ): Promise<void>
   /** Открывает форму жалобы. */
   openComplain(data: unknown): Promise<void>
-  /** Возвращает pending actions пользователя (транзакции, ожидающие подтверждения). MVP: `[]`. */
-  getPendingActions(): unknown[]
+  /**
+   * Действия приложения у текущего аккаунта — транзакции, отправленные по его
+   * просьбе (`getactions` прежнего клиента), в форме `action.export()`.
+   */
+  getAppActions(appId: string): Promise<Record<string, unknown>[]>
+  /** Одно действие приложения по id; null — нет такого. */
+  getAppAction(appId: string, id: string): Promise<Record<string, unknown> | null>
+  /**
+   * Отправить транзакцию от имени пользователя по просьбе приложения и записать
+   * её как действие приложения. Возвращает объект действия с `transaction`.
+   */
+  sendAppTransaction(
+    appId: string,
+    appName: string,
+    obj: LegacyTxObject
+  ): Promise<Record<string, unknown>>
 
   // ─── media (5.8) ───────────────────────────────────────────────────────
   /**
@@ -236,13 +261,16 @@ export async function createDefaultHostContext(
   const { fetchPeertubeHostAllowlist } = await import('@/services/peertube/peertube-host')
   const { parsePeerTubeUrl } = await import('@/helpers/api/peertube-parser')
   const { confirmVideoRemoval } = await import('./host-context-methods/confirm-video-removal')
+  const { sendLegacyTx } = await import('../tx/send-legacy-tx')
+  const { usePendingTransactionsStore, isConfirmed } =
+    await import('@/stores/pending-transactions-store')
 
   const device: HostDevice = opts.device ?? detectDevice(isTauri(), isCapacitor())
 
   const auth = createAuthMethods({ useAuthStore, generateApiSignature, getWalletAddressesList })
   const rpc = createRpcMethods({ useAuthStore, getByPRC, rpcEndpoints, unwrapRpcResponse })
   const content = createContentMethods({ router: opts.router })
-  const payments = createPaymentMethods()
+  const payments = createPaymentMethods({ getUserAddress: () => useAuthStore().address ?? null })
   const media = createMediaMethods({ isCapacitor })
   const currency = createCurrencyMethods({
     fetchProxy: async (path) => {
@@ -259,6 +287,20 @@ export async function createDefaultHostContext(
     confirmRemoval: confirmVideoRemoval,
   })
   const chat = createChatMethods({ router: opts.router })
+  const appTx = createAppTxMethods({
+    getUserAddress: () => useAuthStore().address ?? null,
+    send: (obj, pending) => sendLegacyTx(obj, pending),
+    isStillPending: (txid) => usePendingTransactionsStore().items.some((i) => i.txid === txid),
+    isConfirmedOnNode: async (txid) => {
+      const raw = await getByPRC({
+        method: rpcEndpoints.getRawTransaction,
+        parameters: [txid, 1],
+        options: { auth: false },
+        cachehash: `${txid}-${Date.now()}`,
+      })
+      return isConfirmed(unwrapRpcResponse(raw), txid)
+    },
+  })
 
   return {
     appVersion: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev',
@@ -318,6 +360,7 @@ export async function createDefaultHostContext(
     ...currency,
     ...mediaUpload,
     ...chat,
+    ...appTx,
   }
 }
 

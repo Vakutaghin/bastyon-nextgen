@@ -25,6 +25,19 @@ describe('payment-modal-controller', () => {
     expect(result.rejected).toBe(true)
   })
 
+  it('запрос приложения отменён (приложение закрыли) — окно оплаты закрывается', async () => {
+    const ctrl = new AbortController()
+    const p = openPaymentModal(
+      { recievers: [{ address: 'PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM', amount: 0.5 }] },
+      'Barteron',
+      ctrl.signal
+    )
+    expect(isPaymentModalOpen.value).toBe(true)
+    ctrl.abort()
+    expect(await p).toEqual({ rejected: true, reason: 'aborted' })
+    expect(isPaymentModalOpen.value).toBe(false)
+  })
+
   it('opens modal for a valid payload and exposes payment', async () => {
     const p = openPaymentModal({
       recievers: [{ address: 'PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM', amount: 0.5 }],

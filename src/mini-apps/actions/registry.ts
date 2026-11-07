@@ -74,6 +74,12 @@ export class ActionRegistry {
     return name in this.deps.actions
   }
 
+  /** Тайм-аут действия, если у него свой; иначе undefined — общий тайм-аут моста. */
+  timeoutFor(name: string): number | undefined {
+    const def = this.deps.actions[name] as ActionDefinition | undefined
+    return def?.timeoutMs
+  }
+
   /**
    * Выполняет action. Возвращает `Payload` для отправки в iframe.
    * Все ошибки пробрасываются как есть — bridge преобразует их в RpcError.

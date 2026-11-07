@@ -17,7 +17,7 @@
 import { usePermissionsStore } from '../store/permissions-store'
 import { isKnownPermission, PERMISSIONS, type PermissionId } from '../types/permissions'
 import { ActionSchemas } from './_schema'
-import type { ActionDefinition, ActionMap } from './types'
+import { USER_WAIT_TIMEOUT_MS, type ActionDefinition, type ActionMap } from './types'
 
 const checkPermission: ActionDefinition<{ permission: string }, boolean> = {
   schema: ActionSchemas.checkPermission,
@@ -40,6 +40,8 @@ const checkPermission: ActionDefinition<{ permission: string }, boolean> = {
 const requestPermissions: ActionDefinition<{ permissions: string[] }, PermissionId[]> = {
   schema: ActionSchemas.requestPermissions,
   rateLimitClass: 'normal',
+  // Окна разрешений ждут человека, по одному на каждое.
+  timeoutMs: USER_WAIT_TIMEOUT_MS,
   handler: async ({ data, app, resolver }) => {
     if (!data.permissions.length) {
       throw new Error('permissions:empty')

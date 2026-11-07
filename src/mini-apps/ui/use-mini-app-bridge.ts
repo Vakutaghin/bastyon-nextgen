@@ -36,6 +36,9 @@ import { PERMISSIONS_API_ACTIONS } from '@/mini-apps/actions/permissions-api'
 import { BARTERON_ACTIONS } from '@/mini-apps/actions/barteron'
 import { createDefaultHostContext } from '@/mini-apps/actions/host-context'
 import { setupEventSources } from '@/mini-apps/events/sources'
+import { trackAppActions } from '@/mini-apps/tx/app-actions'
+import { useAuthStore } from '@/blockchain/store/auth-store'
+import type { HostContext } from '@/mini-apps/actions/host-context'
 import type { InstalledApp } from '@/mini-apps/types/app'
 import { logger } from '@/services/logger'
 import { t } from '@/i18n'
@@ -73,10 +76,28 @@ export async function bootMiniApps(router: Router): Promise<void> {
   if (started) return
   started = true
 
+  // До первого await: транзакция с прошлого запуска может подтвердиться, пока
+  // грузятся приложения, и приложение не узнало бы об этом.
+  let hostRef: HostContext | null = null
+  trackAppActions(
+    (appId, key, data) => {
+      miniAppsBridge.push(appId, key, data)
+      // Прежний клиент рассылал баланс при каждой смене действий: после
+      // транзакции он изменился. Право `account` у приложения есть — без него
+      // транзакцию оно не отправило бы.
+      void hostRef
+        ?.getUserBalance()
+        .then((balance) => miniAppsBridge.push(appId, 'balance', balance))
+        .catch(() => {})
+    },
+    () => useAuthStore().address
+  )
+
   const appsStore = useAppsStore()
   await appsStore.init()
 
   const host = await createDefaultHostContext({ router })
+  hostRef = host
 
   const resolver = new PermissionResolver({
     promptUser: ({ app, permission, extra, signal }) => {
@@ -138,6 +159,7 @@ export async function bootMiniApps(router: Router): Promise<void> {
     resolver: appsStore.originResolver,
     dispatchRpc: async ({ app, action, data, signal }) =>
       registry.execute(action, app, data, signal),
+    rpcTimeoutFor: (action) => registry.timeoutFor(action),
     onFetchRequest: (app, req) => fetchTunnel.handle(app, req),
     onIframeEvent: (app, event, data) => {
       for (const fn of onIframeLifecycleEvent) {

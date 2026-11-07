@@ -72,19 +72,25 @@ export interface RpcSuccess {
   data: Payload
 }
 
-/** Ошибочный ответ на RPC. */
+/** Тело ошибки RPC. */
+export interface RpcErrorBody {
+  message: string
+  name?: string
+  description?: string
+  stack?: string
+  /** Опциональный машинно-читаемый код (rate_limit_exceeded, permission_denied, ...). */
+  code?: string
+  /** Для rate-limit: через сколько мс пробовать снова. */
+  retryAfter?: number
+}
+
+/**
+ * Ошибочный ответ на RPC. Строка вместо объекта — ошибка в форме прежнего
+ * клиента, которую приложения сравнивают как есть (`error === 'cancel'`).
+ */
 export interface RpcError {
   response: string
-  error: {
-    message: string
-    name?: string
-    description?: string
-    stack?: string
-    /** Опциональный машинно-читаемый код (rate_limit_exceeded, permission_denied, ...). */
-    code?: string
-    /** Для rate-limit: через сколько мс пробовать снова. */
-    retryAfter?: number
-  }
+  error: RpcErrorBody | string
 }
 
 /** Push-событие хоста в конкретный listener. */

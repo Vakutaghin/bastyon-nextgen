@@ -13,16 +13,13 @@
  * - `!transaction` → `relay = true` (отправлен в мемпул)
  * - `transaction && !completed && !rejected` → `temp = true` (ждёт подтверждения)
  *
- * Мы возвращаем результат HostContext'а как есть — `actionHelper` живёт на стороне SDK
- * миниаппы, не нашей.
- *
- * MVP-замечание: `openPaymentDialog` сейчас возвращает `{rejected: true}` со
- * `reason: 'payment_ui_not_implemented'` — миниаппа корректно обработает это
- * как отказ от платежа, а не зависнет.
+ * Отправленный платёж приходит объектом действия (tx/app-actions), отказ и
+ * отмена — отказом промиса, как у прежнего клиента.
  */
 
 import { ActionSchemas } from './_schema'
-import type { ActionDefinition, ActionMap } from './types'
+import { LegacyRpcError } from '../core/bridge-helpers'
+import { USER_WAIT_TIMEOUT_MS, type ActionDefinition, type ActionMap } from './types'
 
 const payment: ActionDefinition<unknown, Record<string, unknown>> = {
   schema: ActionSchemas.payment,
@@ -31,7 +28,20 @@ const payment: ActionDefinition<unknown, Record<string, unknown>> = {
   rateLimitClass: 'expensive',
   // Имя приложения — в модал: без него строка «Запросило: …» никогда не
   // показывалась, и пользователь не видел, кто инициировал платёж (N22).
-  handler: async ({ data, app, host }) => host.openPaymentDialog(data, app.manifest.name),
+  // Человек читает окно оплаты и решает: общих 30 секунд моста мало — по
+  // истечении приложение получало тайм-аут, а окно оставалось и платило.
+  timeoutMs: USER_WAIT_TIMEOUT_MS,
+  handler: async ({ data, app, host, signal }) => {
+    const result = await host.openPaymentDialog(data, app.manifest.name, app.manifest.id, signal)
+    // Как у прежнего клиента (rejectIfError): отказ — отказом промиса, отмена —
+    // строкой 'cancel'. Раньше отказ приходил успешным ответом без transaction,
+    // и Barteron в безопасной сделке говорил «перевод выполнен».
+    if (result.rejected) {
+      const reason = typeof result.reason === 'string' ? result.reason : ''
+      throw new LegacyRpcError(reason === 'user_cancelled' ? 'cancel' : reason || 'rejected')
+    }
+    return result
+  },
 }
 
 const ext: ActionDefinition<{ ext: string }, string> = {

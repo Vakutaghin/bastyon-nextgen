@@ -17,7 +17,7 @@
 
 import type { z } from 'zod'
 import { ActionSchemas } from './_schema'
-import type { ActionDefinition, ActionMap } from './types'
+import { USER_WAIT_TIMEOUT_MS, type ActionDefinition, type ActionMap } from './types'
 import type { ApiSignature } from '@/blockchain/types/signatures'
 import { appFetch } from '@/helpers/api/fetch-strategies'
 import { isSafeExternalUrl } from '@/helpers/common/safe-external-url'
@@ -52,6 +52,8 @@ const sign: ActionDefinition<{ string?: string }, ApiSignature> = {
   permissions: ['sign'], // uniq=true — prompt каждый раз
   authorization: true,
   rateLimitClass: 'expensive',
+  // Окно подписи ждёт человека каждый раз.
+  timeoutMs: USER_WAIT_TIMEOUT_MS,
   handler: async ({ data, app, host }) => {
     // Legacy: `(data.string ? data.string + '/' : '') + manifest.id`.
     // Здесь точно так же — иначе backend'ы миниапп не валидируют подпись.

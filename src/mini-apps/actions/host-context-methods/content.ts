@@ -1,10 +1,14 @@
 /**
- * HostContext methods: открытие постов/профилей/доната, шаринг, complain,
- * pending actions.
+ * HostContext methods: открытие постов/профилей/доната, шаринг, complain.
  */
 
 import type { Router } from 'vue-router'
 import { openExternal } from '@/helpers/common/open-external'
+import {
+  publicFromAppLink,
+  publicMiniAppUrl,
+  publicShareOrigin,
+} from '@/helpers/common/share-origin'
 import type { HostContext } from '../host-context'
 
 export interface ContentDeps {
@@ -13,7 +17,7 @@ export interface ContentDeps {
 
 export type ContentMethods = Pick<
   HostContext,
-  'openPost' | 'openDonation' | 'openExternalLink' | 'share' | 'openComplain' | 'getPendingActions'
+  'openPost' | 'openDonation' | 'openExternalLink' | 'share' | 'openComplain'
 >
 
 export function createContentMethods(deps: ContentDeps): ContentMethods {
@@ -37,13 +41,14 @@ export function createContentMethods(deps: ContentDeps): ContentMethods {
     },
 
     share: async (data, sharePref = {}) => {
-      const url =
-        data.url ??
-        (data.path
-          ? `${typeof window !== 'undefined' ? window.location.origin : ''}/${data.path.replace(/^\/+/, '')}`
-          : typeof window !== 'undefined'
-            ? window.location.href
-            : '')
+      // Ссылка уходит другому человеку — только публичный адрес. Раньше путь
+      // приклеивался к своему origin, и из приложения уходило
+      // http://tauri.localhost/… или https://localhost/…
+      const url = data.url
+        ? publicFromAppLink(data.url)
+        : sharePref.appId
+          ? publicMiniAppUrl(sharePref.appId, data.path)
+          : publicShareOrigin()
 
       if (sharePref.onBastyon) {
         // Внутренний шаринг: открываем форму создания поста с pre-fill.
@@ -72,12 +77,6 @@ export function createContentMethods(deps: ContentDeps): ContentMethods {
       // здесь нет намеренно, поэтому честно отвечаем «не поддерживается»:
       // раньше мини-аппа получала успех и говорила человеку «жалоба отправлена».
       throw new Error('complain:notsupported')
-    },
-
-    getPendingActions: () => {
-      // Legacy: pending actions = транзакции в mempool. Pending tx store
-      // ещё не подключён к миниаппам в nextgen.
-      return []
     },
   }
 }

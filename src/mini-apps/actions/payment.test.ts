@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ActionRegistry } from './registry'
 import { PAYMENT_ACTIONS } from './payment'
 import { TEST_APP, makeMockHost, setupTestPinia, makeResolver } from './__test-helpers'
+import { LegacyRpcError, normalizeError } from '../core/bridge-helpers'
 
 function setup(hostOverrides = {}, resolverOpts = {}) {
   const host = makeMockHost(hostOverrides)
@@ -15,18 +16,40 @@ describe('payment action', () => {
     setupTestPinia()
   })
 
-  it('delegates to host.openPaymentDialog and returns its result', async () => {
-    const openPaymentDialog = vi.fn(async () => ({ rejected: true, reason: 'user' }))
-    const { reg } = setup({ openPaymentDialog })
-    const r = await reg.execute(
-      'payment',
-      TEST_APP,
-      { recievers: [{ address: 'addr', amount: 1 }], feemode: 'fast' },
-      new AbortController().signal
-    )
+  const PAYMENT = { recievers: [{ address: 'addr', amount: 1 }], feemode: 'fast' }
 
-    expect(r).toEqual({ rejected: true, reason: 'user' })
-    expect(openPaymentDialog).toHaveBeenCalledOnce()
+  it('отправленный платёж — объект действия от хоста; хост знает приложение', async () => {
+    const action = { id: 'act', transaction: 'f'.repeat(64), completed: false }
+    const openPaymentDialog = vi.fn(async () => action)
+    const { reg } = setup({ openPaymentDialog })
+    const r = await reg.execute('payment', TEST_APP, PAYMENT, new AbortController().signal)
+    expect(r).toEqual(action)
+    expect(openPaymentDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ feemode: 'fast' }),
+      TEST_APP.manifest.name,
+      TEST_APP.manifest.id,
+      expect.any(AbortSignal)
+    )
+  })
+
+  it('отмена — отказ строкой "cancel", как у прежнего клиента (Barteron ждёт error === "cancel")', async () => {
+    const { reg } = setup({
+      openPaymentDialog: vi.fn(async () => ({ rejected: true, reason: 'user_cancelled' })),
+    })
+    const err = await reg
+      .execute('payment', TEST_APP, PAYMENT, new AbortController().signal)
+      .catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(LegacyRpcError)
+    expect(normalizeError(err, new AbortController().signal)).toBe('cancel')
+  })
+
+  it('другой отказ — его причина строкой, не успешный ответ', async () => {
+    const { reg } = setup({
+      openPaymentDialog: vi.fn(async () => ({ rejected: true, reason: 'payment_modal_busy' })),
+    })
+    await expect(
+      reg.execute('payment', TEST_APP, PAYMENT, new AbortController().signal)
+    ).rejects.toThrow('payment_modal_busy')
   })
 
   it('requires authorization', async () => {

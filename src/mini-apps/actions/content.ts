@@ -92,15 +92,21 @@ type ShareInput = z.infer<typeof ActionSchemas.share>
 const share: ActionDefinition<ShareInput, void> = {
   schema: ActionSchemas.share,
   rateLimitClass: 'normal',
-  handler: async ({ data, host }) =>
-    host.share({ path: data.path, url: data.url, sharing: data.sharing }, { onBastyon: false }),
+  handler: async ({ data, app, host }) =>
+    host.share(
+      { path: data.path, url: data.url, sharing: data.sharing },
+      { onBastyon: false, appId: app.manifest.id }
+    ),
 }
 
 const shareOnBastyon: ActionDefinition<ShareInput, void> = {
   schema: ActionSchemas.shareOnBastyon,
   rateLimitClass: 'normal',
-  handler: async ({ data, host }) =>
-    host.share({ path: data.path, url: data.url, sharing: data.sharing }, { onBastyon: true }),
+  handler: async ({ data, app, host }) =>
+    host.share(
+      { path: data.path, url: data.url, sharing: data.sharing },
+      { onBastyon: true, appId: app.manifest.id }
+    ),
 }
 
 // ─── complaints ──────────────────────────────────────────────────────────────
@@ -113,23 +119,24 @@ const complain: ActionDefinition<unknown, void> = {
 
 // ─── pending actions ─────────────────────────────────────────────────────────
 
-const getaction: ActionDefinition<unknown, unknown> = {
+// Действия — транзакции, отправленные по просьбе этого приложения
+// (tx/app-actions.ts). Без права `account`, как у прежнего клиента: приложение
+// видит только свои действия.
+
+const getaction: ActionDefinition<{ id?: string } | undefined, unknown> = {
   schema: ActionSchemas.getaction,
+  authorization: true,
   rateLimitClass: 'cheap',
-  handler: async ({ host }) => {
-    const list = host.getPendingActions()
-    // Legacy возвращает первый (текущий) action или null
-    return Array.isArray(list) && list.length > 0 ? list[0] : null
-  },
+  // SDK шлёт `getaction` без id — тогда, как и прежний клиент, null.
+  handler: async ({ data, app, host }) =>
+    data?.id ? host.getAppAction(app.manifest.id, data.id) : null,
 }
 
 const getactions: ActionDefinition<unknown, unknown[]> = {
   schema: ActionSchemas.getactions,
+  authorization: true,
   rateLimitClass: 'cheap',
-  handler: async ({ host }) => {
-    const list = host.getPendingActions()
-    return Array.isArray(list) ? list : []
-  },
+  handler: async ({ app, host }) => host.getAppActions(app.manifest.id),
 }
 
 export const CONTENT_ACTIONS = {

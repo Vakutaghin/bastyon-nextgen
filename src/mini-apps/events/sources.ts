@@ -54,17 +54,23 @@ export function setupEventSources(opts: SetupEventSourcesOptions): Unsubscribe {
   // `theme` никто не менял, и событие не приходило никогда (V42).
   const uiStore = useUIStore()
   const { isDark } = useTheme()
+  // Прежний клиент слал событие `theme` (SDK приложений слушает `on('theme')`),
+  // `theme.changed` — имя этого клиента; шлём оба.
   cleanups.push(
     watch(isDark, (dark) => {
-      miniAppsBridge.pushAll('theme.changed', { rootid: dark ? 'dark' : 'light' })
+      const theme = { rootid: dark ? 'dark' : 'light' }
+      miniAppsBridge.pushAll('theme', theme)
+      miniAppsBridge.pushAll('theme.changed', theme)
     })
   )
 
   // ─── locale.changed ───────────────────────────────────────────────────────
+  // У прежнего клиента событие `locale` было объявлено, но не слалось; шлём и его.
   cleanups.push(
     watch(
       () => uiStore.language,
       (locale) => {
+        miniAppsBridge.pushAll('locale', { locale })
         miniAppsBridge.pushAll('locale.changed', { locale })
       }
     )

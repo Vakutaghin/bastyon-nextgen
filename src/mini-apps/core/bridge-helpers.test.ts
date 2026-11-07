@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { normalizeError } from './bridge-helpers'
+import { LegacyRpcError, normalizeError } from './bridge-helpers'
+import type { RpcErrorBody } from '../types/messages'
 
 const liveSignal = () => new AbortController().signal
 
@@ -20,12 +21,18 @@ describe('normalizeError', () => {
   // N23: стек — внутренности хоста (пути к модулям), в iframe ему не место.
   it('не отдаёт stack в прод-сборке', () => {
     vi.stubEnv('DEV', false)
-    expect(normalizeError(new Error('boom'), liveSignal()).stack).toBeUndefined()
+    expect((normalizeError(new Error('boom'), liveSignal()) as RpcErrorBody).stack).toBeUndefined()
   })
 
   it('оставляет stack в dev — там он нужен для отладки', () => {
     vi.stubEnv('DEV', true)
-    expect(normalizeError(new Error('boom'), liveSignal()).stack).toBeTypeOf('string')
+    expect((normalizeError(new Error('boom'), liveSignal()) as RpcErrorBody).stack).toBeTypeOf(
+      'string'
+    )
+  })
+
+  it('ошибка в форме прежнего клиента уходит строкой как есть', () => {
+    expect(normalizeError(new LegacyRpcError('cancel'), liveSignal())).toBe('cancel')
   })
 
   it('аборт превращается в timeout независимо от ошибки', () => {

@@ -2460,6 +2460,9 @@ export default {
     feemodeReceiverPays: 'Empfänger zahlt',
     errorAuthRequired: 'Anmeldung erforderlich',
     errorInsufficientFunds: 'Nicht genug Guthaben für die Zahlung inklusive Gebühr',
+    txNotSignedIn: 'Melde dich an, damit die App dies in deinem Namen veröffentlichen kann.',
+    txNoCoins:
+      'Es sind keine Coins für die Netzwerkgebühr da. Lade das Wallet auf oder warte, bis die vorherige Transaktion bestätigt ist.',
     errorPaymentFailed: 'Die Zahlung konnte nicht gesendet werden',
   },
   comments: {

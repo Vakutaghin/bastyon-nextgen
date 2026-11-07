@@ -62,6 +62,8 @@ describe('mini-apps event sources', () => {
     await Promise.resolve()
 
     expect(mockedPushAll).toHaveBeenCalledWith('theme.changed', { rootid: 'dark' })
+    // Имя прежнего клиента — его слушает SDK приложений.
+    expect(mockedPushAll).toHaveBeenCalledWith('theme', { rootid: 'dark' })
     cleanup()
     setThemeMode('auto')
   })
@@ -76,6 +78,7 @@ describe('mini-apps event sources', () => {
     await Promise.resolve()
 
     expect(mockedPushAll).toHaveBeenCalledWith('locale.changed', { locale: 'ru' })
+    expect(mockedPushAll).toHaveBeenCalledWith('locale', { locale: 'ru' })
     cleanup()
   })
 

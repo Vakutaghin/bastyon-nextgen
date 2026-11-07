@@ -104,7 +104,7 @@ describe('createRpcMethods.getUserBalance', () => {
     expect(ctx.getByPRC).not.toHaveBeenCalled()
   })
 
-  it('запрашивает getAddressInfo по адресу и возвращает распакованные данные', async () => {
+  it('запрашивает getAddressInfo и добавляет поля прежнего клиента (actual, total, tempbalance)', async () => {
     const ctx = makeDeps()
     ctx.getByPRC.mockResolvedValueOnce({})
     ctx.unwrapRpcResponse.mockReturnValueOnce({ balance: 100 })
@@ -116,7 +116,8 @@ describe('createRpcMethods.getUserBalance', () => {
       parameters: ['PXYZ'],
       options: { auth: false },
     })
-    expect(res).toEqual({ balance: 100 })
+    // Кошелёк Barteron показывает balance.actual.
+    expect(res).toEqual({ balance: 100, total: 100, actual: 100, tempbalance: 0 })
   })
 
   it('возвращает {}, если unwrapRpcResponse дал null', async () => {
@@ -149,7 +150,7 @@ describe('createRpcMethods.getCurrentBlockHeight', () => {
     ctx.unwrapRpcResponse.mockReturnValueOnce({ lastblock: {} })
     const methods = createRpcMethods(ctx.deps)
     await expect(methods.getCurrentBlockHeight()).rejects.toThrow(
-      'actions_currentBlock_not_defined',
+      'actions_currentBlock_not_defined'
     )
   })
 
@@ -159,7 +160,7 @@ describe('createRpcMethods.getCurrentBlockHeight', () => {
     ctx.unwrapRpcResponse.mockReturnValueOnce(null)
     const methods = createRpcMethods(ctx.deps)
     await expect(methods.getCurrentBlockHeight()).rejects.toThrow(
-      'actions_currentBlock_not_defined',
+      'actions_currentBlock_not_defined'
     )
   })
 })

@@ -2402,6 +2402,9 @@ export default {
     feemodeReceiverPays: '받는 사람 부담',
     errorAuthRequired: '로그인이 필요합니다',
     errorInsufficientFunds: '수수료를 포함한 결제 금액에 비해 잔액이 부족합니다',
+    txNotSignedIn: '앱이 회원님 이름으로 게시할 수 있도록 로그인하세요.',
+    txNoCoins:
+      '네트워크 수수료로 쓸 코인이 없습니다. 지갑을 충전하거나 이전 거래가 확인될 때까지 기다리세요.',
     errorPaymentFailed: '결제를 보내지 못했습니다',
   },
   comments: {

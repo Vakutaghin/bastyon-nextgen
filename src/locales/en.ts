@@ -2428,6 +2428,9 @@ export default {
     feemodeReceiverPays: 'receiver pays',
     errorAuthRequired: 'Authorization required',
     errorInsufficientFunds: 'Insufficient funds for the payment including the fee',
+    txNotSignedIn: 'Sign in so the app can publish this on your behalf.',
+    txNoCoins:
+      'There are no coins for the network fee. Top up the wallet or wait for the previous transaction to confirm.',
     errorPaymentFailed: 'Failed to send payment',
   },
   comments: {

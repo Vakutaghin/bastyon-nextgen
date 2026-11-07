@@ -2330,6 +2330,8 @@ export default {
     feemodeReceiverPays: '收款人支付',
     errorAuthRequired: '需要登录',
     errorInsufficientFunds: '余额不足以支付款项及手续费',
+    txNotSignedIn: '请登录，应用才能以你的名义发布。',
+    txNoCoins: '没有可用于网络手续费的币。请为钱包充值，或等待上一笔交易确认。',
     errorPaymentFailed: '付款发送失败',
   },
   comments: {

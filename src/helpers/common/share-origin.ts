@@ -126,6 +126,28 @@ function legacyHexEncode(text: string): string {
 }
 
 /**
+ * Ссылка на страницу мини-приложения для другого человека — формат прежнего
+ * клиента `application?id=<appId>&p=<hex-путь>` на публичном адресе (его же
+ * понимает и этот клиент, см. deep-link.ts).
+ */
+export function publicMiniAppUrl(appId: string, path?: string): string {
+  const params = new URLSearchParams({ id: appId })
+  const inner = (path ?? '').replace(/^\/+/, '')
+  if (inner) params.set('p', legacyHexEncode(inner))
+  return `${publicShareOrigin()}/application?${params.toString()}`
+}
+
+/**
+ * `bastyon://…` (так ссылки на мини-приложения строит SDK прежнего клиента,
+ * `get.applink`) — тот же адрес на публичном origin: схему bastyon:// у
+ * получателя без приложения ничто не откроет.
+ */
+export function publicFromAppLink(url: string): string {
+  const match = /^(?:bastyon|pocketnet):\/\/(.*)$/i.exec(url)
+  return match ? `${publicShareOrigin()}/${match[1]}` : url
+}
+
+/**
  * Код для вставки поста на свой сайт. На bastyon.com своей страницы вставки
  * нет, зато есть виджет прежнего клиента `js/widgets.js` — код тот же, что
  * даёт его меню «Поделиться» (socialshare2 embeddingcode). Веб-сборка этого

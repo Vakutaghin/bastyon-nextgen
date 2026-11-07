@@ -13,6 +13,20 @@ import type { HostContext } from './host-context'
 
 export type RateLimitClass = 'cheap' | 'normal' | 'expensive'
 
+/**
+ * Сколько ждать действие, которое ждёт человека (окно оплаты, выбор фото,
+ * запрос разрешений). Общий тайм-аут моста — 30 с: по его истечении
+ * приложение получало ошибку, а окно оставалось открытым и делало своё дело.
+ */
+export const USER_WAIT_TIMEOUT_MS = 10 * 60_000
+
+/**
+ * Транзакция по просьбе приложения: монеты, подпись, отправка — на медленной
+ * сети или под Tor дольше 30 с. Тайм-аут при ушедшей транзакции приложение
+ * приняло бы за неудачу, и повтор дал бы дубль.
+ */
+export const APP_TX_TIMEOUT_MS = 2 * 60_000
+
 export interface ActionHandlerContext<TIn = unknown> {
   readonly data: TIn
   readonly app: InstalledApp
@@ -31,6 +45,8 @@ export interface ActionDefinition<TIn = unknown, TOut = unknown> {
   readonly authorization?: boolean
   /** Класс для rate limiter (этап 8). */
   readonly rateLimitClass?: RateLimitClass
+  /** Свой тайм-аут RPC вместо общего (мс): для действий, которые ждут человека или сеть. */
+  readonly timeoutMs?: number
   /** Сам handler. Может бросать — registry перехватит и преобразует в RpcError. */
   readonly handler: (ctx: ActionHandlerContext<TIn>) => Promise<TOut>
 }

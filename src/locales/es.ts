@@ -2447,6 +2447,9 @@ export default {
     feemodeReceiverPays: 'paga el destinatario',
     errorAuthRequired: 'Se requiere iniciar sesión',
     errorInsufficientFunds: 'Fondos insuficientes para el pago con la comisión incluida',
+    txNotSignedIn: 'Inicia sesión para que la aplicación pueda publicarlo en tu nombre.',
+    txNoCoins:
+      'No hay monedas para la comisión de la red. Recarga el monedero o espera a que se confirme la transacción anterior.',
     errorPaymentFailed: 'No se pudo enviar el pago',
   },
   comments: {

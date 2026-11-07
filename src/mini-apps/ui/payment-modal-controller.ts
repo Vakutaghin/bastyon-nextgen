@@ -65,8 +65,16 @@ export const currentPaymentPayload = computed(() => currentPaymentRef.value)
 /** Имя приложения, запросившего платёж — для строки «Запросило: …» (N22). */
 export const currentPaymentAppName = computed(() => currentAppNameRef.value)
 
-/** Открывает модал и возвращает Promise с результатом подтверждения / отказа. */
-export function openPaymentModal(raw: unknown, appName = ''): Promise<PaymentResult> {
+/**
+ * Открывает модал и возвращает Promise с результатом подтверждения / отказа.
+ * `signal` — запрос приложения отменён (приложение закрыли): окно закрывается,
+ * иначе человек мог бы заплатить тому, кто ответа уже не ждёт.
+ */
+export function openPaymentModal(
+  raw: unknown,
+  appName = '',
+  signal?: AbortSignal
+): Promise<PaymentResult> {
   const parsed = PaymentPayloadSchema.safeParse(raw)
   if (!parsed.success) {
     return Promise.resolve({
@@ -83,6 +91,13 @@ export function openPaymentModal(raw: unknown, appName = ''): Promise<PaymentRes
   isOpenRef.value = true
   return new Promise<PaymentResult>((resolve) => {
     currentResolve = resolve
+    signal?.addEventListener(
+      'abort',
+      () => {
+        if (currentResolve === resolve) resolvePaymentModal({ rejected: true, reason: 'aborted' })
+      },
+      { once: true }
+    )
   })
 }
 

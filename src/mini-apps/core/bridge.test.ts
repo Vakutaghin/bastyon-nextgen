@@ -248,6 +248,27 @@ describe('MiniAppsBridge', () => {
     expect(msg.error.code).toBe('timeout')
   })
 
+  it('действие со своим тайм-аутом (окно оплаты) не обрывается общим', async () => {
+    const abortSignals: AbortSignal[] = []
+    bridge.start({
+      resolver: createInMemoryResolver([APP]),
+      rpcTimeoutMs: 10,
+      rpcTimeoutFor: (action) => (action === 'payment' ? 60_000 : undefined),
+      dispatchRpc: ({ signal }) => {
+        abortSignals.push(signal)
+        return new Promise((resolve) => setTimeout(() => resolve({ ok: true }), 40))
+      },
+    })
+
+    const { win, sent } = makeFakeWindow()
+    bridge.attachFrame(APP.manifest.id, win as MessageEventSource)
+    dispatchFromIframe({ source: win, origin: APP_ORIGIN, data: { id: 'p1', action: 'payment' } })
+
+    await new Promise((r) => setTimeout(r, 60))
+    expect(abortSignals[0]?.aborted).toBe(false)
+    expect(sent[0]?.message).toEqual({ response: 'p1', data: { ok: true } })
+  })
+
   // ─── FETCH tunnel ─────────────────────────────────────────────────────────
 
   it('rejects FETCH_REQUEST when handler not configured', async () => {
