@@ -164,8 +164,10 @@ export function useChatCrypto(ctx: ChatContext) {
             typeof ev.getStateKey === 'function'
               ? ev.getStateKey()
               : ev.state_key || ev?.event?.state_key
-          const sender = getEventSender(ev)
-          const id = membership === 'invite' ? stateKey : sender
+          // Чьё членство — в state_key, как у прежнего клиента (`state_key ||
+          // sender`). Отправитель у выгона — админ: по нему выгнанный оставался
+          // в участниках, а сам админ считался вышедшим и не мог писать в группу.
+          const id = stateKey || getEventSender(ev)
           if (!id) return null
           return { time: getEventTs(ev) || 1, membership, id }
         })

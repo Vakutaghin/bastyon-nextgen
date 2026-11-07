@@ -4310,6 +4310,8 @@ export default {
     messenger: {
       recipientNoKeys:
         'Este usuario aún no ha publicado claves de cifrado, así que no se puede cifrar el mensaje para él. Pídele que abra la aplicación y vuelve a intentarlo.',
+      recipientKeysUnavailable:
+        'No se pudieron obtener las claves de cifrado de este usuario: el nodo no respondió. Comprueba la conexión y vuelve a intentarlo.',
       loginFailed:
         'No se pudo iniciar sesión en la mensajería. Revisa la conexión y vuelve a abrirla.',
       me: 'Yo',

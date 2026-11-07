@@ -4248,6 +4248,8 @@ export default {
     messenger: {
       recipientNoKeys:
         'This user has not published encryption keys yet, so the message cannot be encrypted for them. Ask them to open the app and try again.',
+      recipientKeysUnavailable:
+        'Could not get this user’s encryption keys: the node did not respond. Check the connection and try again.',
       loginFailed: 'Could not sign in to the messenger. Check the connection and open it again.',
       me: 'Me',
       you: 'You',

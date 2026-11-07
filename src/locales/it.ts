@@ -4294,6 +4294,8 @@ export default {
     messenger: {
       recipientNoKeys:
         'Questo utente non ha ancora pubblicato le chiavi di cifratura, quindi non è possibile cifrare il messaggio per lui. Chiedigli di aprire l’app e riprova.',
+      recipientKeysUnavailable:
+        'Impossibile ottenere le chiavi di cifratura di questo utente: il nodo non ha risposto. Controlla la connessione e riprova.',
       loginFailed: 'Impossibile accedere alla messaggistica. Controlla la connessione e riaprila.',
       me: 'Io',
       you: 'Tu',

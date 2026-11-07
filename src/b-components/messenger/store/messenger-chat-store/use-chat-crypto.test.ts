@@ -117,6 +117,15 @@ describe('useChatCrypto', () => {
       expect(ids).not.toContain('@inviter:srv')
     })
 
+    it('выгнанный выходит из участников, а выгнавший админ остаётся', () => {
+      // У выгона отправитель — админ, а чьё членство — в state_key.
+      const kick = { ...member('@carol:srv', 'leave', 300), sender: '@admin:srv' }
+      const events = [member('@admin:srv', 'join', 50), ...history.slice(0, 3), kick]
+      const ids = setup().getOrderedMemberIds(room(events), 350)
+      expect(ids).toContain('@admin:srv')
+      expect(ids).not.toContain('@carol:srv')
+    })
+
     it('до первого вступления — все известные участники (иначе сообщение не расшифровать)', () => {
       const ids = setup().getOrderedMemberIds(room(history), 50)
       expect(ids.sort()).toEqual(['@alice:srv', '@bob:srv', '@carol:srv'].sort())

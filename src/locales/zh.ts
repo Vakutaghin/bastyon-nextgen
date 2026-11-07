@@ -4062,6 +4062,7 @@ export default {
     },
     messenger: {
       recipientNoKeys: '该用户尚未发布加密密钥，因此无法为其加密消息。请让对方打开应用后重试。',
+      recipientKeysUnavailable: '无法获取该用户的加密密钥：节点没有响应。请检查网络连接后重试。',
       loginFailed: '无法登录聊天。请检查网络连接后重新打开。',
       me: '我',
       you: '你',

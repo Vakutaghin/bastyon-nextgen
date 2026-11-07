@@ -75,6 +75,8 @@ export interface MxRoom {
   getLiveTimeline?: () => MxTimeline
   loadMembersIfNeeded?: () => Promise<unknown>
   getMyMembership?: () => string
+  /** `m.room.join_rules`: 'public' — публичная группа; без события SDK отдаёт 'invite'. */
+  getJoinRule?: () => string
 }
 
 /**

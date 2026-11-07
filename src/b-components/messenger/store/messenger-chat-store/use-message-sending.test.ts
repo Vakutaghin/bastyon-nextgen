@@ -3,9 +3,10 @@
 // текст сразу лежит в кэше расшифровок — ни копия, ни история не показывают
 // «*** Encrypted Message ***», даже пока ключа группы ещё нет.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { matrix, encryptKey, isTetatetchat } = vi.hoisted(() => ({
+const { matrix, encryptKey, isTetatetchat, toastError } = vi.hoisted(() => ({
+  toastError: vi.fn(),
   matrix: {
     getRoom: vi.fn(() => ({ roomId: '!dm:host', loadMembersIfNeeded: async () => {} })),
     joinIfInvited: vi.fn(async () => {}),
@@ -13,6 +14,7 @@ const { matrix, encryptKey, isTetatetchat } = vi.hoisted(() => ({
     getClient: () => ({ getUserId: () => '@me:host' }),
     sendEncryptedDirectMessage: vi.fn(async () => ({ event_id: '$real' })),
     sendEncryptedTextMessage: vi.fn(async () => ({ event_id: '$group' })),
+    sendMessage: vi.fn(async () => ({ event_id: '$plain' })),
     sendStateEvent: vi.fn(async () => ({})),
     redactEvent: vi.fn(async () => ({})),
     sendArchiveRedact: vi.fn(async () => ({})),
@@ -22,7 +24,7 @@ const { matrix, encryptKey, isTetatetchat } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
-vi.mock('@/b-components/app-toast', () => ({ appToast: { error: vi.fn() } }))
+vi.mock('@/b-components/app-toast', () => ({ appToast: { error: toastError } }))
 vi.mock('../../services/matrix-service', () => ({ matrixService: matrix }))
 vi.mock('../../services/encryption-service', () => ({
   encryptTextWithSecret: vi.fn(async () => 'HEX'),
@@ -59,7 +61,7 @@ function setup() {
     currentUser: { value: { id: '@me:host', name: 'me' } },
     authStore: { isUserAuthenticated: true },
     uiStore: { isInitInProgress: false },
-    profileCache: { userProfiles: {} },
+    profileCache: { userProfiles: {}, isUnresolved: vi.fn(() => false) },
     archive: { remove: vi.fn(async () => {}) },
   }
   const crypto = {
@@ -77,6 +79,8 @@ function setup() {
     cache,
     decryptionCache,
     archive: ctx.archive,
+    crypto,
+    profileCache: ctx.profileCache,
   }
 }
 
@@ -171,6 +175,122 @@ describe('sendMessage — эхо и копия события SDK', () => {
     // Заново не шифровали и новой транзакции не открывали.
     expect(matrix.sendEncryptedDirectMessage).toHaveBeenCalledTimes(1)
     expect(matrix.makeTxnId).toHaveBeenCalledTimes(1)
+    expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$real', 'sent']])
+  })
+})
+
+describe('шифровать ли — правила прежнего клиента (canBeEncrypt)', () => {
+  const members = (n: number) => [
+    '@me:host',
+    ...Array.from({ length: n - 1 }, (_, i) => `@u${i}:host`),
+  ]
+  const groupRoom = (joinRule?: string) => ({
+    roomId: ROOM,
+    loadMembersIfNeeded: async () => {},
+    ...(joinRule ? { getJoinRule: () => joinRule } : {}),
+  })
+
+  beforeEach(() => isTetatetchat.mockReturnValue(false))
+  // clearAllMocks подменённую комнату не сбрасывает — возвращаем личную.
+  afterEach(() =>
+    matrix.getRoom.mockImplementation(() => ({ roomId: ROOM, loadMembersIfNeeded: async () => {} }))
+  )
+
+  it('публичная группа — обычный m.text с txnId эхо, ключи участников не нужны', async () => {
+    matrix.getRoom.mockReturnValue(groupRoom('public') as never)
+    const { api, messages, crypto } = setup()
+    await api.sendMessage(ROOM, 'Всем привет')
+    expect(matrix.sendMessage).toHaveBeenCalledWith(ROOM, 'Всем привет', undefined, 'm1.1')
+    expect(matrix.sendEncryptedTextMessage).not.toHaveBeenCalled()
+    expect(crypto.collectPcryptoUsers).not.toHaveBeenCalled()
+    expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$plain', 'sent']])
+  })
+
+  it('закрытая группа от 50 участников — тоже открытым текстом', async () => {
+    matrix.getRoom.mockReturnValue(groupRoom('invite') as never)
+    const { api, crypto } = setup()
+    crypto.getOrderedMemberIds.mockReturnValue(members(50))
+    await api.sendMessage(ROOM, 'Привет')
+    expect(matrix.sendMessage).toHaveBeenCalledTimes(1)
+    expect(matrix.sendEncryptedTextMessage).not.toHaveBeenCalled()
+  })
+
+  it('в комнате пока одна я (личный чат до прихода собеседника) — не открытым текстом', async () => {
+    matrix.getRoom.mockReturnValue(groupRoom() as never)
+    const { api, crypto } = setup()
+    crypto.getOrderedMemberIds.mockReturnValue(['@me:host'])
+    crypto.collectPcryptoUsers.mockResolvedValue([{ id: '@me:host' }])
+    await api.sendMessage(ROOM, 'Привет')
+    expect(matrix.sendMessage).not.toHaveBeenCalled()
+    expect(matrix.sendEncryptedTextMessage).toHaveBeenCalledTimes(1)
+  })
+
+  it('закрытая группа из 49 — шифруется; участник без ключей отправку не останавливает', async () => {
+    matrix.getRoom.mockReturnValue(groupRoom('invite') as never)
+    const { api, messages, crypto } = setup()
+    const ids = members(49)
+    crypto.getOrderedMemberIds.mockReturnValue(ids)
+    const withKeys = ids.slice(0, 48).map((id) => ({ id }))
+    crypto.collectPcryptoUsers.mockResolvedValue(withKeys)
+    await api.sendMessage(ROOM, 'Привет')
+    expect(matrix.sendMessage).not.toHaveBeenCalled()
+    expect(encryptKey).toHaveBeenCalledWith(expect.any(String), withKeys, 10, 2)
+    expect(matrix.sendEncryptedTextMessage).toHaveBeenCalledTimes(1)
+    expect(toastError).not.toHaveBeenCalled()
+    expect(messages[ROOM]!.map((m) => m.status)).toEqual(['sent'])
+  })
+
+  it('профиль участника группы не загрузился — запрашиваем ещё раз и шифруем и для него', async () => {
+    matrix.getRoom.mockReturnValue(groupRoom() as never)
+    const { api, crypto, profileCache } = setup()
+    const ids = members(3)
+    crypto.getOrderedMemberIds.mockReturnValue(ids)
+    crypto.collectPcryptoUsers
+      .mockResolvedValueOnce(ids.slice(0, 2).map((id) => ({ id })))
+      .mockResolvedValueOnce(ids.map((id) => ({ id })))
+    profileCache.isUnresolved.mockReturnValue(true)
+    await api.sendMessage(ROOM, 'Привет')
+    expect(crypto.collectPcryptoUsers).toHaveBeenCalledTimes(2)
+    expect(encryptKey).toHaveBeenCalledWith(
+      expect.any(String),
+      ids.map((id) => ({ id })),
+      10,
+      2
+    )
+  })
+})
+
+describe('личный чат без ключей собеседника', () => {
+  it('ключей нет — «не опубликовал ключи», без второго запроса профиля', async () => {
+    const { api, messages, crypto } = setup()
+    crypto.collectPcryptoUsers.mockResolvedValue([{ id: '@me:host' }])
+    await api.sendMessage(ROOM, 'Привет')
+    expect(crypto.collectPcryptoUsers).toHaveBeenCalledTimes(1)
+    expect(toastError).toHaveBeenCalledWith({ message: 'appMsg.messenger.recipientNoKeys' })
+    expect(matrix.sendEncryptedDirectMessage).not.toHaveBeenCalled()
+    expect(messages[ROOM]!.map((m) => m.status)).toEqual(['failed'])
+  })
+
+  it('профиль не загрузился и со второго раза — «нода не ответила», а не «нет ключей»', async () => {
+    const { api, messages, crypto, profileCache } = setup()
+    crypto.collectPcryptoUsers.mockResolvedValue([{ id: '@me:host' }])
+    profileCache.isUnresolved.mockReturnValue(true)
+    await api.sendMessage(ROOM, 'Привет')
+    expect(crypto.collectPcryptoUsers).toHaveBeenCalledTimes(2)
+    expect(toastError).toHaveBeenCalledWith({
+      message: 'appMsg.messenger.recipientKeysUnavailable',
+    })
+    expect(messages[ROOM]!.map((m) => m.status)).toEqual(['failed'])
+  })
+
+  it('профиль пришёл со второго запроса — сообщение уходит зашифрованным', async () => {
+    const { api, messages, crypto, profileCache } = setup()
+    crypto.collectPcryptoUsers
+      .mockResolvedValueOnce([{ id: '@me:host' }])
+      .mockResolvedValueOnce([{ id: '@me:host' }, { id: '@peer:host' }])
+    profileCache.isUnresolved.mockReturnValue(true)
+    await api.sendMessage(ROOM, 'Привет')
+    expect(matrix.sendEncryptedDirectMessage).toHaveBeenCalledTimes(1)
     expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$real', 'sent']])
   })
 })

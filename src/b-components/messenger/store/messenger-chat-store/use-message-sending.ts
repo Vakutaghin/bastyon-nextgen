@@ -17,7 +17,7 @@ import { getPartnerMatrixId } from '../../room-helpers'
 import type { Message } from '../../types'
 import { markDeleted } from '../../lib/chat-history'
 import { within } from '../../lib/within'
-import { ROOM_WAIT_TIMEOUT, SEND_ORDER_WAIT } from '../consts'
+import { GROUP_ENCRYPTION_MEMBER_LIMIT, ROOM_WAIT_TIMEOUT, SEND_ORDER_WAIT } from '../consts'
 import { pushOptimistic } from './media-sending-helpers'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
@@ -45,6 +45,36 @@ export class RecipientKeysMissingError extends Error {
   }
 }
 
+/**
+ * Профиль собеседника с ключами не загрузился: нода не ответила. Опубликованы ли
+ * ключи, неизвестно — повтор позже может пройти. Раньше это выдавалось за «нет
+ * ключей», и человек просил собеседника зайти в приложение зря.
+ */
+export class RecipientProfilesUnavailableError extends Error {
+  constructor(public readonly recipients: string[]) {
+    super('recipient_profiles_unavailable')
+    this.name = 'RecipientProfilesUnavailableError'
+  }
+}
+
+/**
+ * Шифровать ли группу — правило прежнего клиента (bastyon-chat,
+ * `pcrypto.canBeEncrypt`): публичную группу и группу от 50 участников он не
+ * шифрует, сообщения в них идут обычным `m.text`, и все клиенты так их и
+ * читают. Раньше NextGen шифровал любую группу общим ключом на всех участников:
+ * в чатах на сотни человек это не работало, а один участник без ключей запирал
+ * группу для всех.
+ *
+ * Комнату, где участник один я, прежний клиент тоже не шифрует, а здесь она
+ * шифруется: так выглядит и личный чат, куда собеседник ещё не пришёл или
+ * откуда вышел (`isTetatetchat` узнаёт личный чат по двум участникам), и
+ * открытый текст ушёл бы туда, где его ждут зашифрованным.
+ */
+export function groupCanBeEncrypted(room: MxRoom, memberCount: number): boolean {
+  if (room.getJoinRule?.() === 'public') return false
+  return memberCount < GROUP_ENCRYPTION_MEMBER_LIMIT
+}
+
 export class PkoinMessageDeliveryError extends Error {
   constructor(
     public readonly txid: string,
@@ -57,18 +87,26 @@ export class PkoinMessageDeliveryError extends Error {
 }
 
 /**
- * Проверяет, что у КАЖДОГО участника (кроме меня) есть ключи для шифрования.
+ * Проверяет, что у собеседника в личном чате есть ключи для шифрования.
  * `collectPcryptoUsers` молча пропускает тех, у кого в профиле нет `k`, и
- * сообщение уходило зашифрованным только для отправителя (S39).
+ * сообщение уходило зашифрованным только для отправителя (S39). Профиль, который
+ * не загрузился, — другая ошибка: ключи могут быть, нода не ответила.
+ *
+ * Только для личных чатов: в группе прежний клиент шифрует для тех, у кого
+ * ключи есть, и отправку не останавливает (запрет `cantchat` у него тоже
+ * только для личных).
  */
 function assertRecipientsHaveKeys(
   memberIds: string[],
   users: { id: string }[],
-  myMatrixId?: string
+  isUnresolved: (memberId: string) => boolean
 ): void {
   const withKeys = new Set(users.map((u) => u.id))
-  const missing = memberIds.filter((id) => id !== myMatrixId && !withKeys.has(id))
-  if (missing.length > 0) throw new RecipientKeysMissingError(missing)
+  const missing = memberIds.filter((id) => !withKeys.has(id))
+  if (missing.length === 0) return
+  const unresolved = missing.filter(isUnresolved)
+  if (unresolved.length > 0) throw new RecipientProfilesUnavailableError(unresolved)
+  throw new RecipientKeysMissingError(missing)
 }
 
 /** Копия события в SDK, которая не ушла (`not_sent`), и её повтор с тем же txnId. */
@@ -85,7 +123,7 @@ function findUnsentEcho(
 }
 
 export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
-  const { messages, authStore, uiStore } = ctx
+  const { messages, authStore, uiStore, profileCache } = ctx
   const {
     ensurePcryptoInitialized,
     waitForPcrypto,
@@ -106,6 +144,24 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     return getAddressFromMatrixId(partnerMatrixId)
   }
 
+  /** Профиль участника не получен: запрос упал или не дождался ответа ноды. */
+  const isUnresolvedMember = (memberId: string): boolean => {
+    const address = getAddressFromMatrixId(memberId)
+    return !!address && !!profileCache.isUnresolved?.(address)
+  }
+
+  /**
+   * Ключи участников для шифрования. Профили, которые не загрузились, просим
+   * ещё раз: в большой группе или под Tor за отведённое время приходят не все,
+   * и участник выпадал из шифрования, как будто ключей у него нет.
+   */
+  const collectRecipients = async (memberIds: string[]) => {
+    const users = await collectPcryptoUsers(memberIds)
+    const withKeys = new Set(users.map((u) => u.id))
+    const retry = memberIds.some((id) => !withKeys.has(id) && isUnresolvedMember(id))
+    return retry ? collectPcryptoUsers(memberIds) : users
+  }
+
   /**
    * Отправка группового зашифрованного сообщения по протоколу bastyon-chat:
    *   1) usershash = md5(<id участников кроме меня, сортировка по dbId>) + "_v13_2"
@@ -113,16 +169,17 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
    *      если есть — расшифровываем общий ключ; нет — генерируем и публикуем своё.
    *   3) AES-CBC шифруем тело общим ключом, отправляем m.room.message
    *      { msgtype: 'm.encrypted', body: hex, hash, block: 10 }.
+   * Ключ — для участников с опубликованными ключами; у кого их нет, тот это
+   * сообщение не прочтёт, но и писать в группу не мешает (как у прежнего клиента).
    */
   const sendGroupMessage = async (
     chatId: string,
     room: MxRoom,
+    memberIds: string[],
     text: string,
     extraContent: Record<string, unknown> | undefined,
     txnId: string
   ) => {
-    await room.loadMembersIfNeeded?.()
-
     ensurePcryptoInitialized()
     if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
     if (!pcryptoService.value) throw new Error('PcryptoService not initialized')
@@ -133,12 +190,10 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     if (!myMatrixId) throw new Error('Missing my matrix id')
     const myLocal = getMatrixId(myMatrixId)
 
-    const memberIds = getOrderedMemberIds(room, Date.now())
-    const users = await collectPcryptoUsers(memberIds)
+    const users = await collectRecipients(memberIds)
     if (!users.find((u) => u.id === myMatrixId)) {
       throw new Error('My pcrypto keys are not available')
     }
-    assertRecipientsHaveKeys(memberIds, users, myMatrixId)
 
     const hash = computeGroupUsershash(users, myLocal)
     const block = 10
@@ -195,8 +250,8 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     if (!pcryptoService.value) throw new Error('PcryptoService not initialized')
 
     const memberIds = getOrderedMemberIds(room, Date.now())
-    const users = await collectPcryptoUsers(memberIds)
-    assertRecipientsHaveKeys(memberIds, users)
+    const users = await collectRecipients(memberIds)
+    assertRecipientsHaveKeys(memberIds, users, isUnresolvedMember)
     const block = await pickRoomBlock(room)
     const version = 2
 
@@ -248,8 +303,10 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
   }
 
   /**
-   * Базовая отправка текста: тет-а-тет → per-user pcrypto (E2E), группа →
-   * протокол общего ключа. Сырой `m.text` не отправляется НИКОГДА (см. P0-2).
+   * Базовая отправка текста: тет-а-тет → per-user pcrypto (E2E), закрытая
+   * группа до 50 участников → протокол общего ключа. Публичная или большая
+   * группа → обычный `m.text`, как у прежнего клиента (`groupCanBeEncrypted`).
+   * В личном чате сырой `m.text` не отправляется никогда (P0-2).
    * `extraContent` — relation-метаданные (m.relates_to для ответа) подмешиваются
    * во внешний (открытый) content зашифрованного сообщения.
    */
@@ -267,13 +324,22 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     // Без комнаты шифрование невозможно (нет участников/ключей). Не деградируем к
     // открытому тексту — бросаем, как это делает и медиа-путь.
     if (!room) throw new Error('Room not found')
+    const direct = isTetatetchat(room)
+    let memberIds: string[] = []
+    if (!direct) {
+      await room.loadMembersIfNeeded?.()
+      memberIds = getOrderedMemberIds(room, Date.now())
+      if (!groupCanBeEncrypted(room, memberIds.length)) {
+        return matrixService.sendMessage(chatId, text, extraContent, txnId)
+      }
+    }
     // Свой текст известен: копия события в ленте показывает его сразу, без
     // расшифровки. Иначе у первого сообщения группы (ключ комнаты приходит
     // синком позже отправки) вместо текста стояло «*** Encrypted Message ***».
     decryptionCache.set(localEchoId(chatId, txnId), text)
-    const res = isTetatetchat(room)
+    const res = direct
       ? await sendDirectEncryptedText(chatId, room, text, extraContent, txnId)
-      : await sendGroupMessage(chatId, room, text, extraContent, txnId)
+      : await sendGroupMessage(chatId, room, memberIds, text, extraContent, txnId)
     const eventId = res?.event_id
     if (typeof eventId === 'string' && !decryptionCache.has(eventId)) {
       decryptionCache.set(eventId, text)
@@ -339,6 +405,8 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
       // будет так же бесполезен (S39).
       if (e instanceof RecipientKeysMissingError) {
         appToast.error({ message: t('appMsg.messenger.recipientNoKeys') })
+      } else if (e instanceof RecipientProfilesUnavailableError) {
+        appToast.error({ message: t('appMsg.messenger.recipientKeysUnavailable') })
       }
     }
   }

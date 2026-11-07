@@ -4343,6 +4343,8 @@ export default {
     messenger: {
       recipientNoKeys:
         'Cet utilisateur n’a pas encore publié de clés de chiffrement, le message ne peut donc pas être chiffré pour lui. Demandez-lui d’ouvrir l’application et réessayez.',
+      recipientKeysUnavailable:
+        'Impossible d’obtenir les clés de chiffrement de cet utilisateur : le nœud n’a pas répondu. Vérifiez la connexion et réessayez.',
       loginFailed:
         'Impossible de se connecter à la messagerie. Vérifiez la connexion et rouvrez-la.',
       me: 'Moi',

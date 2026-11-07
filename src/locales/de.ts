@@ -4350,6 +4350,8 @@ export default {
     messenger: {
       recipientNoKeys:
         'Dieser Benutzer hat noch keine Verschlüsselungsschlüssel veröffentlicht, daher kann die Nachricht für ihn nicht verschlüsselt werden. Bitte ihn, die App zu öffnen, und versuche es erneut.',
+      recipientKeysUnavailable:
+        'Die Verschlüsselungsschlüssel dieses Benutzers konnten nicht abgerufen werden: Der Knoten hat nicht geantwortet. Prüfe die Verbindung und versuche es erneut.',
       loginFailed:
         'Die Anmeldung beim Messenger ist fehlgeschlagen. Prüfe die Verbindung und öffne ihn erneut.',
       me: 'Ich',

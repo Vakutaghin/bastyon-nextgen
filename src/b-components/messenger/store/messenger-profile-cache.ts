@@ -68,6 +68,22 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
   let fetchTimeout: ReturnType<typeof setTimeout> | null = null
 
   /**
+   * Адреса, чей запрос профиля упал (нода не ответила, ошибка сети). Пока такой
+   * адрес не загрузится, о его ключах ничего не известно. Без этой отметки
+   * «профиль не загрузился» выглядел как «ключей нет», и отправка говорила, что
+   * собеседник не опубликовал ключи.
+   */
+  const failedAddresses = new Set<string>()
+
+  /**
+   * Профиль не получен: запрос упал или ещё идёт. Если нода ответила, а
+   * профиля в ответе нет (аккаунт не зарегистрирован), это не «не получен» —
+   * ключей у такого адреса действительно нет.
+   */
+  const isUnresolved = (address: string): boolean =>
+    !userProfiles.value[address] && (failedAddresses.has(address) || pendingResolvers.has(address))
+
+  /**
    * Обрабатывает очередь адресов — загружает профили батчами.
    */
   const processQueue = async () => {
@@ -102,8 +118,10 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
             }
           })
         }
+        batch.forEach((addr) => failedAddresses.delete(addr))
       } catch (e) {
         console.error('[ProfileCache] Ошибка загрузки батча профилей:', e)
+        batch.forEach((addr) => failedAddresses.add(addr))
       } finally {
         batch.forEach((addr) => {
           const resolvers = pendingResolvers.get(addr)
@@ -166,6 +184,7 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
     // Ждущих отпускаем: иначе их обещания не завершились бы никогда.
     for (const resolvers of pendingResolvers.values()) resolvers.forEach((r) => r())
     pendingResolvers.clear()
+    failedAddresses.clear()
     fetchQueue = []
     if (fetchTimeout) clearTimeout(fetchTimeout)
   }
@@ -174,6 +193,7 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
     userProfiles,
     changedKeyPeers,
     fetchProfiles,
+    isUnresolved,
     acceptChangedKeys,
     getAvatarUrl,
     reset,

@@ -710,7 +710,11 @@ export const useMessengerStore = defineStore('messenger', () => {
     }
     // Без ключей собеседника сообщение не зашифровать — комната осталась бы пустой.
     if (!partnerHasKeys(address)) {
-      appToast.error({ message: t('appMsg.messenger.recipientNoKeys') })
+      // Профиль не пришёл — о ключах ничего не известно, это не «не опубликовал».
+      const message = profileCache.isUnresolved(address)
+        ? t('appMsg.messenger.recipientKeysUnavailable')
+        : t('appMsg.messenger.recipientNoKeys')
+      appToast.error({ message })
       return false
     }
     const roomId = await startChatWithAddress(address)

@@ -111,3 +111,34 @@ describe('messenger-profile-cache — ждущие профиль не вися�
     expect(done).toBe(true)
   })
 })
+
+describe('messenger-profile-cache — «не загрузился» отдельно от «нет профиля»', () => {
+  it('запрос упал — профиль не получен; удачный повтор снимает отметку', async () => {
+    const cache = useMessengerProfileCache()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    getByPRC.mockRejectedValueOnce(new Error('timeout'))
+    const p = cache.fetchProfiles(['PPeer'])
+    await vi.runAllTimersAsync()
+    await p
+    expect(cache.isUnresolved('PPeer')).toBe(true)
+
+    await load(cache, [{ address: 'PPeer', name: 'Пир', k: '02aa' }])
+    expect(cache.isUnresolved('PPeer')).toBe(false)
+  })
+
+  it('нода ответила без этого адреса (не зарегистрирован) — не «не получен»: ключей и правда нет', async () => {
+    const cache = useMessengerProfileCache()
+    await load(cache, [])
+    expect(cache.userProfiles['PPeer']).toBeUndefined()
+    expect(cache.isUnresolved('PPeer')).toBe(false)
+  })
+
+  it('ответ ещё не пришёл, а ждать уже перестали — не получен', async () => {
+    const cache = useMessengerProfileCache()
+    getByPRC.mockImplementationOnce(() => new Promise(() => {}))
+    const p = cache.fetchProfiles(['PSlow'])
+    await vi.advanceTimersByTimeAsync(20_000)
+    await p
+    expect(cache.isUnresolved('PSlow')).toBe(true)
+  })
+})

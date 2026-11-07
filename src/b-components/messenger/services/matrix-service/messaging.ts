@@ -10,19 +10,30 @@
  */
 import type { MatrixClient, MatrixEventContent } from './types'
 
+/**
+ * Обычный текст без шифрования — только для групп, которые прежний клиент тоже
+ * не шифрует (публичные и от 50 участников, см. use-message-sending).
+ * `txnId` — тот же, что у эхо в ленте: по нему SDK склеивает копию с событием.
+ */
 export function sendMessage(
   client: MatrixClient,
   roomId: string,
   content: string,
-  extraContent?: Record<string, unknown>
+  extraContent?: Record<string, unknown>,
+  txnId?: string
 ) {
-  return client.sendEvent(roomId, 'm.room.message', {
-    msgtype: 'm.text',
-    body: content,
-    // extraContent — relation-метаданные (m.relates_to / m.new_content) для
-    // ответа/редактирования. См. use-message-sending (reply/edit).
-    ...extraContent,
-  })
+  return client.sendEvent(
+    roomId,
+    'm.room.message',
+    {
+      msgtype: 'm.text',
+      body: content,
+      // extraContent — relation-метаданные (m.relates_to / m.new_content) для
+      // ответа/редактирования. См. use-message-sending (reply/edit).
+      ...extraContent,
+    },
+    txnId
+  )
 }
 
 /**

@@ -475,10 +475,11 @@ export class MatrixService {
   public async sendMessage(
     roomId: string,
     content: string,
-    extraContent?: Record<string, unknown>
+    extraContent?: Record<string, unknown>,
+    txnId?: string
   ) {
     if (!this.client) throw new Error('Client not initialized')
-    return sendMessageImpl(this.client as MatrixClient, roomId, content, extraContent)
+    return sendMessageImpl(this.client as MatrixClient, roomId, content, extraContent, txnId)
   }
 
   /**
