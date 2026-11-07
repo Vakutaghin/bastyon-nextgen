@@ -33,6 +33,13 @@ describe('publicShareOrigin (S20)', () => {
     expect(publicShareOrigin()).toBe(PUBLIC_WEB_ORIGIN)
   })
 
+  it('replaces the Tauri origin on Windows (http://tauri.localhost)', () => {
+    vi.stubEnv('DEV', false)
+    setOrigin('http://tauri.localhost')
+    expect(publicShareOrigin()).toBe(PUBLIC_WEB_ORIGIN)
+    expect(publicPostUrl('a'.repeat(64))).toBe(`${PUBLIC_WEB_ORIGIN}/post?s=${'a'.repeat(64)}`)
+  })
+
   it('replaces the Capacitor localhost origin', () => {
     vi.stubEnv('DEV', false)
     setOrigin('https://localhost')

@@ -23,7 +23,14 @@ function isLocalShellOrigin(origin: string): boolean {
   if (origin.startsWith('file://')) return true
   try {
     const { hostname } = new URL(origin)
-    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]'
+    // `*.localhost` — Tauri на Windows отдаёт приложение с http://tauri.localhost:
+    // ссылки из медиастудии и «Поделиться» уходили как http://tauri.localhost/post/….
+    return (
+      hostname === 'localhost' ||
+      hostname.endsWith('.localhost') ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]'
+    )
   } catch {
     return true
   }
