@@ -105,9 +105,12 @@ function peertubeProxyPlugin() {
   }
 }
 
-// В production Tauri загружает фронт через asset-протокол; относительный base гарантирует
-// корректное разрешение путей к JS/CSS (иначе возможен пустой экран, нет запросов)
-const base = process.env.VITE_TAURI === 'true' ? './' : '/'
+// Пути к JS и CSS — от корня во всех сборках. Tauri отдаёт фронт с корня своего
+// протокола (tauri://localhost/, http://tauri.localhost/), так что `/assets/…` там
+// работает. Относительный `./` ломал любую загрузку страницы не с главной: F5 или
+// Ctrl+R в WebView2 на Windows внутри мини-приложения искали скрипты в
+// `/app/assets/…`, получали index.html вместо JS, и окно оставалось белым.
+const base = '/'
 
 export default defineConfig(({ mode }) => ({
   base,
