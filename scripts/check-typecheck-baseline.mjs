@@ -21,13 +21,28 @@ const update = process.argv.includes('--update')
 
 const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'))
 const bin = join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'vue-tsc.cmd' : 'vue-tsc')
-const run = spawnSync(bin, ['--noEmit', '-p', 'tsconfig.json'], { cwd: root, encoding: 'utf8', shell: process.platform === 'win32' })
+// vue-tsc на всём проекте берёт больше 2 ГБ. На машине с 8 ГБ памяти Node по
+// умолчанию даёт куче около 2 ГБ, и vue-tsc падает с heap out of memory.
+const nodeOptions = process.env.NODE_OPTIONS || ''
+const env = /--max-old-space-size/.test(nodeOptions)
+  ? process.env
+  : { ...process.env, NODE_OPTIONS: `${nodeOptions} --max-old-space-size=4096`.trim() }
+const run = spawnSync(bin, ['--noEmit', '-p', 'tsconfig.json'], { cwd: root, encoding: 'utf8', env, shell: process.platform === 'win32' })
 const output = `${run.stdout || ''}${run.stderr || ''}`
-const errors = output.split('\n').filter((line) => /error TS\d+:/.test(line))
+const errors = output.split(/\r?\n/).filter((line) => /error TS\d+:/.test(line))
 const count = errors.length
 
 if (run.error) {
   console.error(`[typecheck] vue-tsc не запустился: ${run.error.message}`)
+  process.exit(1)
+}
+
+// vue-tsc выходит с 0 без ошибок и с 2, если нашёл ошибки типов. Ненулевой код
+// без единой ошибки TS значит, что он упал, не досчитав. Раньше гейт принимал
+// это за «0 ошибок» и пропускал push.
+if (run.status !== 0 && count === 0) {
+  console.error(`[typecheck] vue-tsc упал (код ${run.status ?? run.signal}), ошибки не посчитаны:`)
+  console.error(output.trim().split(/\r?\n/).slice(-15).join('\n'))
   process.exit(1)
 }
 
