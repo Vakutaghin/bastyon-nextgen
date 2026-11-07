@@ -5,6 +5,8 @@ import {
   isPaymentModalOpen,
   currentPaymentPayload,
   currentPaymentAppName,
+  currentPaymentDetails,
+  paymentModalBusy,
   _resetPaymentModalForTests,
 } from './payment-modal-controller'
 
@@ -93,6 +95,22 @@ describe('payment-modal-controller', () => {
     })
     expect(r.rejected).toBe(true)
     expect(r.reason).toMatch(/amount_below_dust/)
+  })
+
+  it('платёж по ссылке магазина: сведения для окна живут, пока оно открыто', async () => {
+    const details = { store: { name: 'Лавка' }, askEmail: true, expiresAt: 1_900_000_000_000 }
+    const p = openPaymentModal(
+      { recievers: [{ address: 'PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM', amount: 1 }] },
+      'Demo app',
+      undefined,
+      details
+    )
+    expect(currentPaymentDetails.value).toEqual(details)
+    expect(paymentModalBusy()).toBe(true)
+    resolvePaymentModal({ transaction: 'tx', completed: true, contacts: { email: 'a@b.c' } })
+    expect((await p).contacts).toEqual({ email: 'a@b.c' })
+    expect(currentPaymentDetails.value).toBeNull()
+    expect(paymentModalBusy()).toBe(false)
   })
 
   it('запоминает имя приложения для строки «Запросило»', async () => {

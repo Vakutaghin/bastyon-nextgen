@@ -2190,6 +2190,7 @@ export default {
     reason2: 'Child exploitation',
     reason3: 'Direct threat of violence',
     reason4: 'Illegal narcotics',
+    reason5: 'Copyright infringement',
     reason6: 'Spam',
     submit: 'Submit report',
     cancel: 'Cancel',
@@ -2432,6 +2433,23 @@ export default {
     txNoCoins:
       'There are no coins for the network fee. Top up the wallet or wait for the previous transaction to confirm.',
     errorPaymentFailed: 'Failed to send payment',
+    videoTitle: 'Video for “{name}”',
+    videoLead:
+      'The video uploads to a Bastyon video server, into your channel. Keep this window open while it uploads: cancelling stops the upload.',
+    videoAttach: 'Attach',
+    complainTitle: 'Report in “{name}”',
+    complainIntro: 'Choose a reason. The report goes to the Pocketnet team without your address.',
+    complainFailed:
+      'Could not send the report: the Pocketnet report server is not responding. Try again later.',
+    extItemCount: '{name} × {count}',
+    extExpires: 'The link is valid until {time}',
+    extExpired: 'The link has expired and can no longer be paid',
+    extEmail: 'Email for the shop',
+    extPhone: 'Phone for the shop',
+    extCallback: 'After payment, {host} will receive the transaction ID.',
+    extCallbackAccount: 'After payment, {host} will receive the transaction ID and your address.',
+    extMerchantFailed:
+      'Payment sent, but {host} did not confirm receiving it. The transaction is in your wallet.',
   },
   comments: {
     title: 'Comments ({count})',

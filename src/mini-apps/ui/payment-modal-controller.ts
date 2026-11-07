@@ -53,17 +53,44 @@ export interface PaymentResult {
   completed?: boolean
   rejected?: boolean
   reason?: string
+  /** Почта и телефон, если магазин их просил (платёж по ссылке). */
+  contacts?: { email?: string; phone?: string }
+}
+
+/**
+ * Платёж по ссылке магазина (`ext`): что показать сверх получателя и суммы и
+ * что спросить у покупателя.
+ */
+export interface PaymentDetails {
+  description?: string
+  store?: { name: string; site?: string }
+  items?: Array<{ name: string; value: number; count: number }>
+  /** Ссылка перестаёт действовать (мс): после этого платить нельзя. */
+  expiresAt?: number
+  /** Кому сообщат об оплате и сообщат ли адрес покупателя. */
+  callbackHost?: string
+  sharesAccount?: boolean
+  askEmail?: boolean
+  askPhone?: boolean
 }
 
 const isOpenRef = ref(false)
 const currentPaymentRef = ref<PaymentPayload | null>(null)
 const currentAppNameRef = ref<string>('')
+const currentDetailsRef = ref<PaymentDetails | null>(null)
 let currentResolve: ((r: PaymentResult) => void) | null = null
 
 export const isPaymentModalOpen = computed(() => isOpenRef.value)
 export const currentPaymentPayload = computed(() => currentPaymentRef.value)
 /** Имя приложения, запросившего платёж — для строки «Запросило: …» (N22). */
 export const currentPaymentAppName = computed(() => currentAppNameRef.value)
+/** Сведения платежа по ссылке магазина; null — обычный платёж приложения. */
+export const currentPaymentDetails = computed(() => currentDetailsRef.value)
+
+/** Окно оплаты уже открыто: второе поверх не открывается. */
+export function paymentModalBusy(): boolean {
+  return isOpenRef.value
+}
 
 /**
  * Открывает модал и возвращает Promise с результатом подтверждения / отказа.
@@ -73,7 +100,8 @@ export const currentPaymentAppName = computed(() => currentAppNameRef.value)
 export function openPaymentModal(
   raw: unknown,
   appName = '',
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  details: PaymentDetails | null = null
 ): Promise<PaymentResult> {
   const parsed = PaymentPayloadSchema.safeParse(raw)
   if (!parsed.success) {
@@ -88,6 +116,7 @@ export function openPaymentModal(
 
   currentPaymentRef.value = parsed.data
   currentAppNameRef.value = appName
+  currentDetailsRef.value = details
   isOpenRef.value = true
   return new Promise<PaymentResult>((resolve) => {
     currentResolve = resolve
@@ -106,6 +135,7 @@ export function resolvePaymentModal(result: PaymentResult): void {
   isOpenRef.value = false
   currentPaymentRef.value = null
   currentAppNameRef.value = ''
+  currentDetailsRef.value = null
   const r = currentResolve
   currentResolve = null
   if (r) r(result)
@@ -116,6 +146,7 @@ export function _resetPaymentModalForTests(): void {
   isOpenRef.value = false
   currentPaymentRef.value = null
   currentAppNameRef.value = ''
+  currentDetailsRef.value = null
   if (currentResolve) {
     currentResolve({ rejected: true, reason: 'reset' })
     currentResolve = null

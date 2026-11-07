@@ -2222,6 +2222,7 @@ export default {
     reason2: 'Ausbeutung von Kindern',
     reason3: 'Direkte Gewaltandrohung',
     reason4: 'Illegale Drogen',
+    reason5: 'Urheberrechtsverletzung',
     reason6: 'Spam',
     submit: 'Meldung senden',
     cancel: 'Abbrechen',
@@ -2464,6 +2465,23 @@ export default {
     txNoCoins:
       'Es sind keine Coins für die Netzwerkgebühr da. Lade das Wallet auf oder warte, bis die vorherige Transaktion bestätigt ist.',
     errorPaymentFailed: 'Die Zahlung konnte nicht gesendet werden',
+    videoTitle: 'Video für „{name}“',
+    videoLead:
+      'Das Video wird auf einen Bastyon-Videoserver in deinen Kanal hochgeladen. Lass das Fenster offen, solange es lädt: Abbrechen stoppt den Upload.',
+    videoAttach: 'Anhängen',
+    complainTitle: 'Meldung in „{name}“',
+    complainIntro: 'Wähle einen Grund. Die Meldung geht ohne deine Adresse an das Pocketnet-Team.',
+    complainFailed:
+      'Meldung nicht gesendet: Der Meldeserver von Pocketnet antwortet nicht. Versuche es später erneut.',
+    extItemCount: '{name} × {count}',
+    extExpires: 'Der Link gilt bis {time}',
+    extExpired: 'Der Link ist abgelaufen und kann nicht mehr bezahlt werden',
+    extEmail: 'E-Mail für den Shop',
+    extPhone: 'Telefon für den Shop',
+    extCallback: 'Nach der Zahlung erhält {host} die Transaktions-ID.',
+    extCallbackAccount: 'Nach der Zahlung erhält {host} die Transaktions-ID und deine Adresse.',
+    extMerchantFailed:
+      'Zahlung gesendet, aber {host} hat den Empfang nicht bestätigt. Die Transaktion steht im Wallet.',
   },
   comments: {
     title: 'Kommentare ({count})',

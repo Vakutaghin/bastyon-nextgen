@@ -70,9 +70,7 @@ export function makeMockHost(overrides: Partial<HostContext> = {}): HostContext 
     getCurrentBlockHeight: vi.fn(async () => 1_000_000),
     // 5.5
     openPaymentDialog: vi.fn(async () => ({ rejected: true, reason: 'not_implemented' })),
-    openExternalPayment: vi.fn(async () => {
-      throw new Error('ext_payment_not_implemented')
-    }),
+    openExternalPayment: vi.fn(async () => 'application:ext:opened'),
     // 5.6
     openPost: vi.fn(async () => {}),
     openDonation: vi.fn(async () => {}),
@@ -81,6 +79,8 @@ export function makeMockHost(overrides: Partial<HostContext> = {}): HostContext 
       imgs.map((_, i) => `https://cdn.test/img${i}.jpg`)
     ),
     removeVideo: vi.fn(async () => {}),
+    getVideosInfo: vi.fn(async () => []),
+    openVideoUploadDialog: vi.fn(async () => null),
     share: vi.fn(async () => {}),
     openComplain: vi.fn(async () => {}),
     getAppActions: vi.fn(async () => []),

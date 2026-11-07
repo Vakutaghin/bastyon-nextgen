@@ -4,7 +4,7 @@
     :title="t('miniapps.paymentTitle')"
     :ok-text="sending ? t('miniapps.sending') : t('miniapps.confirm')"
     :cancel-text="t('miniapps.cancel')"
-    :ok-button-props="{ disabled: sending }"
+    :ok-button-props="{ disabled: sending || blocked }"
     :cancel-button-props="{ disabled: sending }"
     :closable="!sending"
     :mask-closable="false"
@@ -16,6 +16,24 @@
       <SC_AppRow v-if="appName">{{
         t('miniapps.paymentRequestedBy', { name: appName })
       }}</SC_AppRow>
+      <!-- Платёж по ссылке магазина (ext): магазин, описание, товары. -->
+      <template v-if="details">
+        <SC_StoreRow v-if="details.store">
+          {{ details.store.name
+          }}<template v-if="details.store.site"> · {{ details.store.site }}</template>
+        </SC_StoreRow>
+        <SC_MessageRow v-if="details.description">{{ details.description }}</SC_MessageRow>
+        <SC_RecieverList v-if="details.items?.length">
+          <SC_RecieverRow v-for="(item, idx) in details.items" :key="idx">
+            <span>{{
+              item.count > 1
+                ? t('miniapps.extItemCount', { name: item.name, count: item.count })
+                : item.name
+            }}</span>
+            <SC_RecieverAmount>{{ formatAmount(item.value * item.count) }} PKOIN</SC_RecieverAmount>
+          </SC_RecieverRow>
+        </SC_RecieverList>
+      </template>
       <SC_RecieverList>
         <SC_RecieverRow v-for="(r, idx) in payment.recievers" :key="idx">
           <SC_RecieverAddr>{{ r.address }}</SC_RecieverAddr>
@@ -30,15 +48,44 @@
         {{ t('miniapps.paymentFee', { amount: formatAmount(estimatedFee), mode: feemodeLabel }) }}
       </SC_FeeRow>
       <SC_MessageRow v-if="message">{{ t('miniapps.paymentMessage', { message }) }}</SC_MessageRow>
+      <template v-if="details">
+        <SC_FeeRow v-if="details.expiresAt" :class="{ expired }">{{
+          expired ? t('miniapps.extExpired') : t('miniapps.extExpires', { time: expiresText })
+        }}</SC_FeeRow>
+        <Input
+          v-if="details.askEmail"
+          v-model:value="email"
+          type="email"
+          autocomplete="email"
+          :disabled="sending"
+          :placeholder="t('miniapps.extEmail')"
+          :aria-label="t('miniapps.extEmail')"
+        />
+        <Input
+          v-if="details.askPhone"
+          v-model:value="phone"
+          type="tel"
+          autocomplete="tel"
+          :disabled="sending"
+          :placeholder="t('miniapps.extPhone')"
+          :aria-label="t('miniapps.extPhone')"
+        />
+        <SC_FeeRow v-if="details.callbackHost">{{
+          details.sharesAccount
+            ? t('miniapps.extCallbackAccount', { host: details.callbackHost })
+            : t('miniapps.extCallback', { host: details.callbackHost })
+        }}</SC_FeeRow>
+      </template>
       <SC_Error v-if="error">{{ error }}</SC_Error>
     </SC_Wrap>
   </a-modal>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal as AModal } from 'ant-design-vue'
+import { Input, Modal as AModal } from 'ant-design-vue'
+import { bcp47 } from '@/i18n'
 import { useAuthStore } from '@/blockchain'
 import {
   getUnspents,
@@ -56,6 +103,7 @@ import {
   isPaymentModalOpen,
   currentPaymentPayload,
   currentPaymentAppName,
+  currentPaymentDetails,
   resolvePaymentModal,
 } from './payment-modal-controller'
 import {
@@ -70,6 +118,7 @@ import {
   SC_FeeRow,
   SC_MessageRow,
   SC_Error,
+  SC_StoreRow,
 } from './mini-app-payment-modal.styled'
 
 // `a-modal` зарегистрирован глобально через ant-design-vue. Но в setup нам нужно
@@ -78,7 +127,7 @@ import {
 const _ = AModal
 void _
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const authStore = useAuthStore()
 
 const isOpen = computed(() => isPaymentModalOpen.value)
@@ -100,6 +149,48 @@ const feemodeLabel = computed(() =>
 const sending = ref(false)
 const error = ref<string | null>(null)
 
+// ── Платёж по ссылке магазина ───────────────────────────────────────────
+const details = computed(() => currentPaymentDetails.value)
+const email = ref('')
+const phone = ref('')
+const now = ref(Date.now())
+let clock: ReturnType<typeof setInterval> | null = null
+const stopClock = (): void => {
+  if (clock) clearInterval(clock)
+  clock = null
+}
+// Срок ссылки проверяем каждую секунду, пока окно открыто.
+watch(
+  details,
+  (d) => {
+    stopClock()
+    email.value = ''
+    phone.value = ''
+    now.value = Date.now()
+    if (d?.expiresAt) clock = setInterval(() => (now.value = Date.now()), 1000)
+  },
+  { immediate: true }
+)
+onBeforeUnmount(stopClock)
+
+const expired = computed(() => !!details.value?.expiresAt && now.value >= details.value.expiresAt)
+const expiresText = computed(() =>
+  details.value?.expiresAt
+    ? new Intl.DateTimeFormat(bcp47(locale.value), {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      }).format(details.value.expiresAt)
+    : ''
+)
+const emailOk = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()))
+const phoneOk = computed(() => phone.value.replace(/\D/g, '').length >= 5)
+/** Платить нельзя: ссылка истекла или магазин ждёт контакт, а его нет. */
+const blocked = computed(() => {
+  const d = details.value
+  if (!d) return false
+  return expired.value || (!!d.askEmail && !emailOk.value) || (!!d.askPhone && !phoneOk.value)
+})
+
 /**
  * Комиссия, которую показываем до оплаты: по одному входу — столько платит
  * обычная покупка. Точную считаем перед сборкой, когда известны входы.
@@ -118,7 +209,7 @@ function formatAmount(n: number): string {
 }
 
 async function onConfirm() {
-  if (!payment.value || sending.value) return
+  if (!payment.value || sending.value || blocked.value) return
   const mainAddr = authStore.getUserAddress
   const keyPair = authStore.getKeyPair
   if (!mainAddr || !keyPair) {
@@ -172,7 +263,15 @@ async function onConfirm() {
       },
     })
     playSound('coin')
-    resolvePaymentModal({ transaction: txid, completed: true })
+    const d = details.value
+    const contacts =
+      d?.askEmail || d?.askPhone
+        ? {
+            ...(d.askEmail ? { email: email.value.trim() } : {}),
+            ...(d.askPhone ? { phone: phone.value.trim() } : {}),
+          }
+        : undefined
+    resolvePaymentModal({ transaction: txid, completed: true, ...(contacts ? { contacts } : {}) })
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('miniapps.errorPaymentFailed')
   } finally {

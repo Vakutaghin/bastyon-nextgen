@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ActionRegistry } from './registry'
 import { MEDIA_ACTIONS } from './media'
 import { TEST_APP, makeMockHost, setupTestPinia, makeResolver } from './__test-helpers'
+import { VIDEO_UPLOAD_TIMEOUT_MS } from './types'
 
 function setup(hostOverrides = {}, resolverOpts = {}) {
   const host = makeMockHost(hostOverrides)
@@ -108,12 +109,29 @@ describe('media actions', () => {
     ).rejects.toThrow(/videos:remove:no_url/)
   })
 
-  // ─── videos.opendialog — still a stub (needs shared uploader UI) ────────
+  // ─── videos.opendialog — окно загрузки ролика ───────────────────────────
 
-  it('videos.opendialog returns not_implemented stub', async () => {
-    const { reg } = setup()
+  it('videos.opendialog: ответ окна — {link, name}', async () => {
+    const video = { link: 'peertube://h.test/uuid-1', name: 'Велосипед' }
+    const openVideoUploadDialog = vi.fn(async () => video)
+    const { reg } = setup({ openVideoUploadDialog })
+    const r = await reg.execute('videos.opendialog', TEST_APP, {}, new AbortController().signal)
+    expect(r).toEqual(video)
+    expect(openVideoUploadDialog).toHaveBeenCalledWith(
+      TEST_APP.manifest.name,
+      expect.any(AbortSignal)
+    )
+  })
+
+  it('videos.opendialog: окно закрыли — null', async () => {
+    const { reg } = setup({ openVideoUploadDialog: vi.fn(async () => null) })
     await expect(
       reg.execute('videos.opendialog', TEST_APP, {}, new AbortController().signal)
-    ).rejects.toThrow(/videos_opendialog_not_implemented/)
+    ).resolves.toBeNull()
+  })
+
+  it('videos.opendialog: загрузка большого ролика не упирается в тайм-аут моста', () => {
+    const { reg } = setup()
+    expect(reg.timeoutFor('videos.opendialog')).toBe(VIDEO_UPLOAD_TIMEOUT_MS)
   })
 })

@@ -705,5 +705,32 @@ describe('usePostComposer', () => {
       expect(repost.tags.value).toEqual([])
       expect(idb.writes.size).toBe(0)
     })
+
+    it('«Поделиться в Bastyon» из приложения: заготовка в форме, черновик человека цел', async () => {
+      localStorage.setItem(postDraftKey(ME), 'Мой черновик')
+      idb.store.set(FIELDS_KEY, { tags: ['черновик'] })
+      idb.store.set(IMAGES_KEY, [PNG])
+      const share = {
+        message: 'Велосипед\n\nhttps://bastyon.com/application?id=x',
+        images: ['https://img.test/1.jpg'],
+        tags: ['sale', 'Barteron'],
+      }
+      const c = compose({ share })
+      await settle()
+      expect(c.message.value).toBe(share.message)
+      expect(c.tags.value).toEqual(['sale', 'Barteron'])
+      expect(mocks.setFromUrls).toHaveBeenCalledWith(['https://img.test/1.jpg'])
+      expect(mocks.setFromUrls).not.toHaveBeenCalledWith([PNG])
+
+      // Правки такой формы в черновик не пишутся, публикация его не стирает.
+      c.onMessageInput('Другой текст про велосипед, почти новый, забирать в центре')
+      c.addTag('bike')
+      await settle()
+      await c.publish()
+      await settle()
+      expect(idb.writes.size).toBe(0)
+      expect(idb.store.get(FIELDS_KEY)).toEqual({ tags: ['черновик'] })
+      expect(localStorage.getItem(postDraftKey(ME))).toBe('Мой черновик')
+    })
   })
 })

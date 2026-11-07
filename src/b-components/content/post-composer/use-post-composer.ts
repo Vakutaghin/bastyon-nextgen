@@ -29,7 +29,8 @@ import { t } from '@/i18n'
 import {
   type ComposerMode,
   type ComposerSource,
-  type ComposerVideoPrefill,
+  type ComposerSharePrefill,
+  ComposerVideoPrefill,
   isArticleSource,
   parseArticleContent,
   postToComposerData,
@@ -71,6 +72,8 @@ export interface UsePostComposerOptions {
    * подтягиваются: с видео они в одном посте не живут.
    */
   video?: ComposerVideoPrefill | null
+  /** Новый пост с готовым текстом и картинками («Поделиться в Bastyon» из приложения). */
+  share?: ComposerSharePrefill | null
 }
 
 export function usePostComposer(options: UsePostComposerOptions = {}) {
@@ -100,15 +103,20 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
 
   // Префилл по режиму. Черновик читаем только в create. Для статьи message не используется.
   const prefill = options.source && (isEdit || isRepost) ? postToComposerData(options.source) : null
+  const prefillShare = mode === 'create' && options.share ? options.share : null
+  /** Форма живёт черновиком: создание поста, кроме «поделиться» из приложения. */
+  const keepsDraft = mode === 'create' && !prefillShare
 
   const message = ref(
     isEdit && prefill && !editingArticle
       ? prefill.message
       : isRepost
         ? ''
-        : !isEdit
-          ? readDraft(authStore.getUserAddress)
-          : ''
+        : prefillShare
+          ? prefillShare.message
+          : !isEdit
+            ? readDraft(authStore.getUserAddress)
+            : ''
   )
   const prefillVideo = mode === 'create' && options.video?.pointer ? options.video : null
   const caption = ref(isEdit && prefill ? prefill.caption : (prefillVideo?.title ?? ''))
@@ -122,7 +130,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     removeTag,
     onTagBackspace,
     resetTags,
-  } = usePostTags(isEdit && prefill ? prefill.tags : [])
+  } = usePostTags(isEdit && prefill ? prefill.tags : (prefillShare?.tags ?? []))
   const submitting = ref(false)
   // При правке сохраняем видимость и язык оригинала: раньше они сбрасывались
   // на дефолт, и пост «только подписчикам» после исправления опечатки
@@ -163,6 +171,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
 
   // Картинки префилим только для обычного поста (у статьи картинки внутри блоков).
   if (isEdit && prefill && !editingArticle && prefill.images.length) setFromUrls(prefill.images)
+  if (prefillShare?.images.length) setFromUrls(prefillShare.images)
 
   /** Триал-аккаунты не могут ограничивать видимость — только публичные посты (legacy). */
   const isTrial = computed(() => authStore.getUserState?.trial === true)
@@ -340,7 +349,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const onMessageInput = (value: string): void => {
     message.value = value
     // Черновик персистим только в режиме создания (edit/repost не засоряют его).
-    if (mode === 'create') writeDraft(draftAddress, value)
+    if (keepsDraft) writeDraft(draftAddress, value)
   }
 
   const onCaptionInput = (value: string): void => {
@@ -397,7 +406,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   let storedFieldsJson = 'null'
   let storedImages: string[] = []
   // Пока черновик читается, пустая форма не должна затереть сохранённое.
-  let restoring = mode === 'create'
+  let restoring = keepsDraft
   let fieldsTimer: ReturnType<typeof setTimeout> | null = null
   let imagesTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -437,7 +446,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     dismissedLinkUrl.value = f.dismissedLinkUrl
   }
 
-  if (mode === 'create') {
+  if (keepsDraft) {
     watch(
       draftFields,
       () => {
@@ -482,7 +491,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
 
   /** Стереть черновик в хранилищах (форма очищается отдельно). */
   const clearStoredDraft = (): void => {
-    if (mode !== 'create') return
+    if (!keepsDraft) return
     writeDraft(draftAddress, '')
     for (const timer of [fieldsTimer, imagesTimer]) if (timer) clearTimeout(timer)
     fieldsTimer = null

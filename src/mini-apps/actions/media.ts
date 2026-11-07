@@ -8,14 +8,19 @@
  *   (host.uploadImages), возвращает `[{url}]` (legacy `images.upload`).
  * - `videos.remove` — удаляет видео по указателю (host.removeVideo → allowlist хостов от
  *   ноды + подтверждение пользователя → DELETE на инстансе).
- * - `videos.opendialog` — открывает UI-диалог загрузки; всё ещё stub, ждёт вычленения
- *   shared media-uploader'а из `src/b-components/video-uploader/` (UI-плумбинг Фазы E).
+ * - `videos.opendialog` — окно загрузки своего ролика (mini-app-video-dialog.vue);
+ *   ответ `{link, name}` — указатель `peertube://host/uuid` и имя, закрыли окно — null.
  *
  * Legacy эквиваленты — [index.js:930-1024](../../../../___original-repos/pocketnet.gui/js/lib/apps/index.js#L930-L1024).
  */
 
 import { ActionSchemas } from './_schema'
-import { USER_WAIT_TIMEOUT_MS, type ActionDefinition, type ActionMap } from './types'
+import {
+  USER_WAIT_TIMEOUT_MS,
+  VIDEO_UPLOAD_TIMEOUT_MS,
+  type ActionDefinition,
+  type ActionMap,
+} from './types'
 
 /** Максимум картинок за один images.upload (legacy index.js:941). */
 const MAX_UPLOAD_IMAGES = 10
@@ -46,14 +51,14 @@ const imagesUpload: ActionDefinition<unknown, Array<{ url?: string; error?: stri
   },
 }
 
-const videosOpenDialog: ActionDefinition<unknown, never> = {
+const videosOpenDialog: ActionDefinition<unknown, { link: string; name: string } | null> = {
   schema: ActionSchemas['videos.opendialog'],
+  // Как у прежнего клиента: ролик грузится в канал вошедшего человека.
+  authorization: true,
   permissions: [],
   rateLimitClass: 'normal',
-  handler: async () => {
-    // Открытие UI-диалога загрузки ждёт вычленения shared media-uploader'а (плумбинг Фазы E).
-    throw new Error('videos_opendialog_not_implemented')
-  },
+  timeoutMs: VIDEO_UPLOAD_TIMEOUT_MS,
+  handler: async ({ app, host, signal }) => host.openVideoUploadDialog(app.manifest.name, signal),
 }
 
 const videosRemove: ActionDefinition<unknown, { removed: true }> = {

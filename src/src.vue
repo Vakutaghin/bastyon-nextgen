@@ -8,6 +8,8 @@ import type { Locale } from '@/i18n'
 import { loadAntdLocale } from '@/i18n/antd-locale'
 import AppLayout from '@/b-components/app-layout/app-layout.vue'
 import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
+import { isVideoDialogOpen } from '@/mini-apps/ui/video-dialog-controller'
+import { isComplainDialogOpen } from '@/mini-apps/ui/complain-dialog-controller'
 import DonateModal from '@/b-components/donate/donate-modal.vue'
 import PaidSubscriptionModal from '@/b-components/paid-subscription/paid-subscription-modal.vue'
 import BoostModal from '@/b-components/boost/boost-modal.vue'
@@ -49,6 +51,13 @@ const VideoUploadsPanel = defineAsyncComponent(
 // Скачанные ролики: лист выбора качества и окно просмотра без сети.
 const OfflineQualitySheet = defineAsyncComponent(
   () => import('@/b-components/offline-video/offline-quality-sheet.vue')
+)
+// Окна по просьбе мини-приложений: грузятся, только когда их открыли.
+const MiniAppVideoDialog = defineAsyncComponent(
+  () => import('@/mini-apps/ui/mini-app-video-dialog.vue')
+)
+const MiniAppComplainDialog = defineAsyncComponent(
+  () => import('@/mini-apps/ui/mini-app-complain-dialog.vue')
 )
 const OfflineVideoModal = defineAsyncComponent(
   () => import('@/b-components/offline-video/offline-video-modal.vue')
@@ -174,6 +183,9 @@ watch(
       <OfflineVideoModal v-if="offlineVideos.opened" />
       <!-- Mini-apps payment modal — singleton, управляется через payment-modal-controller -->
       <MiniAppPaymentModal />
+      <!-- Ролик и жалоба по просьбе мини-приложения — video/complain-dialog-controller -->
+      <MiniAppVideoDialog v-if="isVideoDialogOpen" />
+      <MiniAppComplainDialog v-if="isComplainDialogOpen" />
       <!-- Донат автору — singleton, открывается через useDonateStore -->
       <DonateModal />
       <!-- Платная подписка на автора — singleton, открывается через usePaidSubscriptionsStore -->

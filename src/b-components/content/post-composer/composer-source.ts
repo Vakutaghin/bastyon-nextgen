@@ -19,6 +19,18 @@ export interface ComposerVideoPrefill {
   title: string
 }
 
+/**
+ * Новый пост с готовым текстом, картинками и тегами — «Поделиться в Bastyon»
+ * из мини-приложения. Черновик человека такой пост не трогает: ни читает, ни
+ * перезаписывает.
+ */
+export interface ComposerSharePrefill {
+  message: string
+  /** Адреса картинок (https). */
+  images: string[]
+  tags: string[]
+}
+
 export interface ComposerSource {
   txid?: string
   hash?: string

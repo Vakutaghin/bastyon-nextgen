@@ -16,7 +16,7 @@
 
 import type { z } from 'zod'
 import { ActionSchemas } from './_schema'
-import type { ActionDefinition, ActionMap } from './types'
+import { USER_WAIT_TIMEOUT_MS, type ActionDefinition, type ActionMap } from './types'
 
 // ─── chain RPC fetchers ──────────────────────────────────────────────────────
 
@@ -32,11 +32,12 @@ const getFeed: ActionDefinition<GetFeedInput, unknown> = {
   },
 }
 
+// Сведения о роликах — из кэша ноды (`peertube/videos`), в форме прежнего
+// клиента: Barteron читает оттуда состояние обработки, плейлист и обложку.
 const getVideos: ActionDefinition<{ urls: string[]; update?: boolean }, unknown> = {
   schema: ActionSchemas['get.videos'],
   rateLimitClass: 'normal',
-  handler: async ({ data, host, signal }) =>
-    host.callRpc('getvideoposts', [data.urls, data.update ?? false], undefined, signal),
+  handler: async ({ data, host }) => host.getVideosInfo(data.urls, data.update ?? false),
 }
 
 const getVideosWithShares: ActionDefinition<unknown, unknown> = {
@@ -105,7 +106,7 @@ const shareOnBastyon: ActionDefinition<ShareInput, void> = {
   handler: async ({ data, app, host }) =>
     host.share(
       { path: data.path, url: data.url, sharing: data.sharing },
-      { onBastyon: true, appId: app.manifest.id }
+      { onBastyon: true, appId: app.manifest.id, appName: app.manifest.name }
     ),
 }
 
@@ -113,8 +114,13 @@ const shareOnBastyon: ActionDefinition<ShareInput, void> = {
 
 const complain: ActionDefinition<unknown, void> = {
   schema: ActionSchemas.complain,
+  // Как у прежнего клиента: жалуется вошедший человек.
+  authorization: true,
   rateLimitClass: 'normal',
-  handler: async ({ data, host }) => host.openComplain(data),
+  // Человек выбирает причину — дольше 30 с общего тайм-аута.
+  timeoutMs: USER_WAIT_TIMEOUT_MS,
+  handler: async ({ data, app, host, signal }) =>
+    host.openComplain(data, app.manifest.name, signal),
 }
 
 // ─── pending actions ─────────────────────────────────────────────────────────

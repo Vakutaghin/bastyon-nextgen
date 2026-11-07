@@ -26,6 +26,9 @@ import { createCurrencyMethods } from './host-context-methods/currency'
 import { createMediaUploadMethods } from './host-context-methods/media-upload'
 import { createChatMethods } from './host-context-methods/chat'
 import { createAppTxMethods } from './host-context-methods/app-tx'
+import { createVideoMethods } from './host-context-methods/videos'
+import type { LegacyVideoItem, UploadedAppVideo } from './host-context-methods/videos'
+import type { ComposerSharePrefill } from '@/b-components/content/post-composer/composer-source'
 import type { LegacyTxObject } from '../tx/legacy-objects'
 
 export type HostDevice = 'browser' | 'capacitor_ios' | 'capacitor_android' | 'tauri' | 'electron'
@@ -143,10 +146,12 @@ export interface HostContext {
     signal?: AbortSignal
   ): Promise<Record<string, unknown>>
   /**
-   * Открывает закодированный платёж по `ext` хэшу. Эквивалент `sdk.ext(payment)`.
-   * MVP: throws `not_implemented`.
+   * Платёж по ссылке магазина (`sdk.ext(payment)`): разбирает ссылку, открывает
+   * окно оплаты и сразу отвечает `application:ext:opened`, как прежний клиент;
+   * об оплате магазину сообщает адрес из ссылки. `share` в ссылке открывает
+   * окно поста. Плохая ссылка — `application:ext:notopened` (код — в `code`).
    */
-  openExternalPayment(extHash: string): Promise<string>
+  openExternalPayment(extHash: string, appName?: string, appId?: string): Promise<string>
 
   // ─── content (5.6) ─────────────────────────────────────────────────────
   /** Открывает пост по txid. */
@@ -161,11 +166,17 @@ export interface HostContext {
    */
   share(
     data: { path?: string; url?: string; sharing?: unknown },
-    /** `appId` — чьей страницей поделиться, если пришёл только `path`. */
-    opts?: { onBastyon?: boolean; appId?: string }
+    /**
+     * `appId` — чьей страницей поделиться, если пришёл только `path`;
+     * `appName` — тег поста при `onBastyon`.
+     */
+    opts?: { onBastyon?: boolean; appId?: string; appName?: string }
   ): Promise<void>
-  /** Открывает форму жалобы. */
-  openComplain(data: unknown): Promise<void>
+  /**
+   * Окно жалобы на содержимое приложения (`{entityLink, entityTxid, entityType}`).
+   * Ждёт, пока окно закроют; жалобу отправляет само окно.
+   */
+  openComplain(data: unknown, appName?: string, signal?: AbortSignal): Promise<void>
   /**
    * Действия приложения у текущего аккаунта — транзакции, отправленные по его
    * просьбе (`getactions` прежнего клиента), в форме `action.export()`.
@@ -207,6 +218,17 @@ export interface HostContext {
    * `videos:remove:denied`, `videos:remove:hosts_unavailable`.
    */
   removeVideo(pointer: string, opts: { appName: string }): Promise<void>
+
+  /**
+   * Сведения о роликах в форме прежнего клиента (`get.videos`): по каждой
+   * ссылке `{link, meta, data}`, null — нода о ролике не знает.
+   */
+  getVideosInfo(urls: string[], update: boolean): Promise<Array<LegacyVideoItem | null>>
+  /**
+   * Окно загрузки своего ролика (`videos.opendialog`): `{link, name}` —
+   * указатель `peertube://host/uuid` и имя; null — окно закрыли.
+   */
+  openVideoUploadDialog(appName: string, signal?: AbortSignal): Promise<UploadedAppVideo | null>
 
   // ─── chat (5.7) ────────────────────────────────────────────────────────
   /** Открывает room в Matrix-чате. */
@@ -257,7 +279,9 @@ export async function createDefaultHostContext(
   const { rpcEndpoints } = await import('@/helpers/api/rpc-endpoints')
   const { unwrapRpcResponse } = await import('@/helpers/common/response-parser')
   const { uploadImages } = await import('@/services/image-upload-service')
-  const { removeVideoByPointer } = await import('@/services/peertube/peertube-videos')
+  const { removeVideoByPointer, getVideosInfo } =
+    await import('@/services/peertube/peertube-videos')
+  const { thumbnailOf } = await import('@/services/media/media-info')
   const { fetchPeertubeHostAllowlist } = await import('@/services/peertube/peertube-host')
   const { parsePeerTubeUrl } = await import('@/helpers/api/peertube-parser')
   const { confirmVideoRemoval } = await import('./host-context-methods/confirm-video-removal')
@@ -269,8 +293,47 @@ export async function createDefaultHostContext(
 
   const auth = createAuthMethods({ useAuthStore, generateApiSignature, getWalletAddressesList })
   const rpc = createRpcMethods({ useAuthStore, getByPRC, rpcEndpoints, unwrapRpcResponse })
-  const content = createContentMethods({ router: opts.router })
-  const payments = createPaymentMethods({ getUserAddress: () => useAuthStore().address ?? null })
+  const openComposer = async (share: ComposerSharePrefill): Promise<void> => {
+    const { useModalStore } = await import('@/stores/modal-store')
+    const { isMobile } = await import('@mobile/utils/platform')
+    const modalStore = useModalStore()
+    // На телефоне окно поста — страница во весь экран, как у «Создать пост».
+    if (isMobile()) {
+      modalStore.postComposerModal.share = share
+      void opts.router.push({ name: 'compose' })
+      return
+    }
+    modalStore.openPostComposerModal({ share })
+  }
+  const content = createContentMethods({
+    router: opts.router,
+    openComposer,
+    complain: async (req, signal) => {
+      const { openComplainDialog } = await import('../ui/complain-dialog-controller')
+      return openComplainDialog(req, signal)
+    },
+  })
+  const payments = createPaymentMethods({
+    getUserAddress: () => useAuthStore().address ?? null,
+    openComposer,
+    notifyMerchant: async (p, tx, contacts, account) => {
+      const [{ notifyMerchant }, { appFetch }, { openExternal }] = await Promise.all([
+        import('../tx/ext-callback'),
+        import('@/helpers/api/fetch-strategies'),
+        import('@/helpers/common/open-external'),
+      ])
+      return notifyMerchant(p, tx, contacts, account, {
+        fetch: (url, init) => appFetch(url, init),
+        openExternal: async (url) => {
+          await openExternal(url)
+        },
+      })
+    },
+    warn: async (message) => {
+      const { appToast } = await import('@/b-components/app-toast')
+      appToast.warning({ message })
+    },
+  })
   const media = createMediaMethods({ isCapacitor })
   const currency = createCurrencyMethods({
     fetchProxy: async (path) => {
@@ -287,6 +350,16 @@ export async function createDefaultHostContext(
     confirmRemoval: confirmVideoRemoval,
   })
   const chat = createChatMethods({ router: opts.router })
+  const videos = createVideoMethods({
+    fetchInfo: async (urls, update) =>
+      (await getVideosInfo({ urls, update })) as Map<string, Record<string, unknown>>,
+    parsePointer: (url) => parsePeerTubeUrl(url),
+    mediaUrl: (url, path) => (path ? thumbnailOf(url, { thumbnailPath: path }) : null),
+    openDialog: async (appName, signal) => {
+      const { openVideoDialog } = await import('../ui/video-dialog-controller')
+      return openVideoDialog(appName, signal)
+    },
+  })
   const appTx = createAppTxMethods({
     getUserAddress: () => useAuthStore().address ?? null,
     send: (obj, pending) => sendLegacyTx(obj, pending),
@@ -361,6 +434,7 @@ export async function createDefaultHostContext(
     ...mediaUpload,
     ...chat,
     ...appTx,
+    ...videos,
   }
 }
 

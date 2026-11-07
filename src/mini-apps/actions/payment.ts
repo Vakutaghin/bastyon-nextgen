@@ -46,13 +46,12 @@ const payment: ActionDefinition<unknown, Record<string, unknown>> = {
 
 const ext: ActionDefinition<{ ext: string }, string> = {
   schema: ActionSchemas.ext,
-  // Permissions не объявлены в legacy — `ext` open другую миниаппу/диалог,
-  // авторизация не требуется (это вход в платёжный flow, не сам платёж).
+  // Permissions не объявлены в legacy: платёж идёт магазину из ссылки, и
+  // окно оплаты показывает получателя, сумму и магазин. Без входа платить
+  // нечем — окно скажет «требуется авторизация».
   rateLimitClass: 'normal',
-  handler: async ({ data, host }) => {
-    await host.openExternalPayment(data.ext)
-    return 'application:ext:opened'
-  },
+  handler: async ({ data, app, host }) =>
+    host.openExternalPayment(data.ext, app.manifest.name, app.manifest.id),
 }
 
 export const PAYMENT_ACTIONS = {

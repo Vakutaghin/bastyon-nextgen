@@ -321,7 +321,12 @@ import ComposerUrlPreview from './composer-url-preview.vue'
 import ComposerVideo from './composer-video.vue'
 import LinkPreviewCard from '@/b-components/content/link-preview-card/link-preview-card.vue'
 import VoiceInputButton from '@/b-components/voice-input/voice-input-button.vue'
-import type { ComposerMode, ComposerSource, ComposerVideoPrefill } from './composer-source'
+import type {
+  ComposerMode,
+  ComposerSource,
+  ComposerSharePrefill,
+  ComposerVideoPrefill,
+} from './composer-source'
 import { useComposerMentions } from './use-composer-mentions'
 import {
   SC_Composer,
@@ -355,6 +360,8 @@ const props = defineProps<{
   source?: ComposerSource | null
   /** Новый пост с уже загруженным видео (из «Моих видео»). */
   video?: ComposerVideoPrefill | null
+  /** Новый пост с готовым текстом и картинками («Поделиться в Bastyon» из приложения). */
+  share?: ComposerSharePrefill | null
 }>()
 const emit = defineEmits<{
   (e: 'published', txid: string): void
@@ -428,6 +435,7 @@ const {
   mode: props.mode,
   source: props.source,
   video: props.video,
+  share: props.share,
 })
 
 // Пока идёт публикация, модалку закрывать нельзя: закрытая посреди отправки

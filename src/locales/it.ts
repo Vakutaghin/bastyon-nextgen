@@ -2202,6 +2202,7 @@ export default {
     reason2: 'Sfruttamento di minori',
     reason3: 'Minaccia diretta di violenza',
     reason4: 'Droghe illegali',
+    reason5: 'Violazione del diritto d’autore',
     reason6: 'Spam',
     submit: 'Invia la segnalazione',
     cancel: 'Annulla',
@@ -2444,6 +2445,25 @@ export default {
     txNoCoins:
       'Non ci sono monete per la commissione di rete. Ricarica il portafoglio o attendi la conferma della transazione precedente.',
     errorPaymentFailed: 'Impossibile inviare il pagamento',
+    videoTitle: 'Video per «{name}»',
+    videoLead:
+      'Il video viene caricato su un server video di Bastyon, nel tuo canale. Tieni aperta la finestra durante il caricamento: annullare lo interrompe.',
+    videoAttach: 'Allega',
+    complainTitle: 'Segnalazione in «{name}»',
+    complainIntro:
+      'Scegli un motivo. La segnalazione arriva al team Pocketnet senza il tuo indirizzo.',
+    complainFailed:
+      'Segnalazione non inviata: il server delle segnalazioni di Pocketnet non risponde. Riprova più tardi.',
+    extItemCount: '{name} × {count}',
+    extExpires: 'Il link è valido fino a {time}',
+    extExpired: 'Il link è scaduto e non si può più pagare',
+    extEmail: 'Email per il negozio',
+    extPhone: 'Telefono per il negozio',
+    extCallback: 'Dopo il pagamento, {host} riceverà l’ID della transazione.',
+    extCallbackAccount:
+      'Dopo il pagamento, {host} riceverà l’ID della transazione e il tuo indirizzo.',
+    extMerchantFailed:
+      'Pagamento inviato, ma {host} non ha confermato la ricezione. La transazione è nel portafoglio.',
   },
   comments: {
     title: 'Commenti ({count})',

@@ -27,6 +27,12 @@ export const USER_WAIT_TIMEOUT_MS = 10 * 60_000
  */
 export const APP_TX_TIMEOUT_MS = 2 * 60_000
 
+/**
+ * Загрузка ролика в окне `videos.opendialog`: большой файл на медленной сети
+ * грузится долго, а по тайм-ауту окно закрылось бы и загрузка прервалась.
+ */
+export const VIDEO_UPLOAD_TIMEOUT_MS = 4 * 60 * 60_000
+
 export interface ActionHandlerContext<TIn = unknown> {
   readonly data: TIn
   readonly app: InstalledApp

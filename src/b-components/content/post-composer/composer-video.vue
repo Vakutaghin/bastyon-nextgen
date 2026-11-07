@@ -1,8 +1,8 @@
 <template>
   <SC_VideoPick v-if="state === 'idle' && !hidePick" :class="{ disabled }">
-    <input type="file" :accept="VIDEO_ACCEPT" :disabled="disabled" @change="onPick" />
+    <input type="file" :accept="accept ?? VIDEO_ACCEPT" :disabled="disabled" @change="onPick" />
     <VideoCameraAddOutlined />
-    {{ t('postComposer.videoUpload') }}
+    {{ pickLabel ?? t('postComposer.videoUpload') }}
   </SC_VideoPick>
 
   <SC_VideoPanel v-else-if="state === 'uploading'" role="status">
@@ -124,6 +124,10 @@ const props = defineProps<{
   disabled?: boolean
   /** Файл выбирают кнопкой панели окна поста (`start`), своя кнопка не нужна. */
   hidePick?: boolean
+  /** Какие файлы предлагать; по умолчанию видео и звук. */
+  accept?: string
+  /** Подпись кнопки выбора файла; по умолчанию «Загрузить видео или аудио». */
+  pickLabel?: string
 }>()
 const emit = defineEmits<{
   (e: 'uploaded', video: UploadedComposerVideo): void

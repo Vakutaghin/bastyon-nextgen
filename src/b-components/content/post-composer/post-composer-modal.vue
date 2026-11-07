@@ -17,6 +17,7 @@
       :mode="modalStore.postComposerModal.mode"
       :source="modalStore.postComposerModal.source"
       :video="modalStore.postComposerModal.video"
+      :share="modalStore.postComposerModal.share"
       @published="onPublished"
       @busy-change="publishing = $event"
     />

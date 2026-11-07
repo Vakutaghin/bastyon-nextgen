@@ -2209,6 +2209,7 @@ export default {
     reason2: 'Explotación infantil',
     reason3: 'Amenaza directa de violencia',
     reason4: 'Drogas ilegales',
+    reason5: 'Infracción de derechos de autor',
     reason6: 'Spam',
     submit: 'Enviar denuncia',
     cancel: 'Cancelar',
@@ -2451,6 +2452,23 @@ export default {
     txNoCoins:
       'No hay monedas para la comisión de la red. Recarga el monedero o espera a que se confirme la transacción anterior.',
     errorPaymentFailed: 'No se pudo enviar el pago',
+    videoTitle: 'Vídeo para «{name}»',
+    videoLead:
+      'El vídeo se sube a un servidor de vídeo de Bastyon, en tu canal. No cierres la ventana mientras se sube: cancelar detiene la subida.',
+    videoAttach: 'Adjuntar',
+    complainTitle: 'Denuncia en «{name}»',
+    complainIntro: 'Elige un motivo. La denuncia llega al equipo de Pocketnet sin tu dirección.',
+    complainFailed:
+      'No se pudo enviar la denuncia: el servidor de denuncias de Pocketnet no responde. Inténtalo más tarde.',
+    extItemCount: '{name} × {count}',
+    extExpires: 'El enlace es válido hasta {time}',
+    extExpired: 'El enlace ha caducado y ya no se puede pagar',
+    extEmail: 'Correo para la tienda',
+    extPhone: 'Teléfono para la tienda',
+    extCallback: 'Tras el pago, {host} recibirá el ID de la transacción.',
+    extCallbackAccount: 'Tras el pago, {host} recibirá el ID de la transacción y tu dirección.',
+    extMerchantFailed:
+      'Pago enviado, pero {host} no confirmó haberlo recibido. La transacción está en tu monedero.',
   },
   comments: {
     title: 'Comentarios ({count})',

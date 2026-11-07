@@ -59,6 +59,10 @@ export const SC_TotalAmount = styled.span`
 export const SC_FeeRow = styled.div`
   font-size: 12px;
   color: var(--ui-text-muted);
+
+  &.expired {
+    color: var(--color-danger);
+  }
 `
 
 export const SC_MessageRow = styled.div`
@@ -72,4 +76,9 @@ export const SC_MessageRow = styled.div`
 export const SC_Error = styled.div`
   color: var(--color-danger);
   font-size: 14px;
+`
+
+export const SC_StoreRow = styled.div`
+  font-weight: 600;
+  font-size: 15px;
 `

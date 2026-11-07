@@ -2170,6 +2170,7 @@ export default {
     reason2: '아동 착취',
     reason3: '직접적인 폭력 위협',
     reason4: '불법 마약',
+    reason5: '저작권 침해',
     reason6: '스팸',
     submit: '신고 보내기',
     cancel: '취소',
@@ -2406,6 +2407,23 @@ export default {
     txNoCoins:
       '네트워크 수수료로 쓸 코인이 없습니다. 지갑을 충전하거나 이전 거래가 확인될 때까지 기다리세요.',
     errorPaymentFailed: '결제를 보내지 못했습니다',
+    videoTitle: '“{name}”용 동영상',
+    videoLead:
+      '동영상은 Bastyon 동영상 서버의 내 채널에 업로드됩니다. 업로드 중에는 창을 닫지 마세요. 취소하면 업로드가 중단됩니다.',
+    videoAttach: '첨부',
+    complainTitle: '“{name}”에서 신고',
+    complainIntro: '사유를 선택하세요. 신고는 회원님 주소 없이 Pocketnet 팀에 전달됩니다.',
+    complainFailed:
+      '신고를 보내지 못했습니다. Pocketnet 신고 서버가 응답하지 않습니다. 나중에 다시 시도하세요.',
+    extItemCount: '{name} × {count}',
+    extExpires: '링크 유효 기간: {time}까지',
+    extExpired: '링크가 만료되어 더 이상 결제할 수 없습니다',
+    extEmail: '상점에 알릴 이메일',
+    extPhone: '상점에 알릴 전화번호',
+    extCallback: '결제 후 {host}에 거래 ID가 전달됩니다.',
+    extCallbackAccount: '결제 후 {host}에 거래 ID와 회원님 주소가 전달됩니다.',
+    extMerchantFailed:
+      '결제는 전송되었지만 {host}에서 수신을 확인하지 않았습니다. 거래는 지갑에 있습니다.',
   },
   comments: {
     title: '댓글({count})',

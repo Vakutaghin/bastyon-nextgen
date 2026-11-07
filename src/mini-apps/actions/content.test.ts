@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ActionRegistry } from './registry'
 import { CONTENT_ACTIONS } from './content'
 import { TEST_APP, makeMockHost, setupTestPinia, makeResolver } from './__test-helpers'
+import { USER_WAIT_TIMEOUT_MS } from './types'
 
 function setup(hostOverrides = {}) {
   const host = makeMockHost(hostOverrides)
@@ -30,18 +31,25 @@ describe('content actions', () => {
     expect(method).toBe('getfeed')
   })
 
-  it('get.videos passes urls + update flag', async () => {
-    const callRpc = vi.fn(async () => [])
-    const { reg } = setup({ callRpc })
-    await reg.execute(
+  it('get.videos — сведения о роликах от хоста, с флагом update', async () => {
+    const getVideosInfo = vi.fn(async () => [null, null])
+    const { reg } = setup({ getVideosInfo })
+    const r = await reg.execute(
       'get.videos',
       TEST_APP,
       { urls: ['a', 'b'], update: true },
       new AbortController().signal
     )
-    const [method, params] = callRpc.mock.calls[0] as unknown as [string, unknown[]]
-    expect(method).toBe('getvideoposts')
-    expect(params).toEqual([['a', 'b'], true])
+    expect(getVideosInfo).toHaveBeenCalledWith(['a', 'b'], true)
+    expect(r).toEqual([null, null])
+  })
+
+  it('get.videos: больше 200 ссылок за раз — отказ схемы', async () => {
+    const { reg } = setup()
+    const urls = Array.from({ length: 201 }, (_, i) => `peertube://h/${i}`)
+    await expect(
+      reg.execute('get.videos', TEST_APP, { urls }, new AbortController().signal)
+    ).rejects.toThrow()
   })
 
   // ─── navigation ──────────────────────────────────────────────────────────
@@ -136,17 +144,23 @@ describe('content actions', () => {
     )
     expect(share).toHaveBeenCalledWith(
       { path: 'post/123', url: undefined, sharing: undefined },
-      { onBastyon: true, appId: TEST_APP.manifest.id }
+      { onBastyon: true, appId: TEST_APP.manifest.id, appName: TEST_APP.manifest.name }
     )
   })
 
   // ─── complain ────────────────────────────────────────────────────────────
 
-  it('complain delegates to host', async () => {
+  it('complain — окно жалобы хоста с именем приложения', async () => {
     const openComplain = vi.fn(async () => {})
     const { reg } = setup({ openComplain })
-    await reg.execute('complain', TEST_APP, { target: 'txid' }, new AbortController().signal)
-    expect(openComplain).toHaveBeenCalledOnce()
+    const data = { entityLink: '/application?id=x', entityTxid: 't', entityType: 'offer' }
+    await reg.execute('complain', TEST_APP, data, new AbortController().signal)
+    expect(openComplain).toHaveBeenCalledWith(data, TEST_APP.manifest.name, expect.any(AbortSignal))
+  })
+
+  it('complain ждёт человека дольше общего тайм-аута моста', () => {
+    const { reg } = setup()
+    expect(reg.timeoutFor('complain')).toBe(USER_WAIT_TIMEOUT_MS)
   })
 
   // ─── pending actions ─────────────────────────────────────────────────────

@@ -1,5 +1,8 @@
 /**
  * HostContext methods: открытие постов/профилей/доната, шаринг, complain.
+ *
+ * «Поделиться в Bastyon» открывает окно поста с заготовкой (share-post.ts),
+ * жалоба — окно жалобы (complain-dialog-controller), как у прежнего клиента.
  */
 
 import type { Router } from 'vue-router'
@@ -10,9 +13,17 @@ import {
   publicShareOrigin,
 } from '@/helpers/common/share-origin'
 import type { HostContext } from '../host-context'
+import type { ComposerSharePrefill } from '@/b-components/content/post-composer/composer-source'
+import { complaintEntity } from '../../core/miniapp-complaint'
+import type { ComplainRequest } from '../../ui/complain-dialog-controller'
+import { sharePostPrefill } from './share-post'
 
 export interface ContentDeps {
   router: Router
+  /** Окно поста с заготовкой (на телефоне — страница /compose). */
+  openComposer: (share: ComposerSharePrefill) => Promise<void>
+  /** Окно жалобы; true — жалоба ушла. */
+  complain: (req: ComplainRequest, signal?: AbortSignal) => Promise<boolean>
 }
 
 export type ContentMethods = Pick<
@@ -44,15 +55,19 @@ export function createContentMethods(deps: ContentDeps): ContentMethods {
       // Ссылка уходит другому человеку — только публичный адрес. Раньше путь
       // приклеивался к своему origin, и из приложения уходило
       // http://tauri.localhost/… или https://localhost/…
-      const url = data.url
-        ? publicFromAppLink(data.url)
+      // SDK без init() отдаёт в url голый путь (`get.applink` не знает приложения):
+      // такой путь — страница этого приложения.
+      const isLink = !!data.url && /^[a-z][a-z0-9+.-]*:\/\//i.test(data.url)
+      const path = isLink ? undefined : (data.url ?? data.path)
+      const url = isLink
+        ? publicFromAppLink(data.url!)
         : sharePref.appId
-          ? publicMiniAppUrl(sharePref.appId, data.path)
+          ? publicMiniAppUrl(sharePref.appId, path)
           : publicShareOrigin()
 
       if (sharePref.onBastyon) {
-        // Внутренний шаринг: открываем форму создания поста с pre-fill.
-        void router.push({ path: '/', query: { share: url } })
+        // Окно поста с текстом, картинками и ссылкой приложения.
+        await deps.openComposer(sharePostPrefill(data.sharing, url, sharePref.appName ?? ''))
         return
       }
 
@@ -71,12 +86,12 @@ export function createContentMethods(deps: ContentDeps): ContentMethods {
       }
     },
 
-    openComplain: async (_data) => {
-      // Старый клиент такую жалобу только писал в свою телеметрию
-      // (Logger.info MINIAPP_COMPLAIN) — ни транзакции, ни модерации. Телеметрии
-      // здесь нет намеренно, поэтому честно отвечаем «не поддерживается»:
-      // раньше мини-аппа получала успех и говорила человеку «жалоба отправлена».
-      throw new Error('complain:notsupported')
+    openComplain: async (data, appName = '', signal) => {
+      const entity = complaintEntity(data)
+      if (!entity) throw new Error('complain:invalid')
+      // Отвечаем, когда окно закрыли, — ушла жалоба или нет (прежний клиент
+      // отвечал сразу и ничем).
+      await deps.complain({ appName, entity }, signal)
     },
   }
 }

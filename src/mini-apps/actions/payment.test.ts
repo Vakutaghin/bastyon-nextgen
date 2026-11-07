@@ -79,23 +79,27 @@ describe('ext action', () => {
     setupTestPinia()
   })
 
-  it('opens external payment by hash', async () => {
-    const openExternalPayment = vi.fn(async () => {})
+  it('платёж по ссылке — хосту с именем и id приложения', async () => {
+    const openExternalPayment = vi.fn(async () => 'application:ext:opened')
     const { reg } = setup({ openExternalPayment })
     const r = await reg.execute('ext', TEST_APP, { ext: '_aabbcc' }, new AbortController().signal)
     expect(r).toBe('application:ext:opened')
-    expect(openExternalPayment).toHaveBeenCalledWith('_aabbcc')
+    expect(openExternalPayment).toHaveBeenCalledWith(
+      '_aabbcc',
+      TEST_APP.manifest.name,
+      TEST_APP.manifest.id
+    )
   })
 
-  it('propagates host error when not implemented', async () => {
+  it('плохая ссылка — отказ хоста доходит до приложения', async () => {
     const { reg } = setup({
       openExternalPayment: vi.fn(async () => {
-        throw new Error('ext_payment_not_implemented')
+        throw new Error('application:ext:notopened')
       }),
     })
     await expect(
       reg.execute('ext', TEST_APP, { ext: '_x' }, new AbortController().signal)
-    ).rejects.toThrow(/ext_payment_not_implemented/)
+    ).rejects.toThrow(/application:ext:notopened/)
   })
 
   it('rejects empty ext string', async () => {

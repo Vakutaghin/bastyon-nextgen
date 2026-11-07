@@ -79,7 +79,7 @@ export const ActionSchemas = {
       feemode: z.string().optional(),
     })
     .passthrough(),
-  ext: z.object({ ext: z.string().min(1) }),
+  ext: z.object({ ext: z.string().min(1).max(20_000) }),
 
   // wallet
   fromToTransactions: z.object({
@@ -94,7 +94,7 @@ export const ActionSchemas = {
   // content
   'get.feed': z.object({}).passthrough().optional(),
   'get.videos': z.object({
-    urls: z.array(z.string()),
+    urls: z.array(z.string().max(512)).max(200),
     update: z.boolean().optional(),
   }),
   'get.videosWithShares': z.object({}).passthrough().optional(),
