@@ -1088,6 +1088,8 @@ export default {
     notifyFile: 'File',
     notSent: 'Non inviato',
     retrySend: 'Riprova',
+    saveMedia: 'Scarica',
+    saveMediaFailed: 'Download non riuscito',
     discardUnsentText:
       'Il messaggio non è stato inviato ed esiste solo su questo dispositivo. Eliminarlo?',
     messages: 'Messaggi',

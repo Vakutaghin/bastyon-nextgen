@@ -1030,6 +1030,8 @@ export default {
     notifyFile: '文件',
     notSent: '未发送',
     retrySend: '重试',
+    saveMedia: '下载',
+    saveMediaFailed: '下载失败',
     discardUnsentText: '消息未发送，仅保存在此设备上。要删除吗？',
     messages: '消息',
     chat: '聊天',

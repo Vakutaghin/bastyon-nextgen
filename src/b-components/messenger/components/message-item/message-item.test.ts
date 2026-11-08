@@ -10,9 +10,13 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { i18n, setI18nLocale } from '@/i18n'
 
-const mocks = vi.hoisted(() => ({ store: null as unknown as Record<string, unknown> }))
+const mocks = vi.hoisted(() => ({
+  store: null as unknown as Record<string, unknown>,
+  download: vi.fn(async (_url: string, _name?: string) => 'saved' as const),
+}))
 
 vi.mock('../../store', () => ({ useMessengerStore: () => mocks.store }))
+vi.mock('@/helpers/common/download-media', () => ({ downloadMedia: mocks.download }))
 vi.mock('vue-router', async (original) => ({
   ...(await original<typeof import('vue-router')>()),
   useRouter: () => ({ push: vi.fn() }),
@@ -134,6 +138,30 @@ describe('меню «⋯» у сообщения', () => {
     const allowed = await openMenu(render('Привет'))
     expect(allowed.textContent).toContain('Удалить')
     expect(mocks.store.canDeleteOthers).toHaveBeenCalledWith('!support:host')
+  })
+
+  it('голосовое: «Скачать» расшифровывает и сохраняет; у текста пункта нет', async () => {
+    mocks.store.fetchAndDecryptMedia = vi.fn(async () => 'blob:voice')
+    const w = render('', undefined, {
+      type: 'audio',
+      url: 'mxc://host/voice',
+      info: { mimetype: 'audio/webm' },
+      timestamp: new Date(2026, 10, 9, 14, 5).getTime(),
+    })
+    const popover = await openMenu(w)
+    const save = popover.querySelector<HTMLButtonElement>('[data-testid="message-save-media"]')!
+    expect(save.textContent).toContain('Скачать')
+    save.click()
+    await vi.waitFor(() => expect(mocks.download).toHaveBeenCalled())
+    expect(mocks.store.fetchAndDecryptMedia).toHaveBeenCalledWith(
+      expect.objectContaining({ url: 'mxc://host/voice' }),
+      'audio/webm'
+    )
+    expect(mocks.download).toHaveBeenCalledWith('blob:voice', 'voice-2026-11-09_14-05')
+
+    document.body.innerHTML = ''
+    const text = await openMenu(render('Привет'))
+    expect(text.querySelector('[data-testid="message-save-media"]')).toBeNull()
   })
 
   it('сообщение есть только на устройстве — значок с объяснением', () => {

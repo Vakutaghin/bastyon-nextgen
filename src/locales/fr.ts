@@ -1101,6 +1101,8 @@ export default {
     notifyFile: 'Fichier',
     notSent: 'Non envoyé',
     retrySend: 'Réessayer',
+    saveMedia: 'Télécharger',
+    saveMediaFailed: 'Échec du téléchargement',
     discardUnsentText:
       'Le message n’a pas été envoyé et n’existe que sur cet appareil. Le supprimer ?',
     messages: 'Messages',

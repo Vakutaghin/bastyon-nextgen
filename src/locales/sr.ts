@@ -1079,6 +1079,8 @@ export default {
     notifyFile: 'Датотека',
     notSent: 'Није послато',
     retrySend: 'Покушај поново',
+    saveMedia: 'Преузми',
+    saveMediaFailed: 'Преузимање није успело',
     discardUnsentText: 'Порука није послата и постоји само на овом уређају. Обрисати је?',
     messages: 'Поруке',
     chat: 'Ћаскање',

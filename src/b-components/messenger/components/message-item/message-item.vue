@@ -156,6 +156,16 @@
                 <RollbackOutlined />
                 <span>{{ t('messenger.reply') }}</span>
               </SC_ActionsItem>
+              <SC_ActionsItem
+                v-if="canSaveMedia"
+                type="button"
+                data-testid="message-save-media"
+                :disabled="savingMedia"
+                @click.stop="onSaveMedia"
+              >
+                <DownloadOutlined />
+                <span>{{ t('messenger.saveMedia') }}</span>
+              </SC_ActionsItem>
               <SC_ActionsItem v-if="canDelete" type="button" class="danger" @click.stop="onDelete">
                 <DeleteOutlined />
                 <span>{{ t('messenger.deleteMessage') }}</span>
@@ -217,7 +227,14 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Popover, Modal } from 'ant-design-vue'
-import { MoreOutlined, DeleteOutlined, RollbackOutlined, DeviceCopyIcon } from '@/components/icons'
+import {
+  MoreOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+  RollbackOutlined,
+  DeviceCopyIcon,
+} from '@/components/icons'
+import { downloadMedia } from '@/helpers/common/download-media'
 import { Z_INDEX } from '@/styles/design-tokens'
 import { parseMeshDialogId } from '@/mesh/ids'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
@@ -542,6 +559,44 @@ const canDelete = computed<boolean>(() => {
   if (isMine.value) return true
   return actionsOpen.value && store.canDeleteOthers(props.message.chatId)
 })
+/**
+ * «Скачать» у голосового и видео: у них, в отличие от файла и картинки, своей
+ * кнопки нет. Тот же путь, что у файла: расшифровать и сохранить —
+ * диалог «Сохранить» на компьютере, «Поделиться» на телефоне.
+ */
+const canSaveMedia = computed<boolean>(
+  () =>
+    (props.message.type === 'audio' || props.message.type === 'video') &&
+    !!props.message.url &&
+    !isMesh.value
+)
+const savingMedia = ref(false)
+
+function mediaFileName(): string {
+  const d = new Date(props.message.timestamp || Date.now())
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`
+  return `${props.message.type === 'audio' ? 'voice' : 'video'}-${stamp}`
+}
+
+async function onSaveMedia(): Promise<void> {
+  if (savingMedia.value) return
+  actionsOpen.value = false
+  savingMedia.value = true
+  try {
+    const raw = props.message.url ?? ''
+    const url = /^(blob|data):/.test(raw)
+      ? raw
+      : await store.fetchAndDecryptMedia(props.message, props.message.info?.mimetype)
+    const result = url ? await downloadMedia(url, mediaFileName()) : 'failed'
+    if (result === 'failed') appToast.error({ message: t('messenger.saveMediaFailed') })
+  } catch {
+    appToast.error({ message: t('messenger.saveMediaFailed') })
+  } finally {
+    savingMedia.value = false
+  }
+}
+
 const canShowActions = computed<boolean>(
   () => canReply.value || (isRealMessage.value && !isMesh.value)
 )

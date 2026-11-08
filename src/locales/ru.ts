@@ -1083,6 +1083,8 @@ export default {
     notifyFile: 'Файл',
     notSent: 'Не отправлено',
     retrySend: 'Повторить',
+    saveMedia: 'Скачать',
+    saveMediaFailed: 'Не удалось скачать',
     discardUnsentText: 'Сообщение не отправлено и есть только на этом устройстве. Удалить его?',
     messages: 'Сообщения',
     chat: 'Чат',

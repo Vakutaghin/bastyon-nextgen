@@ -1096,6 +1096,8 @@ export default {
     notifyFile: 'Datei',
     notSent: 'Nicht gesendet',
     retrySend: 'Erneut senden',
+    saveMedia: 'Herunterladen',
+    saveMediaFailed: 'Download fehlgeschlagen',
     discardUnsentText: 'Die Nachricht wurde nicht gesendet und ist nur auf diesem Gerät. Löschen?',
     messages: 'Nachrichten',
     chat: 'Chat',

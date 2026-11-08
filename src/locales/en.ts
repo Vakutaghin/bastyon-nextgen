@@ -1082,6 +1082,8 @@ export default {
     notifyFile: 'File',
     notSent: 'Not sent',
     retrySend: 'Retry',
+    saveMedia: 'Download',
+    saveMediaFailed: "Couldn't download",
     discardUnsentText: 'The message was not sent and exists only on this device. Delete it?',
     messages: 'Messages',
     chat: 'Chat',
