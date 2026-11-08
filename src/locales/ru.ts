@@ -2131,6 +2131,13 @@ export default {
     error: 'Не удалось загрузить список',
     reputation: 'Репутация',
     loadMore: 'Показать ещё',
+    search: 'Ник или адрес',
+    sortLabel: 'Порядок списка',
+    sort_new: 'Сначала новые',
+    sort_reputation: 'По репутации',
+    searchNamesLoading: 'Загружаю ники — найденных может прибавиться…',
+    searchFound: 'Найден {n} | Найдено {n} | Найдено {n}',
+    searchEmpty: 'Никого не нашлось',
   },
   editProfile: {
     title: 'Редактировать профиль',

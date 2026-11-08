@@ -2114,6 +2114,13 @@ export default {
     error: '목록을 불러오지 못했습니다',
     reputation: '평판',
     loadMore: '더 보기',
+    search: '닉네임 또는 주소',
+    sortLabel: '목록 순서',
+    sort_new: '최신순',
+    sort_reputation: '평판순',
+    searchNamesLoading: '닉네임을 불러오는 중 — 결과가 더 나올 수 있습니다…',
+    searchFound: '{n}명 찾음',
+    searchEmpty: '찾은 사람이 없습니다',
   },
   editProfile: {
     title: '프로필 편집',

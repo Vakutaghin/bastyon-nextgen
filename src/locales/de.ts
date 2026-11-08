@@ -2162,6 +2162,13 @@ export default {
     error: 'Die Liste konnte nicht geladen werden',
     reputation: 'Reputation',
     loadMore: 'Mehr anzeigen',
+    search: 'Nickname oder Adresse',
+    sortLabel: 'Reihenfolge',
+    sort_new: 'Neueste zuerst',
+    sort_reputation: 'Nach Reputation',
+    searchNamesLoading: 'Nicknames werden geladen — es können noch mehr Treffer kommen…',
+    searchFound: '{n} gefunden | {n} gefunden',
+    searchEmpty: 'Niemand gefunden',
   },
   editProfile: {
     title: 'Profil bearbeiten',

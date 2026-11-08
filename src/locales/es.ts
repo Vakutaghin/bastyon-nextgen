@@ -2150,6 +2150,13 @@ export default {
     error: 'No se pudo cargar la lista',
     reputation: 'Reputación',
     loadMore: 'Mostrar más',
+    search: 'Apodo o dirección',
+    sortLabel: 'Orden de la lista',
+    sort_new: 'Más recientes primero',
+    sort_reputation: 'Por reputación',
+    searchNamesLoading: 'Cargando apodos: pueden aparecer más resultados…',
+    searchFound: '{n} encontrado | {n} encontrados',
+    searchEmpty: 'No se encontró a nadie',
   },
   editProfile: {
     title: 'Editar perfil',

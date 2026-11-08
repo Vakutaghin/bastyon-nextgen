@@ -479,16 +479,30 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
       // ноды: по репутации — с репутацией ×10, смещение не учитывается.
       const [owner, orderBy, , , limit] = params as [string, string?, boolean?, number?, number?]
       const list = data.profiles.find((p) => p.address === owner)?.subscribers ?? []
-      if (orderBy !== 'reputation') return list.map((address) => ({ address, private: 'false' }))
+      // Без порядка — тоже с репутацией и высотой блока подписки: последний в
+      // списке подписался позже всех.
+      const repOf = (address: string) =>
+        (data.profiles.find((p) => p.address === address)?.reputation ?? 120) * 10
+      if (orderBy !== 'reputation')
+        return list.map((address, i) => ({
+          address,
+          private: 0,
+          reputation: repOf(address),
+          height: 1000 + i,
+        }))
       return list
         .map((address) => ({
           address,
           private: 0,
-          reputation: (data.profiles.find((p) => p.address === address)?.reputation ?? 120) * 10,
+          reputation: repOf(address),
         }))
         .sort((a, b) => b.reputation - a.reputation)
         .slice(0, limit || 10)
     }
+    case 'getuserblockings':
+      // [адрес, 1, …] — с флагом 1 нода отдаёт одни адреса. Без этого метода
+      // список блокировок у всех пуст, и подписчики шли с заблокированными.
+      return data.profiles.find((p) => p.address === params[0])?.blocking ?? []
     case 'getuseraddress': {
       const name = String(params[0] ?? '').toLowerCase()
       const owner = data.profiles.find((p) => p.name.toLowerCase() === name)
@@ -496,7 +510,12 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
     }
     case 'getusersubscribes':
       // Поле с опечаткой, как у настоящей ноды.
-      return (data.subscribes ?? []).map((adddress) => ({ adddress, private: 'false' }))
+      return (data.subscribes ?? []).map((adddress, i) => ({
+        adddress,
+        private: 0,
+        reputation: (data.profiles.find((p) => p.address === adddress)?.reputation ?? 120) * 10,
+        height: 1000 + i,
+      }))
     case 'getaccountsetting': {
       // Нода отдаёт настройки JSON-строкой; у аккаунта без них — пусто.
       const settings = data.settings?.[params[0] as string]

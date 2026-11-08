@@ -2045,6 +2045,13 @@ export default {
     error: '无法加载列表',
     reputation: '声誉',
     loadMore: '显示更多',
+    search: '昵称或地址',
+    sortLabel: '列表顺序',
+    sort_new: '最新优先',
+    sort_reputation: '按声誉',
+    searchNamesLoading: '正在加载昵称——可能还会找到更多…',
+    searchFound: '找到 {n} 人',
+    searchEmpty: '没有找到',
   },
   editProfile: {
     title: '编辑个人资料',

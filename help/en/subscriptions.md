@@ -26,9 +26,14 @@ Next to the subscribe button in a profile there is a bell, **“Enable notificat
 
 **“Disable notifications”** is the same bell once more: the subscription stays, the notifications stop. If you click **“Subscribed”**, both the subscription and the notifications go.
 
-## Who follows whom
+## Who follows whom <!-- #lists -->
 
 Every profile shows the numbers of **“Subscribers”** and **“Subscriptions”**. Click a number to open a list with names and reputation. You can subscribe to someone right from the list, and **“Show more”** at the bottom loads more people.
+
+Above the list:
+
+- the **“Nickname or address”** field searches by nickname and by part of the address. The app loads the nicknames of everyone in the list on the first search, so in a big list more matches may turn up after a few seconds;
+- **“Newest first”** puts those who subscribed recently on top; **“By reputation”** puts the most reputable on top. The chosen order applies to all lists and stays until the app restarts.
 
 People the profile owner has [blocked](blocking.md) are not in their lists. If the list has someone you have blocked, they have **“Unblock”** instead of subscribing.
 

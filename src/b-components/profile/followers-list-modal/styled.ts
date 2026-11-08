@@ -138,3 +138,55 @@ export const SC_LoadMore = styled.button`
     background: var(--color-bg-hover);
   }
 `
+
+/** Поиск и порядок над списком. */
+export const SC_Toolbar = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+`
+
+export const SC_SortRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`
+
+export const SC_SortButton = styled.button`
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+
+  &.active {
+    border-color: var(--ui-primary);
+    background: rgb(var(--ui-primary-rgb) / 10%);
+    color: var(--ui-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+  }
+
+  &:last-of-type {
+    margin-right: auto;
+  }
+`
+
+export const SC_SearchHint = styled.div`
+  color: var(--color-text-secondary);
+  font-size: 12px;
+`

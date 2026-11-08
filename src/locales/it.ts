@@ -2144,6 +2144,13 @@ export default {
     error: 'Impossibile caricare l’elenco',
     reputation: 'Reputazione',
     loadMore: 'Mostra altro',
+    search: 'Nickname o indirizzo',
+    sortLabel: 'Ordine dell’elenco',
+    sort_new: 'Prima i più recenti',
+    sort_reputation: 'Per reputazione',
+    searchNamesLoading: 'Caricamento dei nickname — potrebbero comparire altri risultati…',
+    searchFound: '{n} trovato | {n} trovati',
+    searchEmpty: 'Nessuno trovato',
   },
   editProfile: {
     title: 'Modifica profilo',

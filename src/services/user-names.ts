@@ -308,6 +308,14 @@ export function userBadges(address: string | null | undefined): readonly string[
 }
 
 /**
+ * Имя, если оно уже известно, — без запроса профиля. Для фильтра по длинному
+ * списку: каждый неизвестный адрес иначе ушёл бы на ноду отдельно. Реактивно.
+ */
+export function peekUserName(address: string): string {
+  return users.get(address)?.name ?? ''
+}
+
+/**
  * Все, чьи имена уже известны (лента, комментарии, профили): мгновенные
  * подсказки @-упоминаний. Реактивно — computed пересчитается, когда придут
  * новые имена.

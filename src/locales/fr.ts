@@ -2163,6 +2163,13 @@ export default {
     error: 'Impossible de charger la liste',
     reputation: 'Réputation',
     loadMore: 'Afficher plus',
+    search: 'Pseudo ou adresse',
+    sortLabel: 'Ordre de la liste',
+    sort_new: 'Les plus récents d’abord',
+    sort_reputation: 'Par réputation',
+    searchNamesLoading: 'Chargement des pseudos — d’autres résultats peuvent s’ajouter…',
+    searchFound: '{n} trouvé | {n} trouvés',
+    searchEmpty: 'Personne trouvé',
   },
   editProfile: {
     title: 'Modifier le profil',

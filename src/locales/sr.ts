@@ -2131,6 +2131,13 @@ export default {
     error: 'Листа није могла да се учита',
     reputation: 'Репутација',
     loadMore: 'Прикажи још',
+    search: 'Надимак или адреса',
+    sortLabel: 'Редослед листе',
+    sort_new: 'Прво најновији',
+    sort_reputation: 'По репутацији',
+    searchNamesLoading: 'Учитавам надимке — може се наћи још…',
+    searchFound: 'Пронађен {n} | Пронађена {n} | Пронађено {n}',
+    searchEmpty: 'Нико није пронађен',
   },
   editProfile: {
     title: 'Измени профил',

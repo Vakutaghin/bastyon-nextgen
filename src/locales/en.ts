@@ -2131,6 +2131,13 @@ export default {
     error: 'Failed to load the list',
     reputation: 'Reputation',
     loadMore: 'Show more',
+    search: 'Nickname or address',
+    sortLabel: 'List order',
+    sort_new: 'Newest first',
+    sort_reputation: 'By reputation',
+    searchNamesLoading: 'Loading nicknames — more may turn up…',
+    searchFound: '{n} found | {n} found',
+    searchEmpty: 'Nobody found',
   },
   editProfile: {
     title: 'Edit profile',
