@@ -6,9 +6,9 @@
     :closable="!sending"
     :mask-closable="!sending"
     :z-index="2700"
-    :title="t('donate.title')"
     @cancel="handleCancel"
   >
+    <template #title>{{ t('donate.title') }} <HelpLink topic="tips" /></template>
     <SC_ModalBody>
       <SC_DonateBody>
         <SC_Recipient>
@@ -116,6 +116,7 @@ import {
   SC_WalletCurrency,
   SC_WalletAddress,
 } from './styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 /** Пресеты быстрых сумм доната (PKOIN). */
 const PRESETS = [1, 5, 10, 50]

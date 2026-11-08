@@ -30,7 +30,9 @@
       <SC_InviteText v-else-if="state === 'accepting'" role="status">
         {{ t('messenger.invite.accepting') }}
       </SC_InviteText>
-      <SC_InviteText v-else>{{ t('messenger.invite.hint') }}</SC_InviteText>
+      <SC_InviteText v-else
+        >{{ t('messenger.invite.hint') }} <HelpLink topic="chats#invites"
+      /></SC_InviteText>
 
       <SC_InviteActions>
         <Button v-if="state === 'gone'" type="primary" @click="decline">
@@ -73,6 +75,7 @@ import {
   SC_InviteTitle,
   SC_InviteWrap,
 } from './styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 /**
  * Приглашение в чат или группу: принять или отклонить, как в прежнем

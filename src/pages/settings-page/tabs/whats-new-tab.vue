@@ -1,5 +1,7 @@
 <template>
-  <SC_SettingsSectionTitle>{{ t('settings.tabs.whatsNew') }}</SC_SettingsSectionTitle>
+  <SC_SettingsSectionTitle
+    >{{ t('settings.tabs.whatsNew') }} <HelpLink topic="updates"
+  /></SC_SettingsSectionTitle>
   <SC_AppVersion>
     <SC_AppVersionText>
       {{ t('settings.about.version', { version: appVersion }) }}
@@ -20,6 +22,7 @@ import { isCapacitor, isTauri } from '@/b-components/video-uploader/utils/enviro
 import { useAppUpdate } from '@/composables/use-app-update'
 import { SC_SettingsSectionTitle } from '../settings-page.styled'
 import { SC_AppVersion, SC_AppVersionText, SC_UpdateButton } from './whats-new-tab.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 declare const __APP_VERSION__: string
 

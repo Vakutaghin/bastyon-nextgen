@@ -1,7 +1,9 @@
 <template>
   <SC_Settings>
     <SC_SettingItem>
-      <SC_Label for="composer-visibility">{{ t('postComposer.visibility') }}</SC_Label>
+      <SC_Label for="composer-visibility">
+        {{ t('postComposer.visibility') }} <HelpLink topic="post-settings" />
+      </SC_Label>
       <Select
         id="composer-visibility"
         :value="visibility"
@@ -46,6 +48,7 @@ import Select, { type SelectOption } from '@/components/select'
 import { SC_Placeholder as SC_PickerLoading } from '@/components/date-time-picker/styled'
 import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@/i18n'
 import { SC_Label, SC_SettingItem, SC_Settings, SC_TrialHint } from './composer-settings.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 // Календарь antd с dayjs тяжёлый — отдельным чанком, когда открывают окно поста.
 const DateTimePicker = defineAsyncComponent({

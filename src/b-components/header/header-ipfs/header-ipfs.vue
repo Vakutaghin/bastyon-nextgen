@@ -16,7 +16,7 @@
     <template #overlay>
       <SC_IpfsMenu @click.stop @mousedown.stop>
         <SC_IpfsRow>
-          <SC_IpfsTitle>IPFS</SC_IpfsTitle>
+          <SC_IpfsTitle>IPFS <HelpLink topic="ipfs-module" /></SC_IpfsTitle>
         </SC_IpfsRow>
 
         <SC_IpfsStatusLine>{{ statusLine }}</SC_IpfsStatusLine>
@@ -75,6 +75,7 @@ import {
   SC_IpfsActions,
   SC_IpfsHint,
 } from './styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 

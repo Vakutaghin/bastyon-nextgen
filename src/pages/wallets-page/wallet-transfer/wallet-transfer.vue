@@ -81,9 +81,9 @@
           <SC_TransferFieldHint>{{ t('wallet.messagePublicHint') }}</SC_TransferFieldHint>
         </SC_TransferField>
         <SC_TransferField>
-          <SC_TransferLabel for="wallet-transfer-feemode">{{
-            t('wallet.feeLabel')
-          }}</SC_TransferLabel>
+          <SC_TransferLabel for="wallet-transfer-feemode">
+            {{ t('wallet.feeLabel') }} <HelpLink topic="send-pkoin#fee" />
+          </SC_TransferLabel>
           <Select id="wallet-transfer-feemode" v-model:value="feemode" :options="feeOptions" />
         </SC_TransferField>
         <SC_TransferSubmit type="button" :disabled="!canSend || sending" @click="doSend">
@@ -182,6 +182,7 @@ import {
   SC_TransferLoginChipText,
   SC_TransferLoginChipRemove,
 } from './wallet-transfer.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const emit = defineEmits<{ sent: [] }>()
 

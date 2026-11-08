@@ -6,7 +6,9 @@
     data-testid="tor-module"
   >
     <SC_ModuleHead>
-      <SC_ModuleTitle>{{ t('settings.modules.tor.title') }}</SC_ModuleTitle>
+      <SC_ModuleTitle
+        >{{ t('settings.modules.tor.title') }} <HelpLink topic="tor"
+      /></SC_ModuleTitle>
       <SC_ModuleStatus>{{ statusLabel }}</SC_ModuleStatus>
     </SC_ModuleHead>
     <SC_ModuleDesc>{{ t('settings.modules.tor.description') }}</SC_ModuleDesc>
@@ -42,6 +44,7 @@ import {
   SC_ModuleStatus,
   SC_ModuleTitle,
 } from './compression-module-section.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const tor = useTorStore()

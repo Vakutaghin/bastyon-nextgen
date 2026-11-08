@@ -1,6 +1,8 @@
 <template>
   <SC_PrivateKeySection>
-    <SC_SettingsSectionTitle>{{ t('settings.privateKey.title') }}</SC_SettingsSectionTitle>
+    <SC_SettingsSectionTitle
+      >{{ t('settings.privateKey.title') }} <HelpLink topic="recovery-phrase"
+    /></SC_SettingsSectionTitle>
 
     <!-- Confirm dialog -->
     <template v-if="pkConfirmVisible">
@@ -92,6 +94,7 @@ import {
   SC_ConfirmBtnPrimary,
   SC_ConfirmBtnDefault,
 } from '../settings-page.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 

@@ -2,7 +2,9 @@
   <!-- Голосовой ввод — на компьютере и в Android: распознавание прямо на устройстве. -->
   <SC_VoiceCard v-if="store.available">
     <SC_VoiceHead>
-      <SC_VoiceTitle>{{ t('voiceInput.settings.title') }}</SC_VoiceTitle>
+      <SC_VoiceTitle
+        >{{ t('voiceInput.settings.title') }} <HelpLink topic="voice-input"
+      /></SC_VoiceTitle>
       <SC_VoiceStatus>{{ statusLabel }}</SC_VoiceStatus>
     </SC_VoiceHead>
     <SC_VoiceDesc>{{ t('voiceInput.settings.description') }}</SC_VoiceDesc>
@@ -106,6 +108,7 @@ import {
   SC_VoiceStatus,
   SC_VoiceTitle,
 } from './voice-input-section.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t, locale } = useI18n()
 const store = useVoiceInputStore()

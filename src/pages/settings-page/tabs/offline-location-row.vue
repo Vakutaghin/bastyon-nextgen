@@ -1,7 +1,9 @@
 <template>
   <SC_CacheRow v-if="store.canChooseLocation && location" data-testid="offline-location-settings">
     <SC_SystemLabel>
-      <SC_SystemTitle>{{ t('offlineVideo.locationTitle') }}</SC_SystemTitle>
+      <SC_SystemTitle
+        >{{ t('offlineVideo.locationTitle') }} <HelpLink topic="offline-video#where"
+      /></SC_SystemTitle>
       <SC_SystemHint>{{
         isAndroid ? t('offlineVideo.locationHintAndroid') : t('offlineVideo.locationHint')
       }}</SC_SystemHint>
@@ -79,6 +81,7 @@ import {
   SC_SystemLabel,
   SC_SystemTitle,
 } from './system-tab.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const store = useOfflineVideosStore()

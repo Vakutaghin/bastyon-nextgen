@@ -1,6 +1,8 @@
 <template>
   <SC_Perms>
-    <SC_PermsTitle>{{ t('settings.appPermissions.title') }}</SC_PermsTitle>
+    <SC_PermsTitle
+      >{{ t('settings.appPermissions.title') }} <HelpLink topic="mini-app-permissions"
+    /></SC_PermsTitle>
     <SC_PermsLead>{{ t('settings.appPermissions.lead') }}</SC_PermsLead>
 
     <SC_PermsState v-if="!permissionsStore.ready">
@@ -77,6 +79,7 @@ import {
   SC_RevokeAllBtn,
   SC_DeleteAppBtn,
 } from './app-permissions-tab.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t, te, locale } = useI18n()
 const permissionsStore = usePermissionsStore()

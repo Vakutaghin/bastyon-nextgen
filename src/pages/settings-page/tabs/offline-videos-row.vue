@@ -1,7 +1,9 @@
 <template>
   <SC_CacheRow v-if="store.available" data-testid="offline-videos-settings">
     <SC_SystemLabel>
-      <SC_SystemTitle>{{ t('offlineVideo.settingsTitle') }}</SC_SystemTitle>
+      <SC_SystemTitle
+        >{{ t('offlineVideo.settingsTitle') }} <HelpLink topic="offline-video#where"
+      /></SC_SystemTitle>
       <SC_SystemHint>{{ t('offlineVideo.settingsHint') }}</SC_SystemHint>
       <SC_CacheUsage>{{ usageText }}</SC_CacheUsage>
     </SC_SystemLabel>
@@ -73,6 +75,7 @@ import {
   SC_SystemLabel,
   SC_SystemTitle,
 } from './system-tab.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 type SwitchValue = string | number | boolean
 

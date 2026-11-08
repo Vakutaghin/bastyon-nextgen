@@ -1,7 +1,9 @@
 <template>
   <!-- Вход в приложение: пин-код или графический ключ (stores/app-lock-store). -->
   <SC_SecurityCard>
-    <SC_SecurityLevel>{{ t('appLock.sectionTitle') }}</SC_SecurityLevel>
+    <SC_SecurityLevel
+      >{{ t('appLock.sectionTitle') }} <HelpLink topic="device-protection"
+    /></SC_SecurityLevel>
 
     <template v-if="!appLock.enabled">
       <SC_SecurityDesc>
@@ -65,6 +67,7 @@ import { appToast } from '@/b-components/app-toast'
 import AppLockSetupModal from './app-lock-setup-modal.vue'
 import { SC_SecurityCard, SC_SecurityDesc, SC_SecurityLevel } from './security-section.styled'
 import { SC_AppLockActions, SC_AppLockHint, SC_AppLockRow } from './app-lock-section.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const appLock = useAppLockStore()

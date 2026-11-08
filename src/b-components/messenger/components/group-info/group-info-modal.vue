@@ -37,6 +37,7 @@
             ? t('messenger.group.unencryptedPublic')
             : t('messenger.group.unencryptedLarge', { n: GROUP_ENCRYPTION_MEMBER_LIMIT })
         }}</span>
+        <HelpLink topic="chat-encryption#groups" />
       </SC_GroupUnencrypted>
 
       <SC_GroupActions>
@@ -179,6 +180,7 @@ import {
   SC_MembersHead,
   SC_YouTag,
 } from './styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 /** Поиск по участникам — когда списком уже неудобно. */
 const SEARCH_FROM = 8

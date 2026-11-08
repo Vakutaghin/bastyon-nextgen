@@ -1,7 +1,9 @@
 <template>
   <SC_List data-testid="offline-downloads">
     <SC_ListHead v-if="list.length">
-      <span>{{ t('offlineVideo.used', { size: usedText }) }}</span>
+      <span
+        >{{ t('offlineVideo.used', { size: usedText }) }} <HelpLink topic="offline-video#where"
+      /></span>
       <Button size="small" danger data-testid="offline-remove-all" @click="confirmRemoveAll">
         {{ t('offlineVideo.removeAll') }}
       </Button>
@@ -24,6 +26,7 @@ import { formatBytes } from '@/services/offline-video/format-bytes'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import OfflineDownloadCard from './offline-download-card.vue'
 import { SC_Empty, SC_List, SC_ListHead } from './offline-video.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const props = defineProps<{ kind: 'video' | 'audio' }>()
 

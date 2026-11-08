@@ -1,7 +1,6 @@
 <template>
   <a-modal
     :open="isOpen && !!payment"
-    :title="t('miniapps.paymentTitle')"
     :ok-text="sending ? t('miniapps.sending') : t('miniapps.confirm')"
     :cancel-text="t('miniapps.cancel')"
     :ok-button-props="{ disabled: sending || blocked }"
@@ -12,6 +11,9 @@
     @ok="onConfirm"
     @cancel="onCancel"
   >
+    <template #title
+      >{{ t('miniapps.paymentTitle') }} <HelpLink topic="mini-app-payments"
+    /></template>
     <SC_Wrap v-if="payment">
       <SC_AppRow v-if="appName">{{
         t('miniapps.paymentRequestedBy', { name: appName })
@@ -120,6 +122,7 @@ import {
   SC_Error,
   SC_StoreRow,
 } from './mini-app-payment-modal.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 // `a-modal` зарегистрирован глобально через ant-design-vue. Но в setup нам нужно
 // именованное локальное имя, иначе TS-парсер ругается на «AModal is unused».

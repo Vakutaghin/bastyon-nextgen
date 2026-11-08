@@ -1,7 +1,8 @@
 /**
  * F1 — справка, как в программах для компьютера: статья про текущий экран
- * (`meta.helpTopic` маршрута) открывается в боковой панели, а если такой
- * статьи нет — раздел справки. В самой справке F1 ничего не делает.
+ * (`meta.helpTopic` маршрута, а если экран знает точнее — его `screenTopic`)
+ * открывается в боковой панели, а если такой статьи нет — раздел справки. В
+ * самой справке F1 ничего не делает.
  */
 
 import { onBeforeUnmount, onMounted } from 'vue'
@@ -20,7 +21,7 @@ export function useHelpHotkey(enabled: () => boolean): void {
     // Иначе браузер откроет свою справку.
     event.preventDefault()
     if (route.name === 'help') return
-    const topic = route.meta.helpTopic
+    const topic = help.screenTopic ?? route.meta.helpTopic
     if (topic) help.openTopic(topic)
     else void router.push('/help')
   }

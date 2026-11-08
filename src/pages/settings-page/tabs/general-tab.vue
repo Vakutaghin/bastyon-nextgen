@@ -1,5 +1,7 @@
 <template>
-  <SC_SettingsSectionTitle>{{ t('settings.tabs.general') }}</SC_SettingsSectionTitle>
+  <SC_SettingsSectionTitle
+    >{{ t('settings.tabs.general') }} <HelpLink topic="settings#general"
+  /></SC_SettingsSectionTitle>
   <SC_SystemSection>
     <SC_SystemRow>
       <SC_SystemLabel>
@@ -148,6 +150,7 @@ import { usePageWidth, type PageWidth } from '@/composables/use-page-width'
 import { useViewport } from '@/composables/use-viewport'
 import { useHeaderLayoutStore } from '@/stores/header-layout-store'
 import { SC_SettingsSectionTitle } from '../settings-page.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const uiStore = useUIStore()
 const { language: appLanguage } = storeToRefs(uiStore)

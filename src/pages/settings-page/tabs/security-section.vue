@@ -1,6 +1,8 @@
 <template>
   <SC_SecurityCard>
-    <SC_SecurityLevel>{{ t('vault.security') }}: {{ levelLabel }}</SC_SecurityLevel>
+    <SC_SecurityLevel
+      >{{ t('vault.security') }}: {{ levelLabel }} <HelpLink topic="device-protection"
+    /></SC_SecurityLevel>
     <SC_SecurityDesc>{{ levelDesc }}</SC_SecurityDesc>
 
     <SC_SecurityActions v-if="!degraded">
@@ -99,6 +101,7 @@ import {
   SC_SecurityWarning,
   SC_SecurityFieldError,
 } from './security-section.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const { level, degraded, busy, requestPersistentStorage, enable, disable } = useVaultSecurity()

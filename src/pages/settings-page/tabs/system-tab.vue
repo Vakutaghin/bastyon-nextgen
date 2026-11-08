@@ -1,5 +1,7 @@
 <template>
-  <SC_SettingsSectionTitle>{{ t('settings.tabs.system') }}</SC_SettingsSectionTitle>
+  <SC_SettingsSectionTitle
+    >{{ t('settings.tabs.system') }} <HelpLink topic="settings#system"
+  /></SC_SettingsSectionTitle>
 
   <SC_SystemSection>
     <ConnectionModeSection v-if="directAvailable()" />
@@ -80,7 +82,9 @@
     </SC_SystemRow>
   </SC_SystemSection>
 
-  <SC_SettingsSectionTitle>{{ t('settings.system.storageTitle') }}</SC_SettingsSectionTitle>
+  <SC_SettingsSectionTitle
+    >{{ t('settings.system.storageTitle') }} <HelpLink topic="local-data"
+  /></SC_SettingsSectionTitle>
   <SC_SystemSection>
     <!-- Кэши приложения для компьютера. Предел держит само приложение (src-tauri
          storage): кэш больше него очищается при запуске и раз в полчаса. -->
@@ -193,6 +197,7 @@ import {
   SC_SystemSection,
   SC_SystemTitle,
 } from './system-tab.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 /** Тип значения, который отдаёт ant-свитч. */
 type SwitchValue = string | number | boolean

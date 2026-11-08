@@ -5,6 +5,7 @@
       <SC_PollHead>
         <PollIcon />
         <span>{{ t('postComposer.pollToggle') }}</span>
+        <HelpLink topic="polls" />
         <SC_PollOptionRemove
           type="button"
           :aria-label="t('postComposer.pollRemove')"
@@ -67,6 +68,7 @@ import {
   SC_PollOptionRemove,
   SC_PollOptionRow,
 } from './composer-poll.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 defineProps<{
   active: boolean

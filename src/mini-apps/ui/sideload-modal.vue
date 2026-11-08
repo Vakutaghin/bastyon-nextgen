@@ -1,7 +1,7 @@
 <template>
   <SC_Overlay v-if="open" @click.self="!loading && emit('close')">
     <SC_Dialog>
-      <SC_Title>{{ t('miniapps.sideloadTitle') }}</SC_Title>
+      <SC_Title>{{ t('miniapps.sideloadTitle') }} <HelpLink topic="mini-apps-dev" /></SC_Title>
 
       <SC_Field>
         <SC_Label>{{ t('miniapps.sideloadScopeLabel') }}</SC_Label>
@@ -55,6 +55,7 @@ import {
   SC_Actions,
   SC_Btn,
 } from './sideload-modal.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ (e: 'close'): void }>()

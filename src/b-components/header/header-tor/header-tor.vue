@@ -34,7 +34,7 @@
         </template>
 
         <SC_TorRow>
-          <SC_TorTitle>Tor</SC_TorTitle>
+          <SC_TorTitle>Tor <HelpLink topic="tor" /></SC_TorTitle>
           <Switch :checked="enabled" :disabled="!available" @click="onToggleSwitch" />
         </SC_TorRow>
 
@@ -149,6 +149,7 @@ import {
   SC_NetBlock,
   SC_TorDivider,
 } from './styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const RadioGroup = Radio.Group
 

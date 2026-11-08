@@ -4,7 +4,7 @@
        устарел, в настройках — всегда. -->
   <SC_ModuleCard v-if="visible">
     <SC_ModuleHead>
-      <SC_ModuleTitle>{{ t('mesh.module.title') }}</SC_ModuleTitle>
+      <SC_ModuleTitle>{{ t('mesh.module.title') }} <HelpLink topic="mesh" /></SC_ModuleTitle>
       <SC_ModuleStatus>{{ statusLabel }}</SC_ModuleStatus>
     </SC_ModuleHead>
     <SC_ModuleDesc>{{ t('mesh.module.description') }}</SC_ModuleDesc>
@@ -48,6 +48,7 @@ import {
   SC_ModuleStatus,
   SC_ModuleTitle,
 } from './compression-module-section.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const props = defineProps<{
   /** На странице «Mesh-сети»: карточка — только пока модуль нужно скачать. */

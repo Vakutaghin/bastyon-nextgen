@@ -1,11 +1,15 @@
 <template>
-  <SC_SettingsSectionTitle>{{ t('settings.tabs.chats') }}</SC_SettingsSectionTitle>
+  <SC_SettingsSectionTitle
+    >{{ t('settings.tabs.chats') }} <HelpLink topic="settings#chats"
+  /></SC_SettingsSectionTitle>
 
   <SC_ArchiveLead v-if="!auth.isUserAuthenticated">{{ t('settings.chats.signIn') }}</SC_ArchiveLead>
   <template v-else>
     <!-- Что собеседники видят о вас: общее для всех устройств аккаунта. -->
     <SC_ArchiveHead>
-      <SC_SystemTitle>{{ t('settings.chats.privacy') }}</SC_SystemTitle>
+      <SC_SystemTitle
+        >{{ t('settings.chats.privacy') }} <HelpLink topic="chats#privacy"
+      /></SC_SystemTitle>
       <SC_SystemHint>{{ t('settings.chats.privacyHint') }}</SC_SystemHint>
     </SC_ArchiveHead>
     <SC_SystemSection>
@@ -24,7 +28,9 @@
       <!-- Приглашение в чат: окно «Принять / Отклонить» или сразу в чат. -->
       <SC_SystemRow>
         <SC_SystemLabel>
-          <SC_SystemTitle>{{ t('settings.chats.acceptInvites') }}</SC_SystemTitle>
+          <SC_SystemTitle
+            >{{ t('settings.chats.acceptInvites') }} <HelpLink topic="chats#invites"
+          /></SC_SystemTitle>
           <SC_SystemHint>{{ t('settings.chats.acceptInvitesHint') }}</SC_SystemHint>
         </SC_SystemLabel>
         <Switch
@@ -41,7 +47,9 @@
     <SC_SystemSection>
       <SC_SystemRow>
         <SC_SystemLabel>
-          <SC_SystemTitle>{{ t('settings.chats.archive') }}</SC_SystemTitle>
+          <SC_SystemTitle
+            >{{ t('settings.chats.archive') }} <HelpLink topic="chat-archive"
+          /></SC_SystemTitle>
           <SC_SystemHint>{{ t('settings.chats.archiveHint') }}</SC_SystemHint>
         </SC_SystemLabel>
         <Switch
@@ -186,6 +194,7 @@ import {
   SC_ArchiveRow,
   SC_ArchiveSearch,
 } from './chats-tab.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 /** Тип значения, который отдаёт ant-свитч. */
 type SwitchValue = string | number | boolean

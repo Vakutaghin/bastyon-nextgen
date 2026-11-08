@@ -21,6 +21,7 @@
         <SC_MenuHeader>
           <HourglassOutlined />
           <SC_MenuTitle>{{ t('header.pendingTitle') }}</SC_MenuTitle>
+          <HelpLink topic="transactions" />
         </SC_MenuHeader>
 
         <SC_EmptyMessage v-if="pendingItems.length === 0">
@@ -200,6 +201,7 @@ import {
   SC_SnippetSpaced,
   SC_ItemActions,
 } from './styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 type RatingPendingItem = {
   kind: 'rating'

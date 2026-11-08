@@ -2,7 +2,6 @@
   <Modal
     class="post-composer-modal"
     :open="modalStore.postComposerModal.isOpen"
-    :title="modalTitle"
     :width="600"
     :centered="true"
     :footer="null"
@@ -11,6 +10,7 @@
     :keyboard="!publishing"
     @cancel="onCancel"
   >
+    <template #title>{{ modalTitle }} <HelpLink topic="post-composer" /></template>
     <!-- v-if пересоздаёт композер при каждом открытии — чтобы префилл edit/repost инициализировался заново. -->
     <PostComposer
       v-if="modalStore.postComposerModal.isOpen"
@@ -32,6 +32,7 @@ import Modal from '@/components/modal/modal.vue'
 import { useModalStore } from '@/stores'
 
 import PostComposer from './post-composer.vue'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const modalStore = useModalStore()

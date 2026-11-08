@@ -1,5 +1,7 @@
 <template>
-  <SC_SettingsSectionTitle>{{ t('settings.layout.headerTitle') }}</SC_SettingsSectionTitle>
+  <SC_SettingsSectionTitle
+    >{{ t('settings.layout.headerTitle') }} <HelpLink topic="settings#layout"
+  /></SC_SettingsSectionTitle>
   <SC_LayoutHint>{{ t('settings.layout.headerHint') }}</SC_LayoutHint>
   <LayoutEditor
     :title="t('settings.layout.headerTitle')"
@@ -82,6 +84,7 @@ import { resetSidebarBlock } from '@/b-components/sidebar/sidebar-blocks'
 import LayoutEditor from './layout-editor.vue'
 import { SC_LayoutHint } from './layout-editor.styled'
 import { SC_SettingsSectionTitle } from '../settings-page.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const layout = useHeaderLayoutStore()

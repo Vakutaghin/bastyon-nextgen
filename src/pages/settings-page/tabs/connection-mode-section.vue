@@ -4,7 +4,9 @@
   <SC_ConnectionRow data-testid="connection-mode">
     <SC_SystemLabel>
       <SC_ConnectionHead>
-        <SC_SystemTitle>{{ t('settings.network.title') }}</SC_SystemTitle>
+        <SC_SystemTitle
+          >{{ t('settings.network.title') }} <HelpLink topic="settings#network"
+        /></SC_SystemTitle>
         <Tooltip
           :title="t('settings.network.info')"
           :trigger="['hover', 'focus', 'click']"
@@ -57,6 +59,7 @@ import {
   SC_ConnectionStatus,
   SC_InfoButton,
 } from './connection-mode-section.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const { state, torOn, status, setConnectionMode } = useConnectionMode()

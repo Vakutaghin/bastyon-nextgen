@@ -5,9 +5,9 @@
     :centered="true"
     :z-index="2700"
     :footer="null"
-    :title="title"
     @cancel="close"
   >
+    <template #title>{{ title }} <HelpLink topic="offline-video" /></template>
     <SC_SheetBody v-if="choice || batch" data-testid="offline-quality-sheet">
       <SC_QualityRow
         v-for="q in rows"
@@ -40,6 +40,7 @@ import { formatBytes } from '@/services/offline-video/format-bytes'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import { OFFLINE_SPARE_BYTES, useOfflineDownload } from './use-offline-download'
 import { SC_QualityRow, SC_SheetBody, SC_SheetFooter } from './offline-video.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t, locale } = useI18n()
 const store = useOfflineVideosStore()

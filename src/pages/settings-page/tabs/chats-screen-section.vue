@@ -1,7 +1,9 @@
 <template>
   <!-- Фильтр входящих: правила и люди. Только на этом устройстве. -->
   <SC_ArchiveHead data-settings-section="screen">
-    <SC_SystemTitle>{{ t('settings.chats.screen') }}</SC_SystemTitle>
+    <SC_SystemTitle
+      >{{ t('settings.chats.screen') }} <HelpLink topic="chats#screen"
+    /></SC_SystemTitle>
     <SC_SystemHint>{{ t('settings.chats.screenHint') }}</SC_SystemHint>
   </SC_ArchiveHead>
   <SC_SystemSection>
@@ -166,6 +168,7 @@ import {
   SC_ScreenPersonRule,
   SC_ScreenRow,
 } from './chats-screen-section.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 /** Тип значения, который отдаёт ant-свитч. */
 type SwitchValue = string | number | boolean

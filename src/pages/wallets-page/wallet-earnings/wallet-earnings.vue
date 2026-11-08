@@ -1,6 +1,8 @@
 <template>
   <SC_Earnings>
-    <SC_EarningsTitle>{{ t('wallet.earningsTitle') }}</SC_EarningsTitle>
+    <SC_EarningsTitle
+      >{{ t('wallet.earningsTitle') }} <HelpLink topic="earnings"
+    /></SC_EarningsTitle>
 
     <SC_EarningsState v-if="isLoading">{{ t('wallet.earningsLoading') }}</SC_EarningsState>
 
@@ -36,6 +38,7 @@ import {
   SC_EarningsUnit,
   SC_EarningsState,
 } from './wallet-earnings.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const { earnings, isLoading, error } = useAccountEarnings()

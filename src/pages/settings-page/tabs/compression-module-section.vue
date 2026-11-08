@@ -2,7 +2,9 @@
   <!-- Модуль сжатия видео (десктоп): FFmpeg, скачанный по просьбе пользователя. -->
   <SC_ModuleCard v-if="desktop && store.available !== null">
     <SC_ModuleHead>
-      <SC_ModuleTitle>{{ t('videoStudio.module.title') }}</SC_ModuleTitle>
+      <SC_ModuleTitle
+        >{{ t('videoStudio.module.title') }} <HelpLink topic="video-compression"
+      /></SC_ModuleTitle>
       <SC_ModuleStatus>{{ statusLabel }}</SC_ModuleStatus>
     </SC_ModuleHead>
     <SC_ModuleDesc>{{ t('videoStudio.module.description') }}</SC_ModuleDesc>
@@ -44,6 +46,7 @@ import {
   SC_ModuleStatus,
   SC_ModuleTitle,
 } from './compression-module-section.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const store = useCompressionModuleStore()

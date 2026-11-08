@@ -19,6 +19,8 @@ vi.mock('@capacitor/core', () => ({ Capacitor: { getPlatform: () => h.platform }
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn(async () => h.picked) }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: h.toast }))
 vi.mock('@/stores/offline-videos-store', () => ({ useOfflineVideosStore: () => h.store }))
+// «?» справки берёт свой стор — в этом тесте он не нужен.
+vi.mock('@/b-components/help/help-link.vue', () => ({ default: { render: () => null } }))
 
 import OfflineLocationRow from './offline-location-row.vue'
 

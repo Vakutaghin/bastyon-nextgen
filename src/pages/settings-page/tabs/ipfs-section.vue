@@ -3,7 +3,7 @@
        удалить — с диска целиком. -->
   <SC_IpfsCard v-if="ipfs.available" data-testid="ipfs-module">
     <SC_IpfsHead>
-      <SC_IpfsTitle>{{ t('settings.ipfs.title') }}</SC_IpfsTitle>
+      <SC_IpfsTitle>{{ t('settings.ipfs.title') }} <HelpLink topic="ipfs-module" /></SC_IpfsTitle>
       <SC_IpfsStatus>{{ statusLabel }}</SC_IpfsStatus>
     </SC_IpfsHead>
     <SC_IpfsDesc>{{ t('settings.ipfs.description') }}</SC_IpfsDesc>
@@ -39,6 +39,7 @@ import {
   SC_IpfsDesc,
   SC_IpfsActions,
 } from './ipfs-section.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const ipfs = useIpfsStore()

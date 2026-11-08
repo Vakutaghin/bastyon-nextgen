@@ -1,5 +1,7 @@
 <template>
-  <SC_SettingsSectionTitle>{{ t('settings.tabs.modules') }}</SC_SettingsSectionTitle>
+  <SC_SettingsSectionTitle
+    >{{ t('settings.tabs.modules') }} <HelpLink topic="settings#modules"
+  /></SC_SettingsSectionTitle>
   <SC_ModulesIntro>
     {{ t('settings.modules.intro') }}
     <template v-if="storage.usage">
@@ -33,6 +35,7 @@ import IpfsSection from './ipfs-section.vue'
 import MeshModuleSection from './mesh-module-section.vue'
 import TorModuleSection from './tor-module-section.vue'
 import VoiceInputSection from './voice-input-section.vue'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const storage = useStorageStore()

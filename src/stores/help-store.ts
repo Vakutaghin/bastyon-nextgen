@@ -45,6 +45,11 @@ export const useHelpStore = defineStore('help', {
      * раздела. Переход по ссылке внутри панели его сбрасывает.
      */
     panelAnchor: null as string | null,
+    /**
+     * Статья для F1 вместо `meta.helpTopic` маршрута — когда экран знает
+     * точнее: открытая вкладка настроек, мессенджер поверх страницы.
+     */
+    screenTopic: null as string | null,
     favorites: readFavorites(),
     navHidden: readNavHidden(),
   }),
@@ -77,6 +82,11 @@ export const useHelpStore = defineStore('help', {
     backInPanel(): void {
       this.panelAnchor = null
       if (this.panel.length > 1) this.panel.pop()
+    },
+
+    /** Экран сообщает, о чём он сейчас; `null` — вернуть статью маршрута. */
+    setScreenTopic(topic: string | null): void {
+      this.screenTopic = topic
     },
 
     closePanel(): void {

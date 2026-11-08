@@ -5,6 +5,7 @@
         <SC_Header>
           <span aria-hidden="true">💎</span>
           <span>{{ t('messenger.sendPkoin') }}</span>
+          <HelpLink topic="pkoin-in-chat" />
         </SC_Header>
 
         <SC_Body>
@@ -93,6 +94,7 @@ import {
   SC_Footer,
   SC_Button,
 } from './styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const props = defineProps<{
   open: boolean

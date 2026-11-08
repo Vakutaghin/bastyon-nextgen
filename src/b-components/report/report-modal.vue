@@ -6,9 +6,9 @@
     :closable="!sending"
     :mask-closable="!sending"
     :z-index="2700"
-    :title="title"
     @cancel="handleCancel"
   >
+    <template #title>{{ title }} <HelpLink topic="reports" /></template>
     <SC_ModalBody>
       <SC_ReportBody>
         <!-- Жалобу сеть примет только от «акулы»: остальным — сразу, почему,
@@ -85,6 +85,7 @@ import {
   SC_ReasonRadio,
   SC_FieldError,
 } from './report-modal.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 // Причины для контента (пост/коммент) = gid'ы [1,2,3,4,6] из legacy (без #5
 // «копирайт», который только для жалоб на пользователя). См. mdls.js complain.

@@ -1,6 +1,8 @@
 <template>
   <SC_Blacklist>
-    <SC_BlacklistTitle>{{ t('settings.blacklist.title') }}</SC_BlacklistTitle>
+    <SC_BlacklistTitle
+      >{{ t('settings.blacklist.title') }} <HelpLink topic="blocking"
+    /></SC_BlacklistTitle>
     <SC_BlacklistLead>{{ t('settings.blacklist.lead') }}</SC_BlacklistLead>
 
     <SC_BlacklistState v-if="relations.isLoading && rows.length === 0">
@@ -54,6 +56,7 @@ import {
   SC_UnblockBtn,
   SC_BlacklistState,
 } from './blacklist-tab.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t } = useI18n()
 const router = useRouter()

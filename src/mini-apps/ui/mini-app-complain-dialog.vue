@@ -8,9 +8,12 @@
     centered
     :closable="!sending"
     :mask-closable="!sending"
-    :title="t('miniapps.complainTitle', { name: request?.appName ?? '' })"
     @cancel="close"
   >
+    <template #title>
+      {{ t('miniapps.complainTitle', { name: request?.appName ?? '' }) }}
+      <HelpLink topic="reports#mini-apps" />
+    </template>
     <SC_ModalBody>
       <SC_ReportBody>
         <SC_ReportIntro>{{ t('miniapps.complainIntro') }}</SC_ReportIntro>
@@ -69,6 +72,7 @@ import {
 } from '@/b-components/report/report-modal.styled'
 import { sendMiniAppComplaint, type ComplaintReasonId } from '../core/miniapp-complaint'
 import { complainRequest, resolveComplainDialog } from './complain-dialog-controller'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 /** Все шесть причин прежнего клиента, включая «Нарушение авторских прав». */
 const REASONS: ComplaintReasonId[] = [1, 2, 3, 4, 5, 6]

@@ -39,6 +39,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotificationSettingsStore } from '@/stores'
 import { useUIStore } from '@/stores/ui-store'
+import { useHelpStore } from '@/stores/help-store'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import { isAndroidVoice } from '@/helpers/voice-input/voice-backend'
 import GeneralTab from './tabs/general-tab.vue'
@@ -118,6 +119,24 @@ function revealActiveTab(behavior: 'auto' | 'smooth'): void {
 }
 
 watch(activeTab, () => void nextTick(() => revealActiveTab('smooth')))
+
+/** F1 на вкладке — её раздел справки, а не общая статья о настройках. */
+const TAB_HELP: Record<T_SettingsTabKey, { helpTopic: string }> = {
+  general: { helpTopic: 'settings#general' },
+  layout: { helpTopic: 'settings#layout' },
+  notifications: { helpTopic: 'notifications' },
+  chats: { helpTopic: 'settings#chats' },
+  system: { helpTopic: 'settings#system' },
+  modules: { helpTopic: 'settings#modules' },
+  privateKey: { helpTopic: 'recovery-phrase' },
+  blacklist: { helpTopic: 'blocking' },
+  appPermissions: { helpTopic: 'mini-app-permissions' },
+  whatsNew: { helpTopic: 'updates' },
+}
+const help = useHelpStore()
+// Записано через helpTopic — тест справки проверяет, что такие разделы есть.
+watch(activeTab, (tab) => help.setScreenTopic(TAB_HELP[tab].helpTopic), { immediate: true })
+onBeforeUnmount(() => help.setScreenTopic(null))
 
 // Ссылка на вкладку, когда настройки уже открыты (шестерёнка в чатах,
 // «Правила фильтра»): страница та же, меняется только адрес.

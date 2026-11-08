@@ -1,5 +1,7 @@
 <template>
-  <SC_SettingsSectionTitle>{{ t('settings.notifications.title') }}</SC_SettingsSectionTitle>
+  <SC_SettingsSectionTitle
+    >{{ t('settings.notifications.title') }} <HelpLink topic="notifications"
+  /></SC_SettingsSectionTitle>
   <SC_NotificationsList>
     <SC_NotificationsRow v-for="key in NOTIFICATION_KEYS" :key="key">
       <SC_NotificationsRowLabel>{{
@@ -29,6 +31,7 @@ import {
   SC_NotificationsRow,
   SC_NotificationsRowLabel,
 } from '../settings-page.styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 const NOTIFICATION_KEYS: NotificationFilterKey[] = [
   'sound',

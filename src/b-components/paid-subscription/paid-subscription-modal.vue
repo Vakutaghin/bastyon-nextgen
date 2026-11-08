@@ -6,9 +6,11 @@
     :closable="!paying"
     :mask-closable="!paying"
     :z-index="2700"
-    :title="t('paidSubscriptions.modal.title')"
     @cancel="close"
   >
+    <template #title
+      >{{ t('paidSubscriptions.modal.title') }} <HelpLink topic="paid-subscriptions"
+    /></template>
     <SC_ModalBody>
       <SC_PaidBody>
         <SC_PaidAuthor>
@@ -188,6 +190,7 @@ import {
   SC_PlanAmountNote,
   SC_PaidConfirm,
 } from './styled'
+import HelpLink from '@/b-components/help/help-link.vue'
 
 /** Выгода длинного срока против помесячной оплаты, %: 1 − 5,5/6 и 1 − 10/12. */
 const SAVINGS: Partial<Record<PaidPlanId, number>> = { '6m': 8, '1y': 17 }
