@@ -1,5 +1,11 @@
 /**
- * Загрузка + воспроизведение голосового сообщения.
+ * Воспроизведение голосового сообщения.
+ *
+ * Звук грузится по «Слушать», а не при показе: раньше каждое голосовое при
+ * открытии чата скачивалось, расшифровывалось и декодировалось целиком —
+ * чат с десятком голосовых тянул мегабайты, которые никто не слушал. Волну
+ * и длительность чат берёт из события (audio-message). Скачанное помнит
+ * `voice-cache`: второй раз и после возврата в чат — без сети.
  *
  * Поддерживает Bastyon-шифрование (msg.info.secrets) через messenger-store.
  * Делит глобальный реестр `playingByChat` со всеми экземплярами — при старте
@@ -12,12 +18,11 @@
  *
  * На onerror пробуем MIME-fixup `audio/mpeg` — типичная починка для серверов,
  * отдающих octet-stream вместо реального MIME аудио.
- *
- * См. CODE_AUDIT.md §1.
  */
 import { computed, onBeforeUnmount, ref, type ComputedRef, type Ref } from 'vue'
 import { matrixFetch } from '@/helpers/api/request'
 import { localMediaBlob } from '../../services/local-media'
+import { cachedVoice, cacheVoice, learnDuration, learnedDuration } from '../../services/voice-cache'
 import type { Message } from '../../types'
 import { t } from '@/i18n'
 import { positionKey, rememberPosition, rememberedPosition } from './audio-positions'
@@ -25,6 +30,9 @@ import { positionKey, rememberPosition, rememberedPosition } from './audio-posit
 // Глобальный реестр активного аудио в каждом чате — старт нового
 // автоматически останавливает предыдущее.
 const playingByChat = new Map<string, HTMLAudioElement>()
+// Последнее голосовое, которое попросили включить в чате: пока одно грузилось,
+// нажали другое — первое, догрузившись, молчит.
+const wantedByChat = new Map<string, symbol>()
 
 /** `HTMLMediaElement.HAVE_METADATA`: у happy-dom статических констант нет. */
 const HAVE_METADATA = 1
@@ -35,24 +43,26 @@ export interface AudioPlayback {
   duration: Ref<number>
   /** Где играет или где остановили, с. */
   currentTime: Ref<number>
-  isLoadingWave: Ref<boolean>
+  /** Звук грузится: нажали «Слушать», а его ещё нет. */
+  isLoading: Ref<boolean>
   hasError: Ref<string | null>
   isReady: Ref<boolean>
   /** Показывать позицию, а не длительность: играет или остановлено не в начале. */
   showsPosition: ComputedRef<boolean>
+  /** Слушать / пауза; во время загрузки — отмена. */
   togglePlay: () => Promise<void>
   seekAt: (ratio: number) => void
-  /** Запускает загрузку, decode + setup audio element. */
-  prepare: () => Promise<void>
+  /** Загрузить звук, не включая. */
+  load: () => Promise<boolean>
 }
 
 export interface AudioPlaybackOptions {
   message: Message
   /**
-   * Декодирует blob в waveform (вызывается параллельно с подготовкой audio el).
-   * Возвращает длительность звука в секундах, если декодер её узнал.
+   * Звук получен (скачан или уже на устройстве). Вернуть длительность, если
+   * её удалось узнать по звуку: у записи MediaRecorder в файле её может не быть.
    */
-  computeWaveform: (blob: Blob) => Promise<number | null>
+  onAudio?: (blob: Blob) => Promise<number | null> | void
   /** Расшифровка Bastyon-secrets (messenger-store API). */
   decryptAudioData: (blob: Blob, message: Message) => Promise<Blob | null>
 }
@@ -63,24 +73,37 @@ function infoDuration(message: Message): number {
   return typeof ms === 'number' && Number.isFinite(ms) && ms > 0 ? ms / 1000 : 0
 }
 
+function isAbort(e: unknown): boolean {
+  return e instanceof DOMException
+    ? e.name === 'AbortError'
+    : (e as { name?: string })?.name === 'AbortError'
+}
+
 export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
-  const { message, computeWaveform, decryptAudioData } = opts
+  const { message, decryptAudioData } = opts
   const key = positionKey(message)
+  const token = Symbol(message.id)
 
   const audioEl = ref<HTMLAudioElement | null>(null)
   const objectUrl = ref<string | null>(null)
   const lastBlob = ref<Blob | null>(null)
   const isPlaying = ref(false)
-  const duration = ref(infoDuration(message))
+  const duration = ref(infoDuration(message) || learnedDuration(message.id) || 0)
   const currentTime = ref(rememberedPosition(key))
-  const isLoadingWave = ref(true)
+  const isLoading = ref(false)
   const hasError = ref<string | null>(null)
   const isReady = ref(false)
   const showsPosition = computed<boolean>(() => isPlaying.value || currentTime.value > 0)
 
+  let loading: Promise<boolean> | null = null
+  let abort: AbortController | null = null
+  let disposed = false
+
   /** Длительность по самому звуку; Infinity (запись без длительности в файле) не берём. */
   function setDuration(seconds: number): void {
-    if (Number.isFinite(seconds) && seconds > 0) duration.value = seconds
+    if (!Number.isFinite(seconds) || seconds <= 0) return
+    duration.value = seconds
+    if (!infoDuration(message)) learnDuration(message.id, seconds)
   }
 
   function hasMetadata(el: HTMLAudioElement): boolean {
@@ -93,123 +116,188 @@ export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
     }
   }
 
-  async function prepare(): Promise<void> {
-    try {
-      hasError.value = null
-      isLoadingWave.value = true
-      const url = message.url
-      if (!url) {
-        hasError.value = t('messenger.audioNoUrl')
-        return
-      }
-      // Голосовое mesh-сети уже в памяти (`blob:`): fetch такой ссылки CSP
-      // не пускает (connect-src), да и незачем.
-      let blob = localMediaBlob(url) ?? null
-      if (!blob) {
-        const response = await matrixFetch(url, { mode: 'cors' })
-        if (!response.ok) {
-          hasError.value = `HTTP ${response.status}`
+  /** Элемент звука — один на сообщение, с первого нажатия. */
+  function element(): HTMLAudioElement {
+    if (audioEl.value) return audioEl.value
+    const el = new Audio()
+    el.preload = 'auto'
+
+    el.addEventListener('loadedmetadata', () => {
+      setDuration(el.duration)
+      isReady.value = true
+      // Остановились раньше (или перемотали до загрузки) — продолжаем оттуда.
+      if (currentTime.value > 0) el.currentTime = currentTime.value
+    })
+
+    el.addEventListener('durationchange', () => setDuration(el.duration))
+
+    el.addEventListener('timeupdate', () => {
+      // До метаданных позиция элемента — ноль загрузки, а не место остановки.
+      if (hasMetadata(el)) currentTime.value = el.currentTime || 0
+    })
+
+    el.addEventListener('ended', () => {
+      isPlaying.value = false
+      currentTime.value = 0
+      rememberPosition(key, 0)
+    })
+
+    el.addEventListener('error', () => {
+      // Звука ещё нет (элемент «разбужен» нажатием без источника) — не ошибка.
+      if (!objectUrl.value) return
+      // Пытаемся прижать MIME = audio/mpeg и перезагрузить — типичная починка
+      // для серверов, отдающих octet-stream / encrypted/audio/mpeg.
+      try {
+        if (lastBlob.value && lastBlob.value.type !== 'audio/mpeg') {
+          const fixedBlob = new Blob([lastBlob.value], { type: 'audio/mpeg' })
+          lastBlob.value = fixedBlob
+          const fixedUrl = URL.createObjectURL(fixedBlob)
+
+          el.src = fixedUrl
+          el.load()
+
+          URL.revokeObjectURL(objectUrl.value)
+          objectUrl.value = fixedUrl
+
+          hasError.value = null
           return
         }
-        blob = await response.blob()
+      } catch {
+        // ignore — упадём в общую ошибку ниже
       }
 
-      // Bastyon-шифрованные аудио (secrets) — расшифровываем через store.
-      if (message.info?.secrets) {
-        const decrypted = await decryptAudioData(blob, message)
-        if (decrypted) blob = decrypted
-      }
+      hasError.value = t('messenger.audioPlayFailed')
+    })
 
-      lastBlob.value = blob
-      setDuration((await computeWaveform(blob)) ?? 0)
-      isLoadingWave.value = false
+    el.addEventListener('pause', () => {
+      // Своя пауза, старт другого голосового или уход из чата — место
+      // остановки остаётся за сообщением. Конец записи — тоже pause, но
+      // за ним ended: там позиция сбрасывается.
+      isPlaying.value = false
+      if (!el.ended && hasMetadata(el)) rememberPosition(key, el.currentTime)
+      releaseChat(el)
+    })
 
-      const oUrl = URL.createObjectURL(blob)
-      objectUrl.value = oUrl
+    audioEl.value = el
+    return el
+  }
 
-      const el = new Audio()
-      el.src = oUrl
-      el.preload = 'auto'
+  /** Звук: с устройства, из памяти сеанса или с сервера (с расшифровкой). */
+  async function fetchBlob(signal: AbortSignal): Promise<Blob | null> {
+    const url = message.url
+    if (!url) {
+      hasError.value = t('messenger.audioNoUrl')
+      return null
+    }
+    // Голосовое mesh-сети и своё неотправленное уже в памяти (`blob:`): fetch
+    // такой ссылки CSP не пускает (connect-src), да и незачем.
+    const local = localMediaBlob(url)
+    if (local) return local
+    const cached = cachedVoice(message.id)
+    if (cached) return cached
 
-      el.addEventListener('loadedmetadata', () => {
-        setDuration(el.duration)
-        isReady.value = true
-        // Остановились раньше (или перемотали до загрузки) — продолжаем оттуда.
-        if (currentTime.value > 0) el.currentTime = currentTime.value
-      })
+    const response = await matrixFetch(url, { mode: 'cors', signal })
+    if (!response.ok) {
+      hasError.value = `HTTP ${response.status}`
+      return null
+    }
+    let blob = await response.blob()
+    // Bastyon-шифрованные аудио (secrets) — расшифровываем через store.
+    if (message.info?.secrets) {
+      const decrypted = await decryptAudioData(blob, message)
+      if (decrypted) blob = decrypted
+    }
+    cacheVoice(message.id, blob)
+    return blob
+  }
 
-      el.addEventListener('durationchange', () => setDuration(el.duration))
-
-      el.addEventListener('timeupdate', () => {
-        // До метаданных позиция элемента — ноль загрузки, а не место остановки.
-        if (hasMetadata(el)) currentTime.value = el.currentTime || 0
-      })
-
-      el.addEventListener('ended', () => {
-        isPlaying.value = false
-        currentTime.value = 0
-        rememberPosition(key, 0)
-      })
-
-      el.addEventListener('error', () => {
-        // Пытаемся прижать MIME = audio/mpeg и перезагрузить — типичная починка
-        // для серверов, отдающих octet-stream / encrypted/audio/mpeg.
-        try {
-          if (lastBlob.value) {
-            const fixedBlob = new Blob([lastBlob.value], { type: 'audio/mpeg' })
-            const fixedUrl = URL.createObjectURL(fixedBlob)
-
-            el.src = fixedUrl
-            el.load()
-
-            if (objectUrl.value) URL.revokeObjectURL(objectUrl.value)
-            objectUrl.value = fixedUrl
-
-            hasError.value = null
-            return
-          }
-        } catch {
-          // ignore — упадём в общую ошибку ниже
+  function load(): Promise<boolean> {
+    if (objectUrl.value) return Promise.resolve(true)
+    if (loading) return loading
+    const ctrl = new AbortController()
+    abort = ctrl
+    hasError.value = null
+    isLoading.value = true
+    const run = (async (): Promise<boolean> => {
+      try {
+        const blob = await fetchBlob(ctrl.signal)
+        if (!blob || ctrl.signal.aborted || disposed) return false
+        lastBlob.value = blob
+        // Волна и длительность по звуку — без ожидания: слушать можно уже сейчас.
+        void Promise.resolve(opts.onAudio?.(blob))
+          .then((seconds) => {
+            if (typeof seconds === 'number') setDuration(seconds)
+          })
+          .catch(() => {})
+        const url = URL.createObjectURL(blob)
+        objectUrl.value = url
+        element().src = url
+        return true
+      } catch (e) {
+        if (!ctrl.signal.aborted && !isAbort(e)) {
+          hasError.value = e instanceof Error ? e.message : t('messenger.audioLoadFailed')
         }
+        return false
+      } finally {
+        // abort и loading заводятся вместе: эта загрузка — ещё текущая.
+        if (abort === ctrl) {
+          abort = null
+          loading = null
+        }
+        isLoading.value = false
+      }
+    })()
+    loading = run
+    return run
+  }
 
-        hasError.value = t('messenger.audioPlayFailed')
-      })
-
-      el.addEventListener('pause', () => {
-        // Своя пауза, старт другого голосового или уход из чата — место
-        // остановки остаётся за сообщением. Конец записи — тоже pause, но
-        // за ним ended: там позиция сбрасывается.
-        isPlaying.value = false
-        if (!el.ended && hasMetadata(el)) rememberPosition(key, el.currentTime)
-        releaseChat(el)
-      })
-
-      audioEl.value = el
-    } catch (e) {
-      hasError.value = e instanceof Error ? e.message : t('messenger.audioLoadFailed')
-      isLoadingWave.value = false
+  /** Повторное нажатие во время загрузки: не ждать, не включать. */
+  function cancelLoading(): void {
+    abort?.abort()
+    if (message.chatId && wantedByChat.get(message.chatId) === token) {
+      wantedByChat.delete(message.chatId)
     }
   }
 
-  async function togglePlay(): Promise<void> {
-    const el = audioEl.value
-    if (!el) return
-
+  async function play(el: HTMLAudioElement): Promise<void> {
+    const prev = message.chatId ? playingByChat.get(message.chatId) : undefined
+    if (prev && prev !== el) prev.pause()
     try {
-      if (isPlaying.value) {
-        el.pause()
-        isPlaying.value = false
-        return
-      }
-      const prev = message.chatId ? playingByChat.get(message.chatId) : undefined
-      if (prev && prev !== el) prev.pause()
-
       await el.play()
       isPlaying.value = true
       if (message.chatId) playingByChat.set(message.chatId, el)
     } catch (e) {
-      console.error('[AudioMessage] play/pause failed:', e)
+      console.error('[AudioMessage] play failed:', e)
     }
+  }
+
+  async function togglePlay(): Promise<void> {
+    if (isLoading.value) {
+      cancelLoading()
+      return
+    }
+    const el = element()
+    if (isPlaying.value) {
+      el.pause()
+      isPlaying.value = false
+      return
+    }
+    const chat = message.chatId
+    if (chat) wantedByChat.set(chat, token)
+    if (!objectUrl.value) {
+      // Нажатие — жест пользователя, а после загрузки его уже нет: WebKit
+      // пускает звук элемента, которому load() позвали в самом жесте.
+      try {
+        el.load()
+      } catch {
+        // ignore
+      }
+      const ok = await load()
+      if (!ok || disposed) return
+      // Пока грузилось, включили другое голосовое этого чата.
+      if (chat && wantedByChat.get(chat) !== token) return
+    }
+    await play(el)
   }
 
   function seekAt(ratio: number): void {
@@ -218,12 +306,17 @@ export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
     const t = Math.max(0, Math.min(duration.value, ratio * duration.value))
     currentTime.value = t
     const el = audioEl.value
-    // Файл ещё грузится — позицию применит loadedmetadata.
+    // Звука ещё нет — позицию применит loadedmetadata.
     if (el && hasMetadata(el)) el.currentTime = t
     if (!isPlaying.value) rememberPosition(key, t)
   }
 
   onBeforeUnmount(() => {
+    disposed = true
+    abort?.abort()
+    if (message.chatId && wantedByChat.get(message.chatId) === token) {
+      wantedByChat.delete(message.chatId)
+    }
     const el = audioEl.value
     if (el) {
       if (!el.ended && hasMetadata(el)) rememberPosition(key, el.currentTime)
@@ -241,12 +334,12 @@ export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
     isPlaying,
     duration,
     currentTime,
-    isLoadingWave,
+    isLoading,
     hasError,
     isReady,
     showsPosition,
     togglePlay,
     seekAt,
-    prepare,
+    load,
   }
 }

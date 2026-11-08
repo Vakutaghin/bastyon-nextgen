@@ -2398,6 +2398,7 @@ export default {
     play: 'Abspielen',
     pause: 'Pause',
     audioLoading: 'Audio wird geladen',
+    audioCancel: 'Laden abbrechen',
   },
   miniapps: {
     pageTitle: 'Dienste',

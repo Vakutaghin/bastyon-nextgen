@@ -5,7 +5,8 @@
 // реакции — в use-message-sending.
 
 import { matrixService } from '../../services/matrix-service'
-import { encryptAudioBlob } from '../../services/encryption-service'
+import { encryptAudioBlob, sealWaveform } from '../../services/encryption-service'
+import { decodeVoice, hasWaveformShape, waveformToInfo } from '../../lib/voice-waveform'
 import { encryptBlobWithRandomKey, wrapKeyForRoom } from '../../services/media-encrypt'
 import { extractImageDimensions, extractVideoMetadata } from '../../services/media-metadata'
 import { isTetatetchat } from '../../helpers'
@@ -114,10 +115,18 @@ export function useMediaSending(
           mimetype: mimetype || 'audio/webm',
           duration: payload.duration || 0,
         }
+        // Волна — по самой записи (плеер своего голосового её уже разобрал).
+        const samples = (await decodeVoice(payload.blob))?.samples
+        const wave = samples && hasWaveformShape(samples) ? samples : undefined
         if (!roomEncrypts(room, memberIds)) {
           await matrixService.sendAudio(
             chatId,
-            { ...audio, blob: payload.blob, size: payload.blob.size },
+            {
+              ...audio,
+              blob: payload.blob,
+              size: payload.blob.size,
+              ...(wave ? { waveform: waveformToInfo(wave) } : {}),
+            },
             onProgress
           )
           return
@@ -129,9 +138,17 @@ export function useMediaSending(
         const { encryptedBlob, secretStr } = await encryptAudioBlob(payload.blob)
         const version = 2
         const secrets = await pcryptoService.value!.encryptKey(secretStr, users, block, version)
+        const waveformEncrypted = wave ? await sealWaveform(wave, secretStr) : undefined
         await matrixService.sendAudio(
           chatId,
-          { ...audio, blob: encryptedBlob, size: encryptedBlob.size, secrets, block },
+          {
+            ...audio,
+            blob: encryptedBlob,
+            size: encryptedBlob.size,
+            secrets,
+            block,
+            ...(waveformEncrypted ? { waveformEncrypted } : {}),
+          },
           onProgress
         )
         return

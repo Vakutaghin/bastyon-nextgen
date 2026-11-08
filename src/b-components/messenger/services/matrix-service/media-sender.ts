@@ -109,7 +109,14 @@ export interface SendAudioData {
   size?: number
   secrets?: SecretsBlock
   block?: number
+  /** Волна для чата без шифрования: целые 0…1024, как у Forta Chat (MSC3245). */
+  waveform?: number[]
+  /** Волна зашифрованного чата — под ключом самого голосового. */
+  waveformEncrypted?: string
 }
+
+/** Метка MSC3245: это запись голоса, а не аудиофайл (Forta Chat, Element). */
+const VOICE_MARKER = 'org.matrix.msc3245.voice'
 
 export async function sendAudio(
   client: MatrixClient,
@@ -147,12 +154,16 @@ export async function sendAudio(
   info.url = mxcUrl
   if (httpUrl) info.httpUrl = httpUrl
   if (data.secrets) info.secrets = data.secrets
+  // Волна в событии: чат рисует голосовое, не скачивая его.
+  if (data.waveform?.length) info.waveform = data.waveform
+  if (data.waveformEncrypted) info.waveformEncrypted = data.waveformEncrypted
 
   const content: MatrixEventContent = {
     msgtype: 'm.audio',
     body: bodyName,
     url: httpUrl || mxcUrl,
     info,
+    [VOICE_MARKER]: {},
   }
   if (typeof data.block === 'number') content.block = data.block
   if (data.secrets?.v) content.version = data.secrets.v

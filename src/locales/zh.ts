@@ -2268,6 +2268,7 @@ export default {
     play: '播放',
     pause: '暂停',
     audioLoading: '正在加载音频',
+    audioCancel: '取消加载',
   },
   miniapps: {
     pageTitle: '服务',

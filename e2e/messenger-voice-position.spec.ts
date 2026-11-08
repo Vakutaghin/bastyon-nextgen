@@ -7,8 +7,10 @@ import { useMockNode, type MockNodeData } from './support/mock-node'
  * Голосовое как в Telegram: до прослушивания — длительность, с первого нажатия
  * — где играет; пауза, другое голосовое или уход в другой чат оставляют
  * сообщение на месте остановки, «Воспроизвести» продолжает с него; дослушали —
- * снова длительность. Длительность видна и до загрузки файла (из события), и у
- * записи MediaRecorder в Chromium, где у самого файла её нет (Infinity).
+ * снова длительность. Звук качается только по «Воспроизвести»: длительность
+ * из события видна сразу, а у записи прежнего Bastyon (в событии её нет, у
+ * записи MediaRecorder в Chromium нет и в файле — Infinity) — после первого
+ * прослушивания, по самому звуку.
  * Сервера чатов нет: переписка подставлена в стор, файлы отдаёт тест.
  */
 
@@ -103,14 +105,14 @@ test('голосовое: длительность сразу, время по �
   await signIn(page)
   const voiceA = await recordVoice(page, A_SECONDS)
 
-  let releaseB = () => {}
-  const bGate = new Promise<void>((resolve) => (releaseB = resolve))
-  await page.route('**/e2e-media/voice-a', (route) =>
-    route.fulfill({ status: 200, contentType: voiceA.type, body: voiceA.body })
-  )
-  await page.route('**/e2e-media/voice-b', async (route) => {
-    await bGate
-    await route.fulfill({ status: 200, contentType: 'audio/mpeg', body: MP3 })
+  const requested: string[] = []
+  await page.route('**/e2e-media/voice-a', (route) => {
+    requested.push('a')
+    return route.fulfill({ status: 200, contentType: voiceA.type, body: voiceA.body })
+  })
+  await page.route('**/e2e-media/voice-b', (route) => {
+    requested.push('b')
+    return route.fulfill({ status: 200, contentType: 'audio/mpeg', body: MP3 })
   })
 
   await page.evaluate(
@@ -196,12 +198,11 @@ test('голосовое: длительность сразу, время по �
   const play = (voice: Locator) => voice.getByRole('button', { name: 'Воспроизвести' })
   const pause = (voice: Locator) => voice.getByRole('button', { name: 'Пауза' })
 
-  // В событии длительности нет, у записи Chromium нет и в файле — по звуку.
-  await expect(timeOf(a)).toHaveText(`0:0${A_SECONDS}`, { timeout: 15_000 })
-  // Длительность из события — пока файл ещё грузится.
-  await expect(b.getByRole('button', { name: 'Загрузка аудио' })).toBeVisible()
+  // Длительность из события — сразу, без звука; у A её нет нигде — пусто.
   await expect(timeOf(b)).toHaveText('0:02')
-  releaseB()
+  await expect(timeOf(a)).toHaveText('')
+  await page.waitForTimeout(1_000)
+  expect(requested).toEqual([])
 
   // Играет — время с начала; пауза — время остановки остаётся.
   await play(a).click()
@@ -227,6 +228,9 @@ test('голосовое: длительность сразу, время по �
   await expect(timeOf(b)).toHaveText('0:02')
   expect(await secondsOf(a)).toBe(stoppedAt)
 
+  // Каждое скачано по разу.
+  expect(requested.sort()).toEqual(['a', 'b'])
+
   // Ушли в другой чат и вернулись — место остановки то же.
   await switchTo(page, DM_CAROL)
   await expect(list.getByText('Привет от Кэрол')).toBeVisible()
@@ -242,5 +246,7 @@ test('голосовое: длительность сразу, время по �
   expect(await secondsOf(a)).toBeGreaterThanOrEqual(stoppedAt)
   await expect(play(a)).toBeVisible({ timeout: 10_000 })
   expect(Date.now() - started).toBeLessThan((A_SECONDS - stoppedAt + 0.8) * 1000)
+  // Дослушали — длительность, узнанная по звуку; скачивать снова не пришлось.
   await expect(timeOf(a)).toHaveText(`0:0${A_SECONDS}`)
+  expect(requested).toEqual(['a', 'b'])
 })

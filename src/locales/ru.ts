@@ -2262,6 +2262,7 @@ export default {
     play: 'Воспроизвести',
     pause: 'Пауза',
     audioLoading: 'Загрузка аудио',
+    audioCancel: 'Отменить загрузку',
   },
   /** «Кто оценил» — окно по числу оценок под звёздами (post-scores-modal). */
   postScores: {

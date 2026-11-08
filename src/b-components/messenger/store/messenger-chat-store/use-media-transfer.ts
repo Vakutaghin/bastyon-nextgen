@@ -2,7 +2,7 @@
 // разворачивает per-message ключ через pcrypto и отдаёт blob URL для рендера.
 
 import { matrixService } from '../../services/matrix-service'
-import { decryptAudioBlob } from '../../services/encryption-service'
+import { decryptAudioBlob, openWaveform } from '../../services/encryption-service'
 import { decryptBytesWithSecret, sniffMimeFromBytes } from '../../services/media-decrypt'
 import type { Message } from '../../types'
 import type { ChatCrypto } from './use-chat-crypto'
@@ -13,26 +13,58 @@ export function useMediaTransfer(chatCrypto: ChatCrypto) {
   /** Кэш расшифрованных blob-URL по eventId — чтобы не дешифровать одно и то же повторно. */
   const decryptedMediaUrls = new Map<string, string>()
 
-  const decryptAudioData = async (blob: Blob, message: Message): Promise<Blob | null> => {
-    if (!pcryptoService.value || !message.info?.secrets) return null
+  /**
+   * Секрет вложения (ключ файла), развёрнутый pcrypto. Голосовому он нужен
+   * дважды — волна при показе и звук по «Слушать», — разворачиваем один раз.
+   */
+  const fileSecrets = new Map<string, Promise<string | null>>()
 
-    try {
+  const fileSecret = (message: Message): Promise<string | null> => {
+    const known = fileSecrets.get(message.id)
+    if (known) return known
+    const run = (async (): Promise<string | null> => {
+      if (!pcryptoService.value || !message.info?.secrets) return null
       const room = matrixService.getRoom(message.chatId)
       if (!room) return null
-
       const memberIds = getOrderedMemberIds(room, message.timestamp)
       const users = await collectPcryptoUsers(memberIds)
-
       const fakeEvent = {
         sender: message.senderId,
         content: { info: { secrets: message.info.secrets } },
       }
-      const decryptedSecretsStr = await pcryptoService.value.decryptEvent(fakeEvent, users)
-      if (!decryptedSecretsStr) return null
+      const secret = await pcryptoService.value.decryptEvent(fakeEvent, users)
+      return secret ? secret.trim() : null
+    })()
+    fileSecrets.set(message.id, run)
+    // Не развернулся (ключи ещё не пришли) — в следующий раз пробуем снова.
+    void run.then(
+      (secret) => {
+        if (!secret) fileSecrets.delete(message.id)
+      },
+      () => fileSecrets.delete(message.id)
+    )
+    return run
+  }
 
-      return await decryptAudioBlob(blob, decryptedSecretsStr.trim())
+  const decryptAudioData = async (blob: Blob, message: Message): Promise<Blob | null> => {
+    try {
+      const secret = await fileSecret(message)
+      if (!secret) return null
+      return await decryptAudioBlob(blob, secret)
     } catch (e) {
       console.error('[ChatStore] Ошибка дешифрования аудио:', e)
+      return null
+    }
+  }
+
+  /** Волна голосового зашифрованного чата: без скачивания звука, по ключу файла. */
+  const decryptVoiceWaveform = async (message: Message): Promise<number[] | null> => {
+    const sealed = message.info?.waveformEncrypted
+    if (typeof sealed !== 'string' || !sealed) return null
+    try {
+      const secret = await fileSecret(message)
+      return secret ? await openWaveform(sealed, secret) : null
+    } catch {
       return null
     }
   }
@@ -120,9 +152,16 @@ export function useMediaTransfer(chatCrypto: ChatCrypto) {
       }
     }
     decryptedMediaUrls.clear()
+    fileSecrets.clear()
   }
 
-  return { decryptAudioData, decryptMediaBlob, fetchAndDecryptMedia, revokeDecryptedMedia }
+  return {
+    decryptAudioData,
+    decryptVoiceWaveform,
+    decryptMediaBlob,
+    fetchAndDecryptMedia,
+    revokeDecryptedMedia,
+  }
 }
 
 export type MediaTransfer = ReturnType<typeof useMediaTransfer>

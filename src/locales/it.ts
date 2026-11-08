@@ -2379,6 +2379,7 @@ export default {
     play: 'Riproduci',
     pause: 'Pausa',
     audioLoading: 'Caricamento dell’audio',
+    audioCancel: 'Annulla il caricamento',
   },
   miniapps: {
     pageTitle: 'Servizi',

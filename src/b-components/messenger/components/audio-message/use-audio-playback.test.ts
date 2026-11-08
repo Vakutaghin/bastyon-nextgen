@@ -1,8 +1,12 @@
 // Голосовое как в Telegram: длительность сразу (из события, мс), с первого
 // нажатия — позиция; пауза, другое голосовое и уход из чата оставляют место
 // остановки, новый экземпляр сообщения продолжает с него; дослушали — с начала.
+// Звук — только по «Слушать»: показ голосового ничего не скачивает; ещё одно
+// нажатие во время загрузки — отмена; скачанное второй раз не качается.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { matrixFetch } from '@/helpers/api/request'
+import { clearVoiceCache } from '../../services/voice-cache'
 import { defineComponent, h } from 'vue'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import type { Message } from '../../types'
@@ -10,7 +14,28 @@ import { useAudioPlayback, type AudioPlayback } from './use-audio-playback'
 import { positionKey, rememberedPosition } from './audio-positions'
 
 vi.mock('@/helpers/api/request', () => ({ matrixFetch: vi.fn() }))
-vi.mock('../../services/local-media', () => ({ localMediaBlob: () => new Blob(['voice']) }))
+/** Звук уже на устройстве (своё, mesh) или только на сервере. */
+let localBlob: Blob | undefined = new Blob(['voice'])
+vi.mock('../../services/local-media', () => ({ localMediaBlob: () => localBlob }))
+
+const fetchMock = vi.mocked(matrixFetch)
+/** Ответ сервера с голосовым; `release` — когда он придёт. */
+function serverVoice(): { release: () => void } {
+  let release = () => {}
+  fetchMock.mockImplementation(
+    (_url, init) =>
+      new Promise((resolve, reject) => {
+        init?.signal?.addEventListener('abort', () =>
+          reject(new DOMException('aborted', 'AbortError'))
+        )
+        release = () =>
+          resolve({ ok: true, status: 200, blob: async () => new Blob(['remote']) } as Response)
+      })
+  )
+  return { release: () => release() }
+}
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 /** `<audio>` без звука: события — по команде теста. */
 class FakeAudio extends EventTarget {
@@ -40,7 +65,10 @@ class FakeAudio extends EventTarget {
     this.dispatchEvent(new Event('pause'))
   }
 
-  load(): void {}
+  loads = 0
+  load(): void {
+    this.loads += 1
+  }
 
   meta(duration: number): void {
     this.duration = duration
@@ -92,7 +120,7 @@ function useVoice(message: Message, decoded: number | null = 5): AudioPlayback {
         setup() {
           api = useAudioPlayback({
             message,
-            computeWaveform: async () => decoded,
+            onAudio: async () => decoded,
             decryptAudioData: async () => null,
           })
           return () => h('div')
@@ -105,7 +133,7 @@ function useVoice(message: Message, decoded: number | null = 5): AudioPlayback {
 
 /** Загрузить и дождаться метаданных. */
 async function ready(api: AudioPlayback, duration = 5): Promise<FakeAudio> {
-  await api.prepare()
+  await api.load()
   const el = lastAudio()
   el.meta(duration)
   return el
@@ -120,6 +148,9 @@ beforeEach(() => {
 afterEach(() => {
   while (mounted.length) mounted.pop()!.unmount()
   FakeAudio.all = []
+  localBlob = new Blob(['voice'])
+  fetchMock.mockReset()
+  clearVoiceCache()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
@@ -133,7 +164,8 @@ describe('useAudioPlayback', () => {
 
   it('Infinity у файла (запись без длительности) не затирает длительность по звуку', async () => {
     const api = useVoice(voice(), 3.5)
-    await api.prepare()
+    await api.load()
+    await settle()
     expect(api.duration.value).toBe(3.5)
     lastAudio().meta(Number.POSITIVE_INFINITY)
     expect(api.duration.value).toBe(3.5)
@@ -207,5 +239,92 @@ describe('useAudioPlayback', () => {
     expect(api.currentTime.value).toBe(2)
     const el = await ready(api, 4)
     expect(el.currentTime).toBe(2)
+  })
+
+  it('показ голосового звук не качает; «Слушать» — качает и включает', async () => {
+    localBlob = undefined
+    const server = serverVoice()
+    const api = useVoice(voice({ duration: 3000 }))
+    await settle()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(FakeAudio.all).toHaveLength(0)
+
+    const pressed = api.togglePlay()
+    expect(api.isLoading.value).toBe(true)
+    // Элемент «разбужен» в самом нажатии — WebKit иначе не пустит звук после загрузки.
+    expect(lastAudio().loads).toBe(1)
+    server.release()
+    await pressed
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(api.isLoading.value).toBe(false)
+    expect(api.isPlaying.value).toBe(true)
+    expect(lastAudio().src).toBe('blob:object')
+  })
+
+  it('ещё одно нажатие во время загрузки — отмена: не включается, можно снова', async () => {
+    localBlob = undefined
+    serverVoice()
+    const api = useVoice(voice())
+    const pressed = api.togglePlay()
+    await api.togglePlay()
+    await pressed
+    expect(api.isLoading.value).toBe(false)
+    expect(api.isPlaying.value).toBe(false)
+    expect(api.hasError.value).toBeNull()
+
+    const server = serverVoice()
+    const again = api.togglePlay()
+    server.release()
+    await again
+    expect(api.isPlaying.value).toBe(true)
+  })
+
+  it('скачанное помнится: то же голосовое после возврата в чат — без сети', async () => {
+    localBlob = undefined
+    const message = voice()
+    const server = serverVoice()
+    const api = useVoice(message)
+    const pressed = api.togglePlay()
+    server.release()
+    await pressed
+    mounted.pop()!.unmount()
+
+    const again = useVoice(message)
+    await again.togglePlay()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(again.isPlaying.value).toBe(true)
+  })
+
+  it('пока одно грузилось, включили другое — первое, догрузившись, молчит', async () => {
+    localBlob = undefined
+    const server = serverVoice()
+    const slow = useVoice(voice())
+    const slowPressed = slow.togglePlay()
+
+    localBlob = new Blob(['voice'])
+    const quick = useVoice(voice())
+    await quick.togglePlay()
+    expect(quick.isPlaying.value).toBe(true)
+
+    server.release()
+    await slowPressed
+    expect(slow.isPlaying.value).toBe(false)
+    expect(quick.isPlaying.value).toBe(true)
+  })
+
+  it('сервер не отдал — ошибка, а нажатие пробует снова', async () => {
+    localBlob = undefined
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 502 } as Response)
+    const api = useVoice(voice())
+    await api.togglePlay()
+    expect(api.hasError.value).toBe('HTTP 502')
+    expect(api.isPlaying.value).toBe(false)
+
+    const server = serverVoice()
+    const again = api.togglePlay()
+    expect(api.hasError.value).toBeNull()
+    server.release()
+    await again
+    expect(api.isPlaying.value).toBe(true)
   })
 })

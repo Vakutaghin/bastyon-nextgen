@@ -143,9 +143,29 @@ describe('media-sender', () => {
         httpUrl: 'https://media.example/srv/media1',
         secrets: SECRETS,
       },
+      'org.matrix.msc3245.voice': {},
       block: 3_000_000,
       version: 2,
     })
+  })
+
+  it('голосовое: волна в событии — открытая (как Forta Chat) или под ключом', async () => {
+    await sendAudio(asClient(client), '!room', {
+      blob: new Blob(['voice']),
+      duration: 1,
+      waveform: [0, 512, 1024],
+    })
+    expect(sentContent(client).info).toMatchObject({ waveform: [0, 512, 1024] })
+    expect(sentContent(client).info).not.toHaveProperty('waveformEncrypted')
+
+    await sendAudio(asClient(client), '!room', {
+      blob: new Blob(['voice']),
+      duration: 1,
+      secrets: SECRETS,
+      waveformEncrypted: 'ab12',
+    })
+    expect(sentContent(client).info).toMatchObject({ waveformEncrypted: 'ab12' })
+    expect(sentContent(client).info).not.toHaveProperty('waveform')
   })
 
   it('уже загруженное (mxcUrl) не грузится повторно', async () => {

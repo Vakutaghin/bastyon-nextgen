@@ -1,16 +1,21 @@
 <template>
   <SC_AudioMessage data-testid="audio-message">
+    <SC_PlayButton v-if="isBlocked" :disabled="true" :aria-label="t('chat.audioLoading')">
+      <SC_Spinner />
+    </SC_PlayButton>
+    <!-- Звук грузится по нажатию; ещё раз — отмена. -->
     <SC_PlayButton
-      v-if="isLoadingWave || isBlocked"
-      :disabled="true"
-      :aria-label="t('chat.audioLoading')"
+      v-else-if="isLoading"
+      data-testid="audio-loading"
+      :aria-label="t('chat.audioCancel')"
+      @click="togglePlay"
     >
       <SC_Spinner />
     </SC_PlayButton>
     <SC_PlayButton
       v-else
       :class="{ playing: isPlaying }"
-      :disabled="!!hasError"
+      :disabled="!message.url"
       :aria-label="isPlaying ? t('chat.pause') : t('chat.play')"
       @click="togglePlay"
     >
@@ -19,7 +24,7 @@
     </SC_PlayButton>
 
     <SC_WaveContainer ref="container" :compact="compact" @click="onSeekByClick">
-      <SC_WaveSpinnerOverlay v-if="isLoadingWave || isBlocked">
+      <SC_WaveSpinnerOverlay v-if="isBlocked">
         <SC_SpinnerRow>
           <SC_Spinner />
           <SC_UploadProgress v-if="message?.info?.uploadProgress">
@@ -34,13 +39,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { isMeshTransport, type Message } from '../../types'
 import { useMessengerStore } from '../../store'
+import { localMediaBlob } from '../../services/local-media'
+import { learnWave, learnedWave } from '../../services/voice-cache'
+import {
+  decodeVoice,
+  hasWaveformShape,
+  waveformBars,
+  waveformFromInfo,
+} from '../../lib/voice-waveform'
 import { useCanvasWaveform } from './use-canvas-waveform'
 import { useAudioPlayback } from './use-audio-playback'
-import { useAudioDecoding } from './use-audio-decoding'
 import { PauseIcon, PlayIcon } from '@/components/icons'
 import {
   SC_AudioMessage,
@@ -67,37 +79,38 @@ const props = withDefaults(
 const store = useMessengerStore()
 const { t } = useI18n()
 
+// === Волна: из события, без скачивания звука ===
+// Волна в событии (Forta Chat, NextGen) — сразу; зашифрованная — по ключу
+// файла, тоже без скачивания; узнанная в этом сеансе — из памяти. Нет нигде
+// (прежний Bastyon) — ровная линия, пока звук не появится: свой — с
+// устройства, чужой — когда его скачали для прослушивания.
+let hasWave = false
+
+function showWave(samples: number[]): void {
+  hasWave = true
+  waveform.setBars(waveformBars(samples, BAR_COUNT))
+}
+
+/** Звук на руках — волна и длительность по нему, если волны не было. */
+async function learnFromAudio(blob: Blob): Promise<number | null> {
+  const decoded = await decodeVoice(blob)
+  if (!decoded) return null
+  if (!hasWave && hasWaveformShape(decoded.samples)) {
+    learnWave(props.message.id, decoded.samples)
+    showWave(decoded.samples)
+  }
+  return decoded.duration
+}
+
 // === Playback ===
 const playback = useAudioPlayback({
   message: props.message,
-  computeWaveform: async (blob) => {
-    try {
-      const { bars, duration } = await decoding.decodeWaveform(blob, BAR_COUNT)
-      waveform.setBars(bars)
-      return duration
-    } catch (e) {
-      // Если декод упал — оставляем плоскую волну, UI продолжит работать.
-      waveform.setBars(Array.from({ length: BAR_COUNT }, () => 0.2))
-      console.error('[AudioMessage] Failed to decode audio for waveform:', e)
-      return null
-    }
-  },
+  onAudio: learnFromAudio,
   decryptAudioData: (blob, message) => store.decryptAudioData(blob, message),
 })
 
-const {
-  isPlaying,
-  duration,
-  currentTime,
-  isLoadingWave,
-  hasError,
-  showsPosition,
-  togglePlay,
-  seekAt,
-} = playback
-
-// === Декод waveform ===
-const decoding = useAudioDecoding()
+const { isPlaying, duration, currentTime, isLoading, hasError, showsPosition, togglePlay, seekAt } =
+  playback
 
 // === Waveform (2D-canvas; WebGL-контекст на каждое сообщение не тянем, N20) ===
 const waveform = useCanvasWaveform({
@@ -127,7 +140,7 @@ function clock(total: number): string {
 // Как в Telegram: до прослушивания — длительность, с первого нажатия — где
 // играет или где остановили. Длительность округляем (запись на 4,98 с — «0:05»),
 // позицию — вниз, как идут часы. Пока длительность не известна (событие
-// прежнего Bastyon без неё, файл ещё грузится) — пусто, а не «0:00».
+// прежнего Bastyon без неё, звук ещё не скачан) — пусто, а не «0:00».
 const timeLabel = computed<string>(() => {
   if (showsPosition.value) return clock(Math.floor(currentTime.value))
   if (duration.value <= 0) return ''
@@ -153,11 +166,23 @@ function onSeekByClick(evt: MouseEvent): void {
   seekAt(ratio)
 }
 
-onMounted(async () => {
-  await playback.prepare()
-})
-
-onBeforeUnmount(async () => {
-  await decoding.close()
+onMounted(() => {
+  const { message } = props
+  const known = waveformFromInfo(message.info) ?? learnedWave(message.id)
+  if (known) {
+    showWave(known)
+    return
+  }
+  if (typeof message.info?.waveformEncrypted === 'string' && message.info.secrets) {
+    void store.decryptVoiceWaveform(message).then((samples) => {
+      if (!samples || hasWave || !hasWaveformShape(samples)) return
+      learnWave(message.id, samples)
+      showWave(samples)
+    })
+    return
+  }
+  // Своё (отправляется, не ушло) и голосовое mesh-сети — звук уже на
+  // устройстве: готовим сразу, сеть не нужна (волна и длительность — по нему).
+  if (message.url && localMediaBlob(message.url)) void playback.load()
 })
 </script>

@@ -135,3 +135,69 @@ export async function decryptTextWithSecret(hexCipher: string, secretStr: string
   )
   return new TextDecoder().decode(plainBuffer)
 }
+
+// ─── Волна голосового в зашифрованном чате ───────────────────────────────────
+// Открыто сервер видит только то, что видел всегда (размер, длительность), —
+// волна уходит под ключом самого голосового. Ключ — свой, выведенный из
+// секрета файла (HKDF, AES-GCM со случайным IV): AES-CBC файла идёт с
+// постоянным IV, и второй шифротекст под тем же ключом ему ни к чему.
+
+const WAVEFORM_KEY_INFO = 'bastyon-voice-waveform-v1'
+const GCM_IV_BYTES = 12
+
+async function waveformKey(secretStr: string, usage: KeyUsage): Promise<CryptoKey> {
+  const enc = new TextEncoder()
+  const material = await window.crypto.subtle.importKey(
+    'raw',
+    enc.encode(secretStr),
+    'HKDF',
+    false,
+    ['deriveKey']
+  )
+  return window.crypto.subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(0), info: enc.encode(WAVEFORM_KEY_INFO) },
+    material,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    [usage]
+  )
+}
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+/** Волна (0…1) под ключом голосового: hex(IV ‖ шифротекст), по байту на число. */
+export async function sealWaveform(samples: readonly number[], secretStr: string): Promise<string> {
+  const max = Math.max(...samples, 0)
+  const bytes = Uint8Array.from(samples, (v) => (max > 0 ? Math.round((v / max) * 255) : 0))
+  const iv = window.crypto.getRandomValues(new Uint8Array(GCM_IV_BYTES))
+  const key = await waveformKey(secretStr, 'encrypt')
+  const cipher = new Uint8Array(
+    await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, bytes)
+  )
+  const out = new Uint8Array(iv.length + cipher.length)
+  out.set(iv)
+  out.set(cipher, iv.length)
+  return toHex(out)
+}
+
+/** Открыть волну голосового; чужая, битая или не по ключу — null. */
+export async function openWaveform(sealed: string, secretStr: string): Promise<number[] | null> {
+  if (!/^[0-9a-f]+$/i.test(sealed) || sealed.length % 2 !== 0) return null
+  const bytes = hexStringToUint8Array(sealed)
+  if (bytes.length <= GCM_IV_BYTES + 16) return null
+  try {
+    const key = await waveformKey(secretStr, 'decrypt')
+    const plain = await window.crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: bytes.slice(0, GCM_IV_BYTES) as unknown as BufferSource },
+      key,
+      bytes.slice(GCM_IV_BYTES) as unknown as BufferSource
+    )
+    return Array.from(new Uint8Array(plain), (b) => b / 255)
+  } catch {
+    return null
+  }
+}

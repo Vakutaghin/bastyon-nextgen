@@ -1157,6 +1157,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     purgeAccountData,
     fetchProfiles: profileCache.fetchProfiles,
     decryptAudioData: chatStore.decryptAudioData,
+    decryptVoiceWaveform: chatStore.decryptVoiceWaveform,
     startChatWithAddress,
     sendToNewChat,
     switchToChatAndLoad,

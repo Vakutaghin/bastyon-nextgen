@@ -30,6 +30,17 @@ const { room, matrix, chat } = vi.hoisted(() => {
 vi.mock('../../services/matrix-service', () => ({ matrixService: matrix }))
 vi.mock('../../services/encryption-service', () => ({
   encryptAudioBlob: vi.fn(async () => ({ encryptedBlob: new Blob(['enc']), secretStr: 'S' })),
+  sealWaveform: vi.fn(
+    async (samples: number[], secret: string) => `sealed:${secret}:${samples.length}`
+  ),
+}))
+/** Что декодер «услышал» в записи: null — формат движку не знаком. */
+const decoded = vi.hoisted(() => ({ samples: [0.1, 0.5, 0.2, 1] as number[] | null }))
+vi.mock('../../lib/voice-waveform', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../lib/voice-waveform')>()),
+  decodeVoice: vi.fn(async () =>
+    decoded.samples ? { samples: decoded.samples, duration: 3 } : null
+  ),
 }))
 vi.mock('../../services/media-encrypt', () => ({
   encryptBlobWithRandomKey: vi.fn(async () => ({
@@ -155,6 +166,37 @@ describe('useMediaSending', () => {
       expect.objectContaining({ duration: 3, block: 10, secrets: { audio: true } }),
       expect.any(Function)
     )
+  })
+
+  it('sendAudio: волна по записи — в шифрованном чате под ключом голосового, открыто её нет', async () => {
+    const { api } = setup()
+    await api.sendAudio('!c:host', new Blob(['a']), { duration: 3 })
+    const data = matrix.sendAudio.mock.lastCall![1] as Record<string, unknown>
+    expect(data.waveformEncrypted).toBe('sealed:S:4')
+    expect(data).not.toHaveProperty('waveform')
+  })
+
+  it('sendAudio: волна в открытой группе — целыми 0…1024, как у Forta Chat', async () => {
+    const { api } = setup()
+    chat.direct = false
+    room.getJoinRule.mockReturnValue('public')
+    await api.sendAudio('!c:host', new Blob(['a']), { duration: 3 })
+    const data = matrix.sendAudio.mock.lastCall![1] as Record<string, unknown>
+    expect(data.waveform).toEqual([102, 512, 205, 1024])
+    expect(data).not.toHaveProperty('waveformEncrypted')
+  })
+
+  it('sendAudio: волну не разобрать — голосовое уходит без неё', async () => {
+    const { api } = setup()
+    decoded.samples = null
+    try {
+      await api.sendAudio('!c:host', new Blob(['a']), { duration: 3 })
+    } finally {
+      decoded.samples = [0.1, 0.5, 0.2, 1]
+    }
+    const data = matrix.sendAudio.mock.lastCall![1] as Record<string, unknown>
+    expect(data).not.toHaveProperty('waveformEncrypted')
+    expect(data).not.toHaveProperty('waveform')
   })
 
   it('sendVideo: постер грузится параллельно, оба object-URL освобождаются', async () => {

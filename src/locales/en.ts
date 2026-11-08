@@ -2366,6 +2366,7 @@ export default {
     play: 'Play',
     pause: 'Pause',
     audioLoading: 'Loading audio',
+    audioCancel: 'Cancel loading',
   },
   miniapps: {
     pageTitle: 'Services',

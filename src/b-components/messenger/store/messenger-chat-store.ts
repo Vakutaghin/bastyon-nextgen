@@ -26,6 +26,7 @@ import { useMessageLoading } from './messenger-chat-store/use-message-loading'
 import { useMessageSending } from './messenger-chat-store/use-message-sending'
 import { useMediaSending } from './messenger-chat-store/use-media-sending'
 import { useMediaTransfer } from './messenger-chat-store/use-media-transfer'
+import { clearVoiceCache } from '../services/voice-cache'
 import { useLocalEcho } from './messenger-chat-store/use-local-echo'
 import { useRedecrypt } from './messenger-chat-store/use-redecrypt'
 import { createOutbox } from './messenger-chat-store/outbox'
@@ -108,6 +109,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     // Blob-URL расшифрованного медиа отзываем: после выхода ссылки на
     // расшифрованные файлы жить не должны (N19).
     mediaTransfer.revokeDecryptedMedia()
+    clearVoiceCache()
     Object.keys(messages).forEach((key) => delete messages[key])
     Object.keys(drafts).forEach((key) => delete drafts[key])
     Object.keys(receiptsVersion).forEach((key) => delete receiptsVersion[key])
@@ -159,6 +161,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     getDirectPartnerAddress: sending.getDirectPartnerAddress,
     fetchAndDecryptMedia: mediaTransfer.fetchAndDecryptMedia,
     decryptAudioData: mediaTransfer.decryptAudioData,
+    decryptVoiceWaveform: mediaTransfer.decryptVoiceWaveform,
     mapEventToMessage: mapping.mapEventToMessage,
     /** Копия своего события получила настоящий id (Room.localEchoUpdated). */
     adoptLocalEcho: localEcho.adoptLocalEcho,
