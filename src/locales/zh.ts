@@ -566,6 +566,9 @@ export default {
       privacy_typingHint: '你输入消息时，对方会看到“正在输入…”。',
       privacy_recording: '显示我正在录制语音',
       privacy_recordingHint: '你录音时，Bastyon NextGen 上的对方会看到“正在录制语音…”。',
+      acceptInvites: '立即接受聊天邀请',
+      acceptInvitesHint:
+        '打开受邀的聊天后立即开始，不再显示“接受 / 拒绝”卡片。邀请你的人会看到你已加入。',
       archive: '将聊天记录保存到设备',
       archiveHint:
         '聊天服务器只保留消息三个月，之后会删除。开启后，聊天记录会复制到此设备：旧消息仍留在聊天中，并标注服务器上已没有。副本使用账号密钥加密，不会发送到任何地方。',

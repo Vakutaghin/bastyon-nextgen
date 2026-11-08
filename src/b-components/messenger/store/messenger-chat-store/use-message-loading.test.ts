@@ -3,12 +3,15 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive, ref } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 
 const { matrix } = vi.hoisted(() => ({
   matrix: {
     getClient: vi.fn(),
     getRoom: vi.fn(),
     joinIfInvited: vi.fn(async () => {}),
+    acceptInvite: vi.fn(async (_roomId: string): Promise<boolean> => true),
+    setPresenceVisible: vi.fn(async () => {}),
   },
 }))
 
@@ -19,6 +22,7 @@ vi.mock('../../helpers', () => ({
 }))
 
 import { useMessageLoading } from './use-message-loading'
+import { useMessengerPrivacyStore } from '../messenger-privacy-store'
 
 type Ev = { id: string; ts: number }
 
@@ -45,6 +49,7 @@ function setup() {
     isMessagesLoading: false,
     isInitInProgress: false,
     syncState: 'STOPPED',
+    dialogs: [] as { id: string; invite?: { by: string } }[],
   })
   const chatCrypto = {
     ensurePcryptoInitialized: vi.fn(),
@@ -96,7 +101,29 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers()
+  setActivePinia(undefined as never)
 })
+
+/** Приглашение от Боба; `join` — вступление, которое принесёт синк. */
+function invitedRoom(events: Ev[] = []) {
+  const state = { membership: 'invite' }
+  return {
+    state,
+    room: {
+      ...fakeRoom('!inv:host', events),
+      getMyMembership: () => state.membership,
+      getMember: () => ({
+        events: { member: { getSender: () => '@bob:host', getTs: () => 1000 } },
+      }),
+    },
+  }
+}
+
+/** Настройки → Чаты → «Принимать приглашения сразу». */
+function acceptInvitesOnOpen(): void {
+  setActivePinia(createPinia())
+  useMessengerPrivacyStore().prefs.acceptInvites = true
+}
 
 describe('useMessageLoading: чат открыт до конца входа в Matrix', () => {
   it('ждёт первого синка и грузит историю комнаты', async () => {
@@ -189,7 +216,39 @@ describe('useMessageLoading: чат открыт до конца входа в M
     await api.loadMessages('!inv:host')
 
     expect(matrix.joinIfInvited).not.toHaveBeenCalled()
+    expect(matrix.acceptInvite).not.toHaveBeenCalled()
     expect(client.paginateEventTimeline).not.toHaveBeenCalled()
+    expect(messages['!inv:host']).toEqual([])
+    expect(api.history['!inv:host']?.invitedBy).toBe('@bob:host')
+    expect(uiStore.isMessagesLoading).toBe(false)
+  })
+
+  it('«принимать сразу»: открыли приглашение — вступили, лента без окна приглашения', async () => {
+    acceptInvitesOnOpen()
+    const { api, messages, uiStore } = setup()
+    const { state, room } = invitedRoom([{ id: '$hi', ts: 1 }])
+    matrixReady(uiStore, [room])
+    uiStore.dialogs = [{ id: '!inv:host', invite: { by: '@bob:host' } }]
+    matrix.acceptInvite.mockImplementationOnce(async () => {
+      state.membership = 'join'
+      return true
+    })
+    await api.loadMessages('!inv:host')
+
+    expect(matrix.acceptInvite).toHaveBeenCalledWith('!inv:host')
+    expect(messages['!inv:host']?.map((m) => m.id)).toEqual(['$hi'])
+    expect(api.history['!inv:host']?.invitedBy).toBeFalsy()
+    expect(uiStore.dialogs[0]!.invite).toBeUndefined()
+  })
+
+  it('«принимать сразу», а вступить нельзя — окно приглашения, как без настройки', async () => {
+    acceptInvitesOnOpen()
+    const { api, messages, uiStore } = setup()
+    const { room } = invitedRoom()
+    matrixReady(uiStore, [room])
+    matrix.acceptInvite.mockRejectedValueOnce(new Error('M_FORBIDDEN'))
+    await api.loadMessages('!inv:host')
+
     expect(messages['!inv:host']).toEqual([])
     expect(api.history['!inv:host']?.invitedBy).toBe('@bob:host')
     expect(uiStore.isMessagesLoading).toBe(false)

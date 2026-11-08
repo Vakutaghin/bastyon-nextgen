@@ -423,9 +423,12 @@ const { t, locale } = useI18n()
 // Активная комната + typing-индикатор собеседника.
 const activeRoomId = computed<string | null>(() => uiStore.activeChatId)
 const isGroupChat = computed<boolean>(() => !!store.activeDialog?.group)
+const privacy = useMessengerPrivacyStore()
 // Приглашение, ещё не принятое: из списка или, если списка ещё нет, из комнаты.
 const pendingInvite = computed<{ by: string } | null>(() => {
   if (props.inviteMode) return null
+  // «Принимать сразу»: пока чат вступает, вместо окна — загрузка ленты.
+  if (privacy.prefs.acceptInvites && uiStore.isMessagesLoading) return null
   const invite = store.activeDialog?.invite
   if (invite) return invite
   const by = store.activeHistory?.invitedBy
@@ -433,7 +436,6 @@ const pendingInvite = computed<{ by: string } | null>(() => {
 })
 const { isTyping, typingName } = useTypingIndicator(activeRoomId)
 const { recordingName } = useRecordingIndicator(activeRoomId)
-const privacy = useMessengerPrivacyStore()
 const { seenIds } = useReadReceipts(activeRoomId)
 const { isBlocked, busy: blockBusy, toggleBlock } = useBlockUser(activeRoomId)
 

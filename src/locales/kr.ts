@@ -596,6 +596,9 @@ export default {
       privacy_recording: '음성 메시지 녹음 중 표시',
       privacy_recordingHint:
         '녹음하는 동안 Bastyon NextGen 상대방에게 "음성 메시지 녹음 중…"이 표시됩니다.',
+      acceptInvites: '채팅 초대 바로 수락',
+      acceptInvitesHint:
+        '초대받은 채팅을 열면 «수락 / 거절» 카드 없이 바로 시작됩니다. 초대한 사람은 내가 참여한 것을 보게 됩니다.',
       archive: '대화를 기기에 저장',
       archiveHint:
         '채팅 서버는 메시지를 3개월 동안 보관한 뒤 삭제합니다. 이 설정을 켜면 대화가 이 기기에 복사되어, 오래된 메시지도 서버에 없다는 표시와 함께 대화에 남습니다. 사본은 계정 키로 암호화되며 어디로도 전송되지 않습니다.',

@@ -42,14 +42,24 @@ describe('messenger-privacy-store', () => {
     )
     const store = useMessengerPrivacyStore()
     store.attach(ADDR)
-    expect(store.prefs).toEqual({ online: true, typing: false, recording: true })
+    expect(store.prefs).toEqual({
+      online: true,
+      typing: false,
+      recording: true,
+      acceptInvites: false,
+    })
     expect(matrix.setPresenceVisible).toHaveBeenLastCalledWith(true)
   })
 
   it('без сохранённой — как было до настройки', () => {
     const store = useMessengerPrivacyStore()
     store.attach(ADDR)
-    expect(store.prefs).toEqual({ online: false, typing: true, recording: true })
+    expect(store.prefs).toEqual({
+      online: false,
+      typing: true,
+      recording: true,
+      acceptInvites: false,
+    })
     expect(matrix.setPresenceVisible).toHaveBeenLastCalledWith(false)
   })
 
@@ -63,11 +73,13 @@ describe('messenger-privacy-store', () => {
       online: true,
       typing: true,
       recording: true,
+      acceptInvites: false,
     })
     expect(JSON.parse(localStorage.getItem(`${CHAT_PRIVACY_STORAGE_PREFIX}${ADDR}`)!)).toEqual({
       online: true,
       typing: true,
       recording: true,
+      acceptInvites: false,
     })
   })
 
@@ -97,7 +109,12 @@ describe('messenger-privacy-store', () => {
 
     matrix.accountData = { online: true, typing: false, recording: false }
     store.syncWithServer()
-    expect(store.prefs).toEqual({ online: true, typing: false, recording: false })
+    expect(store.prefs).toEqual({
+      online: true,
+      typing: false,
+      recording: false,
+      acceptInvites: false,
+    })
     expect(matrix.setPresenceVisible).toHaveBeenLastCalledWith(true)
   })
 

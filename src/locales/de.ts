@@ -607,6 +607,9 @@ export default {
       privacy_recording: 'Anzeigen, dass ich eine Sprachnachricht aufnehme',
       privacy_recordingHint:
         'Ihr Gegenüber in Bastyon NextGen sieht „nimmt eine Sprachnachricht auf…“, während Sie aufnehmen.',
+      acceptInvites: 'Chat-Einladungen sofort annehmen',
+      acceptInvitesHint:
+        'Ein Chat, zu dem Sie eingeladen wurden, beginnt, sobald Sie ihn öffnen – ohne die Karte „Annehmen / Ablehnen“. Wer Sie eingeladen hat, sieht, dass Sie beigetreten sind.',
       archive: 'Chats auf dem Gerät speichern',
       archiveHint:
         'Der Chat-Server bewahrt Nachrichten drei Monate auf und löscht sie dann. Mit dieser Einstellung werden Chats auf dieses Gerät kopiert: Alte Nachrichten bleiben im Chat, markiert als nicht mehr auf dem Server. Die Kopie ist mit dem Kontoschlüssel verschlüsselt und wird nirgendwohin gesendet.',

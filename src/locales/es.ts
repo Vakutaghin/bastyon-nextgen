@@ -607,6 +607,9 @@ export default {
       privacy_recording: 'Mostrar que estoy grabando un audio',
       privacy_recordingHint:
         'La otra persona en Bastyon NextGen ve «grabando un audio…» mientras grabas.',
+      acceptInvites: 'Aceptar invitaciones a chats al instante',
+      acceptInvitesHint:
+        'Un chat al que te invitaron empieza en cuanto lo abres, sin la tarjeta «Aceptar / Rechazar». Quien te invitó verá que te has unido.',
       archive: 'Guardar los chats en el dispositivo',
       archiveHint:
         'El servidor de chats conserva los mensajes tres meses y luego los borra. Con esta opción, los chats se copian a este dispositivo: los mensajes antiguos siguen en el chat, marcados como ya no disponibles en el servidor. La copia está cifrada con la clave de tu cuenta y no se envía a ningún sitio.',

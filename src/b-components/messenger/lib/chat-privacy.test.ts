@@ -12,7 +12,12 @@ import {
 
 describe('sanitizeChatPrivacy', () => {
   it('по умолчанию «в сети» не сообщаем, «печатает» и «записывает» — да', () => {
-    expect(sanitizeChatPrivacy(null)).toEqual({ online: false, typing: true, recording: true })
+    expect(sanitizeChatPrivacy(null)).toEqual({
+      online: false,
+      typing: true,
+      recording: true,
+      acceptInvites: false,
+    })
     expect(DEFAULT_CHAT_PRIVACY.online).toBe(false)
   })
 
@@ -21,18 +26,26 @@ describe('sanitizeChatPrivacy', () => {
       online: true,
       typing: true,
       recording: true,
+      acceptInvites: false,
     })
     expect(sanitizeChatPrivacy({ typing: false, recording: false })).toEqual({
       online: false,
       typing: false,
       recording: false,
+      acceptInvites: false,
     })
+    // Приглашения: принимать сразу — только если так выбрали.
+    expect(sanitizeChatPrivacy({ acceptInvites: true }).acceptInvites).toBe(true)
+    expect(sanitizeChatPrivacy({ acceptInvites: 'yes' }).acceptInvites).toBe(false)
   })
 
-  it('sameChatPrivacy сравнивает все три', () => {
+  it('sameChatPrivacy сравнивает все поля', () => {
     expect(sameChatPrivacy(DEFAULT_CHAT_PRIVACY, { ...DEFAULT_CHAT_PRIVACY })).toBe(true)
     expect(
       sameChatPrivacy(DEFAULT_CHAT_PRIVACY, { ...DEFAULT_CHAT_PRIVACY, recording: false })
+    ).toBe(false)
+    expect(
+      sameChatPrivacy(DEFAULT_CHAT_PRIVACY, { ...DEFAULT_CHAT_PRIVACY, acceptInvites: true })
     ).toBe(false)
   })
 })

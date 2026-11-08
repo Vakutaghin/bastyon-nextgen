@@ -259,8 +259,8 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
       }
     }
 
-    // Чат создал собеседник, а нас только пригласили: до вступления (оно — при
-    // открытии чата) Matrix ленту не отдаёт, и чат с новыми сообщениями стоял в
+    // Чат создал собеседник, а нас только пригласили: до вступления (кнопкой
+    // «Принять» или сразу при открытии — как в настройках) Matrix ленту не отдаёт, и чат с новыми сообщениями стоял в
     // самом низу списка. Его время — время приглашения, как в прежнем клиенте.
     const invited = room.getMyMembership?.() === 'invite'
     const myMemberEvent = myUserId ? room.getMember?.(myUserId)?.events?.member : null

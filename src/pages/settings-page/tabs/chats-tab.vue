@@ -21,6 +21,19 @@
           @change="(on: SwitchValue) => void privacy.set(key, on === true)"
         />
       </SC_SystemRow>
+      <!-- Приглашение в чат: окно «Принять / Отклонить» или сразу в чат. -->
+      <SC_SystemRow>
+        <SC_SystemLabel>
+          <SC_SystemTitle>{{ t('settings.chats.acceptInvites') }}</SC_SystemTitle>
+          <SC_SystemHint>{{ t('settings.chats.acceptInvitesHint') }}</SC_SystemHint>
+        </SC_SystemLabel>
+        <Switch
+          :checked="privacy.prefs.acceptInvites"
+          data-testid="privacy-acceptInvites"
+          :aria-label="t('settings.chats.acceptInvites')"
+          @change="(on: SwitchValue) => void privacy.set('acceptInvites', on === true)"
+        />
+      </SC_SystemRow>
     </SC_SystemSection>
 
     <ChatsScreenSection />

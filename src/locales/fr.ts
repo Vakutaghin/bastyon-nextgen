@@ -610,6 +610,9 @@ export default {
       privacy_recording: 'Montrer que j’enregistre un message vocal',
       privacy_recordingHint:
         'Votre interlocuteur sur Bastyon NextGen voit « enregistre un message vocal… » pendant l’enregistrement.',
+      acceptInvites: 'Accepter tout de suite les invitations aux discussions',
+      acceptInvitesHint:
+        'Une discussion à laquelle vous êtes invité commence dès que vous l’ouvrez, sans la carte « Accepter / Refuser ». La personne qui vous a invité verra que vous l’avez rejointe.',
       archive: 'Enregistrer les conversations sur l’appareil',
       archiveHint:
         'Le serveur de discussion garde les messages trois mois, puis les supprime. Avec cette option, les conversations sont copiées sur cet appareil : les anciens messages restent visibles, marqués comme absents du serveur. La copie est chiffrée avec la clé de votre compte et n’est envoyée nulle part.',

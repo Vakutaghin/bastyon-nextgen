@@ -15,6 +15,7 @@ import {
   type HistoryRoom,
 } from '../../lib/chat-history'
 import type { Message } from '../../types'
+import { useMessengerPrivacyStore } from '../messenger-privacy-store'
 import {
   HISTORY_STEP_TIMEOUT,
   KNOWN_DECRYPT_TIMEOUT,
@@ -25,6 +26,16 @@ import {
 import type { ChatContext, MxEvent, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
 import type { MessageMapping } from './use-message-mapping'
+
+/** Настройка «Принимать приглашения сразу» (Настройки → Чаты). */
+function acceptsInvitesOnOpen(): boolean {
+  try {
+    return useMessengerPrivacyStore().prefs.acceptInvites
+  } catch {
+    // Без Pinia (отдельные тесты) — как по умолчанию: спрашивать.
+    return false
+  }
+}
 
 /** Сколько сообщений нужно на экране сразу, и сколько страниц листать ради них. */
 const MIN_SHOWN_MESSAGES = 10
@@ -214,9 +225,23 @@ export function useMessageLoading(
     uiStore.isMessagesLoading = true
     opening.set(chatId, seq)
     try {
-      const room = await waitForRoom(chatId)
+      let room = await waitForRoom(chatId)
       ensurePcryptoInitialized()
       if (!pcryptoService.value && uiStore.isInitInProgress) await waitForPcrypto()
+
+      // Выбрано «принимать сразу»: открыли чат — вступили. Не вышло
+      // (пригласивший ушёл, нет связи) — окно приглашения, как без настройки.
+      if (room?.getMyMembership?.() === 'invite' && acceptsInvitesOnOpen()) {
+        const joined = await matrixService.acceptInvite(chatId).catch(() => false)
+        if (joined) {
+          // Список ещё помнит приглашение (его перечитают по синку) — окно не нужно.
+          const dialog = uiStore.dialogs.find((d) => d.id === chatId)
+          if (dialog?.invite) delete dialog.invite
+        }
+        // Вступление пришло синком, и историю уже грузит его обработчик.
+        if (seq !== loadSeq) return
+        if (joined) room = matrixService.getRoom(chatId) ?? room
+      }
 
       if (room?.getMyMembership?.() === 'invite') {
         // Приглашение принимают или отклоняют в окне чата (chat-invite): молча

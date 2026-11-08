@@ -599,6 +599,9 @@ export default {
       privacy_recording: 'Show that I’m recording a voice message',
       privacy_recordingHint:
         'The other person on Bastyon NextGen sees “recording a voice message…” while you record.',
+      acceptInvites: 'Accept chat invitations right away',
+      acceptInvitesHint:
+        'A chat you were invited to starts as soon as you open it, without the Accept / Decline card. The person who invited you will see that you joined.',
       archive: 'Save chats on this device',
       archiveHint:
         'The chat server keeps messages for three months, then deletes them. With this on, chats are copied to this device: old messages stay in the chat, marked as no longer on the server. The copy is encrypted with your account key and is never sent anywhere.',

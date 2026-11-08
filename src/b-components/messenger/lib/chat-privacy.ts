@@ -12,10 +12,21 @@ export interface ChatPrivacy {
   typing: boolean
   /** Показывать собеседнику «записывает голосовое…». */
   recording: boolean
+  /**
+   * Приглашение в чат принимается, как только чат открыт, — без окна
+   * «Принять / Отклонить». По умолчанию нет: пригласивший видит, что вы
+   * вступили, а открыть чат — ещё не значит согласиться.
+   */
+  acceptInvites: boolean
 }
 
 /** По умолчанию — как было до настройки: «в сети» не сообщаем, «печатает» — да. */
-export const DEFAULT_CHAT_PRIVACY: ChatPrivacy = { online: false, typing: true, recording: true }
+export const DEFAULT_CHAT_PRIVACY: ChatPrivacy = {
+  online: false,
+  typing: true,
+  recording: true,
+  acceptInvites: false,
+}
 
 /** Тип данных аккаунта Matrix. */
 export const CHAT_PRIVACY_ACCOUNT_DATA = 'app.bastyon.privacy'
@@ -29,11 +40,21 @@ export function sanitizeChatPrivacy(raw: unknown): ChatPrivacy {
   >
   const pick = (key: keyof ChatPrivacy): boolean =>
     typeof value[key] === 'boolean' ? (value[key] as boolean) : DEFAULT_CHAT_PRIVACY[key]
-  return { online: pick('online'), typing: pick('typing'), recording: pick('recording') }
+  return {
+    online: pick('online'),
+    typing: pick('typing'),
+    recording: pick('recording'),
+    acceptInvites: pick('acceptInvites'),
+  }
 }
 
 export function sameChatPrivacy(a: ChatPrivacy, b: ChatPrivacy): boolean {
-  return a.online === b.online && a.typing === b.typing && a.recording === b.recording
+  return (
+    a.online === b.online &&
+    a.typing === b.typing &&
+    a.recording === b.recording &&
+    a.acceptInvites === b.acceptInvites
+  )
 }
 
 /**

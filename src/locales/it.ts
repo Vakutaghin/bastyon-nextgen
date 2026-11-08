@@ -600,6 +600,9 @@ export default {
       privacy_recording: 'Mostra che sto registrando un vocale',
       privacy_recordingHint:
         'L’altra persona su Bastyon NextGen vede «sta registrando un vocale…» mentre registri.',
+      acceptInvites: 'Accetta subito gli inviti alle chat',
+      acceptInvitesHint:
+        'Una chat a cui sei stato invitato inizia appena la apri, senza la scheda «Accetta / Rifiuta». Chi ti ha invitato vedrà che ti sei unito.',
       archive: 'Salva le chat sul dispositivo',
       archiveHint:
         'Il server delle chat conserva i messaggi per tre mesi, poi li elimina. Con questa opzione le chat vengono copiate su questo dispositivo: i messaggi vecchi restano nella chat, segnati come non più presenti sul server. La copia è cifrata con la chiave dell’account e non viene inviata da nessuna parte.',
