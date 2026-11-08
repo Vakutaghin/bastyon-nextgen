@@ -65,6 +65,8 @@ export const resolveVideoElement = (
  * Запускает autoplay с fallback на muted.
  * Mobile Safari (и Chrome на Android) блокируют play() для unmuted видео без user gesture —
  * перезапускаем с muted=true, иначе плеер залипает на постере без сообщения.
+ * AbortError — пуск оборвали пауза или закрытие плеера: это не запрет
+ * автоплея, и запускать ролик снова, хоть и без звука, нельзя.
  */
 export const tryAutoplay = async (
   video: HTMLVideoElement
@@ -73,6 +75,9 @@ export const tryAutoplay = async (
     await video.play()
     return { played: true, muted: video.muted }
   } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      return { played: false, muted: video.muted }
+    }
     if (video.muted) {
       console.warn('Autoplay failed even with muted:', err)
       return { played: false, muted: true }

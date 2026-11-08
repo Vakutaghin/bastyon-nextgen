@@ -560,6 +560,7 @@ const {
   currentMenuScreen,
   initPlayer: hlsInitPlayer,
   retry,
+  abortLoading,
   setQualityLevel,
   openQualityMenu,
   openSpeedMenu,
@@ -1107,11 +1108,8 @@ watch(
     isThumbnailLoaded.value = false
     touch.reset()
 
-    // Сбрасываем HLS и инициализируем заново.
-    if (hls.value) {
-      hls.value.destroy()
-      hls.value = null
-    }
+    // Прошлый ролик мог ещё грузиться — обрываем, чтобы он не занял плеер.
+    abortLoading()
 
     loadThumbnail()
     if (props.autoplay) initPlayer()

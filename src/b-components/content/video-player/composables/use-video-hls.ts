@@ -12,6 +12,7 @@ import {
   initHlsJsVideo,
   initNativeHlsVideo,
   initProgressiveVideo,
+  unloadVideo,
   type VideoInitContext,
 } from '../services/hls-initializer'
 
@@ -224,6 +225,7 @@ export function useVideoHls(
         playerId,
         autoplay: p.autoplay,
         forcePlay,
+        isCurrent: () => generation === initGeneration,
         setupVideoEventListeners,
         updateBuffered,
         setupIntersectionObserver,
@@ -372,6 +374,26 @@ export function useVideoHls(
     initPlayer(true)
   }
 
+  /**
+   * Оборвать загрузку и снять ролик: начатая инициализация, вернувшись из
+   * сети, молча выходит, поток закрыт, у `<video>` нет источника. Без этого
+   * ролик, который ещё грузился, когда плеер закрыли, догружался и играл
+   * вне страницы: остановить его было нечем, кроме выхода из приложения.
+   */
+  const abortLoading = (): void => {
+    initGeneration++
+    // Оборванная загрузка спиннер уже не снимет — снимаем сами.
+    isLoading.value = false
+    clearWatchdog()
+    if (hls.value) {
+      hls.value.destroy()
+      hls.value = null
+    }
+    releaseNativeHls()
+    const video = resolveVideoElement(videoElement)
+    if (video) unloadVideo(video)
+  }
+
   onBeforeUnmount(() => {
     clearWatchdog()
     // Ролик в «картинке в картинке» доигрывает в окне (pip-keeper): поток
@@ -390,11 +412,7 @@ export function useVideoHls(
       stopNativeHls = null
       return
     }
-    if (hls.value) {
-      hls.value.destroy()
-      hls.value = null
-    }
-    releaseNativeHls()
+    abortLoading()
   })
 
   return {
@@ -410,6 +428,7 @@ export function useVideoHls(
     currentMenuScreen,
     initPlayer,
     retry,
+    abortLoading,
     updateQualityLevels,
     setQualityLevel,
     openQualityMenu,

@@ -27,13 +27,31 @@ export interface VideoInitContext {
   playerId: Ref<string>
   autoplay: boolean
   forcePlay: boolean
+  /**
+   * Эта загрузка ещё нужна: плеер не закрыт и не начал загрузку заново.
+   * Иначе ролик, догрузившийся после закрытия, заиграл бы вне страницы —
+   * без кнопок, мимо правила «играет один».
+   */
+  isCurrent: () => boolean
   setupVideoEventListeners: () => void
   updateBuffered: () => void
   setupIntersectionObserver: () => void
 }
 
+/**
+ * Снять с `<video>` источник: загрузка обрывается, а `loadedmetadata`
+ * прошлого источника уже не наступит и ролик не запустит.
+ */
+export function unloadVideo(video: HTMLVideoElement): void {
+  video.pause()
+  if (!video.hasAttribute('src') && !video.currentSrc) return
+  video.removeAttribute('src')
+  video.load()
+}
+
 /** Общий «после-инициализационный» хвост: setup events, volume, autoplay, observer. */
 function finalizeVideoInit(video: HTMLVideoElement, ctx: VideoInitContext): void {
+  if (!ctx.isCurrent()) return
   ctx.isLoading.value = false
   ctx.isInitialized.value = true
   ctx.showControlsInitially.value = true
@@ -79,6 +97,7 @@ export function initBlobVideo(
   video.addEventListener(
     'error',
     () => {
+      if (!ctx.isCurrent()) return
       ctx.isLoading.value = false
       ctx.error.value = t('videoMsg.loadError')
     },
@@ -114,6 +133,7 @@ export function initProgressiveVideo(
   video.addEventListener(
     'error',
     () => {
+      if (!ctx.isCurrent()) return
       ctx.isLoading.value = false
       ctx.error.value = t('videoMsg.playbackError')
     },

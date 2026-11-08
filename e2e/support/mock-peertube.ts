@@ -35,6 +35,10 @@ export interface MockPeerTubeOptions {
   portrait?: boolean
   /** Описание без `aspectRatio`, как у старых роликов: пропорции — только по обложке. */
   noAspectRatio?: boolean
+  /** Сервер думает: описание ролика приходит через столько миллисекунд. */
+  apiDelayMs?: number
+  /** Прямой mp4 начинает отдаваться через столько миллисекунд. */
+  mp4DelayMs?: number
 }
 
 export interface MockPeerTube {
@@ -44,6 +48,9 @@ export interface MockPeerTube {
 
 const HLS_PLAYLIST = 'test-video-240.m3u8'
 const HLS_FILE = 'test-video-240-fragmented.mp4'
+
+const sleep = (ms?: number): Promise<void> =>
+  ms ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve()
 
 const fixture = (name: string): string =>
   fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url))
@@ -118,9 +125,11 @@ export async function useMockPeerTube(
       })
     )
   } else {
-    await page.route(`**/api/peertube/${host}/api/v1/videos/${VIDEO_ID}`, (route) =>
-      route.fulfill({ json: info })
-    )
+    await page.route(`**/api/peertube/${host}/api/v1/videos/${VIDEO_ID}`, async (route) => {
+      await sleep(options.apiDelayMs)
+      // Страницу могли закрыть, пока сервер «думал», — отвечать уже некому.
+      return route.fulfill({ json: info }).catch(() => {})
+    })
   }
   await page.route(`**/api/peertube/${host}/api/v1/videos/${VIDEO_ID}/captions`, (route) =>
     route.fulfill({ json: { total: 0, data: [] } })
@@ -135,9 +144,11 @@ export async function useMockPeerTube(
   const video = readFileSync(
     fixture(options.portrait ? 'test-video-portrait.mp4' : 'test-video.mp4')
   )
-  await page.route(`https://${host}/static/web-videos/${VIDEO_ID}-240.mp4`, (route) => {
+  await page.route(`https://${host}/static/web-videos/${VIDEO_ID}-240.mp4`, async (route) => {
     mock.requests.mp4 += 1
-    return fulfillVideo(route, video)
+    await sleep(options.mp4DelayMs)
+    // Плеер мог за это время оборвать запрос — отвечать уже некому.
+    return fulfillVideo(route, video).catch(() => {})
   })
 
   if (options.hls) {
