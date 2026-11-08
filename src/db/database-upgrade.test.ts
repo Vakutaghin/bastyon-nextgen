@@ -35,10 +35,12 @@ describe('обновление базы', () => {
 
     const db = new AppDatabase()
     await db.open()
-    expect(db.verno).toBe(7)
+    expect(db.verno).toBe(8)
     const stores = Array.from(db.backendDB().objectStoreNames)
     expect(stores).not.toContain('transcodedVideos')
-    expect(stores).toEqual(expect.arrayContaining(['chatArchive', 'chatArchiveChats']))
+    expect(stores).toEqual(
+      expect.arrayContaining(['chatArchive', 'chatArchiveChats', 'chatOutbox'])
+    )
     expect(await db.settings.get('theme')).toMatchObject({ value: 'dark' })
     db.close()
   })
@@ -99,7 +101,7 @@ describe('база ранней сборки', () => {
 
     await initDatabase()
     expect(isDbUnavailable()).toBe(false)
-    expect(db.verno).toBe(7)
+    expect(db.verno).toBe(8)
     expect(db.favorites.schema.primKey.keyPath).toEqual(['address', 'id'])
     expect(await db.favorites.toArray()).toEqual([{ id: 'post1', addedAt: 5, address: '' }])
     expect(await db.settings.get('theme')).toMatchObject({ value: 'dark' })
@@ -107,7 +109,9 @@ describe('база ранней сборки', () => {
     const stores = Array.from(db.backendDB().objectStoreNames)
     expect(stores).not.toContain('videos')
     expect(stores).not.toContain('transcodedVideos')
-    expect(stores).toEqual(expect.arrayContaining(['chatArchive', 'chatArchiveChats']))
+    expect(stores).toEqual(
+      expect.arrayContaining(['chatArchive', 'chatArchiveChats', 'chatOutbox'])
+    )
   })
 
   it('обращения во время пересборки ждут её, а не выключают кэш', async () => {

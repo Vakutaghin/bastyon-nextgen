@@ -3,6 +3,7 @@ import type {
   AppSettings,
   ChatArchiveChat,
   ChatArchiveRecord,
+  ChatOutboxRecord,
   DecryptedMessage,
   FavoritePost,
   MeshDialogRecord,
@@ -27,6 +28,7 @@ export class AppDatabase extends Dexie {
   meshMessages!: Table<MeshMessageRecord, string>
   chatArchive!: Table<ChatArchiveRecord, [string, string, string]>
   chatArchiveChats!: Table<ChatArchiveChat, [string, string]>
+  chatOutbox!: Table<ChatOutboxRecord, [string, string]>
 
   constructor() {
     super('BastyonDB')
@@ -129,6 +131,22 @@ export class AppDatabase extends Dexie {
       meshMessages: 'id, &dedupKey, [dialogId+ts], account',
       chatArchive: '[account+chatId+id], [account+chatId+ts], account',
       chatArchiveChats: '[account+chatId], account',
+    })
+
+    // v8: неотправленные сообщения — переживают перезапуск, чтобы их можно
+    // было отправить снова (messenger-chat-store/outbox).
+    this.version(8).stores({
+      postRatingsPending: '++id, shareId, userAddress, expiresAt, status',
+      settings: 'key, createdAt',
+      favorites: '[address+id], address, addedAt',
+      notifications: '[address+id], address, nblock',
+      decryptedMessages: '[userId+eventId], userId, createdAt',
+      videoProgress: 'id, updatedAt',
+      meshDialogs: 'id, account',
+      meshMessages: 'id, &dedupKey, [dialogId+ts], account',
+      chatArchive: '[account+chatId+id], [account+chatId+ts], account',
+      chatArchiveChats: '[account+chatId], account',
+      chatOutbox: '[account+id], account',
     })
   }
 }

@@ -1075,6 +1075,7 @@ export default {
     notifyFile: 'Датотека',
     notSent: 'Није послато',
     retrySend: 'Покушај поново',
+    discardUnsentText: 'Порука није послата и постоји само на овом уређају. Обрисати је?',
     messages: 'Поруке',
     chat: 'Ћаскање',
     newChat: 'Ново ћаскање',

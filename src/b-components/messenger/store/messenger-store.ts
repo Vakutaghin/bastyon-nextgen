@@ -466,6 +466,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     // «В сети» решается до входа: от этого зависит уже первый синк.
     privacy.attach(authStore.address)
     void archive.attach(authStore.address, authStore.keyPair.privateKey)
+    // Неотправленное с прошлого запуска — обратно в ленты, с «Повторить».
+    void chatStore.attachOutbox(authStore.address, authStore.keyPair.privateKey)
     // Переписка через радио не зависит от Matrix: без интернета она нужнее всего.
     void meshChat.ensureLoaded()
     void useReticulumStore().autostart()
@@ -1125,6 +1127,8 @@ export const useMessengerStore = defineStore('messenger', () => {
     isChatOnScreen: uiStore.isChatOnScreen,
     sendMessage,
     retryMessage,
+    discardMessage: (chatId: string, messageId: string): Promise<void> =>
+      chatStore.discardMessage(chatId, messageId),
     replyToMessage: chatStore.replyToMessage,
     deleteMessage: chatStore.deleteMessage,
     sendReaction: chatStore.sendReaction,

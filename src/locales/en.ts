@@ -1078,6 +1078,7 @@ export default {
     notifyFile: 'File',
     notSent: 'Not sent',
     retrySend: 'Retry',
+    discardUnsentText: 'The message was not sent and exists only on this device. Delete it?',
     messages: 'Messages',
     chat: 'Chat',
     newChat: 'New chat',

@@ -32,6 +32,7 @@ const h = vi.hoisted(() => {
     pcryptoService: null,
     ensurePcryptoInitialized: vi.fn(),
     hydrateDecryptedCache: vi.fn(async () => {}),
+    attachOutbox: vi.fn(async () => {}),
     loadMessages: vi.fn(async () => {}),
     sendMessage: vi.fn(async () => {}),
     retryMessage: vi.fn(async () => {}),

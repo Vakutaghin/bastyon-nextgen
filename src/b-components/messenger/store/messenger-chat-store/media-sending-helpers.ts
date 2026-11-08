@@ -49,14 +49,19 @@ export function revokeObjectUrlQuiet(url: string | null | undefined): void {
   }
 }
 
-/** При ошибке помечает последнее «отправляется» сообщение нужного типа как failed. */
-export function markLastSendingFailed(
+/**
+ * Сообщение не ушло: `failed` и без процентов загрузки. Раньше помечалось
+ * последнее «отправляется» того же типа — если после голосового успело уйти
+ * другое сообщение, голосовое так и крутилось «отправляется».
+ */
+export function markSendingFailed(
   messages: MessagesByChat,
   chatId: string,
-  type: Message['type']
-): void {
-  const arr = messages[chatId]
-  if (!arr) return
-  const last = arr[arr.length - 1]
-  if (last?.status === 'sending' && last.type === type) last.status = 'failed'
+  id: string
+): Message | undefined {
+  const message = messages[chatId]?.find((m) => m.id === id)
+  if (!message || message.status !== 'sending') return undefined
+  message.status = 'failed'
+  if (message.info) delete message.info.uploadProgress
+  return message
 }

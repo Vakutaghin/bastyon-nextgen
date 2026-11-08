@@ -1097,6 +1097,8 @@ export default {
     notifyFile: 'Fichier',
     notSent: 'Non envoyé',
     retrySend: 'Réessayer',
+    discardUnsentText:
+      'Le message n’a pas été envoyé et n’existe que sur cet appareil. Le supprimer ?',
     messages: 'Messages',
     chat: 'Discussion',
     newChat: 'Nouvelle discussion',

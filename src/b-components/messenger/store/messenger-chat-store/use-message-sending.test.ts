@@ -73,8 +73,22 @@ function setup() {
     pickRoomBlock: vi.fn(async () => 10),
     decryptionCache,
   }
+  // Outbox без базы: что лежало бы на устройстве.
+  const outbox = {
+    kept: [] as string[],
+    forgotten: [] as string[],
+    hold: vi.fn(),
+    payload: () => undefined,
+    async keep(message: Message) {
+      this.kept.push(message.id)
+    },
+    async forget(id: string) {
+      this.forgotten.push(id)
+    },
+  }
   return {
-    api: useMessageSending(ctx as never, crypto as never),
+    api: useMessageSending(ctx as never, crypto as never, outbox as never),
+    outbox,
     messages,
     cache,
     decryptionCache,
@@ -176,6 +190,68 @@ describe('sendMessage — эхо и копия события SDK', () => {
     expect(matrix.sendEncryptedDirectMessage).toHaveBeenCalledTimes(1)
     expect(matrix.makeTxnId).toHaveBeenCalledTimes(1)
     expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$real', 'sent']])
+  })
+})
+
+describe('неотправленный текст на устройстве', () => {
+  it('не ушло — сохраняется; повтор удался — забывается под прежним id', async () => {
+    const { api, outbox } = setup()
+    matrix.sendEncryptedDirectMessage.mockRejectedValueOnce(new Error('offline'))
+    await api.sendMessage(ROOM, 'Привет')
+    expect(outbox.kept).toEqual([LOCAL])
+
+    matrix.makeTxnId.mockReturnValueOnce('m2.2')
+    await api.retryMessage(ROOM, LOCAL)
+    expect(outbox.forgotten).toEqual([LOCAL])
+    expect(outbox.kept).toEqual([LOCAL])
+  })
+
+  it('повтор снова не удался — сохраняется под новым id, прежний забыт', async () => {
+    const { api, outbox, messages } = setup()
+    matrix.sendEncryptedDirectMessage.mockRejectedValue(new Error('offline'))
+    try {
+      await api.sendMessage(ROOM, 'Привет')
+      matrix.makeTxnId.mockReturnValueOnce('m2.2')
+      await api.retryMessage(ROOM, LOCAL)
+    } finally {
+      matrix.sendEncryptedDirectMessage.mockReset()
+      matrix.sendEncryptedDirectMessage.mockResolvedValue({ event_id: '$real' })
+    }
+    const again = `~${ROOM}:m2.2`
+    expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([[again, 'failed']])
+    expect(outbox.kept).toEqual([LOCAL, again])
+    expect(outbox.forgotten).toEqual([LOCAL])
+  })
+
+  it('«Удалить» у неотправленного — из ленты, с устройства и копию в SDK', async () => {
+    const { api, outbox, messages } = setup()
+    matrix.sendEncryptedDirectMessage.mockRejectedValueOnce(new Error('offline'))
+    await api.sendMessage(ROOM, 'Привет')
+
+    const unsent = { status: 'not_sent' }
+    const cancelPendingEvent = vi.fn()
+    const getClient = matrix.getClient
+    matrix.getClient = () => ({ getUserId: () => '@me:host', cancelPendingEvent }) as never
+    matrix.getRoom.mockReturnValueOnce({
+      roomId: ROOM,
+      findEventById: (id: string) => (id === LOCAL ? unsent : undefined),
+    } as never)
+    try {
+      await api.discardMessage(ROOM, LOCAL)
+    } finally {
+      matrix.getClient = getClient
+    }
+    expect(messages[ROOM]).toEqual([])
+    expect(cancelPendingEvent).toHaveBeenCalledWith(unsent)
+    expect(outbox.forgotten).toEqual([LOCAL])
+  })
+
+  it('отправленное «Удалить неотправленное» не трогает', async () => {
+    const { api, outbox, messages } = setup()
+    await api.sendMessage(ROOM, 'Привет')
+    await api.discardMessage(ROOM, '$real')
+    expect(messages[ROOM]!.map((m) => m.id)).toEqual(['$real'])
+    expect(outbox.forgotten).toEqual([])
   })
 })
 

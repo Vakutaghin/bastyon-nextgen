@@ -1079,6 +1079,7 @@ export default {
     notifyFile: 'Файл',
     notSent: 'Не отправлено',
     retrySend: 'Повторить',
+    discardUnsentText: 'Сообщение не отправлено и есть только на этом устройстве. Удалить его?',
     messages: 'Сообщения',
     chat: 'Чат',
     newChat: 'Новый чат',

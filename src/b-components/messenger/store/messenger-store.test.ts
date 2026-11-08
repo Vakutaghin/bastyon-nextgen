@@ -93,6 +93,7 @@ function makeChat() {
     pcryptoService: null,
     ensurePcryptoInitialized: vi.fn(),
     hydrateDecryptedCache: vi.fn(async () => {}),
+    attachOutbox: vi.fn(async () => {}),
     loadMessages: vi.fn(async () => {}),
     sendMessage: vi.fn(async () => {}),
     // Как настоящий стор: при сбросе объект пользователя заменяется новым.

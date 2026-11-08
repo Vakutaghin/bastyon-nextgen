@@ -1072,6 +1072,7 @@ export default {
     notifyFile: '파일',
     notSent: '전송되지 않음',
     retrySend: '다시 시도',
+    discardUnsentText: '메시지가 전송되지 않았으며 이 기기에만 있습니다. 삭제할까요?',
     messages: '메시지',
     chat: '채팅',
     newChat: '새 채팅',

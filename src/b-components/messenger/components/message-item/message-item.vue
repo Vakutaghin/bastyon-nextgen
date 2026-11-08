@@ -92,8 +92,17 @@
       <!-- Не ушло в сеть: текст остаётся на экране с кнопкой повтора (S35). -->
       <SC_SendFailed v-if="message.status === 'failed'">
         <span>{{ t('messenger.notSent') }}</span>
-        <SC_RetryButton type="button" @click.stop="onRetry">
+        <SC_RetryButton type="button" data-testid="retry-send" @click.stop="onRetry">
           {{ t('messenger.retrySend') }}
+        </SC_RetryButton>
+        <!-- На сервере его нет: удаляется только с этого устройства. -->
+        <SC_RetryButton
+          v-if="!isMesh"
+          type="button"
+          data-testid="discard-unsent"
+          @click.stop="onDiscard"
+        >
+          {{ t('messenger.deleteMessage') }}
         </SC_RetryButton>
       </SC_SendFailed>
 
@@ -308,6 +317,21 @@ const isMine = computed<boolean>(
 )
 
 /** Повторная отправка текста, который не ушёл (S35). */
+function onDiscard(): void {
+  const chatId = props.message.chatId
+  if (!chatId) return
+  Modal.confirm({
+    title: t('messenger.deleteConfirmTitle'),
+    content: t('messenger.discardUnsentText'),
+    okText: t('messenger.deleteMessage'),
+    okType: 'danger',
+    cancelText: t('messenger.cancel'),
+    centered: true,
+    zIndex: Z_INDEX.CONFIRM,
+    onOk: () => store.discardMessage(chatId, props.message.id),
+  })
+}
+
 function onRetry(): void {
   void store.retryMessage(props.message.chatId, props.message.id)
 }

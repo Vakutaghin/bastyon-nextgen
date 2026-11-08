@@ -28,6 +28,7 @@ import { useMediaSending } from './messenger-chat-store/use-media-sending'
 import { useMediaTransfer } from './messenger-chat-store/use-media-transfer'
 import { useLocalEcho } from './messenger-chat-store/use-local-echo'
 import { useRedecrypt } from './messenger-chat-store/use-redecrypt'
+import { createOutbox } from './messenger-chat-store/outbox'
 
 export const useMessengerChatStore = defineStore('messenger-chat', () => {
   // --- Разделяемое состояние и зависимости ---
@@ -63,8 +64,10 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   const decryption = useMessageDecryption(ctx, chatCrypto)
   const mapping = useMessageMapping(ctx, decryption)
   const loading = useMessageLoading(ctx, chatCrypto, mapping)
-  const sending = useMessageSending(ctx, chatCrypto)
-  const mediaSending = useMediaSending(ctx, chatCrypto)
+  // Неотправленное: вложения для повтора, на устройстве — до следующего запуска.
+  const outbox = createOutbox(messages)
+  const sending = useMessageSending(ctx, chatCrypto, outbox)
+  const mediaSending = useMediaSending(ctx, chatCrypto, outbox)
   const mediaTransfer = useMediaTransfer(chatCrypto)
   const localEcho = useLocalEcho(ctx, chatCrypto, mapping)
   const redecrypt = useRedecrypt(ctx, mapping)
@@ -92,9 +95,16 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     redecrypt.watchChat(chatId)
   }
 
+  /** Повтор неотправленного: вложение — тем же файлом, текст — заново (S35). */
+  const retryMessage = async (chatId: string, messageId: string): Promise<void> => {
+    if (await mediaSending.retryMedia(chatId, messageId)) return
+    await sending.retryMessage(chatId, messageId)
+  }
+
   /** Полный сброс при логауте. */
   const reset = () => {
     redecrypt.reset()
+    outbox.detach()
     // Blob-URL расшифрованного медиа отзываем: после выхода ссылки на
     // расшифрованные файлы жить не должны (N19).
     mediaTransfer.revokeDecryptedMedia()
@@ -129,8 +139,11 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     /** Повод расшифровать заглушки сразу: ключ группы пришёл, связь вернулась. */
     retryUndecrypted: redecrypt.retryNow,
     sendMessage: sending.sendMessage,
-    /** Повтор неудавшейся отправки текста (S35). */
-    retryMessage: sending.retryMessage,
+    retryMessage,
+    /** Удалить неотправленное сообщение — только с этого устройства, на сервере его нет. */
+    discardMessage: sending.discardMessage,
+    /** Неотправленное аккаунта — обратно в ленты (переживает перезапуск). */
+    attachOutbox: outbox.attach,
     // Throwing-вариант (в отличие от sendMessage, который глотает ошибки) —
     // для вызывающих, которым нужен результат/ошибка (напр. mini-app chat action).
     sendTextContent: sending.sendTextContent,

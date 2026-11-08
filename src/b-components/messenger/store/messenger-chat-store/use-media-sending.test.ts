@@ -48,6 +48,28 @@ import { useMediaSending } from './use-media-sending'
 import { encryptAudioBlob } from '../../services/encryption-service'
 import { encryptBlobWithRandomKey } from '../../services/media-encrypt'
 
+/** Outbox без базы: что сохранили бы на устройстве. */
+function fakeOutbox() {
+  const payloads = new Map<string, unknown>()
+  return {
+    kept: [] as string[],
+    forgotten: [] as string[],
+    attach: vi.fn(),
+    detach: vi.fn(),
+    hold(id: string, payload: unknown) {
+      payloads.set(id, payload)
+    },
+    payload: (id: string) => payloads.get(id),
+    async keep(message: { id: string }) {
+      this.kept.push(message.id)
+    },
+    async forget(id: string) {
+      this.forgotten.push(id)
+      payloads.delete(id)
+    },
+  }
+}
+
 function setup(memberIds: string[] = ['@me:host', '@peer:host']) {
   const messages: Record<string, { id: string; type?: string; status: string; url?: string }[]> = {}
   const ctx = {
@@ -64,8 +86,9 @@ function setup(memberIds: string[] = ['@me:host', '@peer:host']) {
     getCurrentBlockHeight: vi.fn(async () => 100),
     pickRoomBlock: vi.fn(async () => 42),
   }
-  const api = useMediaSending(ctx as never, chatCrypto as never)
-  return { api, messages, chatCrypto }
+  const outbox = fakeOutbox()
+  const api = useMediaSending(ctx as never, chatCrypto as never, outbox as never)
+  return { api, messages, chatCrypto, outbox }
 }
 
 beforeEach(() => {
@@ -155,12 +178,51 @@ describe('useMediaSending', () => {
     ])
   })
 
-  it('нет комнаты → ничего не пушится, ошибка проглатывается', async () => {
-    const { api, messages } = setup()
+  it('нет комнаты → фото остаётся неотправленным, с повтором, ошибка проглатывается', async () => {
+    const { api, messages, outbox } = setup()
     matrix.getRoom.mockReturnValueOnce(null as never)
     await api.sendImage('!c:host', new Blob(['img']))
-    expect(messages['!c:host']).toBeUndefined()
+    expect(messages['!c:host']).toEqual([
+      expect.objectContaining({ type: 'image', status: 'failed' }),
+    ])
     expect(matrix.sendImage).not.toHaveBeenCalled()
+    expect(outbox.kept).toEqual([messages['!c:host']![0]!.id])
+  })
+
+  it('голосовое не ушло, а после него ушёл текст — помечено именно голосовое', async () => {
+    const { api, messages } = setup()
+    matrix.sendAudio.mockImplementationOnce(async () => {
+      // Пока голосовое грузилось, в чат ушло другое сообщение.
+      messages['!c:host']!.push({ id: '$text', type: 'text', status: 'sent' })
+      throw new Error('network')
+    })
+    await api.sendAudio('!c:host', new Blob(['a']), { duration: 2 })
+    expect(messages['!c:host']!.map((m) => [m.type, m.status])).toEqual([
+      ['audio', 'failed'],
+      ['text', 'sent'],
+    ])
+  })
+
+  it('«Повторить» у голосового отправляет тот же файл и убирает сообщение после отправки', async () => {
+    const { api, messages, outbox } = setup()
+    const voice = new Blob(['voice'], { type: 'audio/webm' })
+    matrix.sendAudio.mockRejectedValueOnce(new Error('network'))
+    await api.sendAudio('!c:host', voice, { duration: 2 })
+    const id = messages['!c:host']![0]!.id
+    expect(outbox.kept).toEqual([id])
+
+    expect(await api.retryMedia('!c:host', id)).toBe(true)
+    expect(encryptAudioBlob).toHaveBeenLastCalledWith(voice)
+    expect(matrix.sendAudio).toHaveBeenCalledTimes(2)
+    expect(messages['!c:host']).toEqual([])
+    expect(outbox.forgotten).toEqual([id])
+  })
+
+  it('повтор без вложения (текст, чужое) — не наше дело, false', async () => {
+    const { api, messages } = setup()
+    messages['!c:host'] = [{ id: '~t', type: 'text', status: 'failed' }]
+    expect(await api.retryMedia('!c:host', '~t')).toBe(false)
+    expect(messages['!c:host']![0]!.status).toBe('failed')
   })
 
   it('слишком большой файл отбрасывается до любых сетевых вызовов', async () => {

@@ -1084,6 +1084,8 @@ export default {
     notifyFile: 'File',
     notSent: 'Non inviato',
     retrySend: 'Riprova',
+    discardUnsentText:
+      'Il messaggio non è stato inviato ed esiste solo su questo dispositivo. Eliminarlo?',
     messages: 'Messaggi',
     chat: 'Chat',
     newChat: 'Nuova chat',

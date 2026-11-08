@@ -6,19 +6,25 @@
  */
 
 const SALT = new TextEncoder().encode('bastyon-chat-archive')
-const INFO = new TextEncoder().encode('v1')
 
 export interface Sealed {
   iv: Uint8Array
   data: Uint8Array
 }
 
-/** Ключ копии из приватного ключа аккаунта (те же байты — тот же ключ). Buffer тоже годится. */
-export async function deriveArchiveKey(privateKey: ArrayLike<number>): Promise<CryptoKey> {
+/**
+ * Ключ копии из приватного ключа аккаунта (те же байты — тот же ключ). Buffer
+ * тоже годится. `purpose` разводит ключи разных хранилищ: `v1` — копия
+ * переписки, `outbox-v1` — неотправленные сообщения.
+ */
+export async function deriveArchiveKey(
+  privateKey: ArrayLike<number>,
+  purpose = 'v1'
+): Promise<CryptoKey> {
   const raw = toBuffer(Uint8Array.from(privateKey))
   const base = await crypto.subtle.importKey('raw', raw, 'HKDF', false, ['deriveKey'])
   return crypto.subtle.deriveKey(
-    { name: 'HKDF', hash: 'SHA-256', salt: SALT, info: INFO },
+    { name: 'HKDF', hash: 'SHA-256', salt: SALT, info: new TextEncoder().encode(purpose) },
     base,
     { name: 'AES-GCM', length: 256 },
     false,
@@ -42,6 +48,27 @@ export async function openJson<T>(key: CryptoKey, sealed: Sealed): Promise<T | n
       toBuffer(sealed.data)
     )
     return JSON.parse(new TextDecoder().decode(plain)) as T
+  } catch {
+    return null
+  }
+}
+
+/** Байты (вложение) — тем же ключом. */
+export async function sealBytes(key: CryptoKey, bytes: Uint8Array): Promise<Sealed> {
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, toBuffer(bytes))
+  return { iv, data: new Uint8Array(data) }
+}
+
+/** null — не расшифровалось. */
+export async function openBytes(key: CryptoKey, sealed: Sealed): Promise<Uint8Array | null> {
+  try {
+    const plain = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: toBuffer(sealed.iv) },
+      key,
+      toBuffer(sealed.data)
+    )
+    return new Uint8Array(plain)
   } catch {
     return null
   }

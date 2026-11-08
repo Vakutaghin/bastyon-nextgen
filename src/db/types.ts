@@ -213,6 +213,27 @@ export interface ChatArchiveRecord {
   data: Uint8Array
 }
 
+/**
+ * Неотправленное сообщение (чат-сервер не принял, приложение закрыли): живёт
+ * на устройстве, пока его не отправят снова или не удалят. Сообщение и
+ * вложение — шифротекстом (messenger/lib/archive-crypto, ключ `outbox-v1`).
+ */
+export interface ChatOutboxRecord {
+  /** Адрес аккаунта Bastyon. */
+  account: string
+  /** Локальный id сообщения (`local-…`, `~…`). */
+  id: string
+  chatId: string
+  /** Когда сообщение написали, мс. */
+  ts: number
+  iv: Uint8Array
+  data: Uint8Array
+  /** Вложение (голосовое, фото, видео, файл). */
+  blob?: { iv: Uint8Array; data: Uint8Array }
+  /** Обложка видео. */
+  poster?: { iv: Uint8Array; data: Uint8Array }
+}
+
 /** Сохранённый на устройстве чат: подпись для настроек и ход догрузки истории. */
 export interface ChatArchiveChat {
   account: string

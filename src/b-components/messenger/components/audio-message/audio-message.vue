@@ -107,10 +107,11 @@ const waveform = useCanvasWaveform({
 })
 const container = waveform.container
 
-// Голосовое Matrix, пока грузится на сервер. Голосовое mesh-сети — уже у нас
-// (blob), его можно слушать в любом статусе доставки.
+// Голосовое Matrix, пока грузится на сервер. Не ушедшее — запись на
+// устройстве, её можно прослушать (раньше оно крутилось вечно). Голосовое
+// mesh-сети — уже у нас (blob), его можно слушать в любом статусе доставки.
 const isBlocked = computed<boolean>(
-  () => !isMeshTransport(props.message.transport) && props.message.status !== 'sent'
+  () => !isMeshTransport(props.message.transport) && props.message.status === 'sending'
 )
 
 function clock(total: number): string {

@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 import type { Message } from '../../types'
 import {
   createProgressHandler,
-  markLastSendingFailed,
+  markSendingFailed,
   pushOptimistic,
   removeOptimistic,
   revokeObjectUrlQuiet,
@@ -55,13 +55,15 @@ describe('media-sending-helpers', () => {
     expect(() => removeOptimistic(messages, 'nope', 't1')).not.toThrow()
   })
 
-  it('markLastSendingFailed помечает последнее «sending» сообщение того же типа', () => {
-    const messages = { c: [msg('a', 'file', 'sent'), msg('t1', 'image')] }
-    markLastSendingFailed(messages, 'c', 'file')
-    expect(messages.c[1]!.status).toBe('sending') // тип не совпал
-    markLastSendingFailed(messages, 'c', 'image')
-    expect(messages.c[1]!.status).toBe('failed')
-    expect(() => markLastSendingFailed(messages, 'nope', 'image')).not.toThrow()
+  it('markSendingFailed помечает именно своё сообщение, даже если после него ушли другие', () => {
+    const messages = { c: [msg('voice', 'audio'), msg('b', 'text', 'sent')] }
+    expect(markSendingFailed(messages, 'c', 'voice')).toBe(messages.c[0])
+    expect(messages.c[0]!.status).toBe('failed')
+    // Процентов загрузки у не ушедшего нет — значок «40%» не висит.
+    expect(messages.c[0]!.info).not.toHaveProperty('uploadProgress')
+    expect(markSendingFailed(messages, 'c', 'b')).toBeUndefined()
+    expect(messages.c[1]!.status).toBe('sent')
+    expect(() => markSendingFailed(messages, 'nope', 'voice')).not.toThrow()
   })
 
   it('revokeObjectUrlQuiet глотает ошибки и пустые значения', () => {

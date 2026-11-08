@@ -23,6 +23,7 @@ import { pushOptimistic } from './media-sending-helpers'
 import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
 import { localEchoId } from './use-local-echo'
+import { createOutbox, releaseMediaUrls, type Outbox } from './outbox'
 import {
   pkoinTransferContent,
   pkoinTransferText,
@@ -94,20 +95,30 @@ function assertRecipientsHaveKeys(
   throw new RecipientKeysMissingError(missing)
 }
 
-/** Копия события в SDK, которая не ушла (`not_sent`), и её повтор с тем же txnId. */
+/**
+ * Копия события в SDK, которая не ушла (`not_sent`): её повтор с тем же
+ * txnId и отмена, чтобы удалённое неотправленное не вернулось в ленту.
+ */
 function findUnsentEcho(
   chatId: string,
   messageId: string
-): { resend: () => Promise<{ event_id?: string } | undefined> } | null {
+): { resend: () => Promise<{ event_id?: string } | undefined>; cancel: () => void } | null {
   if (!messageId.startsWith('~')) return null
   const client = matrixService.getClient()
   const room = matrixService.getRoom(chatId)
   const event = room?.findEventById?.(messageId)
   if (!client || !event || event.status !== 'not_sent') return null
-  return { resend: () => client.resendEvent(event, room) }
+  return {
+    resend: () => client.resendEvent(event, room),
+    cancel: () => client.cancelPendingEvent(event),
+  }
 }
 
-export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
+export function useMessageSending(
+  ctx: ChatContext,
+  chatCrypto: ChatCrypto,
+  outbox: Outbox = createOutbox(ctx.messages)
+) {
   const { messages, authStore, uiStore, profileCache } = ctx
   const {
     ensurePcryptoInitialized,
@@ -385,7 +396,11 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     } catch (e) {
       console.error('[ChatStore] Ошибка отправки сообщения:', e)
       const failed = messages[chatId]?.find((m) => m.id === localId)
-      if (failed) failed.status = 'failed'
+      if (failed) {
+        failed.status = 'failed'
+        // Переживёт перезапуск: текст в поле ввода уже стёрт.
+        void outbox.keep(failed)
+      }
       // У собеседника нет опубликованных ключей — объясняем, иначе повтор
       // будет так же бесполезен (S39).
       if (e instanceof RecipientKeysMissingError) {
@@ -414,10 +429,14 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
       try {
         const res = await unsent.resend()
         markSent(chatId, messageId, res?.event_id)
+        void outbox.forget(messageId)
       } catch (e) {
         console.error('[ChatStore] Повтор отправки не удался:', e)
         const again = messages[chatId]?.find((m) => m.id === messageId)
-        if (again && again.status === 'sending') again.status = 'failed'
+        if (again && again.status === 'sending') {
+          again.status = 'failed'
+          void outbox.keep(again)
+        }
       }
       return
     }
@@ -433,8 +452,33 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     } catch (e) {
       console.error('[ChatStore] Повтор отправки не удался:', e)
       const again = messages[chatId]?.find((m) => m.id === localId)
-      if (again) again.status = 'failed'
+      if (again) {
+        again.status = 'failed'
+        void outbox.keep(again)
+      }
+    } finally {
+      // На устройстве сообщение лежало под прежним id.
+      void outbox.forget(messageId)
     }
+  }
+
+  /**
+   * Удалить неотправленное: из ленты, с устройства и копию в SDK. На сервере
+   * его нет, поэтому удаление — только здесь.
+   */
+  const discardMessage = async (chatId: string, messageId: string) => {
+    const list = messages[chatId]
+    const idx = list?.findIndex((m) => m.id === messageId) ?? -1
+    const message = idx >= 0 ? list![idx] : undefined
+    if (!message || message.status !== 'failed') return
+    list!.splice(idx, 1)
+    releaseMediaUrls(message)
+    try {
+      findUnsentEcho(chatId, messageId)?.cancel()
+    } catch (e) {
+      console.warn('[ChatStore] Копию неотправленного в SDK не убрать:', e)
+    }
+    await outbox.forget(messageId)
   }
 
   /**
@@ -622,6 +666,7 @@ export function useMessageSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     sendTextContent,
     sendMessage,
     retryMessage,
+    discardMessage,
     replyToMessage,
     deleteMessage,
     sendReaction,

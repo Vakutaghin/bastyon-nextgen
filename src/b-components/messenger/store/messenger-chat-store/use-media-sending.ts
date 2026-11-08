@@ -5,7 +5,6 @@
 // реакции — в use-message-sending.
 
 import { matrixService } from '../../services/matrix-service'
-import { registerLocalMedia, releaseLocalMedia } from '../../services/local-media'
 import { encryptAudioBlob } from '../../services/encryption-service'
 import { encryptBlobWithRandomKey, wrapKeyForRoom } from '../../services/media-encrypt'
 import { extractImageDimensions, extractVideoMetadata } from '../../services/media-metadata'
@@ -18,11 +17,11 @@ import { roomEncrypts } from './encryption-rule'
 import {
   createProgressHandler,
   makeTempId,
-  markLastSendingFailed,
+  markSendingFailed,
   pushOptimistic,
   removeOptimistic,
-  revokeObjectUrlQuiet,
 } from './media-sending-helpers'
+import { createOutbox, mediaUrl, releaseMediaUrls, type MediaPayload, type Outbox } from './outbox'
 
 // Лимиты согласованы с bastyon-chat (input/index.js:141, 163): фото — 100 МБ, файлы — 25 МБ.
 // Тот же лимит применяется к видео (которые сейчас уходят как m.file).
@@ -38,7 +37,11 @@ interface SealedMedia {
   block?: number
 }
 
-export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
+export function useMediaSending(
+  ctx: ChatContext,
+  chatCrypto: ChatCrypto,
+  outbox: Outbox = createOutbox(ctx.messages)
+) {
   const { messages, currentUser, uiStore } = ctx
   const {
     ensurePcryptoInitialized,
@@ -88,247 +91,240 @@ export function useMediaSending(ctx: ChatContext, chatCrypto: ChatCrypto) {
     return { blob: encryptedBlob, size: encryptedBlob.size, secrets, block }
   }
 
-  const sendAudio = async (
-    chatId: string,
-    blob: Blob,
-    meta?: { duration?: number; name?: string }
-  ) => {
-    try {
-      // Оптимистичное сообщение — сразу, до подготовки комнаты: подгрузка
-      // участников идёт по сети, и голосовое появлялось в чате с задержкой
-      // после того, как кнопку отпустили. Blob — в local-media: плеер берёт
-      // его оттуда и рисует волну, пока голосовое грузится (fetch ссылки
-      // `blob:` CSP не пускает, и вместо волны была ошибка загрузки).
-      const objectUrl = registerLocalMedia(blob)
-      const tempId = makeTempId()
-      const now = Date.now()
-      const tempMessage: Message = {
-        id: tempId,
-        chatId,
-        senderId: currentUser.value.id,
-        senderName: currentUser.value.name,
-        text: '',
-        type: 'audio',
-        url: objectUrl,
-        info: {
-          mimetype: blob.type || 'audio/webm',
-          size: blob.size,
-          // Как в событии Matrix — в миллисекундах.
-          duration: meta?.duration ? Math.round(meta.duration * 1000) : 0,
-          uploadProgress: 0,
-        },
-        rawContent: null,
-        timestamp: now,
-        read: true,
-        status: 'sending',
-      }
-      pushOptimistic(messages, chatId, tempMessage)
+  const find = (chatId: string, id: string): Message | undefined =>
+    messages[chatId]?.find((m) => m.id === id)
 
-      const room = await prepareRoom(chatId)
-      const onProgress = createProgressHandler(messages, chatId, tempId)
+  /**
+   * Загрузить вложение и отправить событие. Шифрование — по составу комнаты на
+   * момент отправки: при повторе в чат могли прийти или уйти люди.
+   */
+  const deliver = async (chatId: string, id: string, payload: MediaPayload): Promise<void> => {
+    const room = await prepareRoom(chatId)
+    const onProgress = createProgressHandler(messages, chatId, id)
+    const info = find(chatId, id)?.info
+    const now = Date.now()
+    const mimetype = payload.blob.type
+    const name = payload.name || payload.kind
 
-      const memberIds = getOrderedMemberIds(room, now)
-      const audio = {
-        name: meta?.name || 'voice-message',
-        mimetype: blob.type || 'audio/webm',
-        duration: meta?.duration || 0,
-      }
-
-      if (roomEncrypts(room, memberIds)) {
+    switch (payload.kind) {
+      case 'audio': {
+        const memberIds = getOrderedMemberIds(room, now)
+        const audio = {
+          name,
+          mimetype: mimetype || 'audio/webm',
+          duration: payload.duration || 0,
+        }
+        if (!roomEncrypts(room, memberIds)) {
+          await matrixService.sendAudio(
+            chatId,
+            { ...audio, blob: payload.blob, size: payload.blob.size },
+            onProgress
+          )
+          return
+        }
         const users = await collectPcryptoUsers(memberIds)
         const block = isTetatetchat(room)
           ? DEFAULT_ENCRYPTION_BLOCK
           : (await getCurrentBlockHeight()) || DEFAULT_ENCRYPTION_BLOCK
-
-        const { encryptedBlob, secretStr } = await encryptAudioBlob(blob)
+        const { encryptedBlob, secretStr } = await encryptAudioBlob(payload.blob)
         const version = 2
         const secrets = await pcryptoService.value!.encryptKey(secretStr, users, block, version)
-
         await matrixService.sendAudio(
           chatId,
           { ...audio, blob: encryptedBlob, size: encryptedBlob.size, secrets, block },
           onProgress
         )
-      } else {
-        await matrixService.sendAudio(chatId, { ...audio, blob, size: blob.size }, onProgress)
+        return
       }
-
-      // Удаляем оптимистичное сообщение
-      removeOptimistic(messages, chatId, tempId)
-      releaseLocalMedia(objectUrl)
-    } catch (e) {
-      console.error('[ChatStore] Ошибка отправки аудио:', e)
-      markLastSendingFailed(messages, chatId, 'audio')
+      case 'image': {
+        const sealed = await sealForRoom(room, now, payload.blob)
+        await matrixService.sendImage(
+          chatId,
+          { ...sealed, name, mimetype: mimetype || 'image/jpeg', width: info?.w, height: info?.h },
+          onProgress
+        )
+        return
+      }
+      case 'video': {
+        const poster = payload.poster
+        const [posterMxcUrl, sealed] = await Promise.all([
+          poster
+            ? matrixService
+                .uploadContent(poster, { name: 'poster.jpg', type: 'image/jpeg' })
+                .catch(() => null)
+            : Promise.resolve(null),
+          sealForRoom(room, now, payload.blob),
+        ])
+        await matrixService.sendVideo(
+          chatId,
+          {
+            ...sealed,
+            name,
+            mimetype: mimetype || 'video/mp4',
+            duration: payload.duration,
+            width: info?.w || undefined,
+            height: info?.h || undefined,
+            thumbnailUrl: posterMxcUrl || undefined,
+            thumbnailMimetype: poster?.type || 'image/jpeg',
+            thumbnailSize: poster?.size,
+          },
+          onProgress
+        )
+        return
+      }
+      case 'file': {
+        const sealed = await sealForRoom(room, now, payload.blob)
+        await matrixService.sendFile(
+          chatId,
+          { ...sealed, name, mimetype: mimetype || 'application/octet-stream' },
+          onProgress
+        )
+      }
     }
+  }
+
+  /**
+   * Отправка с уборкой: ушло — оптимистичное сообщение и ссылки на вложение
+   * уходят (настоящее придёт из Matrix); не ушло — сообщение остаётся с
+   * «Повторить», а вложение — в outbox, в том числе на устройстве.
+   */
+  const run = async (chatId: string, id: string, payload: MediaPayload): Promise<void> => {
+    try {
+      await deliver(chatId, id, payload)
+      const sent = find(chatId, id)
+      removeOptimistic(messages, chatId, id)
+      if (sent) releaseMediaUrls(sent)
+      void outbox.forget(id)
+    } catch (e) {
+      console.error('[ChatStore] Ошибка отправки вложения:', e)
+      const failed = markSendingFailed(messages, chatId, id)
+      if (failed) void outbox.keep(failed)
+    }
+  }
+
+  /** Оптимистичное сообщение — сразу, до подготовки комнаты (участники грузятся по сети). */
+  const start = (chatId: string, payload: MediaPayload, message: Omit<Message, 'id'>) => {
+    const id = makeTempId()
+    outbox.hold(id, payload)
+    pushOptimistic(messages, chatId, { ...message, id })
+    return run(chatId, id, payload)
+  }
+
+  const draft = (
+    chatId: string,
+    type: NonNullable<Message['type']>,
+    url: string | undefined,
+    info: Message['info']
+  ): Omit<Message, 'id'> => ({
+    chatId,
+    senderId: currentUser.value.id,
+    senderName: currentUser.value.name,
+    text: '',
+    type,
+    url,
+    info: { ...info, uploadProgress: 0 },
+    rawContent: null,
+    timestamp: Date.now(),
+    read: true,
+    status: 'sending',
+  })
+
+  // Голосовое: Blob — в local-media, плеер берёт его оттуда и рисует волну,
+  // пока голосовое грузится (fetch ссылки `blob:` CSP не пускает).
+  const sendAudio = async (
+    chatId: string,
+    blob: Blob,
+    meta?: { duration?: number; name?: string }
+  ) => {
+    const payload: MediaPayload = {
+      kind: 'audio',
+      blob,
+      name: meta?.name || 'voice-message',
+      duration: meta?.duration || 0,
+    }
+    await start(
+      chatId,
+      payload,
+      draft(chatId, 'audio', mediaUrl(payload), {
+        mimetype: blob.type || 'audio/webm',
+        size: blob.size,
+        // Как в событии Matrix — в миллисекундах.
+        duration: meta?.duration ? Math.round(meta.duration * 1000) : 0,
+      })
+    )
   }
 
   const sendImage = async (chatId: string, file: File | Blob, meta?: { name?: string }) => {
-    try {
-      if (file.size > IMAGE_SIZE_LIMIT_BYTES) {
-        console.error('[ChatStore] Image too large:', file.size, 'limit:', IMAGE_SIZE_LIMIT_BYTES)
-        return
-      }
-      const room = await prepareRoom(chatId)
-
-      const mimetype = file.type || 'image/jpeg'
-      const fileName = (file instanceof File ? file.name : undefined) || meta?.name || 'image'
-      const dims = await extractImageDimensions(file)
-      const objectUrl = URL.createObjectURL(file)
-      const tempId = makeTempId()
-      const now = Date.now()
-
-      const tempMessage: Message = {
-        id: tempId,
-        chatId,
-        senderId: currentUser.value.id,
-        senderName: currentUser.value.name,
-        text: '',
-        type: 'image',
-        url: objectUrl,
-        info: { mimetype, size: file.size, w: dims?.w, h: dims?.h, uploadProgress: 0 },
-        rawContent: null,
-        timestamp: now,
-        read: true,
-        status: 'sending',
-      }
-
-      pushOptimistic(messages, chatId, tempMessage)
-
-      const onProgress = createProgressHandler(messages, chatId, tempId)
-
-      const sealed = await sealForRoom(room, now, file)
-
-      await matrixService.sendImage(
-        chatId,
-        { ...sealed, name: fileName, mimetype, width: dims?.w, height: dims?.h },
-        onProgress
-      )
-
-      removeOptimistic(messages, chatId, tempId)
-      revokeObjectUrlQuiet(objectUrl)
-    } catch (e) {
-      console.error('[ChatStore] Failed to send image:', e)
-      markLastSendingFailed(messages, chatId, 'image')
+    if (file.size > IMAGE_SIZE_LIMIT_BYTES) {
+      console.error('[ChatStore] Image too large:', file.size, 'limit:', IMAGE_SIZE_LIMIT_BYTES)
+      return
     }
+    const name = (file instanceof File ? file.name : undefined) || meta?.name || 'image'
+    const dims = await extractImageDimensions(file)
+    const payload: MediaPayload = { kind: 'image', blob: file, name }
+    await start(
+      chatId,
+      payload,
+      draft(chatId, 'image', mediaUrl(payload), {
+        mimetype: file.type || 'image/jpeg',
+        size: file.size,
+        w: dims?.w,
+        h: dims?.h,
+      })
+    )
   }
 
   const sendVideo = async (chatId: string, file: File | Blob, meta?: { name?: string }) => {
-    try {
-      const room = await prepareRoom(chatId)
-
-      const mimetype = file.type || 'video/mp4'
-      const fileName = (file instanceof File ? file.name : undefined) || meta?.name || 'video'
-      const { duration, w, h, posterBlob } = await extractVideoMetadata(file)
-      const objectUrl = URL.createObjectURL(file)
-      const posterLocalUrl = posterBlob ? URL.createObjectURL(posterBlob) : null
-      const tempId = makeTempId()
-      const now = Date.now()
-
-      const tempMessage: Message = {
-        id: tempId,
-        chatId,
-        senderId: currentUser.value.id,
-        senderName: currentUser.value.name,
-        text: '',
-        type: 'video',
-        url: objectUrl,
-        info: {
-          mimetype,
-          size: file.size,
-          duration: duration ? Math.round(duration * 1000) : undefined,
-          w: w || undefined,
-          h: h || undefined,
-          posterUrl: posterLocalUrl,
-          uploadProgress: 0,
-        },
-        rawContent: null,
-        timestamp: now,
-        read: true,
-        status: 'sending',
-      }
-
-      pushOptimistic(messages, chatId, tempMessage)
-
-      const onProgress = createProgressHandler(messages, chatId, tempId)
-
-      const [posterMxcUrl, sealed] = await Promise.all([
-        posterBlob
-          ? matrixService
-              .uploadContent(posterBlob, { name: 'poster.jpg', type: 'image/jpeg' })
-              .catch(() => null)
-          : Promise.resolve(null),
-        sealForRoom(room, now, file),
-      ])
-
-      await matrixService.sendVideo(
-        chatId,
-        {
-          ...sealed,
-          name: fileName,
-          mimetype,
-          duration,
-          width: w || undefined,
-          height: h || undefined,
-          thumbnailUrl: posterMxcUrl || undefined,
-          thumbnailMimetype: posterBlob?.type || 'image/jpeg',
-          thumbnailSize: posterBlob?.size,
-        },
-        onProgress
-      )
-
-      removeOptimistic(messages, chatId, tempId)
-      revokeObjectUrlQuiet(objectUrl)
-      revokeObjectUrlQuiet(posterLocalUrl)
-    } catch (e) {
-      console.error('[ChatStore] Failed to send video:', e)
-      markLastSendingFailed(messages, chatId, 'video')
-    }
+    const name = (file instanceof File ? file.name : undefined) || meta?.name || 'video'
+    const { duration, w, h, posterBlob } = await extractVideoMetadata(file)
+    const payload: MediaPayload = { kind: 'video', blob: file, name, duration, poster: posterBlob }
+    await start(
+      chatId,
+      payload,
+      draft(chatId, 'video', mediaUrl(payload), {
+        mimetype: file.type || 'video/mp4',
+        size: file.size,
+        duration: duration ? Math.round(duration * 1000) : undefined,
+        w: w || undefined,
+        h: h || undefined,
+        posterUrl: posterBlob ? URL.createObjectURL(posterBlob) : null,
+      })
+    )
   }
 
   const sendFile = async (chatId: string, file: File | Blob, meta?: { name?: string }) => {
-    try {
-      if (file.size > FILE_SIZE_LIMIT_BYTES) {
-        console.error('[ChatStore] File too large:', file.size, 'limit:', FILE_SIZE_LIMIT_BYTES)
-        return
-      }
-      const room = await prepareRoom(chatId)
-
-      const mimetype = file.type || 'application/octet-stream'
-      const fileName = (file instanceof File ? file.name : undefined) || meta?.name || 'file'
-      const tempId = makeTempId()
-      const now = Date.now()
-
-      const tempMessage: Message = {
-        id: tempId,
-        chatId,
-        senderId: currentUser.value.id,
-        senderName: currentUser.value.name,
-        text: '',
-        type: 'file',
-        url: undefined,
-        info: { mimetype, size: file.size, name: fileName, uploadProgress: 0 },
-        rawContent: null,
-        timestamp: now,
-        read: true,
-        status: 'sending',
-      }
-
-      pushOptimistic(messages, chatId, tempMessage)
-
-      const onProgress = createProgressHandler(messages, chatId, tempId)
-
-      const sealed = await sealForRoom(room, now, file)
-
-      await matrixService.sendFile(chatId, { ...sealed, name: fileName, mimetype }, onProgress)
-
-      removeOptimistic(messages, chatId, tempId)
-    } catch (e) {
-      console.error('[ChatStore] Failed to send file:', e)
-      markLastSendingFailed(messages, chatId, 'file')
+    if (file.size > FILE_SIZE_LIMIT_BYTES) {
+      console.error('[ChatStore] File too large:', file.size, 'limit:', FILE_SIZE_LIMIT_BYTES)
+      return
     }
+    const name = (file instanceof File ? file.name : undefined) || meta?.name || 'file'
+    const payload: MediaPayload = { kind: 'file', blob: file, name }
+    await start(
+      chatId,
+      payload,
+      draft(chatId, 'file', undefined, {
+        mimetype: file.type || 'application/octet-stream',
+        size: file.size,
+        name,
+      })
+    )
   }
 
-  return { sendAudio, sendImage, sendVideo, sendFile }
+  /**
+   * Повтор неотправленного вложения — того же сообщения, с тем же файлом.
+   * false — повторять нечего: вложения нет (не текст и не из этого запуска).
+   */
+  const retryMedia = async (chatId: string, id: string): Promise<boolean> => {
+    const message = find(chatId, id)
+    const payload = outbox.payload(id)
+    if (!message || message.status !== 'failed' || !payload) return false
+    message.status = 'sending'
+    message.info = { ...message.info, uploadProgress: 0 }
+    await run(chatId, id, payload)
+    return true
+  }
+
+  return { sendAudio, sendImage, sendVideo, sendFile, retryMedia }
 }
 
 export type MediaSending = ReturnType<typeof useMediaSending>

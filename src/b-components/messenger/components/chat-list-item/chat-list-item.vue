@@ -53,7 +53,7 @@
         </SC_MutedMark>
       </SC_Name>
 
-      <SC_LastMessage v-if="dialog.lastMessage">
+      <SC_LastMessage v-if="lastMessage">
         <!-- Своё сообщение: галочка, как в переписке. В личном чате она и говорит,
              что сообщение ваше, — «Вы:» остаётся только в группах. -->
         <SC_ListTick
@@ -74,10 +74,8 @@
           :aria-label="t('messenger.notSent')"
           >!</SC_ListFailed
         >
-        <span v-if="isMine(dialog.lastMessage) && (isGroup || !lastMark)">{{
-          t('chat.youPrefix')
-        }}</span>
-        <SC_SenderPrefix v-else-if="!isMine(dialog.lastMessage) && senderPrefix"
+        <span v-if="isMine(lastMessage) && (isGroup || !lastMark)">{{ t('chat.youPrefix') }}</span>
+        <SC_SenderPrefix v-else-if="!isMine(lastMessage) && senderPrefix"
           >{{ senderPrefix }}:</SC_SenderPrefix
         >
         {{ lastMessagePreview }}
@@ -89,8 +87,8 @@
     </SC_Info>
 
     <SC_Meta>
-      <SC_Time v-if="dialog.lastMessage">
-        {{ formatTime(dialog.lastMessage.timestamp) }}
+      <SC_Time v-if="lastMessage">
+        {{ formatTime(lastMessage.timestamp) }}
       </SC_Time>
       <SC_Time v-else-if="dialog.invite && dialog.createdAt">
         {{ formatTime(dialog.createdAt) }}
@@ -343,9 +341,27 @@ function onToggleScreen(): void {
   })
 }
 
+const chatStore = useMessengerChatStore()
+
+/**
+ * Последнее сообщение для строки. Своё, которое ещё уходит или не ушло, — если
+ * оно новее последнего с сервера: голосовое грузилось, а в списке стояло
+ * прошлое сообщение, будто ничего не отправляется.
+ */
+const lastMessage = computed<Message | undefined>(() => {
+  const fromServer = props.dialog.lastMessage
+  const local = chatStore.messages[props.dialog.id] ?? []
+  for (let i = local.length - 1; i >= 0; i--) {
+    const m = local[i]!
+    if (m.status !== 'sending' && m.status !== 'failed') continue
+    return !fromServer || m.timestamp >= fromServer.timestamp ? m : fromServer
+  }
+  return fromServer
+})
+
 /** В группе видно, кто написал последним: «Анна: привет». */
 const senderPrefix = computed<string>(() => {
-  const m = props.dialog.lastMessage
+  const m = lastMessage.value
   if (!m || !isGroup.value) return ''
   if (isMeshTransport(m.transport)) return m.senderName || ''
   return chatUserName(m.senderId, store.userProfiles, m.senderName)
@@ -358,7 +374,7 @@ const isActive = computed<boolean>(() => store.activeChatId === props.dialog.id)
 // («Аудио сообщение» и т.п.), а не сырой body — у аудио/медиа это имя файла или
 // зашифрованная строка, и в списке она выглядела как набор букв.
 const lastMessagePreview = computed<string>(() => {
-  const m = props.dialog.lastMessage
+  const m = lastMessage.value
   if (!m) return ''
   if (m.deleted) return t('messenger.history.deletedPreview')
   if (m.text === ENCRYPTED_MESSAGE_PLACEHOLDER) return t('messenger.history.undecryptable')
@@ -406,11 +422,9 @@ function isMine(message: Message): boolean {
   return message.senderId === 'me' || message.senderId === store.currentUser.id
 }
 
-const chatStore = useMessengerChatStore()
-
 /** Своё последнее сообщение прочитали — по квитанциям Matrix, как «✓✓» в переписке. */
 const lastSeen = computed<boolean>(() => {
-  const m = props.dialog.lastMessage
+  const m = lastMessage.value
   if (!m || !m.id.startsWith('$') || isMeshDialogId(props.dialog.id)) return false
   // Пересчёт, когда пришла квитанция (слушатель Room.receipt).
   void chatStore.receiptsVersion[props.dialog.id]
@@ -426,12 +440,12 @@ const lastSeen = computed<boolean>(() => {
 })
 
 const lastMark = computed(() => {
-  const m = props.dialog.lastMessage
+  const m = lastMessage.value
   return m && isMine(m) && !m.deleted ? lastMessageMark(m, lastSeen.value, t) : null
 })
 
 const lastFailed = computed<boolean>(() => {
-  const m = props.dialog.lastMessage
+  const m = lastMessage.value
   return !!m && isMine(m) && m.status === 'failed'
 })
 

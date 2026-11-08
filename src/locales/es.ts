@@ -1089,6 +1089,7 @@ export default {
     notifyFile: 'Archivo',
     notSent: 'No enviado',
     retrySend: 'Reintentar',
+    discardUnsentText: 'El mensaje no se envió y solo está en este dispositivo. ¿Eliminarlo?',
     messages: 'Mensajes',
     chat: 'Chat',
     newChat: 'Nuevo chat',
