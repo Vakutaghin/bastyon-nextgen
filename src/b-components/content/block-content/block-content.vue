@@ -11,7 +11,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type Component } from 'vue'
+import { computed, provide, type Component } from 'vue'
+import { useModalStore } from '@/stores/modal-store'
+import { OPEN_ARTICLE_IMAGE, articleImageUrl, type ArticleImageData } from './article-images'
 import BlockHeader from './blocks/block-header/block-header.vue'
 import BlockParagraph from './blocks/block-paragraph/block-paragraph.vue'
 import BlockList from './blocks/block-list/block-list.vue'
@@ -43,6 +45,20 @@ const parsedBlocks = computed<BlockContentBlock[]>(() => {
   } catch {
     return []
   }
+})
+
+// Картинки статьи — в просмотрщике, все по порядку (article-images.ts).
+const modalStore = useModalStore()
+const imageUrls = computed<string[]>(() =>
+  parsedBlocks.value
+    .filter((block) => block.type === 'image')
+    .map((block) => articleImageUrl(block.data as ArticleImageData))
+    .filter(Boolean)
+)
+provide(OPEN_ARTICLE_IMAGE, (url: string) => {
+  const list = imageUrls.value
+  if (!list.length) return
+  modalStore.openImageGallery(list, Math.max(0, list.indexOf(url)))
 })
 
 const COMPONENT_MAP: Record<string, Component> = {

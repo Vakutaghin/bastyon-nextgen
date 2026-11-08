@@ -21,6 +21,7 @@ export async function resetAccountScopedStores(address?: string | null): Promise
     { useSearchStore },
     { useNotificationSettingsStore },
     { usePaidSubscriptionsStore },
+    { usePinnedPostsStore },
     { useCollectionsStore },
     { useMediaLibraryStore },
     { useVideoUploadsStore },
@@ -34,6 +35,7 @@ export async function resetAccountScopedStores(address?: string | null): Promise
     import('@/stores/search-store'),
     import('@/stores/notification-settings-store'),
     import('@/stores/paid-subscriptions-store'),
+    import('@/stores/pinned-posts-store'),
     import('@/stores/collections-store'),
     import('@/stores/media-library-store'),
     import('@/stores/video-uploads-store'),
@@ -59,6 +61,8 @@ export async function resetAccountScopedStores(address?: string | null): Promise
   useNotificationSettingsStore().$reset()
   // Платежи за подписки и своя цена — данные аккаунта.
   usePaidSubscriptionsStore().reset()
+  // Своё закрепление поста, ещё не подтверждённое сетью, — тоже.
+  usePinnedPostsStore().reset()
   // Коллекции, ждущие блока, и личные списки видео и аудио — свои у аккаунта.
   useCollectionsStore().reset()
   useCollectionsStore().attach(address ?? null)

@@ -7,13 +7,19 @@
       :content="post.content"
     />
 
+    <!-- Анонс статьи открывает её, как «Читать статью». -->
     <SC_PreviewBlock
       v-else-if="post.preview && isCollapsed && shouldCollapse"
+      :class="{ 'opens-post': isArticle }"
+      @click="openArticleFromPreview"
       v-html="formattedPreview"
     />
 
     <SC_PostPreview
       v-else-if="isBlockContent && post.type === 'article' && isCollapsed && shouldCollapse"
+      class="opens-post"
+      data-testid="article-preview"
+      @click="openArticleFromPreview"
       v-html="formattedTruncatedText"
     />
 
@@ -187,6 +193,20 @@ const formattedTruncatedText = computed<string>(() => {
 const readMoreLabel = computed<string>(() =>
   props.post.type === 'article' ? t('postCard.readArticle') : t('postCard.showFull')
 )
+
+const isArticle = computed<boolean>(() => props.post.type === 'article')
+
+/**
+ * Нажали на анонс статьи — открыть её. Ссылка в анонсе ведёт по ссылке, а
+ * выделенный текст — значит, его копируют, а не открывают.
+ */
+function openArticleFromPreview(event: MouseEvent): void {
+  if (!isArticle.value || props.showFull) return
+  if ((event.target as HTMLElement | null)?.closest('a')) return
+  if (window.getSelection()?.toString()) return
+  event.stopPropagation()
+  modalStore.openPostModal(props.post as never)
+}
 
 function openPostModal(event?: Event): void {
   if (event) {

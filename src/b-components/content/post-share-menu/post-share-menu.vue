@@ -29,6 +29,18 @@
       {{ target.label }}
     </SC_ShareItem>
 
+    <!-- Свой пост: закрепить первым в профиле или открепить (accSet, как в старом клиенте). -->
+    <template v-if="canPin">
+      <SC_ShareDivider />
+      <SC_ShareItem type="button" data-testid="post-pin" @click="onPin">
+        <SC_ShareIcon>
+          <UnpinOutlined v-if="isPinned" />
+          <PushpinOutlined v-else />
+        </SC_ShareIcon>
+        {{ isPinned ? t('postCard.unpinAction') : t('postCard.pinAction') }}
+      </SC_ShareItem>
+    </template>
+
     <template v-if="canChainInfo">
       <SC_ShareDivider />
       <SC_ShareItem type="button" @click="onChainInfo">
@@ -66,6 +78,8 @@ import {
   ShareAltOutlined,
   FlagOutlined,
   StopOutlined,
+  PushpinOutlined,
+  UnpinOutlined,
 } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { SHARE_TARGETS, type ShareTarget } from '@/helpers/common/share-targets'
@@ -83,6 +97,10 @@ const props = defineProps<{
   canChainInfo?: boolean
   /** Код вставки на сайт (share-origin publicEmbedCode); нет — пункта нет. */
   embedCode?: string
+  /** «Закрепить в профиле» — у своего опубликованного поста. */
+  canPin?: boolean
+  /** Пост уже закреплён: пункт открепляет. */
+  isPinned?: boolean
 }>()
 const emit = defineEmits<{
   (e: 'done'): void
@@ -90,6 +108,8 @@ const emit = defineEmits<{
   (e: 'block'): void
   /** «В блокчейне»: что записано о посте. */
   (e: 'chainInfo'): void
+  /** Закрепить или открепить свой пост. */
+  (e: 'pin'): void
 }>()
 
 const { t } = useI18n()
@@ -152,6 +172,11 @@ function onReport(): void {
 
 function onBlock(): void {
   emit('block')
+  emit('done')
+}
+
+function onPin(): void {
+  emit('pin')
   emit('done')
 }
 </script>

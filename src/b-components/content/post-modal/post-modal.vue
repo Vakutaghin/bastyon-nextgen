@@ -3,7 +3,8 @@
     <Modal
       class="post-modal"
       :open="isModalOpen"
-      :full-width="fullWidth"
+      :full-width="false"
+      :width="modalWidth"
       :centered="true"
       :closable="true"
       :mask-closable="true"
@@ -52,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
@@ -75,7 +76,7 @@ const PostCard = defineAsyncComponent(
   () => import('@/b-components/content/post-card/post-card.vue')
 )
 
-withDefaults(defineProps<{ fullWidth?: boolean }>(), { fullWidth: true })
+const props = withDefaults(defineProps<{ fullWidth?: boolean }>(), { fullWidth: true })
 
 const emit = defineEmits<{
   close: []
@@ -90,6 +91,36 @@ const postsStore = usePostsStore()
 const { postModal } = storeToRefs(modalStore)
 
 const isModalOpen = computed(() => postModal.value.isOpen)
+
+/** Обычная ширина окна — как у modal.ts «во всю ширину». */
+const BASE_WIDTH = 880
+
+/** Ширина карточки ленты на странице под окном; 0 — ленты нет. */
+function feedCardWidth(): number {
+  let widest = 0
+  for (const card of document.querySelectorAll<HTMLElement>('.post-card')) {
+    if (card.closest('.ant-modal')) continue
+    widest = Math.max(widest, card.getBoundingClientRect().width)
+  }
+  return Math.round(widest)
+}
+
+/**
+ * Окно не уже карточки ленты, из которой его открыли: на широком экране лента
+ * растягивается, и статья в окне в 880 px читалась заметно уже, чем в ленте.
+ * Шире ленты окно не растёт — длинные строки читать трудно.
+ */
+const modalWidth = ref<string | undefined>(undefined)
+watch(
+  isModalOpen,
+  (open) => {
+    if (!open) return
+    modalWidth.value = props.fullWidth
+      ? `min(95vw, ${Math.max(BASE_WIDTH, feedCardWidth())}px)`
+      : undefined
+  },
+  { immediate: true }
+)
 /** Над полноэкранным мессенджером: иначе пост из канала открывался под ним, невидимым. */
 const zIndex = computed<number | undefined>(() =>
   isPageOverlaid.value ? Z_INDEX.MODAL_OVER_MESSENGER : undefined

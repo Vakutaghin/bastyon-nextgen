@@ -41,6 +41,23 @@ export const SC_BoostedBadge = styled.div`
   }
 `
 
+/** Метка закреплённого поста — первым в профиле автора. */
+export const SC_PinnedBadge = styled.div`
+  ${noSelect}
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ui-text-muted);
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`
+
 /** Бейдж оптимистичного поста: транзакция в мемпуле, ещё не в блокчейне. */
 export const SC_PendingBadge = styled.div`
   ${noSelect}
@@ -147,6 +164,14 @@ export const SC_PostTitle = styled.h3`
   font-weight: 600;
   color: var(--ui-text-highlighted);
   line-height: calc(1.4 * var(--leading-scale));
+
+  &.opens-post {
+    cursor: pointer;
+  }
+
+  &.opens-post:hover {
+    color: var(--ui-primary);
+  }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     margin: 0 0 10px;

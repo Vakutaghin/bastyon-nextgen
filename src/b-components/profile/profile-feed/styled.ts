@@ -5,6 +5,10 @@ export const SC_ProfileFeed = styled.div`
   margin: 0 auto;
 `
 
+export const SC_SearchBar = styled.div`
+  margin-bottom: 16px;
+`
+
 export const SC_FeedContent = styled.div`
   display: flex;
   flex-direction: column;

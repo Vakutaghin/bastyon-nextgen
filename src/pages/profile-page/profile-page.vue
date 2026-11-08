@@ -84,6 +84,7 @@ import { getByPRCWithAuth, getByPRC } from '@/helpers/api/request'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { withPendingProfileEdit } from '@/blockchain/store/pending-profile-edit'
 import { useModalStore } from '@/stores'
+import { usePinnedPostsStore } from '@/stores/pinned-posts-store'
 import Button from '@/components/button/button.vue'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type { GetUserAddressResponse } from '@/types/rpc-responses/get-user-address'
@@ -117,6 +118,7 @@ const router = useRouter()
 const { t } = useI18n()
 const authStore = useAuthStore()
 const modalStore = useModalStore()
+const pinnedPosts = usePinnedPostsStore()
 const userAddress = ref<string>('')
 const profile = ref<ProfileWithAccSet | null>(null)
 const loading = ref(true)
@@ -230,6 +232,8 @@ async function fetchUserProfile(identifier: string): Promise<void> {
     // 502/таймаут не должен ронять профиль.
     try {
       const accSet = await fetchAccountSettings(address)
+      // Закреплённый пост — тоже из настроек: лента профиля ставит его первым.
+      pinnedPosts.remember(address, accSet)
       if (profile.value && Object.keys(accSet).length) {
         profile.value = { ...profile.value, accSet }
       }

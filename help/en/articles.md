@@ -40,7 +40,7 @@ An article can be about twice as long as a post — up to 120,000 characters inc
 
 ## How readers see an article
 
-In the feed — the title, the beginning of the text and the **“Read article”** button, which opens the whole article. All articles are collected in the **“Articles”** section of the left panel.
+In the feed — the title, the beginning of the text and the **“Read article”** button, which opens the whole article. You can also open an article by clicking its cover, title or the beginning of the text. The article window is not narrower than the feed. Click a picture in the article to view it large; the arrows in the viewer go through all pictures of the article. All articles are collected in the **“Articles”** section of the left panel.
 
 ## See also
 

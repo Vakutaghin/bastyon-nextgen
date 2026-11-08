@@ -16,7 +16,14 @@ A profile opens when you click a person’s name or avatar — in the feed, in c
 - **“Information”** — what the person wrote about themselves, if anything.
 - **The account address.** Click it to copy: **“Address copied”**. Below it is **“On blockchain”**: what the blockchain holds about the account — registration, balance, reputation, earnings, recent transactions, see [Blockchain explorer](explorer.md#on-blockchain-without-leaving-the-feed).
 - **A website**, if there is one, **“Publications:”** — how many posts the person has, and **“Registered:”** — when they registered.
-- **The feed of this person’s posts**, newest first.
+- **The feed of this person’s posts**, newest first. Above it is the **“Search posts”** field: type a word and press Enter — only this person’s posts that contain it remain, best matches first. The cross in the field brings the feed back.
+- **The pinned post** comes first in the feed, marked **“Pinned”**. The author chooses it; only one post can be pinned.
+
+## Pin your post
+
+Open the **“Share”** menu of your post and choose **“Pin to profile”** — the post becomes first on your page. The previously pinned post returns to its place in the feed. To remove the pin, choose **“Unpin”** in the same menu.
+
+A pin is a blockchain record, like a post: you see it at once, others — when the transaction gets into a block, usually in a minute or two. It is also shown in the original Bastyon app.
 
 ## Marks on the avatar
 

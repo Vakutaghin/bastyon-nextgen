@@ -441,6 +441,26 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
         .slice(0, count)
         .map(profileJson)
     }
+    case 'search': {
+      // [текст, тип, блок, сдвиг, сколько, автор?]: посты, где слово есть в
+      // заголовке или тексте; с автором — только его (поиск в профиле).
+      const [text, type, , start = 0, count = 10, author] = params as [
+        string,
+        string,
+        number,
+        number?,
+        number?,
+        string?,
+      ]
+      if (type !== 'posts') return {}
+      const needle = String(text ?? '').toLowerCase()
+      const found = data.posts
+        .map((p, i) => [p, i] as const)
+        .filter(([p]) => !author || p.address === author)
+        .filter(([p]) => `${p.caption ?? ''} ${p.message}`.toLowerCase().includes(needle))
+        .map(([p, i]) => postJson(p, data, i))
+      return { posts: { data: found.slice(start, start + count) } }
+    }
     case 'getcomments': {
       // [пост, ветка, читатель, id]: со списком id — эти комментарии с любого
       // поста; иначе корневые комментарии поста или ответы ветки.

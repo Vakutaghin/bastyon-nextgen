@@ -97,6 +97,8 @@ import {
   Paperclip,
   Pause,
   Pencil,
+  Pin,
+  PinOff,
   Play,
   Plus,
   QrCode,
@@ -273,6 +275,8 @@ export const PictureOutlined = lucideIcon('PictureOutlined', Image)
 export const PlayCircleFilled = lucideIcon('PlayCircleFilled', CirclePlay, 'soft')
 export const PlayCircleOutlined = lucideIcon('PlayCircleOutlined', CirclePlay)
 export const PlusOutlined = lucideIcon('PlusOutlined', Plus)
+export const PushpinOutlined = lucideIcon('PushpinOutlined', Pin)
+export const UnpinOutlined = lucideIcon('UnpinOutlined', PinOff)
 export const QuestionCircleOutlined = lucideIcon('QuestionCircleOutlined', CircleQuestionMark)
 export const QrcodeOutlined = lucideIcon('QrcodeOutlined', QrCode)
 export const ReloadOutlined = lucideIcon('ReloadOutlined', RefreshCw)

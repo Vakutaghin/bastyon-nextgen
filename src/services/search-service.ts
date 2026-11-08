@@ -156,15 +156,26 @@ export async function searchUsers(
   return Array.isArray(data) ? data : []
 }
 
-export async function searchPosts(query: string, paging: SearchPaging = {}): Promise<SearchPost[]> {
+/**
+ * Посты по словам. `author` — только его посты (поиск в профиле, как у старого
+ * клиента: шестой параметр `search`). `keyword` у `getprofilefeed` нода
+ * пропускает и отдаёт ленту целиком (проверено 08.11.2026).
+ */
+export async function searchPosts(
+  query: string,
+  paging: SearchPaging = {},
+  author?: string
+): Promise<SearchPost[]> {
   const value = sanitizeSearchQuery(query)
   if (!value) return []
 
   const { start = 0, count = 10, fixedBlock = 0 } = paging
+  const parameters: unknown[] = [value, 'posts', fixedBlock, start, count]
+  if (author) parameters.push(author)
 
   const data = await rpcCall<SearchPostsData>({
     method: rpcEndpoints.search,
-    parameters: [value, 'posts', fixedBlock, start, count],
+    parameters,
     options: { auth: false },
   })
 

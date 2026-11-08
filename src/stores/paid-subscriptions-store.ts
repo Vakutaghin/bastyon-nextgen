@@ -290,8 +290,12 @@ export const usePaidSubscriptionsStore = defineStore('paid-subscriptions', () =>
   async function savePrice(value: number): Promise<string> {
     const { saveAccountSettings } =
       await import('@/blockchain/core/actions/account-settings-action')
+    // Транзакция пишет настройки целиком: своё закрепление, которого сеть ещё
+    // не показала, иначе стёрлось бы прежним (pinned-posts-store).
+    const { usePinnedPostsStore } = await import('./pinned-posts-store')
+    const pin = usePinnedPostsStore().pendingPin()
     const { txid } = await saveAccountSettings(
-      { paidsubscription: value },
+      { paidsubscription: value, ...(pin !== undefined ? { pin } : {}) },
       { kind: 'paidSubscriptionPrice', ...(value > 0 ? { amount: value } : {}) }
     )
     adopt(me.value)

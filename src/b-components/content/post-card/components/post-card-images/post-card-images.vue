@@ -11,7 +11,7 @@
         @error="handleImageError"
         @load="(e: Event) => handleImageLoad(e, 0)"
       />
-      <SC_ImageOverlay @click.stop="openImageGallery(0)">
+      <SC_ImageOverlay v-if="!opensPost" @click.stop="openImageGallery(0)">
         <SC_ZoomIconCircle>
           <ZoomInOutlined />
         </SC_ZoomIconCircle>
@@ -74,7 +74,12 @@ import {
   SC_GridMore,
 } from './styled'
 
-const props = defineProps<{ images: string[] }>()
+const props = defineProps<{
+  images: string[]
+  /** Обложка статьи в ленте: нажатие открывает статью, а не просмотрщик. */
+  opensPost?: boolean
+}>()
+const emit = defineEmits<{ 'open-post': [] }>()
 
 const { t } = useI18n()
 const modalStore = useModalStore()
@@ -207,6 +212,11 @@ function cellStyle(tile: GridTile): Record<string, string> {
 }
 
 function openImageGallery(index: number): void {
+  // Обложка статьи в ленте открывает саму статью.
+  if (props.opensPost) {
+    emit('open-post')
+    return
+  }
   if (props.images && props.images.length > 0) {
     // Под Tor лайтбокс берёт картинки так же, через Tor (tor-media-proxy).
     modalStore.openImageGallery(props.images, index)

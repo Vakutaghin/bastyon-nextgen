@@ -14,6 +14,22 @@ export const SC_BlockImage = styled.figure`
   }
 `
 
+/** Картинка-кнопка: нажатие открывает просмотрщик. */
+export const SC_BlockImageButton = styled.button`
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+    border-radius: var(--ui-radius-sm);
+  }
+`
+
 export const SC_BlockImageCaption = styled.figcaption`
   margin-top: 0.5em;
   font-size: 0.9em;

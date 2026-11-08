@@ -37,8 +37,16 @@ const LINKS = `
   }
 `
 
+/** Анонс статьи, открывающий её по нажатию. */
+const OPENS_POST = `
+  &.opens-post {
+    cursor: pointer;
+  }
+`
+
 export const SC_PreviewBlock = styled.div`
   margin-bottom: 10px;
+  ${() => OPENS_POST}
 `
 
 export const SC_ReadMoreButton = styled(Button)`
@@ -95,6 +103,7 @@ export const SC_PostContent = styled.div`
 `
 
 export const SC_PostPreview = styled.div`
+  ${() => OPENS_POST}
   position: relative;
   font-size: 16px;
   line-height: calc(1.5 * var(--leading-scale));

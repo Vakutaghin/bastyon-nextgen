@@ -80,6 +80,19 @@ describe('поиск', () => {
     await expect(searchPosts('x y')).resolves.toEqual([])
   })
 
+  it('посты автора: его адрес шестым параметром, как у поиска в профиле старого клиента', async () => {
+    mocks.rpcCall.mockResolvedValue({ posts: { data: [] } })
+    await searchPosts('pkoin', { start: 10, count: 10, fixedBlock: 5 }, 'PAuthor')
+    expect(mocks.rpcCall.mock.lastCall![0].parameters).toEqual([
+      'pkoin',
+      'posts',
+      5,
+      10,
+      10,
+      'PAuthor',
+    ])
+  })
+
   it('теги раскодируются дважды; нераскодируемый тег остаётся как есть; пустые отбрасываются', async () => {
     mocks.rpcCall.mockResolvedValue({
       tags: {

@@ -35,6 +35,7 @@ export type PendingKind =
   | 'payment'
   | 'postEdit'
   | 'postDelete'
+  | 'postPin'
   | 'commentEdit'
   | 'commentDelete'
   | 'commentScore'

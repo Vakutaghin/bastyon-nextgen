@@ -10,6 +10,10 @@
       <RiseOutlined />
       {{ t('postCard.boosted') }}
     </SC_BoostedBadge>
+    <SC_PinnedBadge v-if="pinned" data-testid="post-pinned">
+      <PushpinOutlined />
+      {{ t('postCard.pinned') }}
+    </SC_PinnedBadge>
     <!-- Свой пост, не попавший в блок за час: текст здесь, чтобы его не потерять. -->
     <SC_TxFailedNote v-if="post.txFailed" data-testid="post-tx-failed">
       <SC_PendingBadge class="failed">
@@ -79,7 +83,12 @@
 
         <!-- На телефоне картинки и ролик — во всю ширину карточки (--post-bleed). -->
         <SC_PostMedia v-if="hasMedia" data-testid="post-media">
-          <PostCardImages v-if="post.images && post.images.length > 0" :images="post.images" />
+          <PostCardImages
+            v-if="post.images && post.images.length > 0"
+            :images="post.images"
+            :opens-post="opensArticle"
+            @open-post="openPost"
+          />
 
           <VideoPlayer
             v-else-if="(post.type === 'video' || post.type === 'audio') && post.videoUrl"
@@ -97,7 +106,11 @@
           <PostCardVideoPlaceholder v-else />
         </SC_PostMedia>
 
-        <SC_PostTitle v-if="decodedTitle">
+        <SC_PostTitle
+          v-if="decodedTitle"
+          :class="{ 'opens-post': opensArticle }"
+          @click="opensArticle && openPost()"
+        >
           {{ decodedTitle }}
         </SC_PostTitle>
 
@@ -215,9 +228,12 @@
                 :can-block="canBlockAuthor"
                 :is-blocked="isAuthorBlocked"
                 :can-chain-info="isTxid(post.txid)"
+                :can-pin="canPin"
+                :is-pinned="isPinned"
                 @report="onReportPost"
                 @block="onBlockAuthor"
                 @chain-info="openChainInfo"
+                @pin="togglePin"
                 @done="shareMenuOpen = false"
               />
             </template>
@@ -282,7 +298,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
@@ -298,6 +314,7 @@ import {
   LockOutlined,
   PlayCircleOutlined,
   EyeOutlined,
+  PushpinOutlined,
 } from '@/components/icons'
 import { Dropdown } from 'ant-design-vue'
 import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
@@ -310,6 +327,8 @@ import { useUserRelationsStore } from '@/stores/user-relations-store'
 import { useRelationActions } from '@/composables/use-relation-actions'
 import { useBoostStore } from '@/stores/boost-store'
 import { useChainInfoStore } from '@/stores/chain-info-store'
+import { usePinnedPostsStore } from '@/stores/pinned-posts-store'
+import { appToast } from '@/b-components/app-toast'
 import { isTxid } from '@/b-components/chain-info/chain-link'
 import { requireAuth } from '@/composables/use-auth-gate'
 import { useAddToListStore } from '@/stores/add-to-list-store'
@@ -347,6 +366,7 @@ import {
   SC_RepostOriginalAuthorTime,
   SC_RepostDeleted,
   SC_BoostedBadge,
+  SC_PinnedBadge,
   SC_PendingBadge,
   SC_TxFailedNote,
   SC_TxFailedDismiss,
@@ -387,6 +407,8 @@ const props = withDefaults(
     targetReply?: boolean
     /** Показывать метку «Продвигаемое» (буст, вплетённый в ленту). */
     boosted?: boolean
+    /** Метка «Закреплено»: пост первым в профиле автора. */
+    pinned?: boolean
     /** Сразу запустить ролик: окно поста открыли нажатием на видео. */
     autoplayVideo?: boolean
     /** Карточка в окне поста (post-modal), а не в ленте или на странице. */
@@ -404,6 +426,7 @@ const props = withDefaults(
     showFull: false,
     authorOverride: null,
     boosted: false,
+    pinned: false,
     autoplayVideo: false,
     inModal: false,
     inFeed: false,
@@ -611,6 +634,36 @@ function openChainInfo(): void {
   if (isTxid(props.post.txid)) useChainInfoStore().open({ kind: 'post', txid: props.post.txid })
 }
 
+// ── Закрепить в профиле ─────────────────────────────────────────────
+// Как в меню поста старого клиента: свой опубликованный пост встаёт первым в
+// профиле (поле `pin` настроек аккаунта). Закреплён может быть один пост.
+const pinnedPosts = usePinnedPostsStore()
+const canPin = computed<boolean>(
+  () => isOwnPost.value && !props.post.pending && isTxid(props.post.txid)
+)
+const isPinned = computed<boolean>(
+  () => canPin.value && pinnedPosts.pinOf(authStore.getUserAddress || '') === props.post.txid
+)
+const pinning = ref(false)
+
+async function togglePin(): Promise<void> {
+  const txid = props.post.txid
+  if (!txid || pinning.value) return
+  const unpin = isPinned.value
+  pinning.value = true
+  try {
+    await pinnedPosts.setPin(unpin ? '' : txid, txid)
+    appToast.success({ message: unpin ? t('postCard.unpinDone') : t('postCard.pinDone') })
+  } catch (e) {
+    appToast.error({
+      message: unpin ? t('postCard.unpinFailed') : t('postCard.pinFailed'),
+      ...(e instanceof Error && e.message ? { description: e.message } : {}),
+    })
+  } finally {
+    pinning.value = false
+  }
+}
+
 // ── Продвижение за PKOIN (буст) ─────────────────────────────────────
 // Как у старого клиента — у любого опубликованного поста, своего и чужого.
 // Гостю сначала окно входа, потом само окно продвижения.
@@ -638,6 +691,10 @@ function openBoost(): void {
 
 // ── Внешний шаринг поста ────────────────────────────────────────────
 const shareMenuOpen = ref(false)
+// Меню своего поста: закреплён ли он, узнаём, когда меню открыли.
+watch(shareMenuOpen, (open) => {
+  if (open && canPin.value) void pinnedPosts.ensure(authStore.getUserAddress || '')
+})
 // Ссылка уходит наружу, поэтому origin — публичный: в Tauri свой origin
 // выглядит как `tauri://localhost`, в Capacitor — `https://localhost` (S20).
 const postUrl = computed<string>(() => publicPostUrl(postId.value))
@@ -647,6 +704,13 @@ const postPath = computed<string>(() =>
   postId.value && !props.post.pending ? `/post/${postId.value}` : ''
 )
 const postHref = computed<string>(() => (postPath.value ? router.resolve(postPath.value).href : ''))
+
+/**
+ * Статья в ленте открывается не только кнопкой «Читать статью», но и
+ * обложкой и заголовком — как превью статьи во ВКонтакте. Картинки самой
+ * статьи смотрят уже в ней.
+ */
+const opensArticle = computed<boolean>(() => props.post.type === 'article' && !props.showFull)
 
 /** В ленте — окно поверх ленты, место в ней остаётся; из окна — страница поста. */
 function openPost(): void {
