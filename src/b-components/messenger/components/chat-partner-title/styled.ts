@@ -60,6 +60,16 @@ export const SC_GroupTitleSub = styled.span`
   white-space: nowrap;
 `
 
+/** «без шифрования» под названием группы: замок открыт, цвет предупреждения. */
+export const SC_UnencryptedMark = styled.span`
+  color: var(--color-warning-text);
+
+  .anticon {
+    margin-right: 2px;
+    vertical-align: -1px;
+  }
+`
+
 /** Значок действия рядом с именем в шапке — как кнопки окна мессенджера. */
 export const SC_TitleAction = styled.button`
   flex: 0 0 auto;

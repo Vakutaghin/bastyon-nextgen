@@ -1331,6 +1331,11 @@ export default {
       leaveConfirmText:
         'Sie verlassen „{name}“ und erhalten keine Nachrichten mehr daraus. In eine geschlossene Gruppe kommen Sie nur mit einer neuen Einladung zurück.',
       unread: 'Neue Nachrichten',
+      unencrypted: 'nicht verschlüsselt',
+      unencryptedLarge:
+        'Nachrichten in dieser Gruppe werden nicht verschlüsselt: Gruppen ab {n} Mitgliedern verschlüsselt Bastyon nicht. Der Chat-Server kann sie lesen – Persönliches besser im privaten Chat schreiben.',
+      unencryptedPublic:
+        'Nachrichten in einer offenen Gruppe werden nicht verschlüsselt: Jeder kann beitreten und sie lesen.',
     },
     channel: {
       kind: 'Kanal',

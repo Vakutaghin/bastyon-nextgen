@@ -42,6 +42,27 @@ export const SC_GroupTopic = styled.p`
   overflow-wrap: anywhere;
 `
 
+/** Переписка группы идёт без шифрования — и почему. */
+export const SC_GroupUnencrypted = styled.p`
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--color-warning-bg);
+  font-size: 13px;
+  line-height: calc(1.45 * var(--leading-scale));
+  color: var(--color-text-primary);
+
+  .anticon {
+    flex: 0 0 auto;
+    margin-top: 2px;
+    color: var(--color-warning-text);
+  }
+`
+
 export const SC_GroupActions = styled.div`
   display: flex;
   flex-wrap: wrap;

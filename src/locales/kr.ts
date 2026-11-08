@@ -1302,6 +1302,11 @@ export default {
       leaveConfirmText:
         '“{name}”에서 나가며 더 이상 메시지를 받지 않습니다. 비공개 그룹에는 새 초대가 있어야 돌아올 수 있습니다.',
       unread: '새 메시지',
+      unencrypted: '암호화되지 않음',
+      unencryptedLarge:
+        '이 그룹의 메시지는 암호화되지 않습니다. Bastyon은 멤버가 {n}명 이상인 그룹을 암호화하지 않습니다. 채팅 서버가 메시지를 읽을 수 있으니 개인적인 내용은 개인 채팅에서 나누세요.',
+      unencryptedPublic:
+        '공개 그룹의 메시지는 암호화되지 않습니다. 누구나 참여해 읽을 수 있습니다.',
     },
     channel: {
       kind: '채널',

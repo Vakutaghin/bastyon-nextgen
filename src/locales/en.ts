@@ -1309,6 +1309,11 @@ export default {
       leaveConfirmText:
         'You will leave “{name}” and stop receiving its messages. You can return to a private group only with a new invitation.',
       unread: 'New messages',
+      unencrypted: 'not encrypted',
+      unencryptedLarge:
+        'Messages in this group are not encrypted: Bastyon does not encrypt groups of {n} members or more. The chat server can read them, so keep personal matters to private chats.',
+      unencryptedPublic:
+        'Messages in a public group are not encrypted: anyone can join and read them.',
     },
     channel: {
       kind: 'Channel',

@@ -25,6 +25,10 @@
               partner.group.memberCount
             )
           }}
+          <!-- Переписка открыта — видно сразу, а почему, скажет окно группы. -->
+          <SC_UnencryptedMark v-if="partner.group.unencrypted" data-testid="group-unencrypted">
+            · <UnlockOutlined />{{ t('messenger.group.unencrypted') }}
+          </SC_UnencryptedMark>
         </SC_GroupTitleSub>
       </SC_GroupTitleText>
     </SC_GroupTitleBtn>
@@ -94,7 +98,7 @@ import Avatar from '@/components/avatar/avatar.vue'
 import ProfileLink from '../profile-link/profile-link.vue'
 import GroupAvatar from '../group-avatar/group-avatar.vue'
 import ChannelAvatar from '../channel-avatar/channel-avatar.vue'
-import { MegaphoneIcon, MessageOutlined } from '@/components/icons'
+import { MegaphoneIcon, MessageOutlined, UnlockOutlined } from '@/components/icons'
 import { useMessengerStore } from '../../store'
 import type { ShownPartner } from './use-shown-partner'
 import { usePartnerPresence } from './use-partner-presence'
@@ -107,6 +111,7 @@ import {
   SC_PartnerTitle,
   SC_PartnerTitleName,
   SC_TitleAction,
+  SC_UnencryptedMark,
 } from './styled'
 
 const props = defineProps<{ partner: ShownPartner }>()

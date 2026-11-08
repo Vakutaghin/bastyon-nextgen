@@ -63,7 +63,7 @@ const DIALOGS = [
   },
 ]
 
-async function signedInWithDialogs(page: Page): Promise<void> {
+async function signedInWithDialogs(page: Page, dialogs: unknown[] = DIALOGS): Promise<void> {
   await useMockNode(page, DATA)
   await page.goto('/')
   await page.waitForSelector('#app > *', { timeout: 30_000 })
@@ -86,7 +86,7 @@ async function signedInWithDialogs(page: Page): Promise<void> {
     const stores = app.config.globalProperties.$pinia._s
     stores.get('messenger-ui')!.setDialogs!(dialogs)
     await stores.get('messenger')!.openMessenger!()
-  }, DIALOGS)
+  }, dialogs)
 }
 
 /** Открыть чат без сервера: только выбрать его (загрузка истории ждала бы комнату). */
@@ -144,6 +144,8 @@ async function checkGroups(page: Page): Promise<void> {
   const title = page.getByRole('button', { name: 'Участники и настройки группы: Книжный клуб' })
   await expect(title).toBeVisible()
   await expect(title).toContainText('5 участников')
+  // Группа до 50 участников шифруется — пометки нет.
+  await expect(title.getByTestId('group-unencrypted')).toHaveCount(0)
   await title.click()
   const modal = page.getByRole('dialog', { name: 'О группе' })
   await expect(modal).toBeVisible()
@@ -163,6 +165,32 @@ async function checkGroups(page: Page): Promise<void> {
     true
   )
 }
+
+test('большая группа: в шапке «без шифрования», в окне группы — почему', async ({ page }) => {
+  test.setTimeout(90_000)
+  const id = '!big:matrix.pocketnet.app'
+  await signedInWithDialogs(page, [
+    {
+      id,
+      partner: { id, name: 'Большой чат' },
+      unreadCount: 0,
+      group: { memberCount: 120, previewIds: [mx(ALICE), mx(BOB)], unencrypted: 'large' },
+    },
+  ])
+  await selectChat(page, id)
+  const title = page.getByRole('button', { name: 'Участники и настройки группы: Большой чат' })
+  await expect(title).toContainText('120 участников')
+  // Рядом с названием группы — никакого «собеседника» с тем же именем.
+  await expect(
+    page.getByTestId('group-title').locator('xpath=..').getByText('Большой чат', { exact: true })
+  ).toHaveCount(1)
+  await expect(title.getByTestId('group-unencrypted')).toHaveText('· без шифрования')
+  await title.click()
+  const modal = page.getByRole('dialog', { name: 'О группе' })
+  await expect(modal.getByTestId('group-unencrypted-note')).toHaveText(
+    'Сообщения в этой группе не шифруются: группы от 50 участников Bastyon не шифрует. Их может прочитать сервер чатов, поэтому личное лучше писать в личном чате.'
+  )
+})
 
 test('группа в списке чатов, фильтр, шапка и окно группы', async ({ page }) => {
   test.setTimeout(90_000)

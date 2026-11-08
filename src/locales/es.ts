@@ -1323,6 +1323,11 @@ export default {
       leaveConfirmText:
         'Saldrás de «{name}» y dejarás de recibir sus mensajes. A un grupo cerrado solo se puede volver con una nueva invitación.',
       unread: 'Mensajes nuevos',
+      unencrypted: 'sin cifrar',
+      unencryptedLarge:
+        'Los mensajes de este grupo no se cifran: Bastyon no cifra los grupos de {n} miembros o más. El servidor de chat puede leerlos, así que lo personal mejor en un chat privado.',
+      unencryptedPublic:
+        'Los mensajes de un grupo abierto no se cifran: cualquiera puede unirse y leerlos.',
     },
     channel: {
       kind: 'Canal',

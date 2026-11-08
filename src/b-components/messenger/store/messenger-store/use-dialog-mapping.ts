@@ -20,6 +20,7 @@ import {
 } from '../../helpers'
 import { groupMembers, membersTitle, previewMemberIds, readGroupState } from '../../lib/group-chat'
 import { PCRYPTO_DIALOG_TIMEOUT } from '../consts'
+import { groupPlaintextReason } from '../messenger-chat-store/encryption-rule'
 import type { MessengerStoreContext } from './types'
 
 /**
@@ -178,6 +179,12 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
       )
     const group: DialogGroup = { memberCount, previewIds }
     if (state.isPublic) group.isPublic = true
+    // Тот же состав и то же правило, что при отправке (use-message-sending).
+    const plaintext = groupPlaintextReason(
+      room,
+      chatStore.getOrderedMemberIds(room, Date.now()).length
+    )
+    if (plaintext) group.unencrypted = plaintext
     if (state.topic) group.topic = state.topic
     return {
       partner: { id: room.roomId, name, avatar: state.avatar, verified: false, mark: null },

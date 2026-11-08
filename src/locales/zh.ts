@@ -1253,6 +1253,10 @@ export default {
       leaveConfirmText:
         '你将退出“{name}”，不再收到它的消息。只有收到新邀请才能重新加入非公开群组。',
       unread: '有新消息',
+      unencrypted: '未加密',
+      unencryptedLarge:
+        '此群组的消息不加密：成员达到 {n} 人的群组，Bastyon 不加密。聊天服务器可以读取这些消息，私事请在私聊中说。',
+      unencryptedPublic: '公开群组的消息不加密：任何人都可以加入并阅读。',
     },
     channel: {
       kind: '频道',

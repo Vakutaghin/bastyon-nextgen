@@ -30,6 +30,14 @@
         </SC_GroupHeadText>
       </SC_GroupHead>
       <SC_GroupTopic v-if="dialog.group.topic">{{ dialog.group.topic }}</SC_GroupTopic>
+      <SC_GroupUnencrypted v-if="dialog.group.unencrypted" data-testid="group-unencrypted-note">
+        <UnlockOutlined />
+        <span>{{
+          dialog.group.unencrypted === 'public'
+            ? t('messenger.group.unencryptedPublic')
+            : t('messenger.group.unencryptedLarge', { n: GROUP_ENCRYPTION_MEMBER_LIMIT })
+        }}</span>
+      </SC_GroupUnencrypted>
 
       <SC_GroupActions>
         <SC_ActionBtn type="button" data-testid="group-mute" @click="toggleMuted">
@@ -139,9 +147,11 @@ import {
   LogoutOutlined,
   MessageOutlined,
   StopOutlined,
+  UnlockOutlined,
 } from '@/components/icons'
 import { Z_INDEX } from '@/styles/design-tokens'
 import { useMessengerStore } from '../../store'
+import { GROUP_ENCRYPTION_MEMBER_LIMIT } from '../../store/consts'
 import GroupAvatar from '../group-avatar/group-avatar.vue'
 import ProfileLink from '../profile-link/profile-link.vue'
 import { useGroupMembers, type GroupMemberView } from './use-group-members'
@@ -154,6 +164,7 @@ import {
   SC_GroupMeta,
   SC_GroupName,
   SC_GroupTopic,
+  SC_GroupUnencrypted,
   SC_IconBtn,
   SC_MemberActions,
   SC_MemberList,

@@ -61,9 +61,17 @@ function fakeRoom(over: Record<string, unknown> = {}) {
   }
 }
 
-function ctx(over: { activeChatId?: string | null; profiles?: Record<string, unknown> } = {}) {
+function ctx(
+  over: {
+    activeChatId?: string | null
+    profiles?: Record<string, unknown>
+    /** Состав группы, по которому решается шифрование (как при отправке). */
+    memberIds?: string[]
+  } = {}
+) {
   const chatStore = {
     pcryptoService: {},
+    getOrderedMemberIds: vi.fn(() => over.memberIds ?? ['@0a0b0c:host', PEER_ID, '@c0c0:host']),
     ensurePcryptoInitialized: vi.fn(),
     waitForPcrypto: vi.fn(),
     getMatrixAvatarUrl: (u: string) => `mx:${u}`,
@@ -221,6 +229,23 @@ describe('useDialogMapping — mapRoomToDialog', () => {
         groupRoom({ 'm.room.name': { name: '@Team' } }, { getJoinRule: () => 'public' })
       )
       expect(d.group?.isPublic).toBe(true)
+      // Открытую группу прежний клиент не шифрует — шапка об этом предупредит.
+      expect(d.group?.unencrypted).toBe('public')
+    })
+
+    it('от 50 участников — без шифрования, как отправка; до 50 — шифруется', async () => {
+      const ids = (n: number) => Array.from({ length: n }, (_, i) => `@${i.toString(16)}:host`)
+      const big = ctx({ memberIds: ids(50) })
+      const room = groupRoom({ 'm.room.name': { name: '@Team' } })
+      const d = await useDialogMapping(big.ctx).mapRoomToDialog(room)
+      expect(d.group?.unencrypted).toBe('large')
+      expect(big.chatStore.getOrderedMemberIds).toHaveBeenCalledWith(room, expect.any(Number))
+
+      const small = ctx({ memberIds: ids(49) })
+      const e = await useDialogMapping(small.ctx).mapRoomToDialog(
+        groupRoom({ 'm.room.name': { name: '@Team' } })
+      )
+      expect(e.group).not.toHaveProperty('unencrypted')
     })
   })
 

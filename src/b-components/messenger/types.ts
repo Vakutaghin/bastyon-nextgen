@@ -94,6 +94,11 @@ export interface DialogGroup {
   isPublic?: boolean
   /** Описание группы (m.room.topic). */
   topic?: string
+  /**
+   * Сообщения идут без шифрования: группа открытая или в ней от 50 участников
+   * (store/messenger-chat-store/encryption-rule). Нет поля — шифруется.
+   */
+  unencrypted?: 'public' | 'large'
 }
 
 export interface Dialog {

@@ -77,6 +77,7 @@ import {
   ListOrdered,
   LoaderCircle,
   Lock,
+  LockOpen,
   LogOut,
   Maximize,
   Megaphone,
@@ -256,6 +257,7 @@ export const KeyOutlined = lucideIcon('KeyOutlined', Key)
 export const LeftOutlined = lucideIcon('LeftOutlined', ChevronLeft)
 export const LoadingOutlined = lucideIcon('LoadingOutlined', LoaderCircle, 'none', true)
 export const LockOutlined = lucideIcon('LockOutlined', Lock)
+export const UnlockOutlined = lucideIcon('UnlockOutlined', LockOpen)
 /** Стереть цифру на клавиатуре пин-кода (у Lucide этот знак называется Delete). */
 export const BackspaceOutlined = lucideIcon('BackspaceOutlined', Delete)
 export const LogoutOutlined = lucideIcon('LogoutOutlined', LogOut)

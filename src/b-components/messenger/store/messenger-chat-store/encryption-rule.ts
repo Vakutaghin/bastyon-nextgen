@@ -18,9 +18,20 @@ import type { MxRoom } from './types'
  * открытый текст ушёл бы туда, где его ждут зашифрованным.
  */
 export function groupCanBeEncrypted(room: MxRoom, memberCount: number): boolean {
-  if (room.getJoinRule?.() === 'public') return false
-  return memberCount < GROUP_ENCRYPTION_MEMBER_LIMIT
+  return groupPlaintextReason(room, memberCount) === null
 }
+
+/**
+ * Почему группа идёт без шифрования: открытая или слишком большая; null —
+ * шифруется. По этому же правилу шапка чата и окно группы предупреждают, что
+ * переписка открыта.
+ */
+export function groupPlaintextReason(room: MxRoom, memberCount: number): GroupPlaintextReason {
+  if (room.getJoinRule?.() === 'public') return 'public'
+  return memberCount < GROUP_ENCRYPTION_MEMBER_LIMIT ? null : 'large'
+}
+
+export type GroupPlaintextReason = 'public' | 'large' | null
 
 /** Личный чат шифруется всегда, группа — по правилу выше. */
 export function roomEncrypts(room: MxRoom, memberIds: readonly string[]): boolean {
