@@ -1273,8 +1273,6 @@ export default {
     filterDirectEmpty: 'Ancora nessuna chat personale',
     filterGroupsEmpty: 'Ancora nessun gruppo',
     screen: {
-      show: 'Mostra {n} chat filtrata | Mostra {n} chat filtrate',
-      hideAgain: 'Nascondi di nuovo le chat filtrate',
       withNew: 'Novità in {n} chat | Novità in {n} chat',
       showShort: 'Mostra',
       allHidden: 'Qui {n} chat è nascosta dal filtro | Qui {n} chat sono nascoste dal filtro',
@@ -1286,6 +1284,20 @@ export default {
       hiddenToast: '«{name}» è nascosta',
       hiddenToastHint:
         'La chat non suona e non è nell’elenco. L’occhio in cima alle chat la mostra, il suo menu «⋯» la riporta.',
+      menuTitle: '{n} chat nascosta dal filtro | {n} chat nascoste dal filtro',
+      noneHidden: 'Nessuna chat nascosta',
+      view_normal: 'Non mostrare le nascoste',
+      view_all: 'Mostrarle insieme a tutte',
+      view_only: 'Solo le nascoste',
+      manage: 'Chat nascoste…',
+      rules: 'Regole del filtro',
+      manageTitle: 'Chat nascoste',
+      manageLead:
+        'Le ha nascoste il filtro in arrivo: non suonano e non contano come non lette. «Riporta» rimette la chat nell’elenco.',
+      open: 'Apri',
+      unhideShort: 'Riporta',
+      unhideOf: 'Riporta «{name}» dalle nascoste',
+      showAllChats: 'Mostra tutte le chat',
     },
     listSearch: {
       open: 'Cerca una chat o una persona',
@@ -1300,6 +1312,7 @@ export default {
       failed: 'Ricerca persone non riuscita, controlla la connessione',
     },
     chatsEmptyTitle: 'Ancora nessuna chat',
+    chatSettings: 'Impostazioni chat',
     chatsEmptyText:
       'Per iniziare una conversazione, apri il profilo di qualcuno e tocca «Avvia la chat». Qui compariranno anche gruppi e canali.',
     group: {

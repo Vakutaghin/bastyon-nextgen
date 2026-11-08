@@ -1257,8 +1257,6 @@ export default {
     filterDirectEmpty: '아직 개인 대화가 없습니다',
     filterGroupsEmpty: '아직 그룹이 없습니다',
     screen: {
-      show: '필터로 숨긴 대화 {n}개 보기',
-      hideAgain: '필터 대화 다시 숨기기',
       withNew: '대화 {n}개에 새 메시지',
       showShort: '보기',
       allHidden: '여기 있는 대화 {n}개를 수신 필터가 숨겼습니다',
@@ -1270,6 +1268,20 @@ export default {
       hiddenToast: '“{name}” 대화를 숨겼습니다',
       hiddenToastHint:
         '소리가 나지 않고 목록에도 보이지 않습니다. 대화 목록 위의 눈 아이콘으로 보고, “⋯” 메뉴에서 되돌릴 수 있습니다.',
+      menuTitle: '필터가 숨긴 대화 {n}개',
+      noneHidden: '숨긴 대화가 없습니다',
+      view_normal: '숨긴 대화 표시 안 함',
+      view_all: '모든 대화와 함께 표시',
+      view_only: '숨긴 대화만',
+      manage: '숨긴 대화…',
+      rules: '필터 규칙',
+      manageTitle: '숨긴 대화',
+      manageLead:
+        '수신 필터가 숨긴 대화입니다. 소리가 나지 않고 읽지 않은 수에도 들어가지 않습니다. “되돌리기”를 누르면 목록으로 돌아갑니다.',
+      open: '열기',
+      unhideShort: '되돌리기',
+      unhideOf: '“{name}”을(를) 숨김에서 되돌리기',
+      showAllChats: '모든 대화 보기',
     },
     listSearch: {
       open: '채팅 또는 사람 찾기',
@@ -1284,6 +1296,7 @@ export default {
       failed: '사람을 검색하지 못했습니다. 연결을 확인하세요',
     },
     chatsEmptyTitle: '아직 채팅이 없습니다',
+    chatSettings: '대화 설정',
     chatsEmptyText:
       '대화를 시작하려면 상대의 프로필을 열고 「채팅 시작」을 누르세요. 그룹과 채널도 여기에 표시됩니다.',
     group: {

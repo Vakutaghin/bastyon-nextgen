@@ -1,6 +1,6 @@
 <template>
   <!-- Фильтр входящих: правила и люди. Только на этом устройстве. -->
-  <SC_ArchiveHead>
+  <SC_ArchiveHead data-settings-section="screen">
     <SC_SystemTitle>{{ t('settings.chats.screen') }}</SC_SystemTitle>
     <SC_SystemHint>{{ t('settings.chats.screenHint') }}</SC_SystemHint>
   </SC_ArchiveHead>

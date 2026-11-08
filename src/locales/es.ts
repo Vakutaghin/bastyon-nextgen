@@ -1277,8 +1277,6 @@ export default {
     filterDirectEmpty: 'Aún no hay chats personales',
     filterGroupsEmpty: 'Aún no hay grupos',
     screen: {
-      show: 'Mostrar {n} chat filtrado | Mostrar {n} chats filtrados',
-      hideAgain: 'Volver a ocultar los chats filtrados',
       withNew: 'Hay novedades en {n} chat | Hay novedades en {n} chats',
       showShort: 'Mostrar',
       allHidden:
@@ -1291,6 +1289,20 @@ export default {
       hiddenToast: '«{name}» está oculto',
       hiddenToastHint:
         'El chat no suena ni aparece en la lista. El ojo arriba de los chats lo muestra; su menú «⋯» lo devuelve.',
+      menuTitle: '{n} chat oculto por el filtro | {n} chats ocultos por el filtro',
+      noneHidden: 'No hay chats ocultos',
+      view_normal: 'No mostrar los ocultos',
+      view_all: 'Mostrarlos junto con todos',
+      view_only: 'Solo los ocultos',
+      manage: 'Chats ocultos…',
+      rules: 'Reglas del filtro',
+      manageTitle: 'Chats ocultos',
+      manageLead:
+        'Los ocultó el filtro de entrada: no suenan ni cuentan como no leídos. «Devolver» vuelve a poner el chat en la lista.',
+      open: 'Abrir',
+      unhideShort: 'Devolver',
+      unhideOf: 'Devolver «{name}» de los ocultos',
+      showAllChats: 'Mostrar todos los chats',
     },
     listSearch: {
       open: 'Buscar un chat o una persona',
@@ -1305,6 +1317,7 @@ export default {
       failed: 'No se pudo buscar personas, revisa la conexión',
     },
     chatsEmptyTitle: 'Aún no hay chats',
+    chatSettings: 'Ajustes de chats',
     chatsEmptyText:
       'Para empezar una conversación, abre el perfil de alguien y toca «Iniciar chat». Aquí también aparecerán grupos y canales.',
     group: {

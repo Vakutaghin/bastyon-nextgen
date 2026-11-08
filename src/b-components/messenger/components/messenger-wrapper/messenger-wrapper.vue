@@ -34,6 +34,7 @@
       <template v-if="listShown" #tools>
         <ChatScreenToggle />
         <ChatSearchToggle />
+        <ChatSettingsButton />
       </template>
 
       <!-- Без него окошко при сбое синка показывало только вечную «Загрузку диалогов». -->
@@ -96,6 +97,8 @@
 
   <!-- Участники и настройки группы — из шапки чата и меню «…» в списке. -->
   <GroupInfoModal v-if="isVisible" />
+  <!-- «Скрытые чаты» — из меню глаза в шапке списка. -->
+  <ChatScreenManageModal v-if="isVisible" />
 </template>
 
 <script setup lang="ts">
@@ -119,6 +122,8 @@ import SyncErrorBanner from '../sync-error-banner/sync-error-banner.vue'
 import ChatPartnerTitle from '../chat-partner-title/chat-partner-title.vue'
 import MessengerActivity from '../messenger-activity/messenger-activity.vue'
 import GroupInfoModal from '../group-info/group-info-modal.vue'
+import ChatScreenManageModal from '../chat-list/chat-screen-manage-modal.vue'
+import ChatSettingsButton from '../chat-list/chat-settings-button.vue'
 import { useShownPartner } from '../chat-partner-title/use-shown-partner'
 import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'

@@ -8,6 +8,7 @@
         </SC_SidebarTitle>
         <ChatScreenToggle />
         <ChatSearchToggle />
+        <ChatSettingsButton />
         <slot name="header-actions" />
       </SC_SidebarHeader>
       <SyncErrorBanner />
@@ -78,6 +79,7 @@ import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
 import ChatList from '../chat-list/chat-list.vue'
 import ChatSearchToggle from '../chat-list/chat-search-toggle.vue'
+import ChatSettingsButton from '../chat-list/chat-settings-button.vue'
 import ChatScreenToggle from '../chat-list/chat-screen-toggle.vue'
 import ChatRoom from '../chat-room/chat-room.vue'
 import MeshChatRoom from '../mesh-chat-room/mesh-chat-room.vue'

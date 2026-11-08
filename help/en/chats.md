@@ -47,6 +47,8 @@ Messages people deleted stay in the conversation as a mark: **“You deleted a m
 
 ## The chat list
 
+The gear above the list, next to the magnifier, opens **“Settings”** → **“Chats”**.
+
 Each chat shows the other person’s name and avatar, the start of the last message (**“You:”** if you wrote it), the time and the number of unread messages.
 
 A group stands out at once: a people icon before its name, the group picture or a mosaic of members’ avatars with a badge in the corner instead of an avatar, and the sender’s name before the last message.
@@ -99,7 +101,7 @@ This app cannot yet create groups, invite or remove members. PKOIN can be sent o
 
 Group messages use a simpler encryption scheme than private ones — see [Message encryption](chat-encryption.md).
 
-## What the other person sees about you
+## What the other person sees about you <!-- #privacy -->
 
 In **“Settings”** → **“Chats”** → **“Privacy”**:
 
@@ -109,7 +111,7 @@ In **“Settings”** → **“Chats”** → **“Privacy”**:
 
 The setting is shared by all your devices: it is kept on the chat server with your account. The previous Bastyon app shows neither “online” nor “recording a voice message”.
 
-## Incoming filter
+## Incoming filter <!-- #screen -->
 
 To keep chats from strangers and random people out of the way, you can hide them from the list. The filter works on this device only: neither the other person nor the chat server knows about it.
 
@@ -121,7 +123,15 @@ In **“Settings”** → **“Chats”** → **“Incoming filter”**:
 
 The filter looks at whoever writes: in a private chat, at the other person; in an invitation, at whoever invited you, to a group too. Rules never hide chats you started, only your own choice does. Groups you have joined, channels and radio network chats are left alone.
 
-A hidden chat makes no sound, sends no notifications and is not counted in the unread number on the chats icon and the app icon. Above the list, next to the magnifier, an eye appears with a number: how many hidden chats have something new. The eye shows the hidden chats, with a crossed-out eye and the reason by their name; press it again to hide them again. If everything in the chosen section is hidden, the empty list has a **“Show”** button.
+A hidden chat makes no sound, sends no notifications and is not counted in the unread number on the chats icon and the app icon. Above the list, next to the magnifier, an eye appears with a number: how many hidden chats have something new. The eye opens a menu:
+
+- **“Don’t show hidden chats”** — the usual list, the default;
+- **“Show them with all chats”** — hidden chats in the list, with a crossed-out eye and the reason by their name;
+- **“Hidden chats only”** — only the hidden ones;
+- **“Hidden chats…”** — a window with all hidden chats: why each is hidden, how many new messages, **“Open”** and **“Bring back”** buttons;
+- **“Filter rules”** — goes to the settings, straight to this section.
+
+The choice stays until the app restarts or you switch accounts. If everything in the chosen section is hidden, the empty list has a **“Show”** button.
 
 In the three-dot menu of a private chat or an invitation:
 

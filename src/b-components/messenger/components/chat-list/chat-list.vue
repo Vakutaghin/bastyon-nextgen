@@ -129,6 +129,17 @@
           {{ t('messenger.screen.showShort') }}
         </SC_EmptyAction>
       </SC_EmptyHint>
+      <!-- «Только скрытые», а скрытых в разделе нет — вернуть обычный список. -->
+      <SC_EmptyHint
+        v-else-if="shown.length === 0 && screen.view === 'only'"
+        data-testid="chats-none-screened"
+      >
+        <EyeOffIcon />
+        <span>{{ t('messenger.screen.noneHidden') }}</span>
+        <SC_EmptyAction type="button" @click="screen.setView('normal')">
+          {{ t('messenger.screen.showAllChats') }}
+        </SC_EmptyAction>
+      </SC_EmptyHint>
       <SC_EmptyHint v-else-if="shown.length === 0 && isOn('channels')" data-testid="channels-empty">
         <MegaphoneIcon />
         <strong>{{ t('messenger.channel.emptyTitle') }}</strong>
@@ -234,12 +245,16 @@ interface Row {
 
 const inKind = (d: Dialog): boolean => showAll.value || isOn(isGroupDialog(d) ? 'groups' : 'direct')
 
-/** Без спрятанных фильтром входящих — пока их не показали глазом в шапке. */
-const visibleDialogs = computed<Dialog[]>(() =>
-  screen.showHidden || screen.hiddenIds.size === 0
+/**
+ * Спрятанные фильтром входящих: по умолчанию их нет в списке, меню глаза в
+ * шапке показывает их вместе со всеми или одни.
+ */
+const visibleDialogs = computed<Dialog[]>(() => {
+  if (screen.view === 'only') return props.dialogs.filter((d) => screen.hiddenIds.has(d.id))
+  return screen.view === 'all' || screen.hiddenIds.size === 0
     ? props.dialogs
     : props.dialogs.filter((d) => !screen.hiddenIds.has(d.id))
-)
+})
 
 /** Сколько чатов выбранного раздела спрятал фильтр. */
 const screenedHere = computed<number>(
@@ -279,6 +294,8 @@ function mergeByTime(dialogs: Row[], channelList: Row[]): Row[] {
 }
 
 const shown = computed<Row[]>(() => {
+  // Каналы фильтр не прячет — среди «только скрытых» их нет.
+  if (screen.view === 'only') return dialogRows.value
   if (!showAll.value && !isOn('channels')) return dialogRows.value
   if (!showAll.value && !isOn('direct') && !isOn('groups')) return channelRows.value
   return mergeByTime(dialogRows.value, channelRows.value)

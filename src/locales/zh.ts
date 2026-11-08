@@ -1209,8 +1209,6 @@ export default {
     filterDirectEmpty: '还没有私聊',
     filterGroupsEmpty: '还没有群组',
     screen: {
-      show: '显示被过滤的 {n} 个聊天',
-      hideAgain: '再次隐藏被过滤的聊天',
       withNew: '{n} 个聊天有新消息',
       showShort: '显示',
       allHidden: '这里有 {n} 个聊天被来信过滤隐藏',
@@ -1222,6 +1220,19 @@ export default {
       hiddenToast: '“{name}”已隐藏',
       hiddenToastHint:
         '该聊天不响铃，也不在列表中。聊天顶部的眼睛图标可显示它，它的“⋯”菜单可恢复。',
+      menuTitle: '过滤隐藏了 {n} 个聊天',
+      noneHidden: '没有隐藏的聊天',
+      view_normal: '不显示隐藏的聊天',
+      view_all: '与所有聊天一起显示',
+      view_only: '仅隐藏的聊天',
+      manage: '隐藏的聊天…',
+      rules: '过滤规则',
+      manageTitle: '隐藏的聊天',
+      manageLead: '这些聊天被来信过滤隐藏：不响铃，也不计入未读。“恢复”会把聊天放回列表。',
+      open: '打开',
+      unhideShort: '恢复',
+      unhideOf: '把“{name}”从隐藏中恢复',
+      showAllChats: '显示所有聊天',
     },
     listSearch: {
       open: '查找聊天或用户',
@@ -1236,6 +1247,7 @@ export default {
       failed: '无法搜索用户，请检查网络连接',
     },
     chatsEmptyTitle: '还没有聊天',
+    chatSettings: '聊天设置',
     chatsEmptyText: '要开始对话，请打开对方的个人资料并点击“开始聊天”。群组和频道也会显示在这里。',
     group: {
       kind: '群组',

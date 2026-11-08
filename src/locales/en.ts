@@ -1263,8 +1263,6 @@ export default {
     filterDirectEmpty: 'No personal chats yet',
     filterGroupsEmpty: 'No groups yet',
     screen: {
-      show: 'Show {n} chat hidden by the filter | Show {n} chats hidden by the filter',
-      hideAgain: 'Hide filtered chats again',
       withNew: 'New in {n} chat | New in {n} chats',
       showShort: 'Show',
       allHidden:
@@ -1277,6 +1275,20 @@ export default {
       hiddenToast: '“{name}” is hidden',
       hiddenToastHint:
         'The chat makes no sound and is not in the list. The eye at the top of the chats shows it; its “⋯” menu brings it back.',
+      menuTitle: '{n} chat hidden by the filter | {n} chats hidden by the filter',
+      noneHidden: 'No hidden chats',
+      view_normal: 'Don’t show hidden chats',
+      view_all: 'Show them with all chats',
+      view_only: 'Hidden chats only',
+      manage: 'Hidden chats…',
+      rules: 'Filter rules',
+      manageTitle: 'Hidden chats',
+      manageLead:
+        'The incoming filter hid them: they make no sound and are not counted as unread. “Bring back” puts a chat back into the list.',
+      open: 'Open',
+      unhideShort: 'Bring back',
+      unhideOf: 'Bring “{name}” back from hidden',
+      showAllChats: 'Show all chats',
     },
     listSearch: {
       open: 'Find a chat or a person',
@@ -1291,6 +1303,7 @@ export default {
       failed: "Couldn't search people, check your connection",
     },
     chatsEmptyTitle: 'No chats yet',
+    chatSettings: 'Chat settings',
     chatsEmptyText:
       'To start a conversation, open someone’s profile and tap “Start chat”. Groups and channels will appear here too.',
     group: {

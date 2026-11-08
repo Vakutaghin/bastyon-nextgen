@@ -3,10 +3,11 @@ import { useMockNode, type MockNodeData } from './support/mock-node'
 
 /**
  * Фильтр входящих: чат человека с низкой репутацией пропадает из списка, не
- * входит в счётчик, его новое — на глазе в шапке; глаз показывает спрятанные,
- * меню «⋯» убирает в скрытые и возвращает. В настройках — правило и человек
- * по нику. Диалоги подставлены в стор, сервер чатов закрыт, профили — с
- * подменной ноды.
+ * входит в счётчик, его новое — на глазе в шапке; меню глаза показывает
+ * спрятанные вместе со всеми или одни, окно «Скрытые чаты» возвращает их,
+ * меню «⋯» убирает в скрытые и возвращает. Шестерёнка и «Правила фильтра»
+ * ведут в настройки чатов. В настройках — правило и человек по нику.
+ * Диалоги подставлены в стор, сервер чатов закрыт, профили — с подменной ноды.
  */
 
 const MNEMONIC =
@@ -137,7 +138,29 @@ const totalUnread = (page: Page) =>
     return app.config.globalProperties.$pinia._s.get('messenger')!.totalUnreadCount
   })
 
+const messengerOpen = (page: Page) =>
+  page.evaluate(() => {
+    const app = (
+      document.querySelector('#app') as unknown as {
+        __vue_app__: {
+          config: { globalProperties: { $pinia: { _s: Map<string, { isOpen: boolean }> } } }
+        }
+      }
+    ).__vue_app__
+    return app.config.globalProperties.$pinia._s.get('messenger')!.isOpen
+  })
+
 const row = (page: Page, name: string) => page.getByTestId('chat-row').filter({ hasText: name })
+
+/** Пункт меню глаза: normal, all, only, manage, rules. */
+async function screenMenu(page: Page, item: string): Promise<void> {
+  await page.getByTestId('chat-screen-toggle').click()
+  const id = ['normal', 'all', 'only'].includes(item)
+    ? `chat-screen-view-${item}`
+    : `chat-screen-${item}`
+  await page.getByTestId(id).click()
+  await expect(page.getByTestId('chat-screen-menu')).toBeHidden()
+}
 
 async function rowMenu(page: Page, name: string, item: string): Promise<void> {
   const r = row(page, name)
@@ -167,9 +190,9 @@ test('фильтр входящих: прячет, считает отдельн
   await expect(toggle).toBeVisible()
   await expect(toggle.getByTestId('chat-screen-new')).toHaveText('1')
 
-  // Глаз — спрятанное видно, с отметкой и причиной.
-  await toggle.click()
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  // «Показывать вместе со всеми» — спрятанное видно, с отметкой и причиной.
+  await screenMenu(page, 'all')
+  await expect(toggle).toHaveClass(/active/)
   const spam = row(page, 'spam_bot')
   await expect(spam).toBeVisible()
   await expect(spam.getByTestId('screened-mark')).toHaveAttribute(
@@ -188,11 +211,88 @@ test('фильтр входящих: прячет, считает отдельн
     'title',
     'Скрыт вами'
   )
-  await toggle.click()
+  await screenMenu(page, 'normal')
   await expect(row(page, 'anna_ng')).toHaveCount(0)
   await expect(row(page, 'spam_bot')).toBeVisible()
   expect(await totalUnread(page)).toBe(3)
 })
+
+test('меню глаза: только скрытые, окно «Скрытые чаты», шестерёнка и правила — в настройки', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await signedInWithDialogs(page)
+  await expect(row(page, 'spam_bot')).toBeVisible({ timeout: 30_000 })
+  await setReputationRule(page)
+  await expect(row(page, 'spam_bot')).toHaveCount(0, { timeout: 15_000 })
+
+  // Пункт меню отмечен; «Только скрытые» — в списке один спам.
+  await page.getByTestId('chat-screen-toggle').click()
+  await expect(page.getByTestId('chat-screen-menu')).toContainText('Скрыт фильтром 1 чат')
+  await expect(page.getByTestId('chat-screen-view-normal')).toHaveAttribute('aria-checked', 'true')
+  await page.getByTestId('chat-screen-view-only').click()
+  await expect(row(page, 'spam_bot')).toBeVisible()
+  await expect(row(page, 'anna_ng')).toHaveCount(0)
+  await expect(row(page, 'newbie_ng')).toHaveCount(0)
+
+  // Окно: причина и число нового; «Вернуть» — спам снова виден, скрытых нет.
+  await screenMenu(page, 'manage')
+  const dialog = page.getByRole('dialog', { name: 'Скрытые чаты' })
+  const item = dialog.getByTestId('screen-manage-row')
+  await expect(item).toHaveCount(1)
+  await expect(item).toContainText('spam_bot')
+  await expect(item).toContainText('Скрыт фильтром: репутация ниже 10')
+  await expect(item).toContainText('3')
+  await item.getByTestId('screen-manage-unhide').click()
+  await expect(dialog.getByTestId('screen-manage-empty')).toHaveText('Скрытых чатов нет')
+  await dialog.locator('.ant-modal-close').click()
+  await expect(dialog).toBeHidden()
+  // В «Только скрытые» пусто — подсказка возвращает обычный список.
+  await expect(page.getByTestId('chats-none-screened')).toBeVisible()
+  await page
+    .getByTestId('chats-none-screened')
+    .getByRole('button', { name: 'Показать все чаты' })
+    .click()
+  await expect(row(page, 'spam_bot')).toBeVisible()
+  await expect(row(page, 'anna_ng')).toBeVisible()
+  await expect(page.getByTestId('chat-screen-toggle')).toHaveCount(0)
+
+  // Шестерёнка — «Настройки → Чаты», окошко мессенджера закрывается.
+  await page.getByTestId('chat-settings').first().click()
+  await expect(page).toHaveURL(/\/settings\?tab=chats$/)
+  await expect(page.getByTestId('screen-reputation')).toBeVisible()
+  // Закрытое окошко прозрачно, но в DOM: смотрим на сам мессенджер.
+  await expect.poll(() => messengerOpen(page)).toBe(false)
+
+  // «Правила фильтра» — к разделу фильтра.
+  await rowMenuFromSettings(page)
+})
+
+/** Снова мессенджер, спам спрятан вручную — «Правила фильтра» в меню глаза ведут к разделу. */
+async function rowMenuFromSettings(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    type Store = Record<string, (...a: unknown[]) => unknown>
+    const app = (
+      document.querySelector('#app') as unknown as {
+        __vue_app__: {
+          config: {
+            globalProperties: {
+              $pinia: { _s: Map<string, Store> }
+              $router: { push(p: string): Promise<unknown> }
+            }
+          }
+        }
+      }
+    ).__vue_app__
+    await app.config.globalProperties.$router.push('/settings?tab=general')
+    await app.config.globalProperties.$pinia._s.get('messenger')!.openMessenger!()
+  })
+  await rowMenu(page, 'spam_bot', 'Убрать в скрытые')
+  await screenMenu(page, 'rules')
+  await expect(page).toHaveURL(/\/settings\?tab=chats&section=screen$/)
+  const head = page.locator('[data-settings-section="screen"]')
+  await expect(head).toBeInViewport()
+}
 
 test('настройки: правило по репутации и человек по нику', async ({ page }) => {
   test.setTimeout(120_000)

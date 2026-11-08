@@ -40,6 +40,13 @@ function storage(): Storage | null {
 
 const fresh = (): ChatScreenPrefs => sanitizeChatScreen(DEFAULT_CHAT_SCREEN)
 
+/**
+ * Как список показывает спрятанные фильтром: не показывает, показывает вместе
+ * со всеми (с отметкой) или только их.
+ */
+export type ScreenView = 'normal' | 'all' | 'only'
+export const SCREEN_VIEWS: readonly ScreenView[] = ['normal', 'all', 'only']
+
 export const useMessengerScreenStore = defineStore('messenger-screen', () => {
   const auth = useAuthStore()
   const ui = useMessengerUiStore()
@@ -47,12 +54,17 @@ export const useMessengerScreenStore = defineStore('messenger-screen', () => {
 
   const prefs = ref<ChatScreenPrefs>(fresh())
   const owner = ref<string | null>(null)
-  /** Спрятанные показаны в списке — кнопкой над ним, до смены аккаунта. */
-  const showHidden = ref(false)
+  /** Что список делает со спрятанными — выбор в меню глаза, до смены аккаунта. */
+  const view = ref<ScreenView>('normal')
+  /** Спрятанные видны в списке (вместе со всеми или одни). */
+  const showHidden = computed<boolean>(() => view.value !== 'normal')
+  /** Окно «Скрытые чаты» — из меню глаза. */
+  const manageOpen = ref(false)
 
   function load(address: string | null): void {
     owner.value = address
-    showHidden.value = false
+    view.value = 'normal'
+    manageOpen.value = false
     if (!address) {
       prefs.value = fresh()
       return
@@ -185,14 +197,21 @@ export const useMessengerScreenStore = defineStore('messenger-screen', () => {
     if (judge(subject)) setPerson(subject.address, 'show', nameOf(dialog, subject.address))
   }
 
+  function setView(next: ScreenView): void {
+    view.value = next
+  }
+
+  /** «Показать» в пустом списке: спрятанные — вместе со всеми, и обратно. */
   function toggleShowHidden(): void {
-    showHidden.value = !showHidden.value
+    view.value = view.value === 'normal' ? 'all' : 'normal'
   }
 
   return {
     prefs,
     owner,
+    view,
     showHidden,
+    manageOpen,
     active,
     hiddenIds,
     hiddenDialogs,
@@ -206,6 +225,7 @@ export const useMessengerScreenStore = defineStore('messenger-screen', () => {
     setPerson,
     hideChat,
     unhideChat,
+    setView,
     toggleShowHidden,
   }
 })

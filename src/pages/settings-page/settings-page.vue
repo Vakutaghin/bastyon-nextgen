@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotificationSettingsStore } from '@/stores'
@@ -119,6 +119,44 @@ function revealActiveTab(behavior: 'auto' | 'smooth'): void {
 
 watch(activeTab, () => void nextTick(() => revealActiveTab('smooth')))
 
+// Ссылка на вкладку, когда настройки уже открыты (шестерёнка в чатах,
+// «Правила фильтра»): страница та же, меняется только адрес.
+watch(
+  () => route.query.tab,
+  (tab) => {
+    const key = SETTINGS_TABS.find((item) => item.key === tab)?.key
+    if (key) activeTab.value = key
+  }
+)
+
+/**
+ * `?section=` — к разделу вкладки (`data-settings-section`). Раздел может
+ * появиться не сразу: вкладка грузит свои данные — ждём его до двух секунд.
+ */
+const SECTION_WAIT_MS = 2000
+let sectionTimer: ReturnType<typeof setTimeout> | undefined
+function revealSection(section: unknown): void {
+  clearTimeout(sectionTimer)
+  if (typeof section !== 'string' || !section) return
+  const started = Date.now()
+  const tryReveal = (): void => {
+    const el = [...document.querySelectorAll<HTMLElement>('[data-settings-section]')].find(
+      (item) => item.dataset.settingsSection === section
+    )
+    if (el) {
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' })
+      return
+    }
+    if (Date.now() - started < SECTION_WAIT_MS) sectionTimer = setTimeout(tryReveal, 100)
+  }
+  void nextTick(tryReveal)
+}
+watch(
+  () => [route.query.tab, route.query.section] as const,
+  ([, section]) => revealSection(section)
+)
+onBeforeUnmount(() => clearTimeout(sectionTimer))
+
 // Подгружаем стартовые состояния (язык, фильтры) до того, как соответствующие
 // табы будут открыты — иначе при первом переключении на «Уведомления» switch
 // показал бы дефолтные значения вместо сохранённых.
@@ -128,5 +166,6 @@ onMounted(() => {
   notificationSettings.load()
   void uiStore.loadLanguage()
   revealActiveTab('auto')
+  revealSection(route.query.section)
 })
 </script>

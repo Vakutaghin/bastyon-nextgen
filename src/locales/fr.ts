@@ -1288,8 +1288,6 @@ export default {
     filterDirectEmpty: 'Aucune discussion personnelle pour le moment',
     filterGroupsEmpty: 'Aucun groupe pour le moment',
     screen: {
-      show: 'Afficher {n} conversation filtrée | Afficher {n} conversations filtrées',
-      hideAgain: 'Masquer à nouveau les conversations filtrées',
       withNew: 'Du nouveau dans {n} conversation | Du nouveau dans {n} conversations',
       showShort: 'Afficher',
       allHidden:
@@ -1302,6 +1300,21 @@ export default {
       hiddenToast: '« {name} » est masqué',
       hiddenToastHint:
         'La conversation ne sonne pas et n’apparaît pas dans la liste. L’œil en haut des conversations l’affiche, son menu « ⋯ » la rétablit.',
+      menuTitle:
+        '{n} conversation masquée par le filtre | {n} conversations masquées par le filtre',
+      noneHidden: 'Aucune conversation masquée',
+      view_normal: 'Ne pas afficher les masquées',
+      view_all: 'Les afficher avec toutes',
+      view_only: 'Seulement les masquées',
+      manage: 'Conversations masquées…',
+      rules: 'Règles du filtre',
+      manageTitle: 'Conversations masquées',
+      manageLead:
+        'Le filtre d’entrée les a masquées : elles ne sonnent pas et ne comptent pas comme non lues. « Rétablir » remet la conversation dans la liste.',
+      open: 'Ouvrir',
+      unhideShort: 'Rétablir',
+      unhideOf: 'Rétablir « {name} » parmi les visibles',
+      showAllChats: 'Afficher toutes les conversations',
     },
     listSearch: {
       open: 'Chercher une discussion ou une personne',
@@ -1316,6 +1329,7 @@ export default {
       failed: 'Recherche de personnes impossible, vérifiez la connexion',
     },
     chatsEmptyTitle: 'Pas encore de discussions',
+    chatSettings: 'Réglages des conversations',
     chatsEmptyText:
       'Pour commencer, ouvrez le profil d’une personne et touchez « Démarrer une discussion ». Les groupes et les chaînes apparaîtront aussi ici.',
     group: {

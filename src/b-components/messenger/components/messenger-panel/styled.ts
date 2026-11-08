@@ -80,6 +80,7 @@ export const SC_SidebarHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 4px;
 
   /* Список во всю ширину: справа над шапкой крестик полноэкранного мессенджера,
      лупа — левее него. */
@@ -94,8 +95,10 @@ export const SC_SidebarHeader = styled.div`
 `
 
 /** «Сообщения» и значок «догружается» рядом. */
+/** Заголовок забирает свободное место — кнопки шапки стоят справа, а не посередине. */
 export const SC_SidebarTitle = styled.div`
   display: flex;
+  flex: 1;
   align-items: center;
   gap: 8px;
   min-width: 0;

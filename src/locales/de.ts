@@ -1285,8 +1285,6 @@ export default {
     filterDirectEmpty: 'Noch keine persönlichen Chats',
     filterGroupsEmpty: 'Noch keine Gruppen',
     screen: {
-      show: '{n} gefilterten Chat anzeigen | {n} gefilterte Chats anzeigen',
-      hideAgain: 'Gefilterte Chats wieder ausblenden',
       withNew: 'Neues in {n} Chat | Neues in {n} Chats',
       showShort: 'Anzeigen',
       allHidden:
@@ -1299,6 +1297,20 @@ export default {
       hiddenToast: '„{name}“ ist ausgeblendet',
       hiddenToastHint:
         'Der Chat klingelt nicht und steht nicht in der Liste. Das Auge oben in den Chats zeigt ihn, sein Menü „⋯“ holt ihn zurück.',
+      menuTitle: '{n} Chat vom Filter ausgeblendet | {n} Chats vom Filter ausgeblendet',
+      noneHidden: 'Keine ausgeblendeten Chats',
+      view_normal: 'Ausgeblendete nicht anzeigen',
+      view_all: 'Zusammen mit allen anzeigen',
+      view_only: 'Nur ausgeblendete',
+      manage: 'Ausgeblendete Chats…',
+      rules: 'Filterregeln',
+      manageTitle: 'Ausgeblendete Chats',
+      manageLead:
+        'Der Eingangsfilter hat sie ausgeblendet: Sie klingeln nicht und zählen nicht als ungelesen. „Zurückholen“ stellt den Chat wieder in die Liste.',
+      open: 'Öffnen',
+      unhideShort: 'Zurückholen',
+      unhideOf: '„{name}“ aus den ausgeblendeten zurückholen',
+      showAllChats: 'Alle Chats anzeigen',
     },
     listSearch: {
       open: 'Chat oder Person suchen',
@@ -1313,6 +1325,7 @@ export default {
       failed: 'Personensuche fehlgeschlagen, Verbindung prüfen',
     },
     chatsEmptyTitle: 'Noch keine Chats',
+    chatSettings: 'Chat-Einstellungen',
     chatsEmptyText:
       'Um eine Unterhaltung zu beginnen, öffnen Sie ein Profil und tippen Sie auf „Chat starten“. Gruppen und Kanäle erscheinen ebenfalls hier.',
     group: {

@@ -353,3 +353,62 @@ export const SC_PersonAddress = styled.span`
   color: var(--ui-text-dimmed);
   font-size: 12px;
 `
+
+/** Меню глаза: как показывать скрытые, окно «Скрытые чаты», правила фильтра. */
+export const SC_ScreenMenu = styled.div`
+  ${noSelect}
+  min-width: 240px;
+  padding: 4px 0;
+  border-radius: var(--ui-radius-lg);
+  background: var(--color-bg-primary);
+  box-shadow: var(--shadow-md);
+`
+
+export const SC_ScreenMenuHead = styled.div`
+  padding: 8px 12px 6px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+`
+
+export const SC_ScreenMenuItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--transition-quick);
+
+  &:hover,
+  &:focus-visible {
+    background: var(--color-bg-tertiary);
+    outline: none;
+  }
+
+  &[aria-checked='true'] {
+    color: var(--ui-primary);
+  }
+`
+
+/** Место под галочку или значок — пункты стоят ровно. */
+export const SC_ScreenMenuMark = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  flex-shrink: 0;
+  font-size: 15px;
+`
+
+export const SC_ScreenMenuDivider = styled.div`
+  height: 1px;
+  margin: 4px 0;
+  background: var(--color-bg-hover);
+`

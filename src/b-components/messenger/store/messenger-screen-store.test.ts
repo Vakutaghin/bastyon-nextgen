@@ -94,6 +94,24 @@ describe('messenger-screen-store', () => {
     expect(screen.showHidden).toBe(false)
   })
 
+  it('меню глаза: вместе со всеми, только скрытые; окно и выбор сбрасывает смена аккаунта', async () => {
+    const screen = useMessengerScreenStore()
+    expect(screen.view).toBe('normal')
+
+    screen.setView('only')
+    expect(screen.showHidden).toBe(true)
+    screen.toggleShowHidden() // «Показать» в пустом списке — обратно к обычному
+    expect(screen.view).toBe('normal')
+    screen.toggleShowHidden()
+    expect(screen.view).toBe('all')
+
+    screen.manageOpen = true
+    auth.state!.getUserAddress = OTHER_ACCOUNT
+    await nextTick()
+    expect(screen.view).toBe('normal')
+    expect(screen.manageOpen).toBe(false)
+  })
+
   it('профиль собеседника не загружен — грузит его сам, пока правила его ждут', async () => {
     const ui = useMessengerUiStore()
     const screen = useMessengerScreenStore()

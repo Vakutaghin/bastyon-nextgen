@@ -1564,3 +1564,8 @@ html.no-animations,
 html.no-animations body {
   scroll-behavior: auto !important;
 }
+
+/* Раздел настроек по ссылке ?section= встаёт под закреплённую шапку, а не за неё. */
+[data-settings-section] {
+  scroll-margin-top: calc(var(--header-height) + 16px);
+}
