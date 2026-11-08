@@ -72,6 +72,24 @@ vi.mock('./helpers/date-feed', async () => {
   }
 })
 
+// WebSocket прокси: тест сам объявляет новый блок.
+const ws = vi.hoisted(() => {
+  const handlers = new Set<() => void>()
+  return {
+    handlers,
+    newBlock: () => handlers.forEach((h) => h()),
+  }
+})
+vi.mock('@/blockchain/ws', () => ({
+  wsService: {
+    on: (event: string, handler: () => void) => {
+      if (event !== 'block') return () => {}
+      ws.handlers.add(handler)
+      return () => ws.handlers.delete(handler)
+    },
+  },
+}))
+
 vi.mock('@/blockchain/store/auth-store', () => ({
   useAuthStore: () => ({ address: '', isUserAuthenticated: false }),
 }))
@@ -415,7 +433,7 @@ describe('useInfiniteFeed', () => {
       vi.useRealTimers()
     })
 
-    it('new posts go on top one by one, the oldest of them first', async () => {
+    it('new posts go on top all at once, the newest first', async () => {
       filtersStore.liveFeed = true
       const feed = mountFeed()
       await deliver(page('a', 'b'))
@@ -423,17 +441,49 @@ describe('useInfiniteFeed', () => {
 
       window.dispatchEvent(new Event('focus'))
       await flush()
-      await vi.advanceTimersByTimeAsync(0)
-      expect(ids(feed)).toEqual(['n1', 'a', 'b'])
+      // Пачка из блока — вся сразу, а не по посту в полторы секунды.
+      expect(ids(feed)).toEqual(['n2', 'n1', 'a', 'b'])
       // Голову спросили от последнего блока, а не на высоте первой страницы.
       expect(vi.mocked(fetchDatePage).mock.lastCall![0]).toMatchObject({
         currentTxid: '',
         height: 0,
       })
-
-      await vi.advanceTimersByTimeAsync(1_500)
-      expect(ids(feed)).toEqual(['n2', 'n1', 'a', 'b'])
       expect(feed.newPostsCount.value).toBe(0)
+    })
+
+    it('a new block: the head is asked right after it, the timer does not repeat it', async () => {
+      // Опрос по таймеру сверяется с часами — их тоже ведёт тест.
+      vi.useRealTimers()
+      vi.useFakeTimers({ toFake: ['setTimeout', 'setInterval', 'Date'] })
+      filtersStore.liveFeed = true
+      const feed = mountFeed()
+      await deliver(page('a', 'b'))
+      const peek = vi.mocked(fetchDatePage)
+      peek.mockClear()
+
+      // Блок пришёл через 20 с после открытия: голову спрашиваем, не дожидаясь опроса.
+      await vi.advanceTimersByTimeAsync(20_000)
+      vi.mocked(buildFeedQueryByTab).mockResolvedValueOnce(page('n1', 'a') as never)
+      ws.newBlock()
+      await vi.advanceTimersByTimeAsync(2_000)
+      await flush()
+      expect(peek).toHaveBeenCalledTimes(1)
+      expect(ids(feed)).toEqual(['n1', 'a', 'b'])
+
+      // Опрос на 30-й секунде — через 10 с после проверки по блоку — лишний.
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(peek).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(peek).toHaveBeenCalledTimes(2)
+    })
+
+    it('the live mode off — new blocks are not followed', async () => {
+      filtersStore.liveFeed = true
+      mountFeed()
+      await deliver(page('a', 'b'))
+      filtersStore.liveFeed = false
+      await nextTick()
+      expect(ws.handlers.size).toBe(0)
     })
 
     it('polls every half a minute and never in the best-first feed', async () => {

@@ -15,6 +15,7 @@ import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useFiltersStore } from '@/stores/filters-store'
 import { useUIStore } from '@/stores/ui-store'
+import { wsService } from '@/blockchain/ws'
 import { buildFeedQueryByTab, type FeedQueryContext } from './helpers/feed-queries'
 import {
   SparseLanguageTimeout,
@@ -371,14 +372,17 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     await refetch()
   }
 
-  // «Новые посты сразу» (filtersStore.liveFeed): голову ленты спрашиваем раз в
-  // LIVE_INTERVAL (блок в Pocketnet — минута), а новые посты ставим наверх по
-  // одному, через LIVE_STEP каждый, — видно, как они приходят. Только в лентах
-  // по дате: в «Лучшем» и «Обсуждаемом» наверху не новое. Новых больше, чем на
-  // LIVE_MAX_PAGES страницах (лента долго стояла в фоне), — пилюля, как без
-  // режима: иначе между ними и показанным осталась бы дыра.
+  // «Новые посты сразу» (filtersStore.liveFeed): пост попадает в ленту ноды с
+  // блоком (в Pocketnet — около минуты), поэтому голову ленты спрашиваем сразу
+  // после нового блока (событие WebSocket прокси) и, на случай если сокета нет,
+  // раз в LIVE_INTERVAL. Новые посты встают наверх все сразу: раньше — по
+  // одному через полторы секунды, и пачка из блока «капала» ещё долго. Только
+  // в лентах по дате: в «Лучшем» и «Обсуждаемом» наверху не новое. Новых
+  // больше, чем на LIVE_MAX_PAGES страницах (лента долго стояла в фоне), —
+  // пилюля, как без режима: иначе между ними и показанным осталась бы дыра.
   const LIVE_INTERVAL = 30_000
-  const LIVE_STEP = 1_500
+  /** После блока нода успевает разложить его посты по лентам. */
+  const LIVE_BLOCK_DELAY = 2_000
   const LIVE_MAX_PAGES = 3
   const liveMode = computed<boolean>(
     () =>
@@ -386,12 +390,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       !filtersStore.topFirst &&
       LIVE_TABS.has(Number(filtersStore.activeTab))
   )
-  /** Новые посты в очереди наверх — от старого к свежему. */
-  let liveQueue: AdaptedPost[] = []
   let liveChecking = false
   let liveTimer: ReturnType<typeof setInterval> | null = null
-  let liveStepTimer: ReturnType<typeof setTimeout> | null = null
-  let lastLiveStep = 0
+  let liveBlockTimer: ReturnType<typeof setTimeout> | null = null
+  let stopBlockWatch: (() => void) | null = null
+  /** Когда голову спрашивали последний раз — опрос по таймеру не дублирует проверку по блоку. */
+  let lastLiveCheck = 0
 
   /** Сколько постов брать с головы ленты за запрос, проверяя новые. */
   const NEW_POSTS_PEEK = 20
@@ -421,7 +425,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
    * постов новее неё нода бы не отдала. Ленту не меняет.
    */
   async function collectNewPosts(maxPages: number): Promise<NewPosts> {
-    const known = new Set([...allPosts.value, ...liveQueue].map((p) => String(p.id)))
+    const known = new Set(allPosts.value.map((p) => String(p.id)))
     const result: NewPosts = { posts: [], contents: [], complete: true }
     let cursor = ''
     for (let i = 0; i < maxPages; i++) {
@@ -474,6 +478,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     if (!allPosts.value.length || !headCheckDue()) return
     const generation = feedGeneration.value
     liveChecking = true
+    lastLiveCheck = Date.now()
     try {
       const fresh = await collectNewPosts(LIVE_MAX_PAGES)
       if (generation !== feedGeneration.value || !liveMode.value) return
@@ -485,8 +490,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       await fetchAndMergeRepostOriginals(fresh.posts, fresh.contents)
       await preloadLastCommentAuthors(fresh.contents)
       if (generation !== feedGeneration.value) return
-      liveQueue.push(...fresh.posts.reverse())
-      stepLive()
+      // Пока шла догрузка, лента могла получить те же посты другим путём.
+      const shown = new Set(allPosts.value.map((p) => String(p.id)))
+      const added = fresh.posts.filter((p) => !shown.has(String(p.id)))
+      if (!added.length) return
+      allPosts.value = [...added, ...allPosts.value]
+      if (authStore.address) enrichWithUserScores(added, allPosts.value, authStore.address)
     } catch {
       // Не вышло — спросим в следующий раз; фоновая проверка не шумит.
     } finally {
@@ -494,44 +503,32 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     }
   }
 
-  /** Следующий пост из очереди — наверх ленты, не чаще раза в LIVE_STEP. */
-  function stepLive(): void {
-    if (liveStepTimer || !liveQueue.length) return
-    liveStepTimer = setTimeout(
-      () => {
-        liveStepTimer = null
-        lastLiveStep = Date.now()
-        const post = liveQueue.shift()
-        if (post && !allPosts.value.some((p) => String(p.id) === String(post.id))) {
-          allPosts.value = [post, ...allPosts.value]
-          if (authStore.address) enrichWithUserScores([post], allPosts.value, authStore.address)
-        }
-        stepLive()
-      },
-      Math.max(0, lastLiveStep + LIVE_STEP - Date.now())
-    )
+  function stopLive(): void {
+    if (liveTimer) clearInterval(liveTimer)
+    liveTimer = null
+    if (liveBlockTimer) clearTimeout(liveBlockTimer)
+    liveBlockTimer = null
+    stopBlockWatch?.()
+    stopBlockWatch = null
   }
-
-  function dropLiveQueue(): void {
-    liveQueue = []
-    if (liveStepTimer) clearTimeout(liveStepTimer)
-    liveStepTimer = null
-  }
-
-  // Лента сменилась или перезагружена — очередь относится к прошлой.
-  watch(feedGeneration, dropLiveQueue)
 
   watch(
     liveMode,
     (on) => {
-      if (liveTimer) clearInterval(liveTimer)
-      liveTimer = null
-      if (!on || typeof window === 'undefined') {
-        dropLiveQueue()
-        return
-      }
+      stopLive()
+      if (!on || typeof window === 'undefined') return
       newPostsCount.value = 0
-      liveTimer = setInterval(() => void checkLive(), LIVE_INTERVAL)
+      // Таймер — запасной путь: только если по блоку давно не спрашивали.
+      liveTimer = setInterval(() => {
+        if (Date.now() - lastLiveCheck >= LIVE_INTERVAL - 1_000) void checkLive()
+      }, LIVE_INTERVAL)
+      stopBlockWatch = wsService.on('block', () => {
+        if (liveBlockTimer) clearTimeout(liveBlockTimer)
+        liveBlockTimer = setTimeout(() => {
+          liveBlockTimer = null
+          void checkLive()
+        }, LIVE_BLOCK_DELAY)
+      })
       void checkLive()
     },
     { immediate: true }
@@ -559,9 +556,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       clearInterval(newPostsTimer)
       newPostsTimer = null
     }
-    if (liveTimer) clearInterval(liveTimer)
-    liveTimer = null
-    dropLiveQueue()
+    stopLive()
     if (typeof window !== 'undefined') {
       window.removeEventListener('focus', onReturn)
       document.removeEventListener('visibilitychange', onReturn)
