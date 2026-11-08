@@ -35,7 +35,7 @@ export type HelpInline =
   | { t: 'image'; src: string; alt: string; theme: 'light' | 'dark' | null }
 
 export type HelpBlock =
-  | { t: 'heading'; level: number; id: string; c: HelpInline[] }
+  | { t: 'heading'; level: number; id: string; key?: string; c: HelpInline[] }
   | { t: 'p'; c: HelpInline[] }
   | { t: 'list'; ordered: boolean; start: number; tight: boolean; items: HelpBlock[][] }
   | { t: 'quote'; c: HelpBlock[] }
@@ -50,6 +50,12 @@ export interface HelpHeading {
   id: string
   level: number
   text: string
+  /**
+   * Метка раздела `<!-- #ключ -->` в конце заголовка: одна на всех языках, по
+   * ней ведут ссылки из приложения (`chats#screen`) — якорь из текста у
+   * каждого языка свой.
+   */
+  key?: string
 }
 
 export interface HelpTopic {

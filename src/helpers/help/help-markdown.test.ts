@@ -75,6 +75,19 @@ describe('parseArticle', () => {
     expect(doc.problems).toEqual([])
   })
 
+  it('метка раздела в заголовке: одна на все языки, в тексте не видна', () => {
+    const doc = parse('# Чаты\n\nЛид.\n\n## Фильтр входящих <!-- #screen -->\n\n## Архив\n')
+    expect(doc.headings).toEqual([
+      { id: 'фильтр-входящих', level: 2, text: 'Фильтр входящих', key: 'screen' },
+      { id: 'архив', level: 2, text: 'Архив' },
+    ])
+    expect(doc.blocks[1]).toMatchObject({ t: 'heading', key: 'screen' })
+    expect(doc.problems).toEqual([])
+    expect(parse('# Ч\n\nЛид.\n\n## А <!-- #x -->\n\n## Б <!-- #x -->\n').problems).toEqual([
+      'метка раздела #x повторяется',
+    ])
+  })
+
   it('без заголовка и со вторым заголовком первого уровня — ошибка', () => {
     expect(parse('Текст').problems).toHaveLength(1)
     expect(parse('# A\n\n# B\n').problems).toHaveLength(1)

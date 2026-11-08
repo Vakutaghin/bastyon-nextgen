@@ -15,7 +15,7 @@
 <script setup lang="ts">
 // Статья в боковой панели. Ссылки на другие статьи листают панель (к прошлой
 // ведёт «Назад»), ссылки в разделы приложения закрывают её и переходят.
-import { computed, provide, ref, watch } from 'vue'
+import { computed, nextTick, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useHelpLibrary } from '@/composables/use-help-library'
@@ -23,7 +23,7 @@ import { GLOSSARY_TOPIC } from '@/helpers/help/help-library'
 import type { HelpLinkTarget } from '@/helpers/help/help-types'
 import { useHelpStore } from '@/stores/help-store'
 import HelpArticle from './help-article.vue'
-import { HELP_VIEW } from './help-view'
+import { HELP_VIEW, findHelpSection } from './help-view'
 import { SC_Compact, SC_PanelButton, SC_State } from './styled'
 
 const props = defineProps<{ topicId: string }>()
@@ -52,19 +52,34 @@ function navigate(target: HelpLinkTarget): void {
 
 provide(HELP_VIEW, { library, highlight: ref<readonly string[]>([]), navigate })
 
-watch(
-  () => props.topicId,
-  () => {
-    const anchor = pendingAnchor.value
-    pendingAnchor.value = null
+function reveal(anchor: string | null): void {
+  void nextTick(() =>
     requestAnimationFrame(() => {
       // Ищем в самой панели: та же статья может быть открыта и на странице под ней.
       const body = document.querySelector('.ant-drawer-body')
-      const ids = body ? [...body.querySelectorAll<HTMLElement>('[id]')] : []
-      const target = anchor ? ids.find((el) => el.id === anchor) : null
+      const target = body && anchor ? findHelpSection(body, anchor) : null
       if (target) target.scrollIntoView({ block: 'start' })
       else body?.scrollTo({ top: 0 })
     })
+  )
+}
+
+watch(
+  () => props.topicId,
+  () => {
+    const anchor = pendingAnchor.value ?? help.panelAnchor
+    pendingAnchor.value = null
+    reveal(anchor)
   }
+)
+
+// Раздел из приложения (`chats#screen`): статья могла ещё грузиться, или
+// панель уже показывает эту статью — тогда меняется только раздел.
+watch(
+  () => [topic.value !== null, help.panelAnchor] as const,
+  ([ready, anchor]) => {
+    if (ready && anchor) reveal(anchor)
+  },
+  { immediate: true }
 )
 </script>

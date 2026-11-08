@@ -74,8 +74,12 @@ function normalizeLabel(label: string): string {
 const UI_LABEL: Record<HelpLocale, RegExp> = { ru: /^«(.+)»$/, en: /^[“"](.+)[”"]$/ }
 const UI_MESSAGES: Record<HelpLocale, unknown> = { ru, en }
 
-/** meta.helpTopic маршрута, <HelpLink topic="…"> и openTopic('…'); привязка :topic="…" — не ссылка. */
-const CONTEXT_REF = /(?:helpTopic:\s*['"]|(?<![:@.\w-])topic="|openTopic\(\s*['"])([a-z0-9-]+)['"]/g
+/**
+ * meta.helpTopic маршрута, <HelpLink topic="…"> и openTopic('…'); привязка :topic="…" — не ссылка.
+ * После `#` — метка раздела (`chats#screen`).
+ */
+const CONTEXT_REF =
+  /(?:helpTopic:\s*['"]|(?<![:@.\w-])topic="|openTopic\(\s*['"])([a-z0-9-]+)(?:#([a-z0-9-]+))?['"]/g
 
 function sourceFiles(dir: string): string[] {
   const out: string[] = []
@@ -152,12 +156,22 @@ describe('справка в help/', () => {
 
   it('контекстная справка в коде ведёт на готовые статьи', () => {
     const refs = new Set<string>()
+    const sections = new Set<string>()
     for (const file of sourceFiles(resolve(ROOT, 'src'))) {
       const code = readFileSync(file, 'utf8')
       for (const m of code.matchAll(CONTEXT_REF)) {
         refs.add(m[1] ?? '')
+        if (m[2]) sections.add(`${m[1]}#${m[2]}`)
       }
     }
+    // Раздел — по метке `<!-- #ключ -->`, она должна быть в статье на обоих языках.
+    const noSection = [...sections].filter((ref) => {
+      const [id = '', key] = ref.split('#')
+      return (['ru', 'en'] as const).some(
+        (l) => !releases[l].topics.get(id)?.headings.some((h) => h.key === key)
+      )
+    })
+    expect(noSection).toEqual([])
     // Черновика в сборке нет: F1 и «?» открыли бы пустое место.
     const missing = [...refs].filter((id) => !releases.ru.topics.has(id))
     expect(missing).toEqual([])

@@ -16,7 +16,7 @@ import {
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { appToast } from '@/b-components/app-toast'
-import { HELP_VIEW, topicPath } from '@/b-components/help/help-view'
+import { HELP_VIEW, findHelpSection, topicPath } from '@/b-components/help/help-view'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { useHelpLibrary } from '@/composables/use-help-library'
 import { copyText } from '@/helpers/common/clipboard'
@@ -111,7 +111,7 @@ export function useHelpPage(): HelpPage {
       if (!lib) return
       await nextTick()
       const anchor = decodeHash(hash)
-      const target = anchor ? document.getElementById(anchor) : null
+      const target = anchor ? findHelpSection(document, anchor) : null
       if (target) target.scrollIntoView({ block: 'start' })
       else window.scrollTo({ top: 0 })
     },

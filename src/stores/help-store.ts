@@ -40,6 +40,11 @@ export const useHelpStore = defineStore('help', {
   state: () => ({
     /** Статьи, открытые в боковой панели: последняя на экране, «Назад» — к предыдущей. */
     panel: [] as string[],
+    /**
+     * Раздел статьи, открытой из приложения (`chats#screen`): якорь или метка
+     * раздела. Переход по ссылке внутри панели его сбрасывает.
+     */
+    panelAnchor: null as string | null,
     favorites: readFavorites(),
     navHidden: readNavHidden(),
   }),
@@ -53,22 +58,30 @@ export const useHelpStore = defineStore('help', {
   },
 
   actions: {
-    /** Открывает статью в боковой панели поверх текущего экрана. */
-    openTopic(id: string): void {
-      this.panel = [id]
+    /**
+     * Открывает статью в боковой панели поверх текущего экрана. `ref` — имя
+     * статьи, после `#` — раздел: `chats#screen`.
+     */
+    openTopic(ref: string): void {
+      const hash = ref.indexOf('#')
+      this.panel = [hash < 0 ? ref : ref.slice(0, hash)]
+      this.panelAnchor = hash < 0 ? null : ref.slice(hash + 1) || null
     },
 
     /** Переход по ссылке внутри панели: «Назад» вернёт к предыдущей статье. */
     followInPanel(id: string): void {
+      this.panelAnchor = null
       if (this.panelTopic !== id) this.panel.push(id)
     },
 
     backInPanel(): void {
+      this.panelAnchor = null
       if (this.panel.length > 1) this.panel.pop()
     },
 
     closePanel(): void {
       this.panel = []
+      this.panelAnchor = null
     },
 
     toggleFavorite(id: string): void {

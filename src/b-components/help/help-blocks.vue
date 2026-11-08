@@ -1,12 +1,18 @@
 <template>
   <template v-for="(block, i) in blocks" :key="i">
-    <h2 v-if="block.t === 'heading' && block.level === 2" :id="block.id">
+    <h2 v-if="block.t === 'heading' && block.level === 2" :id="block.id" :data-help-key="block.key">
       <HelpInlines :nodes="block.c" />
     </h2>
-    <h3 v-else-if="block.t === 'heading' && block.level === 3" :id="block.id">
+    <h3
+      v-else-if="block.t === 'heading' && block.level === 3"
+      :id="block.id"
+      :data-help-key="block.key"
+    >
       <HelpInlines :nodes="block.c" />
     </h3>
-    <h4 v-else-if="block.t === 'heading'" :id="block.id"><HelpInlines :nodes="block.c" /></h4>
+    <h4 v-else-if="block.t === 'heading'" :id="block.id" :data-help-key="block.key">
+      <HelpInlines :nodes="block.c" />
+    </h4>
     <p v-else-if="block.t === 'p'"><HelpInlines :nodes="block.c" /></p>
     <component
       :is="block.ordered ? 'ol' : 'ul'"

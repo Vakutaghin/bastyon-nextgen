@@ -48,6 +48,8 @@ const ALERT_RE = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$/i
 const DETAILS_OPEN_RE = /^<details(?:\s[^>]*)?>\s*(?:<summary>([\s\S]*?)<\/summary>)?$/i
 const DETAILS_CLOSE_RE = /^<\/details>$/i
 const COMMENT_RE = /^<!--[\s\S]*-->$/
+/** Метка раздела в конце заголовка: `## Фильтр входящих <!-- #screen -->`. */
+const HEADING_KEY_RE = /^<!--\s*#([a-z0-9-]+)\s*-->$/
 
 const ENTITIES: Record<string, string> = {
   '&amp;': '&',
@@ -188,7 +190,13 @@ class Converter {
 
   private heading(open: Token): HelpBlock | null {
     const level = Number(open.tag.slice(1))
-    const c = this.inlines(this.tokens[this.i + 1]?.children ?? [])
+    let key: string | undefined
+    const children = (this.tokens[this.i + 1]?.children ?? []).filter((tok) => {
+      const m = tok.type === 'html_inline' ? HEADING_KEY_RE.exec(tok.content.trim()) : null
+      if (m) key = m[1]
+      return !m
+    })
+    const c = this.inlines(children)
     this.i += 3
     const text = plainText(c).trim()
     // Заголовок первого уровня тоже занимает якорь — как на GitHub.
@@ -198,9 +206,12 @@ class Converter {
       else this.title = text
       return null
     }
-    this.headings.push({ id, level, text })
+    if (key && this.headings.some((h) => h.key === key)) {
+      this.problems.push(`метка раздела #${key} повторяется`)
+    }
+    this.headings.push(key ? { id, level, text, key } : { id, level, text })
     this.texts.push(text)
-    return { t: 'heading', level, id, c }
+    return key ? { t: 'heading', level, id, key, c } : { t: 'heading', level, id, c }
   }
 
   private paragraph(): HelpBlock {

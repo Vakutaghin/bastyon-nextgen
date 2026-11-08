@@ -70,7 +70,8 @@ const { isTablet: mobile } = useViewport()
 function openFull(): void {
   const id = help.panelTopic
   if (!id) return
+  const anchor = help.panelAnchor
   help.closePanel()
-  void router.push(topicPath(id))
+  void router.push(topicPath(id, anchor))
 }
 </script>

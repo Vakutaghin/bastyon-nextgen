@@ -41,3 +41,14 @@ export function helpHref(target: HelpLinkTarget): string {
 export function topicPath(id: string, anchor?: string | null): string {
   return helpHref({ kind: 'topic', topic: id, anchor: anchor ?? null })
 }
+
+/**
+ * Раздел статьи по якорю: `id` заголовка (из текста, у каждого языка свой) или
+ * метка раздела `data-help-key` — она одна на всех языках.
+ */
+export function findHelpSection(root: ParentNode, anchor: string): HTMLElement | null {
+  for (const el of root.querySelectorAll<HTMLElement>('[id], [data-help-key]')) {
+    if (el.id === anchor || el.dataset.helpKey === anchor) return el
+  }
+  return null
+}
