@@ -1,8 +1,9 @@
 // UI-состояние мессенджера: открытие/закрытие, полноэкранность, активный диалог, invite
 
 import { defineStore } from 'pinia'
-import { ref, computed, shallowRef, watch } from 'vue'
+import { ref, computed, shallowRef, watch, onScopeDispose } from 'vue'
 
+import { onAppForeground } from '@/helpers/common/app-foreground'
 import type { Dialog } from '../types'
 
 /** Виды строк списка: личные переписки, группы (и каналы/комнаты mesh), каналы авторов. */
@@ -27,8 +28,12 @@ const CHAT_FILTER_KEY = 'BST_MSG_CHAT_FILTER'
  * вернувшись из фона, теряет соединения: первый запрос падает, а через миг
  * связь есть — полоса мигала на секунду. Пока не прошло, обрыв виден значком
  * «Нет связи, переподключаюсь…» в шапке (lib/messenger-activity).
+ *
+ * Дольше паузы, после которой SDK проверяет связь снова (5–10 с после
+ * неудачной проверки): при 8 с одна неудачная проверка и удачная следующая
+ * успевали показать полосу на миг.
  */
-export const SYNC_ERROR_GRACE_MS = 8_000
+export const SYNC_ERROR_GRACE_MS = 12_000
 
 /** Виды по порядку, без повторов; все три — это «Все». */
 function normalizeChatFilter(kinds: readonly string[]): ChatFilter {
@@ -90,14 +95,24 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     settleTimer = null
     syncErrorSettled.value = false
   }
-  watch(syncErrorText, (text) => {
-    if (!text) return unsettle()
+  const startSettle = (): void => {
     if (syncErrorSettled.value || settleTimer) return
     settleTimer = setTimeout(() => {
       settleTimer = null
       syncErrorSettled.value = true
     }, SYNC_ERROR_GRACE_MS)
-  })
+  }
+  watch(syncErrorText, (text) => (text ? startSettle() : unsettle()))
+  // Вернулись из фона: связь могла оборваться, пока приложение было свёрнуто,
+  // и полоса, «выстоявшая» отсчёт в фоне, вставала в первую же секунду — до
+  // переподключения, которое тут же её убирало. Отсчёт — заново, с возвращения.
+  onScopeDispose(
+    onAppForeground(() => {
+      if (!syncErrorText.value) return
+      unsettle()
+      startSettle()
+    })
+  )
   /** Ошибка синка для полосы: короткий обрыв её не показывает. */
   const shownSyncError = computed<string | null>(() =>
     syncErrorSettled.value ? syncError.value : null
