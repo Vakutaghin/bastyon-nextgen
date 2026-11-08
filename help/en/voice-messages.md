@@ -1,5 +1,5 @@
 ---
-keywords: [voice message, audio message, voice recording, microphone]
+keywords: [voice message, audio message, voice recording, microphone, waveform]
 ---
 
 # Voice messages
@@ -23,7 +23,11 @@ Recording responds from the first touch: the time appears at once, and the dot n
 
 ## Listening
 
-A voice message has a **“Play”** button and a progress bar: tap the bar to jump to a point. Voice messages are encrypted the same way as files — see [Photos, videos and files in chat](chat-attachments.md).
+A voice message has a **“Play”** button and a waveform: tap the waveform to jump to a point. Before you listen, the duration is shown next to it; from the first press, how much has played. Voice messages are encrypted the same way as files — see [Photos, videos and files in chat](chat-attachments.md).
+
+A voice message is downloaded only when you press **“Play”**: opening a chat does not download every voice message in it, so on a slow connection the conversation opens faster. While the sound loads, a spinner turns on the button; press it again to cancel the download. The app remembers what you played until it is closed: replaying or coming back to the chat does not download the voice message again.
+
+The waveform comes with the message, so it shows at once, without downloading the sound. In an encrypted chat it is encrypted, like the voice message itself. Voice messages from the previous Bastyon app carry no waveform: until played they show a flat line, and after that the waveform computed from the sound. Their duration may also appear only after the first play.
 
 ## If recording does not start
 

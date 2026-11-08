@@ -16,6 +16,7 @@ A few tricks:
 - **`@name`** — go straight to the profile of the person with that name.
 - **`#tag`** — show a feed of posts with this tag. You can give several tags separated by spaces.
 - **A Bastyon link** — paste a link to a post or a profile, and the app opens it.
+- **An account’s address or public key** — paste it, and the account appears in the suggestions under **“Users”**. The results page and the people search in chats find it the same way. For an address the suggestions also offer **“Open address”** — that address in the blockchain explorer, see [Blockchain](#blockchain).
 
 ## Results
 

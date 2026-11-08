@@ -8,7 +8,7 @@ The wallet is built into your account: balances, transfers, history and earnings
 
 ## Where the wallet is
 
-- On a computer the balance is shown in the header, under your name.
+- The PKOIN balance is shown in the header: on a computer under your name, on a phone and in a narrow window next to your avatar.
 - The wallet section is **“Wallets”** in the account menu, on a phone **“Wallet”** in the bottom bar.
 
 The wallet is there only when you are signed in.

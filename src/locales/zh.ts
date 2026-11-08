@@ -2259,7 +2259,7 @@ export default {
     feedLanguage: '信息流语言',
     liveFeed: '新帖子即时显示',
     liveFeedHint:
-      '新帖子会自动逐条出现在信息流顶部。仅适用于按日期排序的信息流，不适用于“最佳优先”。',
+      '新帖子会在出块后几秒内一起自动出现在信息流顶部。仅适用于按日期排序的信息流，不适用于“最佳优先”。',
     categories: '分类',
     addCategory: '添加分类',
     resetFilter: '重置筛选',

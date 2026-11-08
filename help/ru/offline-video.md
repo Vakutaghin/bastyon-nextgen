@@ -1,26 +1,25 @@
 ---
 keywords:
-  [
-    скачать,
-    скачать видео,
-    без сети,
-    офлайн,
-    оффлайн,
-    скачанное,
-    загрузки,
-    смотреть без интернета,
-    качество,
-    Wi-Fi,
-    автор удалил,
-  ]
+  - скачать
+  - скачать видео
+  - скачать аудио
+  - без сети
+  - офлайн
+  - оффлайн
+  - скачанное
+  - загрузки
+  - сохранить файлом
+  - смотреть без интернета
+  - качество
+  - Wi-Fi
+  - автор удалил
 code:
-  [
-    src/stores/offline-videos-store.ts,
-    src/services/offline-video,
-    src/b-components/offline-video,
-    src-tauri/src/offline,
-    android/app/src/main/java/com/bastyon/app/plugins/offline,
-  ]
+  - src/stores/offline-videos-store.ts
+  - src/services/offline-video
+  - src/b-components/offline-video
+  - src/b-components/header/header-downloads
+  - src-tauri/src/offline
+  - android/app/src/main/java/com/bastyon/app/plugins/offline
 ---
 
 # Скачать для просмотра без сети

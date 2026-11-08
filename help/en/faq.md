@@ -35,7 +35,7 @@ Not in this app yet: an account can be deleted from the network in the settings 
 
 ## Is it free?
 
-Yes. Every action — a post, a rating, a subscription — is a transaction with a tiny fee of 0.00000001 PKOIN. The network sends a new account some coins, and they cover the fees for a long time. This protects the network from spam. See [Confirming actions](transactions.md).
+Yes. Every action — a post, a rating, a subscription — is a transaction with a tiny fee of 0.00000001 PKOIN. A PKOIN transfer costs a little more — usually 0.00001 PKOIN, see [Transfers and fees](send-pkoin.md#the-fee). The network sends a new account some coins, and they cover the fees for a long time. This protects the network from spam. See [Confirming actions](transactions.md).
 
 ## What is PKOIN and why would I need it?
 
@@ -55,7 +55,7 @@ The participants themselves, by the rules written in the node code. Low ratings 
 
 ## Who can read my messages?
 
-Private messages are encrypted on your device, and only you and the other person can read them. Group chats use a simpler scheme. The chat server sees who talks to whom and when, but not the text. See [Message encryption](chat-encryption.md).
+Private messages are encrypted on your device, and only you and the other person can read them. The chat server sees who talks to whom and when, but not the text. Small private groups use a simpler scheme, while public groups and groups of 50 members or more are not encrypted at all: the server can read their messages, and in a public group so can anyone who joins. The header of such a group says **“not encrypted”**. See [Message encryption](chat-encryption.md#group-chats).
 
 ## How do I hide my IP address?
 

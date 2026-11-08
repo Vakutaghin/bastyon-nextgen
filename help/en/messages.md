@@ -1,5 +1,15 @@
 ---
-keywords: [message, reply, reaction, delete message, read receipt, emoji, typing]
+keywords:
+  - message
+  - reply
+  - reaction
+  - delete message
+  - read receipt
+  - emoji
+  - typing
+  - not sent
+  - retry sending
+  - unsent message
 ---
 
 # Messages
@@ -38,9 +48,18 @@ A sent message cannot be edited.
 - **✓** means **“Sent, not read yet”**: the message reached the server.
 - **✓✓** means **“Seen”**: the other person opened the conversation and saw the message; in a group, at least one member did. A message counts as read only while the chat is open on screen: not in a minimized messenger, another tab or a hidden app window.
 - “typing…” above the input field means the other person is typing.
-- **“Not sent”** means the message did not go out, for example the connection dropped. The text stays on screen: press **“Retry”**.
+- **“Not sent”** means the message did not go out, for example the connection dropped. You can send it again or delete it, see [below](#if-a-message-was-not-sent).
 
-The same marks show in the chat list, next to your last message in a chat, and **!** there means it was not sent. In a private chat the mark itself says the message is yours, so “You:” appears before it only in groups.
+The same marks show in the chat list, next to your last message in a chat, and **!** there means it was not sent. While your message is going out, or if it did not go out, the list shows that message rather than the previous one — with **…** or **!**. In a private chat the mark itself says the message is yours, so “You:” appears before it only in groups.
+
+## If a message was not sent
+
+A message that did not go out has **“Not sent”** under it and two buttons:
+
+- **“Retry”** — send it again. This works for text and for attachments alike: a voice message, photo, video or file goes out as the same file, with no need to record or pick it again. An unsent voice message can be played — the recording is already on the device.
+- **“Delete”** — remove the message. The server does not have it, so it is deleted from this device only; the app asks again: **“The message was not sent and exists only on this device. Delete it?”** Chats over radio do not have this button.
+
+An unsent message does not disappear when you close the app: it is kept on the device encrypted, and after a restart it is back in the chat with **“Retry”**. An attachment larger than 25 MB is not saved on the device — such a message stays only while the app is open. After you sign out, unsent messages stay on the device encrypted and come back to the chat the next time you sign in. See [What is stored on your device](local-data.md).
 
 ## Message notifications
 

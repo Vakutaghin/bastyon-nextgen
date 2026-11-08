@@ -17,7 +17,7 @@ Press **“Attach”** — the paper clip to the left of the input field:
 
 You can also drag files anywhere onto an open chat or paste them from the clipboard into the message field.
 
-While a file uploads, it shows how many percent have been sent. The recipient sees pictures and videos right in the conversation, and a file gets a **“Download”** button. A picture opens full screen, and the **“Download image”** button at the top left saves it. On a computer the app asks where to save the file, on a phone the system “Share” sheet opens.
+While a file uploads, it shows how many percent have been sent. The recipient sees pictures and videos right in the conversation, and a file gets a **“Download”** button. A picture opens full screen, and the **“Download image”** button at the top left saves it. A voice message or a video is saved with **“Download”** in the message’s “⋯” menu. On a computer the app asks where to save the file, on a phone the system “Share” sheet opens.
 
 ## Size limit
 
@@ -28,7 +28,7 @@ The chat server will not accept anything larger, and the app tells you straight 
 
 ## Encrypted attachments
 
-Photos, videos, files and voice messages are encrypted on your device before they are sent: each file has its own random key, and that key is encrypted for the chat members. The server stores only the encrypted file, and only the people it was sent to can open it. More in [Message encryption](chat-encryption.md).
+Photos, videos, files and voice messages are encrypted on your device before they are sent: each file has its own random key, and that key is encrypted for the chat members. The server stores only the encrypted file, and only the people it was sent to can open it. The exception is public groups and groups of 50 members or more: there attachments, like text, go unencrypted, and the group header says “not encrypted”. More in [Message encryption](chat-encryption.md#group-chats).
 
 ## See also
 

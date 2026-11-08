@@ -2370,7 +2370,7 @@ export default {
     feedLanguage: 'Lingua del feed',
     liveFeed: 'Nuovi post subito',
     liveFeedHint:
-      'I nuovi post compaiono da soli in cima al feed, uno alla volta. Solo nel feed per data, non con «Prima i migliori».',
+      'I nuovi post compaiono da soli in cima al feed, tutti insieme, un paio di secondi dopo un blocco. Solo nel feed per data, non con «Prima i migliori».',
     categories: 'Categorie',
     addCategory: 'Aggiungi categoria',
     resetFilter: 'Reimposta il filtro',

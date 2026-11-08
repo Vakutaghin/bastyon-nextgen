@@ -10,7 +10,7 @@ Why the network has a coin, where it comes from and how much of it you need to u
 
 ## What it is for
 
-- **Fees.** Every action in the network — a post, a comment, a rating, a subscription, a transfer — costs 0.00000001 PKOIN. That is next to nothing, but with no coins at all on the address the action will not go through — see [Confirming actions](transactions.md).
+- **Fees.** A post, a comment, a rating, a subscription or a profile edit costs 0.00000001 PKOIN, a PKOIN transfer — depending on the transaction size, usually 0.00001 PKOIN, see [Transfers and fees](send-pkoin.md#the-fee). That is next to nothing, but with no coins at all on the address the action will not go through — see [Confirming actions](transactions.md).
 - **A full account.** With a balance of 50 PKOIN or more the account becomes full even if its reputation has not reached 100 yet, and with 250 PKOIN or more you can publish up to 100 video posts a day — see [Account status and limits](limits.md).
 - **Tips and transfers** to other people — see [Tipping the author](tips.md) and [Transfers and fees](send-pkoin.md).
 - **Payments in mini apps** — see [Payments in mini apps](mini-app-payments.md).

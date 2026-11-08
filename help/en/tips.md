@@ -16,7 +16,7 @@ The button is there only when you are signed in and only on other people’s pos
 
 ## What it costs
 
-The network fee is 0.00000001 PKOIN, and it is taken from the amount: the author receives that tiny bit less. Nothing else is charged.
+A tip is a PKOIN transfer, and its network fee is that of a transfer: usually 0.00001 PKOIN, more in [The fee](send-pkoin.md#the-fee). It is taken from the amount: the author receives that tiny bit less. The app charges nothing on top.
 
 The app will not send the transfer if:
 

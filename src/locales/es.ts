@@ -2376,7 +2376,7 @@ export default {
     feedLanguage: 'Idioma del feed',
     liveFeed: 'Publicaciones nuevas al instante',
     liveFeedHint:
-      'Las publicaciones nuevas aparecen solas arriba del feed, una a una. Solo en el feed por fecha, no con «Lo mejor primero».',
+      'Las publicaciones nuevas aparecen solas arriba del feed, todas juntas, un par de segundos después de un bloque. Solo en el feed por fecha, no con «Lo mejor primero».',
     categories: 'Categorías',
     addCategory: 'Añadir categoría',
     resetFilter: 'Restablecer filtro',

@@ -19,14 +19,16 @@ Once the transfer goes to the network, its number (TXID) and the fee charged app
 
 You can send only from the main wallet. To send PKOIN right in a conversation, see [Sending PKOIN in a chat](pkoin-in-chat.md).
 
-## The fee
+## The fee <!-- #fee -->
 
-The network fee for a transfer is 0.00000001 PKOIN, like for any action. In the **“Fee”** field choose who pays it:
+The fee for a transfer depends on the size of the transaction: 0.00002 PKOIN per kilobyte, but no less than 0.00001 PKOIN. An ordinary transfer costs exactly 0.00001 PKOIN. It comes out higher when the amount is gathered from many small incoming payments to the wallet: each of them makes the transaction bigger. A post, a rating and other actions on the network cost less — 0.00000001 PKOIN — but the network does not accept a transfer with such a fee.
 
-- **“Recipient pays”** — the default: the fee is taken from the amount, and the recipient gets slightly less. The amount must be larger than the fee, otherwise — **“Amount must be greater than the fee (recipient pays)”**;
+In the **“Fee”** field choose who pays it:
+
+- **“Recipient pays”** — the default: the fee is taken from the amount, and the recipient gets slightly less. The amount must be larger than the fee, otherwise the **“Calculate fee and send”** button cannot be clicked;
 - **“Sender pays”** — the recipient gets exactly the amount entered, and the fee is charged to you on top.
 
-Sometimes the fee comes out a little higher: if the change that should return to you is less than 0.000007 PKOIN, the network does not accept such a crumb as a separate output, and it goes to the fee. How much was actually charged is shown in the message after sending.
+The app works out the exact fee when sending, once it knows which incoming payments make up the amount. Sometimes it comes out a little higher: if the change that should return to you is less than 0.000007 PKOIN, the network does not accept such a crumb as a separate output, and it goes to the fee. How much was actually charged is shown in the message after sending.
 
 ## If a transfer does not go through
 

@@ -2357,7 +2357,7 @@ export default {
     feedLanguage: 'Feed language',
     liveFeed: 'New posts live',
     liveFeedHint:
-      'New posts appear at the top of the feed by themselves, one by one. Only in the feed by date, not with “Best first”.',
+      'New posts appear at the top of the feed by themselves, all together, a couple of seconds after a block. Only in the feed by date, not with “Best first”.',
     categories: 'Categories',
     addCategory: 'Add category',
     resetFilter: 'Reset filter',

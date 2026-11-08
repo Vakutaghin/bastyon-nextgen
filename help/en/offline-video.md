@@ -1,16 +1,16 @@
 ---
 keywords:
-  [
-    download,
-    download video,
-    offline,
-    no network,
-    downloads,
-    watch without internet,
-    quality,
-    Wi-Fi,
-    author deleted,
-  ]
+  - download
+  - download video
+  - download audio
+  - offline
+  - no network
+  - downloads
+  - save as file
+  - watch without internet
+  - quality
+  - Wi-Fi
+  - author deleted
 ---
 
 # Download to watch offline

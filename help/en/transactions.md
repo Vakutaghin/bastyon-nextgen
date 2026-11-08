@@ -56,7 +56,7 @@ Social actions are almost free: the fee for a post, a comment or a rating is 0.0
 - **“No funds available for the transaction”** — there are no free coins on the address. Top up your [wallet](wallet.md).
 - **“Wait until the network confirms your previous transaction, then try again.”** — the coins from your last action are still on their way. Wait a minute and try again.
 
-Transfers have the same fee; you just choose who pays it when you send — see [Transfers and fees](send-pkoin.md).
+A PKOIN transfer — from the wallet, in a chat, a tip, a paid subscription or mini-app payment — costs more: its fee depends on the size of the transaction and is usually 0.00001 PKOIN. When sending from the wallet you can choose who pays it — see [Transfers and fees](send-pkoin.md#the-fee).
 
 ## See also
 

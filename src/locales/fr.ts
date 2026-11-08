@@ -2390,7 +2390,7 @@ export default {
     feedLanguage: 'Langue du fil',
     liveFeed: 'Nouvelles publications en direct',
     liveFeedHint:
-      'Les nouvelles publications s’ajoutent d’elles-mêmes en haut du fil, une par une. Seulement dans le fil par date, pas avec « Les meilleurs d’abord ».',
+      'Les nouvelles publications s’ajoutent d’elles-mêmes en haut du fil, toutes ensemble, quelques secondes après un bloc. Seulement dans le fil par date, pas avec « Les meilleurs d’abord ».',
     categories: 'Catégories',
     addCategory: 'Ajouter une catégorie',
     resetFilter: 'Réinitialiser le filtre',

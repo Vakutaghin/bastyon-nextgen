@@ -18,6 +18,7 @@ To the right of the search are the icons. This is how they stand until you rearr
 
 - **“Services”** — mini apps inside Bastyon: music, video, games, PKOIN exchange, see [Services](mini-apps.md). In a narrow window only the icon is left of the button.
 - **The hourglass** appears when you have actions the network has not confirmed yet — see [Confirming actions](transactions.md). It always sits next to the bell.
+- **Downloads** — an arrow pointing down next to the hourglass — appears once you have downloaded something to watch offline: what is downloading now and your download history — see [Download to watch offline](offline-video.md#where-downloads-are-and-how-to-get-a-file).
 - **The bell** — **“Notifications”**, see [Notifications](notifications.md).
 - **The speech bubble** opens the messenger; the number on it is unread messages.
 - **Tor** and **IPFS** — status icons of [Tor](tor.md) and [the IPFS module](ipfs-module.md). Only in the desktop app.

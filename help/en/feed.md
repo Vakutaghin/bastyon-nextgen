@@ -1,5 +1,17 @@
 ---
-keywords: [feed, recommendations, subscriptions, video, audio, articles, discussed, promoted, new posts]
+keywords:
+  - feed
+  - recommendations
+  - subscriptions
+  - video
+  - audio
+  - articles
+  - discussed
+  - promoted
+  - new posts
+  - new posts live
+  - refresh feed
+  - pull to refresh
 ---
 
 # Feed
@@ -21,14 +33,16 @@ Posts from authors you have [blocked](blocking.md) are not shown in the feed. To
 
 ## The feed language
 
-The feed, tags and recommendations are in the feed language: the app passes it to the node, and the node picks posts in that language. At first it is the same as the interface language. To read posts in another language without changing the interface, pick the language in the **“Feed language”** field under the **“Best first”** switch in the left panel; on a phone it is in the side menu. If you change the interface language in the header or in the settings, the feed switches to the same language. **“Subscriptions”** does not filter by language: posts of the people you follow show in any language. More in [Language and appearance](appearance.md).
+The feed, tags and recommendations are in the feed language: the app passes it to the node, and the node picks posts in that language. At first it is the same as the interface language. To read posts in another language without changing the interface, pick the language in the **“Feed language”** field under the **“Best first”** and **“New posts live”** switches in the left panel; on a phone it is in the side menu. If you change the interface language in the header or in the settings, the feed switches to the same language. **“Subscriptions”** does not filter by language: posts of the people you follow show in any language. More in [Language and appearance](appearance.md).
 
 ## New posts and refreshing
 
-- Every minute and a half, and when you come back to the window, the app checks whether there are new posts. If there are, a "Show new posts" button with their number appears at the top of the feed.
-- **“Refresh feed”** above the feed loads it again.
+- While **“New posts live”** is off (see below), every minute and a half and when you come back to the window, the app checks whether there are new posts. If there are, a "Show new posts" button with their number appears at the top of the feed.
+- **“Refresh feed”** above the feed loads it again. On a phone a gesture does the same: pull the feed down from the very top — a circle with an arrow slides out from above; let go once it has slid out far enough, and the feed refreshes. While it loads, the circle spins.
 - Older posts load by themselves as you scroll down.
 - **“To top”** at the bottom of the screen takes you back to the start of the feed — the button appears once you have scrolled.
+
+If you turn on **“New posts live”** — the switch under **“Best first”** in the left panel, on a phone in the side menu — there is no button to wait for: new posts appear at the top of the feed by themselves, all together, about 2 seconds after each new [block](glossary.md#block). A post enters the feed with its block, and a new block appears on the network about once a minute. If no signal about a new block arrives, the app checks the feed every 30 seconds. This works in feeds sorted by date; in **“Discussed”** new posts do not appear by themselves, and while **“Best first”** is on, the switch is unavailable. If the feed stayed in the background for a long time and many new posts piled up, the same "Show new posts" button appears instead.
 
 ## New from your subscriptions
 

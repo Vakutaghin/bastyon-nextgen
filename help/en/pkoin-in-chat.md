@@ -16,7 +16,7 @@ Transfers work only in private chats: group chats do not have this item.
 4. **“Message (optional)”** — up to 200 characters, for example what the transfer is for.
 5. Press **“Send”**.
 
-The coins come from your main wallet. You pay the network fee of 0.00000001 PKOIN: the other person receives exactly the amount you entered. If you do not have enough coins, the app says **“Insufficient funds for the transfer including the fee”**.
+The coins come from your main wallet. You pay the network fee, on top of the amount: the other person receives exactly the amount you entered. The fee is the same as for any transfer — usually 0.00001 PKOIN, see [The fee](send-pkoin.md#the-fee). If you do not have enough coins, the app says **“Insufficient funds for the transfer including the fee”**.
 
 A transfer cannot be undone, like any transfer on the network — see [Transfers and fees](send-pkoin.md).
 

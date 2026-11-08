@@ -1,5 +1,15 @@
 ---
-keywords: [services, mini apps, apps, catalog, games, Barteron, favorites, open an app]
+keywords:
+  - services
+  - mini apps
+  - apps
+  - catalog
+  - games
+  - Barteron
+  - favorites
+  - open an app
+  - offers
+  - share on Bastyon
 ---
 
 # Services
@@ -25,9 +35,21 @@ To close it, use the button with a cross at the right edge near the top. For the
 
 If an app takes too long to load, you see “… is not responding — try again later”: the app’s site is down or overloaded.
 
+If you change the theme or the language, an open app learns about it and can switch along with Bastyon.
+
 ## Favorites
 
 The star on a card is **“Add to favorites”**: the app appears in the left panel, one click away. Barteron is always there. To remove it, press the star again — **“Remove from favorites”**.
+
+## Barteron
+
+In Barteron you can publish, edit and delete offers, save your profile, write reviews and give ratings: all of it goes to the network on your behalf, as in the previous Bastyon. Offers still waiting for the network to confirm them already show in the Barteron profile. Only Barteron can publish this way; other mini apps cannot.
+
+An offer can carry a video. The upload window is the same as in the post editor: picking a file, upload progress, cancel, retry and cover. The video uploads to a Bastyon video server, into your channel.
+
+## Share on Bastyon
+
+The “Share on Bastyon” button in a mini app opens the post editor with the app’s text, images and link, and the app’s name among the tags. You can change all of it before publishing. Your own post draft stays untouched.
 
 ## Deleting
 
@@ -38,6 +60,8 @@ Only an app you loaded yourself can be deleted: **“Delete”** on its card. Al
 Mini apps are made by third-party developers and run on their own sites — Bastyon only shows them in a window. An app knows about you only what you allowed it — see [Mini app permissions](mini-app-permissions.md). It cannot pay on your behalf: you confirm every payment yourself, see [Payments in mini apps](mini-app-payments.md).
 
 Like any site, the app’s site sees your IP address. That is why mini apps do not open while [Tor](tor.md) is on: they load directly, bypassing Tor.
+
+If you come across something in an app that breaks the rules, report it with the app’s own button, see [Reports](reports.md#reporting-in-a-mini-app).
 
 ## See also
 

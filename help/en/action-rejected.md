@@ -1,5 +1,11 @@
 ---
-keywords: [rejection, publishing error, limit, insufficient funds, transaction rejected, network rejected]
+keywords:
+  - rejection
+  - publishing error
+  - limit
+  - insufficient funds
+  - transaction rejected
+  - network rejected
 ---
 
 # The network rejected an action
@@ -36,8 +42,10 @@ Every action in Bastyon is a [transaction](glossary.md#transaction), and the nod
 
 ## Money
 
-- **“Not enough funds to pay the fee”** — every action has a fee of 0.00000001 PKOIN, and the wallet is at zero. See [How to get PKOIN](how-to-buy-pkoin.md).
-- **“Insufficient funds for transfer including the fee”** — the wallet holds less than the transfer amount plus the fee.
+- **“Not enough funds to pay the fee”** — a post, a rating and other actions have a fee of 0.00000001 PKOIN, and the wallet is at zero. See [How to get PKOIN](how-to-buy-pkoin.md).
+- **“Insufficient funds for transfer including the fee”** — the wallet holds less than the transfer amount plus the fee. A transfer’s fee depends on the size of the transaction, usually 0.00001 PKOIN, see [Transfers and fees](send-pkoin.md#the-fee).
+- **“The network rejected the transfer: the fee is below the minimum. Try again — the fee is recalculated from the transaction size.”** — send the transfer again.
+- **“The amount is too small: the network treats such a transfer as dust. Increase it.”**
 
 If the node did not answer in time, the action may still have reached the network. Do not repeat it right away — especially a transfer: wait a couple of minutes and check, see [Confirming actions](transactions.md).
 

@@ -1,10 +1,17 @@
 ---
-keywords: [encryption, end-to-end encryption, encryption keys, chat security, keys have changed]
+keywords:
+  - encryption
+  - end-to-end encryption
+  - encryption keys
+  - chat security
+  - keys have changed
+  - not encrypted
+  - public group
 ---
 
 # Message encryption
 
-Who can read your messages, what “the contact’s keys have changed” means, and what the server still sees.
+Who can read your messages, which groups are not encrypted, what “the contact’s keys have changed” means, and what the server still sees.
 
 ## Private chats
 
@@ -36,13 +43,23 @@ What to do:
 
 The remembered keys are kept on this device. After you sign out, the app remembers the contacts’ keys afresh.
 
-## Group chats
+## Group chats <!-- #groups -->
 
-Groups use a simpler scheme: messages are encrypted with a long-lived group key, and that key is encrypted separately for each member and stored in the chat itself. The scheme has a weakness: identical messages give identical ciphertext, so the server can see that the same text was sent again, although it cannot see the text. Private chats do not have this problem. The scheme is shared with the previous Bastyon app and can only change together with it.
+Not every group is encrypted. The rule is the same as in the previous Bastyon app:
+
+- a public group, which anyone can join, is not encrypted;
+- a group of 50 members or more is not encrypted;
+- a small private group is encrypted.
+
+In a group without encryption both messages and attachments — photos, videos, voice messages, files — go out as plain text. The chat server can read them, and in a public group so can anyone who joins. You can tell such a group at once: in the chat header, under the name, next to the number of members, it says **“not encrypted”** with an open lock. Why the group is not encrypted is explained in the **“About the group”** window, which opens when you click the group name in the header. Keep personal matters to private chats.
+
+The rule is checked every time you send: if a private group reaches 50 members, the next messages go out unencrypted, while those already sent stay encrypted.
+
+A small private group uses a simpler scheme than a private chat: messages are encrypted with a long-lived group key, and that key is encrypted separately for each member who has published keys and is stored in the chat itself. A member without keys cannot read such messages, but does not stop the others from writing to the group. The scheme has a weakness: identical messages give identical ciphertext, so the server can see that the same text was sent again, although it cannot see the text. Private chats do not have this problem. The scheme is shared with the previous Bastyon app and can only change together with it.
 
 ## What the server sees
 
-The Matrix server cannot read message text or file contents. But it does see:
+In encrypted chats the Matrix server cannot read message text or file contents — in groups without encryption it can read both, see [Group chats](#group-chats). But even in encrypted chats it does see:
 
 - who talks to whom and which groups they are in — Matrix accounts match Bastyon addresses;
 - when a message was sent and roughly how big it is;

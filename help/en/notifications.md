@@ -1,5 +1,21 @@
 ---
-keywords: [notifications, bell, alerts, sound, notification filter, notification sections, ratings, followers, transfers, system notifications, push, reply to a comment, you replied, comments on my posts]
+keywords:
+  - notifications
+  - bell
+  - alerts
+  - sound
+  - notification filter
+  - notification sections
+  - ratings
+  - followers
+  - transfers
+  - system notifications
+  - push
+  - reply to a comment
+  - you replied
+  - comments on my posts
+  - app icon
+  - unread count
 ---
 
 # Notifications
@@ -72,6 +88,7 @@ The list is kept on this device, separately for each account: the latest 300 not
 
 - **“Sound”** — all the app’s sounds: notifications, new chat messages and the coin when you send PKOIN;
 - **“Browser notifications”** — see below;
+- **“Unread message count on the app icon”** — how many unread chat messages you have, the same number as on the messenger button. On a computer it is on the app icon in the Dock, on the taskbar or in the tray, on Android on the icon in the launcher, for a web app installed from the browser on its icon, and in a browser also in the tab title. On by default. On Android the count needs permission to show notifications — the app asks for it when you turn the switch on. There is no count on iPhone;
 - **“Coinstake win”** — lottery rewards;
 - **“Transaction received”** — incoming transfers;
 - **“New rating (likes)”** — ratings of your posts;

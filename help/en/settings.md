@@ -1,5 +1,30 @@
 ---
-keywords: [settings, preferences, content, modules, cache, diagnostics, what’s new, settings tabs, header and panels, header and menu, header icons, account menu, menu order, left panel, left panel sections, hide categories, hide tags, page width, closing the window, menu bar, saving chats]
+keywords:
+  - settings
+  - preferences
+  - content
+  - modules
+  - cache
+  - diagnostics
+  - what’s new
+  - settings tabs
+  - header and panels
+  - header and menu
+  - header icons
+  - account menu
+  - menu order
+  - left panel
+  - left panel sections
+  - hide categories
+  - hide tags
+  - page width
+  - closing the window
+  - menu bar
+  - saving chats
+  - invitations
+  - incoming filter
+  - downloaded videos
+  - where to keep
 ---
 
 # Settings
@@ -8,7 +33,7 @@ Every settings tab in order: what each one holds and where to read more.
 
 Settings open from the account menu — **“Settings”**. They are available only once you are signed in. The language, theme and other app options are shared by all accounts on the device.
 
-## General
+## General <!-- #general -->
 
 - **“Language”** and **“Theme”** — see [Language and appearance](appearance.md).
 - **“Page width”** — **“Limited”** or **“Full width”**, and **“Button in the header”** to switch quickly; on a computer only, see [Language and appearance](appearance.md).
@@ -19,7 +44,7 @@ Settings open from the account menu — **“Settings”**. They are available o
   - **“Comments order”** — the order a discussion opens in, see [Comments](comments.md);
   - **“Floating chat button”** — the round button in the bottom right corner, on a computer; without it the header icon opens the chat, see [Messenger](messenger.md).
 
-## Header and panels
+## Header and panels <!-- #layout -->
 
 What stands in the header to the right of the search, what is in the avatar menu and what is in the left panel — and in what order.
 
@@ -40,23 +65,29 @@ What hiding an icon means:
 
 On a phone only the bell and the theme fit in the header, in the order set here. The layout is per device and shared by all accounts on it. Until you change anything, the app keeps the default layout and updates it by itself in new versions.
 
-## Notifications
+## Notifications <!-- #notifications -->
 
 Which events to show, sound and system notifications — see [Notifications](notifications.md).
 
-## Chats
+## Chats <!-- #chats -->
 
-**“Privacy”** — what the people you chat with see about you: “online”, “typing”, “recording a voice message”, see [Chats](chats.md#what-the-other-person-sees-about-you). Below it — whether to save chats on this device — the chat server deletes them after three months — for all chats or selected ones, how much is saved and how to erase it. See [Chats saved on this device](chat-archive.md).
+- **“Privacy”** — what the people you chat with see about you: the **“Show that I’m online”**, **“Show that I’m typing”** and **“Show that I’m recording a voice message”** switches, see [What the other person sees about you](chats.md#what-the-other-person-sees-about-you).
+- **“Accept chat invitations right away”** — a chat you are invited to opens right away, without the “Accept / Decline” card, see [Invitations](chats.md#invitations). This setting and **“Privacy”** apply to all your devices.
+- **“Incoming filter”** — hide from the list the chats of people who write to you: by reputation, account badges or by hand. It works on this device only, see [Incoming filter](chats.md#incoming-filter).
+- **“Save chats on this device”** — the chat server deletes messages after three months, while the copy on the device stays: for all chats or selected ones. Below — how much is saved and how to erase it, see [Chats saved on this device](chat-archive.md).
 
-## System
+## System <!-- #system -->
 
 - **“Network connection”** (in the desktop and Android apps) — **“Auto”**, **“Proxy”** or **“Direct to nodes”**, see [Proxy or direct to nodes](network.md#proxy-or-direct-to-nodes).
 - **“Animations”** — smooth transitions; turn them off if the app feels sluggish.
 - **“Interface scale”** and **“Launch at login”** — in the desktop app, see [Language and appearance](appearance.md) and [The desktop app](desktop-app.md).
 - **“When the window is closed”** (Windows and Linux) — **“Minimize to tray”** or **“Quit the app”**; **“Icon in the menu bar”** (macOS) — whether Bastyon shows at the top of the screen. See [The desktop app](desktop-app.md).
-- **“Local data”**: **“Web cache”** and **“IPFS cache”** with a limit and a **“Clear”** button (in the desktop app), **“Keep decrypted messages”** and **“Clear saved data”** — see [What is stored on your device](local-data.md).
+- **“Local data”**:
+  - **“Web cache”** and **“IPFS cache”** with a limit and a **“Clear”** button — in the desktop app, see [What is stored on your device](local-data.md);
+  - **“Downloaded videos”** — how much the downloads take, the default quality, on Android **“Wi-Fi only”**, and **“Delete all”**. Below it — **“Where to keep”**: your own folder on the computer, phone memory or a memory card on Android, and **“Download new videos from subscriptions automatically”**. See [Download to watch offline](offline-video.md#settings);
+  - **“Keep decrypted messages”** and **“Clear saved data”** — see [What is stored on your device](local-data.md).
 
-## Modules
+## Modules <!-- #modules -->
 
 The programs the app downloads when you ask, and how much disk space each one takes. The desktop app shows all the modules here, the Android app only **“Voice input”**:
 
@@ -68,7 +99,7 @@ The programs the app downloads when you ask, and how much disk space each one ta
 
 Under each module you can see how much space it takes and its version. On a computer, modules update together with the app: a new version downloads in the background and takes over at the next start, while the old one keeps working. On a phone, the **“Speed up”** button next to a voice input model downloads its faster version.
 
-## Security
+## Security <!-- #security -->
 
 A PIN or unlock pattern for the app, the recovery phrase and account key, checking that the phrase is written down, and protection on this device — see [Recovery phrase and private key](recovery-phrase.md) and [Protection on this device](device-protection.md).
 
@@ -81,9 +112,9 @@ A PIN or unlock pattern for the app, the recovery phrase and account key, checki
 
 At the top are the app version, where it is installed, and the **“Check”** button: whether there is a new version, see [Updates](updates.md). Below are the changes in every version of the app, newest first. They are also in the help — see [Version history](releases.md).
 
-## Network and connection
+## Network and connection <!-- #network -->
 
-Proxies, nodes and the path of your requests are not in the settings but in the **“Blockchain explorer”**, on the **“Network”** tab. The proxy for the explorer is chosen there too — see [Blockchain explorer](explorer.md#network-the-node-map).
+How the app reaches the network — through a proxy or directly to nodes — is chosen on the **“System”** tab, in the **“Network connection”** row, see [Proxy or direct to nodes](network.md#proxy-or-direct-to-nodes). The proxies, nodes and the path of your requests themselves are not in the settings but in the **“Blockchain explorer”**, on the **“Network”** tab. The proxy for the explorer is chosen there too — see [Blockchain explorer](explorer.md#network-the-node-map).
 
 ## See also
 

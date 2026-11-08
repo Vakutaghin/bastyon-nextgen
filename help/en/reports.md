@@ -1,10 +1,10 @@
 ---
-keywords: [report, complain, violation, spam, pornography, violence, drugs]
+keywords: [report, complain, violation, spam, pornography, violence, drugs, copyright]
 ---
 
 # Reports
 
-When and how to report a post or a comment, and what happens next.
+When and how to report a post, a comment or something in a mini app, and what happens next.
 
 A report is for what the network’s rules directly forbid: erotica and pornography, child exploitation, threats of violence, drugs and spam. If a post is simply unpleasant or you disagree with it, give it a low rating or [block](blocking.md) the author — see [Moderation and rules](moderation.md).
 
@@ -34,6 +34,12 @@ Other restrictions:
 A report is a public transaction: the blockchain shows who reported what and for which reason. It cannot be taken back.
 
 A single report removes nothing. When an author collects enough reports within 30 days, the network assembles a jury of moderators, and it decides whether the rules were broken. If so, the author is banned, and nodes stop showing their posts in feeds. More in [Moderation and rules](moderation.md).
+
+## Reporting in a mini app <!-- #mini-apps -->
+
+Something inside a mini app — an offer in Barteron, for example — is reported with the app’s own button. Bastyon opens its own report window — with the app’s name in the title and six reasons, as in the previous Bastyon: the same five as for a post, plus **“Copyright infringement”**. Choose a reason and click **“Submit report”**; once the report is sent, **“Report submitted”** appears.
+
+Such a report is not a transaction: it goes to the Pocketnet team’s report server, without your address, and it is not in the blockchain. That is why it does not need the “Shark” badge — being signed in is enough. If the report server does not answer, the report is not sent, and the window says so: **“Could not send the report: the Pocketnet report server is not responding. Try again later.”** The window stays open — you can try again.
 
 ## See also
 

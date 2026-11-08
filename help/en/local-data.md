@@ -1,5 +1,16 @@
 ---
-keywords: [cache, clear cache, web cache, cache limit, local data, storage, disk space, decrypted messages, private window, uninstall]
+keywords:
+  - cache
+  - clear cache
+  - web cache
+  - cache limit
+  - local data
+  - storage
+  - disk space
+  - decrypted messages
+  - private window
+  - uninstall
+  - unsent messages
 ---
 
 # What is stored on your device
@@ -17,6 +28,7 @@ Everything published is stored on the network. On the device the app keeps only 
 - **Search history.**
 - **Decrypted messages** — so that conversations are not decrypted again every time you open them. This can be turned off, see below.
 - **Saved chats** — if you turned saving on: encrypted with the account key, see [Chats saved on this device](chat-archive.md).
+- **Unsent messages** — those that did not go out to the chat, until you send them again or delete them: text and attachments up to 25 MB. They are encrypted with a key derived from the account key, so they cannot be read without the account key. After you sign out they stay on the device and come back to the chat the next time you sign in. See [If a message was not sent](messages.md#if-a-message-was-not-sent).
 - **Notifications** that have already arrived.
 - **The places where you stopped watching** videos.
 - **Downloaded videos and tracks** — if you downloaded any, see [Download to watch offline](offline-video.md). These are ordinary video files, they are not encrypted. Only the videos downloaded automatically from subscriptions go away on their own — after a week, unless you tap **“Keep”**. Everything else you can delete on the Downloads tab or in the settings, under **“Downloaded videos”**.

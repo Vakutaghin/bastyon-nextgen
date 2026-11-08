@@ -2389,7 +2389,7 @@ export default {
     feedLanguage: 'Sprache des Feeds',
     liveFeed: 'Neue Beiträge sofort',
     liveFeedHint:
-      'Neue Beiträge erscheinen von selbst oben im Feed, einer nach dem anderen. Nur im Feed nach Datum, nicht bei „Beste zuerst“.',
+      'Neue Beiträge erscheinen von selbst oben im Feed, alle zusammen, ein paar Sekunden nach einem Block. Nur im Feed nach Datum, nicht bei „Beste zuerst“.',
     categories: 'Kategorien',
     addCategory: 'Kategorie hinzufügen',
     resetFilter: 'Filter zurücksetzen',

@@ -44,7 +44,7 @@ Encryption where only the participants can read a message: it is encrypted on th
 
 ## Fee
 
-The network’s charge for every action — a post, a rating, a transfer. It is usually 0.00000001 [PKOIN](#pkoin). The fee goes to whoever produced the [block](#block) with your [transaction](#transaction).
+The network’s charge for every action. A post, a comment, a rating, a subscription or a profile edit costs 0.00000001 [PKOIN](#pkoin); a PKOIN transfer pays by the size of the transaction, usually 0.00001 PKOIN. The fee goes to whoever produced the [block](#block) with your [transaction](#transaction).
 
 ## Gateway
 

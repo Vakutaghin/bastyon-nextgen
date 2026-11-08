@@ -18,7 +18,7 @@ Everything about paid subscriptions is in the [“Paid subscriptions”](bastyon
 
 ## How it works
 
-The author sets a monthly price in PKOIN. A subscriber pays them with a regular transfer marked “subscription”: the money reaches the author’s wallet at once, with no middleman and no service fee. The subscriber pays the network fee of 0.00000001 PKOIN.
+The author sets a monthly price in PKOIN. A subscriber pays them with a regular transfer marked “subscription”: the money reaches the author’s wallet at once, with no middleman and no service fee. The subscriber pays the network fee on top of the price: as for any transfer, usually 0.00001 PKOIN — see [Transfers and fees](send-pkoin.md#the-fee).
 
 Nothing is charged automatically: the network can’t take money from someone else’s wallet. The subscriber sends every payment themselves, and there is no auto-renewal — neither here nor in the previous app. When the term ends, posts for paid subscribers close for them until they pay again.
 

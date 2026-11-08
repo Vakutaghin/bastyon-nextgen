@@ -31,7 +31,13 @@ You start a conversation with someone from their profile — the **“Start chat
 
 You can find a person right in the messenger — with the magnifier above the chat list, see [below](#find-a-chat-or-a-person) — or by name with [search](search.md).
 
-If someone new writes to you, the chat with them appears in the list by itself, labelled **“Invitation to chat”** (for a group, with the name of who invited you) and with the time of the invitation. Its messages show when you open it: the app accepts the invitation itself.
+## Invitations <!-- #invites -->
+
+If someone new writes to you, the chat with them appears in the list by itself, labelled **“Invitation to chat”** (for a group, with the name of who invited you) and with the time of the invitation. Open it and a card appears: who invites you, with **“Accept”** and **“Decline”** buttons. Until you accept, you do not join the chat: messages do not load, and the person who invited you does not see that you opened it. A declined invitation disappears from the list. If the person who invited you has already left the chat, you can no longer join — the card then has **“Remove from list”**.
+
+If you want a chat to open right away, as in the previous Bastyon, turn on **“Settings”** → **“Chats”** → **“Accept chat invitations right away”**. An opened invitation is then accepted by itself and you see the conversation. The person who invited you will see that you joined. If accepting fails — say, the connection dropped — the usual card shows. The setting applies to all your devices: it is stored on the chat server with your account.
+
+Unknown people who write to you can be hidden from the list — see [Incoming filter](#incoming-filter).
 
 ## Why a chat has no messages
 

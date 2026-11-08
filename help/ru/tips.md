@@ -1,6 +1,9 @@
 ---
 keywords: [чаевые, донат, поблагодарить, поддержать автора, подарок, отправить монеты автору]
-code: [src/b-components/donate, src/stores/donate-store.ts, src/blockchain/core/actions/donate-action.ts]
+code:
+  - src/b-components/donate
+  - src/stores/donate-store.ts
+  - src/blockchain/core/actions/donate-action.ts
 ---
 
 # Чаевые автору
@@ -17,7 +20,7 @@ code: [src/b-components/donate, src/stores/donate-store.ts, src/blockchain/core/
 
 ## Сколько стоит
 
-Комиссия сети — 0,00000001 PKOIN, и она вычитается из суммы: автор получит на эту малость меньше. Больше ничего не списывается.
+Чаевые — это перевод PKOIN, и комиссия сети у них как у перевода: обычно 0,00001 PKOIN, подробнее — в разделе [Комиссия](send-pkoin.md#комиссия). Она вычитается из суммы: автор получит на эту малость меньше. Приложение ничего сверх неё не берёт.
 
 Приложение не отправит перевод, если:
 
