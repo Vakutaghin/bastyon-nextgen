@@ -47,6 +47,15 @@
           {{ t('offlineVideo.retry') }}
         </Button>
         <Button
+          v-if="done"
+          size="small"
+          data-testid="offline-save-file"
+          :loading="saving === item.id"
+          @click="save(item)"
+        >
+          {{ t('offlineVideo.saveFile') }}
+        </Button>
+        <Button
           v-if="autoDaysLeft"
           size="small"
           data-testid="offline-keep"
@@ -79,6 +88,7 @@ import { AUTO_KEEP_MS } from '@/services/offline-video/offline-auto'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import { offlineStatusText } from './offline-status'
 import { useOfflineFile } from './use-offline-file'
+import { useSaveOfflineFile } from './use-save-offline-file'
 import {
   SC_AutoBadge,
   SC_Card,
@@ -96,6 +106,7 @@ const props = defineProps<{ item: OfflineItem }>()
 
 const { t, locale } = useI18n()
 const store = useOfflineVideosStore()
+const { saving, save } = useSaveOfflineFile()
 const thumb = useOfflineFile(() => props.item, 'thumb.jpg')
 const thumbFailed = ref(false)
 

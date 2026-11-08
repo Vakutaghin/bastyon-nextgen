@@ -26,13 +26,18 @@ export function isProcessing(info: PeerTubeVideoInfo): boolean {
 /**
  * Качества для скачивания по возрастанию. Каждое качество HLS — один mp4 со
  * звуком; старые ролики без HLS — прямые файлы (без сумм фрагментов).
+ *
+ * Аудио PeerTube хранит одним файлом без картинки: разрешение 0, «Audio». Его
+ * качаем, только если других нет: у ролика рядом с качествами бывает и
+ * отдельная дорожка звука. Раньше разрешение 0 отбрасывалось, и аудио вечно
+ * «ещё обрабатывалось» — скачать его было нельзя.
  */
 export function offlineQualities(info: PeerTubeVideoInfo): OfflineQuality[] {
   const byHeight = new Map<number, OfflineQuality>()
   for (const playlist of info.streamingPlaylists ?? []) {
     for (const f of playlist?.files ?? []) {
       const height = f.resolution?.id ?? 0
-      if (!f.fileUrl || height <= 0 || byHeight.has(height)) continue
+      if (!f.fileUrl || height < 0 || byHeight.has(height)) continue
       byHeight.set(height, {
         height,
         size: f.size ?? 0,
@@ -44,10 +49,12 @@ export function offlineQualities(info: PeerTubeVideoInfo): OfflineQuality[] {
   }
   for (const f of info.files ?? []) {
     const height = f.resolution?.id ?? 0
-    if (!f.fileUrl || height <= 0 || byHeight.has(height)) continue
+    if (!f.fileUrl || height < 0 || byHeight.has(height)) continue
     byHeight.set(height, { height, size: f.size ?? 0, fileUrl: f.fileUrl })
   }
-  return [...byHeight.values()].sort((a, b) => a.height - b.height)
+  const all = [...byHeight.values()].sort((a, b) => a.height - b.height)
+  const video = all.filter((q) => q.height > 0)
+  return video.length ? video : all.slice(0, 1)
 }
 
 /** Ближайшее к запомненному не выше его; всё выше — самое маленькое. */

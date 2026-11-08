@@ -4806,6 +4806,17 @@ export default {
     autoBadge:
       'Téléchargée automatiquement · supprimée dans {n} jour | Téléchargée automatiquement · supprimée dans {n} jours',
     keep: 'Garder',
+    play: 'Lire',
+    saveFile: 'Enregistrer en fichier',
+    savedFile: 'Enregistré : {name}',
+    saveFileFailed: 'Impossible d’enregistrer le fichier',
+    doneToast: 'Téléchargé : « {title} »',
+    downloadsTitle: 'Téléchargements',
+    downloadsActive: 'Téléchargements : {n} en cours | Téléchargements : {n} en cours',
+    downloadsAll: 'Tous les téléchargements ({n})',
+    downloadsWhere:
+      'Les téléchargements restent dans l’application : vous pouvez les regarder et les écouter hors ligne, ici et dans « Téléchargés ». Pour un fichier ordinaire : « Enregistrer en fichier ».',
+    qualityAudio: 'Audio',
     locationTitle: 'Emplacement',
     locationHint:
       'Le dossier des téléchargements. Vous pouvez choisir un autre disque : les vidéos sont déplacées et les téléchargements continuent au nouvel endroit.',

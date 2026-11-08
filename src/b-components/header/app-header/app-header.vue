@@ -21,13 +21,17 @@
            не настраиваются: появляются, только когда есть чего ждать, — у
            колокольчика, оба про события, а без него — с краю. -->
       <SC_Right v-hide-zero-width>
-        <HeaderEvents v-if="!rightItems.includes('notifications')" />
+        <template v-if="!rightItems.includes('notifications')">
+          <HeaderEvents />
+          <HeaderDownloads />
+        </template>
         <template v-for="id in rightItems" :key="id">
           <HeaderServices v-if="id === 'services'" />
           <HeaderTor v-else-if="id === 'tor'" />
           <HeaderIpfs v-else-if="id === 'ipfs'" />
           <template v-else-if="id === 'notifications'">
             <HeaderEvents />
+            <HeaderDownloads />
             <HeaderNotifications />
           </template>
           <HeaderReportBug v-else-if="id === 'reportBug'" />
@@ -70,6 +74,7 @@ import HeaderHistoryNav from '@/b-components/header/header-history-nav/header-hi
 import HeaderSearch from '@/b-components/header/header-search/header-search.vue'
 import HeaderUser from '@/b-components/header/header-user/header-user.vue'
 import HeaderEvents from '@/b-components/header/header-events/header-events.vue'
+import HeaderDownloads from '@/b-components/header/header-downloads/header-downloads.vue'
 import HeaderNotifications from '@/b-components/header/header-notifications/header-notifications.vue'
 import HeaderTor from '@/b-components/header/header-tor/header-tor.vue'
 import HeaderIpfs from '@/b-components/header/header-ipfs/header-ipfs.vue'

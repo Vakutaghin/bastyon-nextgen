@@ -17,7 +17,7 @@
         :data-testid="`offline-quality-${q.height}`"
         @click="pick(q.height)"
       >
-        <span>{{ q.height }}p</span>
+        <span>{{ q.height ? `${q.height}p` : t('offlineVideo.qualityAudio') }}</span>
         <span class="size">{{ q.sizeText }}</span>
       </SC_QualityRow>
       <SC_SheetFooter>

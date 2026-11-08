@@ -51,11 +51,13 @@ import {
   PauseCircleOutlined,
   PlayIcon,
   ReloadOutlined,
+  SaveOutlined,
 } from '@/components/icons'
 import { SC_PostActionBtn } from '@/b-components/content/post-card/styled'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import OfflineRing from './offline-ring.vue'
 import { offlineFraction, offlinePercent, offlineStatusText } from './offline-status'
+import { useSaveOfflineFile } from './use-save-offline-file'
 import {
   offlineSourceFromPost,
   useOfflineDownload,
@@ -68,6 +70,7 @@ const { t, locale } = useI18n()
 const router = useRouter()
 const store = useOfflineVideosStore()
 const { busy, download } = useOfflineDownload()
+const { save } = useSaveOfflineFile()
 const menuOpen = ref(false)
 
 const source = computed(() => offlineSourceFromPost(props.post))
@@ -117,6 +120,9 @@ const menuItems = computed(() => {
     out.push({ key: 'resume', label: t('offlineVideo.resume'), icon: icon(PlayIcon) })
   } else if (it.state.status === 'failed') {
     out.push({ key: 'resume', label: t('offlineVideo.retry'), icon: icon(ReloadOutlined) })
+  } else if (it.state.status === 'done') {
+    out.push({ key: 'play', label: t('offlineVideo.play'), icon: icon(PlayIcon) })
+    out.push({ key: 'save', label: t('offlineVideo.saveFile'), icon: icon(SaveOutlined) })
   }
   out.push({
     key: 'downloads',
@@ -139,6 +145,8 @@ function onMenu({ key }: { key: string | number }): void {
   if (key === 'pause') void store.pause(it.id)
   else if (key === 'resume') void store.resume(it.id)
   else if (key === 'remove') void store.remove(it.id)
+  else if (key === 'play') store.openPlayer(it.id)
+  else if (key === 'save') void save(it)
   else if (key === 'downloads') {
     void router.push(it.meta.kind === 'audio' ? '/audio/downloads' : '/video/downloads')
   }

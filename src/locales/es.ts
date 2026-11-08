@@ -4762,6 +4762,17 @@ export default {
     autoBadge:
       'Descargado automáticamente · se elimina en {n} día | Descargado automáticamente · se elimina en {n} días',
     keep: 'Conservar',
+    play: 'Reproducir',
+    saveFile: 'Guardar como archivo',
+    savedFile: 'Guardado: {name}',
+    saveFileFailed: 'No se pudo guardar el archivo',
+    doneToast: 'Descargado: «{title}»',
+    downloadsTitle: 'Descargas',
+    downloadsActive: 'Descargas: {n} en curso | Descargas: {n} en curso',
+    downloadsAll: 'Todas las descargas ({n})',
+    downloadsWhere:
+      'Lo descargado se guarda dentro de la app: puedes verlo y escucharlo sin conexión, aquí y en «Descargas». Si necesitas un archivo normal, usa «Guardar como archivo».',
+    qualityAudio: 'Audio',
     locationTitle: 'Dónde guardar',
     locationHint:
       'La carpeta de descargas. Puedes elegir otro disco: los vídeos se trasladan y las descargas siguen en el nuevo lugar.',

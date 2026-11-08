@@ -4696,6 +4696,17 @@ export default {
     autoBadge:
       'Downloaded automatically · deleted in {n} day | Downloaded automatically · deleted in {n} days',
     keep: 'Keep',
+    play: 'Play',
+    saveFile: 'Save as file',
+    savedFile: 'Saved: {name}',
+    saveFileFailed: "Couldn't save the file",
+    doneToast: 'Downloaded: “{title}”',
+    downloadsTitle: 'Downloads',
+    downloadsActive: 'Downloads: {n} in progress | Downloads: {n} in progress',
+    downloadsAll: 'All downloads ({n})',
+    downloadsWhere:
+      'Downloads are kept inside the app: you can watch and listen to them offline, right here and in “Downloads”. Need a regular file — “Save as file”.',
+    qualityAudio: 'Audio',
     locationTitle: 'Where to keep',
     locationHint:
       'The folder with downloads. You can pick another disk: videos are moved, and downloads continue in the new place.',

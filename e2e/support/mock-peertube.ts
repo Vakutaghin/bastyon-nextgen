@@ -39,6 +39,11 @@ export interface MockPeerTubeOptions {
   apiDelayMs?: number
   /** Прямой mp4 начинает отдаваться через столько миллисекунд. */
   mp4DelayMs?: number
+  /**
+   * Аудио, как его хранит настоящий PeerTube: один файл HLS с разрешением 0
+   * («Audio»), прямых файлов нет.
+   */
+  audioOnly?: boolean
 }
 
 export interface MockPeerTube {
@@ -98,16 +103,25 @@ export async function useMockPeerTube(
           {
             id: 1,
             playlistUrl: `${hlsBase}/master.m3u8`,
-            files: [{ fileUrl: `${hlsBase}/${HLS_FILE}`, resolution: { id: 240, label: '240p' } }],
+            files: [
+              {
+                fileUrl: `${hlsBase}/${HLS_FILE}`,
+                resolution: options.audioOnly
+                  ? { id: 0, label: 'Audio' }
+                  : { id: 240, label: '240p' },
+              },
+            ],
           },
         ]
       : [],
-    files: [
-      {
-        fileUrl: `https://${host}/static/web-videos/${VIDEO_ID}-240.mp4`,
-        resolution: { id: 240, label: '240p' },
-      },
-    ],
+    files: options.audioOnly
+      ? []
+      : [
+          {
+            fileUrl: `https://${host}/static/web-videos/${VIDEO_ID}-240.mp4`,
+            resolution: { id: 240, label: '240p' },
+          },
+        ],
   }
 
   if (host !== linkHost) {

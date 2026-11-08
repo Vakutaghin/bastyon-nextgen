@@ -4747,6 +4747,17 @@ export default {
     autoBadge:
       'Scaricato automaticamente · eliminato tra {n} giorno | Scaricato automaticamente · eliminato tra {n} giorni',
     keep: 'Tieni',
+    play: 'Riproduci',
+    saveFile: 'Salva come file',
+    savedFile: 'Salvato: {name}',
+    saveFileFailed: 'Impossibile salvare il file',
+    doneToast: 'Scaricato: «{title}»',
+    downloadsTitle: 'Download',
+    downloadsActive: 'Download: {n} in corso | Download: {n} in corso',
+    downloadsAll: 'Tutti i download ({n})',
+    downloadsWhere:
+      'I download restano nell’app: puoi guardarli e ascoltarli offline, qui e in «Scaricati». Per un file normale usa «Salva come file».',
+    qualityAudio: 'Audio',
     locationTitle: 'Dove salvare',
     locationHint:
       'La cartella dei download. Puoi scegliere un altro disco: i video vengono spostati e i download continuano nel nuovo posto.',

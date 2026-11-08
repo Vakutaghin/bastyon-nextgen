@@ -1,5 +1,16 @@
 ---
-keywords: [download, download video, offline, no network, downloads, watch without internet, quality, Wi-Fi, author deleted]
+keywords:
+  [
+    download,
+    download video,
+    offline,
+    no network,
+    downloads,
+    watch without internet,
+    quality,
+    Wi-Fi,
+    author deleted,
+  ]
 ---
 
 # Download to watch offline
@@ -8,13 +19,21 @@ How to download a video or a track into the app, like in YouTube, and watch it w
 
 ## How to download
 
-Open a post with a video and tap **“Download”** under it — next to the ratings and **“Share”**. The same item is in the three-dot menu of a video in the Video and Audio sections.
+Tap **“Download”** under a video or a track — in the feed and on the post page, next to the ratings and **“Share”**. The same item is in the three-dot menu of a video in the Video and Audio sections. Live streams are not downloaded. In a browser without file storage (for example, a private Safari window) the button says that downloading is not possible here.
 
 The app asks for the quality: rows like “144p · 3 MB”, “480p · 95 MB”, and how much space is free at the bottom. Tick **“Remember”**, and later videos will download right away in that quality (if a video doesn't have it — in the nearest lower one). Tracks don't ask: they are small, the lightest option is taken.
 
-While a video downloads, the button shows a ring with the percentage. Tap it to pause or cancel the download. When it's done, the button says **“Downloaded”**, and its menu has **“Delete download”**.
+While a video downloads, the button shows a ring with the percentage. Tap it to pause or cancel the download. When it's done, the button says **“Downloaded”**, and its menu has **“Play”**, **“Save as file”** and **“Delete download”**.
 
 You need to be signed in to download. A video that the server is still processing after upload can't be downloaded yet — the app will say so.
+
+## Where downloads are and how to get a file <!-- #where -->
+
+In the header, next to the hourglass, a **“Downloads”** icon appears — an arrow pointing down. While something downloads, it shows a ring with the overall percentage and the number of downloads. Click it to see the latest ones: pause for what is downloading, resume for what stopped, **“Play”** and **“Save as file”** for what is done. At the bottom there is a link to all downloads — the **“Downloads”** tab. The icon stays while you have downloads — it is your download history. When a download finishes, the app says “Downloaded: …”.
+
+Downloads are kept inside the app, in its data, not in your Downloads folder: the app's player opens them, and they play without a network. Where exactly — see below: [on the computer](#on-the-computer), [on the phone](#on-the-phone), [in the browser](#in-the-browser).
+
+To get a regular file — say, to play a track in another player or send it — click **“Save as file”**: in Downloads in the header, in the menu of the **“Downloaded”** button under a post, or on a card in Downloads. On the computer a “Save as” window opens, on the phone — “Share” (from there “Save to Files” or any app), in the browser — a regular file save. A track is saved as `.m4a`, a video as `.mp4`. The download stays in the app.
 
 ## A whole collection or playlist
 

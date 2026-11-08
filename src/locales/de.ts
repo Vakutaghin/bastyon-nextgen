@@ -4804,6 +4804,17 @@ export default {
     autoBadge:
       'Automatisch geladen · wird in {n} Tag gelöscht | Automatisch geladen · wird in {n} Tagen gelöscht',
     keep: 'Behalten',
+    play: 'Abspielen',
+    saveFile: 'Als Datei speichern',
+    savedFile: 'Gespeichert: {name}',
+    saveFileFailed: 'Datei konnte nicht gespeichert werden',
+    doneToast: 'Heruntergeladen: „{title}“',
+    downloadsTitle: 'Downloads',
+    downloadsActive: 'Downloads: {n} läuft | Downloads: {n} laufen',
+    downloadsAll: 'Alle Downloads ({n})',
+    downloadsWhere:
+      'Heruntergeladenes bleibt in der App: Du kannst es offline ansehen und anhören, hier und unter „Heruntergeladen“. Für eine normale Datei: „Als Datei speichern“.',
+    qualityAudio: 'Audio',
     locationTitle: 'Speicherort',
     locationHint:
       'Der Ordner mit den Downloads. Du kannst ein anderes Laufwerk wählen: Die Videos werden verschoben, Downloads laufen am neuen Ort weiter.',

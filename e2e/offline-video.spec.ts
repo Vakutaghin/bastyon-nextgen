@@ -192,3 +192,61 @@ test('профиль без OPFS (приватное окно Safari): «Ска�
   await expect(page.locator('.ant-notification')).toContainText('Здесь скачивать нельзя')
   await expect(page.getByTestId('offline-quality-sheet')).toHaveCount(0)
 })
+
+test('аудио из ленты: файл звука качается, «Загрузки» в шапке, «Сохранить файлом»', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'OPFS в эфемерном профиле WebKit недоступна')
+  test.setTimeout(120_000)
+  const TRACK = '4'.repeat(64)
+  await useMockNode(page, {
+    profiles: [ALICE],
+    posts: [
+      {
+        txid: TRACK,
+        address: ALICE.address,
+        message: 'Трек для дороги',
+        caption: 'Трек для дороги',
+        type: 'audio',
+        url: VIDEO_URL,
+      },
+    ],
+    comments: [],
+  })
+  // У аудио PeerTube один файл с разрешением 0 — раньше скачивание отвечало
+  // «ещё обрабатывается» навсегда.
+  await useMockPeerTube(page, { hls: true, audioOnly: true })
+  // Без диалога сохранения файл уходит обычной загрузкой браузера.
+  await page.addInitScript(() => {
+    delete (window as { showSaveFilePicker?: unknown }).showSaveFilePicker
+  })
+  await open(page, '/')
+  await signIn(page)
+
+  // «Скачать» — прямо в ленте; качество у звука не спрашивается.
+  const card = page.locator('.post-card', { hasText: 'Трек для дороги' })
+  const button = card.getByTestId('offline-download')
+  await button.click({ timeout: 30_000 })
+  await expect(button).toHaveAttribute('data-status', 'done', { timeout: 60_000 })
+  await expect(page.locator('.ant-notification')).toContainText('Скачано: «Трек для дороги»')
+
+  // Шапка: значок «Загрузки» с историей, «Сохранить файлом» — обычный файл .m4a.
+  await page.getByTestId('header-downloads').click()
+  const row = page.getByTestId('header-download')
+  await expect(row).toHaveCount(1)
+  await expect(row).toHaveAttribute('data-status', 'done')
+  await expect(row).toContainText('Трек для дороги')
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    row.getByTestId('header-download-save').click(),
+  ])
+  expect(download.suggestedFilename()).toBe('Трек для дороги.m4a')
+  expect((await download.createReadStream()).readableLength >= 0).toBe(true)
+  await expect(page.locator('.ant-notification')).toContainText('Сохранено: Трек для дороги.m4a')
+
+  // «Всё скачанное» — вкладка «Скачанное» раздела «Аудио».
+  await page.getByTestId('header-downloads-all').click()
+  await expect(page).toHaveURL(/\/audio\/downloads$/)
+  await expect(page.getByTestId('offline-card')).toContainText('Трек для дороги')
+})

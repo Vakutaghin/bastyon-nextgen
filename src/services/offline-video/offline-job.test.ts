@@ -81,6 +81,57 @@ describe('offline-job', () => {
     expect(qs).toEqual([{ height: 480, size: 10, fileUrl: 'https://h/v-480.mp4' }])
   })
 
+  it('аудио — один файл с разрешением 0: его и качаем (сверено с нодой 09.11.2026)', () => {
+    const audio = info({
+      duration: 180,
+      streamingPlaylists: [
+        {
+          id: 9,
+          playlistUrl: `${BASE}/6a25-master.m3u8`,
+          segmentsSha256Url: `${BASE}/0598-segments-sha256.json`,
+          files: [
+            {
+              resolution: { id: 0, label: 'Audio' },
+              size: 5767518,
+              fileUrl: `${BASE}/cb49-0-fragmented.mp4`,
+            },
+          ],
+        },
+      ],
+    })
+    expect(offlineQualities(audio)).toEqual([
+      {
+        height: 0,
+        size: 5767518,
+        fileUrl: `${BASE}/cb49-0-fragmented.mp4`,
+        playlistUrl: `${BASE}/6a25-master.m3u8`,
+        sha256Url: `${BASE}/0598-segments-sha256.json`,
+      },
+    ])
+    expect(isProcessing(audio)).toBe(false)
+  })
+
+  it('у ролика отдельная дорожка звука среди качеств не показывается', () => {
+    const base = info()
+    const playlist = base.streamingPlaylists![0]!
+    const withAudio = info({
+      streamingPlaylists: [
+        {
+          ...playlist,
+          files: [
+            ...(playlist.files ?? []),
+            {
+              resolution: { id: 0, label: 'Audio' },
+              size: 1,
+              fileUrl: `${BASE}/a-0-fragmented.mp4`,
+            },
+          ],
+        },
+      ],
+    })
+    expect(offlineQualities(withAudio).map((q) => q.height)).toEqual([144, 360])
+  })
+
   it('ролик в обработке скачать нельзя', () => {
     expect(isProcessing(info({ state: { id: 2, label: 'To transcode' } }))).toBe(true)
     expect(isProcessing(info({ streamingPlaylists: [], files: [] }))).toBe(true)

@@ -50,6 +50,7 @@ import {
   Crown,
   Download,
   Ellipsis,
+  FileDown,
   EllipsisVertical,
   Expand,
   Eye,
@@ -238,6 +239,7 @@ export const CrownOutlined = lucideIcon('CrownOutlined', Crown)
 export const DeleteOutlined = lucideIcon('DeleteOutlined', Trash2)
 export const DollarOutlined = lucideIcon('DollarOutlined', Coins)
 export const DownloadOutlined = lucideIcon('DownloadOutlined', Download)
+export const SaveOutlined = lucideIcon('SaveOutlined', FileDown)
 export const EditOutlined = lucideIcon('EditOutlined', Pencil)
 export const EllipsisOutlined = lucideIcon('EllipsisOutlined', Ellipsis)
 export const ExclamationCircleOutlined = lucideIcon('ExclamationCircleOutlined', CircleAlert)

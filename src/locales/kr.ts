@@ -4662,6 +4662,17 @@ export default {
       '앱이 열려 있고 Wi-Fi에 연결된 동안: 한 번에 최대 5개의 새 동영상을 기본 화질로 저장합니다(“매번 묻기”이면 360p). “보관”을 누르지 않으면 일주일 뒤 자동으로 삭제됩니다.',
     autoBadge: '자동 저장됨 · {n}일 후 삭제',
     keep: '보관',
+    play: '재생',
+    saveFile: '파일로 저장',
+    savedFile: '저장됨: {name}',
+    saveFileFailed: '파일을 저장하지 못했습니다',
+    doneToast: '다운로드 완료: “{title}”',
+    downloadsTitle: '다운로드',
+    downloadsActive: '다운로드: {n}개 진행 중',
+    downloadsAll: '모든 다운로드 ({n})',
+    downloadsWhere:
+      '다운로드한 항목은 앱 안에 보관되어 오프라인에서도 여기와 “다운로드”에서 보고 들을 수 있습니다. 일반 파일이 필요하면 “파일로 저장”을 누르세요.',
+    qualityAudio: '오디오',
     locationTitle: '저장 위치',
     locationHint:
       '오프라인 저장 폴더입니다. 다른 디스크를 선택할 수 있습니다. 동영상은 옮겨지고 저장은 새 위치에서 계속됩니다.',

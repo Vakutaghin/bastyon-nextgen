@@ -239,7 +239,7 @@
             </template>
           </Dropdown>
 
-          <!-- Скачать для просмотра без сети — на странице и в окне поста, как у YouTube. -->
+          <!-- Скачать для просмотра без сети, как у YouTube. -->
           <OfflineDownloadButton v-if="canDownload" :post="post" />
 
           <SC_PostActionBtn
@@ -471,13 +471,14 @@ const {
 const isPeerTubeMedia = computed<boolean>(
   () => (props.post.type === 'video' || props.post.type === 'audio') && !!props.post.videoUrl
 )
-// «Скачать» — у ролика или трека на странице и в окне поста; прямой эфир не качается.
+// «Скачать» — у ролика или трека и в ленте, и на странице поста; прямой эфир не
+// качается. Где скачивать некуда (браузер без места для файлов), кнопка так и
+// скажет — честнее, чем молча её прятать.
 const canDownload = computed<boolean>(
   () =>
     isPeerTubeMedia.value &&
     !!props.post.videoUrl?.startsWith('peertube://') &&
-    !props.post.videoUrl.endsWith('/stream') &&
-    (props.showFull || props.inModal)
+    !props.post.videoUrl.endsWith('/stream')
 )
 const { count: viewsCount, live: viewsLive } = usePostViews(() =>
   isPeerTubeMedia.value ? props.post.videoUrl : undefined
