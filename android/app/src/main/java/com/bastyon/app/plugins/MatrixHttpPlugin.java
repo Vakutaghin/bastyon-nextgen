@@ -44,6 +44,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import okio.BufferedSink;
 
 /**
  * Запросы к серверу чатов мимо WebView (src/helpers/api/request-native.ts):
@@ -80,14 +81,20 @@ public class MatrixHttpPlugin extends Plugin {
     private static final int BUFFER = 64 * 1024;
     // Set.of есть только с API 30, String.join — с 26, а minSdk 24.
     private static final Set<String> METHODS = new HashSet<>(Arrays.asList("GET", "POST", "PUT", "DELETE", "HEAD"));
-    // Одно соединение на все запросы: умри оно молча (сменилась сеть, телефон
-    // вернулся из фона), без пинга запросы ждали бы таймаута чтения — минуты.
-    private static final long PING_MS = 10_000;
+    // Одно соединение на все запросы: умри оно молча, без пинга запросы ждали
+    // бы таймаута чтения — минуты. Но OkHttp рвёт соединение со всеми запросами,
+    // если ответ на пинг не пришёл до следующего пинга: при 10 с медленная или
+    // забитая мобильная сеть (большой синк, голосовые) теряла соединение снова
+    // и снова, а синк не мог догрузиться. Умершее после фона и при смене сети
+    // ловят проверка и NetworkCallback, пингу остаётся редкий случай.
+    static final long PING_MS = 30_000;
     // Дольше в фоне — соединение проверяем: сеть телефона за это время могла
     // его потерять, а узнали бы мы об этом только по пингу.
     private static final long BACKGROUND_CHECK_MS = 15_000;
-    // Сколько ждать ответа на проверку: живое соединение отвечает за круг до сервера.
-    private static final long PROBE_MS = 2_000;
+    // Сколько ждать ответа на проверку. Живое соединение отвечает за круг до
+    // сервера, но мобильному радио после фона нужно ещё проснуться: 2 с на
+    // медленной сети не хватало, и живое соединение рвалось зря.
+    static final long PROBE_MS = 5_000;
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private final Map<String, Call> active = new ConcurrentHashMap<>();
@@ -180,6 +187,9 @@ public class MatrixHttpPlugin extends Plugin {
     private void checkConnection() {
         HttpUrl base = lastUrl;
         if (base == null) return;
+        // Подозрение — на соединения, что были до проверки. Новые (SDK уже
+        // повторил запрос, OkHttp открыл свежее) не трогаем.
+        Collection<Connection> suspects = new HashSet<>(inUse.values());
         HttpUrl probe = base.newBuilder().encodedPath("/_matrix/client/versions").query(null).build();
         try {
             OkHttpClient client = http.newBuilder()
@@ -191,7 +201,7 @@ public class MatrixHttpPlugin extends Plugin {
                 // соединение живо
             }
         } catch (Throwable t) {
-            freshConnections();
+            close(suspects);
         }
     }
 
@@ -204,7 +214,10 @@ public class MatrixHttpPlugin extends Plugin {
      * свои стояли «отправляется».
      */
     private void freshConnections() {
-        Collection<Connection> dead = new HashSet<>(inUse.values());
+        close(new HashSet<>(inUse.values()));
+    }
+
+    private void close(Collection<Connection> dead) {
         for (Connection c : dead) {
             try {
                 c.socket().close();
@@ -267,13 +280,7 @@ public class MatrixHttpPlugin extends Plugin {
                     req.header(key, value);
                 }
                 String body = call.getString("body");
-                RequestBody reqBody = null;
-                if (!method.equals("GET") && !method.equals("HEAD")) {
-                    // Тело без Content-Type OkHttp шлёт как есть; POST и PUT без тела он не примет.
-                    byte[] bytes = body != null ? body.getBytes(StandardCharsets.UTF_8) : new byte[0];
-                    reqBody = RequestBody.create(bytes, contentType != null ? MediaType.parse(contentType) : null);
-                }
-                req.method(method, reqBody);
+                req.method(method, body(method, body, contentType));
 
                 Call c = client.newCall(req.build());
                 active.put(id, c);
@@ -313,6 +320,41 @@ public class MatrixHttpPlugin extends Plugin {
                 active.remove(id);
             }
         });
+    }
+
+    /**
+     * Тело запроса. Тело без Content-Type OkHttp шлёт как есть; POST и PUT без
+     * тела он не примет. POST — однократный: соединение оборвалось, когда он
+     * уже ушёл, — OkHttp не шлёт его снова. Сервер мог его выполнить, и повтор
+     * создавал бы вторую комнату (createRoom) или второй вход (login). PUT
+     * (отправка сообщения) несёт свой txnId, его повтор безопасен.
+     */
+    static RequestBody body(String method, String body, String contentType) {
+        if (method.equals("GET") || method.equals("HEAD")) return null;
+        byte[] bytes = body != null ? body.getBytes(StandardCharsets.UTF_8) : new byte[0];
+        MediaType type = contentType != null ? MediaType.parse(contentType) : null;
+        if (!method.equals("POST")) return RequestBody.create(bytes, type);
+        return new RequestBody() {
+            @Override
+            public MediaType contentType() {
+                return type;
+            }
+
+            @Override
+            public long contentLength() {
+                return bytes.length;
+            }
+
+            @Override
+            public void writeTo(BufferedSink sink) throws IOException {
+                sink.write(bytes);
+            }
+
+            @Override
+            public boolean isOneShot() {
+                return true;
+            }
+        };
     }
 
     @PluginMethod
