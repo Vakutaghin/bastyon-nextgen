@@ -26,21 +26,26 @@
         <SC_LoaderText>{{ loaderText }}</SC_LoaderText>
       </SC_Loader>
     </SC_IframeWrap>
-
-    <!-- Лепесток-закрывашка справа сверху. По дефолту виден только иконка-«язычок». -->
-    <SC_ClosePetal
-      type="button"
-      :title="t('miniapps.closeAppTitle', { name: app.manifest.name })"
-      @click="askClose"
-    >
-      <SC_ClosePetalIcon>
-        <CloseOutlined />
-      </SC_ClosePetalIcon>
-      <SC_ClosePetalLabel>{{ t('miniapps.close') }}</SC_ClosePetalLabel>
-    </SC_ClosePetal>
   </SC_Frame>
 
   <SC_Error v-else> {{ t('miniapps.appNotFound') }} </SC_Error>
+
+  <!-- Выход в Bastyon — лепесток справа сверху, при любом состоянии: шапку
+       приложения страница прячет всегда, и без него из «не найдено» или
+       «заблокировано под Tor» выйти было нечем. Первые секунды он раскрыт
+       с подписью, потом остаётся «язычок». -->
+  <SC_ClosePetal
+    type="button"
+    :class="{ open: showHint }"
+    :title="app ? t('miniapps.closeAppTitle', { name: app.manifest.name }) : t('miniapps.close')"
+    data-testid="miniapp-close"
+    @click="askClose"
+  >
+    <SC_ClosePetalIcon>
+      <CloseOutlined />
+    </SC_ClosePetalIcon>
+    <SC_ClosePetalLabel>{{ t('miniapps.close') }}</SC_ClosePetalLabel>
+  </SC_ClosePetal>
 </template>
 
 <script setup lang="ts">
@@ -209,9 +214,29 @@ function releaseApp(appId: string) {
   appsStore.dropSession(appId)
 }
 
+/** Подпись лепестка видна первые секунды: так находят, как выйти. */
+const HINT_MS = 4000
+const showHint = ref(true)
+let hintTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+  showHint.value = false
+  hintTimer = null
+}, HINT_MS)
+
+/**
+ * Обратно — туда, откуда открыли (каталог, лента, профиль); открыли по ссылке
+ * или из другого мини-приложения — на ленту.
+ */
+function leave(): void {
+  const back = (window.history.state as { back?: unknown } | null)?.back
+  if (typeof back === 'string' && !back.startsWith('/app/')) router.back()
+  else void router.push('/')
+}
+
 const askClose = () => {
-  if (!app.value) {
-    void router.push('/')
+  // Приложения нет, оно не открылось или заблокировано — терять в нём нечего.
+  const broken = iframeStatus.value === 'load-error' || iframeStatus.value === 'load-timeout'
+  if (!app.value || mediaBlocked.value || broken) {
+    leave()
     return
   }
   Modal.confirm({
@@ -221,13 +246,12 @@ const askClose = () => {
     cancelText: t('miniapps.stay'),
     okType: 'danger',
     centered: true,
-    onOk: () => {
-      void router.push('/')
-    },
+    onOk: leave,
   })
 }
 
 onBeforeUnmount(() => {
+  if (hintTimer) clearTimeout(hintTimer)
   document.body.classList.remove(BODY_CLASS)
   onIframeLifecycleEvent.delete(onIframeEvent)
   clearLoadTimer()

@@ -123,7 +123,8 @@ export const SC_ClosePetal = styled.button`
     opacity ${TRANSITIONS.FAST};
 
   &:hover,
-  &:focus-visible {
+  &:focus-visible,
+  &.open {
     transform: translateX(0);
     background: var(--color-overlay-70);
     opacity: 1;
