@@ -3583,6 +3583,9 @@ export default {
     removeImage: '이미지 삭제',
     rotateImage: '이미지 회전',
     editImage: '이미지 편집',
+    imagesLayoutHint: '게시물에서 이미지가 이렇게 보입니다.',
+    imagesLayoutHintReorder:
+      '게시물에서 이미지가 이렇게 배치됩니다. 이미지를 다른 이미지 위로 끌어 순서를 바꿀 수 있습니다. 첫 번째 이미지가 더 크게 보입니다.',
     imageAlt: '게시물 이미지',
     imageTooLarge: '이미지가 너무 큽니다(최대 30MB)',
     imageReadError: '이미지를 처리하지 못했습니다',

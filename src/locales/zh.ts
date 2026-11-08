@@ -3450,6 +3450,9 @@ export default {
     removeImage: '移除图片',
     rotateImage: '旋转图片',
     editImage: '编辑图片',
+    imagesLayoutHint: '图片在帖子中会这样显示。',
+    imagesLayoutHintReorder:
+      '图片在帖子中会这样排列。把一张图片拖到另一张上即可调整顺序：第一张占的空间更大。',
     imageAlt: '帖子图片',
     imageTooLarge: '图片过大（最大 30 MB）',
     imageReadError: '无法处理图片',

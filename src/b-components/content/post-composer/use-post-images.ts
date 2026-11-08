@@ -67,6 +67,16 @@ export function usePostImages() {
     }
   }
 
+  /** Переставляет картинку на место `to`: первая в посте получает больше места. */
+  const move = (id: string, to: number): void => {
+    const from = images.value.findIndex((i) => i.id === id)
+    if (from < 0 || to < 0 || to >= images.value.length || from === to) return
+    const next = [...images.value]
+    const [item] = next.splice(from, 1)
+    if (item) next.splice(to, 0, item)
+    images.value = next
+  }
+
   /** Заменяет base64 картинки (результат редактора crop/фильтры). */
   const replace = (id: string, base64: string): void => {
     images.value = images.value.map((i) => (i.id === id ? { ...i, base64 } : i))
@@ -81,5 +91,5 @@ export function usePostImages() {
     images.value = urls.map((url) => ({ id: nextId(), base64: url }))
   }
 
-  return { images, full, base64List, addFiles, remove, rotate, replace, clear, setFromUrls }
+  return { images, full, base64List, addFiles, remove, move, rotate, replace, clear, setFromUrls }
 }

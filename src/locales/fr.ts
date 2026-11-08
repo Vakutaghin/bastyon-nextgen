@@ -3687,6 +3687,9 @@ export default {
     removeImage: 'Retirer l’image',
     rotateImage: 'Faire pivoter l’image',
     editImage: 'Modifier l’image',
+    imagesLayoutHint: 'Voici comment l’image apparaîtra dans la publication.',
+    imagesLayoutHintReorder:
+      'Voici comment les images seront disposées dans la publication. Faites glisser une image sur une autre pour changer l’ordre : la première prend plus de place.',
     imageAlt: 'Image de la publication',
     imageTooLarge: 'L’image est trop volumineuse (30 Mo maximum)',
     imageReadError: 'Impossible de traiter l’image',

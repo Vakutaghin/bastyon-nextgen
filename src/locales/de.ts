@@ -3687,6 +3687,9 @@ export default {
     removeImage: 'Bild entfernen',
     rotateImage: 'Bild drehen',
     editImage: 'Bild bearbeiten',
+    imagesLayoutHint: 'So erscheint das Bild im Beitrag.',
+    imagesLayoutHintReorder:
+      'So werden die Bilder im Beitrag angeordnet. Ziehe ein Bild auf ein anderes, um die Reihenfolge zu ändern: Das erste bekommt mehr Platz.',
     imageAlt: 'Bild des Beitrags',
     imageTooLarge: 'Das Bild ist zu groß (höchstens 30 MB)',
     imageReadError: 'Das Bild konnte nicht verarbeitet werden',

@@ -3650,6 +3650,9 @@ export default {
     removeImage: 'Rimuovi l’immagine',
     rotateImage: 'Ruota l’immagine',
     editImage: 'Modifica l’immagine',
+    imagesLayoutHint: 'Così apparirà l’immagine nel post.',
+    imagesLayoutHintReorder:
+      'Così saranno disposte le immagini nel post. Trascina un’immagine su un’altra per cambiare l’ordine: la prima ha più spazio.',
     imageAlt: 'Immagine del post',
     imageTooLarge: 'L’immagine è troppo grande (massimo 30 MB)',
     imageReadError: 'Impossibile elaborare l’immagine',

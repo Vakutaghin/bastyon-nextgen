@@ -3613,6 +3613,9 @@ export default {
     removeImage: 'Уклони слику',
     rotateImage: 'Ротирај слику',
     editImage: 'Измени слику',
+    imagesLayoutHint: 'Овако ће слика изгледати у објави.',
+    imagesLayoutHintReorder:
+      'Овако ће слике бити распоређене у објави. Превуците слику на другу да промените редослед: прва добија више простора.',
     imageAlt: 'Слика објаве',
     imageTooLarge: 'Слика је превелика (највише 30 MB)',
     imageReadError: 'Слика није могла да се обради',

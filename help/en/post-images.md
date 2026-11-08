@@ -8,9 +8,17 @@ How to add up to 10 images, crop and rotate them, apply a filter — and where t
 
 ## Adding
 
-Click **“Add images”** on the toolbar under the post text, paste an image from the clipboard or drag files into the post window. Once there are images, the plus next to them adds more too. One post takes up to 10 images, each up to 30 MB. Common photo formats and GIFs work.
+Click **“Add images”** on the toolbar under the post text, paste an image from the clipboard or drag files into the post window. Once there are images, the **“Add images”** button under them adds more — you can drop files on it too. One post takes up to 10 images, each up to 30 MB. Common photo formats and GIFs work.
 
 Images and a video uploaded from your device do not go together in one post: while a video is attached, you cannot add images, and the other way round.
+
+## How the images will be laid out <!-- #layout -->
+
+Images in the post window are laid out right away the way the feed will show them: the same grid as albums in VK and Telegram — full width, with the height set by the proportions of the images. The first image gets more space.
+
+To change the order, drag an image onto the one whose place it should take. A dragged image is never added a second time, wherever you drop it. On a phone the order does not change by dragging: remove the image and add it again — it goes last.
+
+While the post is being published, images cannot be moved, removed or added.
 
 ## Editing
 

@@ -127,6 +127,7 @@
       :disabled="submitting"
       @add="addImageFiles"
       @remove="removeImage"
+      @move="moveImage"
       @rotate="rotateImage"
       @edit="onEditImage"
     />
@@ -351,7 +352,7 @@ import {
   SC_ToolGroup,
   SC_Toolbar,
 } from './post-composer.styled'
-import { MAX_TAGS, VIDEO_ACCEPT } from './consts'
+import { COMPOSER_IMAGE_DRAG, MAX_TAGS, VIDEO_ACCEPT } from './consts'
 import { usePostComposer } from './use-post-composer'
 import { postSettingsSummary } from './post-settings-summary'
 
@@ -426,6 +427,7 @@ const {
   onTagBackspace,
   addImageFiles,
   removeImage,
+  moveImage,
   rotateImage,
   replaceImage,
   reset,
@@ -495,15 +497,34 @@ function onPaste(event: Event): void {
   addImageFiles(files)
 }
 
+/**
+ * Своя картинка, которую тянут для смены порядка: файлом она не считается,
+ * хотя браузер и кладёт её в dataTransfer как файл.
+ */
+function isOwnImageDrag(event: DragEvent): boolean {
+  return !!event.dataTransfer?.types.includes(COMPOSER_IMAGE_DRAG)
+}
+
 // Статья ловит перетаскивание сама (картинка встаёт в текст), пост — здесь.
+// Во время публикации окно бросок не принимает — и курсор это показывает.
 function onDragOver(event: DragEvent): void {
-  if (!articleMode.value && canAddImages.value && event.dataTransfer?.types.includes('Files')) {
+  if (
+    !articleMode.value &&
+    canAddImages.value &&
+    !submitting.value &&
+    !isOwnImageDrag(event) &&
+    event.dataTransfer?.types.includes('Files')
+  ) {
     event.preventDefault()
   }
 }
 
 function onDrop(event: DragEvent): void {
   if (articleMode.value) return
+  if (isOwnImageDrag(event)) {
+    event.preventDefault()
+    return
+  }
   const files = imageFiles(event.dataTransfer)
   if (!files.length) return
   event.preventDefault()

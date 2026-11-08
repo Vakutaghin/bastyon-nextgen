@@ -3624,6 +3624,9 @@ export default {
     removeImage: 'Remove image',
     rotateImage: 'Rotate image',
     editImage: 'Edit image',
+    imagesLayoutHint: 'This is how the image will look in the post.',
+    imagesLayoutHintReorder:
+      'This is how the images will be laid out in the post. Drag an image onto another to change the order: the first one gets more space.',
     imageAlt: 'Post image',
     imageTooLarge: 'Image is too large (maximum 30 MB)',
     imageReadError: 'Failed to process the image',

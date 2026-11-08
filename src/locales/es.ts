@@ -3657,6 +3657,9 @@ export default {
     removeImage: 'Quitar imagen',
     rotateImage: 'Girar imagen',
     editImage: 'Editar imagen',
+    imagesLayoutHint: 'Así se verá la imagen en la publicación.',
+    imagesLayoutHintReorder:
+      'Así quedarán las imágenes en la publicación. Arrastra una imagen sobre otra para cambiar el orden: la primera ocupa más espacio.',
     imageAlt: 'Imagen de la publicación',
     imageTooLarge: 'La imagen es demasiado grande (máximo 30 MB)',
     imageReadError: 'No se pudo procesar la imagen',

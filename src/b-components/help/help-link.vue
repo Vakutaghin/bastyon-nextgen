@@ -1,6 +1,7 @@
 <template>
   <SC_ContextLink
     type="button"
+    data-help-link
     :class="{ 'icon-only': !label }"
     :aria-label="label ? undefined : t('help.contextLink')"
     :title="label ? undefined : t('help.contextLink')"
