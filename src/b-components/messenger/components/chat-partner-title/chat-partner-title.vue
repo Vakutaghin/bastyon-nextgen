@@ -51,18 +51,6 @@
         </SC_ChannelTitleSub>
       </SC_GroupTitleText>
     </ProfileLink>
-    <!-- Поля ввода в канале нет: ответить можно автору лично. Сразу за именем,
-         а не у правого края — там крестик полноэкранного мессенджера. -->
-    <SC_TitleAction
-      v-if="partner.channel && partner.address"
-      type="button"
-      :aria-label="t('messenger.channel.writeToAuthor')"
-      :title="t('messenger.channel.writeToAuthor')"
-      data-testid="channel-write"
-      @click="writeToAuthor"
-    >
-      <MessageOutlined />
-    </SC_TitleAction>
     <!-- Аватар и имя ведут в профиль собеседника. -->
     <ProfileLink v-else :address="partner.address" :name="partner.name" chip>
       <Avatar
@@ -81,6 +69,20 @@
       </SC_GroupTitleText>
       <SC_PartnerTitleName v-else>{{ partner.name }}</SC_PartnerTitleName>
     </ProfileLink>
+    <!-- Поля ввода в канале нет: ответить можно автору лично. Сразу за именем,
+         а не у правого края — там крестик полноэкранного мессенджера. Стоит
+         после всей цепочки v-if/v-else: между ветками он забирал себе v-else,
+         и у группы рядом с её названием рисовался ещё и «собеседник». -->
+    <SC_TitleAction
+      v-if="partner.channel && partner.address"
+      type="button"
+      :aria-label="t('messenger.channel.writeToAuthor')"
+      :title="t('messenger.channel.writeToAuthor')"
+      data-testid="channel-write"
+      @click="writeToAuthor"
+    >
+      <MessageOutlined />
+    </SC_TitleAction>
     <!-- Значок «догружается» — тоже сразу за именем. -->
     <slot />
   </SC_PartnerTitle>
