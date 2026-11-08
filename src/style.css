@@ -1248,6 +1248,13 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   z-index: 3005 !important;
 }
 
+/* Меню закреплено вместе с шапкой (fixedPopupLayer): прокрутить к низу страницей
+   его уже нельзя — на низком экране (телефон боком) прокручивается само. */
+.header-user-dropdown .ant-dropdown-menu {
+  max-height: calc(100dvh - 72px);
+  overflow-y: auto;
+}
+
 /* Значки пунктов — 16px, как в боковом меню телефона: у antd они 12px при
    тексте 14px и терялись рядом с подписью. Селектор длиннее, чем у antd
    (.ant-dropdown .ant-dropdown-menu .ant-dropdown-menu-item-icon). */

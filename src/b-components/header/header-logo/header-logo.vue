@@ -5,7 +5,12 @@
     </SC_LogoLink>
 
     <!-- На телефоне язык — в «Настройках»: флаг встал бы между логотипом и меню. -->
-    <Dropdown v-if="!compact" :trigger="['click']" placement="bottomLeft">
+    <Dropdown
+      v-if="!compact"
+      :trigger="['click']"
+      placement="bottomLeft"
+      :get-popup-container="() => fixedPopupLayer(1050)"
+    >
       <!-- В шапке — только флаг: название языка видно в подсказке и в меню. -->
       <SC_LogoLang type="button" :title="languageHint" :aria-label="languageHint">
         <SC_LanguageFlag>{{ currentLanguageFlag }}</SC_LanguageFlag>
@@ -25,6 +30,7 @@ import { useRouter } from 'vue-router'
 import { Dropdown, Menu } from 'ant-design-vue'
 import type { MenuProps } from 'ant-design-vue'
 import { CheckOutlined } from '@/components/icons'
+import { fixedPopupLayer } from '@/components/popup-container'
 import { logoData } from '@/b-components/header/dummy-data/logo-data'
 import { useLocale } from '@/composables/use-locale'
 import { useTheme } from '@/composables/use-theme'

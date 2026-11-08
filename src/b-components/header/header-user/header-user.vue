@@ -22,6 +22,7 @@
       :trigger="['click']"
       placement="bottomRight"
       overlay-class-name="header-user-dropdown"
+      :get-popup-container="() => fixedPopupLayer(3005)"
     >
       <SC_UserInfoTrigger>
         <Avatar
@@ -114,6 +115,7 @@ import { useI18n } from 'vue-i18n'
 import { Dropdown, Menu } from 'ant-design-vue'
 import Button from '@/components/button/button.vue'
 import Avatar from '@/components/avatar/avatar.vue'
+import { fixedPopupLayer } from '@/components/popup-container'
 import Skeleton from '@/components/skeleton/skeleton.vue'
 import SignInModal from '@/b-components/header/sign-in-modal/sign-in-modal.vue'
 import RegisterModal from '@/b-components/header/register-modal/register-modal.vue'

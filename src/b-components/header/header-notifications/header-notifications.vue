@@ -46,6 +46,7 @@ import { useI18n } from 'vue-i18n'
 import { Dropdown, Badge } from 'ant-design-vue'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import { BellOutlined } from '@/components/icons'
+import { fixedPopupLayer } from '@/components/popup-container'
 import Modal from '@/components/modal/modal.vue'
 import { useAuthStore, useNotificationsStore } from '@/stores'
 import { useViewport } from '@/composables/use-viewport'
@@ -108,11 +109,12 @@ function safeDocument(): Document | undefined {
 }
 
 /**
- * Контейнер для overlay: body, чтобы выпадашка была выше мессенджера и
- * полноэкранного оверлея (z-index). В Tauri document может быть недоступен
- * в момент вызова — отсюда защита через `safeDocument()`.
+ * Контейнер для overlay: закреплённый слой на уровне 3000, чтобы выпадашка
+ * была выше мессенджера и полноэкранного оверлея и не уезжала с прокруткой
+ * страницы. В Tauri document может быть недоступен в момент вызова — отсюда
+ * защита через `safeDocument()`.
  */
 function getPopupContainer(_trigger: HTMLElement | undefined): HTMLElement | undefined {
-  return safeDocument()?.body
+  return safeDocument() ? fixedPopupLayer(3000) : undefined
 }
 </script>

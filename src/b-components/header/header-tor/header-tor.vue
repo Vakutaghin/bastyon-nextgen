@@ -4,6 +4,7 @@
     :trigger="['click']"
     placement="bottomRight"
     :overlay-style="{ zIndex: 3000 }"
+    :get-popup-container="() => fixedPopupLayer(3000)"
   >
     <SC_TorWrapper :variant="variant" @click="onTriggerClick">
       <CheckCircleFilled v-if="variant === 'ready'" :style="ICON_SIZE_XL" />
@@ -114,6 +115,7 @@ import { useI18n } from 'vue-i18n'
 import { Dropdown, Switch, Radio, Button, Modal, Segmented } from 'ant-design-vue'
 import type { RadioChangeEvent } from 'ant-design-vue'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
+import { fixedPopupLayer } from '@/components/popup-container'
 import {
   SafetyOutlined,
   LoadingOutlined,

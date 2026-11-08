@@ -2,7 +2,7 @@
 // модалки — в его обёртке, в меню телефона — в нём самом, иначе — в body.
 
 import { describe, expect, it } from 'vitest'
-import { popupContainer } from './popup-container'
+import { fixedPopupLayer, popupContainer } from './popup-container'
 
 function inside(html: string): HTMLElement {
   document.body.innerHTML = html
@@ -24,5 +24,17 @@ describe('popupContainer', () => {
 
   it('иначе — body', () => {
     expect(popupContainer(inside('<span id="trigger"></span>'))).toBe(document.body)
+  })
+})
+
+describe('fixedPopupLayer', () => {
+  it('закреплённый слой в body, один на уровень', () => {
+    document.body.innerHTML = ''
+    const a = fixedPopupLayer(3000)
+    expect(a.parentElement).toBe(document.body)
+    expect(a.style.position).toBe('fixed')
+    expect(a.style.zIndex).toBe('3000')
+    expect(fixedPopupLayer(3000)).toBe(a)
+    expect(fixedPopupLayer(1050)).not.toBe(a)
   })
 })

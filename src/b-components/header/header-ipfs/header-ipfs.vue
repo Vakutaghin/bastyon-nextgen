@@ -4,6 +4,7 @@
     :trigger="['click']"
     placement="bottomRight"
     :overlay-style="{ zIndex: 3000 }"
+    :get-popup-container="() => fixedPopupLayer(3000)"
   >
     <SC_IpfsWrapper :variant="variant" @click="onTriggerClick">
       <LoadingOutlined v-if="variant === 'busy'" spin />
@@ -60,6 +61,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { Dropdown, Button, Modal } from 'ant-design-vue'
 import { GlobalOutlined, LoadingOutlined, WarningFilled } from '@/components/icons'
+import { fixedPopupLayer } from '@/components/popup-container'
 import { useIpfsStore } from '@/stores/ipfs-store'
 import IpfsBrowserDialog from './ipfs-browser-dialog.vue'
 import {
