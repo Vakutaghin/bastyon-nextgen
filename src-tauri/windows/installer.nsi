@@ -16,6 +16,13 @@ Unicode true
 ; removed (no administrator rights), the person chooses: ask again, install
 ; next to it, or keep it. The update also waits for the closing app to let go
 ; of its exe instead of stopping on "Error opening file for writing".
+;
+; A per-user install can still end up where only administrators write: an
+; installer started "as administrator" lets the person pick Program Files,
+; and every update after that runs without the rights and fails, unless the
+; app itself was started as administrator. The update now offers to move the
+; app to the account's folder (BastyonUpdateReadOnly), and the directory page
+; warns about such a folder (BastyonLeaveDirectory).
 ManifestDPIAware true
 ; Add in `dpiAwareness` `PerMonitorV2` to manifest for Windows 10 1607+ (note this should not affect lower versions since they should be able to ignore this and pick up `dpiAware` `true` set by `ManifestDPIAware true`)
 ; Currently undocumented on NSIS's website but is in the Docs folder of source tree, see
@@ -94,6 +101,19 @@ Var WixMode
 ; BASTYON: the MSI product code, to remove it with msiexec /x and no question.
 Var WixProductCode
 Var OldMainBinaryName
+; BASTYON: the folder this run moves the app out of (only administrators may
+; write there), to retarget its shortcuts and remove the old copy afterwards.
+Var BastyonOldDir
+; BASTYON: in and out of BastyonCanWrite, BastyonIsProtected and the shortcut
+; helpers (own variables, so the $R registers of PageReinstall stay intact).
+Var BastyonDir
+Var BastyonResult
+Var BastyonWritable
+Var BastyonProbe
+Var BastyonProbeFile
+Var BastyonFind
+Var BastyonFound
+Var BastyonLnk
 
 Name "${PRODUCTNAME}"
 BrandingText "${COPYRIGHT}"
@@ -373,6 +393,17 @@ Function PageLeaveReinstall
   ${EndIf}
 
   reinst_uninstall:
+    ; BASTYON: the previous per-user install sits where this installer cannot
+    ; write (Program Files, picked once by an installer run as administrator).
+    ; Its uninstaller would remove the registry entries and shortcuts and
+    ; leave every file behind. Install instead: the directory page offers the
+    ; account's folder, and the old copy goes after the install.
+    ${If} $WixMode <> 1
+      StrCpy $BastyonDir $INSTDIR
+      Call BastyonCanWrite
+      ${IfThen} $BastyonResult = 0 ${|} Goto reinst_done ${|}
+    ${EndIf}
+
     HideWindow
     ClearErrors
 
@@ -439,6 +470,7 @@ FunctionEnd
 
 ; 5. Choose install directory page
 !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE BastyonLeaveDirectory ; BASTYON
 !insertmacro MUI_PAGE_DIRECTORY
 
 ; 6. Start menu shortcut page
@@ -539,6 +571,45 @@ LangString bastyonMsiNotRemoved ${LANG_ITALIAN} "La versione precedente di ${PRO
 LangString bastyonMsiNotRemoved ${LANG_KOREAN} "이전 버전의 ${PRODUCTNAME}은(는) 모든 사용자용으로 설치되어 있어 제거하려면 관리자 권한이 필요합니다. Windows가 제거하지 못했습니다(코드 $0).$\r$\n$\r$\n다시 시도: 권한을 다시 요청합니다.$\r$\n무시: 새 버전을 내 계정에만 설치합니다. 이전 버전은 나중에 설정 > 앱에서 제거하세요.$\r$\n중단: 이전 버전을 유지합니다."
 LangString bastyonMsiNotRemoved ${LANG_SIMPCHINESE} "${PRODUCTNAME} 的旧版本是为所有用户安装的，删除它需要管理员权限。Windows 未能删除它（代码 $0）。$\r$\n$\r$\n重试：再次请求权限。$\r$\n忽略：仅为您的帐户安装新版本；稍后在“设置 > 应用”中删除旧版本。$\r$\n中止：保留旧版本。"
 
+; BASTYON: the install stands where only administrators may write
+; (BastyonUpdateReadOnly, BastyonLeaveDirectory, BastyonAfterMove). Yes / No /
+; Cancel are Windows' own buttons, in the system language.
+LangString bastyonUpdateNoWrite ${LANG_ENGLISH} "${PRODUCTNAME} is installed in “$INSTDIR”, which cannot be written to without administrator rights, so it cannot be updated there.$\r$\n$\r$\nYes: move it to your account’s folder “$LOCALAPPDATA\${PRODUCTNAME}”. Updates will no longer need the rights, and your accounts and chats stay. Windows will then offer to delete the old copy, which needs administrator rights; you can decline.$\r$\nNo: update it where it is; Windows will ask for administrator rights.$\r$\nCancel: keep the current version."
+LangString bastyonUpdateNoWrite ${LANG_RUSSIAN} "${PRODUCTNAME} установлен в папку «$INSTDIR», куда без прав администратора записывать нельзя, поэтому обновить его там не получится.$\r$\n$\r$\n«Да» — перенести в папку вашей учётной записи «$LOCALAPPDATA\${PRODUCTNAME}». Обновлениям права больше не понадобятся, аккаунты и переписка останутся. Затем Windows предложит удалить старую копию — для этого нужны права администратора, можно отказаться.$\r$\n«Нет» — обновить на месте, Windows спросит права администратора.$\r$\n«Отмена» — оставить прежнюю версию."
+LangString bastyonUpdateNoWrite ${LANG_GERMAN} "${PRODUCTNAME} ist in „$INSTDIR“ installiert, wo ohne Administratorrechte nicht geschrieben werden kann, deshalb lässt es sich dort nicht aktualisieren.$\r$\n$\r$\nJa: in den Ordner Ihres Kontos „$LOCALAPPDATA\${PRODUCTNAME}“ verschieben. Updates brauchen dann keine Rechte mehr, Konten und Chats bleiben erhalten. Danach bietet Windows an, die alte Kopie zu löschen; dafür sind Administratorrechte nötig, Sie können ablehnen.$\r$\nNein: an Ort und Stelle aktualisieren; Windows fragt nach Administratorrechten.$\r$\nAbbrechen: die aktuelle Version behalten."
+LangString bastyonUpdateNoWrite ${LANG_SPANISH} "${PRODUCTNAME} está instalado en «$INSTDIR», donde no se puede escribir sin permisos de administrador, así que no se puede actualizar ahí.$\r$\n$\r$\nSí: moverlo a la carpeta de su cuenta «$LOCALAPPDATA\${PRODUCTNAME}». Las actualizaciones ya no necesitarán permisos, y sus cuentas y chats se conservan. Después Windows ofrecerá eliminar la copia antigua, lo que requiere permisos de administrador; puede rechazarlo.$\r$\nNo: actualizar en el mismo lugar; Windows pedirá permisos de administrador.$\r$\nCancelar: conservar la versión actual."
+LangString bastyonUpdateNoWrite ${LANG_FRENCH} "${PRODUCTNAME} est installé dans « $INSTDIR », où l'on ne peut pas écrire sans droits d'administrateur ; il ne peut donc pas y être mis à jour.$\r$\n$\r$\nOui : le déplacer dans le dossier de votre compte « $LOCALAPPDATA\${PRODUCTNAME} ». Les mises à jour n'auront plus besoin de droits, vos comptes et discussions sont conservés. Windows proposera ensuite de supprimer l'ancienne copie, ce qui demande des droits d'administrateur ; vous pouvez refuser.$\r$\nNon : mettre à jour sur place ; Windows demandera des droits d'administrateur.$\r$\nAnnuler : garder la version actuelle."
+LangString bastyonUpdateNoWrite ${LANG_ITALIAN} "${PRODUCTNAME} è installato in «$INSTDIR», dove non si può scrivere senza diritti di amministratore, quindi non può essere aggiornato lì.$\r$\n$\r$\nSì: spostarlo nella cartella del tuo account «$LOCALAPPDATA\${PRODUCTNAME}». Gli aggiornamenti non richiederanno più i diritti, account e chat restano. Poi Windows proporrà di eliminare la vecchia copia, cosa che richiede i diritti di amministratore; puoi rifiutare.$\r$\nNo: aggiornare sul posto; Windows chiederà i diritti di amministratore.$\r$\nAnnulla: mantenere la versione attuale."
+LangString bastyonUpdateNoWrite ${LANG_KOREAN} "${PRODUCTNAME}이(가) 관리자 권한 없이는 쓸 수 없는 폴더 “$INSTDIR”에 설치되어 있어 그 위치에서는 업데이트할 수 없습니다.$\r$\n$\r$\n예: 내 계정 폴더 “$LOCALAPPDATA\${PRODUCTNAME}”(으)로 옮깁니다. 이후 업데이트에는 권한이 필요 없으며 계정과 채팅은 그대로 유지됩니다. 이어서 Windows가 이전 사본 삭제를 제안합니다. 삭제에는 관리자 권한이 필요하며 거절해도 됩니다.$\r$\n아니요: 현재 위치에서 업데이트합니다. Windows가 관리자 권한을 요청합니다.$\r$\n취소: 현재 버전을 유지합니다."
+LangString bastyonUpdateNoWrite ${LANG_SIMPCHINESE} "${PRODUCTNAME} 安装在“$INSTDIR”，没有管理员权限无法写入该文件夹，因此无法在原位置更新。$\r$\n$\r$\n是：移动到您帐户的文件夹“$LOCALAPPDATA\${PRODUCTNAME}”。以后更新不再需要权限，帐户和聊天都会保留。随后 Windows 会提示删除旧副本，这需要管理员权限，您可以拒绝。$\r$\n否：在原位置更新，Windows 会请求管理员权限。$\r$\n取消：保留当前版本。"
+
+LangString bastyonDirNoWrite ${LANG_ENGLISH} "The folder “$INSTDIR” cannot be written to without administrator rights.$\r$\n$\r$\nInstall ${PRODUCTNAME} in your account’s folder “$LOCALAPPDATA\${PRODUCTNAME}” instead? It needs no rights, neither to install nor to update.$\r$\n$\r$\nNo: choose another folder."
+LangString bastyonDirNoWrite ${LANG_RUSSIAN} "В папку «$INSTDIR» нельзя записывать без прав администратора.$\r$\n$\r$\nПоставить ${PRODUCTNAME} в папку вашей учётной записи «$LOCALAPPDATA\${PRODUCTNAME}»? Для неё права не нужны ни при установке, ни при обновлениях.$\r$\n$\r$\n«Нет» — выбрать другую папку."
+LangString bastyonDirNoWrite ${LANG_GERMAN} "In den Ordner „$INSTDIR“ kann ohne Administratorrechte nicht geschrieben werden.$\r$\n$\r$\n${PRODUCTNAME} stattdessen im Ordner Ihres Kontos „$LOCALAPPDATA\${PRODUCTNAME}“ installieren? Dafür sind keine Rechte nötig, weder bei der Installation noch bei Updates.$\r$\n$\r$\nNein: einen anderen Ordner wählen."
+LangString bastyonDirNoWrite ${LANG_SPANISH} "En la carpeta «$INSTDIR» no se puede escribir sin permisos de administrador.$\r$\n$\r$\n¿Instalar ${PRODUCTNAME} en la carpeta de su cuenta «$LOCALAPPDATA\${PRODUCTNAME}»? No necesita permisos ni para instalar ni para actualizar.$\r$\n$\r$\nNo: elegir otra carpeta."
+LangString bastyonDirNoWrite ${LANG_FRENCH} "Impossible d'écrire dans le dossier « $INSTDIR » sans droits d'administrateur.$\r$\n$\r$\nInstaller ${PRODUCTNAME} dans le dossier de votre compte « $LOCALAPPDATA\${PRODUCTNAME} » ? Il ne demande aucun droit, ni pour l'installation ni pour les mises à jour.$\r$\n$\r$\nNon : choisir un autre dossier."
+LangString bastyonDirNoWrite ${LANG_ITALIAN} "Nella cartella «$INSTDIR» non si può scrivere senza diritti di amministratore.$\r$\n$\r$\nInstallare ${PRODUCTNAME} nella cartella del tuo account «$LOCALAPPDATA\${PRODUCTNAME}»? Non richiede diritti né per l'installazione né per gli aggiornamenti.$\r$\n$\r$\nNo: scegliere un'altra cartella."
+LangString bastyonDirNoWrite ${LANG_KOREAN} "관리자 권한 없이는 “$INSTDIR” 폴더에 쓸 수 없습니다.$\r$\n$\r$\n대신 내 계정 폴더 “$LOCALAPPDATA\${PRODUCTNAME}”에 ${PRODUCTNAME}을(를) 설치할까요? 설치와 업데이트 모두 권한이 필요 없습니다.$\r$\n$\r$\n아니요: 다른 폴더를 선택합니다."
+LangString bastyonDirNoWrite ${LANG_SIMPCHINESE} "没有管理员权限无法写入文件夹“$INSTDIR”。$\r$\n$\r$\n改为将 ${PRODUCTNAME} 安装到您帐户的文件夹“$LOCALAPPDATA\${PRODUCTNAME}”吗？安装和更新都不需要权限。$\r$\n$\r$\n否：选择其他文件夹。"
+
+LangString bastyonDirAdminOnly ${LANG_ENGLISH} "Only administrators can write to the folder “$INSTDIR”, so every update of ${PRODUCTNAME} would ask for administrator rights.$\r$\n$\r$\nInstall it in your account’s folder “$LOCALAPPDATA\${PRODUCTNAME}” instead? It needs no rights.$\r$\n$\r$\nNo: keep the chosen folder."
+LangString bastyonDirAdminOnly ${LANG_RUSSIAN} "В папку «$INSTDIR» могут записывать только администраторы, поэтому каждое обновление ${PRODUCTNAME} будет просить права администратора.$\r$\n$\r$\nПоставить в папку вашей учётной записи «$LOCALAPPDATA\${PRODUCTNAME}»? Для неё права не нужны.$\r$\n$\r$\n«Нет» — оставить выбранную папку."
+LangString bastyonDirAdminOnly ${LANG_GERMAN} "Nur Administratoren können in den Ordner „$INSTDIR“ schreiben, daher würde jedes Update von ${PRODUCTNAME} nach Administratorrechten fragen.$\r$\n$\r$\nStattdessen im Ordner Ihres Kontos „$LOCALAPPDATA\${PRODUCTNAME}“ installieren? Dafür sind keine Rechte nötig.$\r$\n$\r$\nNein: den gewählten Ordner behalten."
+LangString bastyonDirAdminOnly ${LANG_SPANISH} "Solo los administradores pueden escribir en la carpeta «$INSTDIR», así que cada actualización de ${PRODUCTNAME} pediría permisos de administrador.$\r$\n$\r$\n¿Instalarlo en la carpeta de su cuenta «$LOCALAPPDATA\${PRODUCTNAME}»? No necesita permisos.$\r$\n$\r$\nNo: mantener la carpeta elegida."
+LangString bastyonDirAdminOnly ${LANG_FRENCH} "Seuls les administrateurs peuvent écrire dans le dossier « $INSTDIR » : chaque mise à jour de ${PRODUCTNAME} demanderait des droits d'administrateur.$\r$\n$\r$\nL'installer plutôt dans le dossier de votre compte « $LOCALAPPDATA\${PRODUCTNAME} » ? Il ne demande aucun droit.$\r$\n$\r$\nNon : garder le dossier choisi."
+LangString bastyonDirAdminOnly ${LANG_ITALIAN} "Solo gli amministratori possono scrivere nella cartella «$INSTDIR», quindi ogni aggiornamento di ${PRODUCTNAME} chiederebbe i diritti di amministratore.$\r$\n$\r$\nInstallarlo invece nella cartella del tuo account «$LOCALAPPDATA\${PRODUCTNAME}»? Non richiede diritti.$\r$\n$\r$\nNo: mantenere la cartella scelta."
+LangString bastyonDirAdminOnly ${LANG_KOREAN} "“$INSTDIR” 폴더에는 관리자만 쓸 수 있으므로 ${PRODUCTNAME}을(를) 업데이트할 때마다 관리자 권한을 요청하게 됩니다.$\r$\n$\r$\n대신 내 계정 폴더 “$LOCALAPPDATA\${PRODUCTNAME}”에 설치할까요? 권한이 필요 없습니다.$\r$\n$\r$\n아니요: 선택한 폴더를 유지합니다."
+LangString bastyonDirAdminOnly ${LANG_SIMPCHINESE} "只有管理员可以写入文件夹“$INSTDIR”，因此 ${PRODUCTNAME} 每次更新都会请求管理员权限。$\r$\n$\r$\n改为安装到您帐户的文件夹“$LOCALAPPDATA\${PRODUCTNAME}”吗？该文件夹不需要权限。$\r$\n$\r$\n否：保留所选文件夹。"
+
+LangString bastyonOldCopy ${LANG_ENGLISH} "An old copy of ${PRODUCTNAME} is left in “$BastyonOldDir”. Delete it? Windows will ask for administrator rights."
+LangString bastyonOldCopy ${LANG_RUSSIAN} "В прежней папке «$BastyonOldDir» осталась старая копия ${PRODUCTNAME}. Удалить её? Windows спросит права администратора."
+LangString bastyonOldCopy ${LANG_GERMAN} "Im bisherigen Ordner „$BastyonOldDir“ ist eine alte Kopie von ${PRODUCTNAME} geblieben. Löschen? Windows fragt nach Administratorrechten."
+LangString bastyonOldCopy ${LANG_SPANISH} "En la carpeta anterior «$BastyonOldDir» quedó una copia antigua de ${PRODUCTNAME}. ¿Eliminarla? Windows pedirá permisos de administrador."
+LangString bastyonOldCopy ${LANG_FRENCH} "Une ancienne copie de ${PRODUCTNAME} reste dans « $BastyonOldDir ». La supprimer ? Windows demandera des droits d'administrateur."
+LangString bastyonOldCopy ${LANG_ITALIAN} "Nella cartella precedente «$BastyonOldDir» è rimasta una vecchia copia di ${PRODUCTNAME}. Eliminarla? Windows chiederà i diritti di amministratore."
+LangString bastyonOldCopy ${LANG_KOREAN} "이전 폴더 “$BastyonOldDir”에 ${PRODUCTNAME}의 이전 사본이 남아 있습니다. 삭제할까요? Windows가 관리자 권한을 요청합니다."
+LangString bastyonOldCopy ${LANG_SIMPCHINESE} "原文件夹“$BastyonOldDir”中留有 ${PRODUCTNAME} 的旧副本。要删除吗？Windows 会请求管理员权限。"
+
 Function .onInit
   ${GetOptions} $CMDLINE "/P" $PassiveMode
   ${IfNot} ${Errors}
@@ -586,6 +657,11 @@ Function .onInit
   !if "${INSTALLMODE}" == "both"
     !insertmacro MULTIUSER_INIT
   !endif
+
+  ; BASTYON: an in-app update of an install this process cannot write to.
+  ${If} $UpdateMode = 1
+    Call BastyonUpdateReadOnly
+  ${EndIf}
 FunctionEnd
 
 
@@ -820,6 +896,11 @@ Section Install
     Call CreateOrUpdateDesktopShortcut
   ${EndIf}
 
+  ; BASTYON: moved out of a folder only administrators may write to.
+  ${If} $BastyonOldDir != ""
+    Call BastyonAfterMove
+  ${EndIf}
+
   !ifmacrodef NSIS_HOOK_POSTINSTALL
     !insertmacro NSIS_HOOK_POSTINSTALL
   !endif
@@ -1000,6 +1081,216 @@ Function SkipIfPassive
 FunctionEnd
 Function un.SkipIfPassive
   ${IfThen} $PassiveMode = 1  ${|} Abort ${|}
+FunctionEnd
+
+; BASTYON: $BastyonDir → $BastyonResult = 1 if this process can create files
+; there (in the nearest existing folder up the path, if it does not exist
+; yet). A probe file, not the ACL: elevated, the installer writes anywhere,
+; and the process manifest turns off the VirtualStore redirection.
+Function BastyonCanWrite
+  StrCpy $BastyonResult 0
+  StrCpy $BastyonProbe $BastyonDir
+  ${DoUntil} ${FileExists} "$BastyonProbe\*.*"
+    ${GetParent} $BastyonProbe $BastyonProbe
+    ${IfThen} $BastyonProbe == "" ${|} Return ${|}
+  ${Loop}
+  ClearErrors
+  FileOpen $BastyonProbeFile "$BastyonProbe\.bastyon-write-probe" w
+  ${IfNot} ${Errors}
+    FileClose $BastyonProbeFile
+    Delete "$BastyonProbe\.bastyon-write-probe"
+    StrCpy $BastyonResult 1
+  ${EndIf}
+FunctionEnd
+
+; BASTYON: $BastyonDir → $BastyonResult = 1 inside Program Files or Windows,
+; where only administrators may write. Catches the folder an elevated
+; installer can write to now, but an update without the rights cannot.
+Function BastyonIsProtected
+  StrCpy $BastyonResult 0
+  Push $PROGRAMFILES64
+  Call BastyonUnder
+  Push $PROGRAMFILES
+  Call BastyonUnder
+  Push $WINDIR
+  Call BastyonUnder
+FunctionEnd
+Function BastyonUnder ; root on the stack; $BastyonDir is it or inside it
+  Exch $0
+  Push $1
+  Push $2
+  StrLen $1 $0
+  ${If} $1 > 0
+    StrCpy $2 $BastyonDir $1
+    ${If} $2 == $0
+      StrCpy $2 $BastyonDir 1 $1
+      ${If} $2 == "\"
+      ${OrIf} $2 == ""
+        StrCpy $BastyonResult 1
+      ${EndIf}
+    ${EndIf}
+  ${EndIf}
+  Pop $2
+  Pop $1
+  Pop $0
+FunctionEnd
+
+; BASTYON: leaving the directory page with a folder only administrators may
+; write to. Without the rights the install itself fails there; with them,
+; every later update fails or asks for them. Offer the account's folder.
+Function BastyonLeaveDirectory
+  ${If} $INSTDIR == "$LOCALAPPDATA\${PRODUCTNAME}"
+    Return
+  ${EndIf}
+  StrCpy $BastyonDir $INSTDIR
+  Call BastyonCanWrite
+  StrCpy $BastyonWritable $BastyonResult
+  Call BastyonIsProtected
+  ${If} $BastyonWritable = 1
+  ${AndIf} $BastyonResult = 0
+    Return
+  ${EndIf}
+  ${If} $BastyonWritable = 1
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION "$(bastyonDirAdminOnly)" /SD IDNO IDNO bastyon_keep
+  ${Else}
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION "$(bastyonDirNoWrite)" /SD IDYES IDNO bastyon_back
+  ${EndIf}
+  ; An older install stood there (PageLeaveReinstall kept it): its shortcuts
+  ; and files are dealt with after the install, as on an update.
+  ${If} ${FileExists} "$INSTDIR\${MAINBINARYNAME}.exe"
+    StrCpy $BastyonOldDir $INSTDIR
+  ${EndIf}
+  StrCpy $INSTDIR "$LOCALAPPDATA\${PRODUCTNAME}"
+  ; The page copies its text field into $INSTDIR as it closes, after this
+  ; function: without the new folder in the field the install went to the
+  ; old one anyway.
+  FindWindow $BastyonProbe "#32770" "" $HWNDPARENT
+  GetDlgItem $BastyonProbe $BastyonProbe 1019
+  SendMessage $BastyonProbe ${WM_SETTEXT} 0 "STR:$INSTDIR"
+  bastyon_keep:
+  Return
+  bastyon_back:
+  Abort
+FunctionEnd
+
+; BASTYON: an in-app update (/UPDATE) of an install this process cannot write
+; to. The updater starts the installer without elevation, so it used to stop
+; on "Error opening file for writing" unless the app ran as administrator.
+; Yes: install into the account's folder (no rights needed from now on), the
+; old copy goes after the install. No: run this installer again elevated, on
+; the same folder (/D, since an administrator account other than the
+; person's has another $LOCALAPPDATA). Cancel: start the installed version
+; again, as the update would have.
+Function BastyonUpdateReadOnly
+  ${IfNot} ${FileExists} "$INSTDIR\${MAINBINARYNAME}.exe"
+    Return
+  ${EndIf}
+  StrCpy $BastyonDir $INSTDIR
+  Call BastyonCanWrite
+  ${IfThen} $BastyonResult = 1 ${|} Return ${|}
+
+  bastyon_ask:
+  MessageBox MB_YESNOCANCEL|MB_ICONEXCLAMATION|MB_SETFOREGROUND|MB_TOPMOST "$(bastyonUpdateNoWrite)" /SD IDYES IDYES bastyon_move IDNO bastyon_elevate
+    ClearErrors
+    ${GetOptions} $CMDLINE "/R" $BastyonProbe
+    ${IfNot} ${Errors}
+      Exec '"$INSTDIR\${MAINBINARYNAME}.exe"'
+    ${EndIf}
+    Quit
+
+  bastyon_move:
+    StrCpy $BastyonOldDir $INSTDIR
+    StrCpy $INSTDIR "$LOCALAPPDATA\${PRODUCTNAME}"
+    Return
+
+  bastyon_elevate:
+    ${GetParameters} $BastyonProbe
+    ClearErrors
+    ExecShell "runas" "$EXEPATH" "$BastyonProbe /D=$INSTDIR"
+    ; UAC declined or no administrator to approve it: ask again.
+    ${If} ${Errors}
+      Goto bastyon_ask
+    ${EndIf}
+    Quit
+FunctionEnd
+
+; BASTYON: after moving out of $BastyonOldDir. Shortcuts that started the old
+; copy now start this one (changed in place, so a taskbar pin stays a pin);
+; the old copy goes: our three files and then the folder if it is empty, so
+; nothing else in it is touched. Without the rights, removing it asks UAC: on
+; an update the first question already said so, otherwise ask first.
+Function BastyonAfterMove
+  StrCpy $BastyonDir "$DESKTOP"
+  Call BastyonRetargetIn
+  StrCpy $BastyonDir "$SMPROGRAMS"
+  Call BastyonRetargetIn
+  ${If} $AppStartMenuFolder != ""
+    StrCpy $BastyonDir "$SMPROGRAMS\$AppStartMenuFolder"
+    Call BastyonRetargetIn
+  ${EndIf}
+  StrCpy $BastyonDir "$APPDATA\Microsoft\Internet Explorer\Quick Launch"
+  Call BastyonRetargetIn
+  StrCpy $BastyonDir "$APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar"
+  Call BastyonRetargetIn
+  StrCpy $BastyonDir "$APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\StartMenu"
+  Call BastyonRetargetIn
+
+  Delete "$BastyonOldDir\${MAINBINARYNAME}.exe.old"
+  Delete "$BastyonOldDir\${MAINBINARYNAME}.exe"
+  Delete "$BastyonOldDir\uninstall.exe"
+  RMDir "$BastyonOldDir"
+  ${IfNot} ${FileExists} "$BastyonOldDir\${MAINBINARYNAME}.exe"
+  ${OrIf} ${Silent}
+    Return
+  ${EndIf}
+  ${If} $UpdateMode <> 1
+    MessageBox MB_YESNO|MB_ICONQUESTION "$(bastyonOldCopy)" /SD IDNO IDYES bastyon_remove
+    Return
+  ${EndIf}
+  bastyon_remove:
+  ExecShell "runas" "$SYSDIR\cmd.exe" '/c del /f /q "$BastyonOldDir\${MAINBINARYNAME}.exe" "$BastyonOldDir\${MAINBINARYNAME}.exe.old" "$BastyonOldDir\uninstall.exe" & rmdir "$BastyonOldDir"' SW_HIDE
+FunctionEnd
+
+; BASTYON: every .lnk in $BastyonDir that starts the old copy.
+Function BastyonRetargetIn
+  ClearErrors
+  FindFirst $BastyonFind $BastyonFound "$BastyonDir\*.lnk"
+  ${DoUntil} ${Errors}
+    ${If} $BastyonFound != ""
+      StrCpy $BastyonLnk "$BastyonDir\$BastyonFound"
+      Call BastyonRetargetLnk
+    ${EndIf}
+    ClearErrors
+    FindNext $BastyonFind $BastyonFound
+  ${Loop}
+  FindClose $BastyonFind
+FunctionEnd
+
+; BASTYON: $BastyonLnk → if it starts the old copy's exe, it starts the new
+; one, in the new folder (a "Start in" folder that no longer exists makes
+; Windows refuse to open the shortcut).
+Function BastyonRetargetLnk
+  Push $0
+  Push $1
+  Push $2
+  !insertmacro ComHlpr_CreateInProcInstance ${CLSID_ShellLink} ${IID_IShellLink} r0 ""
+  ${If} $0 P<> 0
+    ${IUnknown::QueryInterface} $0 '("${IID_IPersistFile}",.r1)'
+    ${If} $1 P<> 0
+      ${IPersistFile::Load} $1 '("$BastyonLnk",${STGM_READWRITE})'
+      ${IShellLink::GetPath} $0 '(.r2,${NSIS_MAX_STRLEN},0,0)'
+      ${If} $2 == "$BastyonOldDir\${MAINBINARYNAME}.exe"
+        ${IShellLink::SetPath} $0 '("$INSTDIR\${MAINBINARYNAME}.exe")'
+        ${IShellLink::SetWorkingDirectory} $0 '("$INSTDIR")'
+        ${IPersistFile::Save} $1 '("$BastyonLnk",1)'
+      ${EndIf}
+      ${IUnknown::Release} $1 ""
+    ${EndIf}
+    ${IUnknown::Release} $0 ""
+  ${EndIf}
+  Pop $2
+  Pop $1
+  Pop $0
 FunctionEnd
 
 Function CreateOrUpdateStartMenuShortcut

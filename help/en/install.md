@@ -43,7 +43,7 @@ If a version from 0.9.0 to 0.9.4 quits right after launch on an Apple Silicon Ma
 
 ## Windows
 
-Run the -setup.exe file. SmartScreen may warn about an unknown publisher: click "More info" → "Run anyway". No administrator rights are needed: the app is installed for your user account, so it also updates without questions from Windows.
+Run the -setup.exe file. SmartScreen may warn about an unknown publisher: click "More info" → "Run anyway". No administrator rights are needed: the app is installed for your user account, so it also updates without questions from Windows. Do not run the installer “as administrator”, and keep the suggested folder: Program Files cannot be written to without administrator rights, and every update would ask for them. If you pick such a folder, the installer offers your account’s folder instead.
 
 Earlier versions were installed from an .msi file, for the whole computer. The installer removes such a version itself and installs the new one for your user account; Windows asks once whether to allow it — answer "Yes". Accounts and settings are kept.
 

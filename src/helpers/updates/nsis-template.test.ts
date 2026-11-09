@@ -48,11 +48,64 @@ describe('шаблон установщика Windows', () => {
     expect(template).toContain('Delete "$INSTDIR\\${MAINBINARYNAME}.exe.old" ; BASTYON')
   })
 
+  it('обновление из папки, куда без прав не записать, предлагает перенос, права или отмену', () => {
+    const onInit = template.slice(
+      template.indexOf('Function .onInit'),
+      template.indexOf('FunctionEnd', template.indexOf('Function .onInit'))
+    )
+    expect(onInit).toMatch(/\$UpdateMode = 1\s+Call BastyonUpdateReadOnly/)
+    const fn = template.slice(template.indexOf('Function BastyonUpdateReadOnly'))
+    expect(fn).toMatch(
+      /MB_YESNOCANCEL[^\n]*"\$\(bastyonUpdateNoWrite\)"[^\n]*IDYES bastyon_move IDNO bastyon_elevate/
+    )
+    // «Да» — папка учётной записи, старая копия запоминается для ярлыков и удаления.
+    expect(fn).toMatch(
+      /bastyon_move:\s+StrCpy \$BastyonOldDir \$INSTDIR\s+StrCpy \$INSTDIR "\$LOCALAPPDATA\\\$\{PRODUCTNAME\}"/
+    )
+    // «Нет» — тот же установщик с правами и на ту же папку: /D последним.
+    expect(fn).toContain('ExecShell "runas" "$EXEPATH" "$BastyonProbe /D=$INSTDIR"')
+  })
+
+  it('ручная установка не запускает старый деинсталлятор там, где он ничего не удалит', () => {
+    expect(template).toMatch(
+      /reinst_uninstall:\s+[\s\S]{0,600}Call BastyonCanWrite\s+\$\{IfThen\} \$BastyonResult = 0 \$\{\|\} Goto reinst_done/
+    )
+  })
+
+  it('страница папки предупреждает о папке для администраторов и меняет и поле, и $INSTDIR', () => {
+    expect(template).toMatch(
+      /MUI_PAGE_CUSTOMFUNCTION_LEAVE BastyonLeaveDirectory[^\n]*\n!insertmacro MUI_PAGE_DIRECTORY/
+    )
+    const fn = template.slice(template.indexOf('Function BastyonLeaveDirectory'))
+    expect(fn.slice(0, fn.indexOf('FunctionEnd'))).toMatch(
+      /StrCpy \$INSTDIR "\$LOCALAPPDATA\\\$\{PRODUCTNAME\}"[\s\S]*GetDlgItem \$BastyonProbe \$BastyonProbe 1019\s+SendMessage \$BastyonProbe \$\{WM_SETTEXT\} 0 "STR:\$INSTDIR"/
+    )
+  })
+
+  it('старая копия удаляется только своими файлами, папка — только пустой', () => {
+    const fn = template.slice(
+      template.indexOf('Function BastyonAfterMove'),
+      template.indexOf('FunctionEnd', template.indexOf('Function BastyonAfterMove'))
+    )
+    expect(fn).not.toMatch(/RMDir \/r|rmdir \/s/i)
+    expect(fn).toContain(
+      '\'/c del /f /q "$BastyonOldDir\\${MAINBINARYNAME}.exe" "$BastyonOldDir\\${MAINBINARYNAME}.exe.old" "$BastyonOldDir\\uninstall.exe" & rmdir "$BastyonOldDir"\''
+    )
+    expect(template).toMatch(/Section Install[\s\S]*Call BastyonAfterMove[\s\S]*SectionEnd/)
+  })
+
   it('свои строки — на каждом языке установщика', () => {
-    for (const language of bundle.windows.nsis.languages as string[]) {
-      expect(template).toContain(
-        `LangString bastyonMsiNotRemoved \${LANG_${language.toUpperCase()}}`
-      )
+    const strings = [
+      'bastyonMsiNotRemoved',
+      'bastyonUpdateNoWrite',
+      'bastyonDirNoWrite',
+      'bastyonDirAdminOnly',
+      'bastyonOldCopy',
+    ]
+    for (const name of strings) {
+      for (const language of bundle.windows.nsis.languages as string[]) {
+        expect(template).toContain(`LangString ${name} \${LANG_${language.toUpperCase()}}`)
+      }
     }
   })
 
