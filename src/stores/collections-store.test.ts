@@ -1,5 +1,6 @@
 // Коллекции: тип по элементам у коллекций старого клиента, своё ожидающее
-// поверх ответа ноды, правка в очереди, пока прошлая не в блоке.
+// поверх ответа ноды, правка в очереди, пока прошлая не в блоке; личный
+// список, ставший публичным, уходит, только когда коллекция в блоке.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
@@ -31,6 +32,9 @@ vi.mock('@/blockchain/core/transactions/broadcast-events', () => ({
     return () => undefined
   },
 }))
+vi.mock('@/db/apis/favorites-api', () => ({
+  favoritesAPI: { getList: async () => [], purge: async () => undefined },
+}))
 vi.mock('@/services/media/media-info', () => ({
   fetchMediaInfo: vi.fn(
     async (urls: string[]) =>
@@ -39,6 +43,7 @@ vi.mock('@/services/media/media-info', () => ({
 }))
 
 import { AUTO_COVER_KEY, draftOf, useCollectionsStore, withAutoCover } from './collections-store'
+import { useMediaLibraryStore } from './media-library-store'
 import { normalizeCollection } from '@/services/collections/collections-api'
 import type { AdaptedPost } from '@/types/adapted-post'
 
@@ -175,6 +180,36 @@ describe('collections-store', () => {
     expect(store.collectionsOf(ADDRESS)[0]).toMatchObject({ failed: true })
     store.dismissFailed(tx(200))
     expect(store.collectionsOf(ADDRESS)).toEqual([])
+  })
+
+  it('личный → публичный: личный список удаляется, только когда коллекция попала в блок', async () => {
+    api.fetchProfileCollections.mockResolvedValue([])
+    api.fetchCollectionItems.mockResolvedValue([])
+    const library = useMediaLibraryStore()
+    library.attach(ADDRESS)
+    const listId = library.createPlaylist('posts', 'Рецепты', [tx(1)])!
+    const store = useCollectionsStore()
+    store.attach(ADDRESS)
+    const draft = {
+      kind: 'posts' as const,
+      caption: 'Рецепты',
+      description: '',
+      image: 'https://c',
+      lang: 'ru',
+      contentIds: [tx(1)],
+    }
+    action.sendCollection.mockResolvedValueOnce({ txid: tx(300), payload: {} })
+    await store.create(draft, listId)
+    expect(store.replacing(listId)).toBe(true)
+    // Не попала в блок — личный остаётся.
+    await settled.listener!(tx(300), false)
+    expect(store.replacing(listId)).toBe(false)
+    expect(library.playlists('posts')).toEqual([listId])
+
+    action.sendCollection.mockResolvedValueOnce({ txid: tx(301), payload: {} })
+    await store.create(draft, listId)
+    await settled.listener!(tx(301), true)
+    expect(library.playlists('posts')).toEqual([])
   })
 
   it('неверная правка не встаёт в очередь', async () => {

@@ -24,7 +24,7 @@ Everything published is stored on the network. On the device the app keeps only 
 - **Account keys** — encrypted, see [Protection on this device](device-protection.md). And the list of saved accounts.
 - **App settings**: language, theme, feed, notifications.
 - **Drafts** of posts and comments.
-- **Favorites** — saved posts, see [Favorites](favorites.md).
+- **A copy of private lists and favorites** — so they open at once and without a network. The lists themselves are kept in your account data on the chat server, see [Private lists](media-library.md).
 - **Search history.**
 - **Decrypted messages** — so that conversations are not decrypted again every time you open them. This can be turned off, see below.
 - **Saved chats** — if you turned saving on: encrypted with the account key, see [Chats saved on this device](chat-archive.md).

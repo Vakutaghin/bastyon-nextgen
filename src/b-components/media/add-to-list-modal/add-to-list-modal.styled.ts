@@ -20,6 +20,9 @@ export const SC_Preview = styled.p`
 `
 
 export const SC_Section = styled.h3`
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin: 12px 0 4px;
   font-size: 12px;
   font-weight: 600;
@@ -115,29 +118,6 @@ export const SC_LinkButton = styled.button`
 
   &:hover {
     text-decoration: underline;
-  }
-`
-
-export const SC_NewRow = styled.form`
-  display: flex;
-  gap: 8px;
-  padding: 6px;
-
-  input {
-    flex: 1;
-    min-width: 0;
-    height: 32px;
-    padding: 0 10px;
-    border: 1px solid var(--ui-border-accented);
-    border-radius: var(--ui-radius-md);
-    background: var(--ui-bg);
-    color: var(--ui-text);
-    font-size: 14px;
-  }
-
-  input:focus {
-    outline: 2px solid rgb(var(--ui-primary-rgb) / 40%);
-    border-color: var(--ui-primary);
   }
 `
 

@@ -2,17 +2,14 @@
   <SC_SectionWork>
     <SC_SectionPage class="narrow" data-testid="my-collections">
       <SC_SectionHead>
-        <SC_SectionTitle><CollectionIcon /> {{ t('shelf.title') }}</SC_SectionTitle>
+        <SC_SectionTitle>
+          <CollectionIcon /> {{ t('shelf.title') }} <HelpLink topic="collections" />
+        </SC_SectionTitle>
         <SC_HeadEnd v-if="me">
-          <Dropdown :trigger="['click']" placement="bottomRight">
-            <Button type="primary" data-testid="shelf-create">
-              <template #icon><PlusOutlined /></template>
-              {{ t('shelf.create') }}
-            </Button>
-            <template #overlay>
-              <Menu :items="createItems" @click="onCreate" />
-            </template>
-          </Dropdown>
+          <Button type="primary" data-testid="shelf-create" @click="create">
+            <template #icon><PlusOutlined /></template>
+            {{ t('shelf.create') }}
+          </Button>
         </SC_HeadEnd>
       </SC_SectionHead>
       <SC_Lead>{{ t('shelf.lead') }}</SC_Lead>
@@ -25,21 +22,63 @@
       </SC_Empty>
 
       <template v-else>
+        <SC_Builtins :aria-label="t('shelf.builtins')">
+          <SC_BuiltinCard
+            v-for="item in builtins"
+            :key="item.id"
+            :data-testid="`shelf-builtin-${item.id}`"
+          >
+            <router-link :to="item.to">
+              <span class="icon"><component :is="item.icon" /></span>
+              <span class="name">{{ item.label }}</span>
+              <span class="meta">
+                <span>{{ item.count }}</span>
+                <SC_Badge>
+                  <DeviceCopyIcon v-if="item.id === 'downloads'" />
+                  <LockOutlined v-else />
+                  {{
+                    item.id === 'downloads' ? t('shelf.onDevice') : t('lists.visibility.private')
+                  }}
+                </SC_Badge>
+              </span>
+            </router-link>
+          </SC_BuiltinCard>
+        </SC_Builtins>
+
+        <SC_ListTitle>{{ t('shelf.mine') }}</SC_ListTitle>
         <SC_Toolbar>
-          <SC_Chips role="group" :aria-label="t('shelf.filterLabel')">
-            <SC_Chip
-              v-for="option in FILTERS"
-              :key="option"
-              type="button"
-              :class="{ active: filter === option }"
-              :aria-pressed="filter === option"
-              :data-testid="`shelf-filter-${option}`"
-              @click="filter = option"
-            >
-              {{ t(`shelf.filters.${option}`) }}
-              <SC_ChipCount>{{ counts[option] }}</SC_ChipCount>
-            </SC_Chip>
-          </SC_Chips>
+          <SC_Filters>
+            <SC_Chips role="group" :aria-label="t('lists.whatInside')">
+              <SC_Chip
+                v-for="option in KIND_FILTERS"
+                :key="option"
+                type="button"
+                :class="{ active: kindFilter === option }"
+                :aria-pressed="kindFilter === option"
+                :data-testid="`shelf-filter-${option}`"
+                @click="kindFilter = option"
+              >
+                {{ t(`shelf.kindFilters.${option}`) }}
+                <SC_ChipCount>{{ kindTotals[option] }}</SC_ChipCount>
+              </SC_Chip>
+            </SC_Chips>
+            <SC_Chips role="group" :aria-label="t('lists.whoSees')">
+              <SC_Chip
+                v-for="option in VISIBILITY_FILTERS"
+                :key="option"
+                type="button"
+                :class="{ active: visibilityFilter === option }"
+                :aria-pressed="visibilityFilter === option"
+                :data-testid="`shelf-visibility-${option}`"
+                @click="visibilityFilter = option"
+              >
+                <GlobalOutlined v-if="option === 'public'" />
+                <LockOutlined v-else-if="option === 'private'" />
+                {{ t(`shelf.visibilityFilters.${option}`) }}
+                <SC_ChipCount>{{ visibilityTotals[option] }}</SC_ChipCount>
+              </SC_Chip>
+            </SC_Chips>
+          </SC_Filters>
           <div v-if="rows.length > SEARCH_FROM" class="search">
             <Input
               v-model:value="search"
@@ -52,50 +91,37 @@
           </div>
         </SC_Toolbar>
 
-        <SC_Empty v-if="searching && !shown.length">
-          <p>{{ t('shelf.nothingFound') }}</p>
-        </SC_Empty>
+        <SC_Rows v-if="shown.length" data-testid="shelf-list">
+          <ShelfRowItem
+            v-for="row in shown"
+            :key="row.key"
+            :row="row"
+            :label="labelOf(row)"
+            @action="(action) => onAction(row, action)"
+          />
+        </SC_Rows>
+        <SC_GroupNote v-else-if="filtering">{{ t('shelf.nothingFound') }}</SC_GroupNote>
+        <SC_GroupNote v-else-if="!publicReady">{{ t('collections.loading') }}</SC_GroupNote>
+        <SC_GroupNote v-else data-testid="shelf-empty">{{ t('shelf.none') }}</SC_GroupNote>
 
-        <template v-for="group in groups" :key="group.id">
-          <SC_Block :data-testid="`shelf-group-${group.id}`">
-            <SC_BlockHead>
-              <SC_BlockTitle>{{ t(`shelf.groups.${group.id}`) }}</SC_BlockTitle>
-            </SC_BlockHead>
-            <SC_Note v-if="group.id === 'private'">
-              <LockOutlined /> {{ t('library.privateNote') }}
-            </SC_Note>
-            <SC_Rows v-if="group.rows.length">
-              <ShelfRowItem
-                v-for="row in group.rows"
-                :key="row.key"
-                :row="row"
-                :label="labelOf(row)"
-                @action="(action) => onAction(row, action)"
-              />
-            </SC_Rows>
-            <SC_GroupNote v-else-if="publicStatus === 'loading' || publicStatus === 'idle'">
-              {{ t('collections.loading') }}
-            </SC_GroupNote>
-            <SC_GroupNote v-else-if="publicStatus === 'error'" role="alert">
-              {{ t('shelf.loadFailed') }}
-              <Button type="link" size="small" @click="reload">{{ t('shelf.retry') }}</Button>
-            </SC_GroupNote>
-            <SC_GroupNote v-else>{{ t(`shelf.none.${group.id}`) }}</SC_GroupNote>
-          </SC_Block>
-        </template>
+        <SC_GroupNote v-if="publicStatus === 'error'" role="alert" class="after">
+          {{ t('shelf.loadFailed') }}
+          <Button type="link" size="small" @click="reload">{{ t('shelf.retry') }}</Button>
+        </SC_GroupNote>
+        <SC_Note v-else-if="!publicReady && shown.length">{{ t('shelf.publicLoading') }}</SC_Note>
       </template>
     </SC_SectionPage>
 
-    <!-- Новый личный плейлист и переименование — одно окно с названием. -->
+    <!-- Переименование личного списка. -->
     <Modal
-      :open="!!naming"
-      :title="naming ? namingTitle : ''"
-      :ok-text="naming?.mode === 'create' ? t('library.create') : t('library.save')"
+      :open="!!renaming"
+      :title="t('shelf.renameTitle')"
+      :ok-text="t('library.save')"
       :cancel-text="t('library.cancel')"
       :ok-button-props="{ disabled: !nameDraft.trim() }"
       destroy-on-close
       @ok="saveName"
-      @cancel="naming = null"
+      @cancel="renaming = null"
     >
       <Input
         v-model:value="nameDraft"
@@ -111,43 +137,42 @@
 </template>
 
 <script setup lang="ts">
-// «Коллекции и плейлисты» — всё своё в одном месте: публичные коллекции
-// публикаций, видео- и аудиоплейлисты (блокчейн) и личные списки (сервер
-// чатов). Раньше они жили по разным углам: коллекции — только во вкладке
-// профиля, плейлисты — во вкладках разделов «Видео» и «Аудио». Здесь же их
-// создают, правят, переименовывают, удаляют и копируют ссылку.
+// «Коллекции и плейлисты» — всё своё в одном месте. Сверху встроенные списки:
+// «Избранное», «Смотреть позже», «Скачанное». Ниже — один список своих
+// плейлистов и коллекций, у каждой строки два значка: что внутри (видео, аудио,
+// публикации) и кто видит (все — в блокчейне, только я — в данных аккаунта).
+// «Создать» — одно окно с этими двумя вопросами; в «⋯» строки — изменить,
+// поделиться, сделать личным или публичным, удалить.
 
-import { computed, h, ref, watch, type Component } from 'vue'
+import { computed, ref, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Dropdown, Input, Menu, Modal, type MenuProps } from 'ant-design-vue'
+import { Button, Input, Modal } from 'ant-design-vue'
 import {
-  AudioPlaylistIcon,
+  BookOutlined,
   CollectionIcon,
+  DeviceCopyIcon,
+  DownloadOutlined,
+  GlobalOutlined,
   LockOutlined,
   PlusOutlined,
   SearchOutlined,
-  VideoPlaylistIcon,
+  WatchLaterIcon,
 } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
+import HelpLink from '@/b-components/help/help-link.vue'
+import { useListVisibility } from '@/b-components/media/use-list-visibility'
 import { useAuthStore } from '@/blockchain'
 import { useMediaLibrary } from '@/composables/use-media-library'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { useCollectionEditorStore } from '@/stores/collection-editor-store'
 import { draftOf } from '@/stores/collections-store'
 import { useModalStore } from '@/stores/modal-store'
+import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import { copyText } from '@/helpers/common/clipboard'
 import { publicCollectionUrl } from '@/helpers/common/share-origin'
-import {
-  MY_MUSIC,
-  SAVED_VIDEOS,
-  WATCH_LATER,
-  type LibraryKind,
-} from '@/services/media-library/media-library-doc'
+import { WATCH_LATER } from '@/services/media-library/media-library-doc'
 import { Z_INDEX } from '@/styles/design-tokens'
 import {
-  SC_Block,
-  SC_BlockHead,
-  SC_BlockTitle,
   SC_Chip,
   SC_Chips,
   SC_Empty,
@@ -158,26 +183,35 @@ import {
   SC_SectionWork,
 } from '../media-section/media-section.styled'
 import {
-  SHELF_GROUPS,
+  SHELF_KINDS,
+  SHELF_VISIBILITIES,
   filterShelf,
+  kindCounts,
   privateRows,
   publicRows,
-  shelfCounts,
-  type ShelfFilter,
-  type ShelfGroup,
+  sortShelf,
+  visibilityCounts,
+  type ShelfKindFilter,
   type ShelfRow,
+  type ShelfVisibilityFilter,
 } from './collection-shelf'
 import ShelfRowItem, { type ShelfAction } from './shelf-row.vue'
 import {
+  SC_Badge,
+  SC_BuiltinCard,
+  SC_Builtins,
   SC_ChipCount,
+  SC_Filters,
   SC_GroupNote,
   SC_HeadEnd,
   SC_Lead,
+  SC_ListTitle,
   SC_Rows,
   SC_Toolbar,
 } from './my-collections-page.styled'
 
-const FILTERS: readonly ShelfFilter[] = ['all', ...SHELF_GROUPS]
+const KIND_FILTERS: readonly ShelfKindFilter[] = ['all', ...SHELF_KINDS]
+const VISIBILITY_FILTERS: readonly ShelfVisibilityFilter[] = ['all', ...SHELF_VISIBILITIES]
 /** Поиск — когда строк больше, чем видно глазом. */
 const SEARCH_FROM = 8
 
@@ -185,7 +219,9 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const modalStore = useModalStore()
 const editor = useCollectionEditorStore()
+const offline = useOfflineVideosStore()
 const { library, collections } = useMediaLibrary()
+const { makePublic, makePrivate } = useListVisibility()
 
 useDocumentTitle(() => t('shelf.title'))
 
@@ -204,96 +240,104 @@ function reload(): void {
 }
 
 const publicStatus = computed(() => (me.value ? collections.statusOf(me.value) : 'idle'))
+const publicReady = computed(() => publicStatus.value === 'ready' || publicStatus.value === 'error')
 
-const rows = computed<ShelfRow[]>(() =>
-  me.value ? [...publicRows(collections.collectionsOf(me.value)), ...privateRows(library)] : []
-)
+// ─── встроенные списки ──────────────────────────────────────────────────────
 
-const SYSTEM_LABELS: Record<string, string> = {
-  [SAVED_VIDEOS]: 'shelf.savedVideos',
-  [WATCH_LATER]: 'library.watchLater',
-  [MY_MUSIC]: 'library.myMusic',
+interface Builtin {
+  id: 'favorites' | 'later' | 'downloads'
+  label: string
+  icon: Component
+  count: number
+  to: string
 }
 
+/** «Скачанное» — туда, где оно есть: видео или аудио. */
+const downloadsPath = computed(() =>
+  offline.mine.some((i) => i.meta.kind === 'video') || !offline.mine.length
+    ? '/video/downloads'
+    : '/audio/downloads'
+)
+
+const builtins = computed<Builtin[]>(() => [
+  {
+    id: 'favorites',
+    label: t('library.favorites'),
+    icon: BookOutlined,
+    count: library.favorites.length,
+    to: '/?feedMode=favorites',
+  },
+  {
+    id: 'later',
+    label: t('library.watchLater'),
+    icon: WatchLaterIcon,
+    count: library.ids(WATCH_LATER).length,
+    to: '/video/later',
+  },
+  ...(offline.available
+    ? [
+        {
+          id: 'downloads' as const,
+          label: t('videoSection.tabs.downloads'),
+          icon: DownloadOutlined,
+          count: offline.mine.length,
+          to: downloadsPath.value,
+        },
+      ]
+    : []),
+])
+
+// ─── свои списки ────────────────────────────────────────────────────────────
+
 function labelOf(row: ShelfRow): string {
-  if (row.system) return t(SYSTEM_LABELS[row.key] ?? 'library.untitledPlaylist')
   return row.name || (row.collection ? t('media.untitled') : t('library.untitledPlaylist'))
 }
 
-const filter = ref<ShelfFilter>('all')
-const search = ref('')
-const searching = computed(() => !!search.value.trim())
-
-const counts = computed(() => shelfCounts(rows.value))
-const shown = computed(() => filterShelf(rows.value, filter.value, search.value, labelOf))
-
-/** Группы по порядку; при поиске пустые прячутся, без него — с подсказкой. */
-const groups = computed(() =>
-  SHELF_GROUPS.filter((id) => filter.value === 'all' || filter.value === id)
-    .map((id) => ({ id, rows: shown.value.filter((r) => r.group === id) }))
-    .filter((g) => g.rows.length || (!searching.value && g.id !== 'private'))
+const rows = computed<ShelfRow[]>(() =>
+  me.value
+    ? sortShelf(
+        [
+          ...publicRows(collections.collectionsOf(me.value)),
+          ...privateRows(library, collections.replacing),
+        ],
+        labelOf
+      )
+    : []
 )
 
-// ─── создать ────────────────────────────────────────────────────────────────
+const kindFilter = ref<ShelfKindFilter>('all')
+const visibilityFilter = ref<ShelfVisibilityFilter>('all')
+const search = ref('')
+const filtering = computed(
+  () => !!search.value.trim() || kindFilter.value !== 'all' || visibilityFilter.value !== 'all'
+)
 
-const icon = (c: Component) => () => h(c)
+const kindTotals = computed(() => kindCounts(rows.value, visibilityFilter.value))
+const visibilityTotals = computed(() => visibilityCounts(rows.value, kindFilter.value))
+const shown = computed(() =>
+  filterShelf(rows.value, kindFilter.value, visibilityFilter.value, search.value, labelOf)
+)
 
-const createItems = computed<MenuProps['items']>(() => [
-  { key: 'video', label: t('shelf.createVideo'), icon: icon(VideoPlaylistIcon) },
-  { key: 'audio', label: t('shelf.createAudio'), icon: icon(AudioPlaylistIcon) },
-  { key: 'posts', label: t('shelf.createPosts'), icon: icon(CollectionIcon) },
-  { type: 'divider' },
-  { key: 'private-video', label: t('shelf.createPrivateVideo'), icon: icon(LockOutlined) },
-  { key: 'private-audio', label: t('shelf.createPrivateAudio'), icon: icon(LockOutlined) },
-])
-
-function onCreate({ key }: { key: string | number }): void {
-  if (key === 'video' || key === 'audio') {
-    editor.open({ mode: 'create', kind: key })
-    return
-  }
-  if (key === 'posts') {
-    // Пустую коллекцию нода не примет: собирают её из публикаций.
-    Modal.info({
-      title: t('shelf.postsHowTitle'),
-      content: t('shelf.postsHowText'),
-      okText: t('shelf.understood'),
-      zIndex: Z_INDEX.CONFIRM,
-    })
-    return
-  }
-  if (key === 'private-video' || key === 'private-audio') {
-    nameDraft.value = ''
-    naming.value = { mode: 'create', kind: key === 'private-video' ? 'video' : 'audio' }
-  }
+/** «Создать»: что внутри — по выбранному фильтру, кто видит — тоже. */
+function create(): void {
+  editor.open({
+    mode: 'create',
+    kind: kindFilter.value === 'all' ? 'video' : kindFilter.value,
+    visibility: visibilityFilter.value === 'public' ? 'public' : 'private',
+  })
 }
 
-// ─── название личного плейлиста ─────────────────────────────────────────────
+// ─── переименование личного списка ──────────────────────────────────────────
 
-type Naming = { mode: 'create'; kind: LibraryKind } | { mode: 'rename'; listId: string }
-
-const naming = ref<Naming | null>(null)
+const renaming = ref<string | null>(null)
 const nameDraft = ref('')
 
-const namingTitle = computed(() => {
-  const n = naming.value
-  if (!n) return ''
-  return n.mode === 'rename' ? t('shelf.renameTitle') : t(`shelf.newPrivateTitle.${n.kind}`)
-})
-
 function saveName(): void {
-  const n = naming.value
+  const listId = renaming.value
   const name = nameDraft.value.trim()
-  if (!n || !name) return
-  if (n.mode === 'rename') {
-    library.renamePlaylist(n.listId, name)
-  } else if (library.createPlaylist(n.kind, name)) {
-    appToast.success({ message: t('shelf.created', { name }) })
-    if (filter.value !== 'all' && filter.value !== 'private') filter.value = 'private'
-  } else {
-    appToast.error({ message: t('library.tooManyPlaylists') })
-  }
-  naming.value = null
+  if (!listId || !name) return
+  library.renamePlaylist(listId, name)
+  renaming.value = null
 }
 
 // ─── действия строки ────────────────────────────────────────────────────────
@@ -305,12 +349,14 @@ function onAction(row: ShelfRow, action: ShelfAction): void {
     else if (action === 'share') void share(c.txid)
     else if (action === 'delete') confirmDeletePublic(row)
     else if (action === 'dismiss') collections.dismissFailed(c.txid)
+    else if (action === 'make-private') makePrivate(c)
     return
   }
   if (action === 'rename') {
     nameDraft.value = library.nameOf(row.key)
-    naming.value = { mode: 'rename', listId: row.key }
-  } else if (action === 'delete') confirmDeletePrivate(row)
+    renaming.value = row.key
+  } else if (action === 'make-public') makePublic(row.key)
+  else if (action === 'delete') confirmDeletePrivate(row)
 }
 
 async function share(txid: string): Promise<void> {
@@ -321,7 +367,7 @@ async function share(txid: string): Promise<void> {
 function confirmDeletePublic(row: ShelfRow): void {
   const c = row.collection!
   Modal.confirm({
-    title: t(`shelf.deletePublicTitle.${group(row)}`, { name: labelOf(row) }),
+    title: t('shelf.deleteTitle', { name: labelOf(row) }),
     content: t('collections.deleteConfirmText'),
     okText: t('collections.delete'),
     okType: 'danger',
@@ -340,7 +386,7 @@ function confirmDeletePublic(row: ShelfRow): void {
 
 function confirmDeletePrivate(row: ShelfRow): void {
   Modal.confirm({
-    title: t('shelf.deletePrivateTitle', { name: labelOf(row) }),
+    title: t('shelf.deleteTitle', { name: labelOf(row) }),
     content: t('library.deleteConfirmText'),
     okText: t('library.delete'),
     okType: 'danger',
@@ -351,7 +397,4 @@ function confirmDeletePrivate(row: ShelfRow): void {
     },
   })
 }
-
-const group = (row: ShelfRow): Exclude<ShelfGroup, 'private'> =>
-  row.group === 'private' ? 'posts' : row.group
 </script>

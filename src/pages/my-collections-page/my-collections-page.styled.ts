@@ -1,7 +1,8 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
-// «Коллекции и плейлисты»: фильтр и поиск над группами, в группе — строки.
+// «Коллекции и плейлисты»: встроенные списки плитками, под ними фильтры, поиск
+// и один список строк со значками «что внутри» и «кто видит».
 
 export const SC_Lead = styled.p`
   max-width: 720px;
@@ -143,11 +144,29 @@ export const SC_Text = styled.span`
   }
 
   .meta {
-    display: inline-flex;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 4px;
+    gap: 4px 12px;
     font-size: 13px;
     color: var(--ui-text-muted);
+  }
+`
+
+/** Значок свойства строки: «12 видео», «Только я», «Видят все». */
+export const SC_Badge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+
+  svg {
+    flex: none;
+    font-size: 14px;
+  }
+
+  &.public svg {
+    color: var(--ui-primary);
   }
 `
 
@@ -199,4 +218,85 @@ export const SC_GroupNote = styled.div`
   color: var(--ui-text-muted);
   border: 1px dashed var(--ui-border);
   border-radius: var(--ui-radius-lg);
+
+  &.after {
+    margin-top: 12px;
+  }
+`
+
+// ─── встроенные списки ──────────────────────────────────────────────────────
+
+export const SC_Builtins = styled.ul`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0 0 28px;
+  padding: 0;
+  list-style: none;
+`
+
+export const SC_BuiltinCard = styled.li`
+  a {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 12px;
+    align-items: center;
+    height: 100%;
+    padding: 12px 14px;
+    color: var(--ui-text);
+    text-decoration: none;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-lg);
+    transition: border-color var(--transition-fast);
+  }
+
+  a:hover {
+    border-color: var(--ui-primary);
+  }
+
+  a:focus-visible {
+    outline: 2px solid var(--ui-focus-outline);
+  }
+
+  .icon {
+    display: flex;
+    grid-row: span 2;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    color: var(--ui-primary);
+    background: rgb(var(--ui-primary-rgb) / 10%);
+    border-radius: var(--ui-radius-md);
+  }
+
+  .name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ui-text-highlighted);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    font-size: 12px;
+    color: var(--ui-text-muted);
+  }
+`
+
+/** Подзаголовок над общим списком. */
+export const SC_ListTitle = styled.h2`
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ui-text-highlighted);
+`
+
+/** Две группы фильтров: «что внутри» и «кто видит». */
+export const SC_Filters = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
 `

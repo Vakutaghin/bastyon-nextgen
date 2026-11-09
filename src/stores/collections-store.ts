@@ -10,6 +10,9 @@
 // правку коллекции, которой ещё нет в блоке: такие изменения ждут здесь и
 // уходят сами, когда прошлое подтвердилось. Подтверждение сообщает
 // pending-transactions-store (onTransactionSettled).
+//
+// Личный список, ставший публичным (`create` с `replaces`), удаляется, только
+// когда новая коллекция попала в блок: не попала — личный остаётся.
 
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -37,6 +40,7 @@ import {
 } from '@/services/collections/collection-model'
 import { fetchMediaInfo } from '@/services/media/media-info'
 import { mediaCover, mediaTypeOf } from '@/services/media/media-post'
+import { useMediaLibraryStore } from '@/stores/media-library-store'
 import { logger } from '@/services/logger'
 import type { AdaptedPost } from '@/types/adapted-post'
 
@@ -77,6 +81,8 @@ interface PendingEntry {
   draft: CollectionDraft
   sentAt: number
   failed?: boolean
+  /** Новая коллекция — из этого личного списка: удалить его, когда она в блоке. */
+  replaces?: string
 }
 
 /** Изменение, которое нода пока не примет. */
@@ -369,7 +375,8 @@ export const useCollectionsStore = defineStore('collections', () => {
   async function sendNow(
     rootTxid: string | null,
     action: PendingEntry['action'],
-    draft: CollectionDraft
+    draft: CollectionDraft,
+    replaces?: string
   ): Promise<string> {
     if (action === 'delete') {
       const txid = await deleteCollection(rootTxid!, draft.caption)
@@ -384,17 +391,32 @@ export const useCollectionsStore = defineStore('collections', () => {
     const { txid } = await sendCollection(ready)
     pending.value = [
       ...pending.value,
-      { txid, rootTxid: rootTxid ?? txid, action, draft: ready, sentAt: Date.now() },
+      {
+        txid,
+        rootTxid: rootTxid ?? txid,
+        action,
+        draft: ready,
+        sentAt: Date.now(),
+        ...(replaces ? { replaces } : {}),
+      },
     ]
     persist()
     return txid
   }
 
-  /** Новая коллекция или плейлист. Возвращает её txid. */
-  async function create(draft: CollectionDraft): Promise<string> {
+  /**
+   * Новая коллекция или плейлист. Возвращает её txid. `replaces` — личный
+   * список, который она заменяет (стал публичным).
+   */
+  async function create(draft: CollectionDraft, replaces?: string): Promise<string> {
     const fresh: CollectionDraft = { ...draft }
     delete fresh.rootTxid
-    return sendNow(null, 'create', fresh)
+    return sendNow(null, 'create', fresh, replaces)
+  }
+
+  /** Личный список сейчас публикуется вместо себя — его не трогать. */
+  function replacing(listId: string): boolean {
+    return pending.value.some((p) => p.replaces === listId && !p.failed)
   }
 
   /**
@@ -460,6 +482,10 @@ export const useCollectionsStore = defineStore('collections', () => {
     }
     pending.value = pending.value.filter((p) => p.txid !== txid)
     persist()
+    if (entry.replaces) {
+      const library = useMediaLibraryStore()
+      if (library.owner === owner.value) library.deletePlaylist(entry.replaces)
+    }
     if (owner.value) void loadAuthor(owner.value, true)
     const waiting = queued.value.find((q) => q.rootTxid === entry.rootTxid)
     if (!waiting || entry.action === 'delete') return
@@ -490,6 +516,7 @@ export const useCollectionsStore = defineStore('collections', () => {
     busy,
     pendingEditsOf,
     create,
+    replacing,
     edit,
     remove,
     toggleItem,

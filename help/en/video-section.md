@@ -16,8 +16,9 @@ The buttons on the right above the feed switch the view: **“Grid”** shows vi
 
 - **“Home”** — videos from the whole network in the feed language. **“New”** shows recent ones, **“Best of the week”** the best rated over the last seven days.
 - **“Subscriptions”** — videos by the authors you follow.
-- **“Playlists”** — your public playlists and private playlists — see [Collections and playlists](collections.md) and [Private lists](media-library.md).
-- **“Saved”** and **“Watch later”** — your private lists.
+- **“Playlists”** — your video playlists, public and private — see [Collections and playlists](collections.md).
+- **“Favorites”** — videos from your [favorites](favorites.md). This tab used to be called Saved.
+- **“Watch later”** — your private list for later — see [Private lists](media-library.md).
 - **“Downloads”** — videos downloaded to watch offline — see [Download to watch offline](offline-video.md).
 - **“Uploads”** — your videos in the [Media studio](media-studio.md).
 
@@ -31,7 +32,7 @@ The search field next to the title looks for videos by the post's title and desc
 
 The three-dot button on a video:
 
-- **“Watch later”** and **“Save”** — to your private lists; press again to remove;
+- **“Watch later”** and **“Add to Favorites”** — press again to remove;
 - **“Play next”** — queue it right after what is playing now;
 - **“Add to…”** — to a private or public playlist — see [Collections and playlists](collections.md);
 - **“Download”** — to watch offline — see [Download to watch offline](offline-video.md).
@@ -43,5 +44,6 @@ Open a playlist or a private list and press **“Play all”** or **“Shuffle�
 ## See also
 
 - [Collections and playlists](collections.md)
+- [Favorites](favorites.md)
 - [Private lists](media-library.md)
 - [The Audio section](audio-section.md)

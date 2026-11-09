@@ -1,10 +1,10 @@
 ---
-keywords: [audio, music, audiobooks, podcasts, player, mini player, my music, album, queue, track search, posts, feed view]
+keywords: [audio, music, audiobooks, podcasts, player, mini player, favorites, my music, queue, track search, posts, feed view]
 ---
 
 # The Audio section
 
-Bastyon music, audiobooks and podcasts: categories, My music, playlists and a player that keeps playing while you move around the app.
+Bastyon music, audiobooks and podcasts: categories, Favorites, playlists and a player that keeps playing while you move around the app.
 
 The section opens with **“Audio”** in the left panel, on a phone — in the side menu. Tracks come as a list: cover, title, author and length. The buttons on the right above the feed switch the view: **“Track list”** or **“Posts”** — whole posts, as in the main feed, with the player, text and comments. The view is remembered on this device.
 
@@ -12,11 +12,11 @@ The section opens with **“Audio”** in the left panel, on a phone — in the 
 
 - **“Home”** — tracks from the whole network in the feed language. The **“All”**, **“Music”**, **“Audiobooks”** and **“Podcasts and talks”** categories pick them by the post's tags — “music”, “audiobook”, “podcast” and similar: audio on the network has no genre field. A track without such tags shows only under All.
 - **“Subscriptions”** — tracks by the authors you follow.
-- **“My music”** — your private list — see [Private lists](media-library.md).
-- **“Playlists”** — your albums and playlists, public and private — see [Collections and playlists](collections.md).
+- **“Favorites”** — tracks from your [favorites](favorites.md). This tab used to be called My music.
+- **“Playlists”** — your audio playlists, public and private — see [Collections and playlists](collections.md).
 - **“Downloads”** — tracks downloaded to listen offline — see [Download to watch offline](offline-video.md).
 
-The artist is the author of the post: their tracks, albums and playlists are on the **“Audio”** tab of their profile.
+The artist is the author of the post: their tracks and playlists are on the **“Audio”** tab of their profile.
 
 ## The mini player
 
@@ -32,7 +32,7 @@ The mini player and the player in a post never play at the same time: start one 
 
 ## The track menu
 
-The three-dot button on a track: **“Play next”**, **“Add to queue”**, **“Add to My music”** and **“Add to…”** — to a private or public playlist.
+The three-dot button on a track: **“Play next”**, **“Add to queue”**, **“Add to Favorites”** and **“Add to…”** — to a private or public playlist.
 
 ## Search
 
@@ -41,5 +41,6 @@ The node does not include audio in its search, so the search field looks for tra
 ## See also
 
 - [Collections and playlists](collections.md)
+- [Favorites](favorites.md)
 - [Private lists](media-library.md)
 - [Uploading video and audio](video-upload.md)

@@ -21,6 +21,9 @@
           <SC_HeaderInfo>
             <SC_Kind>
               {{ t(`collections.kinds.${kind}`) }}
+              <span class="visibility" :title="t('lists.visibilityHint.public')">
+                <GlobalOutlined /> {{ t('lists.visibility.public') }}
+              </span>
               <SC_StateBadge v-if="stateLabel" :class="{ failed: collection.failed }">{{
                 stateLabel
               }}</SC_StateBadge>
@@ -62,6 +65,10 @@
                 <Button @click="edit">
                   <template #icon><EditOutlined /></template>
                   {{ t('collections.edit') }}
+                </Button>
+                <Button data-testid="collection-make-private" @click="toPrivate">
+                  <template #icon><LockOutlined /></template>
+                  {{ t('lists.makePrivate') }}
                 </Button>
                 <Button danger @click="confirmDelete">
                   <template #icon><DeleteOutlined /></template>
@@ -124,6 +131,8 @@ import {
   CollectionIcon,
   DeleteOutlined,
   EditOutlined,
+  GlobalOutlined,
+  LockOutlined,
   PlayIcon,
   ShareAltOutlined,
   ShuffleIcon,
@@ -135,6 +144,7 @@ import VideoGrid from '@/b-components/media/video-grid/video-grid.vue'
 import TrackList from '@/b-components/media/track-list/track-list.vue'
 import OfflineDownloadAllButton from '@/b-components/offline-video/offline-download-all-button.vue'
 import { appToast } from '@/b-components/app-toast'
+import { useListVisibility } from '@/b-components/media/use-list-visibility'
 import { useAuthStore } from '@/blockchain'
 import { useMediaLibrary } from '@/composables/use-media-library'
 import { usePlayback } from '@/composables/use-playback'
@@ -288,6 +298,14 @@ async function share(): Promise<void> {
 function edit(): void {
   if (!collection.value) return
   editor.open({ mode: 'edit', kind: kind.value, rootTxid: collection.value.txid })
+}
+
+const { makePrivate } = useListVisibility()
+
+/** Сделать личным: появится личный список, публичная уйдёт из сети — туда и переходим. */
+function toPrivate(): void {
+  const c = collection.value
+  if (c) makePrivate(c, (listId) => void router.push(`/library/${listId}`))
 }
 
 function confirmDelete(): void {

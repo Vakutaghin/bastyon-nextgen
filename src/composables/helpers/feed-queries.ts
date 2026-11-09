@@ -4,7 +4,7 @@
 
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getByPRCWithAuth } from '@/helpers/api/request'
-import { favoritesAPI } from '@/db/apis/favorites-api'
+import { useMediaLibraryStore } from '@/stores/media-library-store'
 import type {
   GetHierarchicalStripResponse,
   GetHierarchicalStripPost,
@@ -170,14 +170,15 @@ export async function buildMostCommentedFeedQuery(
 }
 
 /**
- * Вкладка «Избранное»: список id из локального IDB → батч-загрузка по hash.
+ * Вкладка «Избранное»: id из личного списка аккаунта (общего для устройств) →
+ * батч-загрузка по hash.
  * Поддерживает пагинацию по currentTxid (последний загруженный из локального списка).
  * Возвращает пустой contents если currentTxid не найден или список закончился.
  */
 export async function buildFavoritesFeedQuery(
   ctx: FeedQueryContext
 ): Promise<GetHierarchicalStripResponse> {
-  const allFavIds = await favoritesAPI.getAllIds(ctx.userAddress || '')
+  const allFavIds = await useMediaLibraryStore().favoritesFor(ctx.userAddress || '')
 
   let startIndex = 0
   if (ctx.currentTxid) {

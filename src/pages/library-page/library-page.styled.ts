@@ -39,3 +39,13 @@ export const SC_Back = styled.div`
     color: var(--ui-text);
   }
 `
+
+/** Личный список публикуется вместо себя: пока это так, он только для чтения. */
+export const SC_Replacing = styled.p`
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ui-text-muted);
+  background: var(--ui-bg-muted);
+  border-radius: var(--ui-radius-md);
+`

@@ -4477,60 +4477,55 @@ export default {
     viewPosts: 'Publications',
   },
   library: {
-    myLists: 'Mes listes',
-    savedVideos: 'Enregistrées',
     watchLater: 'À regarder plus tard',
-    myMusic: 'Ma musique',
-    private: 'Privée',
     untitledPlaylist: 'Sans titre',
     newPlaylistName: 'Nom de la playlist',
-    create: 'Créer',
-    newPrivatePlaylist: 'Nouvelle playlist privée',
     full: 'La liste contient déjà 1 000 entrées : plus rien ne rentre',
-    tooManyPlaylists: 'Vous avez déjà 100 playlists privées : c’est la limite',
-    addToMusic: 'Ajouter à « Ma musique »',
-    removeFromMusic: 'Retirer de « Ma musique »',
     addToLater: 'À regarder plus tard',
     removeFromLater: 'Retirer de « À regarder plus tard »',
-    addToSaved: 'Enregistrer',
-    removeFromSaved: 'Retirer des enregistrées',
     count: '{n} entrée | {n} entrées',
     privateNote:
       'Vous seul voyez cette liste. Elle est conservée dans les données de votre compte sur le serveur de discussions et identique sur tous vos appareils.',
-    emptySaved:
-      'Aucune vidéo enregistrée pour l’instant. Choisissez « Enregistrer » dans le menu d’une vidéo.',
     emptyLater: 'Vide. Ajoutez des vidéos avec « À regarder plus tard » dans leur menu.',
-    emptyMusic: '« Ma musique » est encore vide. Ajoutez des titres depuis leur menu.',
-    emptyPlaylist:
-      'La playlist est vide. Ajoutez des entrées avec le bouton « Dans une playlist ».',
     privatePlaylists: 'Playlists privées',
     noPrivatePlaylists: 'Aucune playlist privée pour l’instant',
     cancel: 'Annuler',
     save: 'Enregistrer',
     rename: 'Renommer',
     delete: 'Supprimer',
-    deleteConfirmTitle: 'Supprimer la playlist privée ?',
-    deleteConfirmText:
-      'La playlist disparaît sur tous vos appareils. Les entrées elles-mêmes restent.',
     notFound: 'Cette liste n’existe pas. Elle a peut-être été supprimée sur un autre appareil.',
+    favorites: 'Favoris',
+    addToFavorites: 'Ajouter aux favoris',
+    removeFromFavorites: 'Retirer des favoris',
+    emptyFavorites: {
+      video:
+        'Aucune vidéo dans les favoris pour l’instant. Choisissez « Ajouter aux favoris » dans le menu d’une vidéo ou appuyez sur le signet d’une publication.',
+      audio:
+        'Aucune piste dans les favoris pour l’instant. Choisissez « Ajouter aux favoris » dans le menu d’une piste ou appuyez sur le signet d’une publication.',
+      posts: 'Les favoris sont vides pour l’instant. Appuyez sur le signet d’une publication.',
+    },
+    emptyList: {
+      video:
+        'La playlist est vide. Ajoutez des vidéos avec « Dans une playlist » ou « Ajouter à… » dans leur menu.',
+      audio:
+        'La playlist est vide. Ajoutez des pistes avec « Dans une playlist » ou « Ajouter à… » dans leur menu.',
+      posts:
+        'La collection est vide. Ajoutez des publications avec « Dans une collection » sous chacune.',
+    },
+    deleteConfirmText:
+      'La liste disparaît sur tous vos appareils. Les entrées elles-mêmes restent.',
+    tooManyPlaylists: 'Vous avez déjà 100 listes privées : c’est la limite',
   },
   collections: {
-    addToPlaylist: 'Ajouter à une playlist',
-    addToCollection: 'Ajouter à une collection',
     addToEllipsis: 'Ajouter à…',
     toPlaylistAction: 'Dans une playlist',
     toCollectionAction: 'Dans une collection',
-    publicPlaylistsAndCollections: 'Playlists et collections publiques',
-    myCollections: 'Mes collections',
     publicHint:
       'Visibles par tous et conservées dans la blockchain. Chaque modification est une transaction, 5 par mois au plus pour une collection.',
     loading: 'Chargement…',
-    items: '{n} publication | {n} publications',
     waitingBlock: 'En attente d’un bloc',
     editsLeft: 'Modifications restantes : {n} sur {max}',
-    noOwn: 'Vous n’avez pas encore de collections',
     newPlaylist: 'Nouvelle playlist',
-    newCollection: 'Nouvelle collection',
     queued: 'La modification de « {name} » partira dès que la précédente sera confirmée',
     added: 'Ajouté à « {name} »',
     removed: 'Retiré de « {name} »',
@@ -4548,16 +4543,12 @@ export default {
     notInBlock: 'Pas dans un bloc',
     deleting: 'Suppression',
     publishing: 'Publication',
-    mine: {
-      video: 'Mes playlists',
-      audio: 'Mes albums et playlists',
-    },
     publicNote:
       'Tout le monde voit les playlists publiques : elles sont conservées dans la blockchain, comme les publications.',
     noneYet: {
       posts: 'Aucune collection pour l’instant',
       video: 'Aucune playlist vidéo pour l’instant',
-      audio: 'Aucun album ni playlist pour l’instant',
+      audio: 'Pas encore de playlists audio',
     },
     loadFailed: 'Impossible de charger la collection',
     notFound: 'Collection introuvable : elle a été supprimée ou n’est pas encore dans un bloc',
@@ -4591,8 +4582,8 @@ export default {
     itemRemoved: 'Publication supprimée',
     profileTitle: {
       video: 'Playlists',
-      audio: 'Albums et playlists',
       posts: 'Collections',
+      audio: 'Playlists',
     },
     profileMedia: {
       video: 'Toutes les vidéos',
@@ -4608,7 +4599,7 @@ export default {
       captionPlaceholder: {
         posts: 'Par exemple : Le meilleur de l’année',
         video: 'Par exemple : Saison 1',
-        audio: 'Par exemple : Nouvel album',
+        audio: 'Par exemple : Musique pour la route',
       },
       description: 'Description',
       descriptionPlaceholder: 'De quoi parle cette sélection',
@@ -4626,13 +4617,6 @@ export default {
       },
       move: 'Déplacer l’entrée {n}',
       remove: 'Retirer',
-      emptyItems: {
-        posts: 'Ajoutez des publications avec le bouton « Dans une collection » sous chacune',
-        video:
-          'Ajoutez vos vidéos ci-dessous ou avec le bouton « Dans une playlist » sous une vidéo',
-        audio:
-          'Ajoutez vos titres ci-dessous ou avec le bouton « Dans une playlist » sous un titre',
-      },
       addOwn: {
         video: 'Mes vidéos',
         audio: 'Mes titres',
@@ -4649,69 +4633,39 @@ export default {
         video: 'Modifier la playlist',
         audio: 'Modifier la playlist',
       },
-      createTitle: {
-        posts: 'Nouvelle collection',
-        video: 'Nouvelle playlist vidéo',
-        audio: 'Nouvelle playlist audio',
-      },
     },
   },
   shelf: {
     title: 'Collections et playlists',
-    lead: 'Tout ce que vous avez rassemblé, au même endroit. Les collections et playlists publiques sont stockées dans la blockchain : tout le monde les voit, et chaque modification est une transaction, 5 par mois au plus pour une collection. Vos listes privées, vous seul les voyez.',
     signIn: 'Connectez-vous pour voir et créer vos collections et playlists.',
     signInButton: 'Se connecter',
     create: 'Créer',
-    createVideo: 'Playlist vidéo',
-    createAudio: 'Playlist audio ou album',
-    createPosts: 'Collection de publications',
-    createPrivateVideo: 'Playlist vidéo privée',
-    createPrivateAudio: 'Playlist audio privée',
-    postsHowTitle: 'Comment créer une collection',
-    postsHowText:
-      'Une collection se compose de publications : touchez « Dans une collection » sous une publication et choisissez « Nouvelle collection ». Le réseau n’accepte pas de collection vide.',
-    understood: 'Compris',
-    filterLabel: 'Afficher',
-    filters: {
-      all: 'Tout',
-      posts: 'Collections',
-      video: 'Vidéo',
-      audio: 'Audio',
-      private: 'Privées',
-    },
-    groups: {
-      posts: 'Collections de publications',
-      video: 'Playlists vidéo',
-      audio: 'Playlists audio et albums',
-      private: 'Listes privées',
-    },
-    none: {
-      posts: 'Pas encore de collection. Touchez « Dans une collection » sous une publication.',
-      video: 'Pas encore de playlist vidéo.',
-      audio: 'Pas encore de playlist audio ni d’album.',
-    },
     loadFailed: 'Impossible de charger les collections.',
     retry: 'Réessayer',
     search: 'Rechercher par nom',
     nothingFound: 'Aucun résultat',
-    savedVideos: 'Vidéos enregistrées',
-    systemKind: 'Liste privée',
-    privateKind: 'Playlist privée',
     more: 'Actions',
-    renameTitle: 'Renommer la playlist',
-    newPrivateTitle: {
-      video: 'Nouvelle playlist vidéo privée',
-      audio: 'Nouvelle playlist audio privée',
-    },
-    created: 'Playlist « {name} » créée',
-    deleted: 'Playlist supprimée',
-    deletePublicTitle: {
-      posts: 'Supprimer la collection « {name} » ?',
-      video: 'Supprimer la playlist « {name} » ?',
-      audio: 'Supprimer la playlist « {name} » ?',
-    },
-    deletePrivateTitle: 'Supprimer la playlist privée « {name} » ?',
     manage: 'Toutes les collections et playlists',
+    lead: 'Les playlists rassemblent des vidéos ou de l’audio, les collections n’importe quelles publications. Chaque liste est soit publique — tout le monde la voit, elle est stockée dans la blockchain —, soit privée : vous seul la voyez.',
+    builtins: 'Listes intégrées',
+    onDevice: 'Sur cet appareil',
+    mine: 'Mes playlists et collections',
+    kindFilters: {
+      all: 'Tout',
+      video: 'Vidéo',
+      audio: 'Audio',
+      posts: 'Publications',
+    },
+    visibilityFilters: {
+      all: 'Toutes',
+      public: 'Tout le monde',
+      private: 'Moi seul',
+    },
+    none: 'Pas encore de playlists ni de collections à vous. Appuyez sur « Créer » ou sur « Ajouter à… » dans le menu d’une entrée.',
+    publicLoading: 'Les listes publiques se chargent encore…',
+    deleteTitle: 'Supprimer « {name} » ?',
+    renameTitle: 'Renommer la liste',
+    deleted: 'Liste supprimée',
   },
   videoSection: {
     title: 'Vidéo',
@@ -4723,10 +4677,10 @@ export default {
       home: 'Accueil',
       subscriptions: 'Abonnements',
       playlists: 'Playlists',
-      saved: 'Enregistrées',
       later: 'À regarder plus tard',
       downloads: 'Téléchargements',
       uploads: 'Mises en ligne',
+      favorites: 'Favoris',
     },
     sort: {
       fresh: 'Nouveautés',
@@ -4744,9 +4698,9 @@ export default {
     tabs: {
       home: 'Accueil',
       subscriptions: 'Abonnements',
-      music: 'Ma musique',
       playlists: 'Playlists',
       downloads: 'Téléchargements',
+      favorites: 'Favoris',
     },
     rubrics: {
       all: 'Tout',
@@ -4874,5 +4828,62 @@ export default {
       quota: 'Android a limité les téléchargements en arrière-plan pour aujourd’hui',
       io: 'erreur d’écriture sur le disque',
     },
+  },
+  lists: {
+    whatInside: 'Contenu',
+    whoSees: 'Qui la voit',
+    kind: {
+      video: 'Vidéo',
+      audio: 'Audio',
+      posts: 'Publications',
+    },
+    kindHint: {
+      video: 'Une playlist de vidéos à regarder à la suite',
+      audio: 'Une playlist de pistes à écouter à la suite',
+      posts: 'Une collection de publications : articles, photos, vidéos',
+    },
+    visibility: {
+      private: 'Moi seul',
+      public: 'Tout le monde',
+    },
+    visibilityHint: {
+      private: 'Liste privée dans les données de votre compte, modifiable à volonté',
+      public: 'Publiée dans la blockchain, jusqu’à 5 modifications par mois',
+    },
+    createTitle: 'Nouvelle liste',
+    makePublicTitle: 'Rendre la liste publique',
+    makePublicNote:
+      'La liste apparaîtra dans la blockchain et tout le monde la verra. La liste privée sera supprimée dès que la publication sera dans un bloc. Les nouvelles entrées vont à la fin ; faites glisser pour réordonner.',
+    publish: 'Publier',
+    privateNote:
+      'Vous seul verrez cette liste, sur tous vos appareils. Modifiez-la à volonté et rendez-la publique plus tard.',
+    emptyItems: {
+      video: 'Ajoutez des vidéos ci-dessous ou avec « Dans une playlist » sous une vidéo',
+      audio: 'Ajoutez des pistes ci-dessous ou avec « Dans une playlist » sous une piste',
+      posts:
+        'Ajoutez des publications depuis les favoris ci-dessous ou avec « Dans une collection » sous une publication',
+    },
+    addFrom: 'Ajouter depuis',
+    noOwn: {
+      video: 'Vous n’avez pas encore de vidéos',
+      audio: 'Vous n’avez pas encore de pistes',
+    },
+    created: 'Liste « {name} » créée',
+    madePublic:
+      'La liste part vers le réseau : tout le monde la verra après confirmation, et la liste privée sera supprimée',
+    makePublic: 'Rendre publique',
+    makePrivate: 'Rendre privée',
+    makePrivateTitle: 'Rendre « {name} » privée ?',
+    makePrivateText:
+      'Une liste privée avec les mêmes entrées apparaît : vous seul la verrez. La liste publique est supprimée du réseau : c’est une transaction, comme toute modification. La description et la couverture ne sont pas reprises.',
+    madePrivate: '« {name} » est désormais privée',
+    madePrivateKept:
+      'La liste privée est créée, mais la publique n’a pas pu être supprimée : {reason}',
+    publishingNote:
+      'La liste est en cours de publication dans la blockchain. Dès qu’elle sera dans un bloc, la liste privée sera supprimée et la publique apparaîtra sur la page « Collections et playlists ».',
+    favoritesSub: 'Tous types d’entrées',
+    noPublic: 'Pas encore de listes publiques',
+    newList: 'Nouvelle liste…',
+    publicPlaylists: 'Playlists publiques',
   },
 } as const

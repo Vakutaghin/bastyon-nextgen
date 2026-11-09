@@ -8,7 +8,7 @@ What to do if you lost your phone, forgot your passphrase or cannot find your 12
 
 ## You have the phrase but not the device
 
-Install the app on a new device and sign in with your recovery phrase — see [Signing in](sign-in.md). Everything comes back: the profile, posts, subscriptions, coins and conversations, because they are stored on the network, not on the device. Only drafts and favorites are gone — they lived on the old device.
+Install the app on a new device and sign in with your recovery phrase — see [Signing in](sign-in.md). Everything comes back: the profile, posts, subscriptions, coins and conversations, because they are stored on the network, not on the device. [Favorites and private lists](media-library.md) come back too — they are kept in the account data. Only drafts are gone — they lived on the old device.
 
 If the device may have been stolen, think about whether someone could use it:
 

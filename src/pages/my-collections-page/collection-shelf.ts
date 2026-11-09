@@ -1,30 +1,26 @@
-// «Коллекции и плейлисты»: всё своё одним списком. Публичное — коллекции
-// публикаций, видео- и аудиоплейлисты (транзакции 220 в блокчейне); личное —
-// «Сохранённые», «Смотреть позже», «Моя музыка» и личные плейлисты (данные
-// аккаунта на сервере чатов). Здесь — из чего собраны строки и как их
+// «Коллекции и плейлисты»: всё своё одним списком. У каждой строки два
+// свойства — что внутри (видео, аудио, публикации) и кто видит (все — список
+// в блокчейне, транзакция 220; только я — личный, в данных аккаунта на сервере
+// чатов). Встроенные «Избранное», «Смотреть позже» и «Скачанное» страница
+// показывает отдельно, сверху. Здесь — из чего собраны строки и как их
 // отбирать; сами данные — в collections-store и media-library-store.
 
-import type { CollectionKind } from '@/services/collections/collection-model'
-import {
-  MY_MUSIC,
-  SAVED_VIDEOS,
-  WATCH_LATER,
-  type LibraryKind,
-} from '@/services/media-library/media-library-doc'
+import type { LibraryKind } from '@/services/media-library/media-library-doc'
 import type { CollectionView } from '@/stores/collections-store'
 
-/** Группа на странице: три публичных вида и личные списки. */
-export type ShelfGroup = CollectionKind | 'private'
+export type ShelfVisibility = 'public' | 'private'
 
-export const SHELF_GROUPS: readonly ShelfGroup[] = ['posts', 'video', 'audio', 'private']
+export const SHELF_KINDS: readonly LibraryKind[] = ['video', 'audio', 'posts']
+export const SHELF_VISIBILITIES: readonly ShelfVisibility[] = ['public', 'private']
 
-export type ShelfFilter = 'all' | ShelfGroup
+export type ShelfKindFilter = 'all' | LibraryKind
+export type ShelfVisibilityFilter = 'all' | ShelfVisibility
 
 export interface ShelfRow {
   /** txid коллекции или id личного списка. */
   key: string
-  group: ShelfGroup
-  kind: CollectionKind
+  kind: LibraryKind
+  visibility: ShelfVisibility
   /** Пусто — «Без названия» (подпись даёт страница). */
   name: string
   count: number
@@ -33,23 +29,16 @@ export interface ShelfRow {
   fallbackCover: string | null
   /** Публичная: она сама, с ожидающими правками. */
   collection?: CollectionView
-  /** Встроенный личный список: не переименовать и не удалить. */
-  system?: boolean
+  /** Личный список сейчас публикуется вместо себя. */
+  replacing?: boolean
 }
-
-/** Встроенные личные списки — всегда на месте, даже пустые. */
-export const SYSTEM_SHELF: readonly { id: string; kind: LibraryKind }[] = [
-  { id: SAVED_VIDEOS, kind: 'video' },
-  { id: WATCH_LATER, kind: 'video' },
-  { id: MY_MUSIC, kind: 'audio' },
-]
 
 /** Свои публичные; удаляемые остаются с пометкой, пока удаление не в блоке. */
 export function publicRows(list: readonly CollectionView[]): ShelfRow[] {
   return list.map((c) => ({
     key: c.txid,
-    group: c.kind,
     kind: c.kind,
+    visibility: 'public',
     name: c.caption,
     count: c.contentIds.length,
     to: `/collection/${c.txid}`,
@@ -65,52 +54,80 @@ export interface LibraryShelfSource {
   nameOf(listId: string): string
 }
 
-/** Личные списки: сначала встроенные, потом личные плейлисты видео и аудио. */
-export function privateRows(library: LibraryShelfSource): ShelfRow[] {
-  const row = (id: string, kind: LibraryKind, system: boolean): ShelfRow => ({
-    key: id,
-    group: 'private',
-    kind,
-    name: system ? '' : library.nameOf(id),
-    count: library.ids(id).length,
-    to: `/library/${id}`,
-    cover: null,
-    fallbackCover: null,
-    ...(system ? { system: true } : {}),
-  })
-  return [
-    ...SYSTEM_SHELF.map((s) => row(s.id, s.kind, true)),
-    ...library.playlists('video').map((id) => row(id, 'video', false)),
-    ...library.playlists('audio').map((id) => row(id, 'audio', false)),
-  ]
+/** Личные плейлисты и коллекции (встроенные списки — не здесь). */
+export function privateRows(
+  library: LibraryShelfSource,
+  replacing: (listId: string) => boolean = () => false
+): ShelfRow[] {
+  return SHELF_KINDS.flatMap((kind) =>
+    library.playlists(kind).map((id) => ({
+      key: id,
+      kind,
+      visibility: 'private' as const,
+      name: library.nameOf(id),
+      count: library.ids(id).length,
+      to: `/library/${id}`,
+      cover: null,
+      fallbackCover: null,
+      ...(replacing(id) ? { replacing: true } : {}),
+    }))
+  )
 }
 
-/**
- * Что показать: группа фильтра и поиск по названию. У встроенных списков
- * название переводное — его передаёт страница (`labelOf`).
- */
+/** По названию; только что созданные публичные, которых ещё нет в блоке, — сверху. */
+export function sortShelf(
+  rows: readonly ShelfRow[],
+  labelOf: (row: ShelfRow) => string
+): ShelfRow[] {
+  const fresh = (r: ShelfRow) => (r.collection?.pending === 'create' ? 0 : 1)
+  return [...rows].sort(
+    (a, b) =>
+      fresh(a) - fresh(b) ||
+      labelOf(a).localeCompare(labelOf(b), undefined, { sensitivity: 'base', numeric: true })
+  )
+}
+
+/** Что показать: что внутри, кто видит и поиск по названию (подпись даёт страница). */
 export function filterShelf(
   rows: readonly ShelfRow[],
-  filter: ShelfFilter,
+  kind: ShelfKindFilter,
+  visibility: ShelfVisibilityFilter,
   search: string,
   labelOf: (row: ShelfRow) => string
 ): ShelfRow[] {
   const q = search.trim().toLocaleLowerCase()
   return rows.filter(
     (r) =>
-      (filter === 'all' || r.group === filter) && (!q || labelOf(r).toLocaleLowerCase().includes(q))
+      (kind === 'all' || r.kind === kind) &&
+      (visibility === 'all' || r.visibility === visibility) &&
+      (!q || labelOf(r).toLocaleLowerCase().includes(q))
   )
 }
 
-/** Сколько в каждой группе — для подписей фильтра. */
-export function shelfCounts(rows: readonly ShelfRow[]): Record<ShelfFilter, number> {
-  const counts: Record<ShelfFilter, number> = {
-    all: rows.length,
-    posts: 0,
-    video: 0,
-    audio: 0,
-    private: 0,
+/** Сколько строк каждого вида — при выбранном «кто видит». */
+export function kindCounts(
+  rows: readonly ShelfRow[],
+  visibility: ShelfVisibilityFilter
+): Record<ShelfKindFilter, number> {
+  const counts: Record<ShelfKindFilter, number> = { all: 0, video: 0, audio: 0, posts: 0 }
+  for (const r of rows) {
+    if (visibility !== 'all' && r.visibility !== visibility) continue
+    counts.all += 1
+    counts[r.kind] += 1
   }
-  for (const r of rows) counts[r.group] += 1
+  return counts
+}
+
+/** Сколько публичных и личных — при выбранном «что внутри». */
+export function visibilityCounts(
+  rows: readonly ShelfRow[],
+  kind: ShelfKindFilter
+): Record<ShelfVisibilityFilter, number> {
+  const counts: Record<ShelfVisibilityFilter, number> = { all: 0, public: 0, private: 0 }
+  for (const r of rows) {
+    if (kind !== 'all' && r.kind !== kind) continue
+    counts.all += 1
+    counts[r.visibility] += 1
+  }
   return counts
 }

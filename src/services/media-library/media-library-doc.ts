@@ -1,27 +1,43 @@
-// Личные списки разделов «Видео» и «Аудио»: «Сохранённые видео», «Смотреть
-// позже», «Моя музыка» и личные плейлисты. Их видит только владелец: в
-// блокчейне они были бы публичными, а плейлист там правится 5 раз в месяц.
+// Личные списки: «Избранное», «Смотреть позже», личные плейлисты и личные
+// коллекции. Их видит только владелец: в блокчейне они были бы публичными, а
+// коллекция там правится 5 раз в месяц.
 //
 // Хранятся в данных аккаунта Matrix (MEDIA_LIBRARY_ACCOUNT_DATA) — общие для
 // устройств, как список каналов мессенджера. Два устройства могут менять их
 // одновременно, поэтому у каждого элемента, названия и самого списка своё
 // время изменения, и слияние идёт по записям: удалённое остаётся отметкой,
 // чтобы его время победило старое «добавлено» с другого устройства.
+//
+// «Избранное» — одно на все типы публикаций. Раньше было три списка: закладки
+// постов (только на устройстве), «Сохранённые видео» и «Моя музыка». Два
+// последних остаются в документе: версии до 0.32 их показывают и пополняют, а
+// «Избранное» — их объединение со списком FAVORITES (FAVORITE_LISTS). Версии
+// до 0.32 не знают FAVORITES и личных коллекций (`kind: 'posts'`) и при своей
+// записи на сервер их теряют; новая версия видит пропажу при слиянии и
+// возвращает их своей копией (applyRemote в media-library-store).
 
 export const MEDIA_LIBRARY_ACCOUNT_DATA = 'app.bastyon.media'
 
-export type LibraryKind = 'video' | 'audio'
+/** Что внутри: видео, аудио или публикации любого типа. */
+export type LibraryKind = 'video' | 'audio' | 'posts'
 
-/** Встроенные списки; личные плейлисты — `p:<случайный id>`. */
+/** Встроенные списки; личные плейлисты и коллекции — `p:<случайный id>`. */
+export const FAVORITES = 'favorites'
 export const SAVED_VIDEOS = 'saved-video'
 export const WATCH_LATER = 'watch-later'
 export const MY_MUSIC = 'music'
 
 export const SYSTEM_LISTS: Readonly<Record<string, LibraryKind>> = {
+  [FAVORITES]: 'posts',
   [SAVED_VIDEOS]: 'video',
   [WATCH_LATER]: 'video',
   [MY_MUSIC]: 'audio',
 }
+
+/** Из чего складывается «Избранное»: новый список и два прежних. */
+export const FAVORITE_LISTS: readonly string[] = [FAVORITES, SAVED_VIDEOS, MY_MUSIC]
+
+const LIBRARY_KINDS: readonly LibraryKind[] = ['video', 'audio', 'posts']
 
 export const PLAYLIST_PREFIX = 'p:'
 
@@ -60,7 +76,7 @@ export function emptyLibraryDoc(): MediaLibraryDoc {
 }
 
 const TXID = /^[0-9a-f]{64}$/
-const LIST_ID = /^(saved-video|watch-later|music|p:[A-Za-z0-9_-]{4,40})$/
+const LIST_ID = /^(favorites|saved-video|watch-later|music|p:[A-Za-z0-9_-]{4,40})$/
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
 
 export function isPlaylistId(id: string): boolean {
@@ -75,7 +91,9 @@ export function parseLibraryDoc(raw: unknown): MediaLibraryDoc {
   for (const [id, value] of Object.entries(lists as Record<string, unknown>)) {
     if (!LIST_ID.test(id) || !value || typeof value !== 'object') continue
     const l = value as Record<string, unknown>
-    const kind = SYSTEM_LISTS[id] ?? (l.kind === 'video' || l.kind === 'audio' ? l.kind : null)
+    const kind =
+      SYSTEM_LISTS[id] ??
+      (LIBRARY_KINDS.includes(l.kind as LibraryKind) ? (l.kind as LibraryKind) : null)
     if (!kind || !num(l.t)) continue
     const list: LibraryList = {
       kind,
@@ -174,6 +192,68 @@ export function hasItem(doc: MediaLibraryDoc, id: string, txid: string): boolean
   return !!list && !list.deleted && !!list.items[txid]?.on
 }
 
+/** «Избранное»: новый список и два прежних вместе, свежее сверху, без повторов. */
+export function favoriteIds(doc: MediaLibraryDoc): string[] {
+  const best = new Map<string, number>()
+  for (const id of FAVORITE_LISTS) {
+    const list = doc.lists[id]
+    if (!list || list.deleted) continue
+    for (const [txid, e] of Object.entries(list.items)) {
+      if (!e.on) continue
+      const prev = best.get(txid)
+      if (prev === undefined || e.o > prev) best.set(txid, e.o)
+    }
+  }
+  return [...best.entries()]
+    .sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))
+    .map(([txid]) => txid)
+}
+
+export function isFavorite(doc: MediaLibraryDoc, txid: string): boolean {
+  return FAVORITE_LISTS.some((id) => hasItem(doc, id, txid))
+}
+
+/** Добавить — в новый список; убрать — отовсюду, где запись есть. */
+export function setFavorite(
+  doc: MediaLibraryDoc,
+  txid: string,
+  on: boolean,
+  now: number
+): MediaLibraryDoc {
+  if (on) return isFavorite(doc, txid) ? doc : setItem(doc, FAVORITES, txid, true, now)
+  let next = doc
+  for (const id of FAVORITE_LISTS) {
+    if (hasItem(next, id, txid)) next = setItem(next, id, txid, false, now)
+  }
+  return next
+}
+
+/**
+ * Закладки, которые раньше жили только на устройстве, — в «Избранное», со
+ * своим временем добавления. Запись, которую уже убрали позже, не
+ * возвращается; уже избранная не дублируется.
+ */
+export function importFavorites(
+  doc: MediaLibraryDoc,
+  entries: readonly { txid: string; at: number }[],
+  now: number
+): MediaLibraryDoc {
+  const base = listFor(doc, FAVORITES, now)!
+  const items = { ...base.items }
+  let count = Object.values(items).filter((e) => e.on).length
+  let changed = false
+  for (const { txid, at } of entries) {
+    const when = num(at) ? at : now
+    if (!TXID.test(txid) || count >= LIBRARY_LIST_MAX || isFavorite(doc, txid)) continue
+    const known = items[txid]
+    if (known && (known.on || known.t >= when)) continue
+    items[txid] = { on: true, t: when, o: when }
+    count += 1
+    changed = true
+  }
+  return changed ? { v: 1, lists: { ...doc.lists, [FAVORITES]: { ...base, items } } } : doc
+}
+
 function listFor(doc: MediaLibraryDoc, id: string, now: number): LibraryList | null {
   const existing = doc.lists[id]
   if (existing && !existing.deleted) return existing
@@ -225,7 +305,7 @@ export function moveItem(
   return { v: 1, lists: { ...doc.lists, [id]: { ...list, items } } }
 }
 
-/** Новый личный плейлист; null — их уже LIBRARY_PLAYLISTS_MAX. */
+/** Новый личный плейлист или коллекция; null — их уже LIBRARY_PLAYLISTS_MAX. */
 export function createPlaylist(
   doc: MediaLibraryDoc,
   id: string,

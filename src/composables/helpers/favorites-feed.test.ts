@@ -6,8 +6,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const favIds = vi.hoisted(() => ({ list: [] as string[] }))
 const rpc = vi.hoisted(() => ({ call: vi.fn() }))
 
-vi.mock('@/db/apis/favorites-api', () => ({
-  favoritesAPI: { getAllIds: vi.fn(async () => favIds.list) },
+vi.mock('@/stores/media-library-store', () => ({
+  useMediaLibraryStore: () => ({ favoritesFor: async () => favIds.list }),
 }))
 vi.mock('@/helpers/api/request', () => ({
   getByPRCWithAuth: (args: unknown) => rpc.call(args),

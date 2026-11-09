@@ -74,7 +74,7 @@
         </template>
       </template>
 
-      <LibraryListView v-else-if="tab === 'music'" :list-id="MY_MUSIC" kind="audio" />
+      <LibraryListView v-else-if="tab === 'favorites'" :list-id="FAVORITES" kind="audio" />
       <MediaPlaylistsTab v-else-if="tab === 'playlists'" kind="audio" />
       <OfflineDownloadsList v-else-if="tab === 'downloads'" kind="audio" />
     </SC_SectionPage>
@@ -104,7 +104,7 @@ import OfflineDownloadsList from '@/b-components/offline-video/offline-downloads
 import { useMediaFeed, type MediaFeedSource } from '@/composables/use-media-feed'
 import { requireAuth } from '@/composables/use-auth-gate'
 import { useAuthStore } from '@/blockchain'
-import { MY_MUSIC } from '@/services/media-library/media-library-doc'
+import { FAVORITES } from '@/services/media-library/media-library-doc'
 import { AUDIO_RUBRICS, AUDIO_RUBRIC_TAGS, type AudioRubric } from '@/services/media/audio-rubrics'
 import { loadSectionView, saveSectionView } from '@/services/media/media-section-view'
 import {
@@ -119,9 +119,9 @@ import {
   SC_Tabs,
 } from '../media-section/media-section.styled'
 
-type Tab = 'home' | 'subscriptions' | 'music' | 'playlists' | 'downloads'
+type Tab = 'home' | 'subscriptions' | 'favorites' | 'playlists' | 'downloads'
 
-const NEED_AUTH = new Set<string>(['subscriptions', 'music', 'playlists', 'downloads'])
+const NEED_AUTH = new Set<string>(['subscriptions', 'favorites', 'playlists', 'downloads'])
 
 const { t } = useI18n()
 const route = useRoute()
@@ -131,14 +131,14 @@ const authStore = useAuthStore()
 const tabs = [
   { id: 'home', labelKey: 'audioSection.tabs.home', to: '/audio' },
   { id: 'subscriptions', labelKey: 'audioSection.tabs.subscriptions', to: '/audio/subscriptions' },
-  { id: 'music', labelKey: 'audioSection.tabs.music', to: '/audio/music' },
+  { id: 'favorites', labelKey: 'audioSection.tabs.favorites', to: '/audio/favorites' },
   { id: 'playlists', labelKey: 'audioSection.tabs.playlists', to: '/audio/playlists' },
   { id: 'downloads', labelKey: 'audioSection.tabs.downloads', to: '/audio/downloads' },
 ]
 
 const tab = computed<Tab>(() => {
   const raw = typeof route.params.tab === 'string' ? route.params.tab : ''
-  return ['subscriptions', 'music', 'playlists', 'downloads'].includes(raw) &&
+  return ['subscriptions', 'favorites', 'playlists', 'downloads'].includes(raw) &&
     authStore.isUserAuthenticated
     ? (raw as Tab)
     : 'home'

@@ -1,5 +1,5 @@
 <template>
-  <SC_Row data-testid="shelf-row" :data-key="row.key">
+  <SC_Row data-testid="shelf-row" :data-key="row.key" :data-visibility="row.visibility">
     <router-link :to="row.to" class="main">
       <SC_Thumb :class="{ square: row.kind === 'audio' }">
         <img v-if="coverSrc" :src="coverSrc" alt="" loading="lazy" @error="onCoverError" />
@@ -8,8 +8,19 @@
       <SC_Text>
         <span class="name">{{ label }}</span>
         <span class="meta">
-          <LockOutlined v-if="row.group === 'private'" />
-          {{ meta }}
+          <SC_Badge data-testid="shelf-row-kind">
+            <component :is="kindIcon" />
+            {{ t(`collections.kindCount.${row.kind}`, { n: row.count }, row.count) }}
+          </SC_Badge>
+          <SC_Badge
+            :class="row.visibility"
+            :title="t(`lists.visibilityHint.${row.visibility}`)"
+            data-testid="shelf-row-visibility"
+          >
+            <GlobalOutlined v-if="row.visibility === 'public'" />
+            <LockOutlined v-else />
+            {{ t(`lists.visibility.${row.visibility}`) }}
+          </SC_Badge>
         </span>
       </SC_Text>
       <SC_State v-if="stateLabel" :class="{ failed: row.collection?.failed }">
@@ -33,10 +44,11 @@
 </template>
 
 <script setup lang="ts">
-// Строка на странице «Коллекции и плейлисты»: обложка, название, вид и
-// сколько внутри, состояние своего изменения; «⋯» — открыть, изменить,
-// поделиться, удалить. У публичной в меню — сколько правок осталось в этом
-// месяце (нода пускает 5): узнаём, когда меню открыли.
+// Строка на странице «Коллекции и плейлисты»: обложка, название, что внутри
+// и сколько, кто видит, состояние своего изменения; «⋯» — изменить или
+// переименовать, поделиться, сделать личным или публичным, удалить. У
+// публичной в меню — сколько правок осталось в этом месяце (нода пускает 5):
+// узнаём, когда меню открыли.
 
 import { computed, h, ref, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -46,6 +58,7 @@ import {
   CollectionIcon,
   DeleteOutlined,
   EditOutlined,
+  GlobalOutlined,
   LockOutlined,
   MoreOutlined,
   ShareAltOutlined,
@@ -55,9 +68,23 @@ import { useEditsLeft } from '@/b-components/media/add-to-list-modal/use-edits-l
 import { COLLECTION_EDIT_LIMIT } from '@/services/collections/collection-model'
 import type { CollectionView } from '@/stores/collections-store'
 import type { ShelfRow } from './collection-shelf'
-import { SC_More, SC_Row, SC_State, SC_Text, SC_Thumb } from './my-collections-page.styled'
+import {
+  SC_Badge,
+  SC_More,
+  SC_Row,
+  SC_State,
+  SC_Text,
+  SC_Thumb,
+} from './my-collections-page.styled'
 
-export type ShelfAction = 'edit' | 'share' | 'delete' | 'rename' | 'dismiss'
+export type ShelfAction =
+  | 'edit'
+  | 'share'
+  | 'delete'
+  | 'rename'
+  | 'dismiss'
+  | 'make-public'
+  | 'make-private'
 
 const props = defineProps<{ row: ShelfRow; label: string }>()
 const emit = defineEmits<{ action: [action: ShelfAction] }>()
@@ -86,18 +113,8 @@ function onCoverError(): void {
   coverFailed.value = true
 }
 
-const meta = computed(() => {
-  const { row } = props
-  const count = t(`collections.kindCount.${row.kind}`, { n: row.count }, row.count)
-  const kind = row.collection
-    ? t(`collections.kinds.${row.kind}`)
-    : row.system
-      ? t('shelf.systemKind')
-      : t('shelf.privateKind')
-  return `${kind} · ${count}`
-})
-
 const stateLabel = computed(() => {
+  if (props.row.replacing) return t('collections.publishing')
   const c = props.row.collection
   if (!c) return ''
   if (c.failed) return t('collections.notInBlock')
@@ -141,15 +158,17 @@ const items = computed<MenuItems>(() => {
           disabled: true,
         })
       out.push(
+        { key: 'make-private', label: t('lists.makePrivate'), icon: icon(LockOutlined) },
         { type: 'divider' },
         { key: 'delete', label: t('collections.delete'), icon: icon(DeleteOutlined), danger: true }
       )
     }
     return out
   }
-  if (row.system) return []
+  if (row.replacing) return []
   return [
     { key: 'rename', label: t('library.rename'), icon: icon(EditOutlined) },
+    { key: 'make-public', label: t('lists.makePublic'), icon: icon(GlobalOutlined) },
     { type: 'divider' },
     { key: 'delete', label: t('library.delete'), icon: icon(DeleteOutlined), danger: true },
   ]

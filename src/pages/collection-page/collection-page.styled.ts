@@ -92,6 +92,19 @@ export const SC_Kind = styled.div`
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ui-text-dimmed);
+
+  .visibility {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .visibility svg {
+    color: var(--ui-primary);
+  }
 `
 
 export const SC_StateBadge = styled.span`

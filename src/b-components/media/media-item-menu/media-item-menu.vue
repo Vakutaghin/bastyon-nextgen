@@ -15,8 +15,8 @@
 </template>
 
 <script setup lang="ts">
-// Меню ролика или трека: в очередь, личные списки, «Добавить в…», скачать для
-// просмотра без сети.
+// Меню ролика или трека: в очередь, «Избранное», «Смотреть позже», «Добавить
+// в…», скачать для просмотра без сети.
 
 import { computed, h, ref, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -24,12 +24,11 @@ import { Dropdown, Menu } from 'ant-design-vue'
 import {
   AddToListIcon,
   AudioPlaylistIcon,
+  BookFilled,
+  BookOutlined,
   DeleteOutlined,
   DownloadOutlined,
   MoreOutlined,
-  PlusOutlined,
-  SaveIcon,
-  SavedIcon,
   SkipForwardIcon,
   WatchLaterIcon,
 } from '@/components/icons'
@@ -42,7 +41,8 @@ import {
   offlineSourceFromPost,
   useOfflineDownload,
 } from '@/b-components/offline-video/use-offline-download'
-import { MY_MUSIC, SAVED_VIDEOS, WATCH_LATER } from '@/services/media-library/media-library-doc'
+import { FAVORITES, WATCH_LATER } from '@/services/media-library/media-library-doc'
+import { appToast } from '@/b-components/app-toast'
 import { mediaTitle, mediaTypeOf, postId, toQueueItem } from '@/services/media/media-post'
 import { cachedMediaInfo } from '@/services/media/media-info'
 import type { AdaptedPost } from '@/types/adapted-post'
@@ -62,24 +62,26 @@ const type = computed(() => mediaTypeOf(props.post))
 const id = computed(() => postId(props.post))
 const icon = (c: Component) => () => h(c)
 
+function favoriteItem() {
+  return library.isFavorite(id.value)
+    ? { key: FAVORITES, label: t('library.removeFromFavorites'), icon: icon(BookFilled) }
+    : { key: FAVORITES, label: t('library.addToFavorites'), icon: icon(BookOutlined) }
+}
+
 const items = computed(() => {
   const out: { key: string; label: string; icon: () => ReturnType<typeof h> }[] = []
   if (type.value === 'audio') {
     out.push(
       { key: 'next', label: t('media.playNext'), icon: icon(SkipForwardIcon) },
       { key: 'end', label: t('media.addToQueue'), icon: icon(AudioPlaylistIcon) },
-      library.has(MY_MUSIC, id.value)
-        ? { key: MY_MUSIC, label: t('library.removeFromMusic'), icon: icon(SavedIcon) }
-        : { key: MY_MUSIC, label: t('library.addToMusic'), icon: icon(PlusOutlined) }
+      favoriteItem()
     )
   } else if (type.value === 'video') {
     out.push(
       library.has(WATCH_LATER, id.value)
         ? { key: WATCH_LATER, label: t('library.removeFromLater'), icon: icon(WatchLaterIcon) }
         : { key: WATCH_LATER, label: t('library.addToLater'), icon: icon(WatchLaterIcon) },
-      library.has(SAVED_VIDEOS, id.value)
-        ? { key: SAVED_VIDEOS, label: t('library.removeFromSaved'), icon: icon(SavedIcon) }
-        : { key: SAVED_VIDEOS, label: t('library.addToSaved'), icon: icon(SaveIcon) },
+      favoriteItem(),
       { key: 'next', label: t('media.playNext'), icon: icon(SkipForwardIcon) }
     )
   }
@@ -116,7 +118,10 @@ function onClick({ key }: { key: string | number }): void {
       addToList.open({ postId: id.value, type: props.post.type, title: mediaTitle(props.post) })
       return
     }
-    library.toggle(k, id.value, !library.has(k, id.value))
+    const on = k === FAVORITES ? !library.isFavorite(id.value) : !library.has(k, id.value)
+    const done =
+      k === FAVORITES ? library.setFavorite(id.value, on) : library.toggle(k, id.value, on)
+    if (!done && on) appToast.warning({ message: t('library.full') })
   })
 }
 </script>

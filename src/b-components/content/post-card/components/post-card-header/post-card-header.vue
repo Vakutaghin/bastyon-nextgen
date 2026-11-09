@@ -105,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   BookOutlined,
@@ -122,7 +122,9 @@ import { useMessengerStore } from '@/b-components/messenger/store'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUserRelationsStore, useDonateStore } from '@/stores'
 import { useRelationActions } from '@/composables/use-relation-actions'
-import { favoritesAPI } from '@/db/apis/favorites-api'
+import { useMediaLibrary } from '@/composables/use-media-library'
+import { requireAuth } from '@/composables/use-auth-gate'
+import { appToast } from '@/b-components/app-toast'
 import { formatDateTimeFromString } from '@/helpers/common/date-formatter'
 import { userAvatar, userName } from '@/services/user-names'
 import { userMarkOf } from '@/services/user-marks'
@@ -208,11 +210,14 @@ const relations = useUserRelationsStore()
 const { toggleFollow } = useRelationActions()
 const donateStore = useDonateStore()
 
-const isBookmarked = ref(false)
+const { library } = useMediaLibrary()
 
 const postId = computed<string>(() => {
   return props.post.txid || props.post.hash || String(props.post.id || '')
 })
+
+// «Избранное» — личный список аккаунта, общий для его устройств.
+const isBookmarked = computed<boolean>(() => !!postId.value && library.isFavorite(postId.value))
 
 // Значок автора: бейджи модератора и «акулы» — из профиля, который пришёл с
 // постом (adapt-post запоминает его в user-names), или догружаются по адресу.
@@ -266,14 +271,6 @@ const formattedReputation = computed<string>(() => {
   const rounded = Math.round(val * 10) / 10
   return `${rounded}K`
 })
-
-/** Владелец избранного — текущий аккаунт (N10/Р5); аноним — '' (устройство). */
-const favoritesOwner = (): string => authStore.getUserAddress || ''
-
-async function checkBookmarkStatus(): Promise<void> {
-  if (!postId.value) return
-  isBookmarked.value = await favoritesAPI.has(favoritesOwner(), postId.value)
-}
 
 // ── Подписка (follow) из ленты ──────────────────────────────────────
 const authorAddress = computed<string>(() => displayAuthor.value?.address || '')
@@ -337,26 +334,19 @@ async function startChatWithAuthor(event: Event): Promise<void> {
   }
 }
 
-async function toggleBookmark(event: Event): Promise<void> {
+function toggleBookmark(event: Event): void {
   event.preventDefault()
   event.stopPropagation()
-  if (!postId.value) return
-  if (isBookmarked.value) {
-    await favoritesAPI.remove(favoritesOwner(), postId.value)
-    isBookmarked.value = false
-  } else {
-    await favoritesAPI.add(favoritesOwner(), postId.value)
-    isBookmarked.value = true
-  }
+  const id = postId.value
+  if (!id) return
+  // Избранное хранится в данных аккаунта — гостю сперва вход.
+  requireAuth(() => {
+    const on = !library.isFavorite(id)
+    if (!library.setFavorite(id, on) && on) appToast.warning({ message: t('library.full') })
+  })
 }
 
 function formatTime(timestamp: string): string {
   return formatDateTimeFromString(timestamp)
 }
-
-watch(() => props.post, checkBookmarkStatus, { deep: true })
-// Смена аккаунта — избранное другого владельца (N10/Р5).
-watch(() => authStore.getUserAddress, checkBookmarkStatus)
-
-onMounted(checkBookmarkStatus)
 </script>

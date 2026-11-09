@@ -5,63 +5,56 @@
     :centered="true"
     :z-index="2700"
     :footer="null"
-    :title="title"
     @cancel="store.close()"
   >
+    <template #title>
+      {{ t('collections.addToEllipsis') }} <HelpLink topic="collections#add" />
+    </template>
     <SC_Body v-if="target" data-testid="add-to-list">
       <SC_Preview v-if="target.title">«{{ target.title }}»</SC_Preview>
 
-      <template v-if="mediaKind">
-        <SC_Section>{{ t('library.myLists') }}</SC_Section>
-        <SC_Row
-          v-for="list in systemLists"
-          :key="list.id"
-          type="button"
-          role="menuitemcheckbox"
-          :aria-checked="library.has(list.id, target.postId)"
-          @click="toggleLibrary(list.id)"
-        >
-          <SC_Check :class="{ on: library.has(list.id, target.postId) }"
-            ><CheckOutlined
-          /></SC_Check>
-          <SC_RowText>{{ t(list.labelKey) }}</SC_RowText>
-        </SC_Row>
-        <SC_Row
-          v-for="id in library.playlists(mediaKind)"
-          :key="id"
-          type="button"
-          role="menuitemcheckbox"
-          :aria-checked="library.has(id, target.postId)"
-          @click="toggleLibrary(id)"
-        >
-          <SC_Check :class="{ on: library.has(id, target.postId) }"><CheckOutlined /></SC_Check>
-          <SC_RowText>{{ library.nameOf(id) || t('library.untitledPlaylist') }}</SC_RowText>
-          <SC_RowNote><LockOutlined /> {{ t('library.private') }}</SC_RowNote>
-        </SC_Row>
-        <SC_NewRow v-if="creatingPrivate" @submit.prevent="createPrivate">
-          <input
-            ref="privateInput"
-            v-model="privateName"
-            maxlength="100"
-            :placeholder="t('library.newPlaylistName')"
-            :aria-label="t('library.newPlaylistName')"
-          />
-          <Button type="primary" html-type="submit" :disabled="!privateName.trim()">
-            {{ t('library.create') }}
-          </Button>
-        </SC_NewRow>
-        <SC_LinkButton v-else type="button" @click="startPrivate">
-          <PlusOutlined /> {{ t('library.newPrivatePlaylist') }}
-        </SC_LinkButton>
-      </template>
+      <SC_Section><LockOutlined /> {{ t('lists.visibility.private') }}</SC_Section>
+      <SC_Row
+        type="button"
+        role="menuitemcheckbox"
+        :aria-checked="library.isFavorite(target.postId)"
+        data-testid="add-to-favorites"
+        @click="toggleFavorite"
+      >
+        <SC_Check :class="{ on: library.isFavorite(target.postId) }"><CheckOutlined /></SC_Check>
+        <SC_RowText>
+          {{ t('library.favorites') }}
+          <SC_RowSub>{{ t('lists.favoritesSub') }}</SC_RowSub>
+        </SC_RowText>
+      </SC_Row>
+      <SC_Row
+        v-if="mediaKind === 'video'"
+        type="button"
+        role="menuitemcheckbox"
+        :aria-checked="library.has(WATCH_LATER, target.postId)"
+        @click="toggleLibrary(WATCH_LATER)"
+      >
+        <SC_Check :class="{ on: library.has(WATCH_LATER, target.postId) }"
+          ><CheckOutlined
+        /></SC_Check>
+        <SC_RowText>{{ t('library.watchLater') }}</SC_RowText>
+      </SC_Row>
+      <SC_Row
+        v-for="id in privateLists"
+        :key="id"
+        type="button"
+        role="menuitemcheckbox"
+        :aria-checked="library.has(id, target.postId)"
+        @click="toggleLibrary(id)"
+      >
+        <SC_Check :class="{ on: library.has(id, target.postId) }"><CheckOutlined /></SC_Check>
+        <SC_RowText>
+          {{ library.nameOf(id) || t('library.untitledPlaylist') }}
+          <SC_RowSub>{{ subOf(library.kindOf(id) ?? 'posts', library.ids(id).length) }}</SC_RowSub>
+        </SC_RowText>
+      </SC_Row>
 
-      <SC_Section>
-        {{
-          mediaKind
-            ? t('collections.publicPlaylistsAndCollections')
-            : t('collections.myCollections')
-        }}
-      </SC_Section>
+      <SC_Section><GlobalOutlined /> {{ t('lists.visibility.public') }}</SC_Section>
       <SC_Hint>{{ t('collections.publicHint') }}</SC_Hint>
 
       <SC_Status v-if="loadingPublic">{{ t('collections.loading') }}</SC_Status>
@@ -77,10 +70,7 @@
         <SC_Check :class="{ on: c.contentIds.includes(target.postId) }"><CheckOutlined /></SC_Check>
         <SC_RowText>
           {{ c.caption || t('media.untitled') }}
-          <SC_RowSub
-            >{{ kindLabel(c.kind) }} ·
-            {{ t('collections.items', { n: c.contentIds.length }, c.contentIds.length) }}</SC_RowSub
-          >
+          <SC_RowSub>{{ subOf(c.kind, c.contentIds.length) }}</SC_RowSub>
         </SC_RowText>
         <SC_RowNote>
           <template v-if="c.queued || collections.busy(c.txid)">{{
@@ -92,29 +82,29 @@
         </SC_RowNote>
       </SC_Row>
       <SC_Status v-if="!loadingPublic && !publicLists.length">
-        {{ t('collections.noOwn') }}
+        {{ t('lists.noPublic') }}
       </SC_Status>
-      <SC_LinkButton type="button" @click="createPublic">
-        <PlusOutlined />
-        {{ mediaKind ? t('collections.newPlaylist') : t('collections.newCollection') }}
-      </SC_LinkButton>
-      <SC_LinkButton v-if="mediaKind" type="button" @click="createPublic('posts')">
-        <PlusOutlined /> {{ t('collections.newCollection') }}
+
+      <SC_LinkButton type="button" data-testid="add-to-new-list" @click="createNew">
+        <PlusOutlined /> {{ t('lists.newList') }}
       </SC_LinkButton>
     </SC_Body>
   </Modal>
 </template>
 
 <script setup lang="ts">
-// «Добавить в…»: личные списки (видит только владелец, без ограничений) и свои
-// публичные плейлисты и коллекции (в блокчейне: правка — транзакция, их 5 в
-// месяц на коллекцию). Новое встаёт в конец.
+// «Добавить в…»: сначала то, что видите только вы («Избранное», «Смотреть
+// позже», личные списки, без ограничений), потом свои публичные списки (в
+// блокчейне: правка — транзакция, их 5 в месяц на коллекцию). У каждой строки
+// — что внутри и сколько. Новое встаёт в конец; «Новый список…» открывает
+// окно «Создать» с этой записью.
 
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Modal } from 'ant-design-vue'
-import { CheckOutlined, LockOutlined, PlusOutlined } from '@/components/icons'
+import { Modal } from 'ant-design-vue'
+import { CheckOutlined, GlobalOutlined, LockOutlined, PlusOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
+import HelpLink from '@/b-components/help/help-link.vue'
 import { useAuthStore } from '@/blockchain'
 import { useAddToListStore } from '@/stores/add-to-list-store'
 import { useCollectionEditorStore } from '@/stores/collection-editor-store'
@@ -125,19 +115,13 @@ import {
 } from '@/services/collections/collection-model'
 import type { CollectionKind } from '@/services/collections/collection-model'
 import type { CollectionView } from '@/stores/collections-store'
-import {
-  MY_MUSIC,
-  SAVED_VIDEOS,
-  WATCH_LATER,
-  type LibraryKind,
-} from '@/services/media-library/media-library-doc'
+import { WATCH_LATER, type LibraryKind } from '@/services/media-library/media-library-doc'
 import { useEditsLeft } from './use-edits-left'
 import {
   SC_Body,
   SC_Check,
   SC_Hint,
   SC_LinkButton,
-  SC_NewRow,
   SC_Preview,
   SC_Row,
   SC_RowNote,
@@ -156,34 +140,26 @@ const authStore = useAuthStore()
 const { library, collections } = useMediaLibrary()
 
 const target = computed(() => store.target)
-const mediaKind = computed<LibraryKind | null>(() =>
+const mediaKind = computed<'video' | 'audio' | null>(() =>
   target.value?.type === 'video' ? 'video' : target.value?.type === 'audio' ? 'audio' : null
 )
-const title = computed(() =>
-  mediaKind.value ? t('collections.addToPlaylist') : t('collections.addToCollection')
+/** Куда эту запись можно положить: списки её типа и списки публикаций. */
+const kinds = computed<CollectionKind[]>(() =>
+  mediaKind.value ? [mediaKind.value, 'posts'] : ['posts']
 )
 
-const systemLists = computed(() =>
-  mediaKind.value === 'video'
-    ? [
-        { id: SAVED_VIDEOS, labelKey: 'library.savedVideos' },
-        { id: WATCH_LATER, labelKey: 'library.watchLater' },
-      ]
-    : [{ id: MY_MUSIC, labelKey: 'library.myMusic' }]
-)
+const privateLists = computed(() => kinds.value.flatMap((k) => library.playlists(k)))
 
 const me = computed(() => authStore.getUserAddress || '')
 const loadingPublic = computed(
   () => collections.statusOf(me.value) === 'loading' && !publicLists.value.length
 )
 
-/** Свои коллекции, куда этот пост можно положить: плейлисты его типа и коллекции публикаций. */
 const publicLists = computed<CollectionView[]>(() => {
   if (!me.value) return []
-  const kinds: CollectionKind[] = mediaKind.value ? [mediaKind.value, 'posts'] : ['posts']
   return collections
     .collectionsOf(me.value)
-    .filter((c) => kinds.includes(c.kind) && c.pending !== 'delete' && !c.failed)
+    .filter((c) => kinds.value.includes(c.kind) && c.pending !== 'delete' && !c.failed)
 })
 
 const { editsLeft, refresh: refreshEdits } = useEditsLeft(publicLists)
@@ -192,13 +168,20 @@ watch(
   () => store.isOpen,
   (open) => {
     if (!open || !me.value) return
-    creatingPrivate.value = false
     void collections.loadAuthor(me.value).then(refreshEdits)
   }
 )
 
-function kindLabel(kind: CollectionKind): string {
-  return t(`collections.kinds.${kind}`)
+/** «12 видео», «5 треков», «3 публикации» — по подписи видно и что внутри, и сколько. */
+function subOf(kind: LibraryKind, n: number): string {
+  return t(`collections.kindCount.${kind}`, { n }, n)
+}
+
+function toggleFavorite(): void {
+  const id = target.value?.postId
+  if (!id) return
+  const on = !library.isFavorite(id)
+  if (!library.setFavorite(id, on) && on) appToast.warning({ message: t('library.full') })
 }
 
 function toggleLibrary(listId: string): void {
@@ -206,30 +189,6 @@ function toggleLibrary(listId: string): void {
   if (!id) return
   const on = !library.has(listId, id)
   if (!library.toggle(listId, id, on) && on) appToast.warning({ message: t('library.full') })
-}
-
-// --- Новый личный плейлист ---
-const creatingPrivate = ref(false)
-const privateName = ref('')
-const privateInput = ref<HTMLInputElement | null>(null)
-
-function startPrivate(): void {
-  creatingPrivate.value = true
-  privateName.value = ''
-  void nextTick(() => privateInput.value?.focus())
-}
-
-function createPrivate(): void {
-  const kind = mediaKind.value
-  const id = target.value?.postId
-  if (!kind || !id || !privateName.value.trim()) return
-  const listId = library.createPlaylist(kind, privateName.value)
-  if (!listId) {
-    appToast.warning({ message: t('library.tooManyPlaylists') })
-    return
-  }
-  library.toggle(listId, id, true)
-  creatingPrivate.value = false
 }
 
 // --- Публичные ---
@@ -261,11 +220,15 @@ async function togglePublic(c: CollectionView): Promise<void> {
   }
 }
 
-function createPublic(kind?: CollectionKind | MouseEvent): void {
+function createNew(): void {
   const id = target.value?.postId
   if (!id) return
-  const chosen: CollectionKind = typeof kind === 'string' ? kind : (mediaKind.value ?? 'posts')
   store.close()
-  editor.open({ mode: 'create', kind: chosen, initialIds: [id] })
+  editor.open({
+    mode: 'create',
+    kind: mediaKind.value ?? 'posts',
+    kinds: kinds.value,
+    initialIds: [id],
+  })
 }
 </script>

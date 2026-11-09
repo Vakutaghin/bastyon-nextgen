@@ -276,3 +276,97 @@ export const SC_Status = styled.p`
   font-size: 13px;
   color: var(--ui-text-muted);
 `
+
+// ─── «Что внутри» и «Кто видит» у нового списка ─────────────────────────────
+
+export const SC_ChoiceBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`
+
+export const SC_Choices = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+`
+
+export const SC_Choice = styled.button`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  place-items: center start;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border-accented);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+
+  .icon {
+    display: flex;
+    grid-row: 1 / span 2;
+    grid-column: 1;
+    font-size: 18px;
+    color: var(--ui-text-muted);
+  }
+
+  .title {
+    grid-column: 2;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .hint {
+    grid-column: 2;
+    text-align: left;
+    font-size: 12px;
+    line-height: calc(1.3 * var(--leading-scale));
+    color: var(--ui-text-muted);
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--ui-primary);
+  }
+
+  &.active {
+    border-color: var(--ui-primary);
+    box-shadow: 0 0 0 1px var(--ui-primary);
+  }
+
+  &.active .icon {
+    color: var(--ui-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--ui-primary-rgb) / 40%);
+  }
+`
+
+export const SC_PickTabs = styled.div`
+  display: flex;
+  gap: 4px;
+
+  button {
+    padding: 2px 10px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-full);
+    background: none;
+    color: var(--ui-text-muted);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  button.active {
+    border-color: var(--ui-primary);
+    color: var(--ui-primary);
+  }
+`

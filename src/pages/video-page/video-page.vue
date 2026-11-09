@@ -71,7 +71,7 @@
 
       <MediaPlaylistsTab v-else-if="tab === 'playlists'" kind="video" />
 
-      <LibraryListView v-else-if="tab === 'saved'" :list-id="SAVED_VIDEOS" kind="video" />
+      <LibraryListView v-else-if="tab === 'favorites'" :list-id="FAVORITES" kind="video" />
       <LibraryListView v-else-if="tab === 'later'" :list-id="WATCH_LATER" kind="video" />
       <OfflineDownloadsList v-else-if="tab === 'downloads'" kind="video" />
     </SC_SectionPage>
@@ -100,7 +100,7 @@ import OfflineDownloadsList from '@/b-components/offline-video/offline-downloads
 import { useMediaFeed, type MediaFeedSource } from '@/composables/use-media-feed'
 import { requireAuth } from '@/composables/use-auth-gate'
 import { useAuthStore } from '@/blockchain'
-import { SAVED_VIDEOS, WATCH_LATER } from '@/services/media-library/media-library-doc'
+import { FAVORITES, WATCH_LATER } from '@/services/media-library/media-library-doc'
 import { loadSectionView, saveSectionView } from '@/services/media/media-section-view'
 import {
   SC_Chip,
@@ -114,7 +114,7 @@ import {
   SC_Tabs,
 } from '../media-section/media-section.styled'
 
-type Tab = 'home' | 'subscriptions' | 'playlists' | 'saved' | 'later' | 'downloads'
+type Tab = 'home' | 'subscriptions' | 'playlists' | 'favorites' | 'later' | 'downloads'
 const SORTS = ['fresh', 'best'] as const
 type Sort = (typeof SORTS)[number]
 
@@ -122,7 +122,7 @@ type Sort = (typeof SORTS)[number]
 const NEED_AUTH = new Set<string>([
   'subscriptions',
   'playlists',
-  'saved',
+  'favorites',
   'later',
   'downloads',
   'uploads',
@@ -137,7 +137,7 @@ const tabs = [
   { id: 'home', labelKey: 'videoSection.tabs.home', to: '/video' },
   { id: 'subscriptions', labelKey: 'videoSection.tabs.subscriptions', to: '/video/subscriptions' },
   { id: 'playlists', labelKey: 'videoSection.tabs.playlists', to: '/video/playlists' },
-  { id: 'saved', labelKey: 'videoSection.tabs.saved', to: '/video/saved' },
+  { id: 'favorites', labelKey: 'videoSection.tabs.favorites', to: '/video/favorites' },
   { id: 'later', labelKey: 'videoSection.tabs.later', to: '/video/later' },
   { id: 'downloads', labelKey: 'videoSection.tabs.downloads', to: '/video/downloads' },
   { id: 'uploads', labelKey: 'videoSection.tabs.uploads', to: '/my-videos' },
@@ -145,7 +145,7 @@ const tabs = [
 
 const tab = computed<Tab>(() => {
   const raw = typeof route.params.tab === 'string' ? route.params.tab : ''
-  const known: Tab[] = ['subscriptions', 'playlists', 'saved', 'later', 'downloads']
+  const known: Tab[] = ['subscriptions', 'playlists', 'favorites', 'later', 'downloads']
   return (known as string[]).includes(raw) && (raw === 'home' || authStore.isUserAuthenticated)
     ? (raw as Tab)
     : 'home'

@@ -275,9 +275,13 @@ test('новый плейлист из-под ролика: транзакция
   await page.getByTestId('post-add-to-list').first().click()
   const list = page.getByTestId('add-to-list')
   await expect(list).toBeVisible()
-  await list.getByRole('button', { name: 'Новый плейлист' }).click()
+  await list.getByTestId('add-to-new-list').click()
   const editor = page.getByTestId('collection-editor')
   await expect(editor).toContainText('Первый ролик')
+  // Ролик — в видеоплейлист или в коллекцию публикаций, аудио не предлагается.
+  await expect(page.getByTestId('list-kind-video')).toHaveAttribute('aria-checked', 'true')
+  await expect(page.getByTestId('list-kind-audio')).toHaveCount(0)
+  await page.getByTestId('list-visibility-public').click()
   await page.getByTestId('collection-caption').fill('Сезон 1')
   await page.getByTestId('collection-save').click()
   await expect.poll(() => wallet.sent.length, { timeout: 30_000 }).toBe(1)
@@ -293,5 +297,5 @@ test('новый плейлист из-под ролика: транзакция
   expect(opReturnHash(hex)).toBe(hash256(serialized))
   // Новый плейлист открывается сразу, с пометкой «Публикуется».
   await expect(page.getByRole('heading', { name: 'Сезон 1' })).toBeVisible()
-  await expect(page.getByText('Публикуется')).toBeVisible()
+  await expect(page.getByText('Публикуется', { exact: true })).toBeVisible()
 })

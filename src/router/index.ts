@@ -191,6 +191,9 @@ const router = createRouter({
     },
     // Разделы «Видео» и «Аудио»: вкладка — в адресе (`/video/subscriptions`).
     // ДО catch-all /:userName.
+    // «Сохранённые» и «Моя музыка» стали «Избранным» (0.32): старые адреса — туда.
+    { path: '/video/saved', redirect: '/video/favorites' },
+    { path: '/audio/music', redirect: '/audio/favorites' },
     {
       path: '/video/:tab?',
       name: 'video',
@@ -224,7 +227,13 @@ const router = createRouter({
       component: MyCollectionsPage,
       meta: { titleKey: 'routes.myCollections', helpTopic: 'collections' },
     },
-    // Личный список: «Сохранённые», «Смотреть позже», «Моя музыка», личный плейлист.
+    // Встроенные списки — вкладки разделов и лента «Избранное»; ссылки на них
+    // остались в очереди плеера и закладках браузера.
+    { path: '/library/saved-video', redirect: '/video/favorites' },
+    { path: '/library/music', redirect: '/audio/favorites' },
+    { path: '/library/watch-later', redirect: '/video/later' },
+    { path: '/library/favorites', redirect: { path: '/', query: { feedMode: 'favorites' } } },
+    // Личный плейлист или коллекция.
     {
       path: '/library/:listId',
       name: 'library',

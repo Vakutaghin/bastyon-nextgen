@@ -1,5 +1,6 @@
 // Личные списки: локальная копия, отправка на сервер чатов одной записью,
-// слияние с копией другого устройства.
+// слияние с копией другого устройства, перенос закладок с устройства в
+// «Избранное».
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
@@ -19,8 +20,24 @@ vi.mock('@/b-components/messenger/services/matrix-service', () => ({
   },
 }))
 
+const device = vi.hoisted(() => ({
+  rows: [] as { address: string; id: string; addedAt: number }[],
+  purge: vi.fn(async (_address: string) => undefined),
+}))
+
+vi.mock('@/db/apis/favorites-api', () => ({
+  favoritesAPI: {
+    getList: async (address: string) => device.rows.filter((r) => r.address === address),
+    purge: (address: string) => device.purge(address),
+  },
+}))
+
 import { useMediaLibraryStore } from './media-library-store'
-import { MEDIA_LIBRARY_ACCOUNT_DATA, MY_MUSIC } from '@/services/media-library/media-library-doc'
+import {
+  FAVORITES,
+  MEDIA_LIBRARY_ACCOUNT_DATA,
+  MY_MUSIC,
+} from '@/services/media-library/media-library-doc'
 
 const ADDRESS = 'PDUWW57W8DoV1dMTQYsrkwg66xEuaNckbd'
 const id = (n: number): string => n.toString(16).padStart(64, '0')
@@ -31,6 +48,8 @@ beforeEach(() => {
   matrix.client = null
   matrix.remote = undefined
   matrix.setAccountData.mockClear()
+  device.rows = []
+  device.purge.mockClear()
   vi.useFakeTimers()
 })
 
@@ -94,5 +113,54 @@ describe('media-library-store', () => {
     expect(store.nameOf(listId)).toBe('Сезон 1')
     store.deletePlaylist(listId)
     expect(store.playlists('video')).toEqual([])
+  })
+
+  it('«Избранное»: закладка в новый список, убрать — отовсюду', () => {
+    const store = useMediaLibraryStore()
+    store.attach(ADDRESS)
+    store.toggle(MY_MUSIC, id(1), true)
+    expect(store.isFavorite(id(1))).toBe(true)
+    vi.advanceTimersByTime(10)
+    store.setFavorite(id(2), true)
+    expect(store.ids(FAVORITES)).toEqual([id(2)])
+    expect(store.favorites).toEqual([id(2), id(1)])
+    store.setFavorite(id(1), false)
+    expect(store.ids(MY_MUSIC)).toEqual([])
+    expect(store.favorites).toEqual([id(2)])
+  })
+
+  it('закладки, жившие только на устройстве, переезжают в «Избранное», таблица аккаунта чистится', async () => {
+    device.rows = [
+      { address: ADDRESS, id: id(5), addedAt: 100 },
+      { address: ADDRESS, id: id(6), addedAt: 200 },
+      { address: 'другой', id: id(7), addedAt: 300 },
+    ]
+    const store = useMediaLibraryStore()
+    expect(await store.favoritesFor(ADDRESS)).toEqual([id(6), id(5)])
+    expect(device.purge).toHaveBeenCalledWith(ADDRESS)
+    expect(localStorage.getItem(`BST_MEDIA_LIBRARY_${ADDRESS}`)).toContain(id(6))
+  })
+
+  it('копия не легла на устройство — закладки в таблице остаются', async () => {
+    device.rows = [{ address: ADDRESS, id: id(5), addedAt: 100 }]
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError')
+    })
+    try {
+      const store = useMediaLibraryStore()
+      expect(await store.favoritesFor(ADDRESS)).toEqual([id(5)])
+      expect(device.purge).not.toHaveBeenCalled()
+    } finally {
+      setItem.mockRestore()
+    }
+  })
+
+  it('личный список создаётся сразу с записями, в их порядке', () => {
+    const store = useMediaLibraryStore()
+    store.attach(ADDRESS)
+    const listId = store.createPlaylist('posts', 'Рецепты', [id(3), id(1), id(2)])!
+    expect(store.kindOf(listId)).toBe('posts')
+    expect(store.ids(listId)).toEqual([id(3), id(1), id(2)])
+    expect(store.kindOf(FAVORITES)).toBe('posts')
   })
 })

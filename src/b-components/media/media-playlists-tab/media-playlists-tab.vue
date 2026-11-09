@@ -2,12 +2,12 @@
   <div data-testid="playlists-tab">
     <SC_Block>
       <SC_BlockHead>
-        <SC_BlockTitle>{{ t(`collections.mine.${kind}`) }}</SC_BlockTitle>
+        <SC_BlockTitle><GlobalOutlined /> {{ t('lists.publicPlaylists') }}</SC_BlockTitle>
         <SC_HeadActions>
           <router-link to="/collections" class="manage" data-testid="shelf-link">
             {{ t('shelf.manage') }}
           </router-link>
-          <Button @click="createPublic">
+          <Button data-testid="playlists-create" @click="create">
             <template #icon><PlusOutlined /></template>
             {{ t('collections.newPlaylist') }}
           </Button>
@@ -24,25 +24,9 @@
 
     <SC_Block>
       <SC_BlockHead>
-        <SC_BlockTitle>{{ t('library.privatePlaylists') }}</SC_BlockTitle>
-        <Button @click="creating = true">
-          <template #icon><PlusOutlined /></template>
-          {{ t('library.newPrivatePlaylist') }}
-        </Button>
+        <SC_BlockTitle><LockOutlined /> {{ t('library.privatePlaylists') }}</SC_BlockTitle>
       </SC_BlockHead>
-      <SC_Note><LockOutlined /> {{ t('library.privateNote') }}</SC_Note>
-      <SC_NewForm v-if="creating" @submit.prevent="createPrivate">
-        <input
-          v-model="name"
-          maxlength="100"
-          :placeholder="t('library.newPlaylistName')"
-          :aria-label="t('library.newPlaylistName')"
-        />
-        <Button type="primary" html-type="submit" :disabled="!name.trim()">
-          {{ t('library.create') }}
-        </Button>
-        <Button @click="creating = false">{{ t('library.cancel') }}</Button>
-      </SC_NewForm>
+      <SC_Note>{{ t('library.privateNote') }}</SC_Note>
       <SC_ListRows v-if="privateIds.length">
         <li v-for="id in privateIds" :key="id">
           <router-link :to="`/library/${id}`">
@@ -53,7 +37,7 @@
           </router-link>
         </li>
       </SC_ListRows>
-      <SC_Empty v-else-if="!creating">
+      <SC_Empty v-else>
         <p>{{ t('library.noPrivatePlaylists') }}</p>
       </SC_Empty>
     </SC_Block>
@@ -62,14 +46,15 @@
 
 <script setup lang="ts">
 // Вкладка «Плейлисты» раздела: свои публичные плейлисты (в блокчейне, видят
-// все) и личные (на сервере чатов, видит только владелец).
+// все) и личные (на сервере чатов, видит только владелец). «Новый плейлист»
+// открывает окно «Создать» — там и выбирают, кто его видит.
 
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { Button } from 'ant-design-vue'
 import {
   AudioPlaylistIcon,
+  GlobalOutlined,
   LockOutlined,
   PlusOutlined,
   VideoPlaylistIcon,
@@ -88,12 +73,10 @@ import {
   SC_ListRows,
   SC_Note,
 } from '@/pages/media-section/media-section.styled'
-import { SC_NewForm } from './media-playlists-tab.styled'
 
 const props = defineProps<{ kind: 'video' | 'audio' }>()
 
 const { t } = useI18n()
-const router = useRouter()
 const authStore = useAuthStore()
 const editor = useCollectionEditorStore()
 const { library, collections } = useMediaLibrary()
@@ -111,18 +94,7 @@ watch(
   { immediate: true }
 )
 
-function createPublic(): void {
-  editor.open({ mode: 'create', kind: props.kind })
-}
-
-const creating = ref(false)
-const name = ref('')
-
-function createPrivate(): void {
-  const id = library.createPlaylist(props.kind, name.value)
-  if (!id) return
-  name.value = ''
-  creating.value = false
-  void router.push(`/library/${id}`)
+function create(): void {
+  editor.open({ mode: 'create', kind: props.kind, kinds: [props.kind] })
 }
 </script>

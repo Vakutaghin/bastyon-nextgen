@@ -16,7 +16,8 @@ The **“Switch account”** window lists all accounts saved on this device; the
 
 Each account on the device has its own:
 
-- favorites, post and comment drafts, search history;
+- post and comment drafts, search history;
+- a copy of [private lists](media-library.md) and favorites — the lists themselves are kept in the account data and are the same on all devices;
 - chats and message encryption keys;
 - [my files](my-files.md) in IPFS.
 
@@ -27,7 +28,7 @@ Shared by all accounts are the language, the theme and the rest of the app setti
 **“Sign out”** in the account menu (or the sign-out icon next to an account in the **“Switch account”** window) removes that account from the device:
 
 - its keys and the saved phrase;
-- its favorites, drafts, search history and cached conversations;
+- its drafts, search history, cached conversations and the copy of private lists — they stay on the server;
 - its list of IPFS files — the device stops sharing them.
 
 The account itself does not go anywhere: posts, subscriptions, coins and chats stay on the network. You can come back at any time — but only with the recovery phrase or the key. That is why the app warns you that the action cannot be undone.

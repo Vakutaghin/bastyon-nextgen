@@ -99,7 +99,7 @@ test('гость: просмотры под роликом, бусты на ме
   await expect(page.getByRole('dialog', { name: 'Вход в аккаунт' })).toBeVisible()
 })
 
-test('закладка «В избранное» видна и в тёмной теме', async ({ page }) => {
+test('закладка «В избранное» видна и в тёмной теме, гостю — сперва вход', async ({ page }) => {
   test.setTimeout(120_000)
   await page.setViewportSize({ width: 1400, height: 900 })
   await open(page, makeData())
@@ -118,8 +118,9 @@ test('закладка «В избранное» видна и в тёмной �
   await page.getByRole('button', { name: 'Тёмная тема' }).click()
   await expect.poll(brightness).toBeGreaterThan(0.5)
 
+  // Избранное хранится в данных аккаунта.
   await bookmark.click()
-  await expect(bookmark).toHaveAttribute('aria-label', 'Убрать из избранного')
+  await expect(page.getByRole('dialog', { name: 'Вход в аккаунт' })).toBeVisible()
 })
 
 test('вошедший: сначала новое от подписок, плашка, общая лента без повторов', async ({ page }) => {

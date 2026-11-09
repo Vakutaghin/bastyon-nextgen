@@ -3,9 +3,11 @@ import { useMockNode, type MockNodeData } from './support/mock-node'
 
 /**
  * «Коллекции и плейлисты» на подменной ноде: вход из левой панели и из меню
- * аккаунта, свои коллекции и плейлисты по группам, личные списки, фильтр,
- * личный плейлист — создать, переименовать, удалить. В сеть ничего не уходит:
- * личные списки без мессенджера живут на устройстве.
+ * аккаунта, встроенные списки сверху, свои плейлисты и коллекции одним
+ * списком со значками «что внутри» и «кто видит», фильтры, личный список —
+ * создать в окне «Создать», переименовать, сделать публичным, удалить;
+ * «Избранное» по закладке. В сеть ничего не уходит: личные списки без
+ * мессенджера живут на устройстве.
  */
 
 const MNEMONIC =
@@ -49,7 +51,7 @@ const DATA: MockNodeData = {
     {
       txid: 'b'.repeat(64),
       address: ME,
-      caption: 'Альбом',
+      caption: 'Концерт',
       contentIds: [TRACK],
       contentTypes: 210,
     },
@@ -72,25 +74,30 @@ async function openSignedIn(page: Page, path: string): Promise<void> {
   await expect(dialog).toBeHidden({ timeout: 30_000 })
 }
 
-const group = (page: Page, id: string) => page.getByTestId(`shelf-group-${id}`)
+const row = (page: Page, text: string) => page.getByTestId('shelf-row').filter({ hasText: text })
 
-test('всё своё на одной странице: вход из левой панели, группы, фильтр', async ({ page }) => {
+test('всё своё на одной странице: встроенные сверху, один список со значками, фильтры', async ({
+  page,
+}) => {
   await openSignedIn(page, '/')
   await page.getByRole('button', { name: 'Коллекции', exact: true }).click()
   await expect(page).toHaveURL(/\/collections$/)
 
-  await expect(group(page, 'video')).toContainText('Сезон 1')
-  await expect(group(page, 'audio')).toContainText('Альбом')
-  await expect(group(page, 'posts')).toContainText('Лучшее за год')
-  await expect(group(page, 'private')).toContainText('Сохранённые видео')
-  await expect(group(page, 'private')).toContainText('Моя музыка')
+  await expect(page.getByTestId('shelf-builtin-favorites')).toContainText('Избранное')
+  await expect(page.getByTestId('shelf-builtin-later')).toContainText('Смотреть позже')
+
+  await expect(row(page, 'Сезон 1')).toContainText('1 видео')
+  await expect(row(page, 'Сезон 1').getByTestId('shelf-row-visibility')).toHaveText('Видят все')
+  await expect(row(page, 'Концерт')).toContainText('1 трек')
+  await expect(row(page, 'Лучшее за год')).toContainText('1 публикация')
+  await expect(page.getByTestId('my-collections')).not.toContainText(/альбом/i)
 
   await page.getByTestId('shelf-filter-audio').click()
   await expect(page.getByTestId('shelf-row')).toHaveCount(1)
-  await expect(page.getByTestId('shelf-row')).toContainText('Альбом')
+  await expect(page.getByTestId('shelf-row')).toContainText('Концерт')
 
   await page.getByTestId('shelf-filter-all').click()
-  await page.getByTestId('shelf-row').filter({ hasText: 'Сезон 1' }).getByRole('link').click()
+  await row(page, 'Сезон 1').getByRole('link').click()
   await expect(page).toHaveURL(new RegExp(`/collection/${'a'.repeat(64)}$`))
 })
 
@@ -108,30 +115,64 @@ test('вход прямо на странице: свои коллекции п�
   page,
 }) => {
   await openSignedIn(page, '/collections')
-  await expect(group(page, 'video')).toContainText('Сезон 1', { timeout: 15_000 })
-  await expect(group(page, 'posts')).toContainText('Лучшее за год')
+  await expect(row(page, 'Сезон 1')).toBeVisible({ timeout: 15_000 })
+  await expect(row(page, 'Лучшее за год')).toBeVisible()
 })
 
-test('личный плейлист: создать, переименовать, удалить с подтверждением', async ({ page }) => {
+test('личный список: окно «Создать», переименовать, «Сделать публичным», удалить', async ({
+  page,
+}) => {
   await openSignedIn(page, '/collections')
   await page.getByTestId('shelf-create').click()
-  await page.getByRole('menuitem', { name: 'Личный плейлист видео' }).click()
-  await page.getByTestId('shelf-name').fill('Поездки')
-  await page.getByRole('dialog').getByRole('button', { name: 'Создать' }).click()
-  const row = page.getByTestId('shelf-row').filter({ hasText: 'Поездки' })
-  await expect(row).toContainText('Личный плейлист · 0 видео')
+  const editor = page.getByTestId('collection-editor')
+  await expect(editor).toBeVisible()
+  await expect(page.getByTestId('list-visibility-private')).toHaveAttribute('aria-checked', 'true')
+  await page.getByTestId('list-kind-posts').click()
+  await page.getByTestId('collection-caption').fill('Поездки')
+  await page.getByTestId('collection-save').click()
+  // Личный создаётся сразу и открывается.
+  await expect(page).toHaveURL(/\/library\/p:/)
+  await expect(page.getByRole('heading', { name: 'Поездки' })).toBeVisible()
 
-  await row.getByTestId('shelf-row-menu').click()
+  await page.getByRole('link', { name: /Коллекции и плейлисты/ }).click()
+  await expect(row(page, 'Поездки')).toContainText('0 публикаций')
+  await expect(row(page, 'Поездки').getByTestId('shelf-row-visibility')).toHaveText('Только я')
+
+  await row(page, 'Поездки').getByTestId('shelf-row-menu').click()
   await page.getByRole('menuitem', { name: 'Переименовать' }).click()
   await page.getByTestId('shelf-name').fill('Поездки 2026')
   await page.getByRole('dialog').getByRole('button', { name: 'Сохранить' }).click()
-  const renamed = page.getByTestId('shelf-row').filter({ hasText: 'Поездки 2026' })
+  const renamed = row(page, 'Поездки 2026')
   await expect(renamed).toBeVisible()
+
+  // «Сделать публичным» — то же окно, «Кто видит» уже выбран, название на месте.
+  await renamed.getByTestId('shelf-row-menu').click()
+  await page.getByRole('menuitem', { name: 'Сделать публичным' }).click()
+  await expect(page.getByRole('dialog', { name: /Сделать список публичным/ })).toBeVisible()
+  await expect(page.getByTestId('collection-caption')).toHaveValue('Поездки 2026')
+  await expect(page.getByTestId('list-visibility-public')).toHaveCount(0)
+  await page.getByRole('dialog').getByRole('button', { name: 'Отмена' }).click()
 
   await renamed.getByTestId('shelf-row-menu').click()
   await page.getByRole('menuitem', { name: 'Удалить' }).click()
-  const confirm = page.getByRole('dialog').filter({ hasText: 'Удалить личный плейлист' })
+  const confirm = page.getByRole('dialog').filter({ hasText: 'Удалить «Поездки 2026»?' })
   await expect(confirm).toBeVisible()
   await confirm.getByRole('button', { name: 'Удалить' }).click()
   await expect(renamed).toHaveCount(0)
+})
+
+test('«Избранное»: закладка на посте — в плитке страницы и в ленте «Избранное»', async ({
+  page,
+}) => {
+  await openSignedIn(page, `/post/${POST}`)
+  const bookmark = page.getByTestId('post-bookmark').first()
+  await bookmark.click()
+  await expect(bookmark).toHaveAttribute('aria-pressed', 'true')
+
+  await page.goto('/collections')
+  const tile = page.getByTestId('shelf-builtin-favorites')
+  await expect(tile).toContainText('1')
+  await tile.getByRole('link').click()
+  await expect(page).toHaveURL(/feedMode=favorites/)
+  await expect(page.getByText('Просто пост')).toBeVisible({ timeout: 15_000 })
 })

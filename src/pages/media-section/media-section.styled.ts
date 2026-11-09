@@ -179,6 +179,9 @@ export const SC_HeadActions = styled.div`
 `
 
 export const SC_BlockTitle = styled.h2`
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: 18px;
   font-weight: 600;
