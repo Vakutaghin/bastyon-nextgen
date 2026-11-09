@@ -61,7 +61,8 @@ test('база ранней сборки открывается, строки н
         async () => (await indexedDB.databases()).find((d) => d.name === 'BastyonDB')?.version
       )
     )
-    .toBe(70)
+    // Нынешняя схема — v8 (неотправленные сообщения): Dexie пишет её как 80.
+    .toBe(80)
   const disk = await page.evaluate(
     () =>
       new Promise<{ keyPath: unknown; favorites: unknown[]; stores: string[] }>((resolve) => {
@@ -84,6 +85,7 @@ test('база ранней сборки открывается, строки н
   expect(disk.keyPath).toEqual(['address', 'id'])
   expect(disk.favorites).toEqual([{ id: 'post1', addedAt: 5, address: '' }])
   expect(disk.stores).toContain('chatArchive')
+  expect(disk.stores).toContain('chatOutbox')
   expect(disk.stores).not.toContain('transcodedVideos')
 
   // Версия «Что нового» пережила пересборку — окно не открывается; тоста нет.

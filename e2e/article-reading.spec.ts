@@ -100,7 +100,11 @@ test('анонс и заголовок открывают статью; окно
 
 test('картинка статьи открывает просмотрщик со всеми картинками статьи', async ({ page }) => {
   await openFeed(page)
-  await page.getByText('Читать статью').click()
+  // Кнопкой в карточке: «Что нового» после смены версии тоже упоминает «Читать статью».
+  await page
+    .locator('.post-card', { hasText: 'Дорога на перевал' })
+    .getByRole('button', { name: 'Читать статью' })
+    .click({ timeout: 30_000 })
   const images = modal(page).getByTestId('article-image')
   await expect(images).toHaveCount(2)
 
