@@ -39,7 +39,7 @@ Only one clip plays at a time: start another and the first one pauses. In the fe
 
 ## Keyboard shortcuts
 
-The keys act on the fullscreen clip, or if there is none, on the one that is playing or was started last. Until you have started any clip, the space bar scrolls the page as usual.
+The keys act on the fullscreen clip, or if there is none, on the one that is playing or was started last. Until you have started any clip, the space bar scrolls the page as usual. While the messenger is open — full screen, or as a window you are working in — the keys are its own, not the video’s behind it.
 
 | Key | What it does |
 |---|---|

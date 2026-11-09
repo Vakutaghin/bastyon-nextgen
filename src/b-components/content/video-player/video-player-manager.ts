@@ -10,6 +10,7 @@ import {
   HeldHotkeys,
   hotkeyAction,
   hotkeyCode,
+  isCovered,
   isHotkeyBlockedBy,
   isOnScreen,
 } from './video-hotkeys'
@@ -226,6 +227,8 @@ export class VideoPlayerManager {
           players.find((p) => p.isHovered()))
         : undefined)
     if (!player) return null
+    // Во весь экран плеер сам верхний слой; иначе его может закрывать мессенджер.
+    if (!player.isFullscreen() && isCovered(player.element())) return null
     return isHotkeyBlockedBy(origin, player.element(), player.isPointerMode()) ? null : player
   }
 }

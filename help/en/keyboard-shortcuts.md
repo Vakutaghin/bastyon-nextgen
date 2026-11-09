@@ -37,7 +37,7 @@ In the desktop app, Ctrl and + or − enlarge and shrink the whole window by one
 
 ## Video
 
-The keys act on the video in full screen, or if there is none, on the one playing or started last. Until you have started any video, Space scrolls the page.
+The keys act on the video in full screen, or if there is none, on the one playing or started last. Until you have started any video, Space scrolls the page. A video behind the open messenger does not get the keys.
 
 | Key | What it does |
 | --- | --- |

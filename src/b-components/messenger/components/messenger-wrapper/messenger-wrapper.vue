@@ -1,6 +1,11 @@
 <template>
-  <!-- Full Screen Overlay Mode (перекрывает весь экран, включая хедер) -->
-  <SC_FullScreenOverlay v-if="isFullScreen" :class="{ 'above-bottom-nav': aboveBottomNav }">
+  <!-- Full Screen Overlay Mode (перекрывает весь экран, включая хедер).
+       data-own-hotkeys: клавиши в мессенджере — не горячие клавиши видео за ним. -->
+  <SC_FullScreenOverlay
+    v-if="isFullScreen"
+    data-own-hotkeys
+    :class="{ 'above-bottom-nav': aboveBottomNav }"
+  >
     <SC_CloseOverlayButton :aria-label="t('messenger.close')" @click="closeFullScreen">
       <CloseOutlined />
     </SC_CloseOverlayButton>
@@ -10,7 +15,7 @@
   </SC_FullScreenOverlay>
 
   <!-- Floating Widget Mode (desktop only) -->
-  <SC_MessengerWrapper v-if="showFloatingWidget && !isFullScreen">
+  <SC_MessengerWrapper v-if="showFloatingWidget && !isFullScreen" data-own-hotkeys>
     <MessengerWindow :is-open="isOpen" :title="widgetTitle" @close="closeWidget">
       <template #actions>
         <SC_BackButton

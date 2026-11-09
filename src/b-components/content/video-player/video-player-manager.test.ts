@@ -243,6 +243,51 @@ describe('VideoPlayerManager: горячие клавиши', () => {
     expect(a.actions).toEqual([])
   })
 
+  it('мессенджер во весь экран поверх ленты: F не разворачивает ролик под ним', () => {
+    const a = add('a')
+    play(a)
+    vi.spyOn(a.root, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      bottom: 300,
+      left: 0,
+      right: 400,
+      height: 300,
+      width: 400,
+    } as DOMRect)
+    const overlay = document.body.appendChild(document.createElement('div'))
+    let hit: Element = a.button
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => hit,
+    })
+    try {
+      expect(keydown(document.body, 'KeyF').defaultPrevented).toBe(true)
+      expect(a.actions).toEqual(['fullscreen'])
+
+      hit = overlay
+      expect(keydown(document.body, 'KeyF').defaultPrevented).toBe(false)
+      expect(a.actions).toEqual(['fullscreen'])
+
+      // Развёрнутый ролик сам верхний слой — клавиши его.
+      a.state.fullscreen = true
+      keydown(document.body, 'KeyF')
+      expect(a.actions).toEqual(['fullscreen', 'fullscreen'])
+    } finally {
+      delete (document as { elementFromPoint?: unknown }).elementFromPoint
+    }
+  })
+
+  it('фокус в мессенджере (data-own-hotkeys) — клавиши его', () => {
+    const a = add('a')
+    play(a)
+    const messenger = document.body.appendChild(document.createElement('div'))
+    messenger.setAttribute('data-own-hotkeys', '')
+    const text = messenger.appendChild(document.createElement('span'))
+
+    expect(keydown(text, 'KeyF').defaultPrevented).toBe(false)
+    expect(a.actions).toEqual([])
+  })
+
   it('кнопка плеера: после клика пробел — пауза, после Tab — сама кнопка', () => {
     const a = add('a')
     play(a)

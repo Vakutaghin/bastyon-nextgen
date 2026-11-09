@@ -163,8 +163,11 @@ const INTERACTIVE = [
   ].map((role) => `[role="${role}"]`),
 ].join(', ')
 
-/** Модалки и боковые панели: клавиши в них принадлежат им, а не видео за ними. */
-const DIALOGS = '[role="dialog"], .ant-modal-wrap, .ant-drawer'
+/**
+ * Модалки, боковые панели и мессенджер (`data-own-hotkeys`): клавиши в них
+ * принадлежат им, а не видео за ними.
+ */
+const DIALOGS = '[role="dialog"], .ant-modal-wrap, .ant-drawer, [data-own-hotkeys]'
 
 /**
  * `true` — клавиша принадлежит элементу в фокусе, а не плееру.
@@ -192,6 +195,24 @@ export function isHotkeyBlockedBy(
   }
   const dialog = element.closest(DIALOGS)
   return !!dialog && !(player && dialog.contains(player))
+}
+
+/**
+ * Плеер закрыт другим слоем — например, мессенджером во весь экран: его
+ * клавиши не для ролика под ним. Раньше F в открытом поверх ленты
+ * мессенджере разворачивал видео из ленты. Смотрим, что лежит посередине
+ * видимой части плеера; плеер за краем экрана — не закрыт.
+ */
+export function isCovered(element: Element | null): boolean {
+  if (!element || typeof document.elementFromPoint !== 'function') return false
+  const rect = element.getBoundingClientRect()
+  const top = Math.max(rect.top, 0)
+  const bottom = Math.min(rect.bottom, window.innerHeight)
+  const left = Math.max(rect.left, 0)
+  const right = Math.min(rect.right, window.innerWidth)
+  if (bottom <= top || right <= left) return false
+  const hit = document.elementFromPoint((left + right) / 2, (top + bottom) / 2)
+  return !!hit && !element.contains(hit)
 }
 
 /** Видна хотя бы половина плеера — тот же порог, что у авто-паузы при прокрутке. */

@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { SEEK_REPEAT_INTERVAL } from './consts'
-import { HeldHotkeys, hotkeyAction, isHotkeyBlockedBy, isOnScreen } from './video-hotkeys'
+import {
+  HeldHotkeys,
+  hotkeyAction,
+  isCovered,
+  isHotkeyBlockedBy,
+  isOnScreen,
+} from './video-hotkeys'
 
 const key = (code: string, init: KeyboardEventInit = {}): KeyboardEvent =>
   new KeyboardEvent('keydown', { code, ...init })
@@ -164,6 +170,51 @@ describe('isHotkeyBlockedBy', () => {
     expect(isHotkeyBlockedBy(title, root.querySelector('#player'))).toBe(false)
     // А ролик в ленте за модалкой — не получает.
     expect(isHotkeyBlockedBy(title, root.querySelector('#feed-player'))).toBe(true)
+  })
+})
+
+describe('isCovered', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete (document as { elementFromPoint?: unknown }).elementFromPoint
+    document.body.innerHTML = ''
+  })
+
+  function player(rect: Partial<DOMRect>): HTMLElement {
+    const element = document.body.appendChild(document.createElement('div'))
+    element.appendChild(document.createElement('video'))
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(rect as DOMRect)
+    return element
+  }
+
+  function pointAt(fn: (x: number, y: number) => Element | null): void {
+    Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: fn })
+  }
+
+  it('посередине видимой части — чужой слой: закрыт; свой элемент — нет', () => {
+    const element = player({ top: -100, bottom: 300, left: 0, right: 400 })
+    const overlay = document.body.appendChild(document.createElement('div'))
+    const points: Array<[number, number]> = []
+    pointAt((x, y) => {
+      points.push([x, y])
+      return overlay
+    })
+    expect(isCovered(element)).toBe(true)
+    // Середина видимой части, а не всего плеера (верх ушёл за экран).
+    expect(points).toEqual([[200, 150]])
+
+    pointAt(() => element.querySelector('video'))
+    expect(isCovered(element)).toBe(false)
+  })
+
+  it('за экраном, без размеров и без elementFromPoint — не закрыт', () => {
+    const overlay = document.createElement('div')
+    pointAt(() => overlay)
+    expect(isCovered(player({ top: -400, bottom: -100, left: 0, right: 400 }))).toBe(false)
+    expect(isCovered(player({ top: 0, bottom: 0, left: 0, right: 0 }))).toBe(false)
+    expect(isCovered(null)).toBe(false)
+    delete (document as { elementFromPoint?: unknown }).elementFromPoint
+    expect(isCovered(player({ top: 0, bottom: 300, left: 0, right: 400 }))).toBe(false)
   })
 })
 
