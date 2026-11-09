@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { openStudio } from './support/mock-studio'
+import { onScreen } from './support/on-screen'
+import { skipWithoutWebKitMedia } from './support/webkit-media'
 
 /**
  * «Медиастудия», как «Контент» творческой студии YouTube: ролики плиткой или
@@ -35,6 +37,7 @@ test('окно ролика: название, описание и кадр с �
   page,
   browserName,
 }) => {
+  skipWithoutWebKitMedia()
   test.setTimeout(120_000)
   const server = await openStudio(page)
   await page.getByRole('button', { name: 'Закат на море', exact: true }).click()
@@ -60,7 +63,7 @@ test('окно ролика: название, описание и кадр с �
   await expect(dialog).toContainText('Есть несохранённые изменения')
 
   await save.click()
-  await expect(page.getByText('Изменения сохранены')).toBeVisible({ timeout: 20_000 })
+  await expect(onScreen(page).getByText('Изменения сохранены')).toBeVisible({ timeout: 20_000 })
   expect(server.texts).toEqual([{ name: 'Закат над морем', description: null }])
   expect(server.covers).toHaveLength(1)
   if (browserName === 'chromium') expect(server.covers[0]).toBe('image/jpeg')
@@ -113,6 +116,7 @@ test('«Лимиты»: остаток на сегодня, ступень ак�
 })
 
 test('просмотр: обложка и «Смотреть» в окне ролика открывают плеер поверх', async ({ page }) => {
+  skipWithoutWebKitMedia()
   test.setTimeout(120_000)
   await openStudio(page)
 

@@ -106,6 +106,11 @@ test('раскладка как в ленте; порядок — перетас
     .toBe(true)
   await expect(composer).toContainText('Перетащите картинку на другую')
 
+  // WebKit для Windows не показывает свои MIME-типы в dataTransfer.types во
+  // время dragover (подменяет на text/plain) — перетаскивание там не проверить.
+  // На macOS и в Chromium типы видны.
+  if (test.info().project.name === 'webkit' && process.platform === 'win32') return
+
   // Третью (синюю) — на место первой.
   const tiles = composer.getByTestId('composer-image')
   await tiles.nth(2).dragTo(tiles.nth(0))

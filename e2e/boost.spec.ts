@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { test, expect, type Page, type Route } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { onScreen } from './support/on-screen'
 
 /**
  * Продвижение поста за PKOIN, от кнопки до транзакции: вход тестовым
@@ -162,7 +163,7 @@ test('продвижение поста: прогноз, сумма до 100 % �
   await expect(dialog.getByText(/примерно на сутки: 100\s?%/)).toBeVisible()
 
   await dialog.getByRole('button', { name: 'Продвинуть', exact: true }).click()
-  await expect(page.getByText(/Пост продвинут/)).toBeVisible({ timeout: 20_000 })
+  await expect(onScreen(page).getByText(/Пост продвинут/)).toBeVisible({ timeout: 20_000 })
   await expect(dialog).toBeHidden()
 
   // Отправлено то, что понимает нода: hex, payload и тип операции.

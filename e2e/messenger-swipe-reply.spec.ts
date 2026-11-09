@@ -88,6 +88,9 @@ async function touchDrag(
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
 }
 
+// Касания идут через CDP (Input.dispatchTouchEvent) — он есть только в Chromium.
+test.skip(({ browserName }) => browserName !== 'chromium', 'касания через CDP — только Chromium')
+
 test('смахнули сообщение влево — ответ на него; вверх-вниз — прокрутка без ответа', async ({
   page,
 }) => {

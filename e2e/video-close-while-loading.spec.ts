@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { useMockPeerTube, VIDEO_URL, type MockPeerTubeOptions } from './support/mock-peertube'
+import { skipWithoutWebKitMedia } from './support/webkit-media'
 
 /**
  * Плеер закрыли, пока ролик грузился, — ролик не должен заиграть потом.
@@ -95,6 +96,7 @@ test('сервер ответил после закрытия плеера — �
 })
 
 test('прямой mp4 догрузился после закрытия плеера — ролик не запускается', async ({ page }) => {
+  skipWithoutWebKitMedia()
   const mock = await open(page, { mp4DelayMs: DELAY_MS })
   await startAndLeave(page)
 

@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { onScreen } from './support/on-screen'
 
 /**
  * Попал ли свой пост в блокчейн — видно без перезапуска. Пост ушёл в сеть:
@@ -122,7 +123,7 @@ test('пост попал в блок — пометка уходит сама, 
   await tags.fill('тест')
   await tags.press('Enter')
   await composer.getByRole('button', { name: 'Опубликовать' }).click()
-  await expect(page.getByText('Пост отправлен в сеть')).toBeVisible({ timeout: 30_000 })
+  await expect(onScreen(page).getByText('Пост отправлен в сеть')).toBeVisible({ timeout: 30_000 })
   expect(chain.sent).toBe(1)
 
   const card = page.getByRole('article').filter({ hasText: TEXT })
@@ -133,7 +134,9 @@ test('пост попал в блок — пометка уходит сама, 
   // Транзакция в блоке, лента ноды отдаёт пост. WS молчит — узнаём у ноды.
   chain.inBlock = true
   data.posts.push({ txid: TXID, address: ME, message: TEXT, ago: 30 })
-  await expect(page.getByText('Пост опубликован в блокчейне')).toBeVisible({ timeout: 40_000 })
+  await expect(onScreen(page).getByText('Пост опубликован в блокчейне')).toBeVisible({
+    timeout: 40_000,
+  })
   await expect(card.getByTestId('post-tx-pending')).toHaveCount(0)
   await expect(hourglass).toBeHidden()
   // Карточка одна и уже с кнопками поста: у неопубликованного их нет.

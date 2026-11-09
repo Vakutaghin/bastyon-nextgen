@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { useMockPeerTube, VIDEO_URL, type MockPeerTubeOptions } from './support/mock-peertube'
+import { skipWithoutWebKitMedia } from './support/webkit-media'
 
 /**
  * Вертикальный ролик в ленте — вертикальной рамкой: раньше рамка всегда была
@@ -45,6 +46,7 @@ async function frameBox(page: Page) {
 }
 
 test('телефон: вертикальный ролик во всю ширину, обложка без полос', async ({ page }) => {
+  skipWithoutWebKitMedia()
   test.setTimeout(90_000)
   await page.setViewportSize({ width: 390, height: 844 })
   await open(page, { portrait: true })

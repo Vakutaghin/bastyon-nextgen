@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { onScreen } from './support/on-screen'
 import { useMockPeerTube, PEERTUBE_HOST, VIDEO_ID } from './support/mock-peertube'
 
 /**
@@ -82,6 +83,6 @@ test.describe('приложение на Linux', () => {
 
     await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {})
     await page.getByRole('button', { name: 'Скопировать команду' }).click()
-    await expect(page.getByText('Команда скопирована')).toBeVisible()
+    await expect(onScreen(page).getByText('Команда скопирована')).toBeVisible()
   })
 })

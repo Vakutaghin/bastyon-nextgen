@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { onScreen } from './support/on-screen'
 
 /**
  * Почему в чате нет сообщений: приглашение видно в списке, удалённое — отметкой
@@ -237,7 +238,7 @@ test('новый чат: сразу поле ввода, комната — то
   const input = page.getByPlaceholder('Введите сообщение...')
   await input.fill('Привет, Алиса')
   await page.getByRole('button', { name: 'Отправить сообщение' }).click()
-  await expect(page.getByText(/не опубликовал ключи шифрования/)).toBeVisible()
+  await expect(onScreen(page).getByText(/не опубликовал ключи шифрования/)).toBeVisible()
   await expect(input).toHaveValue('Привет, Алиса')
   expect(await createRoom).toBeNull()
 })

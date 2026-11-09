@@ -6,6 +6,9 @@ import {
   VIDEO_ID,
   type MockPeerTubeOptions,
 } from './support/mock-peertube'
+import { skipFileWithoutWebKitMedia } from './support/webkit-media'
+
+skipFileWithoutWebKitMedia()
 
 /**
  * Откуда плеер берёт ролик, когда что-то сломано: нода из ссылки поста

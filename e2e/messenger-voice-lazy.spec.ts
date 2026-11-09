@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { skipWithoutWebKitMedia } from './support/webkit-media'
 
 /**
  * Голосовые в чате грузятся по «Слушать», а не при открытии чата: волна —
@@ -148,6 +149,7 @@ async function barHeights(page: Page, index: number): Promise<number> {
 test('голосовые: при открытии чата звук не качается, волна — из события; «Слушать» качает один раз', async ({
   page,
 }) => {
+  skipWithoutWebKitMedia()
   test.setTimeout(120_000)
   await page.setViewportSize({ width: 1400, height: 900 })
   const fetched: string[] = []

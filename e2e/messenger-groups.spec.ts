@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { settleOfflineMessenger } from './support/offline-messenger'
 
 /**
  * Группы в списке чатов, шапке и окне группы — без сервера чатов: диалоги
@@ -76,6 +77,7 @@ async function signedInWithDialogs(page: Page, dialogs: unknown[] = DIALOGS): Pr
   await dialog.locator('input, textarea').first().fill(MNEMONIC)
   await dialog.getByRole('button', { name: 'Войти' }).click()
   await expect(dialog).toBeHidden({ timeout: 30_000 })
+  await settleOfflineMessenger(page, DATA.profiles)
   await page.evaluate(async (dialogs) => {
     type Store = Record<string, (...a: unknown[]) => unknown>
     const app = (

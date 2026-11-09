@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { skipWithoutWebKitMedia } from './support/webkit-media'
 
 /**
  * Голосовое как в Telegram: до прослушивания — длительность, с первого нажатия
@@ -101,6 +102,7 @@ const secondsOf = async (voice: Locator): Promise<number> => {
 test('голосовое: длительность сразу, время по ходу, остановка запоминается у сообщения', async ({
   page,
 }) => {
+  skipWithoutWebKitMedia()
   test.setTimeout(120_000)
   await signIn(page)
   const voiceA = await recordVoice(page, A_SECONDS)

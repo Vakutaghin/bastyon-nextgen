@@ -1,5 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { useMockNode } from './support/mock-node'
+import { onScreen } from './support/on-screen'
 
 /**
  * Замок приложения в настоящем движке (Chromium и WebKit — как WKWebView и
@@ -65,7 +66,7 @@ test.describe('Замок приложения', () => {
     await page.keyboard.type('2580')
     await expect(setup.getByText('Повторите пин-код')).toBeVisible()
     await page.keyboard.type('2580')
-    await expect(page.getByText('Пин-код задан.')).toBeVisible()
+    await expect(onScreen(page).getByText('Пин-код задан.')).toBeVisible()
     await expect(setup).toBeHidden()
     await expect(page.getByText('Вход по пин-коду из 4 цифр.')).toBeVisible()
 
@@ -108,7 +109,7 @@ test.describe('Замок приложения', () => {
     await expect(setup.getByText('Нарисуйте ключ ещё раз')).toBeVisible()
     await page.waitForTimeout(300)
     await draw(page, setupGrid, [0, 1, 2, 5, 8])
-    await expect(page.getByText('Графический ключ задан.')).toBeVisible()
+    await expect(onScreen(page).getByText('Графический ключ задан.')).toBeVisible()
     await expect(page.getByText('Вход по графическому ключу.')).toBeVisible()
 
     await page.getByRole('button', { name: 'Заблокировать сейчас' }).click()

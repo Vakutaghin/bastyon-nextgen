@@ -1,5 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { onScreen } from './support/on-screen'
 
 /**
  * Люди и блокировки, как в старом клиенте: комментарии, которые автор поста
@@ -198,7 +199,7 @@ test('профиль: адреса для пожертвований и заня
 
   await dialog.getByLabel('Имя').fill('alice_ng')
   await save.click()
-  await expect(page.getByText('Это имя уже занято')).toBeVisible({ timeout: 20_000 })
+  await expect(onScreen(page).getByText('Это имя уже занято')).toBeVisible({ timeout: 20_000 })
   await expect(dialog).toBeVisible()
 })
 

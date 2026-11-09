@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { settleOfflineMessenger } from './support/offline-messenger'
 
 /**
  * Поиск в списке чатов: лупа раскрывает поле, свои чаты и группы находятся
@@ -65,6 +66,7 @@ async function signedInWithDialogs(page: Page): Promise<void> {
   await auth.locator('input, textarea').first().fill(MNEMONIC)
   await auth.getByRole('button', { name: 'Войти' }).click()
   await expect(auth).toBeHidden({ timeout: 30_000 })
+  await settleOfflineMessenger(page, [{ address: BOB, name: 'bob_ng' }])
   await page.evaluate(async (dialogs) => {
     type Store = Record<string, (...a: unknown[]) => unknown>
     const app = (

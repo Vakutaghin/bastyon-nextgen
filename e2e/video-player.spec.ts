@@ -1,6 +1,9 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
+import { skipFileWithoutWebKitMedia } from './support/webkit-media'
+
+skipFileWithoutWebKitMedia()
 
 /**
  * Плеер как у YouTube, на подменных ноде и PeerTube (ролик 30 секунд из

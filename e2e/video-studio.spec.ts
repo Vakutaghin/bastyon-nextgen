@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { skipWithoutWebKitMedia } from './support/webkit-media'
 
 /**
  * «Медиастудия», как творческая студия YouTube: файл выбран — загрузка идёт,
@@ -209,7 +210,7 @@ async function signIn(page: Page): Promise<void> {
   await expect(dialog).toBeHidden({ timeout: 30_000 })
 }
 
-test('загрузка в фоне: свернуть, уйти со страницы, затем «Создать пост» с этим видео', async ({
+test('загрузка в фоне: свернуть, уйти со страницы, затем «Опубликовать» — окно ролика с формой поста', async ({
   page,
 }) => {
   test.setTimeout(120_000)
@@ -255,18 +256,28 @@ test('загрузка в фоне: свернуть, уйти со страни
   await expect(panel).toContainText('Загрузки завершены', { timeout: 20_000 })
   await expect.poll(() => server.renamed).toEqual(['Море в июле'])
 
-  await panel.getByRole('button', { name: 'Создать пост' }).click()
-  const composer = page.getByRole('dialog', { name: 'Новый пост' })
-  await expect(composer).toBeVisible()
-  await expect(composer.getByText('Видео PeerTube прикреплено')).toBeVisible()
-  await expect(composer.getByLabel('Заголовок видео')).toHaveValue('Море в июле')
-  await expect(panel).toHaveCount(0)
+  // Окно ролика и есть форма поста (06eef523): «Опубликовать» у готовой
+  // загрузки открывает его, второго окна «Новый пост» нет.
+  await panel.getByRole('button', { name: 'Опубликовать' }).click()
+  const post = page.getByRole('dialog', { name: 'Море в июле' })
+  await expect(post).toBeVisible()
+  await expect(post.getByLabel('Название')).toHaveValue('Море в июле')
+  await expect(post.getByLabel('Описание')).toBeVisible()
+  await expect(post.getByRole('button', { name: 'Сохранить без поста' })).toBeVisible()
+  // Без тега пост не уйдёт — и причина видна рядом с кнопкой, а не серая кнопка молча.
+  const publish = post.getByRole('button', { name: 'Опубликовать' })
+  await expect(publish).toBeDisabled()
+  await expect(post.getByText('Добавьте хотя бы один тег')).toBeVisible()
+  await post.getByLabel('Добавьте теги…').fill('море')
+  await post.getByLabel('Добавьте теги…').press('Enter')
+  await expect(publish).toBeEnabled()
 })
 
 test('обложка: первый кадр по умолчанию, кадр с ленты, своя картинка', async ({
   page,
   browserName,
 }) => {
+  skipWithoutWebKitMedia()
   test.setTimeout(120_000)
   await useMockNode(page, DATA)
   const server = await useVideoServer(page)
@@ -321,6 +332,7 @@ test('обложка: первый кадр по умолчанию, кадр с
 test('в списке «Медиастудии» — выбранная обложка, а не миниатюра, которую сервер сделал сам и удалил', async ({
   page,
 }) => {
+  skipWithoutWebKitMedia()
   test.setTimeout(120_000)
   await useMockNode(page, DATA)
   const server = await useVideoServer(page, { coverDelayMs: 1_500 })
@@ -355,6 +367,7 @@ test('обложка в окне поста: «Изменить обложку»
   page,
   browserName,
 }) => {
+  skipWithoutWebKitMedia()
   test.setTimeout(120_000)
   await useMockNode(page, DATA)
   const server = await useVideoServer(page)
@@ -436,9 +449,11 @@ test('обложка звука: без своей — та, что сделал
   expectJpegCover(server.covers[0], browserName)
   await expect(cover).toHaveAttribute('src', /^blob:/)
 
-  await dialog.getByRole('button', { name: 'Создать пост' }).click()
-  const composer = page.getByRole('dialog', { name: 'Новый пост' })
-  await expect(composer.getByText('Аудио PeerTube прикреплено')).toBeVisible()
+  // Пост к звуку пишут в этом же окне.
+  await expect(dialog.getByLabel('Описание')).toBeVisible()
+  await dialog.getByLabel('Добавьте теги…').fill('музыка')
+  await dialog.getByLabel('Добавьте теги…').press('Enter')
+  await expect(dialog.getByRole('button', { name: 'Опубликовать' })).toBeEnabled()
 })
 
 test('видеотека: ролики из постов на любом сервере, пост открывается в окне', async ({ page }) => {

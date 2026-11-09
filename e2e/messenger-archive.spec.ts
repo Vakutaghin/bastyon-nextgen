@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { primeMessengerProfiles } from './support/offline-messenger'
 
 /**
  * Переписка на устройстве и меню сообщения. В полноэкранном мессенджере «⋯»
@@ -76,6 +77,7 @@ async function signedIn(page: Page): Promise<void> {
 
 /** Список чатов и переписка DM в сторах, мессенджер во весь экран. */
 async function openFullMessenger(page: Page, messages: Record<string, unknown>[]): Promise<void> {
+  await primeMessengerProfiles(page, DATA.profiles)
   await page.evaluate(
     async ({ dialogs, dm, messages }) => {
       const stores = (

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { onScreen } from './support/on-screen'
 import { FakeAir, FakeCompanion } from '../src/mesh/meshcore/testing/fake-companion'
 import {
   APP_TO_RADIO,
@@ -22,6 +23,7 @@ import { generatePocketnetAddress } from '../src/blockchain/core/addresses/addre
 import * as ecc from 'tiny-secp256k1'
 import { ECPairFactory } from 'ecpair'
 import { readFileSync } from 'node:fs'
+import { skipWithoutWebKitMedia } from './support/webkit-media'
 
 /**
  * Переписка через mesh-радио в интерфейсе: страница «Mesh-сети», подключение
@@ -835,6 +837,7 @@ test.describe('reticulum', () => {
   })
 
   test('voice messages over LXMF', async ({ page }) => {
+    skipWithoutWebKitMedia()
     test.setTimeout(120_000)
     // Микрофон — тон из WebAudio: MediaRecorder пишет его, как голос.
     await page.addInitScript(() => {
@@ -1129,7 +1132,7 @@ test.describe('reticulum', () => {
     await link.fill('lxm://QbtgND2PxKlhqJt8Zm3Od8Ym')
     await link.locator('xpath=ancestor::form').getByRole('button', { name: 'Открыть' }).click()
     await expect.poll(() => rns.ingested).toEqual(['lxm://QbtgND2PxKlhqJt8Zm3Od8Ym'])
-    await expect(page.getByText('Сообщение открыто — оно в чатах.')).toBeVisible()
+    await expect(onScreen(page).getByText('Сообщение открыто — оно в чатах.')).toBeVisible()
   })
 
   test('browse a NomadNet node: pages, links, a form, back', async ({ page }) => {
@@ -1170,12 +1173,12 @@ test.describe('reticulum', () => {
 
     // Ссылка на файл: узел отдаёт его, дальше — окно «Сохранить как».
     await page.getByRole('button', { name: 'Карта района' }).click()
-    await expect(page.getByText('Файл сохранён: map.png')).toBeVisible()
+    await expect(onScreen(page).getByText('Файл сохранён: map.png')).toBeVisible()
     expect(rns.downloads).toEqual([{ node: NODE, path: '/file/map.png' }])
     // Вместо файла узел ответил страницей — она и показана.
     rns.refused.add('/file/secret.zip')
     await page.getByRole('button', { name: 'Архив' }).click()
-    await expect(page.getByText('Нет доступа')).toBeVisible()
+    await expect(onScreen(page).getByText('Нет доступа')).toBeVisible()
     await page.getByRole('main').getByRole('button', { name: 'Назад' }).click()
 
     await page.getByRole('button', { name: 'Правила' }).click()
@@ -1196,6 +1199,6 @@ test.describe('reticulum', () => {
     // Узел не ответил — ошибка вместо страницы.
     delete rns.pages['/page/hello.mu']
     await page.getByRole('button', { name: 'Обновить', exact: true }).click()
-    await expect(page.getByText('Узел не ответил вовремя.')).toBeVisible()
+    await expect(onScreen(page).getByText('Узел не ответил вовремя.')).toBeVisible()
   })
 })

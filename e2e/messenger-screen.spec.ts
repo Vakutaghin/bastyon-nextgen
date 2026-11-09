@@ -175,7 +175,8 @@ test('фильтр входящих: прячет, считает отдельн
   test.setTimeout(120_000)
   await signedInWithDialogs(page)
   await expect(row(page, 'spam_bot')).toBeVisible({ timeout: 30_000 })
-  expect(await totalUnread(page)).toBe(4)
+  // Счётчик — чаты с непрочитанным, а не сообщения (19f57b64): Анна и спам.
+  expect(await totalUnread(page)).toBe(2)
   await expect(page.getByTestId('chat-screen-toggle')).toHaveCount(0)
 
   await setReputationRule(page)
@@ -203,7 +204,7 @@ test('фильтр входящих: прячет, считает отдельн
   // «Вернуть из скрытых» — человек становится «всегда показывать».
   await rowMenu(page, 'spam_bot', 'Вернуть из скрытых')
   await expect(spam.getByTestId('screened-mark')).toHaveCount(0)
-  expect(await totalUnread(page)).toBe(4)
+  expect(await totalUnread(page)).toBe(2)
 
   // «Убрать в скрытые» — вручную, и без правил.
   await rowMenu(page, 'anna_ng', 'Убрать в скрытые')
@@ -214,7 +215,7 @@ test('фильтр входящих: прячет, считает отдельн
   await screenMenu(page, 'normal')
   await expect(row(page, 'anna_ng')).toHaveCount(0)
   await expect(row(page, 'spam_bot')).toBeVisible()
-  expect(await totalUnread(page)).toBe(3)
+  expect(await totalUnread(page)).toBe(1)
 })
 
 test('меню глаза: только скрытые, окно «Скрытые чаты», шестерёнка и правила — в настройки', async ({

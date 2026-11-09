@@ -1,6 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { onScreen } from './support/on-screen'
 import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
+import { skipWithoutWebKitMedia } from './support/webkit-media'
 
 /**
  * Каналы в мессенджере: «Читать в мессенджере» в профиле автора, канал в
@@ -80,7 +82,7 @@ async function readAliceInMessenger(page: Page): Promise<void> {
   const read = page.getByTestId('profile-channel').filter({ visible: true })
   await expect(read).toHaveText('Читать в мессенджере', { timeout: 30_000 })
   await read.click()
-  await expect(page.getByText('Публикации alice_ng теперь в мессенджере')).toBeVisible()
+  await expect(onScreen(page).getByText('Публикации alice_ng теперь в мессенджере')).toBeVisible()
   await expect(read).toHaveText('Открыть в мессенджере')
   await expect(page.getByTestId('profile-channel-stop').filter({ visible: true })).toBeVisible()
 }
@@ -188,7 +190,7 @@ test('профиль → «Читать в мессенджере» → кана
   await page.getByText('Не читать в мессенджере').click()
   await expect(row).toHaveCount(0)
   await expect(page.getByText('Каналов пока нет')).toBeVisible()
-  await page.getByText('alice_ng больше не в мессенджере').click()
+  await onScreen(page).getByText('alice_ng больше не в мессенджере').click()
   await expect(row).toBeVisible()
 })
 
@@ -274,6 +276,7 @@ const LONG_FEED: MockNodeData = {
 }
 
 test('длинная лента: посты целиком, ролики открываются и играют', async ({ page }) => {
+  skipWithoutWebKitMedia()
   test.setTimeout(120_000)
   await signIn(page, LONG_FEED)
   await useMockPeerTube(page)
@@ -396,6 +399,12 @@ test.describe('на телефоне', () => {
     const hint = page.getByText(/Напишите первое сообщение/)
     await expect(hint).toBeVisible()
     expect(await hint.evaluate(uncovered)).toBe(true)
+    // Тосты на телефоне — внизу, поверх поля ввода, пока не уйдут (4,5 с);
+    // здесь проверяется раскладка, поэтому ждём, пока тост «теперь в
+    // мессенджере» закроется.
+    await expect(onScreen(page).getByText('Публикации alice_ng теперь в мессенджере')).toBeHidden({
+      timeout: 15_000,
+    })
     const input = page.getByPlaceholder('Введите сообщение...').filter({ visible: true })
     expect(await input.evaluate(uncovered)).toBe(true)
   })

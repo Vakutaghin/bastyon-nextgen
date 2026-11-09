@@ -116,7 +116,10 @@ test('уведомления — окном во весь экран, а не в
   const list = sheet.locator('[data-styled-name="SC_NotificationsList"]')
   const overflow = await list.evaluate((el) => el.scrollHeight > el.clientHeight)
   expect(overflow).toBe(true)
-  expect(await list.evaluate((el) => getComputedStyle(el).overscrollBehaviorY)).toBe('contain')
+  // WebKit для Windows свойства не знает (CSS.supports — false); на iOS и в Chromium оно есть.
+  if (await list.evaluate(() => CSS.supports('overscroll-behavior-y', 'contain'))) {
+    expect(await list.evaluate((el) => getComputedStyle(el).overscrollBehaviorY)).toBe('contain')
+  }
   // Заголовок окна — под строкой состояния.
   const title = await sheet.getByText('Уведомления', { exact: true }).boundingBox()
   expect(title!.y).toBeGreaterThanOrEqual(STATUS_BAR)

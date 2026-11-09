@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { test, expect, type Page, type Route } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
+import { skipWithoutWebKitMedia } from './support/webkit-media'
 
 /**
  * Разделы «Видео» и «Аудио», мини-плеер и коллекции на подменной ноде: сетка
@@ -154,6 +155,7 @@ test('раздел «Видео»: только ролики, сеткой', asy
 })
 
 test('раздел «Видео»: ролик играет в окне поста с текстом', async ({ page }) => {
+  skipWithoutWebKitMedia()
   test.setTimeout(60_000)
   await useMockNode(page, {
     ...DATA,
@@ -244,7 +246,9 @@ test('раздел «Аудио»: трек в мини-плеере, следу
   await rows.first().getByRole('link', { name: ALICE.name }).click()
   await expect(page).toHaveURL(new RegExp(ALICE.name))
   await expect(page.getByTestId('mini-player')).toContainText('Вторая песня')
-  await page.getByRole('button', { name: 'Закрыть плеер' }).click()
+  // «Закрыть плеер» — в меню «Ещё» мини-плеера.
+  await page.getByTestId('mini-player').getByRole('button', { name: 'Ещё' }).click()
+  await page.getByRole('menuitem', { name: 'Закрыть плеер' }).click()
   await expect(page.getByTestId('mini-player')).toBeHidden()
 })
 
