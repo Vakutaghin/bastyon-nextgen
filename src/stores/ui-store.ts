@@ -13,17 +13,23 @@ import {
 export type AppLanguage = Locale
 
 const SETTING_KEY_LANGUAGE = 'bastyonAppLanguage'
-/** Язык ленты, если он не как у интерфейса. В localStorage: первый запрос ленты — сразу на нём. */
+/**
+ * Языки ленты, если они не как у интерфейса, — через запятую («ru,en»; раньше
+ * там был один язык, он читается так же). В localStorage: первый запрос
+ * ленты — сразу на них.
+ */
 const FEED_LANGUAGE_STORAGE_KEY = 'bastyon_feed_locale'
 
-function readStoredFeedLanguage(): AppLanguage | null {
+/** Поддерживаемые, без повторов, в порядке списка языков. */
+function normalizeLanguages(list: readonly unknown[]): AppLanguage[] {
+  return SUPPORTED_LOCALES.filter((lang) => list.includes(lang))
+}
+
+function readStoredFeedLanguages(): AppLanguage[] {
   try {
-    const stored = localStorage.getItem(FEED_LANGUAGE_STORAGE_KEY)
-    return (SUPPORTED_LOCALES as readonly unknown[]).includes(stored)
-      ? (stored as AppLanguage)
-      : null
+    return normalizeLanguages((localStorage.getItem(FEED_LANGUAGE_STORAGE_KEY) ?? '').split(','))
   } catch {
-    return null
+    return []
   }
 }
 
@@ -38,8 +44,8 @@ export const useUIStore = defineStore('ui', {
     // Тот же детектор, что у vue-i18n на буте: стор и i18n стартуют с одного значения.
     language: detectInitialLocale() as AppLanguage,
     languageLoaded: false,
-    /** Фильтр языка ленты; null — как у интерфейса. */
-    feedLanguage: readStoredFeedLanguage(),
+    /** Языки ленты; пусто — как у интерфейса. */
+    feedLanguages: readStoredFeedLanguages(),
   }),
 
   getters: {
@@ -61,12 +67,19 @@ export const useUIStore = defineStore('ui', {
       }
     },
 
+    /** На каких языках лента: свои языки ленты, иначе — язык интерфейса. */
+    contentLanguages(): AppLanguage[] {
+      return this.feedLanguages.length ? this.feedLanguages : [this.language]
+    },
+
     /**
-     * Язык контента: лента, продвигаемые посты, теги, «Кого читать». Свой
-     * фильтр у ленты, иначе — язык интерфейса.
+     * Главный язык ленты — для того, что нода отдаёт на одном языке:
+     * продвигаемые посты, теги, категории, «Кого читать», комментарии. Язык
+     * интерфейса, если он среди языков ленты, иначе первый из них.
      */
     contentLanguage(): AppLanguage {
-      return this.feedLanguage ?? this.language
+      const langs = this.contentLanguages
+      return langs.includes(this.language) ? this.language : langs[0]!
     },
   },
 
@@ -179,18 +192,24 @@ export const useUIStore = defineStore('ui', {
     },
 
     /**
-     * Фильтр языка ленты — отдельно от языка интерфейса. Язык интерфейса или
-     * null — «как у интерфейса»: тогда лента идёт за ним и дальше.
+     * Языки ленты — отдельно от языка интерфейса. Пусто или один язык
+     * интерфейса — «как у интерфейса»: тогда лента идёт за ним и дальше.
      */
-    setFeedLanguage(language: AppLanguage | null): void {
-      const next = language && language !== this.language ? language : null
-      this.feedLanguage = next
+    setFeedLanguages(languages: readonly AppLanguage[]): void {
+      const list = normalizeLanguages(languages)
+      const next = list.length === 1 && list[0] === this.language ? [] : list
+      this.feedLanguages = next
       try {
-        if (next) localStorage.setItem(FEED_LANGUAGE_STORAGE_KEY, next)
+        if (next.length) localStorage.setItem(FEED_LANGUAGE_STORAGE_KEY, next.join(','))
         else localStorage.removeItem(FEED_LANGUAGE_STORAGE_KEY)
       } catch {
         // Без localStorage фильтр живёт до перезапуска.
       }
+    },
+
+    /** Один язык ленты; null — как у интерфейса. */
+    setFeedLanguage(language: AppLanguage | null): void {
+      this.setFeedLanguages(language ? [language] : [])
     },
 
     /**

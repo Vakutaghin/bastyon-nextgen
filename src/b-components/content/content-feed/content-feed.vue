@@ -78,7 +78,7 @@
         {{ t('postCard.sparseLanguageFeed') }}
       </SC_FeedNote>
 
-      <SC_FeedLoading v-if="isLoading && allPosts.length === 0">
+      <SC_FeedLoading v-if="(isLoading || isLoadingMore) && allPosts.length === 0">
         <Spin :tip="t('postCard.loadingFeed')">
           <template #indicator>
             <LoadingOutlined :style="ICON_PRIMARY_120" spin />
@@ -160,12 +160,23 @@
             </SC_RetryButton>
           </SC_FeedErrorColumn>
         </SC_FeedError>
+        <SC_FeedHiddenPause v-else-if="hiddenPaused" data-testid="feed-reputation-paused">
+          <p>{{ hiddenPausedText }}</p>
+          <Button size="small" @click="continueHidden">{{
+            t('postCard.reputationContinue')
+          }}</Button>
+        </SC_FeedHiddenPause>
         <SC_FeedEnd v-else-if="!hasMore && allPosts.length > 0 && !isFavoritesTab">
           <p>{{ t('postCard.allPostsLoaded') }}</p>
         </SC_FeedEnd>
       </template>
       <!-- «Пусто» только после того, как ответ разобран: иначе мигает между
            окончанием загрузки и раскладкой постов. -->
+      <!-- Порог репутации скрыл всё, что лента успела просмотреть. -->
+      <SC_FeedHiddenPause v-else-if="hiddenPaused" data-testid="feed-reputation-paused">
+        <p>{{ hiddenPausedText }}</p>
+        <Button size="small" @click="continueHidden">{{ t('postCard.reputationContinue') }}</Button>
+      </SC_FeedHiddenPause>
       <Empty v-else-if="!isLoading && hasSettled" :description="emptyText" />
     </SC_FeedContent>
 
@@ -206,6 +217,9 @@ import {
 } from '@/components/icons'
 import { usePostsStore } from '@/stores/posts-store'
 import { useFiltersStore } from '@/stores/filters-store'
+import { useUIStore } from '@/stores/ui-store'
+import { useAuthStore } from '@/blockchain/store/auth-store'
+import { formatTopReputation } from '@/pages/top-accounts-page/top-format'
 import { useModalStore } from '@/stores'
 import { feedErrorText, useInfiniteFeed } from '@/composables/use-infinite-feed'
 import { useBoostedFeed } from '@/composables/use-boosted-feed'
@@ -237,6 +251,7 @@ import {
   SC_FeedError,
   SC_FeedLoadingMore,
   SC_FeedEnd,
+  SC_FeedHiddenPause,
   SC_FeedRefreshWrap,
   SC_ScrollToTop,
   SC_FeedErrorColumn,
@@ -263,6 +278,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const postsStore = usePostsStore()
 const filtersStore = useFiltersStore()
+const uiStore = useUIStore()
+const authStore = useAuthStore()
 const modalStore = useModalStore()
 const router = useRouter()
 const route = useRoute()
@@ -284,6 +301,9 @@ const {
   newPostsMore,
   showNewPosts,
   sparse,
+  hiddenPaused,
+  hiddenTotal,
+  continueHidden,
 } = useInfiniteFeed({
   initialLimit: 20,
   pageSize: 20,
@@ -412,6 +432,17 @@ function isDeleted(post: FeedItem): boolean {
   )
 }
 
+/**
+ * «Репутация авторов» действует и на продвигаемые посты (лента — в
+ * use-infinite-feed). Своё не прячем.
+ */
+function aboveReputation(post: FeedItem): boolean {
+  const min = filtersStore.minReputation
+  if (min === null) return true
+  if (authStore.address && post.author?.address === authStore.address) return true
+  return (post.author?.reputation ?? 0) >= min
+}
+
 /** Посты подписок сверху и плашка после них; пусто — подборки нет. */
 const subscriptionsHead = computed<FeedItem[]>(() => {
   if (highlightsDeferred.value) return []
@@ -429,7 +460,9 @@ const displayedPosts = computed<FeedItem[]>(() => {
   if (!showBoosted.value || boostedPosts.value.length === 0) return [...head, ...base]
 
   for (const post of base) shown.add(postKey(post))
-  const pool = filterBlocked(boostedPosts.value.filter((b) => !shown.has(postKey(b))))
+  const pool = filterBlocked(
+    boostedPosts.value.filter((b) => !shown.has(postKey(b)) && aboveReputation(b as FeedItem))
+  )
   if (pool.length === 0) return [...head, ...base]
 
   const result: FeedItem[] = [...head]
@@ -584,13 +617,25 @@ const isServerError = computed<boolean>(() => {
 const isFavoritesTab = computed<boolean>(() => filtersStore.activeTab === 6)
 
 // Лента по дате без фильтров пуста — значит, на этом языке постов нет.
-const emptyText = computed<string>(() =>
-  [1, 3, 4, 5].includes(Number(filtersStore.activeTab)) &&
-  !filtersStore.topFirst &&
-  filtersStore.selectedCategories.length === 0 &&
-  filtersStore.selectedTags.length === 0
-    ? t('postCard.feedEmptyLanguage')
+const emptyText = computed<string>(() => {
+  const min = filtersStore.minReputation
+  if (hiddenTotal.value > 0 && min !== null) {
+    return t('postCard.feedEmptyReputation', { n: formatTopReputation(min) })
+  }
+  return [1, 3, 4, 5].includes(Number(filtersStore.activeTab)) &&
+    !filtersStore.topFirst &&
+    filtersStore.selectedCategories.length === 0 &&
+    filtersStore.selectedTags.length === 0
+    ? t(
+        uiStore.contentLanguages.length > 1
+          ? 'postCard.feedEmptyLanguages'
+          : 'postCard.feedEmptyLanguage'
+      )
     : t('postCard.feedEmpty')
+})
+
+const hiddenPausedText = computed<string>(() =>
+  t('postCard.reputationPaused', { n: formatTopReputation(filtersStore.minReputation ?? 0) })
 )
 
 // Новый пост встал наверх («Новые посты сразу»): того, кто читает ниже, не

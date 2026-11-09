@@ -26,7 +26,8 @@ export function resetSidebarBlock(id: SidebarBlockId): void {
   switch (id) {
     case 'feedSettings':
       if (filters.topFirst) filters.toggleTopFirst()
-      useUIStore().setFeedLanguage(null)
+      filters.setMinReputation(null)
+      useUIStore().setFeedLanguages([])
       break
     case 'categories':
       if (filters.selectedCategories.length > 0) filters.clearCategorySelection()

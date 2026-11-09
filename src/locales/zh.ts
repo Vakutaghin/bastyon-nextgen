@@ -2241,6 +2241,10 @@ export default {
     allPostsLoaded: '已加载全部帖子',
     feedEmpty: '信息流为空',
     feedEmptyLanguage: '该语言暂无帖子',
+    feedEmptyLanguages: '这些语言暂无帖子',
+    feedEmptyReputation: '没有声誉 {n} 及以上作者的帖子',
+    reputationPaused: '往下很久都没有声誉 {n} 及以上作者的帖子',
+    reputationContinue: '继续查找',
     newPosts: '显示新帖子（{n}）',
     boosted: '推广',
     visibility: {
@@ -2270,6 +2274,13 @@ export default {
   sidebar: {
     topFirst: '最佳优先',
     feedLanguage: '信息流语言',
+    feedLanguageHint: '可选择多种：信息流会汇集所选全部语言的帖子',
+    minReputation: '作者声誉',
+    minReputationHint: '声誉低于所选值的作者的帖子不会显示在信息流中。“关注”和“收藏”显示所有人。',
+    minReputationAny: '不限',
+    minReputationFrom: '{n} 及以上',
+    minReputationCustom: '自定义…',
+    minReputationValue: '最低声誉',
     liveFeed: '新帖子即时显示',
     liveFeedHint:
       '新帖子会在出块后几秒内一起自动出现在信息流顶部。仅适用于按日期排序的信息流，不适用于“最佳优先”。',

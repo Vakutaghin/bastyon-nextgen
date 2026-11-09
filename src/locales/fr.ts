@@ -2370,6 +2370,10 @@ export default {
     allPostsLoaded: 'Toutes les publications sont chargées',
     feedEmpty: 'Le fil est vide',
     feedEmptyLanguage: 'Aucune publication dans cette langue',
+    feedEmptyLanguages: 'Aucune publication dans ces langues',
+    feedEmptyReputation: 'Aucune publication d’auteurs avec une réputation dès {n}',
+    reputationPaused: 'Longtemps aucune publication d’auteurs avec une réputation dès {n}',
+    reputationContinue: 'Chercher plus loin',
     newPosts: 'Afficher les nouvelles publications ({n})',
     boosted: 'Sponsorisé',
     visibility: {
@@ -2401,6 +2405,15 @@ export default {
   sidebar: {
     topFirst: 'Les meilleurs d’abord',
     feedLanguage: 'Langue du fil',
+    feedLanguageHint:
+      'Vous pouvez en choisir plusieurs : le fil réunit les publications dans toutes les langues choisies',
+    minReputation: 'Réputation des auteurs',
+    minReputationHint:
+      'Les publications des auteurs dont la réputation est inférieure ne sont pas affichées dans le fil. Abonnements et Favoris montrent tout le monde.',
+    minReputationAny: 'Toute',
+    minReputationFrom: 'Dès {n}',
+    minReputationCustom: 'Autre…',
+    minReputationValue: 'Réputation dès',
     liveFeed: 'Nouvelles publications en direct',
     liveFeedHint:
       'Les nouvelles publications s’ajoutent d’elles-mêmes en haut du fil, toutes ensemble, quelques secondes après un bloc. Seulement dans le fil par date, pas avec « Les meilleurs d’abord ».',

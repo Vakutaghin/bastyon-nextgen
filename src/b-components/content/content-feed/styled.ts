@@ -242,6 +242,22 @@ export const SC_FeedEnd = styled.div`
   }
 `
 
+/** Порог «Репутации авторов» долго скрывал всё: что случилось и «Искать дальше». */
+export const SC_FeedHiddenPause = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 30px 20px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+
+  p {
+    margin: 0;
+  }
+`
+
 export const SC_FeedRefreshWrap = styled.div`
   display: inline-flex;
   align-items: center;

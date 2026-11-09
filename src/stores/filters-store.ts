@@ -24,6 +24,7 @@ import {
   CUSTOM_CATEGORY_ICON,
   TEMP_CATEGORY_ICON,
   REMOVED_SPACE_CATEGORY_ID,
+  MIN_REPUTATION_RANGE,
 } from './filters-store-consts'
 import { loadFiltersFromSettings, saveFiltersToSettings } from './filters-persistence'
 
@@ -59,6 +60,9 @@ export const useFiltersStore = defineStore('filters', {
       // «Новые посты сразу»: новые посты встают наверх ленты по дате сами,
       // без пилюли «N новых постов» (use-infinite-feed, checkLive).
       liveFeed: false,
+      // «Репутация авторов»: посты авторов с репутацией ниже в ленте не
+      // показываются (use-infinite-feed, feed-pager); null — любая.
+      minReputation: null as number | null,
       isInitialized: false,
       isInitializing: false,
     }
@@ -139,6 +143,7 @@ export const useFiltersStore = defineStore('filters', {
       if (snapshot.selectedTags) this.selectedTags = snapshot.selectedTags
       if (snapshot.topFirst !== undefined) this.topFirst = snapshot.topFirst
       if (snapshot.liveFeed !== undefined) this.liveFeed = snapshot.liveFeed
+      if (snapshot.minReputation !== undefined) this.minReputation = snapshot.minReputation
 
       // «Космос» был только в NextGen, в legacy такой категории нет. Кто её
       // выбрал, получает ту же выборку своей категорией с тегом «космос».
@@ -161,6 +166,7 @@ export const useFiltersStore = defineStore('filters', {
         selectedTags: this.selectedTags,
         topFirst: this.topFirst,
         liveFeed: this.liveFeed,
+        minReputation: this.minReputation,
       })
     },
 
@@ -175,6 +181,20 @@ export const useFiltersStore = defineStore('filters', {
     /** Переключает «Новые посты сразу». */
     toggleLiveFeed() {
       this.liveFeed = !this.liveFeed
+      void this.saveSettings()
+    },
+
+    /** «Репутация авторов»: целое в пределах MIN_REPUTATION_RANGE; null — любая. */
+    setMinReputation(value: number | null) {
+      const next =
+        value === null || !Number.isFinite(value)
+          ? null
+          : Math.min(
+              MIN_REPUTATION_RANGE.max,
+              Math.max(MIN_REPUTATION_RANGE.min, Math.round(value))
+            )
+      if (next === this.minReputation) return
+      this.minReputation = next
       void this.saveSettings()
     },
 

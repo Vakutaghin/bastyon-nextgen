@@ -108,14 +108,36 @@ describe('ui-store', () => {
       expect(store.language).toBe('ru')
       expect(localStorage.getItem('bastyon_feed_locale')).toBe('en')
       setActivePinia(createPinia())
-      expect(useUIStore().feedLanguage).toBe('en')
+      expect(useUIStore().feedLanguages).toEqual(['en'])
+    })
+
+    it('несколько языков: в порядке списка, помнятся; главный — язык интерфейса, если он среди них', () => {
+      store.language = 'ru'
+      store.setFeedLanguages(['de', 'en', 'de'])
+      expect(store.contentLanguages).toEqual(['en', 'de'])
+      expect(store.contentLanguage).toBe('en')
+      expect(localStorage.getItem('bastyon_feed_locale')).toBe('en,de')
+
+      store.setFeedLanguages(['de', 'ru'])
+      expect(store.contentLanguage).toBe('ru')
+      setActivePinia(createPinia())
+      expect(useUIStore().feedLanguages).toEqual(['ru', 'de'])
+    })
+
+    it('ничего не выбрано — как у интерфейса', () => {
+      store.language = 'ru'
+      store.setFeedLanguages(['en', 'de'])
+      store.setFeedLanguages([])
+      expect(store.feedLanguages).toEqual([])
+      expect(store.contentLanguages).toEqual(['ru'])
+      expect(localStorage.getItem('bastyon_feed_locale')).toBeNull()
     })
 
     it('тот же язык, что у интерфейса, — «как у интерфейса»', () => {
       store.language = 'ru'
       store.setFeedLanguage('en')
       store.setFeedLanguage('ru')
-      expect(store.feedLanguage).toBeNull()
+      expect(store.feedLanguages).toEqual([])
       expect(localStorage.getItem('bastyon_feed_locale')).toBeNull()
     })
 
@@ -123,7 +145,7 @@ describe('ui-store', () => {
       store.language = 'ru'
       store.setFeedLanguage('de')
       await store.setLanguage('en')
-      expect(store.feedLanguage).toBeNull()
+      expect(store.feedLanguages).toEqual([])
       expect(store.contentLanguage).toBe('en')
       expect(localStorage.getItem('bastyon_feed_locale')).toBeNull()
     })

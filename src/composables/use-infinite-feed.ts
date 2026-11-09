@@ -7,10 +7,7 @@
 
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import type {
-  GetHierarchicalStripPost,
-  GetHierarchicalStripResponse,
-} from '@/types/rpc-responses/get-hierarchical-strip'
+import type { GetHierarchicalStripPost } from '@/types/rpc-responses/get-hierarchical-strip'
 import { extractPostsFromResponse, type AdaptedPost } from './use-feed'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useFiltersStore } from '@/stores/filters-store'
@@ -23,6 +20,19 @@ import {
   isSparseFeed,
   type DatePage,
 } from './helpers/date-feed'
+import {
+  byComments,
+  byScore,
+  byTime,
+  collectVisible,
+  mergeSources,
+  passesReputation,
+  toFeedResponse,
+  toRawPage,
+  type FeedPageResponse,
+  type PageSource,
+} from './helpers/feed-pager'
+import { categoriesForLanguage } from '@/b-components/sidebar/sidebar-categories/categories-data'
 import { prefetchMargin } from './use-load-more-sentinel'
 import {
   fetchAndMergeRepostOriginals,
@@ -47,6 +57,16 @@ export function feedErrorText(err: unknown): string {
 
 /** Вкладки со своим источником — не лента по дате: «Подписки», «Избранное», «Обсуждаемое». */
 const OWN_SOURCE_TABS = new Set([2, 6, 7])
+/** Язык не отбирают: «Подписки» — на всех языках, «Избранное» — свой список. */
+const ANY_LANGUAGE_TABS = new Set([2, 6])
+/** Где действует «Репутация авторов»: не в «Подписках» и не в «Избранном» — их выбрали вы. */
+const REPUTATION_TABS = new Set([1, 3, 4, 5, 7])
+/**
+ * Страниц подряд, где порог репутации скрыл всё, — после стольких лента
+ * перестаёт искать сама и ждёт «Искать дальше» (за раз — до пяти страниц
+ * ноды, collectVisible).
+ */
+const MAX_HIDDEN_PAGES = 3
 /** Где «Новые посты сразу»: ленты по дате — главная, подписки, видео, аудио, статьи. */
 const LIVE_TABS = new Set([1, 2, 3, 4, 5])
 
@@ -83,10 +103,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   const filtersStore = useFiltersStore()
   const uiStore = useUIStore()
 
-  // Язык контента: явно переданный (options.lang) приоритетнее, иначе — фильтр
-  // языка ленты из ui-store, а без него — язык интерфейса (legacy брал
-  // `app.localization.key`). Реактивен: смена языка перезагружает ленту.
-  const lang = computed(() => options.lang ?? uiStore.contentLanguage)
+  // Языки контента: явно переданный (options.lang) приоритетнее, иначе — языки
+  // ленты из ui-store, а без них — язык интерфейса (legacy брал
+  // `app.localization.key`). Реактивны: смена языков перезагружает ленту.
+  const languages = computed<string[]>(() =>
+    options.lang ? [options.lang] : [...uiStore.contentLanguages]
+  )
 
   onMounted(() => {
     if (!filtersStore.isInitialized) {
@@ -110,10 +132,19 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   let feedHeight = 0
   /** Ленту на этом языке нода целыми страницами не собирает — посты приходят по одному (date-feed.ts). */
   const sparse = ref(false)
-  /** Сколько постов просили в последнем запросе: пришло меньше — лента кончилась. */
-  let requestedCount = initialLimit
   /** Страниц подряд, в которых не нашлось ничего нового. */
   let repeatedPages = 0
+  /** Страниц подряд, где порог репутации скрыл всё. */
+  let hiddenPages = 0
+  /** Порог скрыл всё на MAX_HIDDEN_PAGES страницах подряд: сама лента дальше не ищет. */
+  const hiddenPaused = ref(false)
+  /** Сколько постов скрыл порог репутации в этой ленте. */
+  const hiddenTotal = ref(0)
+  /**
+   * Источник страниц текущей ленты. Лента из нескольких языков помнит очереди
+   * постов каждого языка (feed-pager), поэтому новый — только с головы ленты.
+   */
+  let pageSource: PageSource | null = null
 
   // Поколение ленты. Растёт при любом сбросе (смена фильтров/вкладки/языка).
   // Обработчик ответа держит паузу на `await` внутри — за это время фильтр мог
@@ -147,7 +178,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       () => filtersStore.timeFilters,
       () => filtersStore.sortFilters,
       () => filtersStore.topFirst, // Тоггл «Сначала лучшее» → переключение источника на gettopfeed
-      () => lang.value, // Смена языка контента
+      () => languages.value.join(','), // Смена языков контента
+      () => filtersStore.minReputation, // «Репутация авторов»
       () => filtersStore.selectedCategories,
       () => filtersStore.selectedTags,
       () => filtersStore.customCategories, // Следим за изменением определений кастомных категорий
@@ -163,9 +195,16 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       loadMoreError.value = null
       newPostsCount.value = 0
       newPostsMore.value = false
+      resetHidden()
     },
     { deep: true }
   )
+
+  function resetHidden(): void {
+    hiddenPages = 0
+    hiddenPaused.value = false
+    hiddenTotal.value = 0
+  }
 
   const queryKey = computed(() => [
     'feed',
@@ -173,7 +212,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     filtersStore.activeTab,
     filtersStore.topFirst,
     filtersStore.topFeedDepth,
-    lang.value,
+    languages.value.join(','),
+    filtersStore.minReputation,
     currentTxidForQuery.value || 'initial',
     filtersStore.selectedCategories,
     filtersStore.selectedTags,
@@ -188,24 +228,40 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     return []
   }
 
+  /**
+   * Теги выбранной категории на языке `language`. Готовые категории у каждого
+   * языка свои (categories-data), в сторе — на главном языке ленты; свои и
+   * временные категории — одни на все языки.
+   */
+  const categoryTags = (id: string, language: string): string[] => {
+    const category = filtersStore.allCategories.find((c) => c.id === id)
+    if (!category) return []
+    const own =
+      filtersStore.customCategories.some((c) => c.id === id) ||
+      (filtersStore.temporaryCategories ?? []).some((c) => c.id === id)
+    if (own || language === uiStore.contentLanguage) return category.tags
+    return categoriesForLanguage(language).find((c) => c.id === id)?.tags ?? category.tags
+  }
+
   // Объединение тегов категорий + пользовательских тегов (для 4-го параметра RPC: tagsfilter).
   // Нижний регистр — как legacy: нода сравнивает теги с учётом регистра.
-  const buildAllTags = (): string[] => {
-    const categoryTags = filtersStore.selectedCategories.flatMap((id) => {
-      const category = filtersStore.allCategories.find((c) => c.id === id)
-      return category ? category.tags : []
-    })
-    return [...categoryTags, ...filtersStore.selectedTags].map((tag: string) =>
+  const buildAllTags = (language: string): string[] => {
+    const tags = filtersStore.selectedCategories.flatMap((id) => categoryTags(id, language))
+    return [...tags, ...filtersStore.selectedTags].map((tag: string) =>
       encodeURIComponent(tag.toLowerCase())
     )
   }
 
-  function feedContext(currentTxid: string, count: number): FeedQueryContext {
+  function feedContext(
+    currentTxid: string,
+    count: number,
+    language = languages.value[0] ?? ''
+  ): FeedQueryContext {
     return {
       currentTxid,
       count,
-      lang: lang.value,
-      allTags: buildAllTags(),
+      lang: language,
+      allTags: buildAllTags(language),
       contentTypes: buildContentTypes(),
       userAddress: authStore.address || '',
       topFirst: filtersStore.topFirst,
@@ -218,27 +274,86 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   async function fetchFeedPage(ctx: FeedQueryContext, jump = true): Promise<DatePage> {
     const tab = Number(filtersStore.activeTab)
     if (ctx.topFirst || OWN_SOURCE_TABS.has(tab)) {
-      sparse.value = false
       return { response: await buildFeedQueryByTab(tab, ctx), requested: ctx.count }
     }
-    try {
-      return await fetchDatePage(ctx, { jump })
-    } finally {
-      sparse.value = isSparseFeed(ctx)
+    return fetchDatePage(ctx, { jump })
+  }
+
+  /** Языки, на которых идут запросы этой вкладки; '' — язык не отбирается. */
+  const tabLanguages = (): string[] =>
+    ANY_LANGUAGE_TABS.has(Number(filtersStore.activeTab)) ? [''] : languages.value
+
+  /** Хоть один язык ленты нода отдаёт по одному посту (date-feed.ts). */
+  function anySparse(): boolean {
+    const tab = Number(filtersStore.activeTab)
+    if (filtersStore.topFirst || OWN_SOURCE_TABS.has(tab)) return false
+    const contentTypes = buildContentTypes()
+    return tabLanguages().some((lang) =>
+      isSparseFeed({ lang, contentTypes, allTags: buildAllTags(lang) })
+    )
+  }
+
+  /**
+   * Страницы ленты. У одного языка курсор — txid последнего поста, как у
+   * ноды. Языков несколько — лента каждого своя (со своей высотой блока), а
+   * страницы сливаются (feed-pager): по дате, в «Лучшем» по оценкам, в
+   * «Обсуждаемом» по числу комментариев. `head` — проверка новых сверху:
+   * от последнего блока и без прыжка через перерыв.
+   */
+  function openPageSource(head = false): PageSource {
+    const langs = tabLanguages()
+    const lane = (language: string, count: (cursor: string) => number): PageSource => {
+      let height = 0
+      return async (cursor) => {
+        const ctx = feedContext(cursor, count(cursor), language)
+        if (head) ctx.height = 0
+        else if (langs.length > 1) ctx.height = cursor === '' ? 0 : height
+        const raw = toRawPage(await fetchFeedPage(ctx, !head), cursor)
+        if (cursor === '' && !head) {
+          height = raw.height
+          if (langs.length === 1) feedHeight = raw.height
+        }
+        return raw
+      }
     }
+    if (head) {
+      const sources = langs.map((l) => lane(l, () => NEW_POSTS_PEEK))
+      return sources.length === 1 ? sources[0]! : mergeSources(sources, mergeKey(), NEW_POSTS_PEEK)
+    }
+    if (langs.length === 1) {
+      return lane(langs[0]!, (cursor) => (cursor === '' ? initialLimit : pageSize))
+    }
+    return mergeSources(
+      langs.map((l) => lane(l, () => pageSize)),
+      mergeKey(),
+      pageSize
+    )
+  }
+
+  function mergeKey() {
+    if (Number(filtersStore.activeTab) === 7) return byComments
+    return filtersStore.topFirst ? byScore : byTime
+  }
+
+  /** Отсев по «Репутации авторов»; null — порога нет или на этой вкладке он не действует. */
+  function reputationFilter(): ((post: GetHierarchicalStripPost) => boolean) | null {
+    const min = filtersStore.minReputation
+    if (min === null || min === undefined) return null
+    if (!REPUTATION_TABS.has(Number(filtersStore.activeTab))) return null
+    const me = authStore.address || ''
+    return (post) => passesReputation(post, min, me)
   }
 
   // Запрос данных — все варианты вкладок диспатчатся в buildFeedQueryByTab.
-  const { data, isLoading, error, refetch } = useQuery<GetHierarchicalStripResponse>({
+  const { data, isLoading, error, refetch } = useQuery<FeedPageResponse>({
     queryKey: queryKey,
     queryFn: async () => {
       const currentTxid = currentTxidForQuery.value
-      const page = await fetchFeedPage(
-        feedContext(currentTxid, currentTxid === '' ? initialLimit : pageSize)
-      )
-      requestedCount = page.requested
-      await preloadLastCommentAuthors(page.response?.data?.contents)
-      return page.response
+      if (currentTxid === '' || !pageSource) pageSource = openPageSource()
+      const page = await collectVisible(pageSource, currentTxid, reputationFilter())
+      sparse.value = anySparse()
+      await preloadLastCommentAuthors(page.posts)
+      return toFeedResponse(page)
     },
     enabled: computed(() => enabled && (hasMore.value || currentTxidForQuery.value === '')),
     staleTime: 0,
@@ -252,7 +367,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       const generation = feedGeneration.value
       const requestedTxid = currentTxidForQuery.value
 
-      if (!newData?.data?.contents) {
+      if (!newData?.data?.contents || !newData.feedPage) {
         // Пустой, но состоявшийся ответ — это «постов нет», а не «ещё грузим».
         if (newData) hasSettled.value = true
         if (newData && currentTxidForQuery.value !== '') {
@@ -265,6 +380,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
 
       const newPosts: AdaptedPost[] = extractPostsFromResponse(newData)
       const contents = newData.data.contents
+      /** Курсор, «есть ли дальше» и сколько скрыто — от источника страниц (feed-pager). */
+      const info = newData.feedPage
 
       // Подгружаем контент оригиналов для репостов (мутирует newPosts на месте).
       await fetchAndMergeRepostOriginals(newPosts, contents)
@@ -272,6 +389,11 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       // За время догрузки оригиналов фильтр/вкладка могли смениться — тогда эта
       // страница относится к прошлой ленте и клеить её некуда (S16).
       if (generation !== feedGeneration.value) return
+
+      // Порог репутации скрыл всю страницу: это не повтор, а поиск дальше.
+      const allHidden = info.hidden > 0 && newPosts.length === 0
+      hiddenTotal.value += info.hidden
+      hiddenPages = allHidden ? hiddenPages + 1 : 0
 
       let postsToEnrich: AdaptedPost[]
       let nothingNew = false
@@ -288,8 +410,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
         const uniqueNewPosts = newPosts.filter((p) => !existingIds.has(String(p.id)))
         allPosts.value = [...allPosts.value, ...uniqueNewPosts]
         postsToEnrich = uniqueNewPosts
-        nothingNew = uniqueNewPosts.length === 0
-        repeatedPages = nothingNew ? repeatedPages + 1 : 0
+        nothingNew = !allHidden && uniqueNewPosts.length === 0
+        if (!allHidden) repeatedPages = nothingNew ? repeatedPages + 1 : 0
       }
 
       // Подгружаем оценки текущего юзера и проставляем myVal в allPosts (fire-and-forget).
@@ -297,31 +419,22 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
         enrichWithUserScores(postsToEnrich, allPosts.value, authStore.address)
       }
 
-      // Обновляем lastTxid для следующей загрузки
-      if (contents.length > 0) {
-        const lastPost = contents[contents.length - 1]
-        const newLastTxid = lastPost?.txid || ''
-
-        // Если получили меньше постов, чем запрашивали, значит это последняя страница
-        hasMore.value =
-          contents.length >= requestedCount &&
-          newLastTxid !== requestedTxid &&
-          repeatedPages < MAX_REPEATED_PAGES
-
-        if (hasMore.value) {
-          lastTxid.value = newLastTxid
-        }
-      } else {
-        hasMore.value = false
-      }
+      // Курсор следующей страницы. Пришло меньше, чем просили, или курсор не
+      // сдвинулся — лента кончилась (toRawPage).
+      hasMore.value =
+        info.more && info.cursor !== requestedTxid && repeatedPages < MAX_REPEATED_PAGES
+      if (hasMore.value) lastTxid.value = info.cursor
 
       loadMoreError.value = null
       isLoadingMore.value = false
-      hasSettled.value = true
+      hiddenPaused.value = allHidden && hasMore.value && hiddenPages >= MAX_HIDDEN_PAGES
+      const searching = allHidden && hasMore.value && !hiddenPaused.value
+      // Пока порог прячет всё, а лента ещё ищет, «Лента пуста» не показываем.
+      if (!searching || allPosts.value.length > 0) hasSettled.value = true
 
-      // Страница целиком из уже показанного: лента не выросла, и наблюдатель
-      // нового отчёта не пришлёт — следующую просим сами.
-      if (nothingNew && hasMore.value) void nextTick(() => loadMore())
+      // Страница целиком из уже показанного или скрытого: лента не выросла, и
+      // наблюдатель нового отчёта не пришлёт — следующую просим сами.
+      if ((nothingNew && hasMore.value) || searching) void nextTick(() => loadMore())
     },
     { immediate: true }
   )
@@ -330,7 +443,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
    * Загружает следующую порцию постов
    */
   const loadMore = async () => {
-    if (isLoadingMore.value || !hasMore.value || isLoading.value) {
+    if (isLoadingMore.value || !hasMore.value || isLoading.value || hiddenPaused.value) {
       return
     }
 
@@ -361,6 +474,13 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     await loadMore()
   }
 
+  /** «Искать дальше»: порог долго скрывал всё — ищем следующие страницы. */
+  const continueHidden = async (): Promise<void> => {
+    hiddenPaused.value = false
+    hiddenPages = 0
+    await loadMore()
+  }
+
   /**
    * Перезагружает ленту С ГОЛОВЫ. Кнопка «Обновить ленту» и WS-подтверждение
    * раньше дёргали `refetch()` напрямую — а он повторяет ТЕКУЩУЮ страницу N,
@@ -375,6 +495,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     loadMoreError.value = null
     newPostsCount.value = 0
     newPostsMore.value = false
+    resetHidden()
     await refetch()
   }
 
@@ -433,19 +554,21 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   async function collectNewPosts(maxPages: number): Promise<NewPosts> {
     const known = new Set(allPosts.value.map((p) => String(p.id)))
     const result: NewPosts = { posts: [], contents: [], complete: true }
+    // Без прыжка через перерыв: за ним старые посты, а не новые.
+    const source = openPageSource(true)
+    const keep = reputationFilter()
     let cursor = ''
     for (let i = 0; i < maxPages; i++) {
-      // Без прыжка через перерыв: за ним старые посты, а не новые.
-      const page = await fetchFeedPage({ ...feedContext(cursor, NEW_POSTS_PEEK), height: 0 }, false)
-      const list = extractPostsFromResponse(page.response)
+      // Скрытые порогом репутации — не новые; лишних страниц ради них не берём.
+      const page = await collectVisible(source, cursor, keep, 1)
+      const list = extractPostsFromResponse(toFeedResponse(page))
       for (const post of list) {
         if (known.has(String(post.id))) return result
         result.posts.push(post)
       }
-      const raw = page.response?.data?.contents ?? []
-      result.contents.push(...raw)
-      cursor = raw[raw.length - 1]?.txid ?? ''
-      if (list.length < page.requested || !cursor) return result
+      result.contents.push(...page.posts)
+      cursor = page.cursor
+      if (!page.more) return result
     }
     result.complete = false
     return result
@@ -708,6 +831,12 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     refetch: refreshFeed,
     /** Ленту на этом языке нода целыми страницами не собирает — посты приходят по одному. */
     sparse: computed(() => sparse.value),
+    /** Порог репутации долго скрывал всё: лента ждёт «Искать дальше». */
+    hiddenPaused: computed(() => hiddenPaused.value),
+    /** Сколько постов скрыл порог репутации в этой ленте. */
+    hiddenTotal: computed(() => hiddenTotal.value),
+    /** «Искать дальше» после долгого ряда скрытых. */
+    continueHidden,
     /** «Новые посты сразу» действует на этой ленте: новые встают наверх сами. */
     liveMode,
     /** Количество новых постов сверху (lentaunseen-lite); 0 — нет новых. */

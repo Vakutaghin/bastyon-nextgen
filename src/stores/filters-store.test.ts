@@ -100,6 +100,25 @@ describe('filters store', () => {
     expect(lastSaved().selectedCategories).toEqual([])
   })
 
+  it('«Репутация авторов»: целое в пределах сети, сохраняется и поднимается при запуске', async () => {
+    const store = useFiltersStore()
+    expect(store.minReputation).toBeNull()
+    store.setMinReputation(249.6)
+    expect(store.minReputation).toBe(250)
+    expect(lastSaved().minReputation).toBe(250)
+    store.setMinReputation(-5000)
+    expect(store.minReputation).toBe(-1000)
+    store.setMinReputation(Number.NaN)
+    expect(store.minReputation).toBeNull()
+    expect(lastSaved().minReputation).toBeNull()
+
+    setActivePinia(createPinia())
+    mocks.load.mockResolvedValue({ minReputation: 1000 })
+    const restored = useFiltersStore()
+    await restored.init()
+    expect(restored.minReputation).toBe(1000)
+  })
+
   it('готовые категории — набор и порядок legacy, теги на языке ленты', () => {
     const store = useFiltersStore()
     const ui = useUIStore()

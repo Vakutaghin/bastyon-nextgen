@@ -2351,6 +2351,10 @@ export default {
     allPostsLoaded: 'Tutti i post sono stati caricati',
     feedEmpty: 'Il feed è vuoto',
     feedEmptyLanguage: 'Nessun post in questa lingua',
+    feedEmptyLanguages: 'Nessun post in queste lingue',
+    feedEmptyReputation: 'Nessun post di autori con reputazione da {n}',
+    reputationPaused: 'Per molto non ci sono post di autori con reputazione da {n}',
+    reputationContinue: 'Continua a cercare',
     newPosts: 'Mostra i nuovi post ({n})',
     boosted: 'Promosso',
     visibility: {
@@ -2381,6 +2385,15 @@ export default {
   sidebar: {
     topFirst: 'Prima i migliori',
     feedLanguage: 'Lingua del feed',
+    feedLanguageHint:
+      'Puoi sceglierne più di una: il feed raccoglie i post in tutte le lingue scelte',
+    minReputation: 'Reputazione autori',
+    minReputationHint:
+      'I post degli autori con reputazione inferiore non vengono mostrati nel feed. Iscrizioni e Preferiti mostrano tutti.',
+    minReputationAny: 'Qualsiasi',
+    minReputationFrom: 'Da {n}',
+    minReputationCustom: 'Altra…',
+    minReputationValue: 'Reputazione da',
     liveFeed: 'Nuovi post subito',
     liveFeedHint:
       'I nuovi post compaiono da soli in cima al feed, tutti insieme, un paio di secondi dopo un blocco. Solo nel feed per data, non con «Prima i migliori».',

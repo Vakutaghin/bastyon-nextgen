@@ -2314,6 +2314,10 @@ export default {
     allPostsLoaded: '모든 게시물을 불러왔습니다',
     feedEmpty: '피드가 비어 있습니다',
     feedEmptyLanguage: '이 언어로 된 게시물이 없습니다',
+    feedEmptyLanguages: '이 언어들로 된 게시물이 없습니다',
+    feedEmptyReputation: '평판 {n} 이상인 작성자의 게시물이 없습니다',
+    reputationPaused: '한동안 평판 {n} 이상인 작성자의 게시물이 없습니다',
+    reputationContinue: '계속 찾기',
     newPosts: '새 게시물 보기({n})',
     boosted: '홍보',
     visibility: {
@@ -2343,6 +2347,14 @@ export default {
   sidebar: {
     topFirst: '인기순',
     feedLanguage: '피드 언어',
+    feedLanguageHint: '여러 개를 고를 수 있습니다. 피드는 선택한 모든 언어의 게시물을 모읍니다',
+    minReputation: '작성자 평판',
+    minReputationHint:
+      '평판이 이보다 낮은 작성자의 게시물은 피드에 표시되지 않습니다. 구독과 즐겨찾기에는 모두 표시됩니다.',
+    minReputationAny: '전체',
+    minReputationFrom: '{n} 이상',
+    minReputationCustom: '직접 입력…',
+    minReputationValue: '최소 평판',
     liveFeed: '새 게시물 바로 표시',
     liveFeedHint:
       '새 게시물이 블록 후 몇 초 안에 피드 맨 위에 한꺼번에 자동으로 나타납니다. 날짜순 피드에서만 작동하며 «인기순»에서는 작동하지 않습니다.',

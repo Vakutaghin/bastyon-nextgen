@@ -2258,6 +2258,14 @@ export default {
   sidebar: {
     topFirst: 'Сначала лучшее',
     feedLanguage: 'Язык ленты',
+    feedLanguageHint: 'Можно выбрать несколько: лента соберёт посты на всех выбранных языках',
+    minReputation: 'Репутация авторов',
+    minReputationHint:
+      'Посты авторов с репутацией ниже выбранной в ленте не показываются. В «Подписках» и «Избранном» — все.',
+    minReputationAny: 'Любая',
+    minReputationFrom: 'От {n}',
+    minReputationCustom: 'Своя…',
+    minReputationValue: 'Репутация от',
     liveFeed: 'Новые посты сразу',
     liveFeedHint:
       'Новые посты сами встают наверх ленты — все сразу, через пару секунд после блока. Только в ленте по дате — не в «Сначала лучшее».',
@@ -2390,6 +2398,10 @@ export default {
     allPostsLoaded: 'Все посты загружены',
     feedEmpty: 'Лента пуста',
     feedEmptyLanguage: 'На этом языке постов нет',
+    feedEmptyLanguages: 'На этих языках постов нет',
+    feedEmptyReputation: 'Постов авторов с репутацией от {n} не нашлось',
+    reputationPaused: 'Дальше долго нет постов авторов с репутацией от {n}',
+    reputationContinue: 'Искать дальше',
     newPosts: 'Показать новые посты ({n})',
     boosted: 'Продвигаемое',
     visibility: {

@@ -12,6 +12,8 @@ export interface FiltersSnapshot {
   topFirst: boolean
   /** «Новые посты сразу»: новые встают наверх ленты сами. */
   liveFeed: boolean
+  /** «Репутация авторов»: посты авторов с репутацией ниже в ленте не показываются; null — любая. */
+  minReputation: number | null
 }
 
 /**
@@ -27,6 +29,7 @@ interface PersistedFilters {
   selectedTags?: string[]
   topFirst?: boolean
   liveFeed?: boolean
+  minReputation?: number | null
 }
 
 export async function loadFiltersFromSettings(): Promise<Partial<FiltersSnapshot>> {
@@ -60,6 +63,9 @@ export async function loadFiltersFromSettings(): Promise<Partial<FiltersSnapshot
     if (typeof settings.liveFeed === 'boolean') {
       snapshot.liveFeed = settings.liveFeed
     }
+    if (settings.minReputation === null || Number.isFinite(settings.minReputation)) {
+      snapshot.minReputation = settings.minReputation ?? null
+    }
     return snapshot
   } catch (e) {
     console.error('Failed to load filters settings:', e)
@@ -76,6 +82,7 @@ export async function saveFiltersToSettings(snapshot: FiltersSnapshot): Promise<
       selectedTags: JSON.parse(JSON.stringify(snapshot.selectedTags)),
       topFirst: snapshot.topFirst,
       liveFeed: snapshot.liveFeed,
+      minReputation: snapshot.minReputation,
     })
   } catch (e) {
     console.error('Failed to save filters settings:', e)

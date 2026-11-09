@@ -2357,6 +2357,10 @@ export default {
     allPostsLoaded: 'Se han cargado todas las publicaciones',
     feedEmpty: 'El feed está vacío',
     feedEmptyLanguage: 'No hay publicaciones en este idioma',
+    feedEmptyLanguages: 'No hay publicaciones en estos idiomas',
+    feedEmptyReputation: 'No hay publicaciones de autores con reputación desde {n}',
+    reputationPaused: 'Durante mucho rato no hay publicaciones de autores con reputación desde {n}',
+    reputationContinue: 'Seguir buscando',
     newPosts: 'Mostrar publicaciones nuevas ({n})',
     boosted: 'Promocionado',
     visibility: {
@@ -2387,6 +2391,15 @@ export default {
   sidebar: {
     topFirst: 'Lo mejor primero',
     feedLanguage: 'Idioma del feed',
+    feedLanguageHint:
+      'Puede elegir varios: el feed reúne publicaciones en todos los idiomas elegidos',
+    minReputation: 'Reputación de autores',
+    minReputationHint:
+      'Las publicaciones de autores con menor reputación no se muestran en el feed. Suscripciones y Favoritos muestran a todos.',
+    minReputationAny: 'Cualquiera',
+    minReputationFrom: 'Desde {n}',
+    minReputationCustom: 'Otra…',
+    minReputationValue: 'Reputación desde',
     liveFeed: 'Publicaciones nuevas al instante',
     liveFeedHint:
       'Las publicaciones nuevas aparecen solas arriba del feed, todas juntas, un par de segundos después de un bloque. Solo en el feed por fecha, no con «Lo mejor primero».',

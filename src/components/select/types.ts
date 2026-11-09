@@ -9,7 +9,10 @@ export interface SelectOption {
 
 export interface SelectProps {
   options: SelectOption[]
-  value?: SelectValue
+  /** В режиме multiple — список выбранных. */
+  value?: SelectValue | SelectValue[]
+  /** multiple — выбор нескольких: список не закрывается, пункт отмечается и снимается. */
+  mode?: 'multiple'
   /**
    * large — 36px, как поля ввода в формах (по умолчанию); middle — 32px, для
    * строки с текстом (сортировка комментариев).

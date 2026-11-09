@@ -91,7 +91,7 @@ export function useSubscriptionHighlights(enabled: () => boolean) {
   })
 
   const posts = computed<AdaptedPost[]>(() =>
-    active.value ? inLanguage(data.value ?? [], uiStore.contentLanguage) : []
+    active.value ? inLanguage(data.value ?? [], uiStore.contentLanguages) : []
   )
 
   /** Человек пролистал подборку: в следующий раз наверху только новое. */

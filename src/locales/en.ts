@@ -2338,6 +2338,10 @@ export default {
     allPostsLoaded: 'All posts loaded',
     feedEmpty: 'Feed is empty',
     feedEmptyLanguage: 'No posts in this language',
+    feedEmptyLanguages: 'No posts in these languages',
+    feedEmptyReputation: 'No posts by authors with reputation from {n}',
+    reputationPaused: 'No posts by authors with reputation from {n} for a long way down',
+    reputationContinue: 'Keep looking',
     newPosts: 'Show new posts ({n})',
     boosted: 'Promoted',
     visibility: {
@@ -2368,6 +2372,14 @@ export default {
   sidebar: {
     topFirst: 'Best first',
     feedLanguage: 'Feed language',
+    feedLanguageHint: 'You can pick several: the feed gathers posts in all the chosen languages',
+    minReputation: 'Author reputation',
+    minReputationHint:
+      'Posts by authors with a lower reputation are not shown in the feed. Subscriptions and Favorites show everyone.',
+    minReputationAny: 'Any',
+    minReputationFrom: 'From {n}',
+    minReputationCustom: 'Custom…',
+    minReputationValue: 'Reputation from',
     liveFeed: 'New posts live',
     liveFeedHint:
       'New posts appear at the top of the feed by themselves, all together, a couple of seconds after a block. Only in the feed by date, not with “Best first”.',

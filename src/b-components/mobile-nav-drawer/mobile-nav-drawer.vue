@@ -122,7 +122,7 @@ watch(
     filtersStore.selectedCategories.join('|'),
     filtersStore.selectedTags.join('|'),
     filtersStore.topFirst,
-    uiStore.feedLanguage,
+    uiStore.feedLanguages.join('|'),
   ],
   () => {
     if (props.isOpen && route.path !== '/') void router.push('/')

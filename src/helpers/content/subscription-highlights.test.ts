@@ -68,5 +68,7 @@ describe('посты подписок: язык ленты', () => {
     expect(inLanguage(list, 'en').map((p) => p.id)).toEqual([2, 3, 4])
     expect(inLanguage(list, 'ru').map((p) => p.id)).toEqual([1, 3])
     expect(inLanguage(list, 'de').map((p) => p.id)).toEqual([3])
+    // Несколько языков ленты — посты на любом из них.
+    expect(inLanguage(list, ['ru', 'en']).map((p) => p.id)).toEqual([1, 2, 3, 4])
   })
 })

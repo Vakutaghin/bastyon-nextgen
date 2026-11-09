@@ -46,7 +46,7 @@ Feed and app sections:
 - **“Help”** — this help;
 - **“Report a bug”** — a chat with support, see [Reporting a bug](report-bug.md).
 
-Under the sections are the **“Best first”** switch, the **“Feed language”**, **“Categories”** and **“Trending tags”**, which select the posts in the feed — see [Categories, tags and sorting](feed-filters.md).
+Under the sections are the **“Best first”** switch, the **“Feed language”**, the **“Author reputation”**, **“Categories”** and **“Trending tags”**, which select the posts in the feed — see [Categories, tags and sorting](feed-filters.md).
 
 The sections and the blocks below them can be hidden and reordered — see [Header and panels](settings.md#header-and-panels).
 

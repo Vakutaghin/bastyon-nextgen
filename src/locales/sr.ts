@@ -2335,6 +2335,10 @@ export default {
     allPostsLoaded: 'Све објаве су учитане',
     feedEmpty: 'Фид је празан',
     feedEmptyLanguage: 'На овом језику нема објава',
+    feedEmptyLanguages: 'На овим језицима нема објава',
+    feedEmptyReputation: 'Нема објава аутора са репутацијом од {n}',
+    reputationPaused: 'Дуго нема објава аутора са репутацијом од {n}',
+    reputationContinue: 'Тражи даље',
     newPosts: 'Прикажи нове објаве ({n})',
     boosted: 'Промовисано',
     visibility: {
@@ -2366,6 +2370,14 @@ export default {
   sidebar: {
     topFirst: 'Прво најбоље',
     feedLanguage: 'Језик фида',
+    feedLanguageHint: 'Можете изабрати више: фид сакупља објаве на свим изабраним језицима',
+    minReputation: 'Репутација аутора',
+    minReputationHint:
+      'Објаве аутора са нижом репутацијом се не приказују у фиду. Претплате и Омиљено приказују све.',
+    minReputationAny: 'Било која',
+    minReputationFrom: 'Од {n}',
+    minReputationCustom: 'Своја…',
+    minReputationValue: 'Репутација од',
     liveFeed: 'Нове објаве одмах',
     liveFeedHint:
       'Нове објаве саме се појављују на врху фида, све заједно, неколико секунди после блока. Само у фиду по датуму, не уз „Прво најбоље“.',

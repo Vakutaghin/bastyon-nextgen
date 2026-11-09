@@ -6,7 +6,8 @@
  * стирает ленту), S16 (страница прошлого фильтра не доклеивается в новую
  * ленту), S17 («Обновить» идёт с головы, а не повторяет текущую страницу),
  * имена авторов последних комментариев догружаются до показа страницы,
- * лента на редком языке по одному посту, «Новые посты сразу».
+ * лента на редком языке по одному посту, «Новые посты сразу», лента на
+ * нескольких языках, порог «Репутация авторов».
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -99,6 +100,7 @@ const filtersStore = reactive({
   topFirst: false,
   liveFeed: false,
   topFeedDepth: 10080,
+  minReputation: null as number | null,
   selectedCategories: [] as string[],
   selectedTags: [] as string[],
   customCategories: [] as unknown[],
@@ -109,9 +111,12 @@ const filtersStore = reactive({
   init: vi.fn(),
 })
 vi.mock('@/stores/filters-store', () => ({ useFiltersStore: () => filtersStore }))
-vi.mock('@/stores/ui-store', () => ({
-  useUIStore: () => ({ language: 'ru', contentLanguage: 'ru' }),
-}))
+const uiStore = reactive({
+  language: 'ru',
+  contentLanguage: 'ru',
+  contentLanguages: ['ru'] as string[],
+})
+vi.mock('@/stores/ui-store', () => ({ useUIStore: () => uiStore }))
 
 import { feedErrorText, useInfiniteFeed } from './use-infinite-feed'
 import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
@@ -138,8 +143,12 @@ function mountFeed(): FeedApi {
   return api as unknown as FeedApi
 }
 
+/** Страница так, как её отдаёт источник ленты: полная (2 из 2) — значит, есть дальше. */
 function page(...txids: string[]) {
-  return { data: { contents: txids.map((txid) => ({ txid })) } }
+  return {
+    data: { contents: txids.map((txid) => ({ txid })) },
+    feedPage: { more: txids.length >= 2, cursor: txids[txids.length - 1] ?? '', hidden: 0 },
+  }
 }
 
 /** Отдаёт ленте страницу так, как это сделал бы vue-query. */
@@ -167,6 +176,8 @@ beforeEach(() => {
   preloadAuthors.mockImplementation(() => Promise.resolve())
   filtersStore.activeTab = 1
   filtersStore.liveFeed = false
+  filtersStore.minReputation = null
+  uiStore.contentLanguages = ['ru']
 })
 
 describe('useInfiniteFeed', () => {
@@ -177,7 +188,10 @@ describe('useInfiniteFeed', () => {
     await queryState.lastOptions!.queryFn!()
     expect(strip.mock.lastCall![1].height).toBe(0)
 
-    await deliver({ data: { height: 4089777, contents: [{ txid: 'a' }, { txid: 'b' }] } })
+    await deliver({
+      data: { height: 4089777, contents: [{ txid: 'a' }, { txid: 'b' }] },
+      feedPage: { more: true, cursor: 'b', hidden: 0 },
+    })
     await feed.loadMore()
     await queryState.lastOptions!.queryFn!()
     expect(strip.mock.lastCall![1]).toMatchObject({ currentTxid: 'b', height: 4089777 })
@@ -208,10 +222,10 @@ describe('useInfiniteFeed', () => {
     const feed = mountFeed()
     vi.mocked(fetchDatePage).mockResolvedValueOnce({ response: page('x'), requested: 1 } as never)
     vi.mocked(isSparseFeed).mockReturnValueOnce(true)
-    await queryState.lastOptions!.queryFn!()
+    const response = await queryState.lastOptions!.queryFn!()
     expect(feed.sparse.value).toBe(true)
 
-    await deliver(page('x'))
+    await deliver(response)
     expect(feed.hasMore.value).toBe(true)
   })
 
@@ -387,7 +401,7 @@ describe('useInfiniteFeed', () => {
     expect(resolved).toBe(false)
 
     gate.release?.()
-    await expect(request).resolves.toEqual({ data: { contents } })
+    await expect(request).resolves.toMatchObject({ data: { contents } })
   })
 
   it('asks for a page three screens before the end; a short page that leaves the trigger in the zone is followed by the next one', async () => {
@@ -449,10 +463,140 @@ describe('useInfiniteFeed', () => {
       filtersStore.selectedTags = []
     }
   })
+  describe('несколько языков', () => {
+    /** Лента языка по дате: посты от новых к старым. */
+    function byLanguage(posts: Record<string, Array<[string, number]>>) {
+      vi.mocked(fetchDatePage).mockImplementation(async (ctx) => {
+        const list = posts[ctx.lang] ?? []
+        const start = ctx.currentTxid ? list.findIndex(([id]) => id === ctx.currentTxid) + 1 : 0
+        const contents = list
+          .slice(start, start + ctx.count)
+          .map(([txid, time]) => ({ txid, time, l: ctx.lang }))
+        return { response: { data: { contents, height: 7 } }, requested: ctx.count } as never
+      })
+    }
+
+    afterEach(() => {
+      vi.mocked(fetchDatePage).mockImplementation(async (ctx: { count: number }) => ({
+        response: (await buildFeedQueryByTab(1, ctx as never)) as never,
+        requested: ctx.count,
+      }))
+    })
+
+    it('у каждого языка своя лента, посты — вперемешку по дате, следующая страница продолжает', async () => {
+      uiStore.contentLanguages = ['ru', 'en']
+      byLanguage({
+        ru: [
+          ['r1', 90],
+          ['r2', 70],
+          ['r3', 40],
+        ],
+        en: [
+          ['e1', 80],
+          ['e2', 30],
+        ],
+      })
+      const feed = mountFeed()
+      vi.mocked(fetchDatePage).mockClear()
+      const first = await queryState.lastOptions!.queryFn!()
+      await deliver(first)
+      // Страница — 2 поста: дальше без нового запроса не узнать, чей пост свежее.
+      expect(feed.allPosts.value.map((p) => p.id)).toEqual(['r1', 'e1'])
+      const langs = vi.mocked(fetchDatePage).mock.calls.map(([ctx]) => ctx.lang)
+      expect(langs).toEqual(['ru', 'en'])
+
+      await feed.loadMore()
+      await deliver(await queryState.lastOptions!.queryFn!())
+      await feed.loadMore()
+      await deliver(await queryState.lastOptions!.queryFn!())
+      expect(feed.allPosts.value.map((p) => p.id)).toEqual(['r1', 'e1', 'r2', 'r3', 'e2'])
+    })
+
+    it('«Подписки» — одним запросом на всех языках', async () => {
+      uiStore.contentLanguages = ['ru', 'en']
+      filtersStore.activeTab = 2
+      mountFeed()
+      const tab = vi.mocked(buildFeedQueryByTab)
+      tab.mockClear()
+      await queryState.lastOptions!.queryFn!()
+      expect(tab).toHaveBeenCalledTimes(1)
+      expect(tab.mock.lastCall![0]).toBe(2)
+    })
+  })
+
+  describe('«Репутация авторов»', () => {
+    const rated = (...rows: Array<[string, number]>) => ({
+      data: {
+        contents: rows.map(([txid, reputation]) => ({
+          txid,
+          address: `P${txid}`,
+          userprofile: { reputation },
+        })),
+      },
+    })
+
+    it('посты авторов ниже порога не попадают в ленту; мало осталось — следующие страницы', async () => {
+      filtersStore.minReputation = 100
+      const tab = vi.mocked(buildFeedQueryByTab)
+      tab.mockClear()
+      tab
+        .mockResolvedValueOnce(rated(['a', 5], ['b', 3]) as never)
+        .mockResolvedValueOnce(rated(['c', 500], ['d', 7]) as never)
+      const feed = mountFeed()
+      await deliver(await queryState.lastOptions!.queryFn!())
+      expect(feed.allPosts.value.map((p) => p.id)).toEqual(['c'])
+      expect(tab.mock.calls.map(([, ctx]) => ctx.currentTxid)).toEqual(['', 'b'])
+      expect(feed.hiddenTotal.value).toBe(3)
+      expect(feed.hasMore.value).toBe(true)
+    })
+
+    it('порог прячет всё — лента ищет сама, потом ждёт «Искать дальше»', async () => {
+      filtersStore.minReputation = 100
+      const feed = mountFeed()
+      const hiddenPage = (cursor: string) => ({
+        data: { contents: [] },
+        feedPage: { more: true, cursor, hidden: 10 },
+      })
+      await deliver(hiddenPage('h1'))
+      // Пока ищет, «Лента пуста» не показывается.
+      expect(feed.hasSettled.value).toBe(false)
+      await nextTick()
+      expect(queryState.refetch).toHaveBeenCalledTimes(1)
+
+      await deliver(hiddenPage('h2'))
+      await nextTick()
+      expect(queryState.refetch).toHaveBeenCalledTimes(2)
+      await deliver(hiddenPage('h3'))
+      await nextTick()
+      expect(queryState.refetch).toHaveBeenCalledTimes(2)
+      expect(feed.hiddenPaused.value).toBe(true)
+      expect(feed.hasSettled.value).toBe(true)
+      expect(feed.hasMore.value).toBe(true)
+
+      // Наблюдатель за низом ленты сам не ищет — только кнопка.
+      feed.recheckLoadMore()
+      await feed.loadMore()
+      expect(queryState.refetch).toHaveBeenCalledTimes(2)
+      await feed.continueHidden()
+      expect(queryState.refetch).toHaveBeenCalledTimes(3)
+      expect(feed.hiddenPaused.value).toBe(false)
+    })
+
+    it('в «Подписках» порог не действует', async () => {
+      filtersStore.minReputation = 100
+      filtersStore.activeTab = 2
+      vi.mocked(buildFeedQueryByTab).mockResolvedValueOnce(rated(['a', 5], ['b', 3]) as never)
+      const feed = mountFeed()
+      await deliver(await queryState.lastOptions!.queryFn!())
+      expect(feed.allPosts.value.map((p) => p.id)).toEqual(['a', 'b'])
+    })
+  })
+
   describe('«Новые посты сразу»', () => {
     const ids = (feed: FeedApi): string[] => feed.allPosts.value.map((p) => String(p.id))
     const flush = async (): Promise<void> => {
-      for (let i = 0; i < 5; i++) await Promise.resolve()
+      // Проверка сверху идёт через источник страниц (feed-pager) — с запасом шагов.
+      for (let i = 0; i < 20; i++) await Promise.resolve()
     }
 
     beforeEach(() => {

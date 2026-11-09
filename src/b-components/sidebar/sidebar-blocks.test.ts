@@ -23,7 +23,8 @@ describe('resetSidebarBlock', () => {
     filters.selectedCategories = ['games']
     filters.selectedTags = ['bastyon']
     filters.topFirst = true
-    useUIStore().setFeedLanguage('de')
+    filters.minReputation = 100
+    useUIStore().setFeedLanguages(['de', 'en'])
   })
 
   it('категории — только выбор категорий', () => {
@@ -41,12 +42,13 @@ describe('resetSidebarBlock', () => {
     expect(filters.selectedCategories).toEqual(['games'])
   })
 
-  it('«Сначала лучшее» и язык ленты — обычный порядок и язык интерфейса', () => {
+  it('«Сначала лучшее», языки ленты и репутация авторов — обычный порядок, язык интерфейса, все авторы', () => {
     const ui = useUIStore()
-    expect(ui.contentLanguage).toBe('de')
+    expect(ui.contentLanguages).toEqual(['en', 'de'])
     resetSidebarBlock('feedSettings')
     expect(useFiltersStore().topFirst).toBe(false)
-    expect(ui.contentLanguage).toBe(ui.language)
+    expect(useFiltersStore().minReputation).toBeNull()
+    expect(ui.contentLanguages).toEqual([ui.language])
     expect(useFiltersStore().selectedCategories).toEqual(['games'])
   })
 })

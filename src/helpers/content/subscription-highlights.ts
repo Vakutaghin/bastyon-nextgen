@@ -40,12 +40,13 @@ export function recentPosts<T extends { timestamp?: string }>(
   })
 }
 
-/** Посты на языке ленты; без языка в записи — тоже (не прятать то, о чём не знаем). */
+/** Посты на языках ленты; без языка в записи — тоже (не прятать то, о чём не знаем). */
 export function inLanguage<T extends { language?: string }>(
   posts: readonly T[],
-  lang: string
+  lang: string | readonly string[]
 ): T[] {
-  return posts.filter((p) => !p.language || p.language === lang)
+  const langs: readonly string[] = typeof lang === 'string' ? [lang] : lang
+  return posts.filter((p) => !p.language || langs.includes(p.language))
 }
 
 /** Посты подписок, которых человек ещё не видел. */

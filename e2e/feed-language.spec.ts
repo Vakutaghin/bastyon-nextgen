@@ -5,7 +5,8 @@ import { useMockNode, type MockNodeData } from './support/mock-node'
 /**
  * Язык ленты — отдельно от языка интерфейса: «Язык ленты» под «Сначала
  * лучшее» меняет только ленту, а язык из шапки переключает и интерфейс, и
- * ленту. Язык ленты виден по запросу к ноде. Нода подменная.
+ * ленту. Языков можно выбрать несколько — лента спрашивает ноду о каждом.
+ * Язык ленты виден по запросу к ноде. Нода подменная.
  */
 
 const ALICE = 'PXXwfNRT7hD6UYeQQMBXSoLsJH4xDdGc4D'
@@ -56,7 +57,11 @@ test('язык ленты меняет только ленту, язык из ш
   const field = page.locator('.ant-select', { has: page.getByLabel('Язык ленты') })
   const box = (await field.locator('.ant-select-arrow').boundingBox())!
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  // В списке отмечают несколько языков: English — добавить, «Русский» — снять.
   await page.locator('.ant-select-item-option', { hasText: 'English' }).click()
+  await page.locator('.ant-select-item-option', { hasText: 'Русский' }).click()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('feed-languages')).toContainText('English')
   await expect.poll(() => langs.at(-1)).toBe('en')
   await expect(page.getByText('Сначала лучшее')).toBeVisible()
 
@@ -72,7 +77,68 @@ test('язык ленты меняет только ленту, язык из ш
   await page.getByRole('menuitem', { name: 'Deutsch' }).click()
   await expect(page.getByText('Beste zuerst')).toBeVisible()
   await expect.poll(() => langs.at(-1)).toBe('de')
-  await expect(page.locator('.ant-select-selection-item[title="Deutsch"]')).toBeVisible()
+  await expect(page.getByTestId('feed-languages')).toContainText('Deutsch')
+})
+
+test('несколько языков: лента спрашивает ноду о каждом и ставит посты по времени', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await page.setViewportSize({ width: 1400, height: 900 })
+  const langs = watchFeedLanguages(page)
+  await useMockNode(page, {
+    profiles: [{ address: ALICE, name: 'alice_ng' }],
+    posts: [
+      {
+        txid: 'a'.repeat(64),
+        address: ALICE,
+        message: 'Свежий по-русски',
+        language: 'ru',
+        ago: 60,
+      },
+      {
+        txid: 'b'.repeat(64),
+        address: ALICE,
+        message: 'Fresh in English',
+        language: 'en',
+        ago: 120,
+      },
+      {
+        txid: 'c'.repeat(64),
+        address: ALICE,
+        message: 'Старый по-русски',
+        language: 'ru',
+        ago: 600,
+      },
+      {
+        txid: 'd'.repeat(64),
+        address: ALICE,
+        message: 'Frisch auf Deutsch',
+        language: 'de',
+        ago: 300,
+      },
+    ],
+    comments: [],
+  })
+  await page.addInitScript((version) => {
+    if (!localStorage.getItem('bastyon_locale')) localStorage.setItem('bastyon_locale', 'ru')
+    localStorage.setItem('bastyonChangelogLastSeenVersion', version)
+    if (!localStorage.getItem('bastyon_feed_locale'))
+      localStorage.setItem('bastyon_feed_locale', 'ru,en')
+  }, APP_VERSION)
+  await page.goto('/')
+  await page.waitForSelector('#app > *', { timeout: 30_000 })
+  const feed = page.locator('main')
+  await expect(feed.getByText('Fresh in English')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByTestId('feed-languages')).toContainText('RU, EN')
+  expect(langs).toEqual(expect.arrayContaining(['ru', 'en']))
+  expect(langs).not.toContain('de')
+  await expect(feed.getByText('Frisch auf Deutsch')).toHaveCount(0)
+
+  // По времени вперемешку: свежий русский, английский, старый русский.
+  const top = async (text: string) => (await feed.getByText(text).boundingBox())!.y
+  expect(await top('Свежий по-русски')).toBeLessThan(await top('Fresh in English'))
+  expect(await top('Fresh in English')).toBeLessThan(await top('Старый по-русски'))
 })
 
 test('подписки — на всех языках, общая лента, новое от подписок и комментарии — на языке ленты', async ({
@@ -185,6 +251,7 @@ test('язык ленты в меню телефона: список откры�
   await field.scrollIntoViewIfNeeded()
   await field.click()
   await page.locator('.ant-select-item-option', { hasText: 'Español' }).click()
-  await expect.poll(() => langs.at(-1)).toBe('es')
+  // Español добавился к русскому: лента спрашивает о нём.
+  await expect.poll(() => langs.includes('es')).toBe(true)
   await expect(page.getByText('Сначала лучшее')).toBeVisible()
 })
