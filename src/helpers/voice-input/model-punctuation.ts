@@ -21,8 +21,12 @@ const MARKS = /[.,!?;:…—–«»“”„"¿¡。，！？；：、]/g
 /** После такого знака модель начинает слово с большой буквы. */
 const SENTENCE_START = /([.!?…。！？][\s«»“”„"]*)(\p{Lu})(?=\p{Ll}*(?:[^\p{L}]|$))/gu
 
-/** Разделители внутри чисел (3.5, 1,5, 7:30) на время чистки — символами частного использования. */
-const NUMBER_SEPARATOR = /(?<=\d)([.,:])(?=\d)/g
+/**
+ * Разделители внутри чисел (3.5, 1,5, 7:30) на время чистки — символами
+ * частного использования. Цифра слева — в группе, а не lookbehind: его нет в
+ * Safari до 16.4 и Chromium 89 (проверка бандла в сборке).
+ */
+const NUMBER_SEPARATOR = /(\d)([.,:])(?=\d)/g
 const PROTECT: Record<string, string> = { '.': '', ',': '', ':': '' }
 const RESTORE: Record<string, string> = { '': '.', '': ',', '': ':' }
 const PROTECTED = /[-]/g
@@ -35,7 +39,7 @@ const PROTECTED = /[-]/g
  */
 export function stripModelPunctuation(text: string): string {
   return text
-    .replace(NUMBER_SEPARATOR, (s) => PROTECT[s] ?? s)
+    .replace(NUMBER_SEPARATOR, (_, digit: string, s: string) => digit + (PROTECT[s] ?? s))
     .replace(SENTENCE_START, (_, mark: string, letter: string) => mark + letter.toLowerCase())
     .replace(/(^|\s)-+(?=\s|$)/g, '$1')
     .replace(MARKS, ' ')
