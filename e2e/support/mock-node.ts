@@ -648,4 +648,12 @@ export async function useMockNode(
       await route.abort()
     }
   })
+  // Matrix идёт и через dev-сервер: `localhost:1980/_matrix` он проксирует на
+  // боевой matrix.pocketnet.app, и правило выше этот адрес пропускает. Без
+  // этого каждый тест со входом отправлял вход тест-мнемоникой на боевой
+  // сервер. Свои ответы Matrix тест задаёт через `page.route` — они важнее.
+  await page.context().route('**/_matrix/**', async (route) => {
+    if (allow?.(route.request().url())) await route.fallback()
+    else await route.abort()
+  })
 }
