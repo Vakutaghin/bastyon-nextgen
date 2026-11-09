@@ -57,7 +57,8 @@ export async function loadFiltersFromSettings(): Promise<Partial<FiltersSnapshot
     if (Array.isArray(settings.selectedTags)) {
       snapshot.selectedTags = settings.selectedTags
     }
-    if (settings.topFirst !== undefined) {
+    // Как и liveFeed: строка "false" из битой записи иначе читалась бы как «да».
+    if (typeof settings.topFirst === 'boolean') {
       snapshot.topFirst = settings.topFirst
     }
     if (typeof settings.liveFeed === 'boolean') {

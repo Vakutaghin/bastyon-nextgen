@@ -9,6 +9,28 @@ import {
 } from './notifications-constants'
 import type { LastBlockByAddress, HiddenIdsByAddress } from './notifications-types'
 
+/**
+ * Записи одного ключа — по очереди. Каждая читает запись всех адресов, меняет
+ * свой и пишет обратно; две подряд (опрос старого аккаунта ещё пишет курсор, а
+ * уже вошли в другой) читали одно и то же, и вторая затирала первую.
+ */
+const writeQueues = new Map<string, Promise<void>>()
+
+function setForAddress<T>(key: string, address: string, value: T): Promise<void> {
+  const run = (writeQueues.get(key) ?? Promise.resolve()).then(async () => {
+    const raw = (await settingsAPI.get(key)) as Record<string, T> | undefined
+    await settingsAPI.set(key, {
+      ...(raw && typeof raw === 'object' ? raw : {}),
+      [address]: value,
+    })
+  })
+  writeQueues.set(
+    key,
+    run.catch(() => {})
+  )
+  return run
+}
+
 /** Высота блока из IDB для адреса (с какого блока запрашивать уведомления). */
 export async function loadLastBlockFromSettings(address: string): Promise<number | null> {
   try {
@@ -27,14 +49,7 @@ export async function loadLastBlockFromSettings(address: string): Promise<number
 /** Сохранить высоту блока в IDB для адреса (указатель «прочитано до»). */
 export async function saveLastBlockToSettings(address: string, block: number): Promise<void> {
   try {
-    const raw = (await settingsAPI.get(NOTIFICATIONS_LAST_BLOCK_KEY)) as
-      | LastBlockByAddress
-      | undefined
-    const next: LastBlockByAddress = {
-      ...(raw && typeof raw === 'object' ? raw : {}),
-      [address]: block,
-    }
-    await settingsAPI.set(NOTIFICATIONS_LAST_BLOCK_KEY, next)
+    await setForAddress(NOTIFICATIONS_LAST_BLOCK_KEY, address, block)
   } catch (e) {
     console.error('[notifications] saveLastBlockToSettings failed', e)
   }
@@ -61,14 +76,7 @@ export async function loadFetchBlockFromSettings(address: string): Promise<numbe
 /** Сохранить курсор фетча (вызывается при каждом опросе). */
 export async function saveFetchBlockToSettings(address: string, block: number): Promise<void> {
   try {
-    const raw = (await settingsAPI.get(NOTIFICATIONS_FETCH_BLOCK_KEY)) as
-      | LastBlockByAddress
-      | undefined
-    const next: LastBlockByAddress = {
-      ...(raw && typeof raw === 'object' ? raw : {}),
-      [address]: block,
-    }
-    await settingsAPI.set(NOTIFICATIONS_FETCH_BLOCK_KEY, next)
+    await setForAddress(NOTIFICATIONS_FETCH_BLOCK_KEY, address, block)
   } catch (e) {
     console.error('[notifications] saveFetchBlockToSettings failed', e)
   }
@@ -90,14 +98,7 @@ export async function loadHiddenIdsFromSettings(address: string): Promise<Set<st
 /** Сохранить скрытые id для адреса в settings. */
 export async function saveHiddenIdsToSettings(address: string, ids: Set<string>): Promise<void> {
   try {
-    const raw = (await settingsAPI.get(NOTIFICATIONS_HIDDEN_IDS_KEY)) as
-      | HiddenIdsByAddress
-      | undefined
-    const next: HiddenIdsByAddress = {
-      ...(raw && typeof raw === 'object' ? raw : {}),
-      [address]: [...ids],
-    }
-    await settingsAPI.set(NOTIFICATIONS_HIDDEN_IDS_KEY, next)
+    await setForAddress(NOTIFICATIONS_HIDDEN_IDS_KEY, address, [...ids])
   } catch (e) {
     console.error('[notifications] saveHiddenIdsToSettings failed', e)
   }

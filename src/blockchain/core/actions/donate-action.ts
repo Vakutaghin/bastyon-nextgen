@@ -12,11 +12,13 @@ import {
   getUnspents,
   filterAvailableUnspents,
   selectAndLockUnspents,
+  unlockUTXOs,
 } from '../transactions/unspents-manager'
 import { buildTransferTransaction } from '../transactions/transaction-builder'
 import { sendTransactionWithMessage } from '../transactions/transaction-sender'
 import { transferFee } from '../transactions/transfer-fee'
 import { utf8Length } from '@/helpers/common/op-return'
+import { DUST_VALUE, toSatoshis } from '@/blockchain/constants/transactions'
 import { t } from '@/i18n'
 
 /** Маркер чаевых в message перевода (legacy donate/index.js:29). */
@@ -50,7 +52,13 @@ export async function donateToAuthor(authorAddress: string, amount: number): Pro
 
   const fee = transferFee({ inputs: selected.length, outputs: 1, messageBytes })
   // include: комиссия вычитается из суммы перевода (получатель получает amount - fee).
-  const receiverAmount = Math.max(0, amount - fee)
+  const receiverAmount = amount - fee
+  // Автору меньше пыли — такой выход сеть не примет, а при нескольких мелких
+  // входах комиссия съедала всю сумму: уходил выход в 0 сатоши, сдача сгорала.
+  if (toSatoshis(receiverAmount) < toSatoshis(DUST_VALUE)) {
+    unlockUTXOs(selected)
+    throw new Error(t('donate.errAmountTooSmall'))
+  }
 
   const built = await buildTransferTransaction({
     unspents: selected,

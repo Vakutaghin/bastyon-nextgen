@@ -26,7 +26,7 @@ export function useVaultSecurity() {
   /** Просим браузер сделать хранилище персистентным (снижает риск вытеснения device-ключа). */
   const requestPersistentStorage = (): void => {
     try {
-      void navigator.storage?.persist?.()
+      navigator.storage?.persist?.()?.catch(() => {})
     } catch {
       /* не поддерживается — не критично */
     }
