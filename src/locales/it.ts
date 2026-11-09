@@ -558,6 +558,17 @@ export default {
     close: 'Chiudi',
     deletedAccount: 'Account eliminato',
   },
+  a11y: {
+    skipToContent: 'Vai al contenuto',
+    withUnread: '{name}, non letti: {n}',
+    search: 'Cerca',
+    account: 'Account {name}',
+    sidebarLeft: 'Sezioni e filtri',
+    sidebarRight: 'Consigli e commenti',
+    chatActions: 'Azioni della chat',
+    rateStars: 'Valuta {n} su 5',
+    ratingGroup: 'Valutazione del post: {avg} su 5',
+  },
   settings: {
     title: 'Impostazioni',
     tabs: {
@@ -790,6 +801,9 @@ export default {
       pageWidthButton: 'Pulsante nella barra superiore',
       pageWidthButtonHint:
         'Cambia la larghezza con un clic. Anche in «Barra superiore e pannelli».',
+      highContrast: 'Contrasto elevato',
+      highContrastHint:
+        'Il testo grigio e i bordi sono più scuri e il contorno di ciò che si seleziona con la tastiera è più visibile. Si attiva anche da solo se il sistema chiede più contrasto.',
     },
     ipfs: {
       title: 'Modulo IPFS',

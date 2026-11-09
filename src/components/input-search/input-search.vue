@@ -1,7 +1,9 @@
 <template>
+  <!-- Поле без своей подписи: для диктора его название — подсказка в поле. -->
   <SC_InputSearch>
     <Input.Search
       v-bind="{ ...$attrs, ...forwarded }"
+      :aria-label="$attrs['aria-label'] ?? p.placeholder"
       :class="['bastyon-input-search', searchClass]"
       :enterButton="enterButtonValue"
     >

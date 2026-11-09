@@ -6,7 +6,12 @@
            элемент шапки: иначе space-between разносил бы их по ширине. -->
       <SC_Left v-if="mobile">
         <HeaderLogo compact />
-        <SC_HamburgerButton :aria-label="t('header.menu')" @click="openDrawer">
+        <SC_HamburgerButton
+          :aria-label="t('header.menu')"
+          aria-haspopup="dialog"
+          :aria-expanded="drawerOpen ? 'true' : 'false'"
+          @click="openDrawer"
+        >
           <MenuOutlined />
         </SC_HamburgerButton>
         <HeaderHistoryNav compact />
@@ -39,12 +44,13 @@
             v-else-if="id === 'messenger' && showMessengerIcon"
             role="button"
             tabindex="0"
-            :aria-label="t('bottomNav.messenger')"
+            :aria-label="messengerLabel"
             @click="toggleMessenger"
-            @keydown.enter="toggleMessenger"
+            @keydown.enter.prevent="toggleMessenger"
+            @keydown.space.prevent="toggleMessenger"
           >
             <MessageOutlined :style="ICON_SIZE_XL" />
-            <SC_UnreadBadge v-if="!isFullScreen && unreadBadge">
+            <SC_UnreadBadge v-if="!isFullScreen && unreadBadge" aria-hidden="true">
               {{ unreadBadge }}
             </SC_UnreadBadge>
           </SC_MessengerWrapper>
@@ -68,6 +74,7 @@
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { unreadLabel } from '@/helpers/a11y/unread-label'
 import { MessageOutlined, MenuOutlined } from '@/components/icons'
 import HeaderLogo from '@/b-components/header/header-logo/header-logo.vue'
 import HeaderHistoryNav from '@/b-components/header/header-history-nav/header-history-nav.vue'
@@ -154,4 +161,9 @@ const unreadBadge = computed<string>(() => {
   if (!n || n <= 0) return ''
   return n > 99 ? '99+' : String(n)
 })
+
+/** Название значка с числом непрочитанных: у role=button диктор читает только его. */
+const messengerLabel = computed<string>(() =>
+  unreadLabel(t('bottomNav.messenger'), isFullScreen.value ? '' : unreadBadge.value)
+)
 </script>

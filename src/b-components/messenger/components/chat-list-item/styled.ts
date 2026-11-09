@@ -33,6 +33,11 @@ export const SC_ListItem = styled.div`
   &.active .dots-btn {
     opacity: 1;
   }
+
+  /* Фокус с клавиатуры на строке или на «…» — «…» видно, как при наведении. */
+  &:focus-within .dots-btn {
+    opacity: 1;
+  }
 `
 
 export const SC_Info = styled.div`
@@ -216,7 +221,8 @@ export const SC_DropdownItem = styled.div`
   transition: background-color var(--transition-quick);
   white-space: nowrap;
 
-  &:hover {
+  &:hover,
+  &:focus-visible {
     background-color: var(--color-bg-tertiary);
   }
 

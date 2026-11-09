@@ -3,6 +3,7 @@
     <SC_TopFirstWrapper>
       <SC_TopFirstLabel>{{ t('sidebar.topFirst') }}</SC_TopFirstLabel>
       <ASwitch
+        :aria-label="t('sidebar.topFirst')"
         :checked="filtersStore.topFirst"
         size="small"
         @change="filtersStore.toggleTopFirst()"

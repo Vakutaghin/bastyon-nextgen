@@ -1,5 +1,15 @@
 <template>
-  <SC_ListItem :class="{ active: isActive }" data-testid="chat-row" data-channel="">
+  <!-- Строка канала — ссылка: Tab доходит до неё, Enter и пробел открывают канал.
+       Не role=button: у кнопки содержимое для диктора «сплющено», и «…» в строке пропадало. -->
+  <SC_ListItem
+    v-key-activate
+    :class="{ active: isActive }"
+    role="link"
+    tabindex="0"
+    :aria-current="isActive ? 'true' : undefined"
+    data-testid="chat-row"
+    data-channel=""
+  >
     <SC_AvatarSlot>
       <ChannelAvatar
         :src="author.avatar"
@@ -44,6 +54,8 @@
         <SC_DotsBtn
           class="dots-btn"
           :aria-label="t('messenger.channel.menu')"
+          aria-haspopup="menu"
+          :aria-expanded="menuOpen ? 'true' : 'false'"
           @click.stop="toggleMenu"
         >
           <EllipsisOutlined />
@@ -53,16 +65,26 @@
           <div v-if="menuOpen">
             <SC_Overlay @click.stop="menuOpen = false" />
             <SC_MenuAnchor :top="menuPos.top" :right="menuPos.right">
-              <SC_Dropdown>
-                <SC_DropdownItem @click.stop="onOpenProfile">
+              <SC_Dropdown ref="menuRef" role="menu" :aria-label="t('messenger.channel.menu')">
+                <SC_DropdownItem role="menuitem" tabindex="-1" @click.stop="onOpenProfile">
                   <UserOutlined />
                   {{ t('messenger.channel.openProfile') }}
                 </SC_DropdownItem>
-                <SC_DropdownItem v-if="newCount > 0" @click.stop="onMarkRead">
+                <SC_DropdownItem
+                  role="menuitem"
+                  tabindex="-1"
+                  v-if="newCount > 0"
+                  @click.stop="onMarkRead"
+                >
                   <CheckOutlined />
                   {{ t('messenger.channel.markRead') }}
                 </SC_DropdownItem>
-                <SC_DropdownItem class="danger" @click.stop="onRemove">
+                <SC_DropdownItem
+                  role="menuitem"
+                  tabindex="-1"
+                  class="danger"
+                  @click.stop="onRemove"
+                >
                   <MegaphoneOffIcon />
                   {{ t('messenger.channel.stop') }}
                 </SC_DropdownItem>
@@ -76,7 +98,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import { focusMenu, isKeyboardClick, vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
@@ -142,6 +165,7 @@ const time = computed<string>(() => {
 })
 
 const menuOpen = ref(false)
+const menuRef = ref<unknown>(null)
 const menuPos = ref({ top: 0, right: 0 })
 
 function toggleMenu(e: MouseEvent): void {
@@ -155,6 +179,14 @@ function toggleMenu(e: MouseEvent): void {
     menuPos.value = { top: rect.bottom + 4, right: window.innerWidth - rect.right }
   }
   menuOpen.value = true
+  // С клавиатуры — фокус на первый пункт, стрелки и Esc (helpers/a11y/key-activate).
+  // nextTick — после menuOpen: иначе он сработает раньше отрисовки меню.
+  if (btn && isKeyboardClick(e)) {
+    void nextTick(() => {
+      const menu = (menuRef.value as { $el?: HTMLElement } | null)?.$el
+      if (menu) focusMenu(menu, btn, () => (menuOpen.value = false))
+    })
+  }
 }
 
 function onOpenProfile(): void {

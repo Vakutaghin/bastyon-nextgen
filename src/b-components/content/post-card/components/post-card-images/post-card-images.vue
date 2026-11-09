@@ -1,7 +1,15 @@
 <template>
   <!-- Одна картинка — во всю ширину, высота по самой картинке. -->
   <SC_PostImage v-if="imageCount === 1">
-    <SC_ImageWrapper :style="getImageWrapperStyle(0)" @click.stop="openImageGallery(0)">
+    <!-- Картинка открывается и с клавиатуры: Tab, затем Enter или пробел. -->
+    <SC_ImageWrapper
+      v-key-activate
+      role="button"
+      tabindex="0"
+      :aria-label="openLabel(0)"
+      :style="getImageWrapperStyle(0)"
+      @click.stop="openImageGallery(0)"
+    >
       <TorImage
         :src="firstImage"
         :alt="t('postCard.imageAlt', { index: 1 })"
@@ -26,6 +34,10 @@
     <SC_GridTile
       v-for="({ tile, src }, idx) in cells"
       :key="idx"
+      v-key-activate
+      role="button"
+      tabindex="0"
+      :aria-label="openLabel(idx)"
       :style="tileStyle(tile)"
       @click.stop="openImageGallery(idx)"
     >
@@ -57,6 +69,7 @@ import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ZoomInOutlined } from '@/components/icons'
 import { useModalStore } from '@/stores/modal-store'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import TorImage from '@/components/tor-image'
 import {
   GRID_MAX_IMAGES,
@@ -82,6 +95,12 @@ const props = defineProps<{
 const emit = defineEmits<{ 'open-post': [] }>()
 
 const { t } = useI18n()
+
+/** Название плитки для диктора: что делает нажатие и какая это картинка. */
+function openLabel(idx: number): string {
+  const what = t('postCard.imageAlt', { index: idx + 1 })
+  return props.opensPost ? what : `${t('postCard.openImage')}: ${what}`
+}
 const modalStore = useModalStore()
 
 const imageAspectRatios = reactive<

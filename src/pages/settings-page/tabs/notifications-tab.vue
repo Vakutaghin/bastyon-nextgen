@@ -8,6 +8,7 @@
         t(NOTIFICATION_FILTER_LABEL_KEYS[key])
       }}</SC_NotificationsRowLabel>
       <Switch
+        :aria-label="t(NOTIFICATION_FILTER_LABEL_KEYS[key])"
         :checked="notificationSettings.getFilter(key)"
         @change="(checked: boolean) => onChange(key, checked)"
       />

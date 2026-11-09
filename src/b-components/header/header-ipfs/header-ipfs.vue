@@ -6,7 +6,16 @@
     :overlay-style="{ zIndex: 3000 }"
     :get-popup-container="() => fixedPopupLayer(3000)"
   >
-    <SC_IpfsWrapper :variant="variant" @click="onTriggerClick">
+    <SC_IpfsWrapper
+      v-key-activate="{ popup: true }"
+      :variant="variant"
+      role="button"
+      tabindex="0"
+      :aria-label="`IPFS: ${statusLine}`"
+      aria-haspopup="true"
+      :aria-expanded="visible ? 'true' : 'false'"
+      @click="onTriggerClick"
+    >
       <LoadingOutlined v-if="variant === 'busy'" spin />
       <WarningFilled v-else-if="variant === 'failed'" />
       <!-- Выключен — серый глобус, запущен — тот же глобус зелёным (цвет у SC_IpfsWrapper). -->
@@ -76,6 +85,7 @@ import {
   SC_IpfsHint,
 } from './styled'
 import HelpLink from '@/b-components/help/help-link.vue'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 
 const { t } = useI18n()
 

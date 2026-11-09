@@ -91,6 +91,17 @@ describe('app-preferences-store', () => {
     expect(again.uiScale).toBe(125)
   })
 
+  it('повышенная контрастность выключена по умолчанию и помнится после перезапуска', async () => {
+    const prefs = useAppPreferencesStore()
+    await prefs.load()
+    expect(prefs.highContrast).toBe(false)
+    await prefs.set('highContrast', true)
+    setActivePinia(createPinia())
+    const again = useAppPreferencesStore()
+    await again.load()
+    expect(again.highContrast).toBe(true)
+  })
+
   it('не роняется, если база отдала null', async () => {
     store.set(APP_PREFERENCES_KEY, null)
     const prefs = useAppPreferencesStore()

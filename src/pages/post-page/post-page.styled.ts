@@ -1,7 +1,7 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
-export const SC_PostPage = styled.div`
+export const SC_PostPage = styled.main`
   width: 100%;
   display: flex;
   justify-content: center;

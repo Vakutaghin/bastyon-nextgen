@@ -40,6 +40,10 @@ In the desktop app: **“Settings”** → **“System”** → **“Interface s
 
 **“Settings”** → **“System”** → **“Animations”** — smooth transitions in the interface. Turn them off if the app feels sluggish or the animations bother you.
 
+## Contrast
+
+**“Settings”** → **“General”** → **“High contrast”** — darker grey text and borders and a more visible outline around what the keyboard selects. If the system asks for more contrast, it turns on by itself. More in [Accessibility](accessibility.md).
+
 ## See also
 
 - [Settings](settings.md)

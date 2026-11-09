@@ -11,7 +11,11 @@
         <SC_SystemTitle>{{ t('settings.system.animations') }}</SC_SystemTitle>
         <SC_SystemHint>{{ t('settings.system.animationsHint') }}</SC_SystemHint>
       </SC_SystemLabel>
-      <Switch :checked="prefs.animations" @change="onAnimations" />
+      <Switch
+        :aria-label="t('settings.system.animations')"
+        :checked="prefs.animations"
+        @change="onAnimations"
+      />
     </SC_SystemRow>
 
     <!-- Масштабом в браузере заведует сам браузер — настройку показываем только в десктопе. -->
@@ -25,6 +29,7 @@
           v-for="scale in UI_SCALES"
           :key="scale"
           :active="prefs.uiScale === scale"
+          :aria-pressed="prefs.uiScale === scale ? 'true' : 'false'"
           type="button"
           @click="onScale(scale)"
         >
@@ -38,7 +43,12 @@
         <SC_SystemTitle>{{ t('settings.system.autostart') }}</SC_SystemTitle>
         <SC_SystemHint>{{ t('settings.system.autostartHint') }}</SC_SystemHint>
       </SC_SystemLabel>
-      <Switch :checked="prefs.autostart" :loading="autostartBusy" @change="onAutostart" />
+      <Switch
+        :aria-label="t('settings.system.autostart')"
+        :checked="prefs.autostart"
+        :loading="autostartBusy"
+        @change="onAutostart"
+      />
     </SC_SystemRow>
 
     <!-- Крестик окна на Windows и Linux: в трей или выход. -->
@@ -58,6 +68,7 @@
           v-for="opt in CLOSE_OPTIONS"
           :key="String(opt.toTray)"
           :active="windowPrefs.closeToTray === opt.toTray"
+          :aria-pressed="windowPrefs.closeToTray === opt.toTray ? 'true' : 'false'"
           type="button"
           :disabled="windowPrefsBusy"
           @click="saveWindowPrefs({ closeToTray: opt.toTray })"
@@ -108,6 +119,7 @@
               v-for="limit in row.limits"
               :key="limit"
               :active="row.limit === limit"
+              :aria-pressed="row.limit === limit ? 'true' : 'false'"
               type="button"
               @click="storage.setLimit(row.kind, limit)"
             >
@@ -139,6 +151,7 @@
       </SC_SystemLabel>
       <Switch
         :checked="prefs.storeDecryptedMessages"
+        :aria-label="t('settings.system.storeDecrypted')"
         data-testid="store-decrypted"
         @change="onStoreDecrypted"
       />

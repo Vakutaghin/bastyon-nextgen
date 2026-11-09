@@ -1,9 +1,35 @@
 import styled from 'vue3-styled-components'
+import { Z_INDEX } from '@/styles/design-tokens'
 
 export const SC_Application = styled.div`
   width: 100%;
   min-height: 100vh;
   position: relative;
+`
+
+/**
+ * «Перейти к содержимому»: не видна, пока на ней нет фокуса с клавиатуры, —
+ * первая же клавиша Tab показывает её в левом верхнем углу.
+ */
+export const SC_SkipLink = styled.a`
+  position: fixed;
+  top: calc(var(--safe-top) + 8px);
+  left: calc(var(--safe-left) + 8px);
+  z-index: ${() => Z_INDEX.TOOLTIP};
+  padding: 8px 16px;
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-primary);
+  color: var(--ui-text-inverted);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transform: translateY(calc(-100% - var(--safe-top) - 16px));
+
+  &:focus,
+  &:focus-visible {
+    transform: none;
+    color: var(--ui-text-inverted);
+  }
 `
 
 export const SC_Camera = styled.div`

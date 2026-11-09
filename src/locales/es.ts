@@ -565,6 +565,17 @@ export default {
     close: 'Cerrar',
     deletedAccount: 'Cuenta eliminada',
   },
+  a11y: {
+    skipToContent: 'Saltar al contenido',
+    withUnread: '{name}, sin leer: {n}',
+    search: 'Buscar',
+    account: 'Cuenta {name}',
+    sidebarLeft: 'Secciones y filtros',
+    sidebarRight: 'Recomendaciones y comentarios',
+    chatActions: 'Acciones del chat',
+    rateStars: 'Valorar con {n} de 5',
+    ratingGroup: 'Valoración de la publicación: {avg} de 5',
+  },
   settings: {
     title: 'Ajustes',
     tabs: {
@@ -796,6 +807,9 @@ export default {
       pageWidthFull: 'Ancho completo',
       pageWidthButton: 'Botón en la barra superior',
       pageWidthButtonHint: 'Cambia el ancho con un clic. También en «Barra superior y paneles».',
+      highContrast: 'Alto contraste',
+      highContrastHint:
+        'El texto gris y los bordes son más oscuros y el contorno de lo seleccionado con el teclado se ve mejor. También se activa solo si el sistema pide más contraste.',
     },
     ipfs: {
       title: 'Módulo IPFS',

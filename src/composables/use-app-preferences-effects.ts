@@ -25,6 +25,15 @@ function applyAnimations(enabled: boolean): void {
   document.documentElement.classList.toggle(NO_ANIMATIONS_CLASS, !enabled)
 }
 
+/** Атрибут, по которому style.css включает повышенную контрастность. */
+export const CONTRAST_ATTRIBUTE = 'data-contrast'
+
+function applyContrast(high: boolean): void {
+  if (typeof document === 'undefined') return
+  if (high) document.documentElement.setAttribute(CONTRAST_ATTRIBUTE, 'more')
+  else document.documentElement.removeAttribute(CONTRAST_ATTRIBUTE)
+}
+
 /**
  * Масштаб интерфейса. В десктопной сборке просим вебвью. В браузере
  * настройка не показывается: там масштабом заведует сам браузер.
@@ -124,12 +133,17 @@ export async function setupAppPreferences(): Promise<void> {
   await prefs.load()
 
   applyAnimations(prefs.animations)
+  applyContrast(prefs.highContrast)
   void applyUiScale(prefs.uiScale)
   setupZoomShortcuts(prefs)
 
   watch(
     () => prefs.animations,
     (enabled) => applyAnimations(enabled)
+  )
+  watch(
+    () => prefs.highContrast,
+    (high) => applyContrast(high)
   )
   watch(
     () => prefs.uiScale,

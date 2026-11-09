@@ -2,7 +2,7 @@ import styled from 'vue3-styled-components'
 
 import { BREAKPOINTS, FONT_SIZE, SPACING } from '@/styles/design-tokens'
 
-export const SC_ComposePage = styled.div`
+export const SC_ComposePage = styled.main`
   display: flex;
   justify-content: center;
   /* Шапка своей высоты на телефоне и со строкой состояния, а не 64px. */

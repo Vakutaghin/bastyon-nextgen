@@ -114,6 +114,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [The phone app](mobile-app.md)
   - [bastyon:// links](deep-links.md)
   - [Keyboard shortcuts](keyboard-shortcuts.md)
+  - [Accessibility](accessibility.md)
   - [Using this help](using-help.md)
 - [Troubleshooting](troubleshooting.md)
   - [No connection to the network](connection-problems.md)

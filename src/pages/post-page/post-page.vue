@@ -1,5 +1,8 @@
 <template>
   <SC_PostPage class="adj">
+    <!-- Заголовок страницы для диктора: заголовок поста в карточке — h3, и
+         не у каждого поста он есть. -->
+    <h1 class="visually-hidden">{{ t('routes.post') }}</h1>
     <SC_PostPageInner>
       <SC_PostStatus v-if="isLoading">
         <Spin :tip="t('postPage.loading')">

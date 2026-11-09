@@ -6,7 +6,12 @@
         <SC_Poster v-if="posterSrc" :src="posterSrc" :alt="alt" loading="lazy" />
         <SC_PosterPlaceholder v-else>🎬</SC_PosterPlaceholder>
 
-        <SC_PlayOverlay v-if="!isLoading && !loadError" type="button" @click="startPlayback">
+        <SC_PlayOverlay
+          v-if="!isLoading && !loadError"
+          type="button"
+          :aria-label="t('chat.play')"
+          @click="startPlayback"
+        >
           <SC_PlayIcon />
         </SC_PlayOverlay>
 

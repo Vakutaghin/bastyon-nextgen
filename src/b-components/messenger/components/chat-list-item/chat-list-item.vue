@@ -1,6 +1,12 @@
 <template>
+  <!-- Строка чата — ссылка: Tab доходит до неё, Enter и пробел открывают чат.
+       Не role=button: у кнопки содержимое для диктора «сплющено», и «…» в строке пропадало. -->
   <SC_ListItem
+    v-key-activate
     :class="{ active: isActive }"
+    role="link"
+    tabindex="0"
+    :aria-current="isActive ? 'true' : undefined"
     data-testid="chat-row"
     :data-group="isGroup ? '' : undefined"
   >
@@ -104,24 +110,47 @@
           :aria-label="t('messenger.group.unread')"
         />
 
-        <SC_DotsBtn class="dots-btn" @click.stop="toggleMenu">
+        <SC_DotsBtn
+          class="dots-btn"
+          :aria-label="t('a11y.chatActions')"
+          aria-haspopup="menu"
+          :aria-expanded="menuOpen ? 'true' : 'false'"
+          @click.stop="toggleMenu"
+        >
           <EllipsisOutlined />
         </SC_DotsBtn>
 
         <Teleport to="body">
           <div v-if="menuOpen">
             <SC_Overlay @click.stop="menuOpen = false" />
-            <SC_Dropdown :style="dropdownStyle">
-              <SC_DropdownItem v-if="dialog.group" @click.stop="onShowMembers">
+            <SC_Dropdown
+              ref="menuRef"
+              role="menu"
+              :aria-label="t('a11y.chatActions')"
+              :style="dropdownStyle"
+            >
+              <SC_DropdownItem
+                role="menuitem"
+                tabindex="-1"
+                v-if="dialog.group"
+                @click.stop="onShowMembers"
+              >
                 <TeamOutlined />
                 {{ t('messenger.group.showMembers') }}
               </SC_DropdownItem>
-              <SC_DropdownItem v-if="canMute" @click.stop="onToggleMuted">
+              <SC_DropdownItem
+                role="menuitem"
+                tabindex="-1"
+                v-if="canMute"
+                @click.stop="onToggleMuted"
+              >
                 <BellOutlined v-if="dialog.muted" />
                 <BellOffOutlined v-else />
                 {{ dialog.muted ? t('messenger.notifyOn') : t('messenger.notifyOff') }}
               </SC_DropdownItem>
               <SC_DropdownItem
+                role="menuitem"
+                tabindex="-1"
                 v-if="canScreen"
                 data-testid="screen-toggle"
                 @click.stop="onToggleScreen"
@@ -131,6 +160,8 @@
                 {{ screenReasonOf ? t('messenger.screen.unhide') : t('messenger.screen.hide') }}
               </SC_DropdownItem>
               <SC_DropdownItem
+                role="menuitem"
+                tabindex="-1"
                 v-if="canArchive"
                 data-testid="archive-toggle"
                 @click.stop="onToggleArchive"
@@ -138,7 +169,7 @@
                 <DeviceCopyIcon />
                 {{ archived ? t('messenger.archive.menuStop') : t('messenger.archive.menuStart') }}
               </SC_DropdownItem>
-              <SC_DropdownItem class="danger" @click.stop="onDelete">
+              <SC_DropdownItem role="menuitem" tabindex="-1" class="danger" @click.stop="onDelete">
                 <LogoutOutlined v-if="dialog.group" />
                 <DeleteOutlined v-else />
                 {{ dialog.group ? t('messenger.group.leave') : t('chat.deleteDialog') }}
@@ -183,7 +214,8 @@
 import { formatClock } from '@/helpers/common/date-formatter'
 import { parseIpfsFileLink, parseIpfsNameLink } from '@/helpers/ipfs/ipfs-link'
 import { supportReportPreview } from '../../lib/support-report-preview'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import { focusMenu, isKeyboardClick, vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useI18n } from 'vue-i18n'
 import { Modal } from 'ant-design-vue'
 import { appToast } from '@/b-components/app-toast'
@@ -251,6 +283,7 @@ const { t } = useI18n()
 const store = useMessengerStore()
 
 const menuOpen = ref(false)
+const menuRef = ref<unknown>(null)
 const showConfirm = ref(false)
 const menuPos = ref({ top: 0, right: 0 })
 
@@ -463,6 +496,14 @@ function toggleMenu(e: MouseEvent): void {
     }
   }
   menuOpen.value = true
+  // С клавиатуры — фокус на первый пункт, стрелки и Esc (helpers/a11y/key-activate).
+  // nextTick — после menuOpen: иначе он сработает раньше отрисовки меню.
+  if (btn && isKeyboardClick(e)) {
+    void nextTick(() => {
+      const menu = (menuRef.value as { $el?: HTMLElement } | null)?.$el
+      if (menu) focusMenu(menu, btn, () => (menuOpen.value = false))
+    })
+  }
 }
 
 function onShowMembers(): void {

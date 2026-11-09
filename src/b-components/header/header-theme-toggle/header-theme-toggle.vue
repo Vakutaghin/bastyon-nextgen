@@ -1,7 +1,9 @@
 <template>
   <Tooltip :title="tooltip" placement="bottom">
     <SC_ThemeToggleWrapper
+      v-key-activate
       role="button"
+      tabindex="0"
       :aria-label="tooltip"
       :aria-pressed="isDark"
       @click="toggle"
@@ -21,6 +23,7 @@ import { ThemeDarkIcon, ThemeLightIcon } from '@/components/icons'
 import { useTheme } from '@/composables/use-theme'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import { SC_ThemeToggleWrapper } from './styled'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 
 const { t } = useI18n()
 

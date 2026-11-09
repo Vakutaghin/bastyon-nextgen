@@ -9,6 +9,7 @@
             :key="tab.key"
             :active="activeTab === tab.key"
             :data-tab="tab.key"
+            :aria-current="activeTab === tab.key ? 'page' : undefined"
             type="button"
             @click="activeTab = tab.key"
           >

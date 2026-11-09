@@ -78,11 +78,26 @@ describe('InputSearch (обёртка)', () => {
     expect(icon.classes()).toContain('lucide-search')
     expect(icon.classes()).not.toContain('lucide-key')
   })
+
+  it('у кнопки поиска есть название для диктора, у поля — подсказка в поле', () => {
+    const w = keep(mount(InputSearch, { props: { value: '', placeholder: 'Поиск…' } }))
+    expect(w.find('.ant-input-search-button .visually-hidden').text()).not.toBe('')
+    expect(w.find('input').attributes('aria-label')).toBe('Поиск…')
+  })
 })
 
 describe('Modal (обёртка)', () => {
   const mountModal = (props: Record<string, unknown>, slots: Record<string, string> = {}) =>
     keep(mount(Modal, { props: { open: true, ...props }, slots, attachTo: document.body }))
+
+  it('окно модальное для диктора, aria-label — название окна без заголовка', async () => {
+    mountModal({ 'aria-label': 'Уведомления' }, { default: '<p>тело</p>' })
+    await nextTick()
+    const dialog = document.body.querySelector('[role="dialog"]')!
+    expect(dialog.getAttribute('aria-modal')).toBe('true')
+    expect(dialog.getAttribute('aria-label')).toBe('Уведомления')
+    expect(document.body.querySelectorAll('[aria-label="Уведомления"]')).toHaveLength(1)
+  })
 
   it('title/centered/destroyOnClose доходят до antd (S63)', async () => {
     const w = mountModal({ title: 'Заголовок', centered: true, destroyOnClose: true })

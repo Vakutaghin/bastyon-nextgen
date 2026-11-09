@@ -7,7 +7,11 @@
           <StopOutlined />
         </SC_TagsReset>
       </SC_TagsControls>
-      <SC_TagsToggle v-if="showToggle">
+      <SC_TagsToggle
+        v-if="showToggle"
+        :aria-label="t('sidebar.trendingTags')"
+        :aria-expanded="isExpanded ? 'true' : 'false'"
+      >
         <CaretUpOutlined v-if="isExpanded" />
         <CaretDownOutlined v-else />
       </SC_TagsToggle>
@@ -27,6 +31,7 @@
         :selected="isTagSelected(tag.name)"
         :weight="tag.weight"
         type="button"
+        :aria-pressed="isTagSelected(tag.name) ? 'true' : 'false'"
         @click="selectTag(tag.name)"
       >
         <SC_TagsName>#{{ tag.name }}</SC_TagsName>

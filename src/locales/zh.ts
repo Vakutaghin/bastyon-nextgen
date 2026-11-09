@@ -529,6 +529,17 @@ export default {
     close: '关闭',
     deletedAccount: '账户已删除',
   },
+  a11y: {
+    skipToContent: '跳到内容',
+    withUnread: '{name}，未读：{n}',
+    search: '搜索',
+    account: '账户 {name}',
+    sidebarLeft: '栏目和筛选',
+    sidebarRight: '推荐和评论',
+    chatActions: '聊天操作',
+    rateStars: '评 {n} 分（满分 5）',
+    ratingGroup: '帖子评分：{avg}（满分 5）',
+  },
   settings: {
     title: '设置',
     tabs: {
@@ -739,6 +750,9 @@ export default {
       pageWidthFull: '全宽',
       pageWidthButton: '顶栏按钮',
       pageWidthButtonHint: '一键切换宽度。“顶栏与面板”中也可设置。',
+      highContrast: '高对比度',
+      highContrastHint:
+        '灰色文字和边框更深，键盘选中项的轮廓更明显。系统开启增强对比度时也会自动开启。',
     },
     ipfs: {
       title: 'IPFS 模块',

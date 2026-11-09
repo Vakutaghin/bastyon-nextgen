@@ -23,8 +23,17 @@
       placement="bottomRight"
       overlay-class-name="header-user-dropdown"
       :get-popup-container="() => fixedPopupLayer(3005)"
+      @open-change="(open: boolean) => (menuOpen = open)"
     >
-      <SC_UserInfoTrigger>
+      <!-- Меню аккаунта с клавиатуры: Enter и пробел открывают, фокус — в меню. -->
+      <SC_UserInfoTrigger
+        v-key-activate="{ popup: true }"
+        role="button"
+        tabindex="0"
+        :aria-label="t('a11y.account', { name: userName })"
+        aria-haspopup="true"
+        :aria-expanded="menuOpen ? 'true' : 'false'"
+      >
         <Avatar
           :src="userAvatar"
           :alt="userInitial"
@@ -109,7 +118,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Dropdown, Menu } from 'ant-design-vue'
@@ -210,6 +220,9 @@ const {
 })
 
 // === Отображение пользователя в шапке ===
+/** Открыто ли меню аккаунта — для aria-expanded кнопки. */
+const menuOpen = ref(false)
+
 const userName = computed<string>(() => {
   if (userProfile.value?.name) return userProfile.value.name
   // Показываем сохранённый ник, пока профиль не подтверждён в блокчейне.

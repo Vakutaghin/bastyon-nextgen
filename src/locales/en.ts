@@ -559,6 +559,17 @@ export default {
     close: 'Close',
     deletedAccount: 'Account deleted',
   },
+  a11y: {
+    skipToContent: 'Skip to content',
+    withUnread: '{name}, unread: {n}',
+    search: 'Search',
+    account: 'Account {name}',
+    sidebarLeft: 'Sections and filters',
+    sidebarRight: 'Recommendations and comments',
+    chatActions: 'Chat actions',
+    rateStars: 'Rate {n} out of 5',
+    ratingGroup: 'Post rating: {avg} out of 5',
+  },
   settings: {
     title: 'Settings',
     tabs: {
@@ -785,6 +796,9 @@ export default {
       pageWidthFull: 'Full width',
       pageWidthButton: 'Button in the header',
       pageWidthButtonHint: 'Switch the width with one click. Also in “Header and panels”.',
+      highContrast: 'High contrast',
+      highContrastHint:
+        'Grey text and borders are darker, and the outline around what the keyboard selects is easier to see. It also turns on by itself when the system asks for more contrast.',
     },
     ipfs: {
       title: 'IPFS module',

@@ -1,4 +1,5 @@
 import { computed, h } from 'vue'
+import { t } from '@/i18n'
 import { Input } from 'ant-design-vue'
 import { SearchOutlined } from '@/components/icons'
 import { SC_InputSearch } from './styled'
@@ -10,12 +11,14 @@ export function useInputSearch(p: InputSearchProps) {
     return {}
   })
 
-  // Кнопка поиска по умолчанию — с лупой (раньше по ошибке стоял ключ).
+  // Кнопка поиска по умолчанию — с лупой (раньше по ошибке стоял ключ). Значок
+  // скрыт от диктора, поэтому рядом — невидимое слово «Найти»: без него кнопка
+  // звучала как «кнопка» без названия.
   const enterButtonValue = computed(() => {
     if (p.enterButton !== undefined) {
       return p.enterButton
     }
-    return h(SearchOutlined)
+    return [h(SearchOutlined), h('span', { class: 'visually-hidden' }, t('a11y.search'))]
   })
 
   // Объявленные пропсы (onSearch/value/placeholder/allowClear/maxLength/…) в

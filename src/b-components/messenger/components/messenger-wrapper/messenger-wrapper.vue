@@ -1,8 +1,11 @@
 <template>
   <!-- Full Screen Overlay Mode (перекрывает весь экран, включая хедер).
-       data-own-hotkeys: клавиши в мессенджере — не горячие клавиши видео за ним. -->
+       data-own-hotkeys: клавиши в мессенджере — не горячие клавиши видео за ним.
+       role=region с названием — для диктора это область «Сообщения». -->
   <SC_FullScreenOverlay
     v-if="isFullScreen"
+    role="region"
+    :aria-label="t('messenger.messages')"
     data-own-hotkeys
     :class="{ 'above-bottom-nav': aboveBottomNav }"
   >
@@ -15,11 +18,17 @@
   </SC_FullScreenOverlay>
 
   <!-- Floating Widget Mode (desktop only) -->
-  <SC_MessengerWrapper v-if="showFloatingWidget && !isFullScreen" data-own-hotkeys>
+  <SC_MessengerWrapper
+    v-if="showFloatingWidget && !isFullScreen"
+    role="region"
+    :aria-label="t('messenger.messages')"
+    data-own-hotkeys
+  >
     <MessengerWindow :is-open="isOpen" :title="widgetTitle" @close="closeWidget">
       <template #actions>
         <SC_BackButton
           v-if="activeChatId || (lastTargetAddress && inviteViewActive)"
+          :aria-label="t('header.back')"
           @click="onWidgetBack"
         >
           <ArrowLeftIcon />

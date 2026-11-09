@@ -40,6 +40,12 @@ export interface AppPreferencesState {
   chatButton: boolean
   /** Масштаб интерфейса в процентах (десктоп). */
   uiScale: number
+  /**
+   * Повышенная контрастность: серый текст и рамки темнее, рамка фокуса
+   * заметнее (style.css, data-contrast). Системная «Повысить контраст»
+   * включает то же самое и без этой настройки.
+   */
+  highContrast: boolean
   /** Запускать приложение при входе в систему (десктоп). */
   autostart: boolean
   /**
@@ -57,6 +63,7 @@ export const DEFAULT_APP_PREFERENCES: AppPreferencesState = {
   commentsOrder: 'newest',
   chatButton: true,
   uiScale: 100,
+  highContrast: false,
   autostart: false,
   storeDecryptedMessages: true,
 }
@@ -74,6 +81,7 @@ function sanitize(raw: Partial<AppPreferencesState> | null): AppPreferencesState
     'chatButton',
     'autostart',
     'storeDecryptedMessages',
+    'highContrast',
   ] as const) {
     if (typeof raw[key] === 'boolean') next[key] = raw[key]
   }
@@ -135,6 +143,7 @@ export const useAppPreferencesStore = defineStore('appPreferences', {
         commentsOrder,
         chatButton,
         uiScale,
+        highContrast,
         autostart,
         storeDecryptedMessages,
       } = this
@@ -146,6 +155,7 @@ export const useAppPreferencesStore = defineStore('appPreferences', {
         commentsOrder,
         chatButton,
         uiScale,
+        highContrast,
         autostart,
         storeDecryptedMessages,
       })

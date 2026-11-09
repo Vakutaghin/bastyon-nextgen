@@ -537,6 +537,65 @@
    рассинхрона дубля. */
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   Повышенная контрастность — «Настройки → Общие» (data-contrast="more",
+   use-app-preferences-effects) или системная «Повысить контраст»
+   (prefers-contrast: more). Серый текст, рамки и цвета состояний темнее в
+   светлой теме и светлее в тёмной: текст не ниже 4,5:1 к фону, рамки полей —
+   не ниже 3:1. Рамка фокуса — сплошная, цвета акцента. Обычный вид не меняется.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root:not([data-theme='dark'])[data-contrast='more'] {
+  --ui-text-dimmed: var(--ui-color-neutral-600);
+  --ui-text-muted: var(--ui-color-neutral-600);
+  --ui-text-toned: var(--ui-color-neutral-700);
+  --ui-text: var(--ui-color-neutral-800);
+  --ui-border: var(--ui-color-neutral-400);
+  --ui-border-muted: var(--ui-color-neutral-400);
+  --ui-border-accented: var(--ui-color-neutral-500);
+  --ui-success: var(--ui-color-green-700);
+  --ui-warning: var(--ui-color-warning-700);
+  --ui-error: var(--ui-color-error-600);
+  --ui-focus-outline: 2px solid var(--ui-primary);
+}
+
+:root[data-theme='dark'][data-contrast='more'] {
+  --ui-text-dimmed: var(--ui-color-neutral-400);
+  --ui-text-muted: var(--ui-color-neutral-300);
+  --ui-text-toned: var(--ui-color-neutral-200);
+  --ui-text: var(--ui-color-neutral-100);
+  --ui-border: var(--ui-color-neutral-600);
+  --ui-border-muted: var(--ui-color-neutral-600);
+  --ui-border-accented: var(--ui-color-neutral-500);
+  --ui-focus-outline: 2px solid var(--ui-primary);
+}
+
+@media (prefers-contrast: more) {
+  :root:not([data-theme='dark']) {
+    --ui-text-dimmed: var(--ui-color-neutral-600);
+    --ui-text-muted: var(--ui-color-neutral-600);
+    --ui-text-toned: var(--ui-color-neutral-700);
+    --ui-text: var(--ui-color-neutral-800);
+    --ui-border: var(--ui-color-neutral-400);
+    --ui-border-muted: var(--ui-color-neutral-400);
+    --ui-border-accented: var(--ui-color-neutral-500);
+    --ui-success: var(--ui-color-green-700);
+    --ui-warning: var(--ui-color-warning-700);
+    --ui-error: var(--ui-color-error-600);
+    --ui-focus-outline: 2px solid var(--ui-primary);
+  }
+
+  :root[data-theme='dark'] {
+    --ui-text-dimmed: var(--ui-color-neutral-400);
+    --ui-text-muted: var(--ui-color-neutral-300);
+    --ui-text-toned: var(--ui-color-neutral-200);
+    --ui-text: var(--ui-color-neutral-100);
+    --ui-border: var(--ui-color-neutral-600);
+    --ui-border-muted: var(--ui-color-neutral-600);
+    --ui-border-accented: var(--ui-color-neutral-500);
+    --ui-focus-outline: 2px solid var(--ui-primary);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Mobile overrides — на узких экранах уменьшаем spacing, layout-высоты,
    убираем большие отступы. Все компоненты, использующие CSS-переменные,
    получают компактный вид автоматически.
@@ -832,6 +891,12 @@ a:active {
   outline-offset: 0;
 }
 
+/* Область, куда фокус ставит программа («Перейти к содержимому», tabindex=-1):
+   рамка вокруг всей страницы не нужна. */
+main[tabindex='-1']:focus {
+  outline: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Выделение текста — как в приложении, а не на странице. Кнопки, вкладки,
    пункты меню, навигация и элементы antd не выделяются протяжкой мыши и
@@ -926,6 +991,15 @@ html {
   overflow-x: hidden;
   overscroll-behavior: contain;
   scroll-behavior: smooth;
+}
+
+/* «Уменьшить движение» в системе — прокрутка к якорю и наверх без анимации. */
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body,
+  .customscroll {
+    scroll-behavior: auto;
+  }
 }
 
 .customscroll::-webkit-scrollbar {

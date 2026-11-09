@@ -1,12 +1,14 @@
 <template>
   <div>
-    <SC_Tabs :class="{ collapsed }">
+    <SC_Tabs :class="{ collapsed }" :aria-label="t('sidebar.navigation')">
       <template v-for="(tab, index) in tabsData" :key="tab.id">
         <SC_TabsDivider v-if="index > 0 && SECTION_STARTS.has(tab.key)" role="separator" />
         <SC_TabsItem
           :active="tab.active && onTabsRoute"
           :disabled="tab.disabled"
           type="button"
+          :aria-label="collapsed ? t(tab.labelKey) : undefined"
+          :aria-current="tab.active && onTabsRoute ? 'page' : undefined"
           @click="onTabClick(tab)"
         >
           <HomeOutlined v-if="tab.icon === 'HomeOutlined'" />

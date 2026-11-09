@@ -22,6 +22,7 @@ vi.mock('@/db/apis/settings-api', () => ({
 }))
 
 import {
+  CONTRAST_ATTRIBUTE,
   resetAppPreferencesEffectsForTests,
   setupAppPreferences,
   stepUiScale,
@@ -140,5 +141,29 @@ describe('setupAppPreferences: масштаб в десктопе', () => {
     document.dispatchEvent(gesture)
     expect(gesture.defaultPrevented).toBe(true)
     expect(mocks.setZoom.mock.calls.length).toBe(zoomCalls)
+  })
+})
+
+describe('setupAppPreferences: повышенная контрастность', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    resetAppPreferencesEffectsForTests()
+    document.documentElement.removeAttribute(CONTRAST_ATTRIBUTE)
+  })
+
+  it('настройка ставит и снимает data-contrast="more" на <html>', async () => {
+    mocks.tauri = false
+    await setupAppPreferences()
+    const prefs = useAppPreferencesStore()
+    expect(document.documentElement.hasAttribute(CONTRAST_ATTRIBUTE)).toBe(false)
+
+    await prefs.set('highContrast', true)
+    await vi.waitFor(() =>
+      expect(document.documentElement.getAttribute(CONTRAST_ATTRIBUTE)).toBe('more')
+    )
+    await prefs.set('highContrast', false)
+    await vi.waitFor(() =>
+      expect(document.documentElement.hasAttribute(CONTRAST_ATTRIBUTE)).toBe(false)
+    )
   })
 })

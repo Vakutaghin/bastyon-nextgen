@@ -1,8 +1,21 @@
 <template>
   <Teleport to="body">
     <SC_Backdrop :isOpen="isOpen" @click="close" />
-    <!-- data-popup-host: списки полей (язык ленты) открываются внутри меню, а не под ним. -->
-    <SC_Drawer :isOpen="isOpen" :aria-hidden="!isOpen" data-popup-host @click.stop>
+    <!-- data-popup-host: списки полей (язык ленты) открываются внутри меню, а не под ним.
+         Закрытое меню только сдвинуто за край: inert убирает его из обхода Tab
+         и от диктора, открытое — окно с названием, Esc закрывает. -->
+    <SC_Drawer
+      :isOpen="isOpen"
+      :aria-hidden="!isOpen"
+      :inert="!isOpen"
+      role="dialog"
+      :aria-modal="isOpen ? 'true' : undefined"
+      :aria-label="t('header.menu')"
+      data-popup-host
+      data-testid="mobile-nav-drawer"
+      @click.stop
+      @keydown.esc="onEsc"
+    >
       <SC_DrawerHeader>
         <!-- Под названием — номер версии с проверкой обновлений: левой панели
              компьютера, где он стоит внизу, на телефоне нет. -->
@@ -10,7 +23,7 @@
           <SC_DrawerTitle>{{ t('app.name') }}</SC_DrawerTitle>
           <AppVersionBadge />
         </SC_DrawerBrand>
-        <SC_DrawerClose :aria-label="t('sidebar.close')" @click="close">
+        <SC_DrawerClose :aria-label="t('sidebar.close')" data-drawer-close @click="close">
           <CloseOutlined :style="ICON_SIZE_LG" />
         </SC_DrawerClose>
       </SC_DrawerHeader>
@@ -47,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import Button from '@/components/button/button.vue'
@@ -95,6 +108,12 @@ function close() {
   emit('close')
 }
 
+/** Esc в раскрытом списке поля (язык ленты) закрывает только список. */
+function onEsc(e: KeyboardEvent) {
+  if ((e.target as HTMLElement | null)?.closest('.ant-select-open')) return
+  close()
+}
+
 function openAuth(mode: 'login' | 'register') {
   close()
   modalStore.openAuthModal(mode)
@@ -133,6 +152,29 @@ watch(
 // оверлеев: прямой `body.style.overflow = ''` при закрытии снимал блокировку,
 // которую держал полноэкранный мессенджер (N36).
 let lockHeld = false
+// Фокус: при открытии — на «Закрыть» (диктор попадает в меню, а не остаётся
+// на странице под ним), при закрытии — туда, откуда открыли (кнопка меню).
+// Касание фокус-рамку не показывает: её рисует только :focus-visible.
+let opener: HTMLElement | null = null
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (open) {
+      opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+      void nextTick(() =>
+        document
+          .querySelector<HTMLElement>('[data-testid="mobile-nav-drawer"] [data-drawer-close]')
+          ?.focus()
+      )
+    } else {
+      const drawer = document.querySelector('[data-testid="mobile-nav-drawer"]')
+      const active = document.activeElement
+      const focusInside = !!active && (active === document.body || !!drawer?.contains(active))
+      if (focusInside && opener?.isConnected) opener.focus()
+      opener = null
+    }
+  }
+)
 watch(
   () => props.isOpen,
   (open) => {

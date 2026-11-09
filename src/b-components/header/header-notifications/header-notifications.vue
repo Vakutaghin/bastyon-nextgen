@@ -12,7 +12,14 @@
       :overlay-style="{ zIndex: 3000 }"
       @open-change="onOpenChange"
     >
-      <SC_NotificationsWrapper role="button" tabindex="0" :aria-label="t('header.notifications')">
+      <SC_NotificationsWrapper
+        v-key-activate="{ popup: true }"
+        role="button"
+        tabindex="0"
+        :aria-label="unreadLabel(t('header.notifications'), unreadCount > 99 ? '99+' : unreadCount)"
+        aria-haspopup="true"
+        :aria-expanded="visible ? 'true' : 'false'"
+      >
         <Badge
           :count="unreadCount"
           :offset="[0, 5]"
@@ -30,6 +37,7 @@
     <Modal
       v-if="sheet"
       :open="visible"
+      :aria-label="t('header.notifications')"
       class="notifications-modal"
       :closable="false"
       :footer="null"
@@ -52,6 +60,8 @@ import { useAuthStore, useNotificationsStore } from '@/stores'
 import { useViewport } from '@/composables/use-viewport'
 import NotificationsPanel from './notifications-panel.vue'
 import { SC_NotificationsWrapper } from './styled'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
+import { unreadLabel } from '@/helpers/a11y/unread-label'
 
 const { t } = useI18n()
 

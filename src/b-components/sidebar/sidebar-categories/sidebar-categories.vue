@@ -17,7 +17,10 @@
         </SC_ControlBtn>
       </SC_CategoriesControls>
 
-      <SC_CategoriesToggle>
+      <SC_CategoriesToggle
+        :aria-label="t('sidebar.categories')"
+        :aria-expanded="isExpanded ? 'true' : 'false'"
+      >
         <CaretUpOutlined v-if="isExpanded" />
         <CaretDownOutlined v-else />
       </SC_CategoriesToggle>
@@ -27,7 +30,11 @@
       <SC_CategoriesItem
         v-for="category in visibleCategories"
         :key="category.id"
+        v-key-activate
         :selected="category.selected"
+        role="button"
+        tabindex="0"
+        :aria-pressed="category.selected ? 'true' : 'false'"
         @click="toggleCategory(category.id)"
       >
         <SC_CategoriesIcon :selected="category.selected">
@@ -41,6 +48,10 @@
         <!-- Кнопка удаления для кастомных/временных категорий -->
         <SC_CategoryRemoveBtn
           v-if="category.isRemovable"
+          v-key-activate
+          role="button"
+          tabindex="0"
+          :aria-label="t('sidebar.delete')"
           @click="(e) => removeCategory(e, category.id)"
         >
           <CloseOutlined :style="ICON_SIZE_10" />
@@ -112,6 +123,7 @@ import { useRpcQuery } from '@/composables/use-rpc-query'
 import type { GetTagsResponse } from '@/types/rpc-responses/get-tags'
 import { ICON_SIZE_10, ICON_WARNING_ICON_22 } from '@/styles/icon-styles'
 import { Z_INDEX } from '@/styles/design-tokens'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import {
   SC_Categories,
   SC_CategoriesHeader,

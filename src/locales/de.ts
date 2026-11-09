@@ -566,6 +566,17 @@ export default {
     close: 'Schließen',
     deletedAccount: 'Konto gelöscht',
   },
+  a11y: {
+    skipToContent: 'Zum Inhalt springen',
+    withUnread: '{name}, ungelesen: {n}',
+    search: 'Suchen',
+    account: 'Konto {name}',
+    sidebarLeft: 'Bereiche und Filter',
+    sidebarRight: 'Empfehlungen und Kommentare',
+    chatActions: 'Chat-Aktionen',
+    rateStars: '{n} von 5 vergeben',
+    ratingGroup: 'Bewertung des Beitrags: {avg} von 5',
+  },
   settings: {
     title: 'Einstellungen',
     tabs: {
@@ -798,6 +809,9 @@ export default {
       pageWidthFull: 'Volle Breite',
       pageWidthButton: 'Schaltfläche in der Kopfzeile',
       pageWidthButtonHint: 'Breite mit einem Klick umschalten. Auch unter „Kopfzeile und Leisten“.',
+      highContrast: 'Hoher Kontrast',
+      highContrastHint:
+        'Grauer Text und Rahmen sind dunkler, der Rahmen um das per Tastatur gewählte Element ist besser zu sehen. Er schaltet sich auch von selbst ein, wenn im System mehr Kontrast eingestellt ist.',
     },
     ipfs: {
       title: 'IPFS-Modul',

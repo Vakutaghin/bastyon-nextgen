@@ -1,4 +1,5 @@
 import { notification } from 'ant-design-vue'
+import { announce } from '@/helpers/a11y/announce'
 
 /**
  * Универсальный компонент тостов (уведомлений)
@@ -23,8 +24,14 @@ export interface T_ToastOptions {
 
 type NotificationType = 'success' | 'error' | 'info' | 'warning'
 
-const createMethod = (type: NotificationType) => (options: T_ToastOptions) =>
-  notification[type]({
+const createMethod = (type: NotificationType) => (options: T_ToastOptions) => {
+  // Тост antd диктор сам не читает (у него нет aria-live) — произносим его текст.
+  // Ошибка перебивает диктора, остальное ждёт паузы.
+  announce(
+    [options.message, options.description].filter(Boolean).join('. '),
+    type === 'error' ? 'assertive' : 'polite'
+  )
+  return notification[type]({
     message: options.message,
     description: options.description,
     duration: options.duration || DEFAULT_DURATION,
@@ -32,6 +39,7 @@ const createMethod = (type: NotificationType) => (options: T_ToastOptions) =>
     key: options.key,
     onClick: options.onClick,
   })
+}
 
 export const appToast = {
   success: createMethod('success'),

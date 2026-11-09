@@ -34,6 +34,11 @@ export function setDocumentTitle(pageTitle: string | null | undefined): void {
   document.title = buildDocumentTitle(pageTitle, currentUnread)
 }
 
+/** Название открытой страницы без числа непрочитанных и имени приложения — для диктора. */
+export function pageTitleForSpeech(): string {
+  return currentPageTitle?.trim() || APP_NAME
+}
+
 /** Число непрочитанных в заголовке; 0 — без него. */
 export function setDocumentTitleUnread(unread: number): void {
   if (unread === currentUnread) return

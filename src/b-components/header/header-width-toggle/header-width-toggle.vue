@@ -6,8 +6,8 @@
       :aria-label="tooltip"
       :aria-pressed="width === 'full'"
       data-testid="header-page-width"
+      v-key-activate
       @click="toggle"
-      @keydown.enter="toggle"
     >
       <!-- Значок — что сделает нажатие: растянуть или собрать колонкой. -->
       <PageWidthLimitedIcon v-if="width === 'full'" />
@@ -26,6 +26,7 @@ import { Tooltip } from 'ant-design-vue'
 import { PageWidthFullIcon, PageWidthLimitedIcon } from '@/components/icons'
 import { usePageWidth } from '@/composables/use-page-width'
 import { SC_WidthToggleWrapper } from './styled'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 
 const { t } = useI18n()
 const { width, toggle } = usePageWidth()

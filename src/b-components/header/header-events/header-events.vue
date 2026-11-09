@@ -6,7 +6,14 @@
     placement="bottomRight"
     :get-popup-container="(trigger) => trigger.closest('header') || document.body"
   >
-    <SC_EventsWrapper role="button" tabindex="0" :aria-label="t('header.pendingTitle')">
+    <SC_EventsWrapper
+      v-key-activate="{ popup: true }"
+      role="button"
+      tabindex="0"
+      :aria-label="unreadLabel(t('header.pendingTitle'), pendingCount)"
+      aria-haspopup="true"
+      :aria-expanded="visible ? 'true' : 'false'"
+    >
       <Badge
         :count="pendingCount"
         :offset="[0, 5]"
@@ -202,6 +209,8 @@ import {
   SC_ItemActions,
 } from './styled'
 import HelpLink from '@/b-components/help/help-link.vue'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
+import { unreadLabel } from '@/helpers/a11y/unread-label'
 
 type RatingPendingItem = {
   kind: 'rating'

@@ -5,12 +5,13 @@
       :key="item.key"
       :active="item.active"
       type="button"
-      :aria-label="item.label"
+      :aria-label="unreadLabel(item.label, badgeText(item.badge))"
+      :aria-current="item.active ? 'page' : undefined"
       @click="item.onClick"
     >
       <SC_NavIcon>
         <component :is="item.icon" />
-        <SC_NavBadge v-if="item.badge">{{ item.badge > 99 ? '99+' : item.badge }}</SC_NavBadge>
+        <SC_NavBadge v-if="item.badge" aria-hidden="true">{{ badgeText(item.badge) }}</SC_NavBadge>
       </SC_NavIcon>
       <SC_NavLabel>{{ item.label }}</SC_NavLabel>
     </SC_NavItem>
@@ -31,7 +32,14 @@ import {
 } from '@/components/icons'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { requireAuth } from '@/composables/use-auth-gate'
+import { unreadLabel } from '@/helpers/a11y/unread-label'
 import { SC_BottomNav, SC_NavItem, SC_NavIcon, SC_NavLabel, SC_NavBadge } from './bottom-nav.styled'
+
+/** Число на значке: больше 99 — «99+». */
+function badgeText(badge: number | undefined): string {
+  if (!badge || badge <= 0) return ''
+  return badge > 99 ? '99+' : String(badge)
+}
 
 interface NavItem {
   key: string

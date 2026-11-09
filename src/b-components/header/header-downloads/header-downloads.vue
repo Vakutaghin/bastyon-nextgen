@@ -9,8 +9,11 @@
     :get-popup-container="popupContainer"
   >
     <SC_DownloadsButton
+      v-key-activate="{ popup: true }"
       role="button"
       tabindex="0"
+      aria-haspopup="true"
+      :aria-expanded="open ? 'true' : 'false'"
       data-testid="header-downloads"
       :aria-label="label"
       :title="label"
@@ -127,6 +130,7 @@ import { useSaveOfflineFile } from '@/b-components/offline-video/use-save-offlin
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import type { OfflineItem } from '@/services/offline-video/types'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import {
   SC_DownloadActions,
   SC_DownloadInfo,

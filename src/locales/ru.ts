@@ -560,6 +560,18 @@ export default {
     close: 'Закрыть',
     deletedAccount: 'Аккаунт удалён',
   },
+  /** Для экранного диктора (helpers/a11y): названия кнопок, областей, объявления. */
+  a11y: {
+    skipToContent: 'Перейти к содержимому',
+    withUnread: '{name}, непрочитанных: {n}',
+    search: 'Найти',
+    account: 'Аккаунт {name}',
+    sidebarLeft: 'Разделы и фильтры',
+    sidebarRight: 'Рекомендации и комментарии',
+    chatActions: 'Действия с чатом',
+    rateStars: 'Поставить {n} из 5',
+    ratingGroup: 'Оценка поста: {avg} из 5',
+  },
   settings: {
     title: 'Настройки',
     tabs: {
@@ -786,6 +798,9 @@ export default {
       pageWidthFull: 'Во всю ширину',
       pageWidthButton: 'Кнопка в шапке',
       pageWidthButtonHint: 'Переключать ширину одним нажатием. То же — в «Шапке и панелях».',
+      highContrast: 'Повышенная контрастность',
+      highContrastHint:
+        'Серый текст и рамки темнее, рамка вокруг выбранного с клавиатуры — заметнее. Включается и сама, если в системе включено повышение контраста.',
     },
     ipfs: {
       title: 'Модуль IPFS',

@@ -558,6 +558,17 @@ export default {
     close: '닫기',
     deletedAccount: '삭제된 계정',
   },
+  a11y: {
+    skipToContent: '본문으로 건너뛰기',
+    withUnread: '{name}, 읽지 않음: {n}',
+    search: '검색',
+    account: '계정 {name}',
+    sidebarLeft: '섹션 및 필터',
+    sidebarRight: '추천 및 댓글',
+    chatActions: '채팅 작업',
+    rateStars: '5점 중 {n}점 주기',
+    ratingGroup: '게시물 평점: 5점 중 {avg}점',
+  },
   settings: {
     title: '설정',
     tabs: {
@@ -781,6 +792,9 @@ export default {
       pageWidthButton: '상단 바 버튼',
       pageWidthButtonHint:
         '한 번의 클릭으로 너비를 바꿉니다. “상단 바와 패널”에서도 설정할 수 있습니다.',
+      highContrast: '고대비',
+      highContrastHint:
+        '회색 글자와 테두리가 더 진해지고, 키보드로 선택한 항목의 윤곽선이 더 잘 보입니다. 시스템에서 대비 증가를 켜면 자동으로도 켜집니다.',
     },
     ipfs: {
       title: 'IPFS 모듈',

@@ -6,7 +6,16 @@
     :overlay-style="{ zIndex: 3000 }"
     :get-popup-container="() => fixedPopupLayer(3000)"
   >
-    <SC_TorWrapper :variant="variant" @click="onTriggerClick">
+    <SC_TorWrapper
+      v-key-activate="{ popup: true }"
+      :variant="variant"
+      role="button"
+      tabindex="0"
+      :aria-label="`Tor: ${statusLine}`"
+      aria-haspopup="true"
+      :aria-expanded="visible ? 'true' : 'false'"
+      @click="onTriggerClick"
+    >
       <CheckCircleFilled v-if="variant === 'ready'" :style="ICON_SIZE_XL" />
       <LoadingOutlined v-else-if="variant === 'busy'" :style="ICON_SIZE_XL" spin />
       <WarningFilled v-else-if="variant === 'failed'" :style="ICON_SIZE_XL" />
@@ -150,6 +159,7 @@ import {
   SC_TorDivider,
 } from './styled'
 import HelpLink from '@/b-components/help/help-link.vue'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 
 const RadioGroup = Radio.Group
 

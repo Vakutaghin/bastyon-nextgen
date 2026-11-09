@@ -32,6 +32,7 @@ On the phone, on the other hand, videos and audio keep playing while the app is 
 
 - [Settings](settings.md) — every tab in order.
 - [Language and appearance](appearance.md) — language, theme, scale and animations.
+- [Accessibility](accessibility.md) — keyboard, screen readers, contrast and text size.
 - [Updates](updates.md) — how to learn about a new version and what changed in it.
 
 ## See also

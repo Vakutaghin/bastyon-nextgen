@@ -12,6 +12,7 @@
           v-for="lang in supportedLanguages"
           :key="lang"
           :active="appLanguage === lang"
+          :aria-pressed="appLanguage === lang ? 'true' : 'false'"
           type="button"
           :title="LOCALE_NAMES[lang]"
           @click="onSetLanguage(lang)"
@@ -29,12 +30,25 @@
           v-for="opt in themeOptions"
           :key="opt.value"
           :active="themeMode === opt.value"
+          :aria-pressed="themeMode === opt.value ? 'true' : 'false'"
           type="button"
           @click="setTheme(opt.value)"
         >
           {{ t(opt.labelKey) }}
         </SC_ScaleButton>
       </SC_ScaleRow>
+    </SC_SystemRow>
+    <!-- Повышенная контрастность: серый текст и рамки темнее, рамка фокуса заметнее. -->
+    <SC_SystemRow data-testid="high-contrast-setting">
+      <SC_SystemLabel>
+        <SC_SystemTitle>{{ t('settings.general.highContrast') }}</SC_SystemTitle>
+        <SC_SystemHint>{{ t('settings.general.highContrastHint') }}</SC_SystemHint>
+      </SC_SystemLabel>
+      <Switch
+        :aria-label="t('settings.general.highContrast')"
+        :checked="prefs.highContrast"
+        @change="setFlag('highContrast', $event)"
+      />
     </SC_SystemRow>
     <!-- Ширина — только на компьютере: на телефоне и планшете страница и так во всю ширину. -->
     <SC_SystemRow v-if="!mobile" data-testid="page-width-setting">
@@ -47,6 +61,7 @@
           v-for="opt in pageWidthOptions"
           :key="opt.value"
           :active="pageWidth === opt.value"
+          :aria-pressed="pageWidth === opt.value ? 'true' : 'false'"
           type="button"
           @click="setPageWidth(opt.value)"
         >
@@ -74,7 +89,11 @@
         <SC_SystemTitle>{{ t('settings.content.embeddedVideo') }}</SC_SystemTitle>
         <SC_SystemHint>{{ t('settings.content.embeddedVideoHint') }}</SC_SystemHint>
       </SC_SystemLabel>
-      <Switch :checked="prefs.embeddedVideo" @change="setFlag('embeddedVideo', $event)" />
+      <Switch
+        :aria-label="t('settings.content.embeddedVideo')"
+        :checked="prefs.embeddedVideo"
+        @change="setFlag('embeddedVideo', $event)"
+      />
     </SC_SystemRow>
 
     <SC_SystemRow>
@@ -82,7 +101,11 @@
         <SC_SystemTitle>{{ t('settings.content.videoAutoplay') }}</SC_SystemTitle>
         <SC_SystemHint>{{ t('settings.content.videoAutoplayHint') }}</SC_SystemHint>
       </SC_SystemLabel>
-      <Switch :checked="prefs.videoAutoplay" @change="setFlag('videoAutoplay', $event)" />
+      <Switch
+        :aria-label="t('settings.content.videoAutoplay')"
+        :checked="prefs.videoAutoplay"
+        @change="setFlag('videoAutoplay', $event)"
+      />
     </SC_SystemRow>
 
     <SC_SystemRow>
@@ -90,7 +113,11 @@
         <SC_SystemTitle>{{ t('settings.content.linkPreviews') }}</SC_SystemTitle>
         <SC_SystemHint>{{ t('settings.content.linkPreviewsHint') }}</SC_SystemHint>
       </SC_SystemLabel>
-      <Switch :checked="prefs.linkPreviews" @change="setFlag('linkPreviews', $event)" />
+      <Switch
+        :aria-label="t('settings.content.linkPreviews')"
+        :checked="prefs.linkPreviews"
+        @change="setFlag('linkPreviews', $event)"
+      />
     </SC_SystemRow>
 
     <SC_SystemRow>
@@ -103,6 +130,7 @@
           v-for="opt in COMMENTS_ORDER_OPTIONS"
           :key="opt.value"
           :active="prefs.commentsOrder === opt.value"
+          :aria-pressed="prefs.commentsOrder === opt.value ? 'true' : 'false'"
           type="button"
           @click="setOrder(opt.value)"
         >
@@ -202,7 +230,12 @@ const COMMENTS_ORDER_OPTIONS: {
 type SwitchValue = string | number | boolean
 
 /** Настройки-тумблеры: перечислены явно, чтобы не приводить типы силой. */
-type BooleanPreferenceKey = 'embeddedVideo' | 'videoAutoplay' | 'linkPreviews' | 'chatButton'
+type BooleanPreferenceKey =
+  | 'embeddedVideo'
+  | 'videoAutoplay'
+  | 'linkPreviews'
+  | 'chatButton'
+  | 'highContrast'
 
 function setFlag(key: BooleanPreferenceKey, checked: SwitchValue): void {
   void prefs.set(key, Boolean(checked))

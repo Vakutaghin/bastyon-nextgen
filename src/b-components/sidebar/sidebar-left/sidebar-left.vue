@@ -1,5 +1,9 @@
 <template>
-  <SC_LeftSidebar :class="{ collapsed }" data-testid="sidebar-left">
+  <SC_LeftSidebar
+    :class="{ collapsed }"
+    :aria-label="t('a11y.sidebarLeft')"
+    data-testid="sidebar-left"
+  >
     <SC_LeftSidebarScroll :class="{ collapsed }">
       <SidebarTabs :collapsed="collapsed" />
       <!-- Блоки под разделами — в порядке из «Шапки и панелей»; в узкой панели их нет. -->
@@ -15,6 +19,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import SidebarTabs from '@/b-components/sidebar/sidebar-tabs/sidebar-tabs.vue'
 import { SIDEBAR_BLOCK_COMPONENTS } from '@/b-components/sidebar/sidebar-blocks'
 import { useHeaderLayout } from '@/b-components/header/header-layout/layout-items'
@@ -23,5 +28,6 @@ import { SC_LeftSidebar, SC_LeftSidebarScroll, SC_LeftSidebarFooter } from './st
 
 withDefaults(defineProps<{ collapsed?: boolean }>(), { collapsed: false })
 
+const { t } = useI18n()
 const { sidebarBlocks } = useHeaderLayout()
 </script>

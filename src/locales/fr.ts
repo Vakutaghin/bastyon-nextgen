@@ -569,6 +569,17 @@ export default {
     close: 'Fermer',
     deletedAccount: 'Compte supprimé',
   },
+  a11y: {
+    skipToContent: 'Aller au contenu',
+    withUnread: '{name}, non lus : {n}',
+    search: 'Rechercher',
+    account: 'Compte {name}',
+    sidebarLeft: 'Sections et filtres',
+    sidebarRight: 'Recommandations et commentaires',
+    chatActions: 'Actions du chat',
+    rateStars: 'Noter {n} sur 5',
+    ratingGroup: 'Note de la publication : {avg} sur 5',
+  },
   settings: {
     title: 'Paramètres',
     tabs: {
@@ -802,6 +813,9 @@ export default {
       pageWidthFull: 'Pleine largeur',
       pageWidthButton: 'Bouton dans l’en-tête',
       pageWidthButtonHint: 'Changer la largeur en un clic. Aussi dans « En-tête et panneaux ».',
+      highContrast: 'Contraste élevé',
+      highContrastHint:
+        'Le texte gris et les bordures sont plus foncés, et le contour de l’élément choisi au clavier est plus visible. Il s’active aussi tout seul si le système demande plus de contraste.',
     },
     ipfs: {
       title: 'Module IPFS',

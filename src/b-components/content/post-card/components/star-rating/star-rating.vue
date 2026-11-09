@@ -12,13 +12,28 @@
       <!-- Обёртка перехватывает клик до popover, чтобы решить — открывать его или сразу
            засчитывать голос (через handleRatingClick). -->
       <SC_InlineBlock @click.capture="handleRatingClick">
-        <SC_StarRating class="star-rating">
+        <!-- С клавиатуры: одна остановка Tab на всю строку, стрелки выбирают
+             звезду (она закрашивается, как при наведении), Enter или пробел
+             ставят оценку. Оценку не отменить, поэтому стрелка её не ставит. -->
+        <SC_StarRating class="star-rating" role="group" :aria-label="groupLabel">
           <template v-for="n in 5" :key="`star-${n}`">
             <SC_StarWrapper
+              v-key-activate
               :class="{ disabled: disabled || isSubmitting || isOwnPost, readonly: hasVoted }"
               :title="isOwnPost ? t('postCard.ratingOwnPost') : undefined"
+              role="button"
+              :data-star="n"
+              :tabindex="focusStar === n ? 0 : -1"
+              :aria-label="t('a11y.rateStars', { n })"
+              :aria-pressed="hasVoted ? (displayRating === n ? 'true' : 'false') : undefined"
+              :aria-disabled="
+                disabled || isSubmitting || isOwnPost || hasVoted ? 'true' : undefined
+              "
               @mouseenter="handleStarHover(n)"
               @mouseleave="handleStarLeave"
+              @focus="handleStarHover(n)"
+              @blur="handleStarLeave"
+              @keydown="(e: KeyboardEvent) => onStarKey(e, n)"
               @click="(e) => handleStarClick(n, e)"
             >
               <!-- Пустая контурная звезда (фон) — всегда видна. -->
@@ -65,7 +80,8 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useI18n } from 'vue-i18n'
 import { Popover as APopover, Button as AButton } from 'ant-design-vue'
 import { StarOutlined, StarFilled, UserOutlined } from '@/components/icons'
@@ -116,6 +132,26 @@ const {
   handleRatingClick,
   openAuthModal,
 } = useStarRating(props, emit)
+
+/** Звезда, на которую встаёт Tab (остальные — стрелками). */
+const focusStar = ref(1)
+const groupLabel = computed(() =>
+  t('a11y.ratingGroup', { avg: optimisticAverageRating.value.toFixed(1) })
+)
+
+/** Стрелки, Home и End — фокус на соседнюю звезду; оценка — только Enter или пробел. */
+function onStarKey(e: KeyboardEvent, n: number): void {
+  const step: Record<string, number> = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }
+  let next: number | null = null
+  if (e.key in step) next = Math.min(5, Math.max(1, n + step[e.key]!))
+  else if (e.key === 'Home') next = 1
+  else if (e.key === 'End') next = 5
+  if (next === null) return
+  e.preventDefault()
+  focusStar.value = next
+  const row = (e.currentTarget as HTMLElement).closest('.star-rating')
+  row?.querySelector<HTMLElement>(`[data-star="${next}"]`)?.focus()
+}
 
 // Окно «кто оценил» — отдельный чанк, грузится при первом открытии.
 const PostScoresModal = defineAsyncComponent(() => import('../post-scores/post-scores-modal.vue'))

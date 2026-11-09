@@ -36,6 +36,7 @@ Settings open from the account menu — **“Settings”**. They are available o
 ## General <!-- #general -->
 
 - **“Language”** and **“Theme”** — see [Language and appearance](appearance.md).
+- **“High contrast”** — darker grey text and borders and a more visible keyboard focus outline, see [Accessibility](accessibility.md).
 - **“Page width”** — **“Limited”** or **“Full width”**, and **“Button in the header”** to switch quickly; on a computer only, see [Language and appearance](appearance.md).
 - **“Content”**:
   - **“Show embedded videos”** — YouTube and Vimeo players right in the post; turned off, a link remains;

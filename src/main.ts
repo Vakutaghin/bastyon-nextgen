@@ -14,6 +14,16 @@ initTheme()
 import { initPageWidth } from '@/composables/use-page-width'
 initPageWidth()
 
+// Увеличение щипком — на сайте в браузере телефона; в приложениях и Safari
+// на iPhone запрет масштаба остаётся (helpers/a11y/viewport-zoom).
+import { Capacitor } from '@capacitor/core'
+import { isTauriEnv } from '@/helpers/api/request-tor'
+import { allowPinchZoom, isIosBrowser } from '@/helpers/a11y/viewport-zoom'
+allowPinchZoom({
+  native: Capacitor.isNativePlatform() || isTauriEnv(),
+  ios: isIosBrowser(navigator),
+})
+
 // Инициализация локали — до монтирования, чтобы <html lang> и тексты
 // сразу соответствовали выбранному языку.
 import { i18n, initI18n } from '@/i18n'

@@ -35,6 +35,7 @@
         ref="replyTextareaRef"
         :value="replyDraft"
         :placeholder="t('comments.replyPlaceholder')"
+        :aria-label="t('comments.replyPlaceholder')"
         rows="2"
         @input="onInput"
         @keydown="(e: KeyboardEvent) => emit('keydown', e)"

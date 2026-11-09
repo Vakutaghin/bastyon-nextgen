@@ -5,6 +5,7 @@
         ref="textareaRef"
         :value="editDraft"
         :placeholder="t('comments.editPlaceholder')"
+        :aria-label="t('comments.editPlaceholder')"
         rows="3"
         @input="onInput"
         @keydown="onKeydown"

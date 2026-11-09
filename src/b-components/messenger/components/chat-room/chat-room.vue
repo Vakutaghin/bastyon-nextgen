@@ -223,6 +223,7 @@
           ref="inputRef"
           v-model="inputValue"
           :placeholder="t('messenger.inputPlaceholder')"
+          :aria-label="t('messenger.inputPlaceholder')"
           rows="1"
           enterkeyhint="send"
           @keydown="handleKeydown"

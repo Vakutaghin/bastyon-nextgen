@@ -54,6 +54,7 @@
         </SC_SystemLabel>
         <Switch
           :checked="archive.prefs.enabled"
+          :aria-label="t('settings.chats.archive')"
           :disabled="!archive.ready"
           data-testid="archive-enabled"
           @change="onEnabled"

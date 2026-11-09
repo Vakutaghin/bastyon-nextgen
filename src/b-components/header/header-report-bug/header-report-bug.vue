@@ -4,8 +4,8 @@
       role="button"
       tabindex="0"
       :aria-label="t('header.reportBug')"
+      v-key-activate
       @click="onClick"
-      @keydown.enter="onClick"
     >
       <BugOutlined :style="ICON_SIZE_XL" />
     </SC_ReportBugWrapper>
@@ -21,6 +21,7 @@ import { useAuthStore } from '@/blockchain'
 import { openSupportChat } from './open-support-chat'
 import { SC_ReportBugWrapper } from './styled'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 
 const { t } = useI18n()
 

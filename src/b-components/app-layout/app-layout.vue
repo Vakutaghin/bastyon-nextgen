@@ -1,9 +1,13 @@
 <template>
   <SC_Application id="application" class="menu-hide">
+    <!-- Первая остановка Tab: шапку и левую панель пропустить одним нажатием. -->
+    <SC_SkipLink href="#app-content" @click.prevent="focusMainContent()">
+      {{ t('a11y.skipToContent') }}
+    </SC_SkipLink>
     <SC_Camera id="camera" />
     <StarExplosion />
 
-    <SC_Appcnt :class="{ 'has-bottom-nav': isMobileOrTablet }">
+    <SC_Appcnt id="app-content" :class="{ 'has-bottom-nav': isMobileOrTablet }">
       <AppHeader />
       <router-view :key="pageKey" />
     </SC_Appcnt>
@@ -28,6 +32,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/b-components/header/app-header/app-header.vue'
 import MessengerWrapper from '@/b-components/messenger/components/messenger-wrapper/messenger-wrapper.vue'
@@ -46,10 +51,16 @@ import { isTauriEnv } from '@/helpers/api/request-tor'
 import { useViewport } from '@/composables/use-viewport'
 import { watchSoftKeyboard } from '@/composables/use-soft-keyboard'
 import { useAccountSwitchReset } from '@/composables/use-account-switch-reset'
-import { SC_Application, SC_Camera, SC_Appcnt } from './styled'
+import { useRouteAnnouncer } from '@/composables/use-route-announcer'
+import { installLiveRegions } from '@/helpers/a11y/announce'
+import { focusMainContent } from '@/helpers/a11y/skip-to-content'
+import { SC_Application, SC_Camera, SC_Appcnt, SC_SkipLink } from './styled'
 
+const { t } = useI18n()
 const uiStore = useUIStore()
 const router = useRouter()
+// Новая страница — диктору её название (use-route-announcer).
+useRouteAnnouncer(router)
 const { isMobileOrTablet } = useViewport()
 // Сменили аккаунт — на ленту, страница собирается заново.
 const pageKey = useAccountSwitchReset()
@@ -84,6 +95,8 @@ function onDocumentClick(e: MouseEvent): void {
 }
 
 onMounted(() => {
+  // Живые области для диктора — заранее, до первого тоста (helpers/a11y/announce).
+  installLiveRegions()
   void uiStore.loadLanguage()
   watchSoftKeyboard()
   document.addEventListener('click', onDocumentClick)

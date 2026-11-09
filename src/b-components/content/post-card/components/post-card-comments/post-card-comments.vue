@@ -152,6 +152,7 @@
           ref="rootReplyTextareaRef"
           :value="isRootReplyActive ? replyDraft : ''"
           :placeholder="t('comments.composerPlaceholder')"
+          :aria-label="t('comments.composerPlaceholder')"
           rows="2"
           @input="
             (e) => {

@@ -89,6 +89,7 @@
         :ref="setInputRef"
         v-model="inputValue"
         :placeholder="t('mesh.chat.placeholder')"
+        :aria-label="t('mesh.chat.placeholder')"
         rows="1"
         @keydown="onKeydown"
         @input="handleInput"

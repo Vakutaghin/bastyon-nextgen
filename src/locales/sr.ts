@@ -556,6 +556,17 @@ export default {
     close: 'Затвори',
     deletedAccount: 'Налог је обрисан',
   },
+  a11y: {
+    skipToContent: 'Пређи на садржај',
+    withUnread: '{name}, непрочитано: {n}',
+    search: 'Пронађи',
+    account: 'Налог {name}',
+    sidebarLeft: 'Одељци и филтери',
+    sidebarRight: 'Препоруке и коментари',
+    chatActions: 'Радње са ћаскањем',
+    rateStars: 'Оцени {n} од 5',
+    ratingGroup: 'Оцена објаве: {avg} од 5',
+  },
   settings: {
     title: 'Подешавања',
     tabs: {
@@ -782,6 +793,9 @@ export default {
       pageWidthFull: 'Пуна ширина',
       pageWidthButton: 'Дугме у заглављу',
       pageWidthButtonHint: 'Мењај ширину једним кликом. Исто и у „Заглавље и панели“.',
+      highContrast: 'Повећан контраст',
+      highContrastHint:
+        'Сиви текст и оквири су тамнији, а оквир око онога што је изабрано тастатуром је уочљивији. Укључује се и сам ако је у систему укључено повећање контраста.',
     },
     ipfs: {
       title: 'IPFS модул',

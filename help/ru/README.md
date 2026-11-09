@@ -114,6 +114,7 @@
   - [Приложение для телефона](mobile-app.md)
   - [Ссылки bastyon://](deep-links.md)
   - [Горячие клавиши](keyboard-shortcuts.md)
+  - [Доступность](accessibility.md)
   - [Как пользоваться справкой](using-help.md)
 - [Неполадки](troubleshooting.md)
   - [Нет связи с сетью](connection-problems.md)

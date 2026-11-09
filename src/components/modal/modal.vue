@@ -1,7 +1,8 @@
 <template>
   <SC_Modal>
     <Modal
-      v-bind="{ ...$attrs, ...forwarded }"
+      v-bind="{ ...restAttrs(), ...forwarded }"
+      :wrapProps="wrapProps()"
       :open="isOpen"
       :width="width"
       :footer="footer"
@@ -25,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { useSlots } from 'vue'
+import { useAttrs, useSlots } from 'vue'
 import { useModal } from './modal'
 import type { ModalProps, ModalEmits } from './types'
 
@@ -44,6 +45,24 @@ const p = withDefaults(defineProps<ModalProps>(), {
 })
 
 const emit = defineEmits<ModalEmits>()
+
+// Для диктора: окно модальное (aria-modal), а у окна без заголовка название
+// из aria-label. Оба — на элемент с role=dialog: у antd это обёртка (wrapProps),
+// а прочие атрибуты antd ставит на корень, где aria-label недопустим.
+// Функции, а не computed: $attrs не реактивны, шаблон и так перерисуется.
+const attrs = useAttrs()
+const OWN_ATTRS = new Set(['aria-label', 'wrapProps'])
+function restAttrs(): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(attrs).filter(([key]) => !OWN_ATTRS.has(key)))
+}
+function wrapProps(): Record<string, unknown> {
+  const label = attrs['aria-label']
+  return {
+    'aria-modal': 'true',
+    ...(label ? { 'aria-label': label } : {}),
+    ...((attrs.wrapProps as Record<string, unknown> | undefined) ?? {}),
+  }
+}
 
 const {
   Modal,
