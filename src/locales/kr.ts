@@ -725,7 +725,7 @@ export default {
       storageTitle: '로컬 데이터',
       clearCache: '저장된 데이터 지우기',
       clearCacheHint:
-        '재생 위치, 복호화된 메시지, 저장된 알림을 삭제합니다. 계정, 키, 설정, 즐겨찾기는 유지됩니다.',
+        '재생 위치, 복호화된 메시지, 저장된 알림과 피드를 삭제합니다. 계정, 키, 설정, 즐겨찾기는 유지됩니다.',
       clearButton: '지우기',
       clearing: '지우는 중…',
       cancel: '취소',
@@ -2339,6 +2339,9 @@ export default {
     removeFromFavorites: '즐겨찾기에서 제거',
     subscriptionsDividerCaption: '위는 구독한 사람들의 새 게시물, 아래는 전체 피드입니다.',
     subscriptionsDividerButton: '“구독”에서 계속 보기',
+    savedFeedOffline:
+      '네트워크 없음 — {time} 저장된 피드를 표시합니다. 연결이 돌아오면 새 게시물을 불러옵니다.',
+    savedFeedUnreachable: 'Bastyon 네트워크가 응답하지 않습니다 — {time} 저장된 피드를 표시합니다.',
     sparseLanguageFeed:
       '이 언어로 작성되는 게시물이 적어 하나씩 검색하므로 피드가 천천히 채워집니다.',
     sparseLanguageNone:

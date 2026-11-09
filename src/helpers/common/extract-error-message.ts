@@ -38,7 +38,7 @@ export function extractErrorMessage(err: unknown): string {
  * Перебор серверов кончился, и ни один не ответил вообще (сетевой сбой, а не
  * ошибка ноды с кодом): сеть есть, а до Bastyon не достучаться.
  */
-function isNetworkUnreachable(err: unknown): boolean {
+export function isNetworkUnreachable(err: unknown): boolean {
   if (!(err instanceof Error) || !/^All (RPC|HTTP) servers failed/.test(err.message)) return false
   const all = (err as { allErrors?: unknown }).allErrors
   return (

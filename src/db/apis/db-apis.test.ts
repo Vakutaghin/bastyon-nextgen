@@ -4,7 +4,8 @@
 // старыми записями, переехавшими к первому спросившему (N10); «Очистить кэш»
 // не трогает избранное, настройки и неотправленные оценки; позиции видео
 // не копятся сверх 300; одна pending-оценка на пост (N10); уведомления
-// новыми сверху. Время подменяется только у Date: fake-indexeddb выполняет запросы
+// новыми сверху; сохранённые ленты — первая страница, не больше шести, стираются
+// с аккаунтом. Время подменяется только у Date: fake-indexeddb выполняет запросы
 // через таймеры, и полная подмена таймеров останавливает базу.
 
 import 'fake-indexeddb/auto'
@@ -21,6 +22,7 @@ import {
   saveDecrypted,
 } from './decrypted-messages-api'
 import { favoritesAPI } from './favorites-api'
+import { FEED_SNAPSHOT_MAX, feedSnapshotAPI } from './feed-snapshot-api'
 import { notificationsAPI } from './notifications-api'
 import { postRatingPendingAPI } from './post-rating-pending-api'
 import { settingsAPI } from './settings-api'
@@ -113,12 +115,61 @@ describe('локальная база', () => {
       ttlMs: 60_000,
     })
 
-    expect(await cacheAPI.size()).toBe(3)
-    await expect(cacheAPI.clear()).resolves.toEqual({ removed: 3 })
+    await feedSnapshotAPI.save('PA', 'feed-1', [{ id: 'p' } as never])
+
+    expect(await cacheAPI.size()).toBe(4)
+    await expect(cacheAPI.clear()).resolves.toEqual({ removed: 4 })
+    expect(await feedSnapshotAPI.load('feed-1')).toBeNull()
     expect(await cacheAPI.size()).toBe(0)
     expect(await favoritesAPI.getAllIds('PA')).toEqual(['p1'])
     expect(await settingsAPI.get('theme')).toBe('dark')
     expect(await db.postRatingsPending.count()).toBe(1)
+  })
+
+  describe('сохранённые ленты', () => {
+    const post = (id: string) => ({ id, title: id }) as never
+
+    it('лента читается по своему ключу; реактивный массив сохраняется копией', async () => {
+      const { reactive } = await import('vue')
+      await feedSnapshotAPI.save('PA', 'tab-1', reactive([post('a'), post('b')]))
+
+      const saved = await feedSnapshotAPI.load('tab-1')
+      expect(saved?.posts.map((p) => p.id)).toEqual(['a', 'b'])
+      expect(saved?.savedAt).toBeGreaterThan(0)
+      expect(await feedSnapshotAPI.load('tab-2')).toBeNull()
+    })
+
+    it('хранится первая страница и не больше FEED_SNAPSHOT_MAX лент: старые вытесняются', async () => {
+      const many = Array.from({ length: 30 }, (_, i) => post(`p${i}`))
+      await feedSnapshotAPI.save('PA', 'feed-0', many)
+      expect((await feedSnapshotAPI.load('feed-0'))?.posts).toHaveLength(20)
+
+      for (let i = 1; i <= FEED_SNAPSHOT_MAX; i++) {
+        await feedSnapshotAPI.save('PA', `feed-${i}`, [post('x')])
+      }
+      expect(await feedSnapshotAPI.count()).toBe(FEED_SNAPSHOT_MAX)
+      expect(await feedSnapshotAPI.load('feed-0')).toBeNull()
+      expect(await feedSnapshotAPI.load(`feed-${FEED_SNAPSHOT_MAX}`)).not.toBeNull()
+    })
+
+    it('повторное сохранение ленты освежает её, а не занимает второе место', async () => {
+      await feedSnapshotAPI.save('PA', 'feed', [post('old')])
+      await feedSnapshotAPI.save('PA', 'feed', [post('new')])
+      expect(await feedSnapshotAPI.count()).toBe(1)
+      expect((await feedSnapshotAPI.load('feed'))?.posts[0]?.id).toBe('new')
+    })
+
+    it('удаление аккаунта стирает только его ленты, выход — все', async () => {
+      await feedSnapshotAPI.save('PA', 'a-feed', [post('a')])
+      await feedSnapshotAPI.save('PB', 'b-feed', [post('b')])
+
+      await feedSnapshotAPI.forgetAccount('PA')
+      expect(await feedSnapshotAPI.load('a-feed')).toBeNull()
+      expect(await feedSnapshotAPI.load('b-feed')).not.toBeNull()
+
+      await expect(feedSnapshotAPI.clear()).resolves.toBe(1)
+      expect(await feedSnapshotAPI.count()).toBe(0)
+    })
   })
 
   describe('настройки', () => {

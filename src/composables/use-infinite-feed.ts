@@ -39,8 +39,10 @@ import {
   enrichWithUserScores,
   preloadLastCommentAuthors,
 } from './helpers/feed-enrichment'
-import { extractErrorMessage } from '@/helpers/common/extract-error-message'
+import { extractErrorMessage, isNetworkUnreachable } from '@/helpers/common/extract-error-message'
 import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
+import { isOfflineError, isOfflineNow } from '@/helpers/api/offline'
+import { FEED_SNAPSHOT_POSTS, feedSnapshotAPI } from '@/db/apis/feed-snapshot-api'
 import { t } from '@/i18n'
 
 /**
@@ -54,6 +56,19 @@ export function feedErrorText(err: unknown): string {
   }
   return extractErrorMessage(err)
 }
+
+/** Ленту не загрузить из-за связи (а не из-за ответа ноды): пора показать сохранённую. */
+export function isConnectionFailure(err: unknown): boolean {
+  return (
+    isOfflineNow() ||
+    isOfflineError(err) ||
+    isNetworkUnreachable(err) ||
+    err instanceof NoDirectNodesError
+  )
+}
+
+/** Через сколько после первой страницы сохранять её: успевают прийти свои оценки постов. */
+const SNAPSHOT_DELAY_MS = 2_000
 
 /** Вкладки со своим источником — не лента по дате: «Подписки», «Избранное», «Обсуждаемое». */
 const OWN_SOURCE_TABS = new Set([2, 6, 7])
@@ -171,6 +186,17 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   // окно лента выглядела пустой и загруженной одновременно.
   const hasSettled = ref(false)
 
+  /**
+   * На экране сохранённая лента (feed-snapshot-api), а не с сервера: связи нет.
+   * Время сохранения, мс; null — лента свежая. Свежая первая страница её
+   * заменяет, а догрузка и проверка новых сверху пока молчат.
+   */
+  const savedAt = ref<number | null>(null)
+  /** Сколько чтений сохранённой ленты идёт сейчас. */
+  const restoring = ref(0)
+  let snapshotTimer: ReturnType<typeof setTimeout> | null = null
+  let pendingSnapshot: (() => void) | null = null
+
   // Следим за изменениями фильтров
   watch(
     [
@@ -191,6 +217,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       hasSettled.value = false
       hasMore.value = true
       allPosts.value = []
+      savedAt.value = null
       isLoadingMore.value = false
       loadMoreError.value = null
       newPostsCount.value = 0
@@ -344,6 +371,71 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     return (post) => passesReputation(post, min, me)
   }
 
+  /**
+   * Ключ сохранённой ленты: аккаунт, вкладка, языки и всё, что отбирает посты.
+   * Категории — их тегами: так ключ не зависит от того, как категория названа.
+   */
+  function snapshotKey(): string {
+    const langs = tabLanguages()
+    return JSON.stringify([
+      authStore.address || '',
+      Number(filtersStore.activeTab),
+      filtersStore.topFirst,
+      filtersStore.topFeedDepth,
+      langs,
+      filtersStore.minReputation ?? null,
+      buildContentTypes(),
+      langs.map((lang) => buildAllTags(lang)),
+    ])
+  }
+
+  /** Сохранить первую страницу ленты чуть позже — со своими оценками постов. */
+  function scheduleSnapshot(): void {
+    if (snapshotTimer) clearTimeout(snapshotTimer)
+    const generation = feedGeneration.value
+    const key = snapshotKey()
+    const account = authStore.address || ''
+    pendingSnapshot = () => {
+      if (generation !== feedGeneration.value || savedAt.value !== null) return
+      // Свои неподтверждённые посты — не лента сети, их не сохраняем.
+      const posts = allPosts.value
+        .filter((p) => !p.pending && !p.txFailed)
+        .slice(0, FEED_SNAPSHOT_POSTS)
+      if (posts.length) void feedSnapshotAPI.save(account, key, posts)
+    }
+    snapshotTimer = setTimeout(flushSnapshot, SNAPSHOT_DELAY_MS)
+  }
+
+  /** Сохранить отложенное сейчас: из ленты ушли раньше, чем истекла пауза. */
+  function flushSnapshot(): void {
+    if (snapshotTimer) clearTimeout(snapshotTimer)
+    snapshotTimer = null
+    const save = pendingSnapshot
+    pendingSnapshot = null
+    save?.()
+  }
+
+  /** Первая страница не загрузилась из-за связи — показать сохранённую ленту. */
+  async function restoreSnapshot(err: unknown): Promise<void> {
+    if (currentTxidForQuery.value !== '' || allPosts.value.length > 0) return
+    if (!isConnectionFailure(err)) return
+    const generation = feedGeneration.value
+    // Пока читаем, лента «грузится»: иначе на миг мелькнула бы ошибка.
+    restoring.value += 1
+    try {
+      const snapshot = await feedSnapshotAPI.load(snapshotKey())
+      // Пока читали, лента могла смениться или загрузиться.
+      if (!snapshot || generation !== feedGeneration.value) return
+      if (allPosts.value.length > 0 || !error.value) return
+      allPosts.value = snapshot.posts
+      savedAt.value = snapshot.savedAt
+      hasMore.value = false
+      hasSettled.value = true
+    } finally {
+      restoring.value -= 1
+    }
+  }
+
   // Запрос данных — все варианты вкладок диспатчатся в buildFeedQueryByTab.
   const { data, isLoading, error, refetch } = useQuery<FeedPageResponse>({
     queryKey: queryKey,
@@ -358,6 +450,15 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     enabled: computed(() => enabled && (hasMore.value || currentTxidForQuery.value === '')),
     staleTime: 0,
     gcTime: 0,
+    // Запрос идёт и без сети и сразу падает OfflineError: по умолчанию TanStack
+    // ставил его на паузу, когда сеть пропадала на ходу, и новая вкладка
+    // оставалась пустой — без спиннера, текста и сохранённой ленты.
+    networkMode: 'always',
+  })
+
+  // Первая страница не загрузилась из-за связи — сохранённая лента вместо ошибки.
+  watch(error, (err) => {
+    if (err) void restoreSnapshot(err)
   })
 
   // Обновляем посты при получении данных
@@ -370,6 +471,11 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       if (!newData?.data?.contents || !newData.feedPage) {
         // Пустой, но состоявшийся ответ — это «постов нет», а не «ещё грузим».
         if (newData) hasSettled.value = true
+        // Связь вернулась, а свежая лента пуста — сохранённую убираем.
+        if (newData && requestedTxid === '' && savedAt.value !== null) {
+          savedAt.value = null
+          allPosts.value = []
+        }
         if (newData && currentTxidForQuery.value !== '') {
           // Если получили пустой ответ при загрузке следующей страницы, значит больше нет постов
           hasMore.value = false
@@ -398,12 +504,14 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       let postsToEnrich: AdaptedPost[]
       let nothingNew = false
       if (requestedTxid === '') {
-        // Первая загрузка — заменяем все посты.
+        // Первая загрузка — заменяем все посты (и сохранённую ленту, если была).
         lastNewPostsCheck = Date.now()
         allPosts.value = newPosts
+        savedAt.value = null
         postsToEnrich = newPosts
         feedHeight = Number(newData.data.height) || 0
         repeatedPages = 0
+        if (newPosts.length) scheduleSnapshot()
       } else {
         // Последующие — добавляем к существующим, фильтруя дубликаты по id.
         const existingIds = new Set(allPosts.value.map((p) => String(p.id)))
@@ -446,6 +554,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     if (isLoadingMore.value || !hasMore.value || isLoading.value || hiddenPaused.value) {
       return
     }
+    // У сохранённой ленты нет продолжения: следующие страницы — когда будет связь.
+    if (savedAt.value !== null) return
 
     isLoadingMore.value = true
     loadMoreError.value = null
@@ -490,7 +600,9 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     feedGeneration.value += 1
     currentTxidForQuery.value = ''
     lastTxid.value = ''
-    hasMore.value = true
+    // Сохранённая лента остаётся на экране, пока не придёт свежая, и
+    // догружать её дальше нечего.
+    hasMore.value = savedAt.value === null
     isLoadingMore.value = false
     loadMoreError.value = null
     newPostsCount.value = 0
@@ -585,6 +697,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   const NEW_POSTS_MIN_GAP = 60_000
   const checkForNewPosts = async (): Promise<void> => {
     if (liveMode.value || !enabled || isLoading.value || isLoadingMore.value) return
+    // Сохранённая лента — не голова сети: новые посчитаются после свежей загрузки.
+    if (savedAt.value !== null) return
     if (typeof document !== 'undefined' && document.hidden) return
     if (Date.now() - lastNewPostsCheck < NEW_POSTS_MIN_GAP) return
     if (!allPosts.value.length || !headCheckDue()) return
@@ -605,6 +719,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
 
   const checkLive = async (): Promise<void> => {
     if (!liveMode.value || !enabled || liveChecking || isLoading.value) return
+    if (savedAt.value !== null) return
     if (typeof document !== 'undefined' && document.hidden) return
     if (!allPosts.value.length || !headCheckDue()) return
     const generation = feedGeneration.value
@@ -690,6 +805,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       newPostsTimer = null
     }
     stopLive()
+    flushSnapshot()
     if (typeof window !== 'undefined') {
       window.removeEventListener('focus', onReturn)
       document.removeEventListener('visibilitychange', onReturn)
@@ -780,6 +896,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       if (!newEnabled) {
         feedGeneration.value += 1
         allPosts.value = []
+        savedAt.value = null
         lastTxid.value = ''
         hasMore.value = true
         isLoadingMore.value = false
@@ -794,6 +911,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     () => {
       feedGeneration.value += 1
       allPosts.value = []
+      savedAt.value = null
       lastTxid.value = ''
       currentTxidForQuery.value = ''
       hasMore.value = true
@@ -807,8 +925,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   return {
     /** Все загруженные посты */
     allPosts: computed(() => allPosts.value),
-    /** Загружается ли первая порция */
-    isLoading,
+    /** Загружается ли первая порция (или читается сохранённая лента) */
+    isLoading: computed(() => isLoading.value || restoring.value > 0),
     /** Ответ по текущему фильтру разобран: до этого «пусто» показывать нельзя */
     hasSettled: computed(() => hasSettled.value),
     /** Загружается ли следующая порция */
@@ -845,5 +963,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     newPostsMore: computed(() => newPostsMore.value),
     /** Показать новые посты: перезагрузить голову ленты + сбросить счётчик. */
     showNewPosts,
+    /** На экране сохранённая лента: когда сохранена, мс; null — лента свежая. */
+    savedAt: computed(() => savedAt.value),
   }
 }

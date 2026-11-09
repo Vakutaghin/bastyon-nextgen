@@ -7,12 +7,12 @@
  * ленту), S17 («Обновить» идёт с головы, а не повторяет текущую страницу),
  * имена авторов последних комментариев догружаются до показа страницы,
  * лента на редком языке по одному посту, «Новые посты сразу», лента на
- * нескольких языках, порог «Репутация авторов».
+ * нескольких языках, порог «Репутация авторов», сохранённая лента без связи.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { defineComponent, h, nextTick, reactive, ref, shallowRef } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import type { VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 
@@ -95,6 +95,18 @@ vi.mock('@/blockchain/store/auth-store', () => ({
   useAuthStore: () => ({ address: '', isUserAuthenticated: false }),
 }))
 
+// Сохранённые ленты — в памяти; сама база — db-apis.test.ts.
+const snapshots = vi.hoisted(() => new Map<string, { savedAt: number; posts: unknown[] }>())
+vi.mock('@/db/apis/feed-snapshot-api', () => ({
+  FEED_SNAPSHOT_POSTS: 20,
+  feedSnapshotAPI: {
+    save: vi.fn(async (_account: string, key: string, posts: unknown[]) => {
+      snapshots.set(key, { savedAt: Date.now(), posts: [...posts] })
+    }),
+    load: vi.fn(async (key: string) => snapshots.get(key) ?? null),
+  },
+}))
+
 const filtersStore = reactive({
   activeTab: 1,
   topFirst: false,
@@ -120,6 +132,8 @@ vi.mock('@/stores/ui-store', () => ({ useUIStore: () => uiStore }))
 
 import { feedErrorText, useInfiniteFeed } from './use-infinite-feed'
 import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
+import { OfflineError } from '@/helpers/api/offline'
+import { feedSnapshotAPI } from '@/db/apis/feed-snapshot-api'
 import { t } from '@/i18n'
 import { buildFeedQueryByTab } from './helpers/feed-queries'
 import { SparseLanguageTimeout, fetchDatePage, isSparseFeed } from './helpers/date-feed'
@@ -178,6 +192,7 @@ beforeEach(() => {
   filtersStore.liveFeed = false
   filtersStore.minReputation = null
   uiStore.contentLanguages = ['ru']
+  snapshots.clear()
 })
 
 describe('useInfiniteFeed', () => {
@@ -274,6 +289,101 @@ describe('useInfiniteFeed', () => {
 
     expect(feed.loadMoreError.value).toBeNull()
     expect(feed.allPosts.value.map((p) => p.id)).toEqual(['a', 'b', 'c', 'd'])
+  })
+
+  describe('сохранённая лента', () => {
+    /** Лента загрузилась и закрыта: первая страница сохранена. */
+    async function saveFirstPage(...txids: string[]): Promise<void> {
+      mountFeed()
+      await deliver(page(...txids))
+      mounted.splice(0).forEach((w) => w.unmount())
+      queryState.data.value = undefined
+    }
+
+    it('without a network the first page shows the saved feed; the fresh one replaces it', async () => {
+      await saveFirstPage('a', 'b')
+      expect(snapshots.size).toBe(1)
+
+      const feed = mountFeed()
+      queryState.error.value = new OfflineError('feed')
+      await flushPromises()
+      expect(feed.allPosts.value.map((p) => p.id)).toEqual(['a', 'b'])
+      expect(feed.savedAt.value).toBeGreaterThan(0)
+      expect(feed.hasSettled.value).toBe(true)
+      // Продолжения у сохранённой ленты нет: догрузка не идёт.
+      expect(feed.hasMore.value).toBe(false)
+      await feed.loadMore()
+      expect(queryState.refetch).not.toHaveBeenCalled()
+
+      // Сеть вернулась — свежая первая страница вместо сохранённой.
+      queryState.error.value = null
+      await deliver(page('c', 'd'))
+      expect(feed.allPosts.value.map((p) => p.id)).toEqual(['c', 'd'])
+      expect(feed.savedAt.value).toBeNull()
+      expect(feed.hasMore.value).toBe(true)
+    })
+
+    it('while the saved feed is read, the feed is loading — the error does not flash', async () => {
+      await saveFirstPage('a', 'b')
+      const load = vi.mocked(feedSnapshotAPI.load)
+      const read = load.getMockImplementation()!
+      let release: () => void = () => {}
+      load.mockImplementationOnce(async (key: string) => {
+        await new Promise<void>((resolve) => (release = resolve))
+        return read(key)
+      })
+      const feed = mountFeed()
+      queryState.error.value = new OfflineError('feed')
+      await nextTick()
+      expect(feed.isLoading.value).toBe(true)
+
+      release()
+      await flushPromises()
+      expect(feed.isLoading.value).toBe(false)
+      expect(feed.allPosts.value).toHaveLength(2)
+    })
+
+    it('an error from the node itself shows the error, not the saved feed', async () => {
+      await saveFirstPage('a', 'b')
+      const feed = mountFeed()
+      queryState.error.value = new Error('node said no')
+      await flushPromises()
+      expect(feed.allPosts.value).toEqual([])
+      expect(feed.savedAt.value).toBeNull()
+    })
+
+    it('another feed has its own saved page; a feed never saved stays an error', async () => {
+      await saveFirstPage('a', 'b')
+      uiStore.contentLanguages = ['en']
+      const feed = mountFeed()
+      queryState.error.value = new OfflineError('feed')
+      await flushPromises()
+      expect(feed.allPosts.value).toEqual([])
+    })
+
+    it('"Refresh" over the saved feed keeps it until the fresh one arrives', async () => {
+      await saveFirstPage('a', 'b')
+      const feed = mountFeed()
+      queryState.error.value = new OfflineError('feed')
+      await flushPromises()
+
+      await feed.refetch()
+      expect(queryState.refetch).toHaveBeenCalledTimes(1)
+      expect(feed.allPosts.value.map((p) => p.id)).toEqual(['a', 'b'])
+      expect(feed.hasMore.value).toBe(false)
+    })
+
+    it('the fresh feed came back empty: the saved one goes away', async () => {
+      await saveFirstPage('a', 'b')
+      const feed = mountFeed()
+      queryState.error.value = new OfflineError('feed')
+      await flushPromises()
+
+      queryState.error.value = null
+      await deliver({ data: { contents: [] }, feedPage: null })
+      expect(feed.allPosts.value).toEqual([])
+      expect(feed.savedAt.value).toBeNull()
+    })
   })
 
   it('returning to the app peeks for new posts at most once a minute, never in background', async () => {

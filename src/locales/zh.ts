@@ -688,7 +688,8 @@ export default {
       autostartFailed: '系统拒绝更改开机启动设置',
       storageTitle: '本地数据',
       clearCache: '清除已保存的数据',
-      clearCacheHint: '删除播放位置、已解密的消息和已保存的通知。账户、密钥、设置和收藏会保留。',
+      clearCacheHint:
+        '删除播放位置、已解密的消息、已保存的通知和信息流。账户、密钥、设置和收藏会保留。',
       clearButton: '清除',
       clearing: '正在清除…',
       cancel: '取消',
@@ -2268,6 +2269,8 @@ export default {
     removeFromFavorites: '取消收藏',
     subscriptionsDividerCaption: '上方是您关注的人的新帖子，下方是综合信息流。',
     subscriptionsDividerButton: '在“关注”中继续',
+    savedFeedOffline: '没有网络——显示 {time} 保存的信息流。连接恢复后将加载新帖子。',
+    savedFeedUnreachable: 'Bastyon 网络没有响应——显示 {time} 保存的信息流。',
     sparseLanguageFeed: '该语言的帖子很少：帖子逐条查找，因此信息流加载较慢。',
     sparseLanguageNone: '节点未找到该语言的帖子——看来这里还没有人用该语言发帖。',
     sparseLanguageGap: '节点未找到该语言更早的帖子：在此之前的间隔太长。',

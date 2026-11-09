@@ -738,7 +738,7 @@ export default {
       storageTitle: 'Datos locales',
       clearCache: 'Borrar datos guardados',
       clearCacheHint:
-        'Elimina las posiciones de reproducción, los mensajes descifrados y las notificaciones guardadas. Se conservan las cuentas, las claves, los ajustes y los favoritos.',
+        'Elimina las posiciones de reproducción, los mensajes descifrados, las notificaciones y los feeds guardados. Se conservan las cuentas, las claves, los ajustes y los favoritos.',
       clearButton: 'Borrar',
       clearing: 'Borrando…',
       cancel: 'Cancelar',
@@ -2383,6 +2383,9 @@ export default {
     subscriptionsDividerCaption:
       'Arriba: lo nuevo de las personas que sigues. Abajo: el feed general.',
     subscriptionsDividerButton: 'Seguir en «Suscripciones»',
+    savedFeedOffline:
+      'Sin red: se muestra el feed guardado {time}. Las publicaciones nuevas se cargarán cuando vuelva la conexión.',
+    savedFeedUnreachable: 'La red de Bastyon no responde: se muestra el feed guardado {time}.',
     sparseLanguageFeed:
       'En este idioma se publica poco: las publicaciones se buscan una a una, por eso el feed crece despacio.',
     sparseLanguageNone:

@@ -728,7 +728,7 @@ export default {
       storageTitle: 'Local data',
       clearCache: 'Clear saved data',
       clearCacheHint:
-        'Removes playback positions, decrypted messages and stored notifications. Accounts, keys, settings and favorites are kept.',
+        'Removes playback positions, decrypted messages, stored notifications and saved feeds. Accounts, keys, settings and favorites are kept.',
       clearButton: 'Clear',
       clearing: 'Clearing…',
       cancel: 'Cancel',
@@ -2363,6 +2363,9 @@ export default {
     subscriptionsDividerCaption:
       'Above are new posts from people you follow. Below is the general feed.',
     subscriptionsDividerButton: 'Continue in “Subscriptions”',
+    savedFeedOffline:
+      'No network — showing the feed saved {time}. New posts will load when the connection is back.',
+    savedFeedUnreachable: 'The Bastyon network is not responding — showing the feed saved {time}.',
     sparseLanguageFeed:
       'Few people post in this language, so posts are found one at a time and the feed grows slowly.',
     sparseLanguageNone:

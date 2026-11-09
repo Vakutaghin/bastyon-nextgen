@@ -740,7 +740,7 @@ export default {
       storageTitle: 'Lokale Daten',
       clearCache: 'Gespeicherte Daten löschen',
       clearCacheHint:
-        'Entfernt Wiedergabepositionen, entschlüsselte Nachrichten und gespeicherte Benachrichtigungen. Konten, Schlüssel, Einstellungen und Favoriten bleiben erhalten.',
+        'Entfernt Wiedergabepositionen, entschlüsselte Nachrichten, gespeicherte Benachrichtigungen und Feeds. Konten, Schlüssel, Einstellungen und Favoriten bleiben erhalten.',
       clearButton: 'Leeren',
       clearing: 'Wird geleert…',
       cancel: 'Abbrechen',
@@ -2397,6 +2397,10 @@ export default {
     subscriptionsDividerCaption:
       'Oben: Neues von Personen, denen Sie folgen. Darunter: der allgemeine Feed.',
     subscriptionsDividerButton: 'Weiter in „Abonnements“',
+    savedFeedOffline:
+      'Kein Netzwerk — angezeigt wird der Feed, gespeichert {time}. Neue Beiträge laden, sobald die Verbindung zurück ist.',
+    savedFeedUnreachable:
+      'Das Bastyon-Netzwerk antwortet nicht — angezeigt wird der Feed, gespeichert {time}.',
     sparseLanguageFeed:
       'In dieser Sprache wird selten gepostet: Beiträge werden einzeln gesucht, deshalb wächst der Feed langsam.',
     sparseLanguageNone:

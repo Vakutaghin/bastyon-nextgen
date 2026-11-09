@@ -78,6 +78,20 @@
         {{ t('postCard.sparseLanguageFeed') }}
       </SC_FeedNote>
 
+      <!-- Связи нет — на экране лента, сохранённая на устройстве. -->
+      <SC_FeedNote
+        v-if="savedAt !== null && allPosts.length > 0"
+        role="status"
+        data-testid="feed-saved-note"
+      >
+        {{ savedFeedText }}
+        <!-- Сеть есть, а Bastyon не отвечал: повтор вручную. Без сети лента
+             загрузится сама, когда соединение вернётся. -->
+        <Button v-if="online" size="small" type="link" @click="refetch">
+          {{ t('postCard.retry') }}
+        </Button>
+      </SC_FeedNote>
+
       <SC_FeedLoading v-if="(isLoading || isLoadingMore) && allPosts.length === 0">
         <Spin :tip="t('postCard.loadingFeed')">
           <template #indicator>
@@ -166,7 +180,9 @@
             t('postCard.reputationContinue')
           }}</Button>
         </SC_FeedHiddenPause>
-        <SC_FeedEnd v-else-if="!hasMore && allPosts.length > 0 && !isFavoritesTab">
+        <SC_FeedEnd
+          v-else-if="!hasMore && allPosts.length > 0 && !isFavoritesTab && savedAt === null"
+        >
           <p>{{ t('postCard.allPostsLoaded') }}</p>
         </SC_FeedEnd>
       </template>
@@ -220,6 +236,8 @@ import { useFiltersStore } from '@/stores/filters-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { formatTopReputation } from '@/pages/top-accounts-page/top-format'
+import { formatTimeAgo } from '@/helpers/common/date-formatter'
+import { useOnline } from '@/composables/use-online'
 import { useModalStore } from '@/stores'
 import { feedErrorText, useInfiniteFeed } from '@/composables/use-infinite-feed'
 import { useBoostedFeed } from '@/composables/use-boosted-feed'
@@ -304,12 +322,21 @@ const {
   hiddenPaused,
   hiddenTotal,
   continueHidden,
+  savedAt,
 } = useInfiniteFeed({
   initialLimit: 20,
   pageSize: 20,
   threshold: undefined, // PREFETCH_SCREENS экранов до конца
   // lang не задаём — берётся из ui-store (язык приложения), реактивно.
   enabled: true,
+})
+
+const online = useOnline()
+/** Пометка над сохранённой лентой: почему она не свежая и когда сохранена. */
+const savedFeedText = computed<string>(() => {
+  if (savedAt.value === null) return ''
+  const time = formatTimeAgo(Math.floor(savedAt.value / 1000))
+  return t(online.value ? 'postCard.savedFeedUnreachable' : 'postCard.savedFeedOffline', { time })
 })
 
 // Продвигаемые посты (getboostfeed) — только на главной вкладке «Лента» (id=1).

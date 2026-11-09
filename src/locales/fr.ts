@@ -745,7 +745,7 @@ export default {
       storageTitle: 'Données locales',
       clearCache: 'Effacer les données enregistrées',
       clearCacheHint:
-        'Supprime les positions de lecture, les messages déchiffrés et les notifications enregistrées. Les comptes, clés, paramètres et favoris sont conservés.',
+        'Supprime les positions de lecture, les messages déchiffrés, les notifications et les fils enregistrés. Les comptes, clés, paramètres et favoris sont conservés.',
       clearButton: 'Vider',
       clearing: 'Nettoyage…',
       cancel: 'Annuler',
@@ -2396,6 +2396,9 @@ export default {
     subscriptionsDividerCaption:
       'Ci-dessus : les nouveautés des personnes que vous suivez. Ci-dessous : le fil général.',
     subscriptionsDividerButton: 'Continuer dans « Abonnements »',
+    savedFeedOffline:
+      'Pas de réseau — affichage du fil enregistré {time}. Les nouvelles publications se chargeront au retour de la connexion.',
+    savedFeedUnreachable: 'Le réseau Bastyon ne répond pas — affichage du fil enregistré {time}.',
     sparseLanguageFeed:
       'On publie rarement dans cette langue : les publications sont cherchées une par une, le fil grandit donc lentement.',
     sparseLanguageNone:

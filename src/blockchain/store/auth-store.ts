@@ -54,11 +54,13 @@ async function purgeAccountScopedIdb(address: Address): Promise<void> {
   const [
     { favoritesAPI },
     { settingsAPI },
+    { feedSnapshotAPI },
     { SEARCH_HISTORY_STORAGE_KEY },
     { NOTIFICATION_FILTERS_KEY },
   ] = await Promise.all([
     import('@/db/apis/favorites-api'),
     import('@/db/apis/settings-api'),
+    import('@/db/apis/feed-snapshot-api'),
     import('@/stores/search-store-consts'),
     import('@/stores/notification-settings-store'),
   ])
@@ -67,15 +69,22 @@ async function purgeAccountScopedIdb(address: Address): Promise<void> {
   await settingsAPI.set(`${NOTIFICATION_FILTERS_KEY}:${address}`, undefined)
   await settingsAPI.remove(accountScopedKey(POST_DRAFT_FIELDS_KEY, address))
   await settingsAPI.remove(accountScopedKey(POST_DRAFT_IMAGES_KEY, address))
+  // Сохранённые ленты аккаунта: в «Подписках» видно, на кого он подписан.
+  await feedSnapshotAPI.forgetAccount(address)
 }
 
 /**
  * Черновики постов в IDB (картинки, теги, опрос…) при выходе — как их текст
  * в localStorage (V14): следующему человеку на устройстве они не принадлежат.
+ * Сохранённые ленты — туда же: они тоже по аккаунтам.
  */
 async function purgePostDraftsIdb(): Promise<void> {
-  const { settingsAPI } = await import('@/db/apis/settings-api')
+  const [{ settingsAPI }, { feedSnapshotAPI }] = await Promise.all([
+    import('@/db/apis/settings-api'),
+    import('@/db/apis/feed-snapshot-api'),
+  ])
   await settingsAPI.removeByPrefix(POST_DRAFT_KEY)
+  await feedSnapshotAPI.clear()
 }
 
 // Общий промис активного restoreSession(). На старте restore зовётся и из

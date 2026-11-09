@@ -166,6 +166,15 @@ const { _settings } = vi.hoisted(() => ({
 }))
 vi.mock('@/db/apis/settings-api', () => ({ settingsAPI: _settings }))
 
+// Сохранённые ленты: по аккаунтам, стираются вместе с ним и при выходе.
+const { _feedSnapshots } = vi.hoisted(() => ({
+  _feedSnapshots: {
+    forgetAccount: vi.fn().mockResolvedValue(undefined),
+    clear: vi.fn().mockResolvedValue(0),
+  },
+}))
+vi.mock('@/db/apis/feed-snapshot-api', () => ({ feedSnapshotAPI: _feedSnapshots }))
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -553,6 +562,12 @@ describe('auth-store', () => {
       expect(_settings.removeByPrefix).toHaveBeenCalledWith('bastyon_post_draft')
     })
 
+    it('сохранённые ленты стираются при выходе: в «Подписках» видно, на кого подписан', async () => {
+      const store = useAuthStore()
+      await store.signOut()
+      expect(_feedSnapshots.clear).toHaveBeenCalled()
+    })
+
     it('should call clearAllUserData()', async () => {
       const { clearAllUserData } = await import('../storage')
       const store = useAuthStore()
@@ -633,8 +648,10 @@ describe('auth-store', () => {
       await vi.waitFor(() => {
         expect(_settings.remove).toHaveBeenCalledWith('bastyon_post_draft_fields:POther')
         expect(_settings.remove).toHaveBeenCalledWith('bastyon_post_draft_images:POther')
+        expect(_feedSnapshots.forgetAccount).toHaveBeenCalledWith('POther')
       })
       expect(_settings.removeByPrefix).not.toHaveBeenCalled()
+      expect(_feedSnapshots.clear).not.toHaveBeenCalled()
     })
 
     it('последний аккаунт: стираются все черновики, и гостя тоже', async () => {

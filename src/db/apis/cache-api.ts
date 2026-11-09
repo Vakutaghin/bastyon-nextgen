@@ -1,4 +1,5 @@
 import { db, withDb } from '../database'
+import { feedSnapshotAPI } from './feed-snapshot-api'
 
 /**
  * Очистка локального кэша (в старом клиенте — «очистить локальное хранилище»).
@@ -7,7 +8,8 @@ import { db, withDb } from '../database'
  * вместе с кэшем улетали бы черновики и незавершённые действия. Поэтому здесь
  * перечислены ровно те таблицы, содержимое которых приложение умеет получить
  * заново, — а аккаунты, ключи, настройки, избранное и неотправленные оценки
- * не трогаются.
+ * не трогаются. Сохранённые ленты лежат в таблице настроек, их стирает
+ * feed-snapshot-api по своему префиксу.
  */
 const CACHE_TABLES = ['videoProgress', 'decryptedMessages', 'notifications'] as const
 
@@ -19,18 +21,19 @@ export interface CacheClearResult {
 export const cacheAPI = {
   /** Сколько записей сейчас занимает кэш. */
   async size(): Promise<number> {
-    return withDb(0, async () => {
+    const tables = await withDb(0, async () => {
       let total = 0
       for (const name of CACHE_TABLES) {
         total += await db.table(name).count()
       }
       return total
     })
+    return tables + (await feedSnapshotAPI.count())
   },
 
   /** Очистить кэш. Возвращает, сколько записей было удалено. */
   async clear(): Promise<CacheClearResult> {
-    return withDb<CacheClearResult>({ removed: 0 }, async () => {
+    const result = await withDb<CacheClearResult>({ removed: 0 }, async () => {
       let removed = 0
       for (const name of CACHE_TABLES) {
         const table = db.table(name)
@@ -39,5 +42,6 @@ export const cacheAPI = {
       }
       return { removed }
     })
+    return { removed: result.removed + (await feedSnapshotAPI.clear()) }
   },
 }

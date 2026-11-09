@@ -10,6 +10,8 @@ The feed does not load, the server is unavailable, the chat does not connect: wh
 
 If no node answered, instead of the feed you see **“Server temporarily unavailable”** and a **“Refresh”** button. The app looks for a live proxy and switches to it by itself, and if none answers, the desktop and Android apps connect to nodes directly. So usually it is enough to wait and press **“Refresh”**. See [Network and nodes](network.md).
 
+If you have opened this feed before, instead of the error you see the copy saved on the device, with the note “The Bastyon network is not responding — showing the feed saved…” and a **“Retry”** button — see [Without a network](#without-a-network).
+
 If nothing loads on any screen:
 
 - check your internet — open any website;
@@ -19,7 +21,9 @@ If nothing loads on any screen:
 
 ## Without a network <!-- #offline -->
 
-When the device is not connected to anything, a **“No network”** bar shows above the feed and in the Video and Audio sections, with a **“Downloads”** link for signed-in users. While there is no network, the app does not try to reach it and does not drain the battery. A feed or profile that has not loaded yet shows “No network connection. It will load once the connection is back.”.
+When the device is not connected to anything, a **“No network”** bar shows above the feed and in the Video and Audio sections, with a **“Downloads”** link for signed-in users. While there is no network, the app does not try to reach it and does not drain the battery.
+
+A feed you have opened before is there even without a network: the app keeps the first page of the last six feeds on the device — one for each tab, language and set of filters. A note above it says when it was saved. The next pages load when the network is back. A feed you have not opened yet and a profile that has not loaded show “No network connection. It will load once the connection is back.”.
 
 When the network comes back, the feed, profile, chats and notifications load by themselves — there is nothing to press.
 
@@ -28,7 +32,7 @@ Without a network you still have:
 - help — it is built into the app;
 - [downloaded videos and audio](offline-video.md);
 - the chat list and messages loaded before, and [mesh messaging](mesh.md);
-- posts that were already on screen before the network dropped.
+- the first page of feeds you have opened, and posts that were already on screen before the network dropped.
 
 ## Tor does not connect
 
