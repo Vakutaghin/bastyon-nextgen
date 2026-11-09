@@ -59,4 +59,41 @@ describe('useLateArrivalGate', () => {
     await nextTick()
     expect(gate.deferred.value).toBe(false)
   })
+
+  // Гость давно смотрит ленту и входит: лента та же (запрос от адреса не
+  // зависит), а подборка нового аккаунта приходит после входа.
+  it('signed in over a feed shown long ago: the countdown starts at sign-in', async () => {
+    const { shown, arrived, gate } = setup()
+    shown.value = true
+    await nextTick()
+    vi.setSystemTime(1_000_000 + 60_000)
+    gate.restart()
+    vi.setSystemTime(1_000_000 + 60_000 + HIGHLIGHTS_GRACE_MS - 100)
+    arrived.value = true
+    await nextTick()
+    expect(gate.deferred.value).toBe(false)
+  })
+
+  it('after sign-in a selection that is late anyway still waits for Refresh', async () => {
+    const { shown, arrived, gate } = setup()
+    shown.value = true
+    await nextTick()
+    gate.restart()
+    vi.setSystemTime(1_000_000 + 60_000)
+    arrived.value = true
+    await nextTick()
+    expect(gate.deferred.value).toBe(true)
+  })
+
+  it('a deferred selection of the previous account does not hold back the next one', async () => {
+    const { shown, arrived, gate } = setup()
+    shown.value = true
+    await nextTick()
+    vi.setSystemTime(1_000_000 + 60_000)
+    arrived.value = true
+    await nextTick()
+    expect(gate.deferred.value).toBe(true)
+    gate.restart()
+    expect(gate.deferred.value).toBe(false)
+  })
 })

@@ -137,7 +137,7 @@ export function useLateArrivalGate(
   feedShown: () => boolean,
   arrived: () => boolean,
   graceMs: number = HIGHLIGHTS_GRACE_MS
-): { deferred: Ref<boolean>; reset: () => void } {
+): { deferred: Ref<boolean>; reset: () => void; restart: () => void } {
   let shownAt = 0
   const deferred = ref(false)
   watch(
@@ -159,5 +159,15 @@ export function useLateArrivalGate(
     deferred.value = false
     shownAt = 0
   }
-  return { deferred, reset }
+  /**
+   * Вошли или сменили аккаунт. Лента при этом остаётся на экране (её запрос от
+   * адреса не зависит), и без нового отсчёта подборка нового аккаунта всегда
+   * считалась опоздавшей: после входа «Новое от подписок» не появлялось до
+   * «Обновить». Отсчёт — с момента входа, как с показа ленты.
+   */
+  function restart(): void {
+    deferred.value = false
+    shownAt = feedShown() ? Date.now() : 0
+  }
+  return { deferred, reset, restart }
 }

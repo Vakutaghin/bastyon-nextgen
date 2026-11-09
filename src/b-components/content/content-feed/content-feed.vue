@@ -365,10 +365,16 @@ const {
 )
 
 // Подборка, пришедшая к уже показанной ленте, ждёт «Обновить» (lateArrivalGate).
-const { deferred: highlightsDeferred, reset: resetHighlightsGate } = useLateArrivalGate(
+const {
+  deferred: highlightsDeferred,
+  reset: resetHighlightsGate,
+  restart: restartHighlightsGate,
+} = useLateArrivalGate(
   () => allPosts.value.length > 0,
   () => subscriptionPosts.value.length > 0
 )
+// Вход и смена аккаунта — новая подборка, отсчёт опоздания заново.
+watch(() => authStore.address, restartHighlightsGate)
 
 /** «Обновить» — заново и обычная лента, и продвигаемые, и посты подписок. */
 function refreshFeed(): Promise<unknown> {

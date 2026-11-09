@@ -141,7 +141,8 @@ test('вошедший: сначала новое от подписок, пла�
   expect(await boostedAt(page)).toEqual([7, 17, 32])
 
   // Плашку пролистали до экрана — подборка просмотрена, после перезагрузки её нет.
-  expect(await page.evaluate(() => localStorage.getItem('bastyon_subscriptions_seen'))).toBeNull()
+  // (Карточка подборки посреди экрана отмечается просмотренной сама, поэтому
+  // запись появляется и до прокрутки; всю подборку закрывает плашка.)
   await divider.scrollIntoViewIfNeeded()
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('bastyon_subscriptions_seen')))
