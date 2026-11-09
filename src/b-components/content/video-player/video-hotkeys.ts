@@ -210,7 +210,8 @@ export function isCovered(element: Element | null): boolean {
   const bottom = Math.min(rect.bottom, window.innerHeight)
   const left = Math.max(rect.left, 0)
   const right = Math.min(rect.right, window.innerWidth)
-  if (bottom <= top || right <= left) return false
+  // Без размеров (NaN) или целиком за экраном — не закрыт.
+  if (!(bottom > top && right > left)) return false
   const hit = document.elementFromPoint((left + right) / 2, (top + bottom) / 2)
   return !!hit && !element.contains(hit)
 }
