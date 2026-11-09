@@ -79,12 +79,13 @@ export function sendEncryptedTextMessage(
     roomId,
     'm.room.message',
     {
+      // extraContent — relation-метаданные (m.relates_to / m.new_content). Идут
+      // первыми: свой body или msgtype в них не заменит шифротекст открытым текстом.
+      ...extraContent,
       msgtype: 'm.encrypted',
       body: payload.body,
       hash: payload.hash,
       block: payload.block,
-      // extraContent — relation-метаданные (m.relates_to / m.new_content).
-      ...extraContent,
     },
     txnId
   )
@@ -109,13 +110,14 @@ export function sendEncryptedDirectMessage(
     roomId,
     'm.room.message',
     {
+      // extraContent — relation-метаданные (m.relates_to) для ответа. Лежат на
+      // внешнем (открытом) content, как и у группового зашифрованного сообщения;
+      // идут первыми, чтобы не заменить шифротекст.
+      ...extraContent,
       msgtype: 'm.encrypted',
       body: payload.body,
       block: payload.block,
       version: payload.version,
-      // extraContent — relation-метаданные (m.relates_to) для ответа. Лежат на
-      // внешнем (открытом) content, как и у группового зашифрованного сообщения.
-      ...extraContent,
     },
     txnId
   )

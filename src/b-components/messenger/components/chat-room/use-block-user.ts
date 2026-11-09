@@ -63,7 +63,8 @@ export function useBlockUser(activeRoomId: Ref<string | null>) {
       if (ignored.has(pid)) ignored.delete(pid)
       else ignored.add(pid)
       await client.setIgnoredUsers?.([...ignored])
-      isBlocked.value = ignored.has(pid)
+      // Пока сервер отвечал, могли открыть другой чат: его кнопке ответ не про него.
+      if (partnerId() === pid) isBlocked.value = ignored.has(pid)
     } catch {
       // Сервер не принял — пере-синхронизируемся с фактическим состоянием.
       refresh()

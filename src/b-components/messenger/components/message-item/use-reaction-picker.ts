@@ -32,6 +32,17 @@ export function useReactionPicker(opts: UseReactionPickerOptions) {
   let scrollParent: HTMLElement | null = null
   let clickOutsideHandler: ((e: MouseEvent) => void) | null = null
   let scrollHandler: (() => void) | null = null
+  /** Щелчок-мимо вешается на следующем такте — чтобы открывший щелчок его не закрыл. */
+  let attachTimer: ReturnType<typeof setTimeout> | null = null
+
+  function detachListeners(): void {
+    if (attachTimer) clearTimeout(attachTimer)
+    attachTimer = null
+    if (clickOutsideHandler) document.removeEventListener('click', clickOutsideHandler, true)
+    if (scrollHandler) scrollParent?.removeEventListener('scroll', scrollHandler, true)
+    clickOutsideHandler = null
+    scrollHandler = null
+  }
 
   function getScrollParent(el: HTMLElement | null): HTMLElement | null {
     if (!el) return null
@@ -127,13 +138,14 @@ export function useReactionPicker(opts: UseReactionPickerOptions) {
         showReactionPicker.value = false
         pickerStyle.value = null
       }
-      setTimeout(() => document.addEventListener('click', clickOutsideHandler!, true), 0)
+      const handler = clickOutsideHandler
+      attachTimer = setTimeout(() => {
+        attachTimer = null
+        document.addEventListener('click', handler, true)
+      }, 0)
       scrollParent?.addEventListener('scroll', scrollHandler, true)
     } else {
-      if (clickOutsideHandler) document.removeEventListener('click', clickOutsideHandler, true)
-      if (scrollHandler) scrollParent?.removeEventListener('scroll', scrollHandler, true)
-      clickOutsideHandler = null
-      scrollHandler = null
+      detachListeners()
     }
   })
 
@@ -141,10 +153,9 @@ export function useReactionPicker(opts: UseReactionPickerOptions) {
     if (showReactionPicker.value) nextTick(positionPicker)
   })
 
-  onUnmounted(() => {
-    if (clickOutsideHandler) document.removeEventListener('click', clickOutsideHandler, true)
-    if (scrollHandler) scrollParent?.removeEventListener('scroll', scrollHandler, true)
-  })
+  // Сообщение ушло из ленты в тот же такт, что открыли пикер, — щелчок-мимо
+  // ещё не повешен; без отмены таймера он повис бы на document навсегда.
+  onUnmounted(detachListeners)
 
   return {
     showReactionPicker,
