@@ -77,7 +77,11 @@ export async function restoreSessionImpl(store: AuthStore): Promise<boolean> {
         clearPendingRegistration()
         if (pending.address) keys.removeAccount(pending.address)
         const remaining = loadAccountsList()
-        if (!remaining.success || !remaining.data?.accounts.length) {
+        // Список не прочитался (не расшифровался, испорчен) — есть ли на
+        // устройстве другие аккаунты, неизвестно. Стереть всё значило бы
+        // потерять их мнемоники; не входим и ничего не трогаем.
+        if (!remaining.success) return finishUnauthenticated()
+        if (!remaining.data?.accounts.length) {
           // Других аккаунтов нет — legacy BST_MNEMONIC тоже принадлежит брошенной
           // регистрации, вычищаем всё, чтобы она не воскресла через fallback.
           clearAllUserData()

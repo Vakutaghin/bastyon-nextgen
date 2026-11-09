@@ -1228,12 +1228,17 @@ describe('auth-store', () => {
     })
 
     it('если других аккаунтов нет — чистит всё и остаётся «не авторизован»', async () => {
-      const { clearAllUserData } = await import('../storage')
+      const { loadAccountsList, clearAllUserData } = await import('../storage')
       _peekPendingRegistration.mockReturnValueOnce({
         nickname: 'b',
         address: 'PNew',
         step: 1,
         timestamp: 1,
+      })
+      // Так loadAccountsList отвечает, когда списка нет вовсе.
+      ;(loadAccountsList as any).mockReturnValueOnce({
+        success: true,
+        data: { accounts: [], currentAccount: null },
       })
       const store = useAuthStore()
       const ok = await store.restoreSession()
