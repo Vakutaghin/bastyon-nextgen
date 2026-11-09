@@ -67,7 +67,7 @@
     <SC_FeedContent>
       <SC_NewPostsPill v-if="newPostsCount > 0" type="button" @click="onShowNewPosts">
         <UpOutlined />
-        {{ t('postCard.newPosts', { n: newPostsCount }) }}
+        {{ t('postCard.newPosts', { n: newPostsMore ? `${newPostsCount}+` : newPostsCount }) }}
       </SC_NewPostsPill>
 
       <!-- Сервисы (мини-приложения) — только над основной лентой. -->
@@ -281,6 +281,7 @@ const {
   loadMoreTrigger,
   refetch,
   newPostsCount,
+  newPostsMore,
   showNewPosts,
   sparse,
 } = useInfiniteFeed({

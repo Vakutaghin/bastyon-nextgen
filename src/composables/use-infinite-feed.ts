@@ -127,6 +127,10 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
   // Счётчик новых постов сверху ленты (lentaunseen-lite): фоновая проверка головы
   // ленты vs отображаемой; пилюля «новые посты» в content-feed.
   const newPostsCount = ref<number>(0)
+  // Счётчик — нижняя граница: просмотренные страницы целиком из новых, а до
+  // показанного не дошли. На русском 20 постов набегает минут за 15, и после
+  // любого перерыва кнопка всегда показывала ровно 20 — пишем «20+».
+  const newPostsMore = ref(false)
   /** Когда голова ленты последний раз приходила с сервера — загрузкой или проверкой. */
   let lastNewPostsCheck = 0
 
@@ -158,6 +162,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       isLoadingMore.value = false
       loadMoreError.value = null
       newPostsCount.value = 0
+      newPostsMore.value = false
     },
     { deep: true }
   )
@@ -369,6 +374,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     isLoadingMore.value = false
     loadMoreError.value = null
     newPostsCount.value = 0
+    newPostsMore.value = false
     await refetch()
   }
 
@@ -461,7 +467,9 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     if (!allPosts.value.length || !headCheckDue()) return
     lastNewPostsCheck = Date.now()
     try {
-      newPostsCount.value = (await collectNewPosts(1)).posts.length
+      const fresh = await collectNewPosts(1)
+      newPostsCount.value = fresh.posts.length
+      newPostsMore.value = !fresh.complete
     } catch {
       // Тихо игнорируем — фоновая проверка не должна шуметь.
     }
@@ -484,6 +492,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       if (generation !== feedGeneration.value || !liveMode.value) return
       if (!fresh.complete) {
         newPostsCount.value = fresh.posts.length
+        newPostsMore.value = true
         return
       }
       if (!fresh.posts.length) return
@@ -518,6 +527,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       stopLive()
       if (!on || typeof window === 'undefined') return
       newPostsCount.value = 0
+      newPostsMore.value = false
       // Таймер — запасной путь: только если по блоку давно не спрашивали.
       liveTimer = setInterval(() => {
         if (Date.now() - lastLiveCheck >= LIVE_INTERVAL - 1_000) void checkLive()
@@ -667,6 +677,7 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
       isLoadingMore.value = false
       loadMoreError.value = null
       newPostsCount.value = 0
+      newPostsMore.value = false
     }
   )
 
@@ -701,6 +712,8 @@ export function useInfiniteFeed(options: UseInfiniteFeedOptions = {}) {
     liveMode,
     /** Количество новых постов сверху (lentaunseen-lite); 0 — нет новых. */
     newPostsCount: computed(() => newPostsCount.value),
+    /** Новых не меньше newPostsCount: дальше не смотрели. */
+    newPostsMore: computed(() => newPostsMore.value),
     /** Показать новые посты: перезагрузить голову ленты + сбросить счётчик. */
     showNewPosts,
   }

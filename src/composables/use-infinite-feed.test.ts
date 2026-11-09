@@ -288,6 +288,35 @@ describe('useInfiniteFeed', () => {
     }
   })
 
+  it('the pill counts new posts down to the shown one; a page of only new ones is a lower bound', async () => {
+    vi.useFakeTimers({ now: 1_000_000, toFake: ['Date'] })
+    const peek = vi.mocked(buildFeedQueryByTab)
+    try {
+      const feed = mountFeed()
+      await deliver(page('a', 'b'))
+
+      vi.setSystemTime(1_000_000 + 61_000)
+      peek.mockResolvedValueOnce(page('n2', 'n1', 'a', 'b') as never)
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => expect(feed.newPostsCount.value).toBe(2))
+      expect(feed.newPostsMore.value).toBe(false)
+
+      // Перерыв дольше, чем набегает страница: все 20 новые, до показанного не дошли.
+      vi.setSystemTime(1_000_000 + 122_000)
+      peek.mockResolvedValueOnce(page(...Array.from({ length: 20 }, (_, i) => `m${i}`)) as never)
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => expect(feed.newPostsCount.value).toBe(20))
+      expect(feed.newPostsMore.value).toBe(true)
+
+      // «Показать» — лента с головы, счётчик и «+» сброшены.
+      await feed.showNewPosts()
+      expect(feed.newPostsCount.value).toBe(0)
+      expect(feed.newPostsMore.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('drops a page that belongs to the previous filter (S16)', async () => {
     const feed = mountFeed()
     await deliver(page('a', 'b'))
@@ -514,6 +543,8 @@ describe('useInfiniteFeed', () => {
       try {
         window.dispatchEvent(new Event('focus'))
         await vi.waitFor(() => expect(feed.newPostsCount.value).toBe(60))
+        // Не меньше 60: дальше не смотрели — кнопка пишет «60+».
+        expect(feed.newPostsMore.value).toBe(true)
         await vi.advanceTimersByTimeAsync(5_000)
         expect(ids(feed)).toEqual(['a', 'b'])
       } finally {
