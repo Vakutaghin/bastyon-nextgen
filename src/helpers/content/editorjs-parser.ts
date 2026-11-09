@@ -13,6 +13,16 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 /**
+ * Текстовое поле блока. Пост — чужие данные из блокчейна: вместо строки там
+ * бывает число, объект или null, и `.replace` на нём ронял рендер карточки.
+ */
+function str(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  return ''
+}
+
+/**
  * Экранирует значение перед вставкой в HTML-атрибут (`src`, `alt`). Editor.js
  * `file.url`/`caption` — недоверенный ввод из блокчейна; без escape строка вроде
  * `x" onerror="…` вырывается из атрибута и инжектит обработчик (P1-1). Финальный
@@ -132,8 +142,10 @@ export function editorjsToHtml(content: string | object): string {
     return formatPlainText(strContent)
   }
 
-  const html = (blocks as EditorJsBlock[])
-    .map((block) => {
+  const html = (blocks as unknown[])
+    .map((item) => {
+      // null или не-объект вместо блока — пропускаем, остальные блоки рисуем.
+      const block = asRecord(item) as Partial<EditorJsBlock>
       switch (block.type) {
         case 'header':
           return parseHeader(block.data)
@@ -166,12 +178,16 @@ export function editorjsToHtml(content: string | object): string {
 }
 
 function parseHeader(raw: unknown): string {
-  const data = asRecord(raw) as { text?: string; level?: number }
-  if (!data.text) return ''
-  const level = data.level && data.level >= 1 && data.level <= 6 ? data.level : 2
+  const data = asRecord(raw)
+  const source = str(data.text)
+  if (!source) return ''
+  // Уровень бывает и строкой ('4' у старых постов). В тег идёт только целое
+  // 1–6 числом: иначе '6e0' или 2.5 давали <h6e0>.
+  const asNumber = Number(data.level)
+  const level = Number.isInteger(asNumber) && asNumber >= 1 && asNumber <= 6 ? asNumber : 2
 
   // Унифицируем переносы строк и <br>
-  const text = data.text.replace(/<br\s*\/?>/gi, '\n')
+  const text = source.replace(/<br\s*\/?>/gi, '\n')
 
   // Форматируем ссылки и экранируем HTML (переносы \n сохраняются)
   let formatted = formatBastyonLinks(text)
@@ -183,11 +199,11 @@ function parseHeader(raw: unknown): string {
 }
 
 function parseParagraph(raw: unknown): string {
-  const data = asRecord(raw) as { text?: string }
-  if (!data.text) return ''
+  const source = str(asRecord(raw).text)
+  if (!source) return ''
 
   // Унифицируем переносы строк и <br>
-  const text = data.text.replace(/<br\s*\/?>/gi, '\n')
+  const text = source.replace(/<br\s*\/?>/gi, '\n')
 
   // Форматируем ссылки и экранируем HTML (переносы \n сохраняются)
   let formatted = formatBastyonLinks(text)
@@ -213,10 +229,10 @@ function parseList(raw: unknown): string {
 
 /** Ссылка-карточка (`link`): превью раньше её теряло целиком (S25). */
 function parseLink(raw: unknown): string {
-  const data = asRecord(raw) as { link?: string; meta?: { title?: string; description?: string } }
+  const data = asRecord(raw)
   const url = typeof data.link === 'string' ? data.link : ''
   if (!url) return ''
-  const title = data.meta?.title || url
+  const title = str(asRecord(data.meta).title) || url
   return `<p class="ce-link">${formatBastyonLinks(title === url ? url : `${title} — ${url}`)}</p>`
 }
 
@@ -238,14 +254,12 @@ function parseTable(raw: unknown): string {
 }
 
 function parseImage(raw: unknown): string {
-  const data = asRecord(raw) as {
-    file?: { url?: string }
-    caption?: string
-    withBorder?: boolean
-    withBackground?: boolean
-    stretched?: boolean
-  }
-  if (!data.file || !data.file.url) return ''
+  const data = asRecord(raw)
+  const fileUrl = asRecord(data.file).url
+  // Адрес — только строкой: число в src превратилось бы в относительную ссылку.
+  const url = typeof fileUrl === 'string' ? fileUrl : ''
+  if (!url) return ''
+  const caption = str(data.caption)
 
   const classes = ['ce-image']
   if (data.withBorder) classes.push('ce-image--with-border')
@@ -253,31 +267,34 @@ function parseImage(raw: unknown): string {
   if (data.stretched) classes.push('ce-image--stretched')
 
   let captionHtml = ''
-  if (data.caption) {
-    captionHtml = `<div class="ce-image__caption">${formatBastyonLinks(data.caption)}</div>`
+  if (caption) {
+    captionHtml = `<div class="ce-image__caption">${formatBastyonLinks(caption)}</div>`
   }
 
   return `
     <div class="${classes.join(' ')}">
-      <img src="${escapeAttr(data.file.url)}" alt="${escapeAttr(data.caption || '')}" />
+      <img src="${escapeAttr(url)}" alt="${escapeAttr(caption)}" />
       ${captionHtml}
     </div>
   `
 }
 
 function parseQuote(raw: unknown): string {
-  const data = asRecord(raw) as { text?: string; caption?: string; alignment?: 'left' | 'center' }
-  if (!data.text) return ''
+  const data = asRecord(raw)
+  const source = str(data.text)
+  if (!source) return ''
 
-  const alignment = data.alignment || 'left'
+  // В class идёт только известное значение — остальное в разметку не попадает.
+  const alignment = data.alignment === 'center' ? 'center' : 'left'
+  const caption = str(data.caption)
   let captionHtml = ''
-  if (data.caption) {
-    let captionText = data.caption.replace(/<br\s*\/?>/gi, '\n')
+  if (caption) {
+    let captionText = caption.replace(/<br\s*\/?>/gi, '\n')
     captionText = formatBastyonLinks(captionText).replace(/\n/g, '<br>')
     captionHtml = `<footer class="ce-quote__caption">${captionText}</footer>`
   }
 
-  let text = data.text.replace(/<br\s*\/?>/gi, '\n')
+  let text = source.replace(/<br\s*\/?>/gi, '\n')
   text = formatBastyonLinks(text).replace(/\n/g, '<br>')
 
   return `
@@ -289,10 +306,10 @@ function parseQuote(raw: unknown): string {
 }
 
 function parseCode(raw: unknown): string {
-  const data = asRecord(raw) as { code?: string }
-  if (!data.code) return ''
+  const source = str(asRecord(raw).code)
+  if (!source) return ''
   // Экранируем HTML в коде, чтобы он отображался как код
-  const code = data.code
+  const code = source
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
