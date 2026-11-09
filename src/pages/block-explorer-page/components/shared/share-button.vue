@@ -1,16 +1,30 @@
 <template>
-  <SC_ShareBtn type="button" :title="hoverTitle" @click="share">
-    <ShareAltOutlined :style="ICON_SIZE_13" />
-    {{ labelText }}
-  </SC_ShareBtn>
+  <SC_ShareGroup>
+    <SC_ShareBtn type="button" :title="hoverTitle" @click="share">
+      <ShareAltOutlined :style="ICON_SIZE_13" />
+      {{ labelText }}
+    </SC_ShareBtn>
+    <!-- В чат Bastyon — ссылка формата bastyon.com (share-origin chatLinks). -->
+    <SC_ShareBtn
+      v-if="chatUrl && canShareToChat"
+      type="button"
+      :title="t('shareToChat.action')"
+      data-testid="explorer-share-to-chat"
+      @click="shareToChat({ link: chatUrl, title })"
+    >
+      <SendOutlined :style="ICON_SIZE_13" />
+      {{ t('shareToChat.short') }}
+    </SC_ShareBtn>
+  </SC_ShareGroup>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ShareAltOutlined } from '@/components/icons'
+import { SendOutlined, ShareAltOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
-import { SC_ShareBtn } from './share-button.styled'
+import { useShareToChat } from '@/composables/use-share-to-chat'
+import { SC_ShareBtn, SC_ShareGroup } from './share-button.styled'
 import { ICON_SIZE_13 } from '@/styles/icon-styles'
 
 const p = defineProps<{
@@ -24,9 +38,12 @@ const p = defineProps<{
    * `https://localhost/…`, и у получателя такая ссылка не открывалась.
    */
   url: string
+  /** Ссылка для чата (share-origin `chatLinks.explorer`); нет — кнопки «В чат» нет. */
+  chatUrl?: string
 }>()
 
 const { t } = useI18n()
+const { canShareToChat, shareToChat } = useShareToChat()
 
 const labelText = computed(() => p.label ?? t('explorerShared.share'))
 const hoverTitle = computed(() => p.title)

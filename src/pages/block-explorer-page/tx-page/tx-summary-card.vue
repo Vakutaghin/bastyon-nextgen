@@ -6,6 +6,7 @@
       <ShareButton
         :title="t('explorerPage.txShareTitle', { txid: tx.txid })"
         :url="publicExplorerUrl('tx', tx.txid)"
+        :chat-url="chatLinks.explorer('tx', tx.txid)"
       />
     </SC_TxTitleRow>
 
@@ -103,7 +104,7 @@ import { useI18n } from 'vue-i18n'
 import HashLink from '../components/shared/hash-link.vue'
 import InfoTooltip from '../components/shared/info-tooltip.vue'
 import ShareButton from '../components/shared/share-button.vue'
-import { publicExplorerUrl } from '@/helpers/common/share-origin'
+import { chatLinks, publicExplorerUrl } from '@/helpers/common/share-origin'
 import {
   formatExplorerNumber as formatNumber,
   formatExplorerPkoin,

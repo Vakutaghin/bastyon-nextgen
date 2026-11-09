@@ -1064,6 +1064,28 @@ export default {
     /** Под ником в результатах поиска — вместо адреса. */
     reputation: 'Reputation {n}',
   },
+  shareToChat: {
+    action: 'Send to chat',
+    short: 'To chat',
+    title: 'Send to chat',
+    search: 'Search chats',
+    chats: 'Chats',
+    comment: 'Caption — optional',
+    send: 'Send',
+    sendMany: 'Send ({n})',
+    sentTo: 'Sent: {name}',
+    open: 'Click to open the chat',
+    sentMany: 'Sent to {n} chat | Sent to {n} chats',
+    limit: 'Up to {n} chats at a time',
+    notFound: 'No chats with this name',
+    loading: 'Loading chats…',
+    offline: 'No connection to the chat server',
+    noChats: 'No chats yet — start a conversation in the messenger',
+    openChat: 'Not encrypted — not allowed here',
+    openChatSecret: 'Messages in this chat are not encrypted: the server would see the file key',
+    copy: 'Copy link',
+    copied: 'Link copied',
+  },
   messenger: {
     chatFallbackTitle: 'Chat',
     audioNoUrl: 'The voice message has no file link',
@@ -2067,6 +2089,9 @@ export default {
     close: 'Close',
   },
   profile: {
+    share: 'Share profile',
+    copyLink: 'Copy link',
+    linkCopied: 'Profile link copied',
     tabsLabel: 'Profile sections',
     tabs: {
       posts: 'Posts',

@@ -17,6 +17,16 @@
           <span>{{ t('comments.share') }}</span>
         </SC_MenuItem>
 
+        <SC_MenuItem
+          v-if="canShare && canShareToChat"
+          type="button"
+          data-testid="comment-share-to-chat"
+          @click.stop.prevent="onAction('chat')"
+        >
+          <SendOutlined />
+          <span>{{ t('shareToChat.action') }}</span>
+        </SC_MenuItem>
+
         <SC_MenuItem v-if="canChainInfo" type="button" @click.stop.prevent="onAction('chain')">
           <BlockOutlined />
           <span>{{ t('chainInfo.action') }}</span>
@@ -78,7 +88,9 @@ import {
   GiftOutlined,
   FlagOutlined,
   BlockOutlined,
+  SendOutlined,
 } from '@/components/icons'
+import { useShareToChat } from '@/composables/use-share-to-chat'
 import { SC_MenuList, SC_MenuItem, SC_MenuTrigger } from './styled'
 import type { CommentMenuAction } from './types'
 
@@ -108,6 +120,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { canShareToChat } = useShareToChat()
 
 const open = ref(false)
 

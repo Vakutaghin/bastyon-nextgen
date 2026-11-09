@@ -61,6 +61,7 @@ import {
   GlobalOutlined,
   LockOutlined,
   MoreOutlined,
+  SendOutlined,
   ShareAltOutlined,
   VideoPlaylistIcon,
 } from '@/components/icons'
@@ -80,6 +81,7 @@ import {
 export type ShelfAction =
   | 'edit'
   | 'share'
+  | 'chat'
   | 'delete'
   | 'rename'
   | 'dismiss'
@@ -147,6 +149,10 @@ const items = computed<MenuItems>(() => {
     const out: MenuItems = [
       { key: 'share', label: t('collections.share'), icon: icon(ShareAltOutlined) },
     ]
+    // В чат — то, что уже в блокчейне: по ссылке на неподтверждённую собеседник ничего не найдёт.
+    if (!c.pending) {
+      out.push({ key: 'chat', label: t('shareToChat.action'), icon: icon(SendOutlined) })
+    }
     // Своё изменение ещё не в блоке — править и удалять нечего: страница коллекции так же.
     if (!c.pending) {
       const left = editsLeft.value[c.txid]

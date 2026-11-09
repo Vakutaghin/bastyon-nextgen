@@ -1,6 +1,13 @@
 import styled from 'vue3-styled-components'
 import { TRANSITIONS } from '@/styles/design-tokens'
 
+/** «Поделиться» и «В чат» рядом. */
+export const SC_ShareGroup = styled.span`
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+`
+
 export const SC_ShareBtn = styled.button`
   display: inline-flex;
   align-items: center;

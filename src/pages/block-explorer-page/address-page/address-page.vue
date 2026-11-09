@@ -15,6 +15,7 @@
             v-if="address"
             :title="t('explorerPage.addressShareTitle', { address })"
             :url="publicExplorerUrl('address', address)"
+            :chat-url="chatLinks.explorer('address', address)"
           />
           <AddressQr v-if="address" :address="address" />
         </SC_AddrTitleActions>
@@ -100,7 +101,7 @@ import { getExplorerRpcConfig } from '@/composables/use-explorer-preferred-node'
 import HashLink from '../components/shared/hash-link.vue'
 import AddressQr from '../components/shared/address-qr.vue'
 import ShareButton from '../components/shared/share-button.vue'
-import { publicExplorerUrl } from '@/helpers/common/share-origin'
+import { chatLinks, publicExplorerUrl } from '@/helpers/common/share-origin'
 import ExplorerError from '../components/shared/explorer-error.vue'
 import { Skeleton } from '@/components'
 import {

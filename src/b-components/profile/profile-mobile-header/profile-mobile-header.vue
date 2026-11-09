@@ -93,6 +93,19 @@
           <MessageOutlined />
         </SC_BellButton>
       </template>
+      <!-- Поделиться профилем — и своим: отправить его другу в чат. -->
+      <!-- Ник — из профиля: у name запасное «User», ссылка по нему вела бы не туда. -->
+      <ProfileShare v-if="address" :address="address" :name="profile.name">
+        <SC_BellButton
+          type="button"
+          class="icon"
+          :title="t('profile.share')"
+          :aria-label="t('profile.share')"
+          data-testid="profile-share"
+        >
+          <ShareAltOutlined />
+        </SC_BellButton>
+      </ProfileShare>
       <template v-if="canShowChannel">
         <SC_ChannelButton
           type="button"
@@ -158,6 +171,7 @@ import {
   MegaphoneOffIcon,
   MessageOutlined,
   PlusOutlined,
+  ShareAltOutlined,
 } from '@/components/icons'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { userMark } from '@/helpers/profile/user-mark'
@@ -170,6 +184,7 @@ import { useProfileChannel } from '../profile-sidebar/use-profile-channel'
 import { useRelationLists } from '../profile-sidebar/use-relation-lists'
 import { formatAbout, formatReputation } from '../profile-sidebar/format-about'
 import ProfileBadges from '../profile-badges/profile-badges.vue'
+import ProfileShare from '../profile-share/profile-share.vue'
 import ProfileInfoSheet from '../profile-info-sheet/profile-info-sheet.vue'
 import FollowersListModal from '../followers-list-modal/followers-list-modal.vue'
 import EditProfileModal from '../edit-profile-modal/edit-profile-modal.vue'

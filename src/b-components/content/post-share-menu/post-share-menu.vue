@@ -1,5 +1,16 @@
 <template>
   <SC_ShareMenu>
+    <!-- В чат Bastyon: ссылка формата bastyon.com — там она становится карточкой поста. -->
+    <SC_ShareItem
+      v-if="chatLink && canShareToChat"
+      type="button"
+      data-testid="share-to-chat-action"
+      @click="sendToChat"
+    >
+      <SC_ShareIcon><SendOutlined /></SC_ShareIcon>
+      {{ t('shareToChat.action') }}
+    </SC_ShareItem>
+
     <SC_ShareItem type="button" @click="copyLink">
       <SC_ShareIcon><CopyOutlined /></SC_ShareIcon>
       {{ t('postCard.copyLink') }}
@@ -79,8 +90,10 @@ import {
   FlagOutlined,
   StopOutlined,
   PushpinOutlined,
+  SendOutlined,
   UnpinOutlined,
 } from '@/components/icons'
+import { useShareToChat } from '@/composables/use-share-to-chat'
 import { appToast } from '@/b-components/app-toast'
 import { SHARE_TARGETS, type ShareTarget } from '@/helpers/common/share-targets'
 import { SC_ShareMenu, SC_ShareItem, SC_ShareIcon, SC_ShareDivider } from './styled'
@@ -88,6 +101,8 @@ import { SC_ShareMenu, SC_ShareItem, SC_ShareIcon, SC_ShareDivider } from './sty
 const props = defineProps<{
   url: string
   text: string
+  /** Ссылка для чата (share-origin `chatLinks`); нет — пункта «Отправить в чат» нет. */
+  chatLink?: string
   canReport?: boolean
   /** «Заблокировать автора» — чужой пост, человек вошёл (как в меню поста старого клиента). */
   canBlock?: boolean
@@ -113,6 +128,12 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { canShareToChat, shareToChat } = useShareToChat()
+
+function sendToChat(): void {
+  if (props.chatLink) shareToChat({ link: props.chatLink, title: props.text })
+  emit('done')
+}
 
 const canNativeShare = computed<boolean>(
   () => typeof navigator !== 'undefined' && typeof navigator.share === 'function'

@@ -87,6 +87,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   LinkIcon,
+  SendOutlined,
   MoreOutlined,
   MusicIcon,
   PlayCircleOutlined,
@@ -101,6 +102,7 @@ import { useThumbnailFallback } from '@/composables/use-thumbnail-fallback'
 import type { StudioView } from './studio-list'
 import { formatCompact, formatCount, formatStudioDate } from './studio-format'
 import { videoShareLink } from './studio-share'
+import { useShareToChat } from '@/composables/use-share-to-chat'
 import type { ServerVideo } from './use-server-videos'
 import type { DetailsTab } from './video-details/video-details-modal.vue'
 import {
@@ -190,6 +192,7 @@ function onThumbClick(): void {
 }
 
 const shareLink = computed(() => videoShareLink(props.video))
+const { canShareToChat, shareToChat } = useShareToChat()
 
 const menuItems = computed(() => [
   ...(playable.value
@@ -203,6 +206,9 @@ const menuItems = computed(() => [
     : []),
   ...(shareLink.value
     ? [{ key: 'copy-link', label: t('mediaStudio.copyLink'), icon: () => h(LinkIcon) }]
+    : []),
+  ...(shareLink.value && canShareToChat.value
+    ? [{ key: 'chat', label: t('shareToChat.action'), icon: () => h(SendOutlined) }]
     : []),
   { key: 'details', label: t('mediaStudio.tabDetails'), icon: () => h(EditOutlined) },
   { key: 'stats', label: t('mediaStudio.tabStats'), icon: () => h(StatsIcon) },
@@ -232,6 +238,8 @@ async function copyLink(): Promise<void> {
 function onMenu({ key }: { key: string | number }): void {
   if (key === 'play') emit('play')
   else if (key === 'copy-link') void copyLink()
+  else if (key === 'chat' && shareLink.value)
+    shareToChat({ link: shareLink.value.chatUrl, title: props.video.name })
   else if (key === 'details' || key === 'stats') emit('details', key)
   else if (key === 'create-post') emit('create-post')
   else if (key === 'remove') emit('remove')

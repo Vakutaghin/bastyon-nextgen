@@ -80,6 +80,19 @@ export function publicCollectionUrl(txid: string): string {
     : `${origin}/collection/${txid}`
 }
 
+/**
+ * Ссылка на профиль для другого человека: по нику — её легко прочесть, а
+ * понимают её и прежний клиент на bastyon.com, и маршрут `/:userName` этого
+ * приложения. Ника нет — по адресу (прежний клиент знает `author?address=`).
+ */
+export function publicProfileUrl(address: string, name?: string): string {
+  const origin = publicShareOrigin()
+  if (name) return `${origin}/${encodeURIComponent(name)}`
+  return origin === PUBLIC_WEB_ORIGIN
+    ? `${origin}/author?address=${encodeURIComponent(address)}`
+    : `${origin}/${encodeURIComponent(address)}`
+}
+
 export type ExplorerEntity = 'block' | 'tx' | 'address'
 
 /**
@@ -131,10 +144,14 @@ function legacyHexEncode(text: string): string {
  * понимает и этот клиент, см. deep-link.ts).
  */
 export function publicMiniAppUrl(appId: string, path?: string): string {
+  return miniAppUrlOn(publicShareOrigin(), appId, path)
+}
+
+function miniAppUrlOn(origin: string, appId: string, path?: string): string {
   const params = new URLSearchParams({ id: appId })
   const inner = (path ?? '').replace(/^\/+/, '')
   if (inner) params.set('p', legacyHexEncode(inner))
-  return `${publicShareOrigin()}/application?${params.toString()}`
+  return `${origin}/application?${params.toString()}`
 }
 
 /**
@@ -168,6 +185,26 @@ export function publicEmbedCode(postId: string): string {
     `<iframe src="${origin}/embed/post/${postId}" width="100%" height="640" frameborder="0" ` +
     'allow="fullscreen; picture-in-picture" loading="lazy"></iframe>'
   )
+}
+
+/**
+ * Ссылки для отправки в чат Bastyon («Поделиться → Отправить в чат»). Всегда
+ * в формате bastyon.com, какой бы ни была сборка: собеседник может сидеть в
+ * прежнем клиенте или в forta.chat, а карточку поста все они рисуют только
+ * для `bastyon.com/post?s=…` (lib/bastyon-link). Этот клиент открывает все
+ * эти ссылки у себя (deep-link.ts), прежний — на своём сайте.
+ */
+export const chatLinks = {
+  post: (postId: string): string => postPath(PUBLIC_WEB_ORIGIN, postId),
+  comment: (postId: string, comment: { id: string; parentid?: string | null }): string =>
+    commentUrl(PUBLIC_WEB_ORIGIN, postId, comment),
+  collection: (txid: string): string => `${PUBLIC_WEB_ORIGIN}/collection?c=${txid}`,
+  /** По адресу, а не по нику: ник можно сменить, ссылка в переписке останется. */
+  profile: (address: string): string =>
+    `${PUBLIC_WEB_ORIGIN}/author?address=${encodeURIComponent(address)}`,
+  miniApp: (appId: string, path?: string): string => miniAppUrlOn(PUBLIC_WEB_ORIGIN, appId, path),
+  explorer: (kind: ExplorerEntity, id: string): string =>
+    `${PUBLIC_WEB_ORIGIN}/blockexplorer/${kind === 'tx' ? 'transaction' : kind}/${encodeURIComponent(id)}`,
 }
 
 /**

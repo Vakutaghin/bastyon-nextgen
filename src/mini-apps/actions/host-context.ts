@@ -305,9 +305,15 @@ export async function createDefaultHostContext(
     }
     modalStore.openPostComposerModal({ share })
   }
+  const { useShareToChatStore } = await import('@/stores/share-to-chat-store')
   const content = createContentMethods({
     router: opts.router,
     openComposer,
+    shareToChat: (target) => {
+      if (!useAuthStore().isUserAuthenticated) return false
+      useShareToChatStore().open(target)
+      return true
+    },
     complain: async (req, signal) => {
       const { openComplainDialog } = await import('../ui/complain-dialog-controller')
       return openComplainDialog(req, signal)

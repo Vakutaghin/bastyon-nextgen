@@ -222,6 +222,7 @@
             <template #overlay>
               <PostShareMenu
                 :url="postUrl"
+                :chat-link="chatLink"
                 :embed-code="embedCode"
                 :text="shareText"
                 :can-report="canReport"
@@ -333,7 +334,7 @@ import { isTxid } from '@/b-components/chain-info/chain-link'
 import { requireAuth } from '@/composables/use-auth-gate'
 import { useAddToListStore } from '@/stores/add-to-list-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
-import { publicEmbedCode, publicPostUrl } from '@/helpers/common/share-origin'
+import { chatLinks, publicEmbedCode, publicPostUrl } from '@/helpers/common/share-origin'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import OfflineDownloadButton from '@/b-components/offline-video/offline-download-button.vue'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
@@ -699,6 +700,8 @@ watch(shareMenuOpen, (open) => {
 // Ссылка уходит наружу, поэтому origin — публичный: в Tauri свой origin
 // выглядит как `tauri://localhost`, в Capacitor — `https://localhost` (S20).
 const postUrl = computed<string>(() => publicPostUrl(postId.value))
+/** В чат — опубликованный пост: у неотправленного txid ещё нет. */
+const chatLink = computed<string>(() => (isTxid(postId.value) ? chatLinks.post(postId.value) : ''))
 
 // Страница поста. У поста в мемпуле её ещё нет: время остаётся подписью.
 const postPath = computed<string>(() =>

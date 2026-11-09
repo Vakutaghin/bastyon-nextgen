@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 // Меню ролика или трека: в очередь, «Избранное», «Смотреть позже», «Добавить
-// в…», скачать для просмотра без сети.
+// в…», скачать для просмотра без сети, отправить в чат и скопировать ссылку.
 
 import { computed, h, ref, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -28,7 +28,9 @@ import {
   BookOutlined,
   DeleteOutlined,
   DownloadOutlined,
+  LinkIcon,
   MoreOutlined,
+  SendOutlined,
   SkipForwardIcon,
   WatchLaterIcon,
 } from '@/components/icons'
@@ -43,6 +45,9 @@ import {
 } from '@/b-components/offline-video/use-offline-download'
 import { FAVORITES, WATCH_LATER } from '@/services/media-library/media-library-doc'
 import { appToast } from '@/b-components/app-toast'
+import { useShareToChat } from '@/composables/use-share-to-chat'
+import { copyText } from '@/helpers/common/clipboard'
+import { chatLinks, publicPostUrl } from '@/helpers/common/share-origin'
 import { mediaTitle, mediaTypeOf, postId, toQueueItem } from '@/services/media/media-post'
 import { cachedMediaInfo } from '@/services/media/media-info'
 import type { AdaptedPost } from '@/types/adapted-post'
@@ -57,6 +62,7 @@ const addToList = useAddToListStore()
 const offline = useOfflineVideosStore()
 const { download } = useOfflineDownload()
 const open = ref(false)
+const { canShareToChat, shareToChat } = useShareToChat()
 
 const type = computed(() => mediaTypeOf(props.post))
 const id = computed(() => postId(props.post))
@@ -93,12 +99,24 @@ const items = computed(() => {
         : { key: 'offline', label: t('offlineVideo.download'), icon: icon(DownloadOutlined) }
     )
   }
+  if (canShareToChat.value) {
+    out.push({ key: 'chat', label: t('shareToChat.action'), icon: icon(SendOutlined) })
+  }
+  out.push({ key: 'copy-link', label: t('postCard.copyLink'), icon: icon(LinkIcon) })
   return out
 })
 
 function onClick({ key }: { key: string | number }): void {
   open.value = false
   const k = String(key)
+  if (k === 'chat') {
+    shareToChat({ link: chatLinks.post(id.value), title: mediaTitle(props.post) })
+    return
+  }
+  if (k === 'copy-link') {
+    void copyLink()
+    return
+  }
   if (k === 'offline') {
     download(offlineSourceFromPost(props.post))
     return
@@ -123,5 +141,11 @@ function onClick({ key }: { key: string | number }): void {
       k === FAVORITES ? library.setFavorite(id.value, on) : library.toggle(k, id.value, on)
     if (!done && on) appToast.warning({ message: t('library.full') })
   })
+}
+
+async function copyLink(): Promise<void> {
+  const url = publicPostUrl(id.value)
+  if (await copyText(url)) appToast.success({ message: t('postCard.linkCopied'), description: url })
+  else appToast.error({ message: t('postCard.shareFailed') })
 }
 </script>

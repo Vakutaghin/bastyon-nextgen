@@ -51,6 +51,8 @@ An offer can carry a video. The upload window is the same as in the post editor:
 
 The “Share on Bastyon” button in a mini app opens the post editor with the app’s text, images and link, and the app’s name among the tags. You can change all of it before publishing. Your own post draft stays untouched.
 
+A regular “Share” button in an app opens the **“Send to chat”** window for a signed-in user: the link to the app can go to your chats, be copied or be handed to the system menu — see [Reposting and linking to a post](sharing.md#sending-to-a-chat). Without signing in, as before, the system menu opens, and where there is none the link is copied.
+
 ## Deleting
 
 Only an app you loaded yourself can be deleted: **“Delete”** on its card. All permissions granted to it are deleted with it. Catalog apps are not installed in the first place.

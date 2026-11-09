@@ -15,6 +15,7 @@
  *   bastyon://index?v=<txid>                    — видео-пост
  *   bastyon://application?id=<appId>[&p=<hex>]  — мини-приложение
  *   bastyon://i?stx=<txid>[&node=…]             — перевод, которым legacy отчитывается в чате
+ *   https://bastyon.com/author?address=<адрес>  — профиль (так ссылается прежний клиент)
  *   bastyon://<ник или адрес>                   — профиль
  */
 
@@ -135,8 +136,9 @@ export function resolveDeepLink(rawUrl: string): string | null {
     return HEX64_RE.test(txid) ? `/explorer/tx/${txid.toLowerCase()}` : '/'
   }
 
-  // Профиль: `profile?address=…` либо просто `bastyon://<ник>`.
-  if (head === 'profile' || head === 'user') {
+  // Профиль: `profile?address=…`, `author?address=…` (так прежний клиент
+  // ссылается на автора) либо просто `bastyon://<ник>`.
+  if (head === 'profile' || head === 'user' || head === 'author') {
     const address = params.get('address') || params.get('id') || segments[1] || ''
     return address ? `/${address}` : '/'
   }

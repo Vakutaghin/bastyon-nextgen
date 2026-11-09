@@ -129,7 +129,7 @@ describe('content actions', () => {
     await reg.execute('share', TEST_APP, { path: 'post/123' }, new AbortController().signal)
     expect(share).toHaveBeenCalledWith(
       { path: 'post/123', url: undefined, sharing: undefined },
-      { onBastyon: false, appId: TEST_APP.manifest.id }
+      { onBastyon: false, appId: TEST_APP.manifest.id, appName: TEST_APP.manifest.name }
     )
   })
 

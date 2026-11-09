@@ -6,7 +6,7 @@
     <SC_BlockNavBtn type="button" :disabled="!nextHash" @click="emit('go', nextHash)">
       {{ t('explorerPage.blockNavNext') }} <RightOutlined :style="ICON_SIZE_XS" />
     </SC_BlockNavBtn>
-    <ShareButton v-if="hasBlock" :title="shareTitle" :url="shareUrl" />
+    <ShareButton v-if="hasBlock" :title="shareTitle" :url="shareUrl" :chat-url="shareChatUrl" />
   </SC_BlockNav>
 </template>
 
@@ -25,6 +25,8 @@ defineProps<{
   hasBlock: boolean
   shareTitle: string
   shareUrl: string
+  /** Ссылка для «В чат» (share-origin chatLinks). */
+  shareChatUrl?: string
 }>()
 
 const emit = defineEmits<{ go: [hash: string] }>()

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { publicPostUrl } from '@/helpers/common/share-origin'
+import { chatLinks, publicPostUrl } from '@/helpers/common/share-origin'
 import { videoShareLink } from './studio-share'
 
 const POINTER = 'peertube://peertube701.pocketnet.app/5f1c2d3e-0000-4000-8000-000000000001/audio'
@@ -15,12 +15,20 @@ describe('videoShareLink', () => {
         { txid: 'old', caption: '', time: 1 },
       ],
     })
-    expect(link).toEqual({ url: publicPostUrl('fresh'), kind: 'post' })
+    expect(link).toEqual({
+      url: publicPostUrl('fresh'),
+      chatUrl: chatLinks.post('fresh'),
+      kind: 'post',
+    })
+    // В чат — всегда формат bastyon.com: там ссылка становится карточкой поста.
+    expect(link?.chatUrl).toBe('https://bastyon.com/post?s=fresh')
   })
 
   it('without a post: the video page on the server, audio too', () => {
     expect(videoShareLink({ pointer: POINTER, processing: false, posts: [] })).toEqual({
       url: 'https://peertube701.pocketnet.app/videos/watch/5f1c2d3e-0000-4000-8000-000000000001',
+      chatUrl:
+        'https://peertube701.pocketnet.app/videos/watch/5f1c2d3e-0000-4000-8000-000000000001',
       kind: 'server',
     })
   })

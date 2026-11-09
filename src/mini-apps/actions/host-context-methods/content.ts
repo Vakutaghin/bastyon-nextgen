@@ -24,6 +24,11 @@ export interface ContentDeps {
   openComposer: (share: ComposerSharePrefill) => Promise<void>
   /** Окно жалобы; true — жалоба ушла. */
   complain: (req: ComplainRequest, signal?: AbortSignal) => Promise<boolean>
+  /**
+   * Окно «Поделиться» Bastyon: чаты, копирование, системное «Поделиться».
+   * false — не открылось (не вошли): тогда как раньше.
+   */
+  shareToChat?: (target: { link: string; title?: string }) => boolean
 }
 
 export type ContentMethods = Pick<
@@ -70,6 +75,11 @@ export function createContentMethods(deps: ContentDeps): ContentMethods {
         await deps.openComposer(sharePostPrefill(data.sharing, url, sharePref.appName ?? ''))
         return
       }
+
+      // Вошедшему — своё окно: отправить в чат Bastyon, скопировать или
+      // системным «Поделиться». В системном меню чатов Bastyon нет, а на
+      // компьютере ссылка раньше молча копировалась.
+      if (deps.shareToChat?.({ link: url, title: sharePref.appName })) return
 
       // Web Share API если есть, иначе fallback на копирование в clipboard.
       const nav = typeof navigator !== 'undefined' ? navigator : undefined

@@ -61,6 +61,14 @@
                 <template #icon><ShareAltOutlined /></template>
                 {{ t('collections.share') }}
               </Button>
+              <Button
+                v-if="canShareToChat && !collection.pending"
+                data-testid="collection-share-to-chat"
+                @click="sendToChat"
+              >
+                <template #icon><SendOutlined /></template>
+                {{ t('shareToChat.action') }}
+              </Button>
               <template v-if="isOwn && !collection.pending">
                 <Button @click="edit">
                   <template #icon><EditOutlined /></template>
@@ -134,6 +142,7 @@ import {
   GlobalOutlined,
   LockOutlined,
   PlayIcon,
+  SendOutlined,
   ShareAltOutlined,
   ShuffleIcon,
   VideoPlaylistIcon,
@@ -156,7 +165,8 @@ import { fetchMediaInfo, type MediaInfo } from '@/services/media/media-info'
 import { formatDuration, mediaTypeOf, postId, toQueueItem } from '@/services/media/media-post'
 import { userName, userAvatar } from '@/services/user-names'
 import { copyText } from '@/helpers/common/clipboard'
-import { publicCollectionUrl } from '@/helpers/common/share-origin'
+import { chatLinks, publicCollectionUrl } from '@/helpers/common/share-origin'
+import { useShareToChat } from '@/composables/use-share-to-chat'
 import { Z_INDEX } from '@/styles/design-tokens'
 import type { QueueItem } from '@/stores/playback-queue-store'
 import type { AdaptedPost } from '@/types/adapted-post'
@@ -293,6 +303,15 @@ function play(shuffled: boolean): void {
 async function share(): Promise<void> {
   const ok = await copyText(publicCollectionUrl(txid.value))
   if (ok) appToast.success({ message: t('collections.linkCopied') })
+}
+
+const { canShareToChat, shareToChat } = useShareToChat()
+
+function sendToChat(): void {
+  shareToChat({
+    link: chatLinks.collection(txid.value),
+    title: collection.value?.caption || t('media.untitled'),
+  })
 }
 
 function edit(): void {

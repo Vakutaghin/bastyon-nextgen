@@ -257,6 +257,31 @@ export const SC_BellButton = styled.button`
   }
 `
 
+/** «Поделиться профилем» — спокойная кнопка, как «Заблокировать», без красного. */
+export const SC_ShareProfileButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: calc(100% - 20px);
+  margin: 0 20px 12px 0;
+  padding: 9px 14px;
+  border-radius: var(--ui-radius-lg);
+  border: 1px solid var(--color-border);
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+
+  &:hover {
+    border-color: var(--ui-primary);
+    color: var(--ui-primary);
+  }
+`
+
 export const SC_BlockButton = styled.button`
   display: flex;
   align-items: center;

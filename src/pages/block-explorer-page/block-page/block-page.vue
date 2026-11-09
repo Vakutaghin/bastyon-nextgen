@@ -17,6 +17,7 @@
         :has-block="!!block"
         :share-title="t('explorerPage.blockShareTitle', { height: heightLabel })"
         :share-url="block ? publicExplorerUrl('block', block.hash) : ''"
+        :share-chat-url="block ? chatLinks.explorer('block', block.hash) : ''"
         @go="goTo"
       />
 
@@ -54,7 +55,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
 import ExplorerError from '../components/shared/explorer-error.vue'
 import BlockNav from './block-nav.vue'
-import { publicExplorerUrl } from '@/helpers/common/share-origin'
+import { chatLinks, publicExplorerUrl } from '@/helpers/common/share-origin'
 import BlockMetaGrid from './block-meta-grid.vue'
 import BlockTxList from './block-tx-list.vue'
 import { useDocumentTitle } from '@/composables/use-document-title'

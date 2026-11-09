@@ -8,11 +8,13 @@
 import type { Ref } from 'vue'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
-import { commentUrl, publicShareOrigin } from '@/helpers/common/share-origin'
+import { chatLinks, commentUrl, publicShareOrigin } from '@/helpers/common/share-origin'
+import { useShareToChatStore } from '@/stores/share-to-chat-store'
 import { useChainInfoStore, useDonateStore, useReportStore } from '@/stores'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { CommentMenuAction } from '../types'
 import type { useCommentEditDelete } from './use-comment-edit-delete'
+import { getCommentMessageText } from '../helpers'
 
 export interface UseCommentMenuActionsOptions {
   postId: Ref<string>
@@ -77,6 +79,15 @@ export function useCommentMenuActions(opts: UseCommentMenuActionsOptions) {
     }
     if (action === 'share') {
       void shareComment(comment)
+      return
+    }
+    if (action === 'chat') {
+      // В чате ссылка с commentid становится карточкой поста с переходом к комментарию.
+      const text = getCommentMessageText(comment).replace(/\s+/g, ' ').trim()
+      useShareToChatStore().open({
+        link: chatLinks.comment(opts.postId.value, comment),
+        title: text.length > 80 ? `${text.slice(0, 80)}…` : text,
+      })
       return
     }
     if (action === 'donate') {

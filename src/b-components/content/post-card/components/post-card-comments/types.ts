@@ -59,6 +59,7 @@ export type CommentMenuAction =
   | 'block'
   | 'unblock'
   | 'share'
+  | 'chat'
   | 'donate'
   | 'report'
   | 'chain'

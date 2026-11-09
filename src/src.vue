@@ -13,6 +13,7 @@ import { isComplainDialogOpen } from '@/mini-apps/ui/complain-dialog-controller'
 import DonateModal from '@/b-components/donate/donate-modal.vue'
 import PaidSubscriptionModal from '@/b-components/paid-subscription/paid-subscription-modal.vue'
 import BoostModal from '@/b-components/boost/boost-modal.vue'
+import ShareToChatModal from '@/b-components/messenger/components/share-to-chat/share-to-chat-modal.vue'
 import AddToListModal from '@/b-components/media/add-to-list-modal/add-to-list-modal.vue'
 import CollectionEditorModal from '@/b-components/media/collection-editor/collection-editor-modal.vue'
 import ReportModal from '@/b-components/report/report-modal.vue'
@@ -192,6 +193,8 @@ watch(
       <PaidSubscriptionModal />
       <!-- Продвижение поста за PKOIN — singleton, открывается через useBoostStore -->
       <BoostModal />
+      <!-- «Поделиться → Отправить в чат» — singleton, открывается через useShareToChatStore -->
+      <ShareToChatModal />
       <!-- «Добавить в…» и редактор коллекции — singleton, открываются useAddToListStore и useCollectionEditorStore -->
       <AddToListModal />
       <CollectionEditorModal />

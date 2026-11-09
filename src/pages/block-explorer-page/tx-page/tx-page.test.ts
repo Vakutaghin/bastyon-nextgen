@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { i18n } from '@/i18n'
@@ -63,7 +64,8 @@ function mountPage() {
   return mount(TxPage, {
     props: { txid: 'txMAIN_SENTINEL' },
     global: {
-      plugins: [i18n, router, [VueQueryPlugin, { queryClient: new QueryClient() }]],
+      // Pinia — у «Поделиться» есть «В чат», ему нужен стор входа.
+      plugins: [createPinia(), i18n, router, [VueQueryPlugin, { queryClient: new QueryClient() }]],
       stubs: { InfoTooltip: true },
     },
   })

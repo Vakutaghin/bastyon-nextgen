@@ -59,6 +59,15 @@
                 <Button size="small" @click="files.copyPermanent(entry)">
                   {{ t('myFiles.copyLink') }}
                 </Button>
+                <Button
+                  v-if="canShareToChat"
+                  size="small"
+                  @click="
+                    shareToChat({ link: buildNameLink(entry.name), title: files.targetOf(entry) })
+                  "
+                >
+                  {{ t('shareToChat.action') }}
+                </Button>
                 <Button size="small" @click="dialog = entry">
                   {{ t('myFiles.permanent.update') }}
                 </Button>
@@ -99,6 +108,17 @@
               <Button size="small" @click="files.copyLink(file)">
                 {{ t('myFiles.copyLink') }}
               </Button>
+              <!-- В чате ссылка на файл — карточка файла; у приватного в ней ключ. -->
+              <Button
+                v-if="canShareToChat"
+                size="small"
+                data-testid="file-share-to-chat"
+                @click="
+                  shareToChat({ link: buildShareLink(file), title: file.name, secret: !!file.key })
+                "
+              >
+                {{ t('shareToChat.action') }}
+              </Button>
               <Button
                 v-if="!file.key"
                 size="small"
@@ -134,7 +154,8 @@ import { Button } from 'ant-design-vue'
 import { FileOutlined, LinkIcon, LockOutlined } from '@/components/icons'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { formatLongDate } from '@/helpers/common/date-formatter'
-import { buildNameLink } from '@/helpers/ipfs/ipfs-viewer'
+import { buildNameLink, buildShareLink } from '@/helpers/ipfs/ipfs-viewer'
+import { useShareToChat } from '@/composables/use-share-to-chat'
 import type { IpfsShare } from '@/stores/ipfs-store'
 import PermanentLinkDialog from './permanent-link-dialog.vue'
 import { useMyFiles } from './use-my-files'
@@ -163,6 +184,7 @@ import {
 
 const { t } = useI18n()
 const files = useMyFiles()
+const { canShareToChat, shareToChat } = useShareToChat()
 const { loading, sharing } = files
 const node = files.node
 const remoteConfigured = files.remoteConfigured

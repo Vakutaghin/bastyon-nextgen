@@ -169,7 +169,8 @@ import { draftOf } from '@/stores/collections-store'
 import { useModalStore } from '@/stores/modal-store'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import { copyText } from '@/helpers/common/clipboard'
-import { publicCollectionUrl } from '@/helpers/common/share-origin'
+import { chatLinks, publicCollectionUrl } from '@/helpers/common/share-origin'
+import { useShareToChat } from '@/composables/use-share-to-chat'
 import { WATCH_LATER } from '@/services/media-library/media-library-doc'
 import { Z_INDEX } from '@/styles/design-tokens'
 import {
@@ -216,6 +217,7 @@ const VISIBILITY_FILTERS: readonly ShelfVisibilityFilter[] = ['all', ...SHELF_VI
 const SEARCH_FROM = 8
 
 const { t } = useI18n()
+const { shareToChat } = useShareToChat()
 const authStore = useAuthStore()
 const modalStore = useModalStore()
 const editor = useCollectionEditorStore()
@@ -347,6 +349,8 @@ function onAction(row: ShelfRow, action: ShelfAction): void {
   if (c) {
     if (action === 'edit') editor.open({ mode: 'edit', kind: c.kind, rootTxid: c.txid })
     else if (action === 'share') void share(c.txid)
+    else if (action === 'chat')
+      shareToChat({ link: chatLinks.collection(c.txid), title: labelOf(row) })
     else if (action === 'delete') confirmDeletePublic(row)
     else if (action === 'dismiss') collections.dismissFailed(c.txid)
     else if (action === 'make-private') makePrivate(c)

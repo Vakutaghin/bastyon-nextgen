@@ -135,6 +135,31 @@ describe('createContentMethods.share', () => {
     expect(writeText).toHaveBeenCalledWith('https://x.io/p')
   })
 
+  it('вошедшему — окно «Поделиться» Bastyon с чатами вместо системного', async () => {
+    const share = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('window', { location: { origin: 'https://b.io', href: 'https://b.io/cur' } })
+    vi.stubGlobal('navigator', { share, clipboard: { writeText: vi.fn() } })
+    const shareToChat = vi.fn(() => true)
+
+    await createContentMethods({ ...deps(router), shareToChat }).share(
+      { url: 'https://x.io/p' },
+      { appId: 'x.app', appName: 'Игра' }
+    )
+    expect(shareToChat).toHaveBeenCalledWith({ link: 'https://x.io/p', title: 'Игра' })
+    expect(share).not.toHaveBeenCalled()
+  })
+
+  it('не вошли — окно не открылось, как раньше: системное «Поделиться»', async () => {
+    const share = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('window', { location: { origin: 'https://b.io', href: 'https://b.io/cur' } })
+    vi.stubGlobal('navigator', { share })
+
+    await createContentMethods({ ...deps(router), shareToChat: () => false }).share({
+      url: 'https://x.io/p',
+    })
+    expect(share).toHaveBeenCalledWith({ url: 'https://x.io/p' })
+  })
+
   it('ничего не делает, если нет ни share, ни clipboard', async () => {
     vi.stubGlobal('window', { location: { origin: 'https://b.io', href: 'https://b.io/cur' } })
     vi.stubGlobal('navigator', {})

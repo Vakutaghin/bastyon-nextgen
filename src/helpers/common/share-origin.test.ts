@@ -2,7 +2,10 @@
 // (`tauri://localhost`, `https://localhost` в Capacitor).
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { parseBasytonLink } from '@/b-components/messenger/lib/bastyon-link'
+import { resolveDeepLink } from './deep-link'
 import {
+  chatLinks,
   commentUrl,
   HELP_SOURCE_URL,
   publicEmbedCode,
@@ -10,6 +13,7 @@ import {
   publicHelpUrl,
   publicShareOrigin,
   publicPostUrl,
+  publicProfileUrl,
   PUBLIC_WEB_ORIGIN,
 } from './share-origin'
 
@@ -124,5 +128,46 @@ describe('publicExplorerUrl', () => {
   it('веб-сборка этого приложения открывает свой /explorer', () => {
     setOrigin('https://next.example')
     expect(publicExplorerUrl('tx', 'ab12')).toBe('https://next.example/explorer/tx/ab12')
+  })
+})
+
+describe('chatLinks — ссылки для отправки в чат', () => {
+  const TX = 'a'.repeat(64)
+
+  it('всегда формат bastyon.com, на какой бы сборке ни были: там пост становится карточкой', () => {
+    setOrigin('https://my-bastyon.example')
+    expect(chatLinks.post(TX)).toBe(`https://bastyon.com/post?s=${TX}`)
+    expect(parseBasytonLink(chatLinks.post(TX))?.txid).toBe(TX)
+    expect(chatLinks.comment(TX, { id: 'c'.repeat(64), parentid: 'p'.repeat(64) })).toBe(
+      `https://bastyon.com/post?s=${TX}&commentid=${'c'.repeat(64)}&parentid=${'p'.repeat(64)}`
+    )
+    expect(chatLinks.collection(TX)).toBe(`https://bastyon.com/collection?c=${TX}`)
+    expect(chatLinks.explorer('tx', TX)).toBe(`https://bastyon.com/blockexplorer/transaction/${TX}`)
+    expect(chatLinks.miniApp('app.id', 'page/1')).toMatch(
+      /^https:\/\/bastyon\.com\/application\?id=app\.id&p=/
+    )
+  })
+
+  it('этот клиент открывает их у себя: пост, комментарий, коллекция, профиль, мини-приложение', () => {
+    setOrigin('tauri://localhost')
+    expect(resolveDeepLink(chatLinks.post(TX))).toBe(`/post/${TX}`)
+    expect(resolveDeepLink(chatLinks.comment(TX, { id: 'c'.repeat(64) }))).toBe(
+      `/post/${TX}?commentid=${'c'.repeat(64)}`
+    )
+    expect(resolveDeepLink(chatLinks.collection(TX))).toBe(`/collection/${TX}`)
+    expect(resolveDeepLink(chatLinks.profile('PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82'))).toBe(
+      '/PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82'
+    )
+    expect(resolveDeepLink(chatLinks.miniApp('app.id'))).toBe('/app/app.id')
+  })
+})
+
+describe('publicProfileUrl', () => {
+  it('по нику; без ника — по адресу, на bastyon.com в формате прежнего клиента', () => {
+    setOrigin('tauri://localhost')
+    expect(publicProfileUrl('PADDR', 'alice')).toBe('https://bastyon.com/alice')
+    expect(publicProfileUrl('PADDR')).toBe('https://bastyon.com/author?address=PADDR')
+    setOrigin('https://my-bastyon.example')
+    expect(publicProfileUrl('PADDR')).toBe('https://my-bastyon.example/PADDR')
   })
 })

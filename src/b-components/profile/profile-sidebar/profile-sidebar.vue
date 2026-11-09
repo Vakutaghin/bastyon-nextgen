@@ -101,6 +101,14 @@
         {{ t('profile.startChat') }}
       </SC_StartChatButton>
 
+      <!-- Поделиться профилем: в чат, ссылкой, системным «Поделиться» — и своим тоже. -->
+      <ProfileShare v-if="userAddress" :address="userAddress" :name="profile.name">
+        <SC_ShareProfileButton type="button" data-testid="profile-share">
+          <ShareAltOutlined />
+          {{ t('profile.share') }}
+        </SC_ShareProfileButton>
+      </ProfileShare>
+
       <SC_BlockButton
         v-if="canShowSubscribe"
         :class="{ blocked: isBlocked }"
@@ -156,6 +164,7 @@ import {
   MegaphoneOffIcon,
   StopOutlined,
   UserOutlined,
+  ShareAltOutlined,
 } from '@/components/icons'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import Spin from '@/components/spin/spin.vue'
@@ -170,6 +179,7 @@ import EditProfileModal from '@/b-components/profile/edit-profile-modal/edit-pro
 import FollowersListModal from '@/b-components/profile/followers-list-modal/followers-list-modal.vue'
 import PaidProfileButton from '@/b-components/paid-subscription/paid-profile-button.vue'
 import ProfileBadges from '@/b-components/profile/profile-badges/profile-badges.vue'
+import ProfileShare from '@/b-components/profile/profile-share/profile-share.vue'
 import { ICON_PRIMARY_24 } from '@/styles/icon-styles'
 import { userName } from '@/services/user-names'
 import {
@@ -189,6 +199,7 @@ import {
   SC_BellButton,
   SC_ChannelButton,
   SC_BlockButton,
+  SC_ShareProfileButton,
   SC_StatButton,
   SC_SidebarDetails,
 } from './styled'

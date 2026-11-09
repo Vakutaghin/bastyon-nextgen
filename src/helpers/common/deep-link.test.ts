@@ -55,6 +55,12 @@ describe('resolveDeepLink — профили', () => {
     )
   })
 
+  it('author?address= — так на автора ссылается прежний клиент', () => {
+    expect(
+      resolveDeepLink('https://bastyon.com/author?address=PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82')
+    ).toBe('/PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82')
+  })
+
   it('pocketnet:// — историческая схема, тоже наша', () => {
     expect(resolveDeepLink('pocketnet://bob')).toBe('/bob')
   })

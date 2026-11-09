@@ -96,7 +96,7 @@ const share: ActionDefinition<ShareInput, void> = {
   handler: async ({ data, app, host }) =>
     host.share(
       { path: data.path, url: data.url, sharing: data.sharing },
-      { onBastyon: false, appId: app.manifest.id }
+      { onBastyon: false, appId: app.manifest.id, appName: app.manifest.name }
     ),
 }
 
