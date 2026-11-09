@@ -24,6 +24,7 @@ import servers from '@/servers.json'
 import { torRoutingMode } from '@/helpers/tor/tor-gate'
 import {
   isAppInBackground,
+  isMobileAppInBackground,
   msSinceForeground,
   onAppForeground,
 } from '@/helpers/common/app-foreground'
@@ -172,9 +173,14 @@ let stopForeground: (() => void) | null = null
 
 function startRecheck(): void {
   if (recheckTimer) return
-  recheckTimer = setInterval(() => void recheck(), RECHECK_MS)
+  // Свёрнутое мобильное приложение прокси не пингует: сбой в фоне и так не в
+  // счёт, а при возвращении перепроверим сразу (ниже).
+  recheckTimer = setInterval(() => {
+    if (!isMobileAppInBackground()) void recheck()
+  }, RECHECK_MS)
   globalThis.addEventListener?.('online', onOnline)
-  // Вернулись в приложение — сразу; на Android visibilitychange не приходит.
+  // Вернулись в приложение — сразу, не ждём таймера (на Android видимость
+  // страницы меняется на секунды позже).
   stopForeground = onAppForeground(onOnline)
   connectionOf()?.addEventListener?.('change', onOnline)
 }

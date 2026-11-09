@@ -2,14 +2,19 @@
  * Свёрнуто ли приложение и когда оно вернулось — один сигнал для всех
  * платформ.
  *
- * На Android WebView в фоне остаётся «видимым» (MainActivity.onPause будит его
- * ради звука), и `visibilitychange` там не приходит вовсе: свёрнутость знает
- * только `appStateChange` Capacitor. В браузере и на компьютере — по видимости
- * страницы.
+ * На Android свёрнутость первым знает `appStateChange` Capacitor: страница
+ * WebView становится скрытой (`visibilitychange`) секунды через четыре
+ * (эмулятор API 35, WebView 124), а таймеры и сеть всё это время работают.
+ * В браузере и на компьютере — по видимости страницы.
  *
  * Зачем это сети: пока приложение в фоне, система может отрезать ему сеть, и
  * запросы падают, хотя прокси живы. Такой сбой — не повод уходить к нодам, а
  * по возвращении стоит сразу переподключиться, не дожидаясь пауз повторов.
+ *
+ * И батарее: свёрнутое мобильное приложение не гасят, пока играет звук, — часами.
+ * Опросы, которые нужны только экрану, тогда ждут возвращения
+ * (`isMobileAppInBackground`). На компьютере и в браузере свёрнутое окно
+ * по-прежнему получает уведомления — там ничего не откладываем.
  */
 
 import { Capacitor } from '@capacitor/core'
@@ -69,6 +74,23 @@ export function onAppForeground(listener: ForegroundListener): () => void {
 export function isAppInBackground(): boolean {
   start()
   return background
+}
+
+/**
+ * Экрана не видно: приложение свёрнуто или страница скрыта. На Android первое
+ * приходит на секунды раньше второго.
+ */
+export function isAppHidden(): boolean {
+  return isAppInBackground() || (typeof document !== 'undefined' && document.hidden)
+}
+
+/**
+ * Свёрнуто мобильное приложение: опрос, нужный только экрану, пропускаем и
+ * догоняем при возвращении (`onAppForeground`). На компьютере и в браузере —
+ * всегда false: там свёрнутое окно показывает уведомления.
+ */
+export function isMobileAppInBackground(): boolean {
+  return Capacitor.isNativePlatform() && isAppInBackground()
 }
 
 /** Сколько прошло с возвращения из фона; Infinity — в фон ещё не уходило. */

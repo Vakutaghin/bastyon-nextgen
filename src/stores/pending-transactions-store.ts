@@ -30,6 +30,8 @@ import {
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { wsService } from '@/blockchain/ws/ws-service'
+import { isMobileAppInBackground, onAppForeground } from '@/helpers/common/app-foreground'
+import { Capacitor } from '@capacitor/core'
 
 export interface PendingTransaction {
   txid: string
@@ -203,6 +205,10 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
 
   /** Спросить ноду про самые старые ожидания: WS мог подтверждение пропустить. */
   async function checkWithNode(): Promise<void> {
+    // Свёрнутое мобильное приложение ноду не спрашивает (таймер и каждый блок
+    // будили бы радио часами, пока играет звук): спросим при возвращении.
+    // Подтверждение по WebSocket приходит и в фоне.
+    if (isMobileAppInBackground()) return
     if (checking) {
       checkAgain = true
       return
@@ -272,7 +278,11 @@ export const usePendingTransactionsStore = defineStore('pending-transactions', (
     if (!stopBlock) stopBlock = wsService.on('block', checkSoon)
     if (!stopOpen) stopOpen = wsService.on('open', checkSoon)
     // Вернулись в приложение: таймер в фоне (телефон, свёрнутое окно) стоял.
-    if (!stopVisibility && typeof document !== 'undefined') {
+    // В мобильном — по сигналу Capacitor: он приходит сразу, а видимость
+    // страницы — с опозданием, и проверка шла бы дважды.
+    if (!stopVisibility && Capacitor.isNativePlatform()) {
+      stopVisibility = onAppForeground(checkSoon)
+    } else if (!stopVisibility && typeof document !== 'undefined') {
       const onVisible = () => {
         if (document.visibilityState === 'visible') checkSoon()
       }

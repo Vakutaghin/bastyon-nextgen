@@ -25,6 +25,8 @@ import {
   notifyTransactionBroadcast,
   onTransactionSettled,
 } from '@/blockchain/core/transactions/broadcast-events'
+import { Capacitor } from '@capacitor/core'
+import { resetAppForegroundForTests, setAppActiveForTests } from '@/helpers/common/app-foreground'
 import {
   isConfirmed,
   PENDING_TX_TTL_MS,
@@ -216,6 +218,27 @@ describe('pending-transactions-store', () => {
     expect(store.items.map((i) => i.txid)).toEqual([TX(1), TX(2), TX(3)])
     expect(store.listed.map((i) => i.txid)).toEqual([TX(3)])
     expect(store.count).toBe(1)
+  })
+
+  it('свёрнутое мобильное приложение ноду не спрашивает — спросит, вернувшись', async () => {
+    const native = vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+    try {
+      const store = usePendingTransactionsStore()
+      store.init('PAlice')
+      setAppActiveForTests(false)
+      notifyTransactionBroadcast({ txid: TX(1), operationType: 'share', meta: { kind: 'post' } })
+      h.getByPRC.mockResolvedValue({ data: { txid: TX(1), height: 4084009, blockHash: 'b' } })
+      h.ws.get('block')?.({})
+      await Promise.resolve()
+      expect(h.getByPRC).not.toHaveBeenCalled()
+
+      setAppActiveForTests(true)
+      await vi.waitFor(() => expect(store.items).toHaveLength(0))
+      expect(h.getByPRC).toHaveBeenCalledTimes(1)
+    } finally {
+      native.mockRestore()
+      resetAppForegroundForTests()
+    }
   })
 
   it('новый блок, переподключение WS и возврат в приложение — спросить ноду сразу', async () => {

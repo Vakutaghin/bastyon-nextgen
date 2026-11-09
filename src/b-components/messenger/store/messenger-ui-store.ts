@@ -3,7 +3,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, shallowRef, watch, onScopeDispose } from 'vue'
 
-import { onAppForeground } from '@/helpers/common/app-foreground'
+import { isAppHidden, onAppForeground } from '@/helpers/common/app-foreground'
 import type { Dialog } from '../types'
 
 /** Виды строк списка: личные переписки, группы (и каналы/комнаты mesh), каналы авторов. */
@@ -175,7 +175,10 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     if (activeChatId.value !== chatId && chatAliases.get(chatId) !== activeChatId.value) {
       return false
     }
-    if (typeof document !== 'undefined' && document.hidden) return false
+    // Свёрнуто — не на экране. На Android страница скрывается секунды через
+    // четыре после сворачивания: по одной `document.hidden` пришедшее в эти
+    // секунды помечалось прочитанным, без звука и без счётчика на значке.
+    if (isAppHidden()) return false
     return true
   }
 

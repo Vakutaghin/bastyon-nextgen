@@ -19,7 +19,7 @@ import { onTorEnabled } from '@/stores/tor-store'
 import { orderedProxies } from '@/helpers/api/node-selector'
 import type { ServerEndpoint } from '@/helpers/api/rpc-retry'
 import { debugLog } from '@/helpers/common/debug-log'
-import { onAppForeground } from '@/helpers/common/app-foreground'
+import { isMobileAppInBackground, onAppForeground } from '@/helpers/common/app-foreground'
 import { connectionRoute, onRouteChange } from '@/helpers/api/direct-nodes/connection-route'
 import { NODE_WSS_PORT } from '@/helpers/api/direct-nodes/node-call'
 import { directNodes, markNodeDead } from '@/helpers/api/direct-nodes/node-pool'
@@ -62,6 +62,8 @@ class PocketnetWsService {
   private closing = false
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private reconnectAttempt = 0
+  /** Сокет упал, пока мобильное приложение свёрнуто: подключимся при возвращении (resume). */
+  private reconnectDeferred = false
   private connectTimer: ReturnType<typeof setTimeout> | null = null
   /** Адреса, ожидающие подписки (если WS ещё не открыт) */
   private pendingSubscriptions: string[] = []
@@ -231,6 +233,7 @@ class PocketnetWsService {
       this.clearConnectTimer()
       this.isConnected = true
       this.reconnectAttempt = 0
+      this.reconnectDeferred = false
       this.connected.clear()
       this.emit('open', {})
 
@@ -445,6 +448,13 @@ class PocketnetWsService {
     if (isOfflineNow()) return
     // Idempotent: onerror + onclose из-за одной аварии иначе зашедулили бы два reconnect-а подряд.
     if (this.reconnectTimer) return
+    // Свёрнутое мобильное приложение не стучится каждые полминуты (система
+    // часто режет ему сеть, а звук держит его в фоне часами): подключимся,
+    // когда вернутся.
+    if (isMobileAppInBackground()) {
+      this.reconnectDeferred = true
+      return
+    }
 
     this.reconnectAttempt++
     const delay = Math.min(
@@ -475,7 +485,9 @@ class PocketnetWsService {
    */
   resume(awayMs: number) {
     if (!this.active || this.closing) return
-    if (this.reconnectTimer || awayMs >= STALE_AFTER_BACKGROUND_MS) this.reconnect()
+    if (this.reconnectTimer || this.reconnectDeferred || awayMs >= STALE_AFTER_BACKGROUND_MS) {
+      this.reconnect()
+    }
   }
 
   /**
@@ -498,6 +510,7 @@ class PocketnetWsService {
     // Сбрасываем backoff: следующий цикл connect() начнётся с чистого счётчика,
     // а не залипнет на RECONNECT_MAX_DELAY от прошлой неудачной серии.
     this.reconnectAttempt = 0
+    this.reconnectDeferred = false
 
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)

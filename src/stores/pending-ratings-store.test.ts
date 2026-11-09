@@ -28,6 +28,8 @@ vi.mock('@/db/apis/post-rating-pending-api', () => ({
 }))
 vi.mock('@/helpers/api/request', () => ({ rpcCallArrayWithAuth: mocks.rpc }))
 
+import { Capacitor } from '@capacitor/core'
+import { resetAppForegroundForTests, setAppActiveForTests } from '@/helpers/common/app-foreground'
 import { usePendingRatingsStore } from './pending-ratings-store'
 
 describe('pending-ratings-store × смена аккаунта', () => {
@@ -56,6 +58,24 @@ describe('pending-ratings-store × смена аккаунта', () => {
     expect(store.count).toBe(0)
     await vi.advanceTimersByTimeAsync(15_000)
     expect(mocks.rpc).toHaveBeenCalledTimes(1)
+  })
+
+  it('свёрнутое мобильное приложение не опрашивает; вернулись — спрашивает сразу', async () => {
+    const native = vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+    try {
+      const store = usePendingRatingsStore()
+      await store.init()
+      setAppActiveForTests(false)
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(mocks.rpc).not.toHaveBeenCalled()
+
+      setAppActiveForTests(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mocks.rpc).toHaveBeenCalledTimes(1)
+    } finally {
+      native.mockRestore()
+      resetAppForegroundForTests()
+    }
   })
 
   it('poll не уходит с postIds прежнего аккаунта под новым адресом', async () => {

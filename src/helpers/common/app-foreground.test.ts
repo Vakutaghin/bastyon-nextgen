@@ -2,11 +2,15 @@
 // приложения не было и сколько прошло с возвращения.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { Capacitor } from '@capacitor/core'
 import {
+  isAppHidden,
   isAppInBackground,
+  isMobileAppInBackground,
   msSinceForeground,
   onAppForeground,
   resetAppForegroundForTests,
+  setAppActiveForTests,
 } from './app-foreground'
 
 function setVisibility(state: 'visible' | 'hidden'): void {
@@ -45,5 +49,28 @@ describe('app-foreground', () => {
     setVisibility('hidden')
     setVisibility('visible')
     expect(away).toHaveLength(1)
+  })
+})
+
+describe('свёрнутое мобильное приложение', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    resetAppForegroundForTests()
+  })
+
+  it('откладывает фоновые опросы только в мобильном; экрана не видно — и по сигналу, и по странице', () => {
+    setAppActiveForTests(false)
+    expect(isAppHidden()).toBe(true)
+    // Компьютер и браузер: свёрнутое окно показывает уведомления — не откладываем.
+    expect(isMobileAppInBackground()).toBe(false)
+
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+    expect(isMobileAppInBackground()).toBe(true)
+
+    setAppActiveForTests(true)
+    expect(isMobileAppInBackground()).toBe(false)
+    expect(isAppHidden()).toBe(false)
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    expect(isAppHidden()).toBe(true)
   })
 })

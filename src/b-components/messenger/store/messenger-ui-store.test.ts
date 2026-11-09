@@ -108,3 +108,24 @@ describe('красная полоса ошибки синка', () => {
     })
   })
 })
+
+describe('чат на экране', () => {
+  beforeEach(() => resetAppForegroundForTests())
+  afterEach(() => resetAppForegroundForTests())
+
+  it('свёрнутое приложение — чат не на экране, хотя страница ещё не скрыта', () => {
+    const ui = useMessengerUiStore()
+    ui.isOpen = true
+    ui.switchToChat('!room:server')
+    expect(ui.isChatOnScreen('!room:server')).toBe(true)
+
+    // На Android страница скрывается секунды через четыре после сворачивания:
+    // пришедшее в эти секунды не должно помечаться прочитанным.
+    setAppActiveForTests(false)
+    expect(document.hidden).toBe(false)
+    expect(ui.isChatOnScreen('!room:server')).toBe(false)
+
+    setAppActiveForTests(true)
+    expect(ui.isChatOnScreen('!room:server')).toBe(true)
+  })
+})

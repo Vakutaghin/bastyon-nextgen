@@ -3,6 +3,7 @@ import { wsService } from './ws-service'
 import type { WsMessage } from './ws-service'
 import type { KeyPair } from '../types/keys'
 import { setAppActiveForTests } from '@/helpers/common/app-foreground'
+import { Capacitor } from '@capacitor/core'
 
 // ---------------------------------------------------------------------------
 // Fake WebSocket — управляемая вручную замена сокета. Сервис получает её
@@ -510,6 +511,28 @@ describe('PocketnetWsService', () => {
       setAppActiveForTests(true)
       await vi.advanceTimersByTimeAsync(0)
       expect(FakeWebSocket.instances).toHaveLength(3)
+    })
+
+    it('свёрнутое мобильное приложение не переподключается в фоне, а вернувшись — сразу', async () => {
+      vi.useFakeTimers()
+      const native = vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+      try {
+        await wsService.connect()
+        FakeWebSocket.instances[0]!._open()
+
+        setAppActiveForTests(false)
+        FakeWebSocket.instances[0]!._serverClose()
+        await vi.advanceTimersByTimeAsync(30_000)
+        expect(FakeWebSocket.instances).toHaveLength(1)
+
+        // Фон короче минуты, но сокет упал в нём — подключаемся сразу.
+        setAppActiveForTests(true)
+        await vi.advanceTimersByTimeAsync(0)
+        expect(FakeWebSocket.instances).toHaveLength(2)
+      } finally {
+        native.mockRestore()
+        setAppActiveForTests(true)
+      }
     })
 
     it('reconnect() закрывает текущий сокет и поднимает новый', async () => {

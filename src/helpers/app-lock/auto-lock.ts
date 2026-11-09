@@ -5,9 +5,9 @@
 // приложение событий не получает, так что время без дела копится само и
 // проверяется при возврате.
 //
-// Свёрнуто ли — на телефоне по appStateChange Capacitor: WebView в фоне
-// Android нарочно держится «видимым» (MainActivity.onPause, ради звука), и
-// visibilitychange там не приходит. На компьютере и в браузере — по
+// Свёрнуто ли — на телефоне по appStateChange Capacitor: страница WebView на
+// Android становится скрытой секунды через четыре после сворачивания
+// (MainActivity.onPause будит WebView ради звука). На компьютере и в браузере — по
 // visibilitychange: окно свернули, спрятали в трей, ушли на другую вкладку.
 
 export interface AutoLockOptions {

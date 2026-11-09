@@ -5,10 +5,15 @@
  */
 import type { MatrixClient as SdkMatrixClient } from 'matrix-js-sdk'
 import { isOfflineNow } from '@/helpers/api/offline'
+import { isMobileAppInBackground } from '@/helpers/common/app-foreground'
 
 export async function runKeepAlive(client: SdkMatrixClient | null): Promise<void> {
   // Без сети пинговать некого: запрос только упадёт и напишет в консоль.
   if (!client || isOfflineNow()) return
+  // Свёрнутое мобильное приложение: синк и так каждые полминуты ходит с тем
+  // же токеном (он держит счётчик непрочитанных на значке), а пинг сверху
+  // лишь будит радио. Вернёмся — мессенджер переподключится сам.
+  if (isMobileAppInBackground()) return
 
   try {
     if (typeof client.whoami === 'function') {

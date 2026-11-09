@@ -20,6 +20,7 @@ import { Capacitor } from '@capacitor/core'
 import { isTauriEnv } from '@/helpers/api/request-tor'
 import { allowPinchZoom, isIosBrowser } from '@/helpers/a11y/viewport-zoom'
 import { isOfflineNow } from '@/helpers/api/offline'
+import { isMobileAppInBackground, onAppForeground } from '@/helpers/common/app-foreground'
 allowPinchZoom({
   native: Capacitor.isNativePlatform() || isTauriEnv(),
   ios: isIosBrowser(navigator),
@@ -179,6 +180,10 @@ watch(
       notificationsPollTimerId = setInterval(() => {
         // Без сети не опрашиваем: вернётся — обновим сразу (ниже, на «online»).
         if (isOfflineNow()) return
+        // Свёрнутое мобильное приложение уведомлений из опроса не показывает
+        // (только тосты на экране), а играя звук, живёт в фоне часами —
+        // спросим при возвращении (ниже).
+        if (isMobileAppInBackground()) return
         notificationsStore.init({ forceRefresh: true })
       }, NOTIFICATIONS_POLL_INTERVAL_MS)
     }
@@ -187,6 +192,13 @@ watch(
 )
 window.addEventListener('online', () => {
   if (authStore.isUserAuthenticated) void notificationsStore.init({ forceRefresh: true })
+})
+onAppForeground((awayMs) => {
+  // Только мобильное: на компьютере и в браузере опрос в фоне не стоял.
+  if (!Capacitor.isNativePlatform() || awayMs < NOTIFICATIONS_POLL_INTERVAL_MS) return
+  if (authStore.isUserAuthenticated && !isOfflineNow()) {
+    void notificationsStore.init({ forceRefresh: true })
+  }
 })
 // Matrix-логин запускает только auth-store (signIn/switchAccount/restoreSession →
 // resetMessenger) — второй watcher здесь давал два параллельных логина (S11).

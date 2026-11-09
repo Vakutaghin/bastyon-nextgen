@@ -377,7 +377,7 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
   // Вернулись в приложение: синк, упавший, пока оно было свёрнуто (система
   // отрезала сеть), ждал бы паузы повтора — пусть идёт сразу. На Android
-  // visibilitychange не приходит, поэтому — по общему сигналу.
+  // visibilitychange приходит на секунды позже, поэтому — по общему сигналу.
   onScopeDispose(onAppForeground(() => void matrixService.getClient()?.retryImmediately?.()))
   // Сеть вернулась: SDK проверяет связь раз в 5–10 с — пусть синк идёт сразу.
   const onOnline = () => void matrixService.getClient()?.retryImmediately?.()
