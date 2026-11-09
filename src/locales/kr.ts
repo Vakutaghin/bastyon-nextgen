@@ -2407,6 +2407,8 @@ export default {
   chat: {
     postLoading: '게시물을 불러오는 중…',
     postInBastyon: 'Bastyon 게시물',
+    profileCard: 'Bastyon 프로필',
+    collectionCard: 'Bastyon 컬렉션',
     videoPost: '동영상 게시물',
     youPrefix: '나: ',
     audioMessage: '오디오 메시지',

@@ -2430,6 +2430,8 @@ export default {
   chat: {
     postLoading: 'Учитавање објаве…',
     postInBastyon: 'Објава на Bastyon-у',
+    profileCard: 'Профил на Bastyon-у',
+    collectionCard: 'Колекција на Bastyon-у',
     videoPost: 'Видео објава',
     youPrefix: 'Ви: ',
     audioMessage: 'Аудио порука',

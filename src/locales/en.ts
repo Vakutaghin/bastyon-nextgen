@@ -2432,6 +2432,8 @@ export default {
   chat: {
     postLoading: 'Loading post…',
     postInBastyon: 'Post on Bastyon',
+    profileCard: 'Profile on Bastyon',
+    collectionCard: 'Collection on Bastyon',
     videoPost: 'Video post',
     youPrefix: 'You: ',
     audioMessage: 'Audio message',

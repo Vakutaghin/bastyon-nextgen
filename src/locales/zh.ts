@@ -2333,6 +2333,8 @@ export default {
   chat: {
     postLoading: '正在加载帖子…',
     postInBastyon: 'Bastyon 帖子',
+    profileCard: 'Bastyon 个人资料',
+    collectionCard: 'Bastyon 合集',
     videoPost: '视频帖子',
     youPrefix: '你：',
     audioMessage: '语音消息',

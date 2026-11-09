@@ -2466,6 +2466,8 @@ export default {
   chat: {
     postLoading: 'Beitrag wird geladen…',
     postInBastyon: 'Beitrag auf Bastyon',
+    profileCard: 'Profil auf Bastyon',
+    collectionCard: 'Sammlung auf Bastyon',
     videoPost: 'Videobeitrag',
     youPrefix: 'Du: ',
     audioMessage: 'Audionachricht',

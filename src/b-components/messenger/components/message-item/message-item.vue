@@ -87,7 +87,8 @@
       <div v-else class="message-text">
         <template v-for="(seg, idx) in messageSegments" :key="idx">
           <span v-if="seg.kind === 'html'" v-html="seg.html" />
-          <PostEmbed v-else :target="seg.target" />
+          <PostEmbed v-else-if="seg.kind === 'bastyon'" :target="seg.target" />
+          <EntityEmbed v-else :target="seg.target" />
         </template>
         <LinkPreview v-if="previewUrl" :url="previewUrl" />
         <SC_MeshRouteButton v-if="lxmfAddress" type="button" @click.stop="writeViaReticulum">
@@ -291,6 +292,7 @@ import { parseSupportReport } from '../../lib/support-report'
 import SupportReportBox from '../support-report/support-report-box.vue'
 import { supportReportPreview } from '../../lib/support-report-preview'
 import PostEmbed from '../post-embed/post-embed.vue'
+import EntityEmbed from '../entity-embed/entity-embed.vue'
 import LinkPreview from '../link-preview/link-preview.vue'
 import { formatMessageSegments, extractFirstExternalUrl } from './helpers'
 import { useReactionPicker } from './use-reaction-picker'

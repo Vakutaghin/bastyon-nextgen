@@ -139,3 +139,38 @@ describe('extractFirstExternalUrl', () => {
     expect(extractFirstExternalUrl('ftp://example.com')).toBeNull()
   })
 })
+
+describe('ссылки на профиль и коллекцию — карточками', () => {
+  const ADDRESS = 'PXXwfNRT7hD6UYeQQMBXSoLsJH4xDdGc4D'
+  const TX = 'b'.repeat(64)
+  const POST = `https://bastyon.com/post?s=${'a'.repeat(64)}`
+
+  it('профиль, пост и коллекция — карточки по порядку, текст между ними остаётся', () => {
+    const segments = formatMessageSegments(
+      `Глянь https://bastyon.com/author?address=${ADDRESS} и ${POST}\nbastyon://collection?c=${TX}`
+    )
+    expect(segments.map((s) => s.kind)).toEqual([
+      'html',
+      'entity',
+      'html',
+      'bastyon',
+      'html',
+      'entity',
+    ])
+    expect(segments[1]).toMatchObject({ target: { kind: 'profile', address: ADDRESS } })
+    expect(segments[5]).toMatchObject({ target: { kind: 'collection', txid: TX } })
+  })
+
+  it('превью ссылки — не для них: они уже карточки', () => {
+    expect(
+      extractFirstExternalUrl(`https://bastyon.com/collection?c=${TX} https://example.com/x`)
+    ).toBe('https://example.com/x')
+  })
+
+  it('с другими параметрами — обычная ссылка', () => {
+    const segments = formatMessageSegments(
+      `https://bastyon.com/author?address=${ADDRESS}&ref=PAAAA`
+    )
+    expect(segments.map((s) => s.kind)).toEqual(['html'])
+  })
+})

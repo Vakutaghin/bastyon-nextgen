@@ -2318,6 +2318,8 @@ export default {
   chat: {
     postLoading: 'Загружаем пост…',
     postInBastyon: 'Пост в Бастионе',
+    profileCard: 'Профиль в Бастионе',
+    collectionCard: 'Коллекция в Бастионе',
     videoPost: 'Видеопост',
     youPrefix: 'Вы: ',
     audioMessage: 'Аудио сообщение',

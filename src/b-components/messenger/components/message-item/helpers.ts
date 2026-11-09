@@ -4,6 +4,7 @@ import { escapeHtml } from '@/helpers/common/html-escape'
 
 import { MESSAGE_URL_PATTERN } from './consts'
 import { BASTYON_LINK_RE, parseBasytonLink, type BastyonLinkTarget } from '../../lib/bastyon-link'
+import { ENTITY_LINK_RE, entityOfMatch, type EntityLinkTarget } from '../../lib/entity-link'
 
 /** Базовые проверки безопасности URL: только http(s), без javascript:/data:/blob:. */
 const isSafeHttpUrl = (raw: string): boolean => {
@@ -53,44 +54,70 @@ export function trimBlankLines(text: string): string {
 export type MessageSegment =
   | { kind: 'html'; html: string }
   | { kind: 'bastyon'; target: BastyonLinkTarget; raw: string }
+  /** Ссылка на профиль или коллекцию (lib/entity-link) — карточкой. */
+  | { kind: 'entity'; target: EntityLinkTarget; raw: string }
 
-/**
- * Разбивает текст сообщения на сегменты:
- *  - сначала находим Бастион-ссылки (post/index/comment) и заменяем их segment-ами
- *    типа 'bastyon' для последующего рендера через <PostEmbed>;
- *  - оставшийся текст обрабатываем как обычный (URL → <a>, остальное — escape).
- *
- * Если bastyon-ссылок несколько — все попадают как embed-сегменты в исходном порядке.
- */
-export function formatMessageSegments(rawText: string): MessageSegment[] {
-  const text = trimBlankLines(rawText)
-  if (!text) return []
+type EmbedSegment = Exclude<MessageSegment, { kind: 'html' }>
+type EmbedMatch = { start: number; end: number; segment: EmbedSegment }
 
-  // Найти все Bastyon-ссылки и их позиции
+/** Ссылки, которые рисуются карточками: пост (видео, комментарий), профиль, коллекция. */
+function embedMatches(text: string): EmbedMatch[] {
+  const matches: EmbedMatch[] = []
   BASTYON_LINK_RE.lastIndex = 0
-  const matches: Array<{ start: number; end: number; raw: string; target: BastyonLinkTarget }> = []
   let m: RegExpExecArray | null
   while ((m = BASTYON_LINK_RE.exec(text)) !== null) {
     const raw = m[0]
     const target = parseBasytonLink(raw)
     if (target) {
-      matches.push({ start: m.index, end: m.index + raw.length, raw, target })
+      matches.push({
+        start: m.index,
+        end: m.index + raw.length,
+        segment: { kind: 'bastyon', target, raw },
+      })
     }
   }
+  ENTITY_LINK_RE.lastIndex = 0
+  while ((m = ENTITY_LINK_RE.exec(text)) !== null) {
+    const raw = m[0]
+    const target = entityOfMatch(m)
+    if (target) {
+      matches.push({
+        start: m.index,
+        end: m.index + raw.length,
+        segment: { kind: 'entity', target, raw },
+      })
+    }
+  }
+  return matches.sort((a, b) => a.start - b.start)
+}
 
+/**
+ * Разбивает текст сообщения на сегменты:
+ *  - ссылки на пост (post/index/comment) — сегменты 'bastyon' под <PostEmbed>,
+ *    на профиль и коллекцию — 'entity' под их карточки;
+ *  - оставшийся текст обрабатываем как обычный (URL → <a>, остальное — escape).
+ *
+ * Если таких ссылок несколько — все попадают как embed-сегменты в исходном порядке.
+ */
+export function formatMessageSegments(rawText: string): MessageSegment[] {
+  const text = trimBlankLines(rawText)
+  if (!text) return []
+
+  const matches = embedMatches(text)
   if (matches.length === 0) {
     return [{ kind: 'html', html: formatMessageText(text) }]
   }
 
-  // Сшиваем сегменты: куски обычного текста чередуются с bastyon-embed
+  // Сшиваем сегменты: куски обычного текста чередуются с карточками
   const segments: MessageSegment[] = []
   let cursor = 0
   for (const match of matches) {
+    if (match.start < cursor) continue
     if (match.start > cursor) {
       const chunk = text.slice(cursor, match.start)
       if (chunk) segments.push({ kind: 'html', html: formatMessageText(chunk) })
     }
-    segments.push({ kind: 'bastyon', target: match.target, raw: match.raw })
+    segments.push(match.segment)
     cursor = match.end
   }
   if (cursor < text.length) {
@@ -110,13 +137,8 @@ export function formatMessageSegments(rawText: string): MessageSegment[] {
 export function extractFirstExternalUrl(text: string): string | null {
   if (!text) return null
 
-  // Сначала соберём набор позиций бастион-ссылок, чтобы исключить их из общего поиска.
-  BASTYON_LINK_RE.lastIndex = 0
-  const bastyonRanges: Array<[number, number]> = []
-  let bm: RegExpExecArray | null
-  while ((bm = BASTYON_LINK_RE.exec(text)) !== null) {
-    bastyonRanges.push([bm.index, bm.index + bm[0].length])
-  }
+  // Ссылки, которые и так рисуются карточками (пост, профиль, коллекция), — не превью.
+  const bastyonRanges = embedMatches(text).map(({ start, end }) => [start, end] as const)
   const inBastyon = (pos: number): boolean =>
     bastyonRanges.some(([start, end]) => pos >= start && pos < end)
 
