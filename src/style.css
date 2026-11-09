@@ -1489,6 +1489,14 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   }
 }
 
+/* Панель выделенных сообщений (message-selection-bar): в узком окне чата —
+   только значки, у кнопок остаются aria-label и подсказки. */
+@container selection-bar (max-width: 460px) {
+  .selection-bar-label {
+    display: none;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Mini-apps fullscreen mode — когда открыта миниаппа (`/app/:id`), скрываем
    родное хост-приложение хедер. Активируется через class на <body> из

@@ -63,6 +63,68 @@ export const SC_MessageRow = styled.div`
   &.others {
     justify-content: flex-start;
   }
+
+  /* Режим выделения: подсветка выделенного — во всю ширину ленты, поверх её
+     отступов (16 px, message-list) и щелей между строками (8 px). */
+  &.selecting {
+    position: relative;
+    isolation: isolate;
+  }
+
+  &.selecting::before {
+    content: '';
+    position: absolute;
+    inset: -4px -16px;
+    z-index: -1;
+    pointer-events: none;
+    background: transparent;
+    transition: background-color var(--transition-fast);
+  }
+
+  &.selecting:hover::before {
+    background: var(--color-overlay-6);
+  }
+
+  &.selected::before,
+  &.selected:hover::before {
+    background: rgb(var(--ui-primary-rgb) / 14%);
+  }
+`
+
+/** Кружок выделения слева от сообщения; у своих — прижат к левому краю. */
+export const SC_SelectCheck = styled.button`
+  ${noSelect}
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-bottom: 5px;
+  padding: 0;
+  border: 2px solid var(--ui-border-accented);
+  border-radius: 50%;
+  background: var(--ui-bg);
+  color: var(--ui-bg);
+  font-size: 13px;
+  cursor: pointer;
+  animation: select-check-in var(--transition-fast);
+
+  &.mine {
+    margin-right: auto;
+  }
+
+  &.on {
+    border-color: var(--ui-primary);
+    background: var(--ui-primary);
+  }
+
+  @keyframes select-check-in {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+  }
 `
 
 /** Слот для аватарки слева от чужого сообщения. Сохраняет место даже когда аватарка пустая, чтобы пузыри стояли ровно. */

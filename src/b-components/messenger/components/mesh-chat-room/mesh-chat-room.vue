@@ -19,9 +19,9 @@
       {{ t('mesh.chat.emptyHint', { limit }) }}
     </SC_ChatRoomEmptyHint>
 
-    <MessageList :messages="messages" @reply="onReplyTo" />
+    <MessageList :messages="messages" :selection="selection" @reply="onReplyTo" />
 
-    <SC_ReplyBanner v-if="replyingTo">
+    <SC_ReplyBanner v-if="replyingTo && !selection.active">
       <SC_ReplyBannerBar />
       <SC_ReplyBannerBody>
         <SC_ReplyBannerTitle>
@@ -34,7 +34,15 @@
       </SC_ReplyBannerClose>
     </SC_ReplyBanner>
 
-    <SC_MessageInputArea>
+    <!-- Выделены сообщения — вместо поля ввода их действия. -->
+    <MessageSelectionBar
+      v-if="selection.active"
+      :selection="selection"
+      :messages="messages"
+      @reply="onReplyTo"
+    />
+
+    <SC_MessageInputArea v-show="!selection.active">
       <EmojiPicker v-if="showEmojiPicker" @select="onEmojiSelect" />
 
       <!-- Вложения — только LXMF: у радио-сетей на них нет места в пакете. -->
@@ -134,6 +142,8 @@ import { utf8Length } from '@/mesh/bytes'
 import { meshAttachments } from '@/mesh/media'
 import { splitForMesh } from '@/mesh/text'
 import MessageList from '../message-list/message-list.vue'
+import { useMessageSelection } from '../message-list/use-message-selection'
+import MessageSelectionBar from '../message-selection-bar/message-selection-bar.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
 import PaperMessageDialog from './paper-message-dialog.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
@@ -267,6 +277,8 @@ function onReplyTo(message: Message): void {
 function cancelReply(): void {
   replyingTo.value = null
 }
+
+const selection = useMessageSelection()
 
 const canSubmit = computed(
   () => canSend.value && !!inputValue.value.trim() && !tooLong.value && !sending.value
@@ -415,6 +427,7 @@ watch(
   () => props.dialogId,
   () => {
     replyingTo.value = null
+    selection.clear()
     // Недописанное голосовое не уходит в чат, который открыли следом.
     cancelVoice()
     void open()

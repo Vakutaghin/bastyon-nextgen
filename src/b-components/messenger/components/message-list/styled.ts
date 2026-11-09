@@ -18,6 +18,20 @@ export const SC_MessageList = styled.div`
   & > :first-child {
     margin-top: auto;
   }
+
+  /* Выделение сообщений: палец на сообщении, протяжка мышью, режим выделения —
+     текст не выделяется, на iOS не всплывает меню ссылки. */
+  &.pressing,
+  &.drag-selecting,
+  &.selecting {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  &.selecting [data-select-id] {
+    cursor: pointer;
+  }
 `
 
 /** История ещё грузится: строка над тем, что уже на экране. */

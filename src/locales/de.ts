@@ -1215,6 +1215,20 @@ export default {
     deleteConfirmTitle: 'Nachricht löschen?',
     deleteConfirmText: 'Die Nachricht wird für alle Chatteilnehmer entfernt.',
     deleteOthersConfirmText: 'Die Nachricht von {name} wird für alle Teilnehmer gelöscht.',
+    /** Выделение нескольких сообщений, как в Telegram (message-selection-bar). */
+    select: 'Auswählen',
+    selection: {
+      count: '{n} Nachricht | {n} Nachrichten',
+      toggle: 'Nachricht auswählen',
+      cancel: 'Auswahl aufheben',
+      copy: 'Kopieren',
+      copied: 'Kopiert',
+      copyFailed: 'Kopieren fehlgeschlagen',
+      deleteTitle: '{n} Nachricht löschen? | {n} Nachrichten löschen?',
+      deleteText: 'Die Nachrichten werden für alle Teilnehmer gelöscht.',
+      deleteFailed:
+        '{n} Nachricht konnte nicht gelöscht werden | {n} Nachrichten konnten nicht gelöscht werden',
+    },
     replyingTo: 'Antwort an',
     cancel: 'Abbrechen',
     send: 'Senden',

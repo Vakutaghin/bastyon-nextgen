@@ -220,6 +220,25 @@ export function formatDateTimeExact(unixSeconds: number): string {
   })
 }
 
+/**
+ * Дата и время цифрами, до минут: «09.11.2026, 14:30» — в скопированных
+ * сообщениях чата, как у Telegram.
+ *
+ * @param ms - метка времени в миллисекундах
+ */
+export function formatDateTimeNumeric(ms: number): string {
+  const date = validDate(ms)
+  return date
+    ? date.toLocaleString(dateLocale(), {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : ''
+}
+
 /** Часы и минуты: «14:30» / «02:30 PM». */
 export function formatClock(ms: number): string {
   const date = validDate(ms)

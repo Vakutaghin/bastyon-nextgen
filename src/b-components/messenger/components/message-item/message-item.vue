@@ -1,5 +1,18 @@
 <template>
-  <SC_MessageRow :class="isMine ? 'mine' : 'others'">
+  <SC_MessageRow :class="[isMine ? 'mine' : 'others', { selecting, selected }]">
+    <!-- Режим выделения (как в Telegram): кружок слева у каждого сообщения.
+         Щелчок по нему, как и по строке, ловит лента (use-select-gestures). -->
+    <SC_SelectCheck
+      v-if="selecting"
+      type="button"
+      role="checkbox"
+      data-testid="select-check"
+      :class="{ on: selected, mine: isMine }"
+      :aria-checked="selected"
+      :aria-label="t('messenger.selection.toggle')"
+    >
+      <CheckOutlined v-if="selected" />
+    </SC_SelectCheck>
     <SC_AvatarSlot v-if="!isMine">
       <!-- Аватар ведёт в профиль отправителя — в группе по-другому к нему не попасть. -->
       <ProfileLink v-if="showAvatar" :address="isMesh ? null : senderAddress" :name="displayName">
@@ -131,7 +144,7 @@
           <DeliveryTicks :mark="mark.mark" />
         </SC_SeenTick>
         <SC_ReactionButton
-          v-if="canReact"
+          v-if="canReact && !selecting"
           ref="reactionTriggerRef"
           type="button"
           :title="t('messenger.reaction')"
@@ -143,7 +156,7 @@
         <!-- Меню antd монтируется при первом нажатии: в каждой строке ленты оно
              стоило дороже самого сообщения, а открывают его редко. -->
         <APopover
-          v-if="canShowActions && actionsMounted"
+          v-if="canShowActions && actionsMounted && !selecting"
           v-model:open="actionsOpen"
           trigger="click"
           placement="topRight"
@@ -166,6 +179,15 @@
                 <DownloadOutlined />
                 <span>{{ t('messenger.saveMedia') }}</span>
               </SC_ActionsItem>
+              <SC_ActionsItem
+                v-if="selectable"
+                type="button"
+                data-testid="message-select"
+                @click.stop="onSelect"
+              >
+                <CheckCircleOutlined />
+                <span>{{ t('messenger.select') }}</span>
+              </SC_ActionsItem>
               <SC_ActionsItem v-if="canDelete" type="button" class="danger" @click.stop="onDelete">
                 <DeleteOutlined />
                 <span>{{ t('messenger.deleteMessage') }}</span>
@@ -183,7 +205,7 @@
           </SC_ActionsButton>
         </APopover>
         <SC_ActionsButton
-          v-else-if="canShowActions"
+          v-else-if="canShowActions && !selecting"
           type="button"
           data-testid="message-actions"
           :title="t('messenger.actions')"
@@ -228,6 +250,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Popover, Modal } from 'ant-design-vue'
 import {
+  CheckCircleOutlined,
+  CheckOutlined,
   MoreOutlined,
   DeleteOutlined,
   DownloadOutlined,
@@ -271,6 +295,11 @@ import LinkPreview from '../link-preview/link-preview.vue'
 import { formatMessageSegments, extractFirstExternalUrl } from './helpers'
 import { useReactionPicker } from './use-reaction-picker'
 import {
+  canReplyTo,
+  isMeshReplyable as meshReplyable,
+  isServerMessage,
+} from '../../lib/message-selection'
+import {
   SC_MessageItem,
   SC_AudioUrlMissing,
   SC_ReactionEmojiIcon,
@@ -297,6 +326,7 @@ import {
   SC_MeshBindingNote,
   SC_UndecryptableNote,
   SC_LocalOnlyMark,
+  SC_SelectCheck,
 } from './styled'
 
 const APopover = Popover
@@ -313,11 +343,23 @@ const props = withDefaults(
     showAvatar?: boolean
     /** Своё сообщение прочитано собеседником (квитанции Matrix, use-read-receipts). */
     seen?: boolean
+    /** Лента умеет выделять сообщения: в меню есть «Выбрать». */
+    selectable?: boolean
+    /** Включён режим выделения: кружок слева, меню и реакции спрятаны. */
+    selecting?: boolean
+    selected?: boolean
   }>(),
-  { showName: true, showAvatar: true, seen: false }
+  {
+    showName: true,
+    showAvatar: true,
+    seen: false,
+    selectable: false,
+    selecting: false,
+    selected: false,
+  }
 )
 
-const emit = defineEmits<{ reply: [message: Message] }>()
+const emit = defineEmits<{ reply: [message: Message]; select: [message: Message] }>()
 
 const store = useMessengerStore()
 const router = useRouter()
@@ -359,9 +401,7 @@ const meshKind = computed(() =>
   isMesh.value ? (parseMeshDialogId(props.message.chatId)?.kind ?? null) : null
 )
 /** Meshtastic передаёт ответы и реакции по радио — если у сообщения есть id пакета. */
-const isMeshReplyable = computed<boolean>(
-  () => props.message.transport === 'meshtastic' && !!props.message.meshReplyable
-)
+const isMeshReplyable = computed<boolean>(() => meshReplyable(props.message))
 
 /** «…», «✓», «✓✓» у времени своего сообщения (delivery-mark.ts). */
 const mark = computed(() =>
@@ -510,9 +550,7 @@ const previewUrl = computed<string | null>(() =>
 
 const canReact = computed<boolean>(() => {
   if (isMeshReplyable.value) return !isMine.value
-  if (typeof props.message.id !== 'string' || !props.message.id.startsWith('$')) return false
-  if (isMine.value) return false
-  return true
+  return isServerMessage(props.message) && !isMine.value
 })
 
 // Плавающий пикер реакций вынесен в use-reaction-picker (состояние, позиционирование,
@@ -544,11 +582,9 @@ async function openActions(): Promise<void> {
   actionsOpen.value = true
 }
 /** Реальное (отправленное) сообщение с matrix event-id ($...), не temp/pending. */
-const isRealMessage = computed<boolean>(
-  () => typeof props.message.id === 'string' && props.message.id.startsWith('$')
-)
+const isRealMessage = computed<boolean>(() => isServerMessage(props.message))
 /** Ответить можно на любое реальное сообщение (и на сообщение Meshtastic с id пакета). */
-const canReply = computed<boolean>(() => isRealMessage.value || isMeshReplyable.value)
+const canReply = computed<boolean>(() => canReplyTo(props.message))
 /**
  * Удалить у всех: своё, а чужое — если права в комнате позволяют (в личном
  * чате у обоих есть, в группе — у админов и модераторов). Спрашиваем при
@@ -641,6 +677,12 @@ const repliedPreview = computed<{ name: string; text: string } | null>(() => {
 function onReply(): void {
   actionsOpen.value = false
   emit('reply', props.message)
+}
+
+/** «Выбрать»: режим выделения с этим сообщением, как в Telegram. */
+function onSelect(): void {
+  actionsOpen.value = false
+  emit('select', props.message)
 }
 
 function onDelete(): void {

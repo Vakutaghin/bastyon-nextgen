@@ -1,5 +1,15 @@
 <template>
-  <SC_MessageList ref="listRef" data-testid="message-list" @scroll="handleScroll">
+  <!-- Выделение сообщений (use-select-gestures): одни слушатели на всю ленту. -->
+  <SC_MessageList
+    ref="listRef"
+    data-testid="message-list"
+    :class="{ selecting: !!selection?.active, pressing, 'drag-selecting': dragging }"
+    @scroll="handleScroll"
+    @pointerdown="onPointerDown"
+    @click.capture="onClickCapture"
+    @contextmenu="onContextMenu"
+    @dragstart="onDragStart"
+  >
     <SC_HistoryLoading v-if="loading" role="status" data-testid="history-loading">
       <SC_HistoryLoadingSpinner aria-hidden="true" />
       {{ t('messenger.loadingMessages') }}
@@ -27,11 +37,16 @@
       <MessageItem
         v-if="row.kind === 'message'"
         data-row
+        :data-select-id="selection ? row.message.id : undefined"
         :message="row.message"
         :show-name="isFirstInGroup(row.index)"
         :show-avatar="isFirstInGroup(row.index)"
         :seen="seenIds.has(row.message.id)"
+        :selectable="!!selection"
+        :selecting="!!selection?.active"
+        :selected="!!selection?.active && selection.has(row.message.id)"
         @reply="emit('reply', $event)"
+        @select="selection?.toggle($event.id)"
       />
       <!-- Удалённое сообщение — отметка, кто удалил: раньше оно пропадало без следа. -->
       <SC_DeletedMark v-else data-row data-testid="deleted-mark">
@@ -57,6 +72,8 @@ import type { Message } from '../../types'
 import { chatUserName } from '../../helpers'
 import { historyRows, type ChatHistory, type HistoryRow } from '../../lib/chat-history'
 import { useRowWindow } from './use-row-window'
+import type { MessageSelection } from './use-message-selection'
+import { useSelectGestures } from './use-select-gestures'
 import { useMessengerStore } from '../../store'
 import MessageItem from '../message-item/message-item.vue'
 import ChatHistoryNote from '../chat-history-note/chat-history-note.vue'
@@ -79,6 +96,8 @@ const props = withDefaults(
     loading?: boolean
     /** Сменился — другая лента (поиск по чату): снова только последние строки. */
     windowKey?: string
+    /** Выделение сообщений (use-message-selection); нет — в этой ленте не выделяют. */
+    selection?: MessageSelection | null
   }>(),
   {
     messages: () => [],
@@ -86,6 +105,7 @@ const props = withDefaults(
     history: null,
     loading: false,
     windowKey: '',
+    selection: null,
   }
 )
 
@@ -145,6 +165,23 @@ function getListEl(): HTMLDivElement | null {
   if (!v) return null
   return (v as { $el?: HTMLDivElement }).$el ?? (v as HTMLDivElement)
 }
+
+/** Сообщения, которые можно выделить, в порядке ленты (удалённые — отметки, их нет). */
+const selectableIds = computed<string[]>(() =>
+  props.messages.filter((m) => !m.deleted).map((m) => m.id)
+)
+
+const { pressing, dragging, onPointerDown, onClickCapture, onContextMenu, onDragStart } =
+  useSelectGestures({
+    list: getListEl,
+    selection: () => props.selection,
+    order: () => selectableIds.value,
+  })
+
+// Удалили, отправленное получило id сервера, сменился поиск — выделение только из ленты.
+watch(selectableIds, (ids) => {
+  if (props.selection?.active) props.selection.retain(new Set(ids))
+})
 
 async function scrollToBottom(): Promise<void> {
   await nextTick()

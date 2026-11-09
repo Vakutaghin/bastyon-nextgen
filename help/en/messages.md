@@ -10,11 +10,14 @@ keywords:
   - not sent
   - retry sending
   - unsent message
+  - select messages
+  - select several messages
+  - copy messages
 ---
 
 # Messages
 
-How to write, reply to and react to messages, delete them, and tell whether a message was delivered.
+How to write, reply to and react to messages, select and delete them, and tell whether a message was delivered.
 
 ## Writing
 
@@ -30,6 +33,24 @@ To send a photo, a file or a voice message, see [Photos, videos and files in cha
 
 - The three-dot button on a message is **“Actions”**. **“Reply”** — your reply will quote the original message; above the input field you see what you are replying to, and the cross cancels the reply.
 - The smiley button on someone else’s message is **“Reaction”**: 👍 ❤️ 😂 😮 😢 🙏. Reactions show under the message with a count.
+
+## Selecting several messages
+
+As in Telegram: selected messages can be copied or deleted in one go.
+
+- **On a phone** — press and hold a message.
+- **On a computer** — hold the mouse button on the empty space next to a message and drag across others: everything in between gets selected. At the edge of the feed it scrolls by itself. Dragging over text selects the text, as before.
+- **Anywhere** — **“Select”** in the message’s **“Actions”** menu.
+
+Circles appear on the left of the messages. Tapping a message checks or unchecks it, Shift+click checks everything from the previous one. Links, pictures and players don’t open meanwhile. Uncheck the last one and the mode turns off.
+
+In place of the input field you see how many are selected and the buttons:
+
+- **“Reply”** — when one message is selected.
+- **“Copy”** — the text of the messages to the clipboard. One message is copied as is, several — in order, each with the name and time: “Name, [11/09/2026, 02:30 PM]”. Photos, videos and voice messages are copied as their type, a file — with its name.
+- **“Delete”** — for everyone, with the same question as for one message. The button is there only when all the selected messages can be deleted: other people’s — if you have that right (see [below](#deleting)), unsent ones — one at a time, with **“Delete”** under them.
+
+The cross, Esc or Back on Android clear the selection. On a computer Ctrl+C copies the selected messages and Delete deletes them.
 
 ## Deleting
 

@@ -131,13 +131,14 @@
         :history="searchQuery.trim() ? null : store.activeHistory"
         :loading="isLoading"
         :window-key="searchQuery.trim()"
+        :selection="selection"
         @load-more="emit('load-more')"
         @reply="onReplyTo"
         @retry="retryHistory"
       />
     </template>
 
-    <SC_ReplyBanner v-if="replyingTo">
+    <SC_ReplyBanner v-if="replyingTo && !selection.active">
       <SC_ReplyBannerBar />
       <SC_ReplyBannerBody>
         <SC_ReplyBannerTitle>
@@ -164,7 +165,16 @@
       @toggle="activeRoomId && store.toggleMeshRoute(activeRoomId)"
     />
 
-    <SC_ChatInputBar v-if="!pendingInvite" ref="inputAreaRef">
+    <!-- Выделены сообщения — вместо поля ввода их действия, как в Telegram. -->
+    <MessageSelectionBar
+      v-if="selection.active && !pendingInvite"
+      :selection="selection"
+      :messages="displayedMessages"
+      @reply="onReplyTo"
+    />
+
+    <!-- Спрятано, а не убрано: черновик, высота поля и диктовка остаются. -->
+    <SC_ChatInputBar v-if="!pendingInvite" v-show="!selection.active" ref="inputAreaRef">
       <!-- RECORDING STATE: с первого касания, не дожидаясь микрофона. -->
       <template v-if="isRecording">
         <SC_RecordingTimer data-testid="voice-timer" :class="{ live: isCapturing }">{{
@@ -311,6 +321,8 @@ import { useTypingIndicator } from './use-typing-indicator'
 import { useReadReceipts } from './use-read-receipts'
 import { useBlockUser } from './use-block-user'
 import MessageList from '../message-list/message-list.vue'
+import { useMessageSelection } from '../message-list/use-message-selection'
+import MessageSelectionBar from '../message-selection-bar/message-selection-bar.vue'
 import ChatHistoryNote from '../chat-history-note/chat-history-note.vue'
 import ChatInvite from '../chat-invite/chat-invite.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
@@ -469,10 +481,14 @@ function cancelReply(): void {
   replyingTo.value = null
 }
 
-// Сброс поиска и активного ответа при смене диалога.
+// Выделение сообщений (message-list, message-selection-bar).
+const selection = useMessageSelection()
+
+// Сброс поиска, ответа и выделения при смене диалога.
 watch(activeRoomId, () => {
   searchQuery.value = ''
   replyingTo.value = null
+  selection.clear()
 })
 
 // Отправка собственного typing-статуса (throttle: не чаще раза в 3с).
