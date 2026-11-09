@@ -3327,7 +3327,7 @@ export default {
     browserNewCount: '{count} nouvelles notifications',
     filterSound: 'Son',
     filterBrowser: 'Notifications du navigateur',
-    filterAppBadge: 'Nombre de messages non lus sur l’icône de l’app',
+    filterAppBadge: 'Nombre de discussions non lues sur l’icône de l’app',
     filterWin: 'Gain de coinstake',
     filterTransactions: 'Transaction reçue',
     filterUpvotes: 'Nouvelle note (j’aime)',
@@ -3825,8 +3825,8 @@ export default {
       'Votre compte est en cours de validation dans la blockchain. Veuillez patienter...',
   },
   appBadge: {
-    tooltip: '{name} — {n} message non lu | {name} — {n} messages non lus',
-    unread: '{n} message non lu | {n} messages non lus',
+    tooltip: '{name} — {n} discussion non lue | {name} — {n} discussions non lues',
+    unread: '{n} discussion non lue | {n} discussions non lues',
     channel: 'Messages non lus',
   },
   tray: {

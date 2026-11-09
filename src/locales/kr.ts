@@ -3245,7 +3245,7 @@ export default {
     browserNewCount: '새 알림 {count}개',
     filterSound: '소리',
     filterBrowser: '브라우저 알림',
-    filterAppBadge: '앱 아이콘에 읽지 않은 메시지 수 표시',
+    filterAppBadge: '앱 아이콘에 읽지 않은 채팅 수 표시',
     filterWin: '코인스테이크 보상',
     filterTransactions: '거래 받음',
     filterUpvotes: '새 평가(좋아요)',
@@ -3717,8 +3717,8 @@ export default {
     validationMessage: '블록체인에서 계정을 확인하고 있습니다. 잠시 기다려 주세요...',
   },
   appBadge: {
-    tooltip: '{name} — 읽지 않은 메시지 {n}개',
-    unread: '읽지 않은 메시지 {n}개',
+    tooltip: '{name} — 읽지 않은 채팅 {n}개',
+    unread: '읽지 않은 채팅 {n}개',
     channel: '읽지 않은 메시지',
   },
   tray: {

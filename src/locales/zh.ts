@@ -3133,7 +3133,7 @@ export default {
     browserNewCount: '{count} 条新通知',
     filterSound: '声音',
     filterBrowser: '浏览器通知',
-    filterAppBadge: '在应用图标上显示未读消息数',
+    filterAppBadge: '在应用图标上显示未读聊天数',
     filterWin: 'Coinstake 奖励',
     filterTransactions: '收到交易',
     filterUpvotes: '新评分（点赞）',
@@ -3579,8 +3579,8 @@ export default {
     validationMessage: '正在区块链上验证你的账户。请稍候...',
   },
   appBadge: {
-    tooltip: '{name} — {n} 条未读消息',
-    unread: '{n} 条未读消息',
+    tooltip: '{name} — {n} 个未读聊天',
+    unread: '{n} 个未读聊天',
     channel: '未读消息',
   },
   tray: {

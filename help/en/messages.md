@@ -63,7 +63,7 @@ An unsent message does not disappear when you close the app: it is kept on the d
 
 ## Message notifications
 
-When a message arrives in a chat that is not open, a sound plays and the unread count on the chat icon goes up. Several messages in a row make one sound, and a message the other person edited makes none. The **“Sound”** switch in the [notification settings](notifications.md) turns the sound off. If **“Browser notifications”** are on in the [notification settings](notifications.md) and the app window is minimised, the system tells you too — without the text: the sender’s name and what arrived, for example “New message” or “Image”.
+When a message arrives in a chat that is not open, a sound plays, the chat’s unread count in the list goes up, and the messenger icon shows how many chats have unread messages. Several messages in a row make one sound, and a message the other person edited makes none. The **“Sound”** switch in the [notification settings](notifications.md) turns the sound off. If **“Browser notifications”** are on in the [notification settings](notifications.md) and the app window is minimised, the system tells you too — without the text: the sender’s name and what arrived, for example “New message” or “Image”.
 
 ## See also
 

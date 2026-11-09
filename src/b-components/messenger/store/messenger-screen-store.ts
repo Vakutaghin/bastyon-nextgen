@@ -111,9 +111,9 @@ export const useMessengerScreenStore = defineStore('messenger-screen', () => {
   const hiddenIds = computed<ReadonlySet<string>>(
     () => new Set(hiddenDialogs.value.map((d) => d.id))
   )
-  /** Непрочитанные сообщения в спрятанных — вычитаются из общего счётчика. */
-  const hiddenUnread = computed<number>(() =>
-    hiddenDialogs.value.reduce((sum, d) => sum + (d.unreadCount || 0), 0)
+  /** Спрятанные чаты с непрочитанным — вычитаются из общего счётчика (он считает чаты). */
+  const hiddenUnread = computed<number>(
+    () => hiddenDialogs.value.filter((d) => (d.unreadCount || 0) > 0).length
   )
   /** Спрятанные чаты с новым — число на кнопке «Скрытые». */
   const hiddenWithNew = computed<number>(

@@ -3282,7 +3282,7 @@ export default {
     browserNewCount: '{count} new notifications',
     filterSound: 'Sound',
     filterBrowser: 'Browser notifications',
-    filterAppBadge: 'Unread message count on the app icon',
+    filterAppBadge: 'Unread chat count on the app icon',
     filterWin: 'Coinstake win',
     filterTransactions: 'Transaction received',
     filterUpvotes: 'New rating (likes)',
@@ -3758,8 +3758,8 @@ export default {
     validationMessage: 'Your account is being validated on the blockchain. Please wait...',
   },
   appBadge: {
-    tooltip: '{name} — {n} unread message | {name} — {n} unread messages',
-    unread: '{n} unread message | {n} unread messages',
+    tooltip: '{name} — {n} unread chat | {name} — {n} unread chats',
+    unread: '{n} unread chat | {n} unread chats',
     channel: 'Unread messages',
   },
   tray: {

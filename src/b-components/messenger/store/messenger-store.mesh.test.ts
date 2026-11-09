@@ -115,7 +115,7 @@ function makeMesh() {
   return reactive({
     dialogs: [{ id: MESH_ID }] as Array<{ id: string }>,
     messengerDialogs: [dialog(MESH_ID, 3000, 2, 'meshcore')],
-    totalUnread: 2,
+    totalUnread: 1,
     ensureLoaded: vi.fn(async () => {}),
     openDialog: vi.fn(async () => {}),
     messengerMessages: vi.fn(() => [meshMessage]),
@@ -182,11 +182,21 @@ beforeEach(() => {
 })
 
 describe('mesh chats in the messenger', () => {
-  it('lists mesh and Matrix chats together, freshest first, and sums the unread', () => {
+  it('lists mesh and Matrix chats together, freshest first, and counts chats with unread', () => {
     const store = useMessengerStore()
-    useMessengerUiStore().setDialogs([dialog('!old:host', 1000, 1), dialog('!new:host', 5000, 3)])
-    expect(store.dialogs.map((d) => d.id)).toEqual(['!new:host', MESH_ID, '!old:host'])
-    expect(store.totalUnreadCount).toBe(1 + 3 + 2)
+    useMessengerUiStore().setDialogs([
+      dialog('!old:host', 1000, 1),
+      dialog('!new:host', 5000, 3),
+      dialog('!read:host', 4000, 0),
+    ])
+    expect(store.dialogs.map((d) => d.id)).toEqual([
+      '!new:host',
+      '!read:host',
+      MESH_ID,
+      '!old:host',
+    ])
+    // Два чата Matrix с 1 и 3 сообщениями и mesh-чат с 2 — три чата, не шесть сообщений.
+    expect(store.totalUnreadCount).toBe(3)
   })
 
   it('shows mesh chats while Matrix has not loaded anything', () => {

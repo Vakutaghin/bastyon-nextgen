@@ -84,7 +84,8 @@ describe('messenger-screen-store', () => {
     screen.setReputation(true, 10)
 
     expect([...screen.hiddenIds]).toEqual(['!spam'])
-    expect(screen.hiddenUnread).toBe(4)
+    // Чат со спамом (4 сообщения) — один чат в общем счётчике.
+    expect(screen.hiddenUnread).toBe(1)
     expect(screen.hiddenWithNew).toBe(1)
 
     screen.toggleShowHidden()

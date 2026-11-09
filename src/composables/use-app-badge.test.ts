@@ -64,9 +64,9 @@ describe('useAppBadge', () => {
 
     expect(mocks.show).toHaveBeenCalledTimes(2)
     expect(mocks.show).toHaveBeenLastCalledWith(3, {
-      tooltip: 'Bastyon NextGen — 3 непрочитанных сообщения',
+      tooltip: 'Bastyon NextGen — 3 непрочитанных чата',
       title: 'Bastyon NextGen',
-      text: '3 непрочитанных сообщения',
+      text: '3 непрочитанных чата',
       channel: 'Непрочитанные сообщения',
     })
     expect(mocks.ensure).toHaveBeenCalledTimes(1)
@@ -78,14 +78,14 @@ describe('useAppBadge', () => {
     await settle()
     expect(mocks.show).toHaveBeenLastCalledWith(
       21,
-      expect.objectContaining({ text: '21 непрочитанное сообщение' })
+      expect.objectContaining({ text: '21 непрочитанный чат' })
     )
 
     i18n.global.locale.value = 'en'
     await settle()
     expect(mocks.show).toHaveBeenLastCalledWith(
       21,
-      expect.objectContaining({ text: '21 unread messages' })
+      expect.objectContaining({ text: '21 unread chats' })
     )
 
     mocks.settings.appBadge = false

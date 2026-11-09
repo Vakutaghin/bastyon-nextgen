@@ -133,7 +133,8 @@ export const useMeshChatStore = defineStore('mesh-chat', () => {
   let loading: Promise<void> | null = null
 
   const messengerDialogs = computed<Dialog[]>(() => dialogs.value.map(meshDialogToMessenger))
-  const totalUnread = computed(() => dialogs.value.reduce((n, d) => n + d.unread, 0))
+  /** Mesh-чаты с непрочитанным: общий счётчик мессенджера считает чаты, а не сообщения. */
+  const totalUnread = computed(() => dialogs.value.filter((d) => d.unread > 0).length)
 
   function find(id: string): MeshDialogRecord | undefined {
     return dialogs.value.find((d) => d.id === id)

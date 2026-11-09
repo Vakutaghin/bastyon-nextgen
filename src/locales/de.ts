@@ -3323,7 +3323,7 @@ export default {
     browserNewCount: '{count} neue Benachrichtigungen',
     filterSound: 'Ton',
     filterBrowser: 'Browser-Benachrichtigungen',
-    filterAppBadge: 'Anzahl ungelesener Nachrichten auf dem App-Symbol',
+    filterAppBadge: 'Anzahl ungelesener Chats auf dem App-Symbol',
     filterWin: 'Coinstake-Gewinn',
     filterTransactions: 'Transaktion erhalten',
     filterUpvotes: 'Neue Bewertung (Likes)',
@@ -3824,8 +3824,8 @@ export default {
     validationMessage: 'Dein Konto wird in der Blockchain geprüft. Bitte warte...',
   },
   appBadge: {
-    tooltip: '{name} — {n} ungelesene Nachricht | {name} — {n} ungelesene Nachrichten',
-    unread: '{n} ungelesene Nachricht | {n} ungelesene Nachrichten',
+    tooltip: '{name} — {n} ungelesener Chat | {name} — {n} ungelesene Chats',
+    unread: '{n} ungelesener Chat | {n} ungelesene Chats',
     channel: 'Ungelesene Nachrichten',
   },
   tray: {
