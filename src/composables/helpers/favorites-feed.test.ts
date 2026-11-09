@@ -1,13 +1,19 @@
 // N11: удалённый пост в избранном не должен обрывать ленту — страница
 // добирается до полного размера, остальное избранное остаётся доступным.
+// Плюс конец списка, убранный из избранного якорь и список чужого аккаунта.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const favIds = vi.hoisted(() => ({ list: [] as string[] }))
+const favIds = vi.hoisted(() => ({ list: [] as string[], owners: [] as string[] }))
 const rpc = vi.hoisted(() => ({ call: vi.fn() }))
 
 vi.mock('@/stores/media-library-store', () => ({
-  useMediaLibraryStore: () => ({ favoritesFor: async () => favIds.list }),
+  useMediaLibraryStore: () => ({
+    favoritesFor: async (owner: string) => {
+      favIds.owners.push(owner)
+      return favIds.list
+    },
+  }),
 }))
 vi.mock('@/helpers/api/request', () => ({
   getByPRCWithAuth: (args: unknown) => rpc.call(args),
@@ -32,6 +38,7 @@ const ctx = (over: Record<string, unknown> = {}) =>
 beforeEach(() => {
   rpc.call.mockReset()
   favIds.list = []
+  favIds.owners = []
 })
 
 /** Нода отдаёт только «живые» id — удалённые просто отсутствуют в ответе. */
@@ -109,5 +116,60 @@ describe('buildFavoritesFeedQuery: id сохранения ≠ id в ответ�
       'hash-1',
       'hash-2',
     ])
+  })
+})
+
+describe('buildFavoritesFeedQuery: границы списка', () => {
+  const txids = (res: Awaited<ReturnType<typeof buildFavoritesFeedQuery>>) =>
+    res.data.contents.map((p) => (p as { txid: string }).txid)
+
+  it('берёт избранное текущего аккаунта, без адреса — анонимный список', async () => {
+    await buildFavoritesFeedQuery(ctx({ userAddress: 'PB' }))
+    await buildFavoritesFeedQuery(ctx({ userAddress: '' }))
+    expect(favIds.owners).toEqual(['PB', ''])
+  })
+
+  it('пустое избранное — пустая страница без запроса к ноде', async () => {
+    const res = await buildFavoritesFeedQuery(ctx())
+    expect(res.data.contents).toEqual([])
+    expect(rpc.call).not.toHaveBeenCalled()
+  })
+
+  it('последний показанный пост убрали из избранного — лента останавливается', async () => {
+    favIds.list = ['a', 'b', 'c']
+    const res = await buildFavoritesFeedQuery(ctx({ currentTxid: 'gone' }))
+    expect(res.data.contents).toEqual([])
+    expect(rpc.call).not.toHaveBeenCalled()
+  })
+
+  it('после последнего поста списка — пустая страница (конец ленты)', async () => {
+    favIds.list = ['a', 'b']
+    const res = await buildFavoritesFeedQuery(ctx({ currentTxid: 'b' }))
+    expect(res.data.contents).toEqual([])
+    expect(rpc.call).not.toHaveBeenCalled()
+  })
+
+  it('все оставшиеся удалены — перебирает список до конца и не зацикливается', async () => {
+    favIds.list = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+    rpc.call.mockImplementation(nodeWithAlive(new Set()))
+    const res = await buildFavoritesFeedQuery(ctx({ count: 3 }))
+    expect(res.data.contents).toEqual([])
+    // Пачки по размеру страницы: [a,b,c], [d,e,f], [g].
+    expect(
+      rpc.call.mock.calls.map((c) => (c[0] as { parameters: [string[]] }).parameters[0])
+    ).toEqual([['a', 'b', 'c'], ['d', 'e', 'f'], ['g']])
+  })
+
+  it('добор не превышает размер страницы', async () => {
+    favIds.list = ['a', 'b', 'c', 'd', 'e', 'f']
+    rpc.call.mockImplementation(nodeWithAlive(new Set(['b', 'd', 'e', 'f'])))
+    const res = await buildFavoritesFeedQuery(ctx({ count: 2 }))
+    expect(txids(res)).toEqual(['b', 'd'])
+  })
+
+  it('ответ ноды в обёртке { data } тоже понимается', async () => {
+    favIds.list = ['a']
+    rpc.call.mockResolvedValue({ data: [{ txid: 'a' }] })
+    expect(txids(await buildFavoritesFeedQuery(ctx()))).toEqual(['a'])
   })
 })

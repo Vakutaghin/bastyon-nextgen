@@ -2,6 +2,14 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import CryptoJS from 'crypto-js'
 import { encryptData, decryptData, forgetKeys, prewarmKeys } from './encryption'
 
+// PBKDF2 crypto-js с настоящими 100 000 итераций: обычно 2–3 с на файл, а под
+// замером покрытия (v8) в разы дольше — общих 15 с не хватает.
+vi.setConfig({ testTimeout: 60_000 })
+// Тесты синхронные и идут подряд без единого такта цикла событий: ответы
+// главного процесса vitest не разбираются, и под нагрузкой за минуту воркер
+// падает с «Timeout calling onTaskUpdate». Такт после каждого теста.
+afterEach(() => new Promise<void>((resolve) => setTimeout(resolve, 0)))
+
 describe('encryptData', () => {
   it('produces output with v2: prefix', () => {
     const result = encryptData('hello world', 'test-key')
