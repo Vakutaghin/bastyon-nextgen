@@ -3642,6 +3642,13 @@ export default {
       removeContent:
         'Le fichier du modèle sera supprimé du disque. Vous pourrez le télécharger à nouveau.',
       commandsTitle: 'Commandes vocales de ponctuation',
+      punctuation: 'Ponctuation',
+      punctuation_voice: 'Je la dicte',
+      punctuation_voiceHint:
+        'Le modèle n’écrit que les mots. La ponctuation vient des commandes : « virgule », « point », « point d’interrogation »… Une pause n’ajoute rien ; une phrase commence par une majuscule.',
+      punctuation_model: 'Le modèle la met',
+      punctuation_modelHint:
+        'Le modèle met la ponctuation et les majuscules selon les pauses et l’intonation ; les commandes marchent aussi.',
       statusReady: 'Modèle : {name}',
       statusNone: 'Aucun modèle téléchargé',
     },

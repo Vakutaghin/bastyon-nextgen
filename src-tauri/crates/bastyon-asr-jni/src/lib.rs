@@ -49,6 +49,8 @@ enum EngineJob {
         samples: Vec<f32>,
         language: String,
         prompt: String,
+        /// Знаки ставит модель; нет — человек голосом.
+        punctuate: bool,
         pass: engine::Pass,
         /// Прерывает и ещё не начатый расчёт, и идущий.
         cancelled: Arc<AtomicBool>,
@@ -106,6 +108,7 @@ fn engine_loop(rx: mpsc::Receiver<EngineJob>) {
                 samples,
                 language,
                 prompt,
+                punctuate,
                 pass,
                 cancelled,
                 reply,
@@ -115,7 +118,7 @@ fn engine_loop(rx: mpsc::Receiver<EngineJob>) {
                 }
                 let result = ensure_engine(&mut engine, &model_file).and_then(|_| {
                     engine.as_ref().expect("engine just loaded").transcribe(
-                        &samples, &language, &prompt, pass, &cancelled,
+                        &samples, &language, &prompt, punctuate, pass, &cancelled,
                     )
                 });
                 let _ = reply.send(result);
@@ -188,6 +191,8 @@ struct Session {
     language: String,
     /// Текст перед курсором и уже распознанное — подсказка модели.
     context: String,
+    /// Знаки ставит модель; нет — человек голосовыми командами.
+    punctuate: bool,
     cancelled: Arc<AtomicBool>,
     pending: Pending,
     seq: u32,
@@ -299,6 +304,7 @@ impl Session {
             samples,
             language: self.language.clone(),
             prompt: self.context.clone(),
+            punctuate: self.punctuate,
             pass: engine::Pass::Phrase,
             cancelled: self.cancelled.clone(),
             reply,
@@ -316,6 +322,7 @@ impl Session {
             samples,
             language: self.language.clone(),
             prompt: self.context.clone(),
+            punctuate: self.punctuate,
             pass: engine::Pass::Draft,
             cancelled: abort.clone(),
             reply,
@@ -409,6 +416,7 @@ fn start_session(
     vad_file: String,
     language: &str,
     prompt: String,
+    punctuate: bool,
     emit: Emit,
 ) -> Result<u32, String> {
     let id = NEXT_SESSION.fetch_add(1, Ordering::Relaxed);
@@ -426,6 +434,7 @@ fn start_session(
         vad_file,
         language: whisper_language(language),
         context: prompt,
+        punctuate,
         cancelled: Arc::new(AtomicBool::new(false)),
         pending: VecDeque::new(),
         seq: 0,
@@ -466,6 +475,7 @@ pub extern "system" fn Java_com_bastyon_app_plugins_voice_AsrNative_start(
     vad_file: JString,
     language: JString,
     prompt: JString,
+    punctuate: jboolean,
     events: JObject,
 ) -> jint {
     init_logging();
@@ -481,7 +491,14 @@ pub extern "system" fn Java_com_bastyon_app_plugins_voice_AsrNative_start(
             .new_global_ref(events)
             .map_err(|e| format!("engine_error: {e}"))?;
         let emit: Emit = Box::new(move |payload| java_event(&vm, &events, payload));
-        let id = start_session(model_file, vad_file, &language, prompt, emit)?;
+        let id = start_session(
+            model_file,
+            vad_file,
+            &language,
+            prompt,
+            punctuate != JNI_FALSE,
+            emit,
+        )?;
         Ok(id as jint)
     })();
     match started {
@@ -586,6 +603,8 @@ mod tests {
             dir.join("ggml-silero-v6.2.0.bin").to_string_lossy().into(),
             &std::env::var("BASTYON_ASR_LANG").unwrap_or_else(|_| "ru".into()),
             String::new(),
+            // BASTYON_ASR_PUNCT=0 — знаки модели запрещены, как в режиме «ставлю сам».
+            std::env::var("BASTYON_ASR_PUNCT").map(|v| v != "0").unwrap_or(true),
             Box::new(move |ev| {
                 let _ = lock(&tx).send(ev);
             }),

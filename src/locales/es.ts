@@ -3613,6 +3613,13 @@ export default {
       removeTitle: '¿Eliminar el modelo «{name}»?',
       removeContent: 'El archivo del modelo se borrará del disco. Podrá descargarlo de nuevo.',
       commandsTitle: 'Comandos de voz para la puntuación',
+      punctuation: 'Puntuación',
+      punctuation_voice: 'La dicto yo',
+      punctuation_voiceHint:
+        'El modelo escribe solo palabras. Los signos salen de las órdenes: «coma», «punto», «signo de interrogación»… Una pausa no añade nada; la frase empieza con mayúscula.',
+      punctuation_model: 'La pone el modelo',
+      punctuation_modelHint:
+        'El modelo pone signos y mayúsculas según las pausas y la entonación; las órdenes también funcionan.',
       statusReady: 'Modelo: {name}',
       statusNone: 'Ningún modelo descargado',
     },

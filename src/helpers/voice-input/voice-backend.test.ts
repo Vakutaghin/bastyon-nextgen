@@ -59,9 +59,18 @@ describe('voice backend', () => {
       model: 'small',
       language: 'ru',
       prompt: 'Привет',
+      punctuation: false,
     })
     expect(session).toBe(7)
-    expect(plugin.start).toHaveBeenCalledWith({ model: 'small', language: 'ru', prompt: 'Привет' })
+    expect(plugin.start).toHaveBeenCalledWith({
+      model: 'small',
+      language: 'ru',
+      prompt: 'Привет',
+      punctuation: false,
+    })
+    // Без поля (старый вызов) знаки ставит модель — как раньше.
+    await voiceInvoke('asr_start', { model: 'small', language: 'ru', prompt: '' })
+    expect(plugin.start).toHaveBeenLastCalledWith(expect.objectContaining({ punctuation: true }))
 
     await voiceInvoke('asr_stop', { session: 7 })
     expect(plugin.stop).toHaveBeenCalledWith({ session: 7 })

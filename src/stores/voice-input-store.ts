@@ -8,6 +8,12 @@ import {
   voiceInvoke,
   voiceListen,
 } from '@/helpers/voice-input/voice-backend'
+import {
+  DEFAULT_VOICE_PUNCTUATION,
+  stripModelPunctuation,
+  voicePrompt,
+  type VoicePunctuation,
+} from '@/helpers/voice-input/model-punctuation'
 
 /**
  * Голосовой ввод: распознавание прямо на устройстве — на компьютере
@@ -61,6 +67,7 @@ interface InstallProgress {
 }
 
 const LS_MODEL = 'voiceInput:model'
+const LS_PUNCTUATION = 'voiceInput:punctuation'
 export const DEFAULT_VOICE_MODEL: VoiceModelId = 'small'
 const MODEL_IDS: VoiceModelId[] = ['base', 'small', 'turbo']
 
@@ -100,6 +107,16 @@ function loadModel(): VoiceModelId {
     // нет localStorage — модель по умолчанию
   }
   return DEFAULT_VOICE_MODEL
+}
+
+function loadPunctuation(): VoicePunctuation {
+  try {
+    const raw = localStorage.getItem(LS_PUNCTUATION)
+    if (raw === 'voice' || raw === 'model') return raw
+  } catch {
+    // нет localStorage — как по умолчанию
+  }
+  return DEFAULT_VOICE_PUNCTUATION
 }
 
 function rawError(error: unknown): string {
@@ -157,6 +174,8 @@ export const useVoiceInputStore = defineStore('voice-input', {
     status: null as VoiceStatus | null,
     /** Выбранная модель (для скачивания и диктовки). */
     model: loadModel(),
+    /** Кто ставит знаки препинания: человек голосовыми командами или модель. */
+    punctuation: loadPunctuation(),
     phase: 'idle' as VoicePhase,
     /** Нажали, пока дораспознаётся хвост: с этого поля — новая запись, когда он допишется. */
     restartFor: null as string | null,
@@ -218,6 +237,20 @@ export const useVoiceInputStore = defineStore('voice-input', {
       }
     },
 
+    setPunctuation(mode: VoicePunctuation): void {
+      this.punctuation = mode
+      try {
+        localStorage.setItem(LS_PUNCTUATION, mode)
+      } catch {
+        // не сохранили — до перезапуска помним в сторе
+      }
+    },
+
+    /** Текст фразы для поля: в режиме «ставлю сам» — без знаков, проскочивших у модели. */
+    phraseText(text: string): string {
+      return this.punctuation === 'voice' ? stripModelPunctuation(text) : text
+    },
+
     async refresh(): Promise<VoiceStatus | null> {
       if (!this.available) return null
       try {
@@ -264,12 +297,12 @@ export const useVoiceInputStore = defineStore('voice-input', {
         if (!this.owns(p.session) || !this.ownerId) return
         if (newWords(p.seq, p.text)) lastWords = Date.now()
         lastDraft = { seq: p.seq, text: p.text }
-        targets.get(this.ownerId)?.draft(p.text, p.seq)
+        targets.get(this.ownerId)?.draft(this.phraseText(p.text), p.seq)
       })
       await on<{ session: number; seq: number; text: string }>('asr:text', (p) => {
         if (!this.owns(p.session) || !this.ownerId) return
         if (newWords(p.seq, p.text)) lastWords = Date.now()
-        targets.get(this.ownerId)?.insert(p.text, p.seq)
+        targets.get(this.ownerId)?.insert(this.phraseText(p.text), p.seq)
       })
       await on<{ session: number; reason: string; error: string | null }>('asr:end', (p) => {
         if (!this.owns(p.session)) return
@@ -369,7 +402,8 @@ export const useVoiceInputStore = defineStore('voice-input', {
         const session = await voiceInvoke<number>('asr_start', {
           model,
           language: target.language(),
-          prompt: target.context(),
+          prompt: this.punctuation === 'voice' ? voicePrompt(target.context()) : target.context(),
+          punctuation: this.punctuation === 'model',
         })
         this.lastSession = Math.max(this.lastSession, session)
         // Пока ждали ответа, поле могли закрыть, отменить запуск — или

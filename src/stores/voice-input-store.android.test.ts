@@ -73,7 +73,12 @@ describe('voice input store на Android', () => {
       settle: vi.fn(),
     })
     await store.start('f')
-    expect(plugin.start).toHaveBeenCalledWith({ model: 'small', language: 'ru', prompt: '' })
+    expect(plugin.start).toHaveBeenCalledWith({
+      model: 'small',
+      language: 'ru',
+      prompt: '',
+      punctuation: false,
+    })
     expect(store.phase).toBe('listening')
     listeners.get('asr:partial')?.({ session: 4, seq: 0, text: 'при' })
     expect(draft).toHaveBeenCalledWith('при', 0)

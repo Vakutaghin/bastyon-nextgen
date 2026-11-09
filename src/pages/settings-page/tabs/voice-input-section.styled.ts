@@ -132,3 +132,33 @@ export const SC_CommandList = styled.dl`
     font-family: var(--font-family-mono);
   }
 `
+
+/** Подзаголовок группы выбора внутри карточки («Знаки препинания»). */
+export const SC_GroupTitle = styled.div`
+  margin-top: 4px;
+  color: var(--ui-text-highlighted);
+  font-size: 14px;
+  font-weight: 600;
+`
+
+/** Вариант выбора целиком — label: нажатие на текст тоже выбирает. */
+export const SC_ChoiceRow = styled.label`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--ui-radius-lg);
+  cursor: pointer;
+
+  &.selected {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-light);
+  }
+
+  input {
+    margin: 0;
+    accent-color: var(--color-primary);
+  }
+`

@@ -71,6 +71,35 @@
       {{ t('voiceInput.models.speedNote') }}
     </SC_VoiceDesc>
 
+    <SC_ModelRows
+      v-if="store.status?.supported !== false"
+      role="radiogroup"
+      :aria-label="t('voiceInput.settings.punctuation')"
+      data-testid="voice-punctuation"
+    >
+      <SC_GroupTitle
+        >{{ t('voiceInput.settings.punctuation') }} <HelpLink topic="voice-input#punctuation"
+      /></SC_GroupTitle>
+      <SC_ChoiceRow
+        v-for="mode in PUNCTUATION_MODES"
+        :key="mode"
+        :class="{ selected: store.punctuation === mode }"
+        :data-testid="`voice-punctuation-${mode}`"
+      >
+        <input
+          type="radio"
+          name="voice-punctuation"
+          :value="mode"
+          :checked="store.punctuation === mode"
+          @change="store.setPunctuation(mode)"
+        />
+        <SC_ModelInfo>
+          <SC_ModelLine>{{ t(`voiceInput.settings.punctuation_${mode}`) }}</SC_ModelLine>
+          <SC_ModelHint>{{ t(`voiceInput.settings.punctuation_${mode}Hint`) }}</SC_ModelHint>
+        </SC_ModelInfo>
+      </SC_ChoiceRow>
+    </SC_ModelRows>
+
     <SC_Commands v-if="commands.length">
       <summary>{{ t('voiceInput.settings.commandsTitle') }}</summary>
       <SC_CommandList>
@@ -90,11 +119,14 @@ import { Button, Modal } from 'ant-design-vue'
 
 import { formatFileSize } from '@/b-components/video-uploader/utils/video-formatter'
 import { spokenCommandHints } from '@/helpers/voice-input/spoken-commands'
+import type { VoicePunctuation } from '@/helpers/voice-input/model-punctuation'
 import { useVoiceInputStore, voiceErrorText, type VoiceModelId } from '@/stores/voice-input-store'
 import ModuleInfo from './module-info.vue'
 import {
+  SC_ChoiceRow,
   SC_CommandList,
   SC_Commands,
+  SC_GroupTitle,
   SC_ModelActions,
   SC_ModelHint,
   SC_ModelInfo,
@@ -112,6 +144,9 @@ import HelpLink from '@/b-components/help/help-link.vue'
 
 const { t, locale } = useI18n()
 const store = useVoiceInputStore()
+
+/** Кто ставит знаки: человек голосом (по умолчанию) или модель. */
+const PUNCTUATION_MODES: VoicePunctuation[] = ['voice', 'model']
 
 onMounted(() => {
   void store.subscribe()

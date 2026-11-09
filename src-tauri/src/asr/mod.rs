@@ -55,6 +55,8 @@ enum EngineJob {
         samples: Vec<f32>,
         language: String,
         prompt: String,
+        /// Знаки ставит модель; нет — человек голосом.
+        punctuate: bool,
         pass: engine::Pass,
         /// Прерывает и ещё не начатый расчёт, и идущий.
         cancelled: Arc<AtomicBool>,
@@ -116,6 +118,7 @@ fn engine_loop(rx: mpsc::Receiver<EngineJob>) {
                 samples,
                 language,
                 prompt,
+                punctuate,
                 pass,
                 cancelled,
                 reply,
@@ -125,7 +128,7 @@ fn engine_loop(rx: mpsc::Receiver<EngineJob>) {
                 }
                 let result = ensure_engine(&mut engine, &model_file).and_then(|_| {
                     engine.as_ref().expect("engine just loaded").transcribe(
-                        &samples, &language, &prompt, pass, &cancelled,
+                        &samples, &language, &prompt, punctuate, pass, &cancelled,
                     )
                 });
                 let _ = reply.send(result);
@@ -415,6 +418,8 @@ pub fn asr_start(
     model: String,
     language: String,
     prompt: String,
+    // Нет поля (старая страница) — знаки ставит модель, как раньше.
+    punctuation: Option<bool>,
 ) -> Result<u32, String> {
     if !engine::cpu_supported() {
         return Err("unsupported_cpu".into());
@@ -439,6 +444,7 @@ pub fn asr_start(
         vad_file: mgr.paths.file(&VAD_MODEL).to_string_lossy().to_string(),
         language: whisper_language(&language),
         context: prompt,
+        punctuate: punctuation.unwrap_or(true),
         engine: mgr.engine.clone(),
     };
     std::thread::Builder::new()
@@ -674,6 +680,8 @@ struct Session {
     language: String,
     /// Текст перед курсором и уже распознанное — подсказка модели.
     context: String,
+    /// Знаки ставит модель; нет — человек голосовыми командами.
+    punctuate: bool,
     engine: Arc<EngineWorker>,
 }
 
@@ -863,6 +871,7 @@ impl Session {
             samples,
             language: self.language.clone(),
             prompt: self.context.clone(),
+            punctuate: self.punctuate,
             pass: engine::Pass::Phrase,
             cancelled: cancelled.clone(),
             reply,
@@ -880,6 +889,7 @@ impl Session {
             samples,
             language: self.language.clone(),
             prompt: self.context.clone(),
+            punctuate: self.punctuate,
             pass: engine::Pass::Draft,
             cancelled: abort.clone(),
             reply,
@@ -994,7 +1004,7 @@ mod live_tests {
                 if let Some((n, d)) = seg.draft() {
                     let t0 = Instant::now();
                     let text = engine
-                        .transcribe(&d, &lang, "", engine::Pass::Draft, &keep)
+                        .transcribe(&d, &lang, "", true, engine::Pass::Draft, &keep)
                         .unwrap();
                     owed = t0.elapsed();
                     println!(
@@ -1010,7 +1020,7 @@ mod live_tests {
         for p in &phrases {
             let t0 = Instant::now();
             let text = engine
-                .transcribe(p, &lang, &context, engine::Pass::Phrase, &keep)
+                .transcribe(p, &lang, &context, true, engine::Pass::Phrase, &keep)
                 .unwrap();
             println!(
                 "phrase {:.1}s → {:.2}s: {text}",
@@ -1028,7 +1038,7 @@ mod live_tests {
             flag.store(true, Ordering::Relaxed);
         });
         let t0 = Instant::now();
-        let aborted = engine.transcribe(&phrases[0], &lang, "", engine::Pass::Phrase, &abort);
+        let aborted = engine.transcribe(&phrases[0], &lang, "", true, engine::Pass::Phrase, &abort);
         stopper.join().unwrap();
         println!("aborted after {:.2}s: {aborted:?}", t0.elapsed().as_secs_f32());
         assert_eq!(aborted, Err("cancelled".into()));

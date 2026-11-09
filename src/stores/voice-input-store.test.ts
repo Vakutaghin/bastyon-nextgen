@@ -95,10 +95,12 @@ describe('voice input store', () => {
     const store = useVoiceInputStore()
     store.register(t)
     await store.start('field-1')
+    // По умолчанию знаки ставит человек: модели они запрещены, подсказка — без них.
     expect(invoke).toHaveBeenCalledWith('asr_start', {
       model: 'small',
       language: 'ru',
-      prompt: 'Привет',
+      prompt: 'привет',
+      punctuation: false,
     })
     expect(store.phase).toBe('listening')
     emit('asr:level', { session: 7, level: 0.6, speaking: true })
@@ -120,6 +122,41 @@ describe('voice input store', () => {
     expect(store.ownerId).toBeNull()
     // Черновик, если остался, становится обычным текстом.
     expect(t.settle).toHaveBeenCalled()
+  })
+
+  it('знаки: «ставлю сам» чистит проскочившие знаки модели, «расставляет модель» — как было', async () => {
+    const field = { ...target(), context: () => 'Привет, Анна. Как дела?' }
+    invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === 'asr_status') return status(['small'])
+      if (cmd === 'asr_start') return 7
+    })
+    const store = useVoiceInputStore()
+    expect(store.punctuation).toBe('voice')
+    store.register(field)
+    await store.start('field-1')
+    // Имя в середине остаётся с большой буквы, начала предложений — строчные.
+    expect(invoke).toHaveBeenCalledWith(
+      'asr_start',
+      expect.objectContaining({ prompt: 'привет Анна как дела', punctuation: false })
+    )
+    emit('asr:partial', { session: 7, seq: 0, text: 'В 7:30, у дома.' })
+    expect(field.draft).toHaveBeenLastCalledWith('В 7:30 у дома', 0)
+    emit('asr:text', { session: 7, seq: 0, text: 'Встретимся. Потом - кино!' })
+    expect(field.insert).toHaveBeenLastCalledWith('Встретимся потом кино', 0)
+    await store.cancel()
+
+    // Выбор запоминается и уходит в движок; текст модели не трогаем.
+    store.setPunctuation('model')
+    expect(useVoiceInputStore().punctuation).toBe('model')
+    expect(localStorage.getItem('voiceInput:punctuation')).toBe('model')
+    invoke.mockClear()
+    await store.start('field-1')
+    expect(invoke).toHaveBeenCalledWith(
+      'asr_start',
+      expect.objectContaining({ prompt: 'Привет, Анна. Как дела?', punctuation: true })
+    )
+    emit('asr:text', { session: 7, seq: 1, text: 'Встретимся. Потом — кино!' })
+    expect(field.insert).toHaveBeenLastCalledWith('Встретимся. Потом — кино!', 1)
   })
 
   it('нажали, пока дописывается хвост: он не теряется, а новая запись начинается после него', async () => {

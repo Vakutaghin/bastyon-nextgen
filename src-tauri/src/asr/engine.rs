@@ -5,11 +5,12 @@
 //! после установки компилирует шейдеры Metal ~10 с.
 
 use std::ffi::c_void;
+use std::os::raw::c_int;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 use whisper_rs::{
-    FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperVadContext,
-    WhisperVadContextParams,
+    FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperSysContext,
+    WhisperSysState, WhisperTokenData, WhisperVadContext, WhisperVadContextParams,
 };
 
 use super::segmenter::{SpeechDetector, FRAME};
@@ -120,9 +121,109 @@ unsafe extern "C" fn abort_requested(flag: *mut c_void) -> bool {
     unsafe { (*(flag as *const AtomicBool)).load(Ordering::Relaxed) }
 }
 
+/// Знаки препинания, которые модель ставит сама: . , ! ? ; : … — « » и т. п.
+const PUNCTUATION: &[char] = &[
+    '.', ',', '!', '?', ';', ':', '…', '—', '–', '«', '»', '“', '”', '„', '"', '¿', '¡', '。',
+    '，', '！', '？', '；', '：', '、',
+];
+
+/// Как токен словаря относится к знакам препинания.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum PunctKind {
+    /// Знак: в режиме «знаки ставлю сам» модели его не писать.
+    Mark,
+    /// «.», «,» или «:» вплотную: после цифры это 3.5, 1,5 и 7:30 — разрешён.
+    Numeric,
+}
+
+/// Знак ли токен с таким текстом. Дефис вплотную — часть слова («кто-то»), а
+/// с пробелом впереди — тире, которое модель ставит сама. Апострофы, скобки,
+/// проценты и прочее — не знаки препинания предложения, их не трогаем.
+pub fn punctuation_kind(text: &str) -> Option<PunctKind> {
+    let body = text.trim_start();
+    if body.is_empty() {
+        return None;
+    }
+    if matches!(text, "." | "," | ":") {
+        return Some(PunctKind::Numeric);
+    }
+    if body.chars().all(|c| PUNCTUATION.contains(&c)) {
+        return Some(PunctKind::Mark);
+    }
+    if body.len() != text.len() && body.chars().all(|c| c == '-') {
+        return Some(PunctKind::Mark);
+    }
+    None
+}
+
+/// Токены-знаки словаря модели — для запрета, когда знаки ставит человек.
+struct PunctTokens {
+    marks: Vec<c_int>,
+    numeric: Vec<c_int>,
+    /// По id токена: кончается цифрой (после него «.», «,», «:» вплотную разрешены).
+    ends_digit: Vec<bool>,
+}
+
+impl PunctTokens {
+    fn scan(ctx: &WhisperContext) -> Self {
+        let n = ctx.token_eot().max(0);
+        let mut out = Self {
+            marks: Vec::new(),
+            numeric: Vec::new(),
+            ends_digit: vec![false; n as usize],
+        };
+        for id in 0..n {
+            let Ok(bytes) = ctx.token_to_bytes(id) else {
+                continue;
+            };
+            // Кусок многобайтной буквы — не решить, оставляем (запасная чистка — в приложении).
+            let Ok(text) = std::str::from_utf8(bytes) else {
+                continue;
+            };
+            out.ends_digit[id as usize] = text.chars().last().is_some_and(|c| c.is_ascii_digit());
+            match punctuation_kind(text) {
+                Some(PunctKind::Mark) => out.marks.push(id),
+                Some(PunctKind::Numeric) => out.numeric.push(id),
+                None => {}
+            }
+        }
+        out
+    }
+}
+
+/// whisper.cpp перед выбором каждого токена: знаки препинания — невозможны.
+unsafe extern "C" fn forbid_punctuation(
+    _ctx: *mut WhisperSysContext,
+    _state: *mut WhisperSysState,
+    tokens: *const WhisperTokenData,
+    n_tokens: c_int,
+    logits: *mut f32,
+    user_data: *mut c_void,
+) {
+    // SAFETY: user_data — PunctTokens движка, живой всё время `full`; logits —
+    // вероятности словаря (все id токенов-знаков меньше token_eot); tokens — уже
+    // выбранные токены фразы, n_tokens штук.
+    unsafe {
+        let punct = &*(user_data as *const PunctTokens);
+        let after_digit = n_tokens > 0 && {
+            let last = (*tokens.add(n_tokens as usize - 1)).id;
+            punct.ends_digit.get(last as usize).copied().unwrap_or(false)
+        };
+        for &id in &punct.marks {
+            *logits.add(id as usize) = f32::NEG_INFINITY;
+        }
+        if !after_digit {
+            for &id in &punct.numeric {
+                *logits.add(id as usize) = f32::NEG_INFINITY;
+            }
+        }
+    }
+}
+
 pub struct Engine {
     model_file: String,
     ctx: WhisperContext,
+    punct: PunctTokens,
 }
 
 impl Engine {
@@ -132,9 +233,11 @@ impl Engine {
         params.use_gpu = use_gpu();
         let ctx = WhisperContext::new_with_params(model_file, params)
             .map_err(|e| format!("engine_error: {e}"))?;
+        let punct = PunctTokens::scan(&ctx);
         Ok(Self {
             model_file: model_file.to_string(),
             ctx,
+            punct,
         })
     }
 
@@ -143,13 +246,16 @@ impl Engine {
     }
 
     /// Текст фразы. `language` — код whisper (ru, en, ko…), `prompt` — текст
-    /// перед курсором: по нему модель держит стиль, регистр и имена. `abort`
-    /// прерывает расчёт на полпути — ошибка `cancelled`.
+    /// перед курсором: по нему модель держит стиль, регистр и имена.
+    /// `punctuate` — знаки ставит модель; нет — их ставит человек голосовыми
+    /// командами, а модели знаки запрещены. `abort` прерывает расчёт на
+    /// полпути — ошибка `cancelled`.
     pub fn transcribe(
         &self,
         samples: &[f32],
         language: &str,
         prompt: &str,
+        punctuate: bool,
         pass: Pass,
         abort: &AtomicBool,
     ) -> Result<String, String> {
@@ -206,6 +312,15 @@ impl Engine {
         unsafe {
             params.set_abort_callback(Some(abort_requested));
             params.set_abort_callback_user_data(abort as *const AtomicBool as *mut c_void);
+        }
+        if !punctuate {
+            // SAFETY: `self.punct` живёт, пока жив движок, — дольше вызова `full`.
+            unsafe {
+                params.set_filter_logits_callback(Some(forbid_punctuation));
+                params.set_filter_logits_callback_user_data(
+                    &self.punct as *const PunctTokens as *mut c_void,
+                );
+            }
         }
         let done = state.full(params, samples);
         if abort.load(Ordering::Relaxed) {
@@ -448,6 +563,24 @@ mod tests {
         assert_eq!(cut_loop(speech), speech);
         assert_eq!(cut_loop("очень очень холодно"), "очень очень холодно");
         assert!(draft_max_tokens(16_000) >= 20);
+    }
+
+    #[test]
+    fn punctuation_tokens_are_told_from_words_hyphens_and_numbers() {
+        use PunctKind::*;
+        for t in [
+            " .", "...", " ,", "?", " ?!", "!", " —", "–", " «", "»", " \"", "…", "。", "，", " -",
+            " --",
+        ] {
+            assert_eq!(punctuation_kind(t), Some(Mark), "{t:?}");
+        }
+        for t in [".", ",", ":"] {
+            assert_eq!(punctuation_kind(t), Some(Numeric), "{t:?}");
+        }
+        // Дефис вплотную — часть слова; апостроф, слова, цифры, скобки, пробелы — не знаки.
+        for t in ["-", "'", "'s", " привет", "мир", "3", " 2026", " (", ")", "%", " ", ""] {
+            assert_eq!(punctuation_kind(t), None, "{t:?}");
+        }
     }
 
     #[test]

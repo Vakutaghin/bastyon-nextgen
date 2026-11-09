@@ -31,7 +31,7 @@ final class AsrNative {
     static native boolean supported();
 
     /** Начать диктовку (прежняя отменяется). Возвращает id сессии. */
-    static native int start(String modelFile, String vadFile, String language, String prompt, Events events);
+    static native int start(String modelFile, String vadFile, String language, String prompt, boolean punctuate, Events events);
 
     /** Кусок записи: 16 кГц, моно, -1..1. */
     static native void push(int session, float[] samples);

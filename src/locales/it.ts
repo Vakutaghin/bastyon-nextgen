@@ -3606,6 +3606,13 @@ export default {
       removeTitle: 'Rimuovere il modello «{name}»?',
       removeContent: 'Il file del modello verrà eliminato dal disco. Potrai scaricarlo di nuovo.',
       commandsTitle: 'Comandi vocali per la punteggiatura',
+      punctuation: 'Punteggiatura',
+      punctuation_voice: 'La detto io',
+      punctuation_voiceHint:
+        'Il modello scrive solo le parole. La punteggiatura viene dai comandi: «virgola», «punto», «punto interrogativo»… Una pausa non aggiunge nulla; la frase inizia con la maiuscola.',
+      punctuation_model: 'La mette il modello',
+      punctuation_modelHint:
+        'Il modello mette punteggiatura e maiuscole secondo pause e intonazione; anche i comandi funzionano.',
       statusReady: 'Modello: {name}',
       statusNone: 'Nessun modello scaricato',
     },

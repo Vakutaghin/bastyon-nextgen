@@ -13,7 +13,13 @@ interface VoiceInputPlugin {
   install(o: { model: string }): Promise<void>
   cancelInstall(): Promise<void>
   remove(o: { model: string }): Promise<void>
-  start(o: { model: string; language: string; prompt: string }): Promise<{ session: number }>
+  start(o: {
+    model: string
+    language: string
+    prompt: string
+    /** Знаки ставит модель; false — человек голосовыми командами. */
+    punctuation: boolean
+  }): Promise<{ session: number }>
   stop(o: { session: number }): Promise<void>
   cancel(o: { session: number }): Promise<void>
   openMicSettings(): Promise<void>
@@ -54,6 +60,7 @@ async function androidInvoke(cmd: string, args: Args): Promise<unknown> {
         model,
         language: String(args.language ?? ''),
         prompt: String(args.prompt ?? ''),
+        punctuation: args.punctuation !== false,
       })
       return started.session
     }

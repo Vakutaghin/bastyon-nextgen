@@ -3540,6 +3540,13 @@ export default {
       removeTitle: '‘{name}’ 모델을 삭제할까요?',
       removeContent: '모델 파일이 디스크에서 삭제됩니다. 다시 다운로드할 수 있습니다.',
       commandsTitle: '문장 부호 음성 명령',
+      punctuation: '문장 부호',
+      punctuation_voice: '직접 말해서 입력',
+      punctuation_voiceHint:
+        '모델은 단어만 씁니다. 문장 부호는 “쉼표”, “마침표”, “물음표” 같은 명령으로 넣습니다. 잠시 멈춰도 부호가 들어가지 않습니다.',
+      punctuation_model: '모델이 자동으로 입력',
+      punctuation_modelHint:
+        '모델이 쉼과 억양에 따라 문장 부호를 넣습니다. 명령도 함께 쓸 수 있습니다.',
       statusReady: '모델: {name}',
       statusNone: '다운로드한 모델 없음',
     },

@@ -3642,6 +3642,13 @@ export default {
       removeContent:
         'Die Modelldatei wird von der Festplatte gelöscht. Sie können sie erneut herunterladen.',
       commandsTitle: 'Sprachbefehle für Satzzeichen',
+      punctuation: 'Satzzeichen',
+      punctuation_voice: 'Ich diktiere sie',
+      punctuation_voiceHint:
+        'Das Modell schreibt nur Wörter. Satzzeichen kommen von Befehlen: „Komma“, „Punkt“, „Fragezeichen“… Eine Pause setzt nichts, ein Satz beginnt groß.',
+      punctuation_model: 'Setzt das Modell',
+      punctuation_modelHint:
+        'Das Modell setzt Satzzeichen und Großbuchstaben nach Pausen und Betonung; Befehle funktionieren auch.',
       statusReady: 'Modell: {name}',
       statusNone: 'Kein Modell heruntergeladen',
     },

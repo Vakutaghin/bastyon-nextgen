@@ -3581,6 +3581,13 @@ export default {
       removeTitle: 'Remove the “{name}” model?',
       removeContent: 'The model file will be deleted from the disk. You can download it again.',
       commandsTitle: 'Voice commands for punctuation',
+      punctuation: 'Punctuation',
+      punctuation_voice: 'I dictate it',
+      punctuation_voiceHint:
+        'The model writes only words. Punctuation comes from commands: “comma”, “period”, “question mark”… A pause adds nothing; a capital letter starts a sentence.',
+      punctuation_model: 'The model adds it',
+      punctuation_modelHint:
+        'The model puts punctuation and capitals by pauses and intonation; commands work too.',
       statusReady: 'Model: {name}',
       statusNone: 'No model downloaded',
     },

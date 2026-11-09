@@ -39,7 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *   install({model}) — скачать модель и детектор речи; события
  *       `asr:install-progress` {model, received, total};
  *   cancelInstall(), remove({model});
- *   start({model, language, prompt}) — {session}; запись с микрофона, события
+ *   start({model, language, prompt, punctuation}) — {session}; punctuation —
+ *       знаки ставит модель (false — человек голосом); запись с микрофона, события
  *       `asr:level` {session, level, speaking}, `asr:state` {session, loading,
  *       pending}, `asr:partial` {session, seq, text} — черновик фразы по ходу
  *       речи, `asr:text` {session, seq, text}, `asr:end` {session, reason,
@@ -269,6 +270,8 @@ public class VoiceInputPlugin extends Plugin {
                     models.file(VoiceModels.VAD).getAbsolutePath(),
                     call.getString("language", "auto"),
                     call.getString("prompt", ""),
+                    // Знаки ставит модель; false — человек голосовыми командами.
+                    call.getBoolean("punctuation", true),
                     this::onNativeEvent);
         } catch (RuntimeException e) {
             record.stop();
