@@ -138,7 +138,7 @@
       />
     </template>
 
-    <SC_ReplyBanner v-if="replyingTo && !selection.active">
+    <SC_ReplyBanner v-if="replyingTo && !selection.active" data-testid="reply-banner">
       <SC_ReplyBannerBar />
       <SC_ReplyBannerBody>
         <SC_ReplyBannerTitle>

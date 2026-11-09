@@ -89,6 +89,56 @@ export const SC_MessageRow = styled.div`
   &.selected:hover::before {
     background: rgb(var(--ui-primary-rgb) / 14%);
   }
+
+  /* Ответ смахиванием (message-list/use-swipe-reply): строка едет за пальцем
+     влево, справа проступает стрелка — кружок (::before) и стрелка (::after).
+     В режиме выделения смахивания нет, ::before здесь свободен. */
+  &.swiping {
+    position: relative;
+    transform: translateX(var(--swipe-x, 0));
+  }
+
+  &.swipe-settle {
+    transition: transform var(--transition-fast);
+  }
+
+  &.swiping::before,
+  &.swiping::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 12px);
+    width: 32px;
+    height: 32px;
+    margin-top: -16px;
+    pointer-events: none;
+    opacity: var(--swipe-progress, 0);
+    transform: scale(calc(0.6 + 0.4 * var(--swipe-progress, 0)));
+  }
+
+  &.swiping::before {
+    border-radius: 50%;
+    background: var(--color-overlay-6);
+    transition: background-color var(--transition-fast);
+  }
+
+  &.swiping::after {
+    background: var(--ui-text-muted);
+    /* iOS 15.0–15.3: маска только с префиксом. */
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z'/%3E%3C/svg%3E")
+      center / 18px no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z'/%3E%3C/svg%3E")
+      center / 18px no-repeat;
+  }
+
+  /* Дальше порога: отпустить — ответ. */
+  &.swipe-armed::before {
+    background: var(--ui-primary);
+  }
+
+  &.swipe-armed::after {
+    background: var(--ui-bg);
+  }
 `
 
 /** Кружок выделения слева от сообщения; у своих — прижат к левому краю. */

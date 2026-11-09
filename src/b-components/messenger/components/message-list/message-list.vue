@@ -1,12 +1,18 @@
 <template>
-  <!-- Выделение сообщений (use-select-gestures): одни слушатели на всю ленту. -->
+  <!-- Выделение сообщений (use-select-gestures) и ответ смахиванием (use-swipe-reply):
+       одни слушатели на всю ленту. -->
   <SC_MessageList
     ref="listRef"
     data-testid="message-list"
-    :class="{ selecting: !!selection?.active, pressing, 'drag-selecting': dragging }"
+    :class="{
+      selecting: !!selection?.active,
+      pressing,
+      'drag-selecting': dragging,
+      'swipe-replying': swiping,
+    }"
     @scroll="handleScroll"
-    @pointerdown="onPointerDown"
-    @click.capture="onClickCapture"
+    @pointerdown="onListPointerDown"
+    @click.capture="onListClickCapture"
     @contextmenu="onContextMenu"
     @dragstart="onDragStart"
   >
@@ -38,6 +44,7 @@
         v-if="row.kind === 'message'"
         data-row
         :data-select-id="selection ? row.message.id : undefined"
+        :data-reply-id="canReplyTo(row.message) ? row.message.id : undefined"
         :message="row.message"
         :show-name="isFirstInGroup(row.index)"
         :show-avatar="isFirstInGroup(row.index)"
@@ -74,6 +81,8 @@ import { historyRows, type ChatHistory, type HistoryRow } from '../../lib/chat-h
 import { useRowWindow } from './use-row-window'
 import type { MessageSelection } from './use-message-selection'
 import { useSelectGestures } from './use-select-gestures'
+import { useSwipeReply } from './use-swipe-reply'
+import { canReplyTo } from '../../lib/message-selection'
 import { useMessengerStore } from '../../store'
 import MessageItem from '../message-item/message-item.vue'
 import ChatHistoryNote from '../chat-history-note/chat-history-note.vue'
@@ -177,6 +186,27 @@ const { pressing, dragging, onPointerDown, onClickCapture, onContextMenu, onDrag
     selection: () => props.selection,
     order: () => selectableIds.value,
   })
+
+// Ответ смахиванием влево (телефон), как в Telegram; в режиме выделения — нет.
+const swipeReply = useSwipeReply({
+  list: getListEl,
+  disabled: () => !!props.selection?.active,
+  reply: (id) => {
+    const message = props.messages.find((m) => m.id === id)
+    if (message) emit('reply', message)
+  },
+})
+const swiping = swipeReply.swiping
+
+function onListPointerDown(e: PointerEvent): void {
+  swipeReply.onPointerDown(e)
+  onPointerDown(e)
+}
+
+function onListClickCapture(e: MouseEvent): void {
+  swipeReply.onClickCapture(e)
+  if (!e.defaultPrevented) onClickCapture(e)
+}
 
 // Удалили, отправленное получило id сервера, сменился поиск — выделение только из ленты.
 watch(selectableIds, (ids) => {

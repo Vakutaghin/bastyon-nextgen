@@ -2,6 +2,7 @@
 keywords:
   - message
   - reply
+  - swipe
   - reaction
   - delete message
   - read receipt
@@ -32,6 +33,7 @@ To send a photo, a file or a voice message, see [Photos, videos and files in cha
 ## Replies and reactions
 
 - The three-dot button on a message is **“Actions”**. **“Reply”** — your reply will quote the original message; above the input field you see what you are replying to, and the cross cancels the reply.
+- On a phone there is a quicker way: swipe the message to the left with your finger, as in Telegram. An arrow appears on the right; when it turns coloured, let go and the reply is set. If you stop short or bring your finger back, nothing happens. Swiping does not work while selecting messages or on messages that have not been sent yet.
 - The smiley button on someone else’s message is **“Reaction”**: 👍 ❤️ 😂 😮 😢 🙏. Reactions show under the message with a count.
 
 ## Selecting several messages

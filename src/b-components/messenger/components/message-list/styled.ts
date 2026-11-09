@@ -3,7 +3,8 @@ import { noSelect } from '@/styles/chrome-styles'
 
 export const SC_MessageList = styled.div`
   flex: 1;
-  overflow-y: auto;
+  /* Вбок не листается: см. ответ смахиванием ниже. */
+  overflow: hidden auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -12,6 +13,10 @@ export const SC_MessageList = styled.div`
      message-list сам: свой якорь Chromium срабатывал вдобавок, и экран
      уезжал; в WebKit якоря нет вовсе — так поведение одно. */
   overflow-anchor: none;
+  /* Ответ смахиванием (use-swipe-reply): вбок ленту двигает палец, а не
+     браузер; сдвинутое сообщение и стрелка за краем не дают прокрутки вбок.
+     Блок кода, который листается сам, своё горизонтальное листание сохраняет. */
+  touch-action: pan-y pinch-zoom;
 
   /* Сообщения прижаты к полю ввода, как в переписке: отправленное, пока
      история грузится, встаёт внизу, а не под шапкой. */
@@ -23,7 +28,8 @@ export const SC_MessageList = styled.div`
      текст не выделяется, на iOS не всплывает меню ссылки. */
   &.pressing,
   &.drag-selecting,
-  &.selecting {
+  &.selecting,
+  &.swipe-replying {
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
