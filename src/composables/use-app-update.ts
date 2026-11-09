@@ -37,6 +37,7 @@ import {
 } from '@/helpers/updates/android-update'
 import { settingsAPI } from '@/db/apis/settings-api'
 import { logger } from '@/services/logger'
+import { isOfflineNow } from '@/helpers/api/offline'
 
 const log = logger.scope('[update]')
 
@@ -142,6 +143,16 @@ export async function maybeCheckForUpdate(): Promise<void> {
   if (launchChecked) return
   launchChecked = true
 
+  // Запуск без сети: проверим, когда она появится, а не упадём один раз до
+  // следующего запуска (запрос к GitHub без сети только ждёт таймаут).
+  if (isOfflineNow()) {
+    window.addEventListener('online', () => void runLaunchCheck(), { once: true })
+    return
+  }
+  await runLaunchCheck()
+}
+
+async function runLaunchCheck(): Promise<void> {
   skippedVersion.value = await readSkippedVersion()
   await checkForUpdate()
 }

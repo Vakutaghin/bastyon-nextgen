@@ -27,6 +27,7 @@ import { markDeleted } from '../../lib/chat-history'
 import { archiveRedactIds } from '../../lib/archive-redact'
 import { SOUND_MAX_AGE } from '../consts'
 import type { MessengerStoreContext } from './types'
+import { isOfflineNow } from '@/helpers/api/offline'
 
 const log = logger.scope('[MessengerStore]')
 
@@ -300,6 +301,12 @@ export function registerMatrixListeners(
       if (state === 'ERROR') {
         const reason = syncErrorReason(data?.error)
         const key = REASON_KEY[reason.kind]
+        // Устройство без сети — это не сбой сервера: так и пишем.
+        if (isOfflineNow() && reason.kind !== 'token') {
+          uiStore.setSyncError(() => t('common.offline'))
+          uiStore.syncErrorDetail = null
+          return
+        }
         uiStore.setSyncError(() => {
           const why = key ? t(key, { status: reason.status ?? '' }) : ''
           return why

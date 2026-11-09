@@ -17,6 +17,7 @@ import { getRpcPath } from './rpc-endpoints'
 import { appFetch } from './fetch-strategies'
 import { retryWithBackoff, type ServerEndpoint } from './rpc-retry'
 import { anyProxyAlive, orderedProxies } from './node-selector'
+import { assertOnline, isOfflineNow } from './offline'
 import {
   connectionRoute,
   mayFallBackToDirect,
@@ -232,6 +233,8 @@ async function tryHttpRequest(
  * Использует механизм backoff для оптимизации запросов.
  */
 export async function fetchHttp(params: HttpRequestParams): Promise<unknown> {
+  // Без сети — сразу ошибка, без перебора прокси (helpers/api/offline).
+  assertOnline(params.path, params.options?.host)
   // Если указан конкретный host:port — обращаемся только к нему (для прокси с кошельком и т. п.)
   if (params.options?.host && params.options?.port) {
     return tryHttpRequest(params, params.options.host, params.options.port)
@@ -257,6 +260,8 @@ export async function fetchHttp(params: HttpRequestParams): Promise<unknown> {
  * знает из настроек сразу — мимо Tor пинг не пойдёт.
  */
 export function warmUpProxies(): void {
+  // Без сети пинговать некого: первый запрос после её возврата найдёт ноду сам.
+  if (isOfflineNow()) return
   void orderedProxies(servers.servers.production.proxy as ServerEndpoint[]).catch(() => {})
   void connectionRoute().catch(() => {})
 }
@@ -285,6 +290,8 @@ export async function getByPRC(
   params: T_RpcRequestParams,
   config?: RpcRequestConfig
 ): Promise<unknown> {
+  // Без сети — сразу ошибка, без перебора прокси и нод (helpers/api/offline).
+  assertOnline(params.method, config?.host)
   if (config?.host && config?.port) {
     return tryRpcRequest(params, config.host, config.port)
   }

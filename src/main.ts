@@ -19,6 +19,7 @@ initPageWidth()
 import { Capacitor } from '@capacitor/core'
 import { isTauriEnv } from '@/helpers/api/request-tor'
 import { allowPinchZoom, isIosBrowser } from '@/helpers/a11y/viewport-zoom'
+import { isOfflineNow } from '@/helpers/api/offline'
 allowPinchZoom({
   native: Capacitor.isNativePlatform() || isTauriEnv(),
   ios: isIosBrowser(navigator),
@@ -176,12 +177,17 @@ watch(
       useNotificationSettingsStore(pinia).load()
       notificationsStore.init()
       notificationsPollTimerId = setInterval(() => {
+        // Без сети не опрашиваем: вернётся — обновим сразу (ниже, на «online»).
+        if (isOfflineNow()) return
         notificationsStore.init({ forceRefresh: true })
       }, NOTIFICATIONS_POLL_INTERVAL_MS)
     }
   },
   { immediate: true }
 )
+window.addEventListener('online', () => {
+  if (authStore.isUserAuthenticated) void notificationsStore.init({ forceRefresh: true })
+})
 // Matrix-логин запускает только auth-store (signIn/switchAccount/restoreSession →
 // resetMessenger) — второй watcher здесь давал два параллельных логина (S11).
 

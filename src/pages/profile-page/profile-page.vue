@@ -7,7 +7,8 @@
       <ProfileCover :profile="profile" />
 
       <SC_ProfileContentWrapper>
-        <ProfileSidebar :profile="profile" @profile-updated="onProfileEdited" />
+        <!-- Профиль не загрузился — без колонки: в ней крутился бы вечный спиннер. -->
+        <ProfileSidebar v-if="!error" :profile="profile" @profile-updated="onProfileEdited" />
 
         <SC_ProfileMainContent>
           <!-- На телефоне боковой колонки нет: главное из неё — над постами,
@@ -107,6 +108,8 @@ import {
   SC_ProfileCreatePost,
 } from './profile-page.styled'
 import { loadPendingRegistration } from '@/blockchain/storage/pending-registration'
+import { extractErrorMessage } from '@/helpers/common/extract-error-message'
+import { useOnline } from '@/composables/use-online'
 import { isMobile } from '@mobile/utils/platform'
 
 interface ProfileWithAccSet extends UserProfile {
@@ -242,7 +245,8 @@ async function fetchUserProfile(identifier: string): Promise<void> {
     }
   } catch (e) {
     console.error('Failed to load profile:', e)
-    error.value = e instanceof Error ? e.message : t('profile.loadFailed')
+    // Без сети и при сетевом сбое — словами, а не «All RPC servers failed».
+    error.value = extractErrorMessage(e) || t('profile.loadFailed')
   } finally {
     loading.value = false
   }
@@ -317,6 +321,13 @@ watch(
   },
   { immediate: true }
 )
+
+// Профиль не загрузился без сети — сеть вернулась, загружаем сами.
+const online = useOnline()
+watch(online, (isOnline) => {
+  const name = route.params.userName
+  if (isOnline && error.value && !loading.value && name) void fetchUserProfile(name as string)
+})
 
 useDocumentTitle(
   () => profile.value?.name ?? (route.params.userName as string) ?? t('profile.title')

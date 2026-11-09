@@ -554,6 +554,9 @@ export default {
     ipfsPinClearBtn: '서비스 제거',
   },
   common: {
+    offline: '네트워크에 연결되어 있지 않습니다. 연결이 돌아오면 불러옵니다.',
+    networkUnavailable:
+      'Bastyon 네트워크가 응답하지 않습니다. 연결을 확인하거나 나중에 다시 시도하세요.',
     cancel: '취소',
     close: '닫기',
     deletedAccount: '삭제된 계정',

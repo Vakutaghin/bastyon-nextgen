@@ -28,6 +28,7 @@ import {
   onAppForeground,
 } from '@/helpers/common/app-foreground'
 import { anyProxyAlive } from '../node-selector'
+import { isOfflineNow } from '../offline'
 import type { ServerEndpoint } from '../rpc-retry'
 import { connectionState, type ConnectionMode, type ConnectionRoute } from './connection-state'
 import { isNodeLinkAvailable } from './native-link'
@@ -106,6 +107,9 @@ async function nodesAnswer(): Promise<boolean> {
 }
 
 async function decide(): Promise<ConnectionRoute> {
+  // Устройство без сети: ни прокси, ни 47 нод не пингуем и ничего не решаем —
+  // решит первый запрос после возврата сети (autoRoute остаётся пустым).
+  if (isOfflineNow()) return setRoute('proxy')
   // Молчат и прокси, и ноды — сети нет: остаёмся на прокси, а когда сеть
   // появится, сбой запроса решит заново (reportProxiesUnreachable).
   const direct = !(await anyProxyAlive(PROXIES)) && (await nodesAnswer())

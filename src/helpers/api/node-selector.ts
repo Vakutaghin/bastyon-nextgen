@@ -21,6 +21,7 @@
 import { appFetch } from './fetch-strategies'
 import { torRoutingMode, waitForTorRouting } from '@/helpers/tor/tor-gate'
 import type { ServerEndpoint } from './rpc-retry'
+import { isOfflineNow } from './offline'
 
 const STORAGE_KEY = 'bastyon_live_proxy'
 
@@ -177,6 +178,9 @@ export async function orderedProxies(proxies: ServerEndpoint[]): Promise<ServerE
     if (stillInList) return [stillInList, ...rest]
   }
 
+  // Без сети пинговать некого: порядок как есть, выбор — когда сеть вернётся.
+  if (isOfflineNow()) return proxies
+
   if (!selectionInFlight) {
     selectionInFlight = probeAll(proxies).finally(() => {
       selectionInFlight = null
@@ -191,6 +195,7 @@ export async function orderedProxies(proxies: ServerEndpoint[]): Promise<ServerE
  * нодам напрямую.
  */
 export function anyProxyAlive(proxies: ServerEndpoint[]): Promise<boolean> {
+  if (isOfflineNow()) return Promise.resolve(false)
   return new Promise((resolve) => {
     let left = proxies.length
     if (!left) {

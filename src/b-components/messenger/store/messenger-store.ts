@@ -59,6 +59,7 @@ import { registerMatrixListeners } from './messenger-store/use-matrix-listeners'
 import { useMeshRoutes } from './messenger-store/use-mesh-routes'
 import { appToast } from '@/b-components/app-toast'
 import { requireAuth } from '@/composables/use-auth-gate'
+import { isOfflineNow } from '@/helpers/api/offline'
 
 export const useMessengerStore = defineStore('messenger', () => {
   const authStore = useAuthStore()
@@ -378,6 +379,10 @@ export const useMessengerStore = defineStore('messenger', () => {
   // отрезала сеть), ждал бы паузы повтора — пусть идёт сразу. На Android
   // visibilitychange не приходит, поэтому — по общему сигналу.
   onScopeDispose(onAppForeground(() => void matrixService.getClient()?.retryImmediately?.()))
+  // Сеть вернулась: SDK проверяет связь раз в 5–10 с — пусть синк идёт сразу.
+  const onOnline = () => void matrixService.getClient()?.retryImmediately?.()
+  window.addEventListener('online', onOnline)
+  onScopeDispose(() => window.removeEventListener('online', onOnline))
 
   // --- Инициализация Matrix ---
 
@@ -529,6 +534,14 @@ export const useMessengerStore = defineStore('messenger', () => {
             listenersRegistered = true
           }
 
+          // Без сети вход только упадёт и повторится по таймеру: ждём её возврата.
+          if (isOfflineNow()) {
+            uiStore.syncState = 'ERROR'
+            uiStore.setSyncError(() => t('common.offline'))
+            uiStore.dialogsLoadedOnce = true
+            window.addEventListener('online', retryLoginNow, { once: true })
+            return
+          }
           const success = await matrixService.login(authStore.address, authStore.keyPair)
           // Пока шёл вход, аккаунт сменили: этот вход уже чужой.
           if (run !== session) return

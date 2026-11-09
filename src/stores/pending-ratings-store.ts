@@ -6,6 +6,7 @@ import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCallArrayWithAuth } from '@/helpers/api/request'
 import { calculateRatingUpdate } from '@/helpers/common/rating-calculator'
 import type { GetPageScore } from '@/types/rpc-responses/get-page-scores'
+import { isOfflineNow } from '@/helpers/api/offline'
 
 type T_PendingItem = {
   shareId: string
@@ -16,6 +17,8 @@ type T_PendingItem = {
 
 // Polling timer lives outside reactive state to avoid serialization/reactivity issues
 let pollingTimer: ReturnType<typeof setInterval> | null = null
+/** Опрос идёт: следующий тик ждёт. Запрос бывает дольше 5 с — тики накладывались. */
+let pollInFlight = false
 
 // Операции IDB по одному shareId выполняются строго по очереди (N10): `add`
 // вызывается без await, и `markFailed`/`markSubmitted` раньше могли искать
@@ -143,7 +146,17 @@ export const usePendingRatingsStore = defineStore('pendingRatings', {
       this.isInitialized = false
       this.initedForAddress = null
     },
+    /** Тик опроса: не поверх идущего и не без сети (helpers/api/offline). */
     async poll() {
+      if (pollInFlight || isOfflineNow()) return
+      pollInFlight = true
+      try {
+        await this.pollOnce()
+      } finally {
+        pollInFlight = false
+      }
+    },
+    async pollOnce() {
       const auth = useAuthStore()
       const postsStore = usePostsStore()
       const address = auth.getUserAddress

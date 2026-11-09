@@ -552,6 +552,8 @@ export default {
     ipfsPinClearBtn: 'Уклони сервис',
   },
   common: {
+    offline: 'Нема мреже. Учитаће се када се веза врати.',
+    networkUnavailable: 'Мрежа Bastyon не одговара. Проверите везу или покушајте касније.',
     cancel: 'Откажи',
     close: 'Затвори',
     deletedAccount: 'Налог је обрисан',

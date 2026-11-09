@@ -4,9 +4,11 @@
  * здесь — только сам одиночный пинг (чистая функция от клиента).
  */
 import type { MatrixClient as SdkMatrixClient } from 'matrix-js-sdk'
+import { isOfflineNow } from '@/helpers/api/offline'
 
 export async function runKeepAlive(client: SdkMatrixClient | null): Promise<void> {
-  if (!client) return
+  // Без сети пинговать некого: запрос только упадёт и напишет в консоль.
+  if (!client || isOfflineNow()) return
 
   try {
     if (typeof client.whoami === 'function') {

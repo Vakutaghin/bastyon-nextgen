@@ -158,3 +158,21 @@ describe('retryWithBackoff', () => {
     ).rejects.toThrow('No RPC servers available')
   })
 })
+
+describe('сеть пропала посреди перебора', () => {
+  it('остальные прокси не спрашиваем и мёртвыми не помечаем', async () => {
+    mocks.orderedProxies.mockResolvedValue([A, B, C])
+    mocks.markProxyDead.mockClear()
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true)
+    const request = vi.fn(async () => {
+      online.mockReturnValue(false)
+      throw new TypeError('Failed to fetch')
+    })
+    await expect(
+      retryWithBackoff({}, { servers: [A, B, C], request, protocolName: 'RPC' })
+    ).rejects.toMatchObject({ offline: true })
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(mocks.markProxyDead).not.toHaveBeenCalled()
+    online.mockRestore()
+  })
+})

@@ -25,3 +25,16 @@ export const queryClient = new QueryClient({
     },
   },
 })
+
+// Запрос упал без сети — сеть вернулась, повторяем сами. TanStack повторяет
+// при переподключении, только если сам видел «сети нет → есть», а при запуске
+// без сети он считает, что сеть есть (onlineManager начинает с true), и лента
+// оставалась с ошибкой до нажатия «Повторить».
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    void queryClient.refetchQueries(
+      { type: 'active', predicate: (query) => query.state.status === 'error' },
+      { cancelRefetch: false }
+    )
+  })
+}

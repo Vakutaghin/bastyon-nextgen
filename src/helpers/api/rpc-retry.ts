@@ -12,6 +12,7 @@
  */
 
 import { orderedProxies, markProxyAlive, markProxyDead } from './node-selector'
+import { isOfflineNow, OfflineError } from './offline'
 import { isLogicError, isTimeout500 } from './rpc-errors'
 
 export interface ServerEndpoint {
@@ -93,6 +94,8 @@ export async function retryWithBackoff<P, R>(
         throw error
       }
 
+      // Сеть пропала посреди перебора: прокси не виноват, остальные не спрашиваем.
+      if (isOfflineNow()) throw new OfflineError(protocolName)
       lastError.push(toError(error))
       if (isTimeout500(error)) {
         // Прокси ответил — не успела нода за ним (тяжёлый SQL: лента на редком

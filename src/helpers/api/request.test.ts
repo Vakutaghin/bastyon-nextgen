@@ -260,3 +260,21 @@ describe('request', () => {
     })
   })
 })
+
+describe('без сети', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('RPC и HTTP сразу падают OfflineError: ни пинга прокси, ни запроса', async () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    mocks.appFetch.mockReset()
+    mocks.orderedProxies.mockReset().mockResolvedValue([NODE, NODE2])
+    await expect(getByPRC({ method: 'getnodeinfo', parameters: [] })).rejects.toMatchObject({
+      offline: true,
+    })
+    await expect(fetchHttp({ path: '/ping', method: 'GET' } as never)).rejects.toMatchObject({
+      offline: true,
+    })
+    expect(mocks.appFetch).not.toHaveBeenCalled()
+    expect(mocks.orderedProxies).not.toHaveBeenCalled()
+  })
+})

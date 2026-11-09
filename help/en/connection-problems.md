@@ -17,6 +17,19 @@ If nothing loads on any screen:
 - if your provider blocks the Bastyon proxies (as is now the case in Russia), make sure **“Settings”** → **“System”** → **“Network connection”** (or the menu of the Tor icon in the header) is set to **“Auto”** or **“Direct to nodes”**, see [Proxy or direct to nodes](network.md#proxy-or-direct-to-nodes). This does not work in the browser: there you need a VPN;
 - if you are on a VPN or a corporate network, it may block the nodes: the proxies use port 8899 and live updates use 8099; directly, nodes answer on ports 38881 and 8887.
 
+## Without a network <!-- #offline -->
+
+When the device is not connected to anything, a **“No network”** bar shows above the feed and in the Video and Audio sections, with a **“Downloads”** link for signed-in users. While there is no network, the app does not try to reach it and does not drain the battery. A feed or profile that has not loaded yet shows “No network connection. It will load once the connection is back.”.
+
+When the network comes back, the feed, profile, chats and notifications load by themselves — there is nothing to press.
+
+Without a network you still have:
+
+- help — it is built into the app;
+- [downloaded videos and audio](offline-video.md);
+- the chat list and messages loaded before, and [mesh messaging](mesh.md);
+- posts that were already on screen before the network dropped.
+
 ## Tor does not connect
 
 While Tor is connecting, the app does not go online — nothing loads. If the connection is stuck at the same percentage, your provider is most likely blocking Tor. Open the Tor menu in the header, choose **“Automatic”** or other bridges — see [Tor](tor.md#bridges) — and press **“Apply”**. If that does not help, turn Tor off: the app reloads and works directly.

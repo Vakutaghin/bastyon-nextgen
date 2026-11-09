@@ -562,6 +562,9 @@ export default {
     ipfsPinClearBtn: 'Dienst entfernen',
   },
   common: {
+    offline: 'Keine Netzwerkverbindung. Es wird geladen, sobald die Verbindung zurück ist.',
+    networkUnavailable:
+      'Das Bastyon-Netzwerk antwortet nicht. Prüfen Sie die Verbindung oder versuchen Sie es später.',
     cancel: 'Abbrechen',
     close: 'Schließen',
     deletedAccount: 'Konto gelöscht',

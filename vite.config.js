@@ -168,10 +168,14 @@ export default defineConfig(({ mode }) => ({
               : {}),
             // Manifest уже в public/manifest.webmanifest — берём его как есть.
             manifest: false,
-            // Игнорируем precache мини-приложений и WASM-чанков (большие).
+            // В кэш — всё, без чего сайт не запустится без сети. Раньше в нём не
+            // было pocketnet-bitcoin-*.js (0,6 МБ, его грузит сам index.html) и
+            // WASM secp256k1 (1,2 МБ, ключи в @/blockchain) — без сети сайт не
+            // стартовал. Не кэшируем только WASM шифрования чатов: 5,6 МБ, он
+            // грузится, когда открывают мессенджер. Звуки и картинки справки — в кэш.
             workbox: {
-              globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-              globIgnores: ['**/pocketnet-bitcoin-*.js', '**/*.wasm'],
+              globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,wasm,mp3,jpg,webp,gif,mjs}'],
+              globIgnores: ['**/matrix_sdk_crypto_wasm*.wasm'],
               maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
               navigateFallback: '/index.html',
               // /_matrix/* и /api/* — не SPA, оставляем сети. `/app/:appId` —

@@ -525,6 +525,8 @@ export default {
     ipfsPinClearBtn: '移除服务',
   },
   common: {
+    offline: '没有网络连接。连接恢复后将自动加载。',
+    networkUnavailable: 'Bastyon 网络没有响应。请检查连接或稍后再试。',
     cancel: '取消',
     close: '关闭',
     deletedAccount: '账户已删除',

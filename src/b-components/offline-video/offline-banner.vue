@@ -2,13 +2,14 @@
   <SC_OfflineBanner v-if="visible" role="status" data-testid="offline-banner">
     <WifiOffIcon />
     <span>{{ t('offlineVideo.noNetwork') }}</span>
-    <router-link :to="to">{{ t('offlineVideo.downloadsLink') }}</router-link>
+    <router-link v-if="downloads" :to="to">{{ t('offlineVideo.downloadsLink') }}</router-link>
   </SC_OfflineBanner>
 </template>
 
 <script setup lang="ts">
 // «Нет сети · Скачанное» на ленте и в разделах «Видео» и «Аудио»: без сети
-// смотреть можно скачанное.
+// смотреть можно скачанное. «Нет сети» видят все (и гость, и сайт), ссылку
+// «Скачанное» — те, у кого скачивание есть.
 
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -25,6 +26,7 @@ const online = useOnline()
 const auth = useAuthStore()
 const store = useOfflineVideosStore()
 
-const visible = computed(() => !online.value && auth.isUserAuthenticated && store.available)
+const visible = computed(() => !online.value)
+const downloads = computed(() => auth.isUserAuthenticated && store.available)
 const to = computed(() => (props.kind === 'audio' ? '/audio/downloads' : '/video/downloads'))
 </script>
