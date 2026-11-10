@@ -87,6 +87,8 @@ const near = (rgba: number[], rgb: [number, number, number]) =>
 test('фото в чат: без места съёмки, тот же кадр и поворот; битый JPEG перерисован', async ({
   page,
 }) => {
+  // Холодный dev-сервер рядом с другими воркерами отдаёт приложение дольше 30 с.
+  test.setTimeout(90_000)
   await useMockNode(page, { profiles: [], posts: [], comments: [] })
   await page.goto('/')
   await page.waitForSelector('#app > *', { timeout: 30_000 })
