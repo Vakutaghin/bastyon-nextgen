@@ -7,6 +7,7 @@ vi.mock('@/b-components/app-toast', () => ({ appToast: toast }))
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
 
 import { NodeRejectError } from '@/blockchain/core/transactions/node-reject'
+import { UnreachableError } from '@/helpers/api/reachability'
 import { classifyVoteError, handleVoteError } from './star-rating-errors'
 
 describe('classifyVoteError (S18)', () => {
@@ -14,6 +15,14 @@ describe('classifyVoteError (S18)', () => {
     expect(classifyVoteError({ error: { code: 5 } }).isSelfScore).toBe(true)
     expect(classifyVoteError({ message: 'SelfScore' }).isSelfScore).toBe(true)
     expect(classifyVoteError({ error: { code: 4 } }).isSelfScore).toBe(false)
+  })
+
+  it('no Bastyon server answers (connected, no internet) is a network failure', () => {
+    expect(classifyVoteError(new UnreachableError('sendrawtransaction')).isNetworkFailed).toBe(true)
+    expect(
+      classifyVoteError(new Error('All RPC servers failed. Last error: x')).isNetworkFailed
+    ).toBe(true)
+    expect(classifyVoteError(new Error('boom')).isNetworkFailed).toBe(false)
   })
 
   it('still separates the other known verdicts', () => {

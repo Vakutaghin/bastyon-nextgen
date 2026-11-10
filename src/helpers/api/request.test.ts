@@ -1,13 +1,15 @@
 // Запросы к нодам: URL и тело RPC, разбор ответа (ошибка в JSON при 200 и
 // при 500, httpStatus на ошибке для failover — P2-3, «аккаунт не найден» у
 // user.get), таймаут вместо зависания, бродкаст транзакции без перебора нод
-// (V1), HTTP с подписью и 401, и типизированные обёртки rpcCall*.
+// (V1), HTTP с подписью и 401, и типизированные обёртки rpcCall*. Сеть есть,
+// а прокси не отвечают и на пинг — UnreachableError сразу, без перебора.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   appFetch: vi.fn(),
   orderedProxies: vi.fn(),
+  pingProxy: vi.fn(),
   signRpc: vi.fn(),
   signHttp: vi.fn(),
 }))
@@ -18,6 +20,7 @@ vi.mock('./fetch-strategies', () => ({
 }))
 vi.mock('./node-selector', () => ({
   orderedProxies: mocks.orderedProxies,
+  pingProxy: mocks.pingProxy,
   markProxyAlive: vi.fn(),
   markProxyDead: vi.fn(),
 }))
@@ -35,6 +38,7 @@ import {
   rpcCallWithAuth,
 } from './request'
 import { onRpcTraffic, type RpcTrafficEvent } from './rpc-traffic'
+import { LIVENESS_AFTER_MS, isUnreachable, resetReachabilityForTests } from './reachability'
 
 const NODE = { host: 'n1.pocketnet.app', port: 8899 }
 const NODE2 = { host: 'n2.pocketnet.app', port: 8899 }
@@ -56,6 +60,8 @@ describe('request', () => {
   beforeEach(() => {
     mocks.appFetch.mockReset()
     mocks.orderedProxies.mockReset().mockResolvedValue([NODE, NODE2])
+    mocks.pingProxy.mockReset().mockResolvedValue(true)
+    resetReachabilityForTests()
     mocks.signRpc.mockReset().mockImplementation(async (p: object) => ({ ...p, signature: 'sig' }))
     mocks.signHttp.mockReset().mockImplementation(async (d: object) => ({ ...d, signature: 'sig' }))
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -276,5 +282,153 @@ describe('без сети', () => {
     })
     expect(mocks.appFetch).not.toHaveBeenCalled()
     expect(mocks.orderedProxies).not.toHaveBeenCalled()
+  })
+})
+
+/** Ошибка запроса с тем, что о ней знают: «связи нет», причина и её список. */
+type Failure = Error & { unreachable?: boolean; cause: Error & { allErrors: Error[] } }
+const asFailure = (e: unknown) => e as Failure
+/** Запрос должен был упасть. */
+const unexpected = (): never => {
+  throw new Error('expected the request to fail')
+}
+
+describe('сеть есть, а прокси не отвечают', () => {
+  const failed = () => Promise.reject(new TypeError('Failed to fetch'))
+  const hanging = (_url: string, init: { signal: AbortSignal }) =>
+    new Promise((_, reject) =>
+      init.signal.addEventListener('abort', () =>
+        reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+      )
+    )
+
+  beforeEach(() => {
+    mocks.appFetch.mockReset()
+    mocks.orderedProxies.mockReset().mockResolvedValue([NODE, NODE2])
+    mocks.signHttp.mockReset().mockImplementation(async (d: object) => d)
+    mocks.pingProxy.mockReset().mockResolvedValue(false)
+    resetReachabilityForTests()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    resetReachabilityForTests()
+  })
+
+  it('RPC: сбой, на пинг никто — UnreachableError, вторая нода не спрошена; дальше — сразу', async () => {
+    mocks.appFetch.mockImplementation(failed)
+    const error = await getByPRC({ method: 'getnodeinfo', parameters: [] }).then(
+      unexpected,
+      asFailure
+    )
+    expect(error).toMatchObject({ unreachable: true, name: 'UnreachableError' })
+    expect(String(error.cause?.message)).toMatch(/^All RPC servers failed/)
+    expect(mocks.appFetch).toHaveBeenCalledTimes(1)
+    expect(isUnreachable()).toBe(true)
+
+    // Свежий круг пинга никого не нашёл — следующий запрос не уходит вовсе.
+    mocks.appFetch.mockClear()
+    mocks.pingProxy.mockClear()
+    await expect(getByPRC({ method: 'getcomments', parameters: [] })).rejects.toMatchObject({
+      unreachable: true,
+    })
+    await expect(fetchHttp({ path: 'x', data: {} })).rejects.toMatchObject({ unreachable: true })
+    expect(mocks.appFetch).not.toHaveBeenCalled()
+    expect(mocks.pingProxy).not.toHaveBeenCalled()
+  })
+
+  it('HTTP: так же', async () => {
+    mocks.appFetch.mockImplementation(failed)
+    await expect(fetchHttp({ path: 'x', data: {} })).rejects.toMatchObject({ unreachable: true })
+    expect(mocks.appFetch).toHaveBeenCalledTimes(1)
+    expect(isUnreachable()).toBe(true)
+  })
+
+  it('связи нет, но пинг снова отвечает — запрос идёт, связь есть', async () => {
+    mocks.appFetch.mockImplementation(failed)
+    await getByPRC({ method: 'getnodeinfo', parameters: [] }).catch(() => {})
+    expect(isUnreachable()).toBe(true)
+
+    // Круг устарел — новый.
+    vi.useFakeTimers()
+    await vi.advanceTimersByTimeAsync(11_000)
+    mocks.pingProxy.mockResolvedValue(true)
+    mocks.appFetch.mockReset().mockResolvedValue(response({ result: 'success' }))
+    await expect(getByPRC({ method: 'getnodeinfo', parameters: [] })).resolves.toEqual({
+      result: 'success',
+    })
+    expect(isUnreachable()).toBe(false)
+  })
+
+  it('ответ сервера с ошибкой — не «связи нет»: другие ошибки как раньше', async () => {
+    mocks.pingProxy.mockResolvedValue(true)
+    mocks.appFetch.mockResolvedValue(response({}, { status: 503, statusText: 'Unavailable' }))
+    const error = await fetchHttp({ path: 'x', data: {} }).then(unexpected, asFailure)
+    expect(error.message).toMatch(/^All HTTP servers failed/)
+    expect(error.unreachable).toBeUndefined()
+    expect(isUnreachable()).toBe(false)
+  })
+
+  it('прокси молчит и на пинг — обрыв через секунды, а не через 30 с', async () => {
+    vi.useFakeTimers()
+    mocks.pingProxy.mockImplementation(
+      async (server: { host: string }) => server.host !== NODE.host
+    )
+    mocks.appFetch.mockImplementation((url: string, init: { signal: AbortSignal }) =>
+      url.includes(NODE.host)
+        ? hanging(url, init)
+        : Promise.resolve(response({ result: 'success', data: 'n2' }))
+    )
+    let result: unknown = null
+    void getByPRC({ method: 'getnodeinfo', parameters: [] }).then((r) => (result = r))
+    await vi.advanceTimersByTimeAsync(LIVENESS_AFTER_MS)
+    expect(result).toEqual({ result: 'success', data: 'n2' })
+    expect(mocks.appFetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('обрыв по пингу назван так, а не таймаутом; свой таймаут — как раньше', async () => {
+    vi.useFakeTimers()
+    mocks.appFetch.mockImplementation(hanging)
+    // Обе молчат: перебор кончается на первой, в причине — обрыв по пингу.
+    const pending = getByPRC({ method: 'getnodeinfo', parameters: [] }).then(unexpected, asFailure)
+    await vi.advanceTimersByTimeAsync(LIVENESS_AFTER_MS)
+    const error = await pending
+    expect(error).toMatchObject({ unreachable: true })
+    expect(error.cause.allErrors.map((e: Error) => e.message)).toEqual([
+      'RPC proxy did not answer a ping',
+    ])
+
+    resetReachabilityForTests()
+    mocks.appFetch.mockClear()
+    const http = fetchHttp({ path: 'x', data: {} }).then(unexpected, asFailure)
+    await vi.advanceTimersByTimeAsync(LIVENESS_AFTER_MS)
+    expect((await http).cause.allErrors.map((e: Error) => e.message)).toEqual([
+      'HTTP proxy did not answer a ping',
+    ])
+
+    // Конкретная нода (без перебора) — без пинга, свой таймаут.
+    resetReachabilityForTests()
+    mocks.pingProxy.mockClear()
+    const pinned = fetchHttp({
+      path: 'x',
+      data: {},
+      options: { host: NODE.host, port: NODE.port, timeout: 7000 },
+    } as never).then(unexpected, asFailure)
+    await vi.advanceTimersByTimeAsync(7000)
+    expect((await pinned).message).toBe('Request timeout')
+    expect(mocks.pingProxy).not.toHaveBeenCalled()
+  })
+
+  it('бродкаст: связи нет и пинг молчит — транзакция не уходит', async () => {
+    mocks.appFetch.mockImplementation(failed)
+    await getByPRC({ method: 'getnodeinfo', parameters: [] }).catch(() => {})
+    mocks.appFetch.mockClear()
+    await expect(
+      getByPRC({
+        method: 'sendrawtransactionwithmessage',
+        parameters: ['hex'],
+        options: { noFailover: true },
+      })
+    ).rejects.toMatchObject({ unreachable: true })
+    expect(mocks.appFetch).not.toHaveBeenCalled()
   })
 })

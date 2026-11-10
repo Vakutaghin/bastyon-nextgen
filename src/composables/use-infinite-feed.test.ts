@@ -133,6 +133,7 @@ vi.mock('@/stores/ui-store', () => ({ useUIStore: () => uiStore }))
 import { feedErrorText, useInfiniteFeed } from './use-infinite-feed'
 import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
 import { OfflineError } from '@/helpers/api/offline'
+import { UnreachableError } from '@/helpers/api/reachability'
 import { feedSnapshotAPI } from '@/db/apis/feed-snapshot-api'
 import { t } from '@/i18n'
 import { buildFeedQueryByTab } from './helpers/feed-queries'
@@ -341,6 +342,14 @@ describe('useInfiniteFeed', () => {
       await flushPromises()
       expect(feed.isLoading.value).toBe(false)
       expect(feed.allPosts.value).toHaveLength(2)
+    })
+
+    it('connected but no Bastyon server answers — the saved feed too', async () => {
+      await saveFirstPage('a', 'b')
+      const feed = mountFeed()
+      queryState.error.value = new UnreachableError('feed')
+      await flushPromises()
+      expect(feed.allPosts.value.map((p) => p.id)).toEqual(['a', 'b'])
     })
 
     it('an error from the node itself shows the error, not the saved feed', async () => {

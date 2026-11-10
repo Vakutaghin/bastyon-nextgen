@@ -13,6 +13,7 @@ import { Capacitor } from '@capacitor/core'
 
 import { CURRENT_APP_VERSION } from '@/helpers/changelog/changelog-loader'
 import { currentProxy } from '@/helpers/api/node-selector'
+import { unreachableForS } from '@/helpers/api/reachability'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { isTauriEnv } from '@/helpers/api/request-tor'
@@ -71,6 +72,8 @@ export interface SupportReportData {
   network: {
     online: boolean
     connection?: string
+    /** Сеть есть, а прокси не отвечают и на пинг — столько секунд. */
+    unreachableForS?: number
     /** Прокси-нода, через которую идут запросы. */
     node?: string
     /** Нода за прокси, её версия и последний блок: отстала ли от сети. */
@@ -281,6 +284,7 @@ export async function collectSupportReport(now: Date = new Date()): Promise<Supp
     network: {
       online: safe(() => navigator.onLine, true),
       connection: connection?.effectiveType,
+      unreachableForS: unreachableForS(now.getTime()),
       // После запроса к ноде: если прокси ещё не была выбрана, её выбрал он.
       node: proxyHost(),
       ...nodeFacts,

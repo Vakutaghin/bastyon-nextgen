@@ -5,6 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 import { setI18nLocale } from '@/i18n'
 import { OfflineError } from '@/helpers/api/offline'
+import { UnreachableError } from '@/helpers/api/reachability'
 import { extractErrorMessage } from './extract-error-message'
 
 beforeAll(() => setI18nLocale('ru'))
@@ -20,6 +21,15 @@ function allFailed(errors: unknown[]): Error {
 describe('extractErrorMessage', () => {
   it('без сети — «Нет сети…»', () => {
     expect(extractErrorMessage(new OfflineError('rpc'))).toMatch(/^Нет сети/)
+  })
+
+  it('сеть есть, а прокси молчат и на пинг — про гостевой Wi-Fi и что загрузится само', () => {
+    const text = extractErrorMessage(
+      new UnreachableError('feed', allFailed([new TypeError('Failed to fetch')]))
+    )
+    expect(text).toMatch(/^Сеть есть, но Bastyon не отвечает/)
+    expect(text).toMatch(/Wi-Fi/)
+    expect(text).toMatch(/Загрузится само/)
   })
 
   it('все серверы молчат по сети — «Сеть Bastyon не отвечает…»', () => {

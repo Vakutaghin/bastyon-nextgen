@@ -93,7 +93,7 @@ function setCurrent(proxy: ServerEndpoint): void {
  * Health-пинг одной ноды: POST /ping с принудительным таймаутом через
  * AbortController. /ping у прокси лёгкий (≈0.4s) и отвечает 200 пока прокси жив.
  */
-async function probe(server: ServerEndpoint): Promise<boolean> {
+async function probe(server: ServerEndpoint, timeoutMs = PROBE_TIMEOUT_MS): Promise<boolean> {
   // Под Tor таймаут считается с готовности Tor: раньше 4 с истекали, пока он
   // подключался, и на каждом запуске все прокси выходили мёртвыми.
   let mode = await torRoutingMode()
@@ -102,7 +102,7 @@ async function probe(server: ServerEndpoint): Promise<boolean> {
   const controller = new AbortController()
   const timeoutId = setTimeout(
     () => controller.abort(),
-    mode === 'tor' ? TOR_PROBE_TIMEOUT_MS : PROBE_TIMEOUT_MS
+    mode === 'tor' ? Math.max(TOR_PROBE_TIMEOUT_MS, timeoutMs) : timeoutMs
   )
   try {
     const res = await appFetch(`https://${server.host}:${server.port}/ping`, {
@@ -210,6 +210,14 @@ export function anyProxyAlive(proxies: ServerEndpoint[]): Promise<boolean> {
       })
     }
   })
+}
+
+/**
+ * Пинг одного прокси со своим таймаутом (под Tor — не меньше TOR_PROBE_TIMEOUT_MS).
+ * Для проверки связи (reachability): ей нужен запас на медленную сеть.
+ */
+export function pingProxy(server: ServerEndpoint, timeoutMs: number): Promise<boolean> {
+  return probe(server, timeoutMs)
 }
 
 /** Нода, с которой сейчас работает приложение (для сведений в поддержку). */

@@ -558,6 +558,8 @@ export default {
     offline: 'No network connection. It will load once the connection is back.',
     networkUnavailable:
       'The Bastyon network is not responding. Check your connection or try again later.',
+    noConnection:
+      'Connected, but Bastyon is not answering. On café or hotel Wi-Fi, sign in on its page first. It will load by itself once the connection is back.',
     cancel: 'Cancel',
     close: 'Close',
     deletedAccount: 'Account deleted',

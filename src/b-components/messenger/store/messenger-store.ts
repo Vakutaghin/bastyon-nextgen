@@ -10,6 +10,7 @@ import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type { Dialog } from '../types'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { onAppForeground } from '@/helpers/common/app-foreground'
+import { onNetworkBack } from '@/helpers/api/reachability'
 import { isUserVerified } from '@/helpers/profile/is-user-verified'
 import { userMark } from '@/helpers/profile/user-mark'
 import { logger } from '@/services/logger'
@@ -379,10 +380,9 @@ export const useMessengerStore = defineStore('messenger', () => {
   // отрезала сеть), ждал бы паузы повтора — пусть идёт сразу. На Android
   // visibilitychange приходит на секунды позже, поэтому — по общему сигналу.
   onScopeDispose(onAppForeground(() => void matrixService.getClient()?.retryImmediately?.()))
-  // Сеть вернулась: SDK проверяет связь раз в 5–10 с — пусть синк идёт сразу.
-  const onOnline = () => void matrixService.getClient()?.retryImmediately?.()
-  window.addEventListener('online', onOnline)
-  onScopeDispose(() => window.removeEventListener('online', onOnline))
+  // Сеть вернулась (или Bastyon снова отвечает — «сеть есть, интернета нет»):
+  // SDK проверяет связь раз в 5–10 с — пусть синк идёт сразу.
+  onScopeDispose(onNetworkBack(() => void matrixService.getClient()?.retryImmediately?.()))
 
   // --- Инициализация Matrix ---
 
@@ -402,6 +402,7 @@ export const useMessengerStore = defineStore('messenger', () => {
    */
   let loginRetryTimer: ReturnType<typeof setTimeout> | null = null
   let loginRetryDelay = LOGIN_RETRY_MIN_DELAY
+  let stopRetryOnNetworkBack: (() => void) | null = null
 
   const retryLoginNow = () => {
     cancelLoginRetry()
@@ -450,12 +451,14 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (loginRetryTimer) clearTimeout(loginRetryTimer)
     loginRetryTimer = null
     loginRetryDelay = LOGIN_RETRY_MIN_DELAY
-    window.removeEventListener('online', retryLoginNow)
+    stopRetryOnNetworkBack?.()
+    stopRetryOnNetworkBack = null
   }
 
   const scheduleLoginRetry = () => {
     if (loginRetryTimer) return
-    window.addEventListener('online', retryLoginNow)
+    // Пауза дорастает до 5 мин: связь вернулась — не ждём её.
+    stopRetryOnNetworkBack ??= onNetworkBack(retryLoginNow)
     loginRetryTimer = setTimeout(() => {
       loginRetryTimer = null
       void initMatrix()

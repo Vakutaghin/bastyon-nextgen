@@ -25,6 +25,7 @@ import { NODE_WSS_PORT } from '@/helpers/api/direct-nodes/node-call'
 import { directNodes, markNodeDead } from '@/helpers/api/direct-nodes/node-pool'
 import { NodeWebSocket } from '@/helpers/api/direct-nodes/node-websocket'
 import { isOfflineNow } from '@/helpers/api/offline'
+import { onNetworkBack } from '@/helpers/api/reachability'
 
 // --- Types ---
 
@@ -558,10 +559,11 @@ onRouteChange(() => {
 
 onAppForeground((awayMs) => wsService.resume(awayMs))
 
-// Сеть вернулась: пауза перед повтором могла дорасти до 30 с — подключаемся
-// сразу, как после возврата в приложение. Сокет мог умереть молча — новый.
+// Сеть вернулась (или прокси снова отвечают): пауза перед повтором могла
+// дорасти до 30 с — подключаемся сразу, как после возврата в приложение.
+// Сокет мог умереть молча — новый.
 if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => wsService.resume(Number.POSITIVE_INFINITY))
+  onNetworkBack(() => wsService.resume(Number.POSITIVE_INFINITY))
 }
 
 // Tor включили на ходу: открытый сокет с подпиской адреса шёл мимо Tor.

@@ -557,6 +557,8 @@ export default {
     offline: 'Nessuna connessione di rete. Si caricherà quando la connessione tornerà.',
     networkUnavailable:
       'La rete Bastyon non risponde. Controlla la connessione o riprova più tardi.',
+    noConnection:
+      'C’è rete, ma Bastyon non risponde. Sul Wi-Fi di un bar o di un hotel, accedi prima dalla sua pagina. Si caricherà da solo quando torna la connessione.',
     cancel: 'Annulla',
     close: 'Chiudi',
     deletedAccount: 'Account eliminato',

@@ -564,6 +564,8 @@ export default {
     offline: 'Sin conexión de red. Se cargará cuando vuelva la conexión.',
     networkUnavailable:
       'La red de Bastyon no responde. Comprueba la conexión o inténtalo más tarde.',
+    noConnection:
+      'Hay red, pero Bastyon no responde. En el wifi de un café u hotel, inicia sesión primero en su página. Se cargará solo cuando vuelva la conexión.',
     cancel: 'Cancelar',
     close: 'Cerrar',
     deletedAccount: 'Cuenta eliminada',

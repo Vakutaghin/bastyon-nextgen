@@ -10,14 +10,16 @@
  * - `request-signing.ts` — подпись RPC/HTTP параметров через auth-store
  * - `rpc-errors.ts` — `isLogicError` / `isTimeout500`
  * - `rpc-retry.ts` — `retryWithBackoff` цикл по серверам
+ * - `reachability.ts` — сеть есть, а прокси не отвечают: не ждать таймаутов
  */
 
 import servers from '@/servers.json'
 import { getRpcPath } from './rpc-endpoints'
 import { appFetch } from './fetch-strategies'
-import { retryWithBackoff, type ServerEndpoint } from './rpc-retry'
+import { noProxyAnswered, retryWithBackoff, type ServerEndpoint } from './rpc-retry'
 import { anyProxyAlive, orderedProxies } from './node-selector'
 import { assertOnline, isOfflineNow } from './offline'
+import { noteReachable, noteUnreachable, proxiesReachable, UnreachableError } from './reachability'
 import {
   connectionRoute,
   mayFallBackToDirect,
@@ -47,9 +49,10 @@ export { appFetch, matrixFetch, getTauriFetch } from './fetch-strategies'
 async function tryRpcRequest(
   params: T_RpcRequestParams,
   host: string,
-  port: number
+  port: number,
+  signal?: AbortSignal
 ): Promise<unknown> {
-  if (!hasRpcTrafficListeners()) return requestRpc(params, host, port)
+  if (!hasRpcTrafficListeners()) return requestRpc(params, host, port, signal)
   const startedAt = Date.now()
   const report = (ok: boolean, response?: unknown) =>
     reportRpcTraffic({
@@ -61,7 +64,7 @@ async function tryRpcRequest(
       ms: Date.now() - startedAt,
     })
   try {
-    const response = await requestRpc(params, host, port)
+    const response = await requestRpc(params, host, port, signal)
     report(true, response)
     return response
   } catch (error) {
@@ -70,10 +73,31 @@ async function tryRpcRequest(
   }
 }
 
+/**
+ * Свой таймаут запроса и обрыв снаружи (прокси не ответил на пинг, rpc-retry)
+ * — один сигнал. `stop` снимает таймер и подписку: тело ответа читается без них.
+ */
+function requestGuard(timeoutMs: number, outer?: AbortSignal) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const onOuter = () => controller.abort()
+  outer?.addEventListener('abort', onOuter, { once: true })
+  return {
+    signal: controller.signal,
+    /** Оборван снаружи: прокси молчит и на пинг. */
+    silenced: () => outer?.aborted === true,
+    stop() {
+      clearTimeout(timer)
+      outer?.removeEventListener('abort', onOuter)
+    },
+  }
+}
+
 async function requestRpc(
   params: T_RpcRequestParams,
   host: string,
-  port: number
+  port: number,
+  signal?: AbortSignal
 ): Promise<unknown> {
   const useEx = params.options?.ex === true
   const path = getRpcPath(params.method, useEx)
@@ -83,9 +107,8 @@ async function requestRpc(
   // refused) висит до сетевого таймаута ОС (~75с). Живая нода уже отобрана
   // health-пингом (node-selector), поэтому потолок щадящий — это страховка на
   // случай, если нода умерла «на лету».
-  const controller = new AbortController()
   const timeout = params.options?.timeout ?? 30000
-  const timeoutId = setTimeout(() => controller.abort(), timeout)
+  const guard = requestGuard(timeout, signal)
 
   let response: Response
   try {
@@ -95,16 +118,19 @@ async function requestRpc(
         'Content-Type': 'application/json;charset=utf-8',
       },
       body: JSON.stringify(params),
-      signal: controller.signal,
+      signal: guard.signal,
     })
   } catch (error) {
-    clearTimeout(timeoutId)
+    guard.stop()
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error(`RPC request timeout after ${timeout}ms`, { cause: error })
+      const why = guard.silenced()
+        ? 'RPC proxy did not answer a ping'
+        : `RPC request timeout after ${timeout}ms`
+      throw new Error(why, { cause: error })
     }
     throw error
   }
-  clearTimeout(timeoutId)
+  guard.stop()
 
   // Для некоторых методов (например, user.get) 500 может означать "не найдено"
   // Пытаемся прочитать тело ответа, даже если статус не OK
@@ -168,7 +194,8 @@ async function requestRpc(
 async function tryHttpRequest(
   params: HttpRequestParams,
   host: string,
-  port: number
+  port: number,
+  signal?: AbortSignal
 ): Promise<unknown> {
   const { path, data, options } = params
 
@@ -176,9 +203,8 @@ async function tryHttpRequest(
 
   const url = `https://${host}:${port}/${path}`
 
-  const controller = new AbortController()
   const timeout = options?.timeout || 30000
-  const timeoutId = setTimeout(() => controller.abort(), timeout)
+  const guard = requestGuard(timeout, signal)
 
   try {
     const response = await appFetch(url, {
@@ -188,10 +214,10 @@ async function tryHttpRequest(
         Accept: 'application/json',
       },
       body: JSON.stringify(signedData),
-      signal: controller.signal,
+      signal: guard.signal,
     })
 
-    clearTimeout(timeoutId)
+    guard.stop()
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
@@ -218,10 +244,11 @@ async function tryHttpRequest(
 
     return result.data || result
   } catch (error) {
-    clearTimeout(timeoutId)
+    guard.stop()
 
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timeout', { cause: error })
+      const why = guard.silenced() ? 'HTTP proxy did not answer a ping' : 'Request timeout'
+      throw new Error(why, { cause: error })
     }
 
     throw error
@@ -246,12 +273,22 @@ export async function fetchHttp(params: HttpRequestParams): Promise<unknown> {
   if ((await connectionRoute()) === 'direct' && !(await anyProxyAlive(proxies))) {
     throw new Error(`Proxy servers are unreachable: ${params.path}`)
   }
+  // Связи нет, и свежий пинг никого не нашёл — сразу (reachability).
+  if (!(await proxiesReachable(proxies))) throw new UnreachableError(params.path)
 
-  return retryWithBackoff(params, {
-    servers: proxies,
-    request: tryHttpRequest,
-    protocolName: 'HTTP',
-  })
+  try {
+    return await retryWithBackoff(params, {
+      servers: proxies,
+      request: tryHttpRequest,
+      protocolName: 'HTTP',
+    })
+  } catch (error) {
+    if (noProxyAnswered(error)) {
+      noteUnreachable()
+      throw new UnreachableError(params.path, error)
+    }
+    throw error
+  }
 }
 
 /**
@@ -299,6 +336,11 @@ export async function getByPRC(
   if ((await connectionRoute()) === 'direct') return directRpc(params)
 
   const proxies = servers.servers.production.proxy as ServerEndpoint[]
+  // «Авто»: прокси перестали отвечать — запрос уходит к нодам, если те отвечают.
+  const fallback = await mayFallBackToDirect()
+
+  // Связи нет, и свежий пинг никого не нашёл — не перебираем (reachability).
+  if (!(await proxiesReachable(proxies))) return viaNodesOrUnreachable(params, fallback)
 
   // Неидемпотентные вызовы (бродкаст транзакции, V1): один сервер и никакого
   // перебора — таймаут первой ноды не должен отправлять тот же hex второй.
@@ -308,24 +350,42 @@ export async function getByPRC(
     return tryRpcRequest(params, server.host, server.port)
   }
 
-  // «Авто»: прокси перестали отвечать по ходу — после первого сбоя проверяем
-  // все разом и, если молчат все, не ждём таймаута каждого, а идём к нодам.
-  const fallback = await mayFallBackToDirect()
+  // Перебор сам кончается, когда на пинг не ответил ни один прокси: дальше —
+  // к нодам («Авто») или «связи нет», без таймаута каждого прокси.
   try {
     return await retryWithBackoff(params, {
       servers: proxies,
       request: tryRpcRequest,
       isLogicErrorThrowable: true,
       protocolName: 'RPC',
-      stopAfterFailure: fallback ? async () => !(await anyProxyAlive(proxies)) : undefined,
       maxNodeTimeouts: params.options?.nodeTimeouts,
     })
   } catch (error) {
     if (fallback && proxiesUnreachable(error) && (await reportProxiesUnreachable())) {
+      noteReachable()
       return directRpc(params)
+    }
+    if (noProxyAnswered(error)) {
+      noteUnreachable()
+      throw new UnreachableError(params.method, error)
     }
     throw error
   }
+}
+
+/**
+ * Прокси молчат: в «Авто» — к нодам, если те отвечают (связь, значит, есть),
+ * иначе — «связи нет».
+ */
+async function viaNodesOrUnreachable(
+  params: T_RpcRequestParams,
+  fallback: boolean
+): Promise<unknown> {
+  if (fallback && (await reportProxiesUnreachable())) {
+    noteReachable()
+    return directRpc(params)
+  }
+  throw new UnreachableError(params.method)
 }
 
 /**

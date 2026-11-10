@@ -527,6 +527,8 @@ export default {
   common: {
     offline: '没有网络连接。连接恢复后将自动加载。',
     networkUnavailable: 'Bastyon 网络没有响应。请检查连接或稍后再试。',
+    noConnection:
+      '已联网，但 Bastyon 没有响应。如果是咖啡馆或酒店的 Wi-Fi，请先在其页面登录。连接恢复后会自动加载。',
     cancel: '取消',
     close: '关闭',
     deletedAccount: '账户已删除',

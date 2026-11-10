@@ -565,6 +565,8 @@ export default {
     offline: 'Keine Netzwerkverbindung. Es wird geladen, sobald die Verbindung zurück ist.',
     networkUnavailable:
       'Das Bastyon-Netzwerk antwortet nicht. Prüfen Sie die Verbindung oder versuchen Sie es später.',
+    noConnection:
+      'Verbunden, aber Bastyon antwortet nicht. Melden Sie sich im WLAN eines Cafés oder Hotels zuerst auf dessen Seite an. Es lädt von selbst, sobald die Verbindung da ist.',
     cancel: 'Abbrechen',
     close: 'Schließen',
     deletedAccount: 'Konto gelöscht',

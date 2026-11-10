@@ -42,6 +42,7 @@ import {
 import { extractErrorMessage, isNetworkUnreachable } from '@/helpers/common/extract-error-message'
 import { NoDirectNodesError } from '@/helpers/api/direct-nodes/node-pool'
 import { isOfflineError, isOfflineNow } from '@/helpers/api/offline'
+import { isUnreachableError } from '@/helpers/api/reachability'
 import { FEED_SNAPSHOT_POSTS, feedSnapshotAPI } from '@/db/apis/feed-snapshot-api'
 import { t } from '@/i18n'
 
@@ -62,6 +63,7 @@ export function isConnectionFailure(err: unknown): boolean {
   return (
     isOfflineNow() ||
     isOfflineError(err) ||
+    isUnreachableError(err) ||
     isNetworkUnreachable(err) ||
     err instanceof NoDirectNodesError
   )

@@ -80,6 +80,7 @@ vi.mock('./messenger-store/use-dialog-mapping', () => ({
 }))
 
 import { findExistingRoomByAddress } from '../room-helpers'
+import { noteReachable, noteUnreachable } from '@/helpers/api/reachability'
 import { useMessengerStore } from './messenger-store'
 import { SYNC_ERROR_GRACE_MS, useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerChannelsStore } from './messenger-channels-store'
@@ -361,6 +362,22 @@ describe('messenger-store: повтор входа в Matrix в фоне', () =>
     await store.initMatrix()
 
     window.dispatchEvent(new Event('online'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(h.matrix.login).toHaveBeenCalledTimes(2)
+  })
+
+  it('сеть была, а Bastyon молчал — ответил: повтор входа сразу, без паузы', async () => {
+    h.matrix.login.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+    await store.initMatrix()
+
+    noteUnreachable()
+    noteReachable()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(h.matrix.login).toHaveBeenCalledTimes(2)
+
+    // Вход удался — подписка снята: следующий ответ Bastyon вход не повторяет.
+    noteUnreachable()
+    noteReachable()
     await vi.advanceTimersByTimeAsync(0)
     expect(h.matrix.login).toHaveBeenCalledTimes(2)
   })

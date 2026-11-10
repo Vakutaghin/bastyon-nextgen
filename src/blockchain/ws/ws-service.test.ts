@@ -3,6 +3,7 @@ import { wsService } from './ws-service'
 import type { WsMessage } from './ws-service'
 import type { KeyPair } from '../types/keys'
 import { setAppActiveForTests } from '@/helpers/common/app-foreground'
+import { noteReachable, noteUnreachable } from '@/helpers/api/reachability'
 import { Capacitor } from '@capacitor/core'
 
 // ---------------------------------------------------------------------------
@@ -511,6 +512,16 @@ describe('PocketnetWsService', () => {
       setAppActiveForTests(true)
       await vi.advanceTimersByTimeAsync(0)
       expect(FakeWebSocket.instances).toHaveLength(3)
+    })
+
+    it('сеть была, а прокси молчали — ответили: новый сокет сразу, без паузы повтора', async () => {
+      vi.useFakeTimers()
+      await wsService.connect()
+      FakeWebSocket.instances[0]!._open()
+      noteUnreachable()
+      noteReachable()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(FakeWebSocket.instances).toHaveLength(2)
     })
 
     it('свёрнутое мобильное приложение не переподключается в фоне, а вернувшись — сразу', async () => {

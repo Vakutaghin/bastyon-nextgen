@@ -3,6 +3,7 @@
 
 import { appToast } from '@/b-components/app-toast'
 import { NodeRejectError } from '@/blockchain/core/transactions/node-reject'
+import { isUnreachableError } from '@/helpers/api/reachability'
 import { t } from '@/i18n'
 import type { StarRatingEmits } from '../types'
 
@@ -70,8 +71,10 @@ export function classifyVoteError(error: unknown): ClassifiedError {
   }
 
   const isNetworkFailed =
-    typeof e.message === 'string' &&
-    (e.message.includes('All RPC servers failed') || e.message.includes('All HTTP servers failed'))
+    isUnreachableError(error) ||
+    (typeof e.message === 'string' &&
+      (e.message.includes('All RPC servers failed') ||
+        e.message.includes('All HTTP servers failed')))
 
   return {
     isDoubleScore,

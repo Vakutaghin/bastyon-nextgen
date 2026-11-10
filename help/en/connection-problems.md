@@ -1,5 +1,5 @@
 ---
-keywords: [no connection, server unavailable, not loading, node unavailable, offline, chat does not connect]
+keywords: [no connection, no internet, guest Wi-Fi, server unavailable, not loading, node unavailable, offline, chat does not connect]
 ---
 
 # No connection to the network
@@ -33,6 +33,17 @@ Without a network you still have:
 - [downloaded videos and audio](offline-video.md);
 - the chat list and messages loaded before, and [mesh messaging](mesh.md);
 - the first page of feeds you have opened, and posts that were already on screen before the network dropped.
+
+## Connected, but nothing loads <!-- #no-internet -->
+
+Sometimes the device is connected but there is no internet: café, hotel or train Wi-Fi before you sign in on its page, a router that lost its provider, a block. Then instead of the feed and profiles you see “Connected, but Bastyon is not answering…”, or the saved feed if you have opened it before.
+
+The app notices this within seconds instead of waiting half a minute for each server. While there is no connection, it checks by itself: after a few seconds, then every half minute, and right away when the network changes or you return to the app. As soon as Bastyon answers, the feed, profiles, notifications and chats load by themselves. In the desktop and Android apps in **“Auto”** mode it also switches to nodes directly if they answer.
+
+What to do:
+
+- on guest Wi-Fi, open any website in the browser — the network sign-in page appears; sign in and return to the app;
+- if websites open but Bastyon does not, the proxies may be blocked — see [The feed does not load](#the-feed-does-not-load).
 
 ## Tor does not connect
 

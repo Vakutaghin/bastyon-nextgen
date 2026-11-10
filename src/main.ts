@@ -20,6 +20,7 @@ import { Capacitor } from '@capacitor/core'
 import { isTauriEnv } from '@/helpers/api/request-tor'
 import { allowPinchZoom, isIosBrowser } from '@/helpers/a11y/viewport-zoom'
 import { isOfflineNow } from '@/helpers/api/offline'
+import { onNetworkBack } from '@/helpers/api/reachability'
 import { isMobileAppInBackground, onAppForeground } from '@/helpers/common/app-foreground'
 allowPinchZoom({
   native: Capacitor.isNativePlatform() || isTauriEnv(),
@@ -190,7 +191,8 @@ watch(
   },
   { immediate: true }
 )
-window.addEventListener('online', () => {
+// Сеть вернулась или прокси снова отвечают («сеть есть, интернета нет»).
+onNetworkBack(() => {
   if (authStore.isUserAuthenticated) void notificationsStore.init({ forceRefresh: true })
 })
 onAppForeground((awayMs) => {

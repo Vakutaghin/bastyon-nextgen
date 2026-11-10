@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
 import { isOfflineError } from '@/helpers/api/offline'
+import { isUnreachableError } from '@/helpers/api/reachability'
 
 /**
  * Извлекает человекочитаемое сообщение из произвольной ошибки.
@@ -18,6 +19,8 @@ export function extractErrorMessage(err: unknown): string {
   // Без сети и «ни один сервер не ответил по сети» — словами, а не строкой
   // «All RPC servers failed. Last error: Failed to fetch».
   if (isOfflineError(err)) return t('common.offline')
+  // Сеть есть, а прокси не отвечают и на пинг: связь проверяется сама.
+  if (isUnreachableError(err)) return t('common.noConnection')
   if (isNetworkUnreachable(err)) return t('common.networkUnavailable')
   if (err instanceof Error) return err.message
   if (typeof err === 'object') {

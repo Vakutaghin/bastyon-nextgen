@@ -557,6 +557,8 @@ export default {
     offline: '네트워크에 연결되어 있지 않습니다. 연결이 돌아오면 불러옵니다.',
     networkUnavailable:
       'Bastyon 네트워크가 응답하지 않습니다. 연결을 확인하거나 나중에 다시 시도하세요.',
+    noConnection:
+      '네트워크에 연결되어 있지만 Bastyon이 응답하지 않습니다. 카페나 호텔 Wi-Fi라면 먼저 해당 페이지에서 로그인하세요. 연결되면 자동으로 불러옵니다.',
     cancel: '취소',
     close: '닫기',
     deletedAccount: '삭제된 계정',

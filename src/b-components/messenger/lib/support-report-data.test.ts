@@ -18,6 +18,8 @@ vi.mock('../services/matrix-service', () => ({
 }))
 const journal = vi.hoisted(() => ({ report: vi.fn() }))
 vi.mock('../services/matrix-service/sync-journal', () => ({ syncJournal: journal }))
+const reach = vi.hoisted(() => ({ unreachableForS: vi.fn() }))
+vi.mock('@/helpers/api/reachability', () => reach)
 
 import { clearRecentErrors, rememberError } from '@/helpers/diagnostics/recent-errors'
 import { useMessengerUiStore } from '../store/messenger-ui-store'
@@ -33,6 +35,7 @@ beforeEach(() => {
   mocks.rpc.mockReset()
   mocks.rpc.mockRejectedValue(new Error('offline'))
   journal.report.mockReturnValue({ state: 'PREPARED', stateForS: 75, recoveries: 0, journal: [] })
+  reach.unreachableForS.mockReset().mockReturnValue(undefined)
 })
 
 afterEach(() => clearRecentErrors())
@@ -66,6 +69,8 @@ describe('collectSupportReport', () => {
       chatServer: 'matrix.pocketnet.app',
       chatSync: 'SYNCING',
     })
+    // Связь есть — поля нет вовсе.
+    expect('unreachableForS' in report.network && report.network.unreachableForS).toBeFalsy()
     expect(mocks.rpc.mock.calls[0]![0]).toMatchObject({ method: 'getnodeinfo' })
     expect(report.errors.map((e) => e.message)).toEqual(['[profile] <address> not found'])
     expect(Array.isArray(report.stalls)).toBe(true)
@@ -78,6 +83,13 @@ describe('collectSupportReport', () => {
       journal: [],
     })
     expect(reportJson(report)).not.toContain(ADDRESS)
+  })
+
+  it('сеть есть, а прокси молчат — сколько секунд, на момент сбора', async () => {
+    reach.unreachableForS.mockReturnValue(42)
+    const report = await collectSupportReport(new Date(1_791_288_000_000))
+    expect(reach.unreachableForS).toHaveBeenCalledWith(1_791_288_000_000)
+    expect(report.network.unreachableForS).toBe(42)
   })
 
   it('на компьютере система — от приложения', async () => {
