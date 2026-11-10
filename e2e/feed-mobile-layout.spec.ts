@@ -141,7 +141,8 @@ test('на компьютере карточка остаётся карточк
 
   await card(page, 'Длинный пост').getByRole('button', { name: 'Показать полностью' }).click()
   const modal = page.locator('.ant-modal-content').filter({ hasText: 'Длинный пост' })
-  await expect(modal).toBeVisible()
+  // Первое окно поста на холодном dev-сервере WebKit открывает дольше 5 с.
+  await expect(modal).toBeVisible({ timeout: 15_000 })
   await expect
     .poll(async () => Math.round((await modal.boundingBox())?.x ?? 0))
     .toBeGreaterThan(100)
