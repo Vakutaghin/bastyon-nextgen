@@ -197,6 +197,9 @@ mod tests {
         assert!(!lines.contains("${pt_path}"), "{lines}");
     }
 
+    // Пути Android — только на хосте с `/`: на Windows Path::join ставит `\`,
+    // а к программам дописывается `.exe`. На самом Android ни того ни другого нет.
+    #[cfg(not(windows))]
     #[test]
     fn android_torrc_points_at_the_library_dir() {
         let paths = TorPaths::android(

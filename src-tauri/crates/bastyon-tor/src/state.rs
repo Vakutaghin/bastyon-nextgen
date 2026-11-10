@@ -329,6 +329,8 @@ mod tests {
         assert_eq!(paths.pt_program("lyrebird"), paths.pt_dir.join("lyrebird"));
     }
 
+    // Пути Android — только на хосте с `/`: на Windows Path::join ставит `\`.
+    #[cfg(not(windows))]
     #[test]
     fn android_runs_tor_and_transports_from_the_library_dir() {
         let root = PathBuf::from("/data/user/0/com.bastyon.app/files/tor");

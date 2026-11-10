@@ -2117,7 +2117,7 @@ mod tests {
 
     #[test]
     fn config_lists_interfaces_in_python_format() {
-        let text = config_text(&[
+        let r = config_text(&[
             IfaceConfig::Tcp {
                 host: "rns.example.org".into(),
                 port: 4242,
@@ -2133,8 +2133,14 @@ mod tests {
                 fd: None,
             },
             IfaceConfig::Auto,
-        ])
-        .unwrap();
+        ]);
+        // На Windows RNode нет (у rns-net там нет последовательного порта):
+        // конфиг с ним — отказ, а не узел без радио.
+        if cfg!(windows) {
+            assert_eq!(r.unwrap_err(), "unsupported: RNode /dev/cu.usbserial-0001");
+            return;
+        }
+        let text = r.unwrap();
         assert!(text.contains("share_instance = No"));
         assert!(text.contains("[[rns.example.org:4242]]\n    type = TCPClientInterface"));
         assert!(text.contains("target_port = 4242"));
@@ -2165,8 +2171,8 @@ mod tests {
             fd: None,
         }]);
         assert!(r.is_err());
-        // Android: вместо пути — дескриптор моста.
-        let text = config_text(&[IfaceConfig::Rnode {
+        // Android: вместо пути — дескриптор моста. На Windows RNode нет.
+        let r = config_text(&[IfaceConfig::Rnode {
             port: "usb-1234".into(),
             frequency: 869_525_000,
             bandwidth: 125_000,
@@ -2174,8 +2180,12 @@ mod tests {
             coding_rate: 5,
             tx_power: 14,
             fd: Some(42),
-        }])
-        .unwrap();
+        }]);
+        if cfg!(windows) {
+            assert_eq!(r.unwrap_err(), "unsupported: RNode usb-1234");
+            return;
+        }
+        let text = r.unwrap();
         assert!(text.contains("\n    fd = 42\n") && !text.contains("\n    port = "), "{text}");
     }
 

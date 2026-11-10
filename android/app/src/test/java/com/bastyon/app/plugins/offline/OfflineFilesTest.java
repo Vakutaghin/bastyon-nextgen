@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -221,7 +222,11 @@ public class OfflineFilesTest {
         File dir = new File(root, "big-1080");
         assertTrue(dir.mkdirs());
         long len = 3L * 1024 * 1024 * 1024 + 5;
-        // Разреженный файл: места на диске почти не занимает.
+        // Разреженный файл: места на диске почти не занимает. ext4 и APFS
+        // разрежают сами, NTFS — только с SPARSE при создании: без него Windows
+        // писала на диск все 3 ГБ нулей, и тест шёл минуту.
+        Files.newByteChannel(new File(dir, "video.mp4").toPath(),
+                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.SPARSE).close();
         try (RandomAccessFile f = new RandomAccessFile(new File(dir, "video.mp4"), "rw")) {
             f.setLength(len);
             f.seek(3_000_000_000L);
