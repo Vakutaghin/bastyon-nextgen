@@ -11,6 +11,10 @@ import {
   startIndexedDbStore,
 } from './matrix-service/transport'
 import { runKeepAlive } from './matrix-service/keepalive'
+import { syncJournal } from './matrix-service/sync-journal'
+import { createSyncWatchdog } from './matrix-service/sync-watchdog'
+import { isAppHidden } from '@/helpers/common/app-foreground'
+import { isOfflineNow } from '@/helpers/api/offline'
 import {
   uploadContent as uploadContentImpl,
   sendAudio as sendAudioImpl,
@@ -48,6 +52,13 @@ export class MatrixService {
   private eventQueue: Array<{ event: string; listener: (...args: any[]) => void }> = []
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null
   private keepAliveIntervalMs = 60000
+  /** Зависший синк — перезапуск (sync-watchdog); путь синка — в журнал для поддержки. */
+  private syncWatchdog = createSyncWatchdog({
+    journal: syncJournal,
+    client: () => this.client,
+    hidden: isAppHidden,
+    offline: isOfflineNow,
+  })
   private store: InstanceType<typeof sdk.IndexedDBStore> | null = null
   /**
    * Растёт на каждом stop(). Вход, начатый до смены аккаунта, заканчивался уже
@@ -99,8 +110,11 @@ export class MatrixService {
       if (deviceId) opts.deviceId = deviceId
     }
 
-    // Все запросы Matrix (в т.ч. /filter) через matrixFetch — в Tauri обход CORS
-    opts.fetchFn = (input: RequestInfo | URL, init?: RequestInit) => matrixFetch(input, init)
+    // Все запросы Matrix (в т.ч. /filter) через matrixFetch — в Tauri обход CORS.
+    // Запросы синка — ещё и в журнал (sync-journal).
+    opts.fetchFn = syncJournal.wrapFetch((input: RequestInfo | URL, init?: RequestInit) =>
+      matrixFetch(input, init)
+    )
 
     // IndexedDBStore: matrix-js-sdk сохраняет sync-state на диск, и при
     // последующих запусках `getRooms()` сразу возвращает все комнаты из кэша, без
@@ -126,7 +140,17 @@ export class MatrixService {
       client.on(event as Parameters<SdkMatrixClient['on']>[0], listener)
     })
 
+    // Состояния синка — в журнал. Сторож оборвал зависший запрос — SDK ушёл в
+    // RECONNECTING (обрыв /sync) или ERROR (обрыв push rules или фильтра до
+    // первого /sync): повторяем сразу, без его паузы на проверку связи.
+    client.on(sdk.ClientEvent.Sync, (state: string, prev: string | null) => {
+      syncJournal.noteState(state, prev)
+      const waiting = state === 'RECONNECTING' || state === 'ERROR'
+      if (waiting && this.syncWatchdog.recovering()) client.retryImmediately()
+    })
+
     if (accessToken) {
+      syncJournal.noteStart(!!store)
       // «В сети» по умолчанию не объявляем — как и прежний чат Bastyon: синк
       // идёт с set_presence=offline. Включили в настройках — синк сам держит
       // «в сети», пока приложение открыто.
@@ -135,6 +159,7 @@ export class MatrixService {
         disablePresence: !this.presenceVisible,
       })
       this.startKeepAlive()
+      this.syncWatchdog.start()
     }
     return true
   }
@@ -747,6 +772,7 @@ export class MatrixService {
       this.store = null
     }
     this.stopKeepAlive()
+    this.syncWatchdog.stop()
     this.eventQueue = []
   }
 }

@@ -4,7 +4,7 @@
  * Только то, что помогает понять ошибку: версия и платформа, система, экран,
  * язык, настройки, от которых зависит работа, к чему подключено приложение и
  * последние ошибки (с вырезанными адресами, см. recent-errors) и долгие
- * блокировки (main-thread-stalls). Ни ключей,
+ * блокировки (main-thread-stalls), журнал синка чатов (sync-journal). Ни ключей,
  * ни фразы восстановления, ни адреса и имени (поддержка и так видит, кто
  * пишет), ни переписки, контактов, страниц, где человек был.
  */
@@ -24,6 +24,7 @@ import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { useTorStore } from '@/stores/tor-store'
 import type { GetNodeInfoResponse } from '@/types/rpc-responses/get-node-info'
 import { matrixService } from '../services/matrix-service'
+import { syncJournal, type SyncJournalReport } from '../services/matrix-service/sync-journal'
 import { useMessengerUiStore } from '../store/messenger-ui-store'
 
 export const SUPPORT_REPORT_KIND = 'bastyon-nextgen-support'
@@ -85,6 +86,8 @@ export interface SupportReportData {
   errors: RecentError[]
   /** Долгие блокировки за неделю: «листается, но не нажимается». */
   stalls: MainThreadStall[]
+  /** Путь синка чатов: запросы, ответы, разбор, состояния — «Обновляю…» минутами. */
+  chatSync: SyncJournalReport
 }
 
 interface TauriSystemInfo {
@@ -288,6 +291,7 @@ export async function collectSupportReport(now: Date = new Date()): Promise<Supp
     storage: storageUse,
     errors: recentErrors(),
     stalls: recentStalls(now.getTime()),
+    chatSync: syncJournal.report(now.getTime()),
   }
 }
 

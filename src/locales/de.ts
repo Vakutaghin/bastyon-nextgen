@@ -1471,6 +1471,7 @@ export default {
           'ob Internet da ist, mit welchem Knoten und Chat-Server die App verbunden ist, wie viel Speicher belegt ist',
         errors:
           'letzte App-Fehler und lange Hänger; Adressen, Kennungen und Dateipfade sind entfernt',
+        sync: 'Verlauf der Chat-Synchronisierung: wann Anfragen an den Chat-Server gingen und wie lange sie dauerten, Antwortgrößen und Zustandswechsel, ohne Inhalte',
       },
       consentNever:
         'Schlüssel, Wiederherstellungsphrase, Passwort, Nachrichten, Kontakte und Verlauf werden nicht gesendet. Die Nachricht ist verschlüsselt wie der ganze private Chat.',

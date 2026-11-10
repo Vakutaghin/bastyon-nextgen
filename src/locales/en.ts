@@ -1446,6 +1446,7 @@ export default {
         network:
           'whether there is internet, which node and chat server the app is connected to, how much storage is used',
         errors: 'recent app errors and long freezes, with addresses, IDs and file paths removed',
+        sync: 'how chat sync is going: when requests to the chat server went and how long they took, response sizes and state changes, with no content',
       },
       consentNever:
         'Keys, the recovery phrase, password, messages, contacts and browsing history are not sent. The message is encrypted like everything in a private chat.',

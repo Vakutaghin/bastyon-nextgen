@@ -1462,6 +1462,7 @@ export default {
           'si hay internet, a qué nodo y servidor de chat está conectada la aplicación, cuánto espacio ocupa',
         errors:
           'los últimos errores y bloqueos largos de la aplicación, sin direcciones, identificadores ni rutas de archivos',
+        sync: 'cómo va la sincronización de chats: cuándo salieron las solicitudes al servidor de chats y cuánto tardaron, el tamaño de las respuestas y los cambios de estado, sin contenido',
       },
       consentNever:
         'No se envían las claves, la frase de recuperación, la contraseña, los mensajes, los contactos ni el historial. El mensaje va cifrado, como todo el chat privado.',

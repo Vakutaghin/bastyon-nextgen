@@ -16,6 +16,8 @@ vi.mock('@/helpers/api/request', () => ({ getByPRC: mocks.rpc }))
 vi.mock('../services/matrix-service', () => ({
   matrixService: { getBaseUrl: () => 'https://matrix.pocketnet.app' },
 }))
+const journal = vi.hoisted(() => ({ report: vi.fn() }))
+vi.mock('../services/matrix-service/sync-journal', () => ({ syncJournal: journal }))
 
 import { clearRecentErrors, rememberError } from '@/helpers/diagnostics/recent-errors'
 import { useMessengerUiStore } from '../store/messenger-ui-store'
@@ -30,6 +32,7 @@ beforeEach(() => {
   mocks.invoke.mockReset()
   mocks.rpc.mockReset()
   mocks.rpc.mockRejectedValue(new Error('offline'))
+  journal.report.mockReturnValue({ state: 'PREPARED', stateForS: 75, recoveries: 0, journal: [] })
 })
 
 afterEach(() => clearRecentErrors())
@@ -66,6 +69,14 @@ describe('collectSupportReport', () => {
     expect(mocks.rpc.mock.calls[0]![0]).toMatchObject({ method: 'getnodeinfo' })
     expect(report.errors.map((e) => e.message)).toEqual(['[profile] <address> not found'])
     expect(Array.isArray(report.stalls)).toBe(true)
+    // Журнал синка — на момент сбора сведений.
+    expect(journal.report).toHaveBeenCalledWith(1_791_288_000_000)
+    expect(report.chatSync).toEqual({
+      state: 'PREPARED',
+      stateForS: 75,
+      recoveries: 0,
+      journal: [],
+    })
     expect(reportJson(report)).not.toContain(ADDRESS)
   })
 

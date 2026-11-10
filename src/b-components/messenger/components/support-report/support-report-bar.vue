@@ -82,7 +82,7 @@ import {
   SC_ConsentPreviewLabel,
 } from './styled'
 
-const CONSENT_ITEMS = ['app', 'system', 'settings', 'network', 'errors'] as const
+const CONSENT_ITEMS = ['app', 'system', 'settings', 'network', 'errors', 'sync'] as const
 
 const props = defineProps<{ chatId: string }>()
 
