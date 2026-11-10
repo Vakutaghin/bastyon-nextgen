@@ -101,6 +101,8 @@ async function uploadThroughFetch(
 // ─── Audio ───────────────────────────────────────────────────────────────────
 
 export interface SendAudioData {
+  /** Транзакция сообщения: повтор с тем же txnId сервер не задвоит. */
+  txnId?: string
   blob?: Blob
   mxcUrl?: string
   name?: string
@@ -167,12 +169,14 @@ export async function sendAudio(
   }
   if (typeof data.block === 'number') content.block = data.block
   if (data.secrets?.v) content.version = data.secrets.v
-  return client.sendEvent(roomId, 'm.room.message', content)
+  return client.sendEvent(roomId, 'm.room.message', content, data.txnId)
 }
 
 // ─── Image ───────────────────────────────────────────────────────────────────
 
 export interface SendImageData {
+  /** Транзакция сообщения: повтор с тем же txnId сервер не задвоит. */
+  txnId?: string
   blob?: Blob
   mxcUrl?: string
   name?: string
@@ -226,12 +230,14 @@ export async function sendImage(
   }
   if (typeof data.block === 'number') content.block = data.block
   if (data.secrets?.v) content.version = data.secrets.v
-  return client.sendEvent(roomId, 'm.room.message', content)
+  return client.sendEvent(roomId, 'm.room.message', content, data.txnId)
 }
 
 // ─── Video ───────────────────────────────────────────────────────────────────
 
 export interface SendVideoData {
+  /** Транзакция сообщения: повтор с тем же txnId сервер не задвоит. */
+  txnId?: string
   blob?: Blob
   mxcUrl?: string
   name?: string
@@ -301,12 +307,14 @@ export async function sendVideo(
   }
   if (typeof data.block === 'number') content.block = data.block
   if (data.secrets?.v) content.version = data.secrets.v
-  return client.sendEvent(roomId, 'm.room.message', content)
+  return client.sendEvent(roomId, 'm.room.message', content, data.txnId)
 }
 
 // ─── File ────────────────────────────────────────────────────────────────────
 
 export interface SendFileData {
+  /** Транзакция сообщения: повтор с тем же txnId сервер не задвоит. */
+  txnId?: string
   blob?: Blob
   mxcUrl?: string
   name?: string
@@ -373,5 +381,5 @@ export async function sendFile(
   }
   if (typeof data.block === 'number') content.block = data.block
   if (data.secrets?.v) content.version = data.secrets.v
-  return client.sendEvent(roomId, 'm.room.message', content)
+  return client.sendEvent(roomId, 'm.room.message', content, data.txnId)
 }

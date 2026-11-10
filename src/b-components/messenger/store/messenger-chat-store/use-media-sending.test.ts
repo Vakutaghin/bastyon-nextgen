@@ -23,6 +23,7 @@ const { room, matrix, chat } = vi.hoisted(() => {
     sendVideo: vi.fn(send()),
     sendFile: vi.fn(send()),
     uploadContent: vi.fn(async () => 'mxc://poster'),
+    makeTxnId: vi.fn(() => 'm1.1'),
   }
   return { room, matrix, chat }
 })
@@ -55,7 +56,12 @@ vi.mock('../../services/media-metadata', () => ({
   stripPhotoMetadata: vi.fn(async (blob: Blob) => blob),
   extractVideoMetadata: vi.fn(async () => ({ duration: 1.5, w: 30, h: 40, posterBlob: null })),
 }))
-vi.mock('../../helpers', () => ({ isTetatetchat: () => chat.direct }))
+vi.mock('../../helpers', async (importOriginal) => ({
+  // Лента комнаты — настоящая: по ней txn-state ищет дошедшее событие.
+  getRoomTimelineEvents: (await importOriginal<typeof import('../../helpers')>())
+    .getRoomTimelineEvents,
+  isTetatetchat: () => chat.direct,
+}))
 
 import { useMediaSending } from './use-media-sending'
 import { encryptAudioBlob } from '../../services/encryption-service'
@@ -281,6 +287,106 @@ describe('useMediaSending', () => {
     expect(matrix.sendAudio).toHaveBeenCalledTimes(2)
     expect(messages['!c:host']).toEqual([])
     expect(outbox.forgotten).toEqual([id])
+  })
+
+  // ─── Повтор и транзакция: дошедшее сообщение второй раз не создаётся ───────
+
+  it('вложение уходит со своим txnId, повтор — с тем же, а не с новым', async () => {
+    const { api, messages } = setup()
+    matrix.sendImage.mockRejectedValueOnce(new Error('timeout'))
+    await api.sendImage('!c:host', new Blob(['img'], { type: 'image/png' }))
+    const id = messages['!c:host']![0]!.id
+    expect(matrix.sendImage.mock.calls[0]![1]).toMatchObject({ txnId: 'm1.1' })
+
+    matrix.makeTxnId.mockImplementation(() => 'm2.2')
+    try {
+      expect(await api.retryMedia('!c:host', id)).toBe(true)
+    } finally {
+      matrix.makeTxnId.mockImplementation(() => 'm1.1')
+    }
+    expect(matrix.sendImage).toHaveBeenCalledTimes(2)
+    expect(matrix.sendImage.mock.calls[1]![1]).toMatchObject({ txnId: 'm1.1' })
+    expect(messages['!c:host']).toEqual([])
+  })
+
+  it('txnId доходит до каждого вида вложений', async () => {
+    const { api } = setup()
+    await api.sendAudio('!c:host', new Blob(['a'], { type: 'audio/webm' }), { duration: 1 })
+    await api.sendVideo('!c:host', new Blob(['v'], { type: 'video/mp4' }))
+    await api.sendFile('!c:host', new Blob(['f']), { name: 'a.txt' })
+    for (const send of [matrix.sendAudio, matrix.sendVideo, matrix.sendFile]) {
+      expect(send.mock.calls[0]![1]).toMatchObject({ txnId: 'm1.1' })
+    }
+  })
+
+  it('повтор, а вложение на деле дошло (синк принёс событие с этим txnId) — второй раз не уходит', async () => {
+    const { api, messages, outbox } = setup()
+    matrix.sendFile.mockRejectedValueOnce(new Error('timeout'))
+    await api.sendFile('!c:host', new Blob(['f']), { name: 'a.txt' })
+    const id = messages['!c:host']![0]!.id
+    const arrived = { getId: () => '$file', getUnsigned: () => ({ transaction_id: 'm1.1' }) }
+    matrix.getRoom.mockReturnValueOnce({
+      ...room,
+      getLiveTimeline: () => ({ getEvents: () => [arrived] }),
+    } as never)
+    expect(await api.retryMedia('!c:host', id)).toBe(true)
+    expect(matrix.sendFile).toHaveBeenCalledTimes(1)
+    expect(encryptBlobWithRandomKey).toHaveBeenCalledTimes(1)
+    expect(messages['!c:host']).toEqual([])
+    expect(outbox.forgotten).toEqual([id])
+  })
+
+  it('копия в SDK «не ушла» — её повторяет SDK, без новой загрузки и шифрования', async () => {
+    const { api, messages } = setup()
+    matrix.sendImage.mockRejectedValueOnce(new Error('connection reset'))
+    await api.sendImage('!c:host', new Blob(['img'], { type: 'image/png' }))
+    const id = messages['!c:host']![0]!.id
+    const unsent = { status: 'not_sent' }
+    const resendEvent = vi.fn(async () => ({ event_id: '$img' }))
+    matrix.getClient.mockReturnValueOnce({ resendEvent, cancelPendingEvent: vi.fn() } as never)
+    matrix.getRoom.mockReturnValueOnce({
+      ...room,
+      getEventForTxnId: (txn: string) => (txn === 'm1.1' ? unsent : undefined),
+    } as never)
+    expect(await api.retryMedia('!c:host', id)).toBe(true)
+    expect(resendEvent).toHaveBeenCalledWith(unsent, expect.objectContaining({ roomId: '!c:host' }))
+    expect(matrix.sendImage).toHaveBeenCalledTimes(1)
+    expect(encryptBlobWithRandomKey).toHaveBeenCalledTimes(1)
+    expect(messages['!c:host']).toEqual([])
+  })
+
+  it('копия ещё в пути — повтор не шлёт второй раз, сообщение остаётся с «Повторить»', async () => {
+    const { api, messages } = setup()
+    matrix.sendFile.mockRejectedValueOnce(new Error('timeout'))
+    await api.sendFile('!c:host', new Blob(['f']), { name: 'a.txt' })
+    const id = messages['!c:host']![0]!.id
+    matrix.getRoom.mockReturnValueOnce({
+      ...room,
+      getEventForTxnId: () => ({ status: 'sending' }),
+    } as never)
+    expect(await api.retryMedia('!c:host', id)).toBe(true)
+    expect(matrix.sendFile).toHaveBeenCalledTimes(1)
+    expect(messages['!c:host']!.map((m) => m.status)).toEqual(['failed'])
+  })
+
+  it('вложение из записи без txnId (до обновления) — txnId появляется и держится между повторами', async () => {
+    const { api, messages, outbox } = setup()
+    const payload = { kind: 'file' as const, blob: new Blob(['f']), name: 'old.txt' }
+    outbox.hold('local-old', payload)
+    messages['!c:host'] = [{ id: 'local-old', type: 'file', status: 'failed' }]
+    matrix.sendFile.mockRejectedValueOnce(new Error('offline'))
+    await api.retryMedia('!c:host', 'local-old')
+    expect(payload).toMatchObject({ txnId: 'm1.1' })
+    matrix.makeTxnId.mockImplementation(() => 'm2.2')
+    try {
+      await api.retryMedia('!c:host', 'local-old')
+    } finally {
+      matrix.makeTxnId.mockImplementation(() => 'm1.1')
+    }
+    expect(matrix.sendFile.mock.calls.map((c) => (c[1] as { txnId?: string }).txnId)).toEqual([
+      'm1.1',
+      'm1.1',
+    ])
   })
 
   it('повтор без вложения (текст, чужое) — не наше дело, false', async () => {

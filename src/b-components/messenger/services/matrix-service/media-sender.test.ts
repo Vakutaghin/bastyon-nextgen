@@ -35,9 +35,11 @@ function fakeClient(upload: unknown = 'mxc://srv/media1') {
       opts.progressHandler?.({ loaded: 50, total: 100 })
       return upload
     }),
-    sendEvent: vi.fn(async (_roomId: string, _type: string, _content: unknown) => ({
-      event_id: '$sent',
-    })),
+    sendEvent: vi.fn(
+      async (_roomId: string, _type: string, _content: unknown, _txnId?: string) => ({
+        event_id: '$sent',
+      })
+    ),
   }
 }
 
@@ -124,13 +126,20 @@ describe('media-sender', () => {
       duration: 2.345,
       secrets: SECRETS,
       block: 3_000_000,
+      txnId: 'm5.5',
     })
 
     expect(client.uploadContent.mock.lastCall![1]).toMatchObject({
       name: 'voice-message',
       type: 'audio/ogg',
     })
-    expect(client.sendEvent).toHaveBeenCalledWith('!room', 'm.room.message', expect.any(Object))
+    // txnId — в SDK: повтор с ним сервер узнаёт и не создаёт второе событие.
+    expect(client.sendEvent).toHaveBeenCalledWith(
+      '!room',
+      'm.room.message',
+      expect.any(Object),
+      'm5.5'
+    )
     expect(sentContent(client)).toEqual({
       msgtype: 'm.audio',
       body: 'https://media.example/srv/media1',
@@ -173,8 +182,10 @@ describe('media-sender', () => {
       mxcUrl: 'mxc://srv/ready',
       width: 640,
       height: 480,
+      txnId: 'm6.6',
     })
     expect(client.uploadContent).not.toHaveBeenCalled()
+    expect(client.sendEvent.mock.lastCall![3]).toBe('m6.6')
     expect(sentContent(client)).toMatchObject({
       msgtype: 'm.image',
       url: 'https://media.example/srv/ready',
@@ -192,7 +203,9 @@ describe('media-sender', () => {
       thumbnailUrl: 'mxc://srv/thumb',
       thumbnailWidth: 320,
       thumbnailHeight: 180,
+      txnId: 'm7.7',
     })
+    expect(client.sendEvent.mock.lastCall![3]).toBe('m7.7')
     expect(sentContent(client)).toMatchObject({
       msgtype: 'm.video',
       body: 'море.mp4',
@@ -209,7 +222,13 @@ describe('media-sender', () => {
 
   it('файл: body — JSON для bastyon-chat, filename и url — для Element', async () => {
     const blob = new Blob(['12345678'], { type: 'application/pdf' })
-    await sendFile(asClient(client), '!room', { blob, name: 'отчёт.pdf', secrets: SECRETS })
+    await sendFile(asClient(client), '!room', {
+      blob,
+      name: 'отчёт.pdf',
+      secrets: SECRETS,
+      txnId: 'm8.8',
+    })
+    expect(client.sendEvent.mock.lastCall![3]).toBe('m8.8')
     const content = sentContent(client)
     expect(JSON.parse(content.body as string)).toEqual({
       name: 'отчёт.pdf',

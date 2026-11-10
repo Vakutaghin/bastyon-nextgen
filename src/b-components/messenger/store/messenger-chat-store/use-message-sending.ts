@@ -24,6 +24,7 @@ import type { ChatContext, MxRoom } from './types'
 import type { ChatCrypto } from './use-chat-crypto'
 import { localEchoId } from './use-local-echo'
 import { createOutbox, releaseMediaUrls, type Outbox } from './outbox'
+import { txnIdOf, txnState } from './txn-state'
 import {
   pkoinTransferContent,
   pkoinTransferText,
@@ -93,25 +94,6 @@ function assertRecipientsHaveKeys(
   const unresolved = missing.filter(isUnresolved)
   if (unresolved.length > 0) throw new RecipientProfilesUnavailableError(unresolved)
   throw new RecipientKeysMissingError(missing)
-}
-
-/**
- * Копия события в SDK, которая не ушла (`not_sent`): её повтор с тем же
- * txnId и отмена, чтобы удалённое неотправленное не вернулось в ленту.
- */
-function findUnsentEcho(
-  chatId: string,
-  messageId: string
-): { resend: () => Promise<{ event_id?: string } | undefined>; cancel: () => void } | null {
-  if (!messageId.startsWith('~')) return null
-  const client = matrixService.getClient()
-  const room = matrixService.getRoom(chatId)
-  const event = room?.findEventById?.(messageId)
-  if (!client || !event || event.status !== 'not_sent') return null
-  return {
-    resend: () => client.resendEvent(event, room),
-    cancel: () => client.cancelPendingEvent(event),
-  }
 }
 
 export function useMessageSending(
@@ -420,45 +402,42 @@ export function useMessageSending(
     const failed = list?.find((m) => m.id === messageId)
     if (!failed || failed.status !== 'failed' || failed.type !== 'text') return
 
-    // Запрос мог дойти до сервера, а оборваться только ответ. Такое событие SDK
-    // держит неотправленным с прежним txnId; повтор с ним же сервер узнаёт и
-    // возвращает то же событие. Новая транзакция дала бы собеседнику дубль.
-    const unsent = findUnsentEcho(chatId, messageId)
-    if (unsent) {
-      failed.status = 'sending'
-      try {
-        const res = await unsent.resend()
-        markSent(chatId, messageId, res?.event_id)
-        void outbox.forget(messageId)
-      } catch (e) {
-        console.error('[ChatStore] Повтор отправки не удался:', e)
-        const again = messages[chatId]?.find((m) => m.id === messageId)
-        if (again && again.status === 'sending') {
-          again.status = 'failed'
-          void outbox.keep(again)
-        }
-      }
+    // Запрос мог дойти до сервера, а оборваться только ответ. Повтор — с прежним
+    // txnId (txn-state): сервер узнаёт транзакцию и возвращает то же событие.
+    // Новая транзакция дала бы всем участникам дубль, навсегда.
+    const prevTxn = txnIdOf(chatId, messageId)
+    const state = prevTxn ? txnState(chatId, prevTxn) : ({ kind: 'unknown' } as const)
+    if (state.kind === 'delivered') {
+      markSent(chatId, messageId, state.eventId)
+      void outbox.forget(messageId)
       return
     }
+    // SDK ещё отправляет ту же копию: чем кончится, скажет Room.localEchoUpdated.
+    if (state.kind === 'pending') return
 
-    // До сервера дело не дошло (не было ключей, шифрования): шифруем заново.
-    const txnId = matrixService.makeTxnId()
+    // Копия в SDK — повторяет сама себя; нет копии (перезапуск, ключи не
+    // нашлись) — шифруем заново, но под тем же txnId.
+    const txnId = prevTxn ?? matrixService.makeTxnId()
     const localId = localEchoId(chatId, txnId)
     failed.id = localId
     failed.status = 'sending'
     try {
-      const res = await sendTextContent(chatId, failed.text, undefined, txnId)
+      const res =
+        state.kind === 'unsent'
+          ? await state.resend()
+          : await sendTextContent(chatId, failed.text, undefined, txnId)
       markSent(chatId, localId, res?.event_id)
+      void outbox.forget(localId)
     } catch (e) {
       console.error('[ChatStore] Повтор отправки не удался:', e)
       const again = messages[chatId]?.find((m) => m.id === localId)
-      if (again) {
+      if (again && again.status === 'sending') {
         again.status = 'failed'
         void outbox.keep(again)
       }
     } finally {
-      // На устройстве сообщение лежало под прежним id.
-      void outbox.forget(messageId)
+      // Id без txnId (старая запись) сменился: на устройстве оно лежало под прежним.
+      if (localId !== messageId) void outbox.forget(messageId)
     }
   }
 
@@ -474,7 +453,9 @@ export function useMessageSending(
     list!.splice(idx, 1)
     releaseMediaUrls(message)
     try {
-      findUnsentEcho(chatId, messageId)?.cancel()
+      const txnId = txnIdOf(chatId, messageId)
+      const state = txnId ? txnState(chatId, txnId) : null
+      if (state?.kind === 'unsent') state.cancel()
     } catch (e) {
       console.warn('[ChatStore] Копию неотправленного в SDK не убрать:', e)
     }

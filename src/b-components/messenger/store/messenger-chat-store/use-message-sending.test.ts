@@ -34,7 +34,10 @@ vi.mock('../../services/group-encryption', () => ({
   findCommonKeyStateEvent: () => null,
   decryptGroupCommonKey: vi.fn(),
 }))
-vi.mock('../../helpers', () => ({
+vi.mock('../../helpers', async (importOriginal) => ({
+  // Лента комнаты — настоящая: по ней txn-state ищет дошедшее событие.
+  getRoomTimelineEvents: (await importOriginal<typeof import('../../helpers')>())
+    .getRoomTimelineEvents,
   isTetatetchat,
   getAddressFromMatrixId: () => 'PPARTNER',
   getMatrixId: (a: string) => a,
@@ -101,6 +104,8 @@ function setup() {
 beforeEach(() => {
   vi.clearAllMocks()
   isTetatetchat.mockReturnValue(true)
+  // Неизрасходованный mockReturnValueOnce clearAllMocks не снимает — он ушёл бы в следующий тест.
+  matrix.makeTxnId.mockReset().mockReturnValue('m1.1')
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
@@ -149,14 +154,70 @@ describe('sendMessage — эхо и копия события SDK', () => {
     expect(messages[ROOM]!.map((m) => m.id)).toEqual(['$group'])
   })
 
-  it('не ушло — эхо «не отправлено»; повтор берёт новый txnId и доводит до настоящего id', async () => {
+  it('не ушло, копии в SDK нет (перезапуск) — шифруем заново, но под прежним txnId', async () => {
     const { api, messages } = setup()
     matrix.sendEncryptedDirectMessage.mockRejectedValueOnce(new Error('offline'))
     await api.sendMessage(ROOM, 'Привет')
     expect(messages[ROOM]).toEqual([expect.objectContaining({ id: LOCAL, status: 'failed' })])
 
+    // Новый txnId был бы m2.2: сервер не узнал бы транзакцию, если первая дошла.
     matrix.makeTxnId.mockReturnValueOnce('m2.2')
     await api.retryMessage(ROOM, LOCAL)
+    expect(matrix.sendEncryptedDirectMessage).toHaveBeenLastCalledWith(
+      ROOM,
+      expect.anything(),
+      undefined,
+      'm1.1'
+    )
+    expect(matrix.makeTxnId).toHaveBeenCalledTimes(1)
+    expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$real', 'sent']])
+  })
+
+  it('повтор, а сообщение на деле дошло (синк принёс событие с этим txnId) — второй раз не уходит', async () => {
+    const { api, messages, outbox } = setup()
+    matrix.sendEncryptedDirectMessage.mockRejectedValueOnce(new Error('timeout'))
+    await api.sendMessage(ROOM, 'Привет')
+    const arrived = { getId: () => '$real', getUnsigned: () => ({ transaction_id: 'm1.1' }) }
+    matrix.getRoom.mockReturnValueOnce({
+      roomId: ROOM,
+      getLiveTimeline: () => ({ getEvents: () => [arrived] }),
+    } as never)
+    await api.retryMessage(ROOM, LOCAL)
+    expect(matrix.sendEncryptedDirectMessage).toHaveBeenCalledTimes(1)
+    expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$real', 'sent']])
+    expect(outbox.forgotten).toEqual([LOCAL])
+  })
+
+  it('копия ещё в пути — повтор ничего не шлёт и не трогает сообщение', async () => {
+    const { api, messages } = setup()
+    matrix.sendEncryptedDirectMessage.mockRejectedValueOnce(new Error('offline'))
+    await api.sendMessage(ROOM, 'Привет')
+    matrix.getRoom.mockReturnValueOnce({
+      roomId: ROOM,
+      getEventForTxnId: (txn: string) => (txn === 'm1.1' ? { status: 'sending' } : undefined),
+    } as never)
+    await api.retryMessage(ROOM, LOCAL)
+    expect(matrix.sendEncryptedDirectMessage).toHaveBeenCalledTimes(1)
+    expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([[LOCAL, 'failed']])
+  })
+
+  it('id без txnId (не эхо) — повтор с новым txnId, запись на устройстве переезжает', async () => {
+    const { api, messages, outbox } = setup()
+    messages[ROOM] = [
+      {
+        id: 'legacy-1',
+        chatId: ROOM,
+        senderId: '@me:host',
+        text: 'Привет',
+        type: 'text',
+        rawContent: null,
+        timestamp: 1,
+        read: true,
+        status: 'failed',
+      },
+    ]
+    matrix.makeTxnId.mockReturnValueOnce('m2.2')
+    await api.retryMessage(ROOM, 'legacy-1')
     expect(matrix.sendEncryptedDirectMessage).toHaveBeenLastCalledWith(
       ROOM,
       expect.anything(),
@@ -164,6 +225,7 @@ describe('sendMessage — эхо и копия события SDK', () => {
       'm2.2'
     )
     expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([['$real', 'sent']])
+    expect(outbox.forgotten).toEqual([`~${ROOM}:m2.2`, 'legacy-1'])
   })
 
   it('запрос оборвался, а копия в SDK «не ушла» — повтор той же копией, с прежним txnId', async () => {
@@ -206,7 +268,7 @@ describe('неотправленный текст на устройстве', ()
     expect(outbox.kept).toEqual([LOCAL])
   })
 
-  it('повтор снова не удался — сохраняется под новым id, прежний забыт', async () => {
+  it('повтор снова не удался — остаётся под тем же id и txnId', async () => {
     const { api, outbox, messages } = setup()
     matrix.sendEncryptedDirectMessage.mockRejectedValue(new Error('offline'))
     try {
@@ -217,10 +279,9 @@ describe('неотправленный текст на устройстве', ()
       matrix.sendEncryptedDirectMessage.mockReset()
       matrix.sendEncryptedDirectMessage.mockResolvedValue({ event_id: '$real' })
     }
-    const again = `~${ROOM}:m2.2`
-    expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([[again, 'failed']])
-    expect(outbox.kept).toEqual([LOCAL, again])
-    expect(outbox.forgotten).toEqual([LOCAL])
+    expect(messages[ROOM]!.map((m) => [m.id, m.status])).toEqual([[LOCAL, 'failed']])
+    expect(outbox.kept).toEqual([LOCAL, LOCAL])
+    expect(outbox.forgotten).toEqual([])
   })
 
   it('«Удалить» у неотправленного — из ленты, с устройства и копию в SDK', async () => {

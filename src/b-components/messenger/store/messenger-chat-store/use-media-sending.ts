@@ -27,6 +27,7 @@ import {
   removeOptimistic,
 } from './media-sending-helpers'
 import { createOutbox, mediaUrl, releaseMediaUrls, type MediaPayload, type Outbox } from './outbox'
+import { txnState } from './txn-state'
 
 // Лимиты согласованы с bastyon-chat (input/index.js:141, 163): фото — 100 МБ, файлы — 25 МБ.
 // Тот же лимит применяется к видео (которые сейчас уходят как m.file).
@@ -104,6 +105,19 @@ export function useMediaSending(
    * момент отправки: при повторе в чат могли прийти или уйти люди.
    */
   const deliver = async (chatId: string, id: string, payload: MediaPayload): Promise<void> => {
+    // Одна транзакция на все попытки (у записей до txnId — с этой попытки):
+    // сообщение, которое на деле дошло, повтор не задвоит (txn-state).
+    const earlier = payload.txnId
+    const txnId = (payload.txnId ??= matrixService.makeTxnId())
+    const state = earlier ? txnState(chatId, earlier) : null
+    if (state?.kind === 'delivered') return
+    if (state?.kind === 'pending') throw new Error('media message is still being sent')
+    if (state?.kind === 'unsent') {
+      // Вложение уже загружено, событие собрано: SDK повторяет его как есть.
+      await state.resend()
+      return
+    }
+
     const room = await prepareRoom(chatId)
     const onProgress = createProgressHandler(messages, chatId, id)
     const info = find(chatId, id)?.info
@@ -115,6 +129,7 @@ export function useMediaSending(
       case 'audio': {
         const memberIds = getOrderedMemberIds(room, now)
         const audio = {
+          txnId,
           name,
           mimetype: mimetype || 'audio/webm',
           duration: payload.duration || 0,
@@ -161,7 +176,14 @@ export function useMediaSending(
         const sealed = await sealForRoom(room, now, payload.blob)
         await matrixService.sendImage(
           chatId,
-          { ...sealed, name, mimetype: mimetype || 'image/jpeg', width: info?.w, height: info?.h },
+          {
+            ...sealed,
+            txnId,
+            name,
+            mimetype: mimetype || 'image/jpeg',
+            width: info?.w,
+            height: info?.h,
+          },
           onProgress
         )
         return
@@ -180,6 +202,7 @@ export function useMediaSending(
           chatId,
           {
             ...sealed,
+            txnId,
             name,
             mimetype: mimetype || 'video/mp4',
             duration: payload.duration,
@@ -197,7 +220,7 @@ export function useMediaSending(
         const sealed = await sealForRoom(room, now, payload.blob)
         await matrixService.sendFile(
           chatId,
-          { ...sealed, name, mimetype: mimetype || 'application/octet-stream' },
+          { ...sealed, txnId, name, mimetype: mimetype || 'application/octet-stream' },
           onProgress
         )
       }
