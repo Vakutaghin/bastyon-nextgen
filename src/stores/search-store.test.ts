@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 
 // Заглушка для settingsAPI: тесты не должны трогать настоящий IndexedDB.
@@ -168,6 +168,13 @@ describe('search-store', () => {
   })
 
   describe('persistence', () => {
+    // Стор узнаёт владельца истории динамическим импортом auth-store. Первый
+    // импорт на холодную — дольше секунды ожидания vi.waitFor: запись опаздывала
+    // и попадала в следующий тест.
+    beforeAll(async () => {
+      await import('@/blockchain/store/auth-store')
+    }, 30_000)
+
     it('persists commits to settings storage', async () => {
       store.commit('hello')
       // persistHistory асинхронный (определяет владельца через auth-store) — ждём запись.
