@@ -19,7 +19,9 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowReactive, shallowRef, watch } from 'vue'
 
+import { appToast } from '@/b-components/app-toast'
 import { useAuthStore } from '@/blockchain/store/auth-store'
+import { t } from '@/i18n'
 import { getPeerTubeCaptions, getPeerTubeVideoInfo } from '@/helpers/api/peertube-api'
 import { PeerTubeFetchError, parsePeerTubeUrl } from '@/helpers/api/peertube-url'
 import type { PeerTubeVideoInfo } from '@/helpers/api/peertube-url'
@@ -90,6 +92,22 @@ const FIRST_CHECK_AFTER_MS = 60_000
 
 /** Сбои, которые проходят сами: сеть вернулась, Tor поднялся. */
 const RETRY_ON_ONLINE = new Set(['network'])
+
+/**
+ * Веб: ролик качает другая вкладка, и остановить её загрузку отсюда нельзя —
+ * воркер отвечает `busy` (web-worker.ts). Сказать, где это сделать: раньше
+ * «Приостановить» и «Отменить загрузку» молча ничего не делали. true — это был
+ * `busy` и пользователю сказано.
+ */
+function reportOtherTab(e: unknown): boolean {
+  if (!(e instanceof Error) || e.message !== 'busy') return false
+  appToast.info({
+    message: t('offlineVideo.otherTab'),
+    description: t('offlineVideo.otherTabHint'),
+    key: 'offline-other-tab',
+  })
+  return true
+}
 
 function readQualityPref(): OfflineQualityPref {
   try {
@@ -505,7 +523,11 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
   }
 
   async function pause(id: string): Promise<void> {
-    await (await backend()).pause(id)
+    try {
+      await (await backend()).pause(id)
+    } catch (e) {
+      if (!reportOtherTab(e)) throw e
+    }
   }
 
   async function resume(id: string): Promise<void> {
@@ -525,7 +547,12 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
       put(await b.patchMeta(id, { accounts: others }), id)
       return
     }
-    await b.remove(id)
+    try {
+      await b.remove(id)
+    } catch (e) {
+      if (reportOtherTab(e)) return
+      throw e
+    }
     put(null, id)
   }
 
@@ -560,7 +587,15 @@ export const useOfflineVideosStore = defineStore('offline-videos', () => {
     await hydrate()
     const b = backendRef
     if (!b) return
-    await b.clear()
+    try {
+      await b.clear()
+    } catch (e) {
+      // Остальное стёрто (по каждому пришло `changed`), остался ролик, который
+      // качает другая вкладка.
+      if (!reportOtherTab(e)) throw e
+      usage.value = null
+      return
+    }
     for (const id of [...items.keys()]) put(null, id)
     usage.value = null
   }

@@ -4805,6 +4805,8 @@ export default {
     resume: 'Fortsetzen',
     cancel: 'Download abbrechen',
     remove: 'Download löschen',
+    otherTab: 'Dieser Download läuft in einem anderen Tab',
+    otherTabHint: 'Pausieren oder abbrechen kannst du ihn nur dort.',
     openDownloads: 'Downloads öffnen',
     removeAll: 'Alle löschen',
     removeAllTitle: 'Alle Downloads löschen?',

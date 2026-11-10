@@ -4761,6 +4761,8 @@ export default {
     resume: 'Reanudar',
     cancel: 'Cancelar descarga',
     remove: 'Eliminar descarga',
+    otherTab: 'Esta descarga está en curso en otra pestaña',
+    otherTabHint: 'Solo puedes pausarla o cancelarla allí.',
     openDownloads: 'Abrir Descargas',
     removeAll: 'Eliminar todo',
     removeAllTitle: '¿Eliminar todas las descargas?',

@@ -14,7 +14,9 @@
 // - Несколько вкладок не согласуются, но и не портят файлы: загрузка ролика
 //   идёт под `navigator.locks` (`bastyon-offline:<id>`). Занят другой вкладкой
 //   — эта ждёт, пока он освободится, и только тогда берётся за него сама.
-//   Удаление ролика, который качает другая вкладка, отвечает `busy`.
+//   Пауза и удаление ролика, который качает другая вкладка, отвечают `busy`
+//   (страница говорит, что остановить его можно только там), а эта вкладка
+//   по-прежнему ждёт ту, чтобы показать итог.
 // - Мелкие JSON и состояние очереди меняются по одному (`serial`): «удалить»
 //   во время загрузки либо дошло до задачи (и она удаляет сама), либо задачи
 //   уже нет и удаляет команда — как под замком в Rust.
@@ -668,11 +670,25 @@ async function pause(id: string): Promise<boolean> {
   queue = queue.filter((q) => q !== id)
   const dir = await itemDir(id)
   const state = dir ? await readState(dir) : null
-  if (!dir || state?.status !== 'queued') return false
-  state.status = 'paused'
-  delete state.error
-  await writeState(dir, state)
-  return true
+  if (!dir || !state || (state.status !== 'queued' && state.status !== 'downloading')) {
+    return false
+  }
+  // «Качается», а здесь не идёт — качает другая вкладка, отсюда её загрузку не
+  // остановить. Замок свободен — та вкладка закрылась посреди загрузки, и ролик
+  // ставится на паузу здесь, как ждущий.
+  const held = state.status === 'downloading' ? await tryLock(id) : FREE
+  if (!held) {
+    waitForOtherTab(id)
+    throw new Error('busy')
+  }
+  try {
+    state.status = 'paused'
+    delete state.error
+    await writeState(dir, state)
+    return true
+  } finally {
+    held.release()
+  }
 }
 
 /** Продолжить приостановленное или упавшее (кнопка «Повторить»). */
@@ -701,7 +717,10 @@ async function remove(id: string): Promise<boolean> {
   }
   queue = queue.filter((q) => q !== id)
   const held = await tryLock(id)
-  if (!held) throw new Error('busy')
+  if (!held) {
+    waitForOtherTab(id)
+    throw new Error('busy')
+  }
   try {
     const root = await offlineRoot()
     await root.removeEntry(id, { recursive: true })

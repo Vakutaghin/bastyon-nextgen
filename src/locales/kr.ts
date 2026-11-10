@@ -4664,6 +4664,8 @@ export default {
     resume: '계속',
     cancel: '저장 취소',
     remove: '저장 삭제',
+    otherTab: '다른 탭에서 저장 중입니다',
+    otherTabHint: '일시정지나 취소는 그 탭에서만 할 수 있습니다.',
     openDownloads: '오프라인 저장 열기',
     removeAll: '모두 삭제',
     removeAllTitle: '저장한 항목을 모두 삭제할까요?',

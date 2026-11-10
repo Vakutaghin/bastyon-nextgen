@@ -18,8 +18,12 @@ const h = vi.hoisted(() => ({
   info: vi.fn(),
   captions: vi.fn(async () => [] as unknown[]),
   subscriptions: vi.fn(async (): Promise<unknown[]> => []),
+  toast: vi.fn(),
 }))
 
+vi.mock('@/b-components/app-toast', () => ({
+  appToast: { info: h.toast, success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+}))
 vi.mock('@/services/offline-video/subscription-videos', () => ({
   fetchSubscriptionVideos: h.subscriptions,
 }))
@@ -35,6 +39,7 @@ vi.mock('@/helpers/api/peertube-api', async (orig) => ({
 }))
 
 import { PeerTubeFetchError } from '@/helpers/api/peertube-api'
+import { t } from '@/i18n'
 import { knownLocalCopy, resetOfflineLookup } from '@/services/offline-video/offline-lookup'
 import { useOfflineVideosStore } from './offline-videos-store'
 
@@ -156,6 +161,7 @@ describe('offline-videos-store', () => {
     h.info.mockReset()
     h.subscriptions.mockReset().mockResolvedValue([])
     h.captions.mockReset().mockResolvedValue([])
+    h.toast.mockReset()
     localStorage.clear()
   })
 
@@ -457,6 +463,40 @@ describe('offline-videos-store', () => {
     await store.forgetAccount('PGone')
     expect(f.backend.remove).toHaveBeenCalledWith('a-144')
     expect(f.items.get('b-144')!.meta.accounts).toEqual(['PMe'])
+  })
+
+  it('веб: ролик качает другая вкладка — пауза, отмена и «удалить всё» говорят, где его остановить', async () => {
+    const id = `${UUID}-144`
+    const f = fake([item({}, 'downloading')])
+    const busy = async () => {
+      throw new Error('busy')
+    }
+    f.backend.pause.mockImplementation(busy)
+    f.backend.remove.mockImplementation(busy)
+    f.backend.clear.mockImplementation(busy)
+    h.backend = f.backend
+    const store = useOfflineVideosStore()
+    await store.hydrate()
+
+    await store.pause(id)
+    await store.remove(id)
+    await store.clearAll()
+    // Ролик остаётся в списке: его загрузка идёт дальше.
+    expect(store.mine.map((i) => i.id)).toEqual([id])
+    expect(h.toast).toHaveBeenCalledTimes(3)
+    expect(t('offlineVideo.otherTab')).not.toBe('offlineVideo.otherTab')
+    expect(h.toast).toHaveBeenLastCalledWith({
+      message: t('offlineVideo.otherTab'),
+      description: t('offlineVideo.otherTabHint'),
+      key: 'offline-other-tab',
+    })
+
+    // Прочие ошибки — как раньше: наверх, без этого тоста.
+    f.backend.remove.mockRejectedValueOnce(new Error('io'))
+    await expect(store.remove(id)).rejects.toThrow('io')
+    f.backend.pause.mockRejectedValueOnce(new Error('io'))
+    await expect(store.pause(id)).rejects.toThrow('io')
+    expect(h.toast).toHaveBeenCalledTimes(3)
   })
 
   it('выход из всех аккаунтов стирает всё', async () => {

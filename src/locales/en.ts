@@ -4693,6 +4693,8 @@ export default {
     resume: 'Resume',
     cancel: 'Cancel download',
     remove: 'Delete download',
+    otherTab: 'This download is running in another tab',
+    otherTabHint: 'You can pause or cancel it only there.',
     openDownloads: 'Open Downloads',
     removeAll: 'Delete all',
     removeAllTitle: 'Delete all downloads?',

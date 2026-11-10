@@ -248,10 +248,22 @@ test('две вкладки: вторая не качает тот же роли
   // Вторая вкладка за файл не берётся: его держит первая.
   await second.waitForTimeout(4_000)
   expect(secondFile.gate.asked).toBe(0)
-  // «Отменить» там, где ролик не качается, загрузку первой не ломает.
+  // «Приостановить» и «Отменить» там, где ролик не качается, загрузку первой
+  // не ломают и не молчат: говорят, что остановить её можно только там.
+  const toast = second
+    .locator('.ant-notification-notice')
+    .filter({ hasText: 'Загрузка идёт в другой вкладке' })
+  await card.getByRole('button', { name: 'Приостановить' }).click()
+  await expect(toast).toBeVisible()
+  await expect(toast).toContainText('Приостановить или отменить её можно только там.')
+  await toast.locator('.ant-notification-notice-close').click()
+  await expect(toast).toHaveCount(0)
+  await expect(card).toHaveAttribute('data-status', 'downloading')
   await card.getByRole('button', { name: 'Отменить загрузку' }).click()
+  await expect(toast).toBeVisible()
   await second.waitForTimeout(1_000)
   await expect(card).toHaveCount(1)
+  await expect(card).toHaveAttribute('data-status', 'downloading')
 
   // Первая докачала — вторая видит готовый ролик сама.
   await file.release()

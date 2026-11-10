@@ -4803,6 +4803,8 @@ export default {
     resume: 'Reprendre',
     cancel: 'Annuler le téléchargement',
     remove: 'Supprimer le téléchargement',
+    otherTab: 'Ce téléchargement est en cours dans un autre onglet',
+    otherTabHint: 'Vous ne pouvez le mettre en pause ou l’annuler que là-bas.',
     openDownloads: 'Ouvrir les téléchargements',
     removeAll: 'Tout supprimer',
     removeAllTitle: 'Supprimer tous les téléchargements ?',

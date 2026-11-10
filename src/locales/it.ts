@@ -4747,6 +4747,8 @@ export default {
     resume: 'Riprendi',
     cancel: 'Annulla download',
     remove: 'Elimina download',
+    otherTab: 'Questo download è in corso in un’altra scheda',
+    otherTabHint: 'Puoi metterlo in pausa o annullarlo solo lì.',
     openDownloads: 'Apri Download',
     removeAll: 'Elimina tutto',
     removeAllTitle: 'Eliminare tutti i download?',

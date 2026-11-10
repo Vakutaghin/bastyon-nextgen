@@ -4489,6 +4489,8 @@ export default {
     resume: '继续',
     cancel: '取消下载',
     remove: '删除下载',
+    otherTab: '该下载正在另一个标签页中进行',
+    otherTabHint: '只能在那个标签页中暂停或取消。',
     openDownloads: '打开“已下载”',
     removeAll: '全部删除',
     removeAllTitle: '删除所有下载？',
