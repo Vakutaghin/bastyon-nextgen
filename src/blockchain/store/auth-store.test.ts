@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { createPinia, setActivePinia, defineStore } from 'pinia'
 import { useAuthStore } from './auth-store'
 
@@ -604,6 +604,17 @@ describe('auth-store', () => {
   // ── removeAccount ──────────────────────────────────────────────────────
 
   describe('removeAccount: локальные данные мессенджера (V15/Р6)', () => {
+    // Данные удалённого стираются в фоне, а модули для этого стор берёт
+    // динамическим импортом. Эти три не подменены, и первый импорт на холодную
+    // дольше секунды ожидания vi.waitFor — тест падал на свежем раннере CI.
+    beforeAll(async () => {
+      await Promise.all([
+        import('@/db/apis/favorites-api'),
+        import('@/stores/search-store-consts'),
+        import('@/stores/notification-settings-store'),
+      ])
+    }, 30_000)
+
     async function signedInAs(address: string, others: string[]) {
       const { useKeysStore } = await import('./keys-store')
       const keys = useKeysStore()
