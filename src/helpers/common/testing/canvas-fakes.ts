@@ -7,6 +7,8 @@ import { vi } from 'vitest'
 export interface FakeContext {
   calls: Array<[string, ...unknown[]]>
   filter: string
+  /** Прочие свойства, которые код ставил контексту (fillStyle и т.п.). */
+  props: Record<string, unknown>
 }
 
 export interface FakeCanvas {
@@ -26,6 +28,13 @@ export interface CanvasFakes {
   noContextOnce(): void
   /** Следующий toDataURL бросит (tainted canvas). */
   throwOnceOnExport(): void
+  /** Картинки (data-URL) с прозрачными пикселями — их отдаст getImageData. */
+  transparent: Set<string>
+  /**
+   * Тело экспорта: задано — toDataURL отдаёт настоящий base64 data-URL с этим
+   * телом (размер важен, когда код сравнивает его с оригиналом).
+   */
+  exportBody: ((type: string, width: number, height: number) => string) | null
   restore(): void
 }
 
@@ -34,6 +43,8 @@ export function installCanvasFakes(): CanvasFakes {
   const canvases: FakeCanvas[] = []
   let noContext = false
   let throwOnExport = false
+  const transparent = new Set<string>()
+  const fakes = { exportBody: null as CanvasFakes['exportBody'] }
 
   class FakeImage {
     onload: (() => void) | null = null
@@ -75,14 +86,28 @@ export function installCanvasFakes(): CanvasFakes {
     const ctx: FakeContext = {
       calls: [],
       filter: 'none',
+      props: {},
     }
+    // Последняя нарисованная картинка — по ней getImageData решает о прозрачности.
+    let drawn = ''
     const recorder = new Proxy(ctx, {
       get(target, prop) {
+        if (prop === 'getImageData') {
+          return (...args: unknown[]) => {
+            target.calls.push(['getImageData', ...args])
+            const alpha = transparent.has(drawn) ? 0 : 255
+            return { data: Uint8ClampedArray.of(255, 255, 255, 255, 255, 255, 255, alpha) }
+          }
+        }
         if (prop in target) return target[prop as keyof FakeContext]
-        return (...args: unknown[]) => target.calls.push([String(prop), ...args])
+        return (...args: unknown[]) => {
+          if (prop === 'drawImage') drawn = String((args[0] as { src?: string })?.src ?? '')
+          target.calls.push([String(prop), ...args])
+        }
       },
       set(target, prop, value) {
         if (prop === 'filter') target.filter = String(value)
+        else target.props[String(prop)] = value
         return true
       },
     })
@@ -98,7 +123,11 @@ export function installCanvasFakes(): CanvasFakes {
           throwOnExport = false
           throw new Error('SecurityError: tainted canvas')
         }
-        return `data:${type ?? 'image/png'};q=${quality ?? '-'};${canvas.width}x${canvas.height}`
+        const mime = type ?? 'image/png'
+        if (fakes.exportBody) {
+          return `data:${mime};base64,${fakes.exportBody(mime, canvas.width, canvas.height)}`
+        }
+        return `data:${mime};q=${quality ?? '-'};${canvas.width}x${canvas.height}`
       },
     }
     canvases.push(canvas)
@@ -108,6 +137,13 @@ export function installCanvasFakes(): CanvasFakes {
   return {
     sizes,
     canvases,
+    transparent,
+    get exportBody() {
+      return fakes.exportBody
+    },
+    set exportBody(value) {
+      fakes.exportBody = value
+    },
     noContextOnce: () => {
       noContext = true
     },

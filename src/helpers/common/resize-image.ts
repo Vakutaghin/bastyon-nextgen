@@ -6,11 +6,18 @@
  * `resizeImageBase64` — DOM-обёртка (canvas), работает только в браузере.
  */
 
+import { dataUrlByteLength, dataUrlBytes, sniffImage, stripImageMetadata } from './image-metadata'
+
 /** Целевой бокс по умолчанию (как в legacy share-композере). */
 export const MAX_IMAGE_WIDTH = 1920
 export const MAX_IMAGE_HEIGHT = 1080
 /** Качество JPEG по умолчанию. */
 export const IMAGE_QUALITY = 0.92
+/**
+ * Предел PNG с прозрачностью. Логотип или стикер в PNG весит сотни КБ, а
+ * вырезанное фото 1920×1080 — несколько МБ: такое уходит JPEG на белом фоне.
+ */
+export const MAX_PNG_BYTES = 2 * 1024 * 1024
 
 /**
  * Вписывает (w×h) в бокс (maxW×maxH) с сохранением пропорций.
@@ -42,10 +49,53 @@ export interface ResizeOptions {
   quality?: number
 }
 
+/** Есть ли на холсте хоть один не совсем непрозрачный пиксель. */
+function hasTransparency(ctx: CanvasRenderingContext2D, width: number, height: number): boolean {
+  let data: Uint8ClampedArray
+  try {
+    data = ctx.getImageData(0, 0, width, height).data
+  } catch {
+    return false
+  }
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i]! < 255) return true
+  }
+  return false
+}
+
+/**
+ * Кадр с холста. Прозрачная картинка — PNG: в JPEG прозрачные места
+ * становились чёрными. PNG тяжелее предела — JPEG, но на белом фоне.
+ */
+function encodeCanvas(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  transparent: boolean,
+  quality: number
+): string {
+  if (!transparent) return canvas.toDataURL('image/jpeg', quality)
+  const png = canvas.toDataURL('image/png')
+  if (dataUrlByteLength(png) <= MAX_PNG_BYTES) return png
+  // Белый фон под уже нарисованной картинкой.
+  ctx.globalCompositeOperation = 'destination-over'
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  return canvas.toDataURL('image/jpeg', quality)
+}
+
 /**
  * Ресайзит base64-изображение в пределах бокса. GIF возвращается как есть.
- * Результат — data:image/jpeg (или исходный формат для PNG с прозрачностью —
- * legacy конвертировал в JPEG; здесь сохраняем JPEG ради размера).
+ *
+ * Результат:
+ * - больше бокса — уменьшенный кадр: JPEG, а с прозрачностью — PNG
+ *   (тяжелее MAX_PNG_BYTES — JPEG на белом фоне);
+ * - в пределах бокса — так же перекодированный кадр или оригинал JPEG/PNG без
+ *   метаданных (EXIF с местом съёмки и т.п.), если оригинал не тяжелее:
+ *   уже сжатую картинку повторное сжатие только утяжеляло и портило;
+ * - анимированный PNG в пределах бокса — оригинал без метаданных, как GIF.
+ *
+ * Метаданные не уходят на сервер ни в одном случае: canvas их не переносит,
+ * а из оригинала они вырезаются (image-metadata.ts).
  */
 export function resizeImageBase64(base64: string, options: ResizeOptions = {}): Promise<string> {
   if (isGifDataUrl(base64)) return Promise.resolve(base64)
@@ -83,9 +133,25 @@ export function resizeImageBase64(base64: string, options: ResizeOptions = {}): 
 
       ctx.drawImage(img, 0, 0, width, height)
       try {
-        resolve(canvas.toDataURL('image/jpeg', quality))
+        // Формат — по байтам: у файла без типа (облако на Android) префикс
+        // data-URL ставит вызывающий наугад. У JPEG прозрачности не бывает.
+        const head = dataUrlBytes(base64, 12)
+        const transparent =
+          (!head || sniffImage(head) !== 'jpeg') && hasTransparency(ctx, width, height)
+        const fitsBox = width === img.naturalWidth && height === img.naturalHeight
+        const original = fitsBox ? stripImageMetadata(base64) : null
+        if (original?.animated) {
+          resolve(original.dataUrl)
+          return
+        }
+        const encoded = encodeCanvas(canvas, ctx, transparent, quality)
+        if (original && dataUrlByteLength(original.dataUrl) <= dataUrlByteLength(encoded)) {
+          resolve(original.dataUrl)
+          return
+        }
+        resolve(encoded)
       } catch (e) {
-        // toDataURL может бросить (tainted canvas) — отдаём оригинал.
+        // toDataURL может бросить (tainted canvas).
         reject(e instanceof Error ? e : new Error('resize failed'))
       }
     }
