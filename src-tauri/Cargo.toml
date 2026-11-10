@@ -158,6 +158,18 @@ opt-level = 2
 [profile.dev.package.rns-core]
 opt-level = 2
 
+# whisper.cpp (голосовой ввод) в debug-сборке. Build-скрипт whisper-rs-sys с
+# debug_assertions задаёт CMAKE_BUILD_TYPE=RelWithDebInfo, а собирает
+# конфигурацию Release. На Windows cmake-rs кладёт /MT от crt-static
+# (.cargo/config.toml) во флаги RelWithDebInfo, Release собирается с /MD, и
+# debug-сборка (cargo test, tauri dev) не линкуется: __imp_fgetc, __imp_realloc…
+# Без debug_assertions скрипт задаёт Release, как в релизной сборке. opt-level:
+# флаги cmake-rs заменяют флаги Release целиком, без него whisper.cpp собрался
+# бы без /O2 и диктовка в debug шла бы в разы медленнее.
+[profile.dev.package.whisper-rs-sys]
+debug-assertions = false
+opt-level = 2
+
 # rns-net и rns-crypto с правками Bastyon (ресурсы и keepalive как у Python,
 # файлы NomadNet, ключ из сети без паники) — те же версии, на которых
 # закреплён lxmf-rs.

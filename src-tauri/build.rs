@@ -116,10 +116,45 @@ const COMMANDS: &[&str] = &[
   "offline_move",
 ];
 
+/// Манифест Windows с Common Controls v6 — тот же, что tauri-build вшивает в
+/// программу (windows-app-manifest.xml).
+const COMMON_CONTROLS_MANIFEST: &str = r#"<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*" />
+    </dependentAssembly>
+  </dependency>
+</assembly>
+"#;
+
+/// Манифест на Windows вшивает компоновщик MSVC, а не tauri-build. tauri-build
+/// кладёт его в ресурс, а ресурс попадает только в программу
+/// (rustc-link-arg-bins). Тестовый exe без манифеста получал старый comctl32
+/// без TaskDialogIndirect и падал до первого теста: STATUS_ENTRYPOINT_NOT_FOUND
+/// (0xc0000139). Компоновщик вшивает манифест во всё, что собирает, и в тесты
+/// тоже. /MANIFESTUAC:NO: без него компоновщик дописал бы в манифест программы
+/// trustInfo, а программа должна получить тот же манифест, что и раньше.
+/// Возвращает true, если манифест вшивает компоновщик.
+fn embed_manifest_by_linker() -> bool {
+  let target = std::env::var("TARGET").unwrap_or_default();
+  if !target.ends_with("-windows-msvc") {
+    return false;
+  }
+  let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR"));
+  let manifest = out_dir.join("app.manifest");
+  std::fs::write(&manifest, COMMON_CONTROLS_MANIFEST).expect("write app.manifest");
+  println!("cargo:rustc-link-arg=/MANIFEST:EMBED");
+  println!("cargo:rustc-link-arg=/MANIFESTUAC:NO");
+  println!("cargo:rustc-link-arg=/MANIFESTINPUT:{}", manifest.display());
+  true
+}
+
 fn main() {
-  tauri_build::try_build(
-    tauri_build::Attributes::new()
-      .app_manifest(tauri_build::AppManifest::new().commands(COMMANDS)),
-  )
-  .expect("failed to run tauri-build");
+  let mut attributes =
+    tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(COMMANDS));
+  if embed_manifest_by_linker() {
+    attributes =
+      attributes.windows_attributes(tauri_build::WindowsAttributes::new_without_app_manifest());
+  }
+  tauri_build::try_build(attributes).expect("failed to run tauri-build");
 }
