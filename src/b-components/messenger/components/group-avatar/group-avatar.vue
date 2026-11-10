@@ -17,9 +17,8 @@
 import { computed } from 'vue'
 import Avatar from '@/components/avatar/avatar.vue'
 import { TeamOutlined } from '@/components/icons'
-import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { useMessengerStore } from '../../store'
-import { chatUserName, getAddressFromMatrixId } from '../../helpers'
+import { chatUserAvatar, chatUserName, getAddressFromMatrixId } from '../../helpers'
 import { SC_GroupAvatar, SC_GroupBadge, SC_Mosaic, SC_Tile } from './styled'
 
 const props = withDefaults(
@@ -41,12 +40,10 @@ const store = useMessengerStore()
 const tiles = computed(() =>
   props.memberIds.slice(0, 4).map((id) => {
     const address = getAddressFromMatrixId(id)
-    const p = address ? store.userProfiles[address] : undefined
-    const img = p?.i || p?.avatar || p?.image
     return {
       id,
       name: chatUserName(id, store.userProfiles),
-      avatar: typeof img === 'string' ? resolveImageUrl(img) : undefined,
+      avatar: chatUserAvatar(address, store.userProfiles),
     }
   })
 )

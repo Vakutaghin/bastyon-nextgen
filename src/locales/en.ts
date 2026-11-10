@@ -730,7 +730,7 @@ export default {
       storageTitle: 'Local data',
       clearCache: 'Clear saved data',
       clearCacheHint:
-        'Removes playback positions, decrypted messages, stored notifications and saved feeds. Accounts, keys, settings and favorites are kept.',
+        'Removes playback positions, decrypted messages, stored notifications, saved feeds and user names and avatars. Accounts, keys, settings and favorites are kept.',
       clearButton: 'Clear',
       clearing: 'Clearing…',
       cancel: 'Cancel',

@@ -23,6 +23,7 @@ import {
 } from './decrypted-messages-api'
 import { favoritesAPI } from './favorites-api'
 import { FEED_SNAPSHOT_MAX, feedSnapshotAPI } from './feed-snapshot-api'
+import { KNOWN_USER_PREFIX, KNOWN_USERS_MAX, knownUsersAPI } from './known-users-api'
 import { notificationsAPI } from './notifications-api'
 import { postRatingPendingAPI } from './post-rating-pending-api'
 import { settingsAPI } from './settings-api'
@@ -116,10 +117,12 @@ describe('локальная база', () => {
     })
 
     await feedSnapshotAPI.save('PA', 'feed-1', [{ id: 'p' } as never])
+    await knownUsersAPI.save([['PB', { name: 'bob' }]])
 
-    expect(await cacheAPI.size()).toBe(4)
-    await expect(cacheAPI.clear()).resolves.toEqual({ removed: 4 })
+    expect(await cacheAPI.size()).toBe(5)
+    await expect(cacheAPI.clear()).resolves.toEqual({ removed: 5 })
     expect(await feedSnapshotAPI.load('feed-1')).toBeNull()
+    expect(await knownUsersAPI.load()).toEqual([])
     expect(await cacheAPI.size()).toBe(0)
     expect(await favoritesAPI.getAllIds('PA')).toEqual(['p1'])
     expect(await settingsAPI.get('theme')).toBe('dark')
@@ -169,6 +172,61 @@ describe('локальная база', () => {
 
       await expect(feedSnapshotAPI.clear()).resolves.toBe(1)
       expect(await feedSnapshotAPI.count()).toBe(0)
+    })
+  })
+
+  describe('сохранённые имена', () => {
+    it('пишутся простой копией, читаются недавними первыми; повторная запись заменяет', async () => {
+      const { reactive } = await import('vue')
+      const now = vi.spyOn(Date, 'now')
+      now.mockReturnValue(1_000)
+      await knownUsersAPI.save([
+        ['PA', reactive({ name: 'alice', avatar: 'https://x/a.jpg', badges: ['shark'] })],
+        ['PB', { name: 'bob' }],
+        ['', { name: 'nobody' }],
+      ])
+      now.mockReturnValue(2_000)
+      await knownUsersAPI.save([
+        ['PC', { deleted: true, name: 'gone' }],
+        ['PB', { name: 'bobby', avatar: null }],
+      ])
+      now.mockRestore()
+
+      const loaded = await knownUsersAPI.load()
+      expect(
+        loaded
+          .slice(0, 2)
+          .map(([a]) => a)
+          .sort()
+      ).toEqual(['PB', 'PC'])
+      expect(Object.fromEntries(loaded)).toEqual({
+        PA: { name: 'alice', avatar: 'https://x/a.jpg', badges: ['shark'] },
+        PB: { name: 'bobby', avatar: null },
+        PC: { deleted: true },
+      })
+      expect(await knownUsersAPI.count()).toBe(3)
+    })
+
+    it('сверх KNOWN_USERS_MAX при чтении стираются самые давние; чужие строки настроек не трогаются', async () => {
+      await settingsAPI.set('theme', 'dark')
+      const now = Date.now()
+      const rows = Array.from({ length: KNOWN_USERS_MAX + 5 }, (_, i) => ({
+        key: KNOWN_USER_PREFIX + 'P' + i,
+        value: { name: 'u' + i, avatar: null },
+        createdAt: now + i,
+        updatedAt: now + i,
+      }))
+      await db.settings.bulkPut(rows)
+
+      const loaded = await knownUsersAPI.load()
+      expect(loaded).toHaveLength(KNOWN_USERS_MAX)
+      expect(loaded[0]![0]).toBe('P' + (KNOWN_USERS_MAX + 4))
+      expect(loaded.some(([a]) => a === 'P4')).toBe(false)
+      expect(await knownUsersAPI.count()).toBe(KNOWN_USERS_MAX)
+      expect(await settingsAPI.get('theme')).toBe('dark')
+
+      await expect(knownUsersAPI.clear()).resolves.toBe(KNOWN_USERS_MAX)
+      expect(await settingsAPI.get('theme')).toBe('dark')
     })
   })
 

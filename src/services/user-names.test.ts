@@ -7,8 +7,12 @@ vi.mock('@/helpers/api/request', () => ({ getByPRC: (...args: unknown[]) => getB
 import { t } from '@/i18n'
 import {
   __resetUserNamesForTests,
+  knownUsers,
+  onUserSeen,
+  peekUserName,
   preloadUserNames,
   rememberUsers,
+  restoreUsers,
   shortAddress,
   userAvatar,
   userBadges,
@@ -289,5 +293,143 @@ describe('userBadges', () => {
     rememberUsers([{ address: GONE, deleted: true }])
     expect(userBadges(GONE)).toEqual([])
     expect(getByPRC).not.toHaveBeenCalled()
+  })
+})
+
+describe('между запусками', () => {
+  it('сохранённое имя — сразу, и всё равно спрашивается у ноды: новое имя его сменит', async () => {
+    restoreUsers([[ALICE, { name: 'OldName', avatar: 'https://x/old.jpg', badges: ['shark'] }]])
+    getByPRC.mockResolvedValue([{ address: ALICE, name: 'NewName', i: 'https://x/new.jpg' }])
+    const label = computed(() => userName(ALICE))
+    expect(label.value).toBe('OldName')
+    expect(userAvatar(ALICE)).toBe('https://x/old.jpg')
+    expect(userBadges(ALICE)).toEqual(['shark'])
+    await settle()
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+    expect(label.value).toBe('NewName')
+    expect(userAvatar(ALICE)).toBe('https://x/new.jpg')
+    // Подтверждённое нодой второй раз не спрашивается.
+    userName(ALICE)
+    await settle()
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+  })
+
+  it('сохранённое не перетирает пришедшее в этом запуске', () => {
+    rememberUsers([{ address: ALICE, name: 'NewName' }])
+    restoreUsers([
+      [ALICE, { name: 'OldName' }],
+      [BOB, { name: 'Leo5591' }],
+    ])
+    expect(userName(ALICE)).toBe('NewName')
+    expect(peekUserName(BOB)).toBe('Leo5591')
+    expect(knownUsers().map((u) => u.name)).toEqual(['NewName', 'Leo5591'])
+  })
+
+  it('удалённый аккаунт помнится; записи без имени и битые не поднимаются', () => {
+    restoreUsers([
+      [GONE, { deleted: true }],
+      [ALICE, {}],
+      ['', { name: 'nobody' }],
+      [BOB, { name: 42 as never, badges: ['shark', 7 as never] }],
+    ])
+    expect(userName(GONE)).toBe(t('common.deletedAccount'))
+    expect(userName(ALICE)).toBe(shortAddress(ALICE))
+    expect(userName(BOB)).toBe(shortAddress(BOB))
+  })
+
+  it('в обращение для блокчейна сохранённое имя не идёт, пока нода его не подтвердит', async () => {
+    restoreUsers([[ALICE, { name: 'OldName' }]])
+    getByPRC.mockResolvedValue([{ address: ALICE, name: 'NewName' }])
+    expect(userNameIfKnown(ALICE)).toBe('')
+    await settle()
+    expect(userNameIfKnown(ALICE)).toBe('NewName')
+  })
+
+  it('сохранённые имена экран не ждёт, но спрашивает тем же запросом, что и недостающие', async () => {
+    restoreUsers([[BOB, { name: 'Leo5591' }]])
+    const gate: { release?: (value: unknown) => void } = {}
+    getByPRC.mockReturnValueOnce(
+      new Promise((resolve) => {
+        gate.release = resolve
+      })
+    )
+    let done = false
+    const preload = preloadUserNames([ALICE, BOB]).then(() => {
+      done = true
+    })
+    await Promise.resolve()
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+    expect(getByPRC.mock.calls[0]![0].parameters).toEqual([[ALICE, BOB], '1'])
+    expect(done).toBe(false)
+    gate.release?.([
+      { address: ALICE, name: 'SergiyKir' },
+      { address: BOB, name: 'Leo5591' },
+    ])
+    await preload
+    expect(userName(ALICE)).toBe('SergiyKir')
+  })
+
+  it('только сохранённые — экран не ждёт вовсе, а свежие имена приходят следом', async () => {
+    restoreUsers([[BOB, { name: 'Leo5591' }]])
+    getByPRC.mockReturnValueOnce(new Promise(() => {}))
+    let done = false
+    void preloadUserNames([BOB]).then(() => {
+      done = true
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(done).toBe(true)
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+  })
+
+  it('на сохранение уходит изменённое и впервые подтверждённое за запуск, без повторов', async () => {
+    const seen: Array<[string, unknown]> = []
+    onUserSeen((address, user) => seen.push([address, { ...user }]))
+    rememberUsers([{ address: ALICE, name: 'SergiyKir', i: 'https://x/a.jpg' }])
+    rememberUsers([{ address: ALICE, name: 'SergiyKir', i: 'https://x/a.jpg' }])
+    expect(seen).toEqual([
+      [ALICE, { name: 'SergiyKir', avatar: 'https://x/a.jpg', badges: undefined }],
+    ])
+
+    rememberUsers([{ address: ALICE, name: 'Sergiy' }])
+    rememberUsers([{ address: GONE, deleted: true }])
+    // Аккаунт без имени — сохранять нечего.
+    rememberUsers([{ address: BOB, name: '', badges: ['shark'] }])
+    expect(seen.map(([a]) => a)).toEqual([ALICE, ALICE, GONE])
+
+    // Поднятое с устройства и подтверждённое нодой без изменений — тоже на
+    // сохранение: так видно, что человек ещё встречается, и его не вытеснят.
+    const CAROL = 'PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPy'
+    restoreUsers([[CAROL, { name: 'carol', avatar: null, badges: [] }]])
+    getByPRC.mockResolvedValue([{ address: CAROL, name: 'carol', badges: [] }])
+    userName(CAROL)
+    await settle()
+    expect(seen[seen.length - 1]).toEqual([CAROL, { name: 'carol', avatar: null, badges: [] }])
+    expect(seen).toHaveLength(4)
+  })
+
+  it('нода не прислала профиль — сохранённое не продлевается и больше не спрашивается', async () => {
+    const seen: string[] = []
+    onUserSeen((address) => seen.push(address))
+    restoreUsers([[ALICE, { name: 'OldName' }]])
+    getByPRC.mockResolvedValue([])
+    userName(ALICE)
+    await settle()
+    expect(seen).toEqual([])
+    userName(ALICE)
+    await settle()
+    expect(getByPRC).toHaveBeenCalledTimes(1)
+  })
+
+  it('сбой обновления не стирает сохранённое: имя остаётся, повтор — как обычно', async () => {
+    restoreUsers([[ALICE, { name: 'OldName' }]])
+    getByPRC.mockRejectedValueOnce(new Error('offline'))
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(userName(ALICE)).toBe('OldName')
+    await settle()
+    expect(userName(ALICE)).toBe('OldName')
+    getByPRC.mockResolvedValueOnce([{ address: ALICE, name: 'NewName' }])
+    await vi.advanceTimersByTimeAsync(2_100)
+    expect(getByPRC).toHaveBeenCalledTimes(2)
+    expect(userName(ALICE)).toBe('NewName')
   })
 })

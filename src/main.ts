@@ -53,6 +53,7 @@ import { installDropGuard } from '@/helpers/common/drop-guard'
 import { installPopupClickShield } from '@/helpers/common/popup-click-shield'
 import { watchMainThreadStalls } from '@/helpers/diagnostics/main-thread-stalls'
 import { initDatabase } from '@/db/database'
+import { startSavedUserNames } from '@/services/user-names-saved'
 import { useAuthStore } from '@/blockchain'
 import {
   useNotificationsStore,
@@ -77,6 +78,8 @@ import './style.css'
 // без этого Dexie открывала её сама — мимо проверки старой схемы в
 // initDatabase. Обращения через withDb ждут открытия.
 const dbReady = initDatabase()
+// Имена и аватары прошлых запусков: подписи сразу с ником, и без сети тоже.
+void dbReady.then(() => startSavedUserNames()).catch(() => {})
 
 const app = createApp(App)
 const pinia = createPinia()

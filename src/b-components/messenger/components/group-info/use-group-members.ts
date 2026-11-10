@@ -7,11 +7,10 @@
  */
 
 import { computed, ref, watch, type Ref } from 'vue'
-import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { userMark, type UserMark } from '@/helpers/profile/user-mark'
 import { matrixService } from '../../services/matrix-service'
 import { useMessengerStore } from '../../store'
-import { chatUserName, getAddressFromMatrixId } from '../../helpers'
+import { chatUserAvatar, chatUserName, getAddressFromMatrixId } from '../../helpers'
 import {
   groupMembers,
   sortGroupMembers,
@@ -57,12 +56,11 @@ export function useGroupMembers(roomId: Ref<string | null>) {
     const list = (entries.value ?? []).map((e) => {
       const address = getAddressFromMatrixId(e.id)
       const p = address ? store.userProfiles[address] : undefined
-      const img = p?.i || p?.avatar || p?.image
       return {
         ...e,
         address,
         name: chatUserName(e.id, store.userProfiles),
-        avatar: typeof img === 'string' ? resolveImageUrl(img) : undefined,
+        avatar: chatUserAvatar(address, store.userProfiles),
         mark: address ? userMark(p, address) : null,
         isMe: e.id === myId,
         ignored: ignored.value.includes(e.id),

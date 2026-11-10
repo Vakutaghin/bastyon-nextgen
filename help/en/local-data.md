@@ -11,6 +11,7 @@ keywords:
   - private window
   - uninstall
   - unsent messages
+  - names and avatars
 ---
 
 # What is stored on your device
@@ -31,6 +32,7 @@ Everything published is stored on the network. On the device the app keeps only 
 - **Unsent messages** — those that did not go out to the chat, until you send them again or delete them: text and attachments up to 25 MB. They are encrypted with a key derived from the account key, so they cannot be read without the account key. After you sign out they stay on the device and come back to the chat the next time you sign in. See [If a message was not sent](messages.md#if-a-message-was-not-sent).
 - **Notifications** that have already arrived.
 - **The first page of feeds** you have opened — the last six, so the feed shows even without a network, see [Without a network](connection-problems.md#without-a-network). An account’s feeds are erased when you sign out of it or remove it from the device.
+- **Names and avatars of people** you have seen in the feed, comments and chats — up to 3000 people, so captions show nicknames right after launch, even without a network. They are erased when you sign out or remove any account from the device.
 - **The places where you stopped watching** videos.
 - **Downloaded videos and tracks** — if you downloaded any, see [Download to watch offline](offline-video.md). These are ordinary video files, they are not encrypted. Only the videos downloaded automatically from subscriptions go away on their own — after a week, unless you tap **“Keep”**. Everything else you can delete on the Downloads tab or in the settings, under **“Downloaded videos”**.
 - **Web cache** — pictures, videos and pages the app has already downloaded.
@@ -49,7 +51,7 @@ The **“Keep decrypted messages”** switch is in the same section. When it is 
 
 ## Clearing saved data
 
-**“Settings”** → the **“System”** tab → **“Clear saved data”**. This removes viewing positions, decrypted messages, saved notifications and saved feeds — the app loads all of that again later. Accounts, keys, settings and favorites stay.
+**“Settings”** → the **“System”** tab → **“Clear saved data”**. This removes viewing positions, decrypted messages, saved notifications, saved feeds and people’s names and avatars — the app loads all of that again later. Accounts, keys, settings and favorites stay.
 
 ## Private windows and blocked storage
 

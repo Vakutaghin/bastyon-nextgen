@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { t } from '@/i18n'
+import { __resetUserNamesForTests, restoreUsers } from '@/services/user-names'
 import {
   getEventId,
   getEventContent,
@@ -13,6 +14,7 @@ import {
   tetatetid,
   isTetatetchat,
   getAddressFromMatrixId,
+  chatUserAvatar,
   chatUserName,
   getRoomTimelineEvents,
   hexStringToUint8Array,
@@ -216,6 +218,37 @@ describe('chatUserName: вместо Matrix-id — логин или корот�
     expect(chatUserName(MATRIX_ID, { [ADDRESS]: { deleted: true } })).toBe(
       t('common.deletedAccount')
     )
+  })
+
+  describe('профиль ещё не пришёл (запуск, нет сети)', () => {
+    afterEach(() => __resetUserNamesForTests())
+
+    it('логин и аватар — из общего кэша имён, он помнит прошлые запуски', () => {
+      _hexToAddress.mockReturnValue(ADDRESS)
+      restoreUsers([[ADDRESS, { name: 'SergiyKir', avatar: 'https://x/a.jpg' }]])
+      expect(chatUserName(MATRIX_ID, {}, 'matrix-display')).toBe('SergiyKir')
+      expect(chatUserAvatar(ADDRESS, {})).toBe('https://x/a.jpg')
+    })
+
+    it('пришёл профиль — он важнее сохранённого; без картинки — аватара нет', () => {
+      _hexToAddress.mockReturnValue(ADDRESS)
+      restoreUsers([[ADDRESS, { name: 'OldName', avatar: 'https://x/old.jpg' }]])
+      const profiles = { [ADDRESS]: { name: 'NewName' } }
+      expect(chatUserName(MATRIX_ID, profiles)).toBe('NewName')
+      expect(chatUserAvatar(ADDRESS, profiles)).toBeUndefined()
+      expect(chatUserAvatar(ADDRESS, { [ADDRESS]: { i: 'abc.jpg' } })).toBe(
+        'https://pocketnet.app:8092/i/abc.jpg'
+      )
+      // Профиль без имени (пустой логин) — не подменяем его сохранённым.
+      expect(chatUserName(MATRIX_ID, { [ADDRESS]: {} })).toBe('PJFaWLSP…')
+    })
+
+    it('ничего не известно — короткий адрес, без адреса — аватара нет', () => {
+      _hexToAddress.mockReturnValue(ADDRESS)
+      expect(chatUserName(MATRIX_ID, {})).toBe('PJFaWLSP…')
+      expect(chatUserAvatar(ADDRESS, {})).toBeUndefined()
+      expect(chatUserAvatar(null, {})).toBeUndefined()
+    })
   })
 })
 

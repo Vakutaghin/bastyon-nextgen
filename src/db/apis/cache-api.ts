@@ -1,5 +1,6 @@
 import { db, withDb } from '../database'
 import { feedSnapshotAPI } from './feed-snapshot-api'
+import { knownUsersAPI } from './known-users-api'
 
 /**
  * Очистка локального кэша (в старом клиенте — «очистить локальное хранилище»).
@@ -8,8 +9,8 @@ import { feedSnapshotAPI } from './feed-snapshot-api'
  * вместе с кэшем улетали бы черновики и незавершённые действия. Поэтому здесь
  * перечислены ровно те таблицы, содержимое которых приложение умеет получить
  * заново, — а аккаунты, ключи, настройки, избранное и неотправленные оценки
- * не трогаются. Сохранённые ленты лежат в таблице настроек, их стирает
- * feed-snapshot-api по своему префиксу.
+ * не трогаются. Сохранённые ленты и имена пользователей лежат в таблице
+ * настроек, их стирают feed-snapshot-api и known-users-api по своим префиксам.
  */
 const CACHE_TABLES = ['videoProgress', 'decryptedMessages', 'notifications'] as const
 
@@ -28,7 +29,7 @@ export const cacheAPI = {
       }
       return total
     })
-    return tables + (await feedSnapshotAPI.count())
+    return tables + (await feedSnapshotAPI.count()) + (await knownUsersAPI.count())
   },
 
   /** Очистить кэш. Возвращает, сколько записей было удалено. */
@@ -42,6 +43,7 @@ export const cacheAPI = {
       }
       return { removed }
     })
-    return { removed: result.removed + (await feedSnapshotAPI.clear()) }
+    const snapshots = await feedSnapshotAPI.clear()
+    return { removed: result.removed + snapshots + (await knownUsersAPI.clear()) }
   },
 }

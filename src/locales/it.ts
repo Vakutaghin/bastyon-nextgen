@@ -733,7 +733,7 @@ export default {
       storageTitle: 'Dati locali',
       clearCache: 'Cancella i dati salvati',
       clearCacheHint:
-        'Rimuove le posizioni di riproduzione, i messaggi decifrati, le notifiche e i feed salvati. Account, chiavi, impostazioni e preferiti vengono mantenuti.',
+        'Rimuove le posizioni di riproduzione, i messaggi decifrati, le notifiche, i feed salvati e i nomi e gli avatar degli utenti. Account, chiavi, impostazioni e preferiti vengono mantenuti.',
       clearButton: 'Svuota',
       clearing: 'Pulizia…',
       cancel: 'Annulla',

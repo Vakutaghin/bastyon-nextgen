@@ -742,7 +742,7 @@ export default {
       storageTitle: 'Lokale Daten',
       clearCache: 'Gespeicherte Daten löschen',
       clearCacheHint:
-        'Entfernt Wiedergabepositionen, entschlüsselte Nachrichten, gespeicherte Benachrichtigungen und Feeds. Konten, Schlüssel, Einstellungen und Favoriten bleiben erhalten.',
+        'Entfernt Wiedergabepositionen, entschlüsselte Nachrichten, gespeicherte Benachrichtigungen, Feeds sowie Nutzernamen und Avatare. Konten, Schlüssel, Einstellungen und Favoriten bleiben erhalten.',
       clearButton: 'Leeren',
       clearing: 'Wird geleert…',
       cancel: 'Abbrechen',

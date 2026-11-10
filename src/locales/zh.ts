@@ -691,7 +691,7 @@ export default {
       storageTitle: '本地数据',
       clearCache: '清除已保存的数据',
       clearCacheHint:
-        '删除播放位置、已解密的消息、已保存的通知和信息流。账户、密钥、设置和收藏会保留。',
+        '删除播放位置、已解密的消息、已保存的通知、信息流以及用户名和头像。账户、密钥、设置和收藏会保留。',
       clearButton: '清除',
       clearing: '正在清除…',
       cancel: '取消',

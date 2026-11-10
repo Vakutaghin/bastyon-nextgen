@@ -271,13 +271,12 @@ import { deliveryMark } from './delivery-mark'
 import DeliveryTicks from './delivery-ticks.vue'
 import { useMessengerStore } from '../../store'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../../store/consts'
-import { chatUserName, getAddressFromMatrixId } from '../../helpers'
+import { chatUserAvatar, chatUserName, getAddressFromMatrixId } from '../../helpers'
 import {
   formatDateTimeFromString as formatTime,
   formatMessageTime,
 } from '@/helpers/common/date-formatter'
 import { QUICK_REACTION_EMOJIS } from '../../store/consts'
-import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import Avatar from '@/components/avatar/avatar.vue'
 import ProfileLink from '../profile-link/profile-link.vue'
 import AudioMessage from '../audio-message/audio-message.vue'
@@ -430,13 +429,6 @@ const senderAddress = computed<string | null>(() => {
   return getAddressFromMatrixId(id)
 })
 
-/** Профиль отправителя из реактивного кэша (подтянется автоматически после fetch). */
-const senderProfile = computed(() => {
-  const addr = senderAddress.value
-  if (!addr) return null
-  return store.userProfiles[addr] || null
-})
-
 const displayName = computed<string>(() => {
   if (isMine.value) return store.currentUser.name || t('messenger.you')
   // В mesh-канале отправитель — имя, которое написало его радио; его может не быть.
@@ -447,10 +439,7 @@ const displayName = computed<string>(() => {
 /** URL аватарки отправителя (или undefined, если ещё нет в кэше). */
 const displayAvatar = computed<string | undefined>(() => {
   if (isMine.value) return store.currentUser.avatar
-  const profile = senderProfile.value as { i?: string; avatar?: string; image?: string } | null
-  const img = profile?.i || profile?.avatar || profile?.image
-  if (!img) return undefined
-  return resolveImageUrl(img) || undefined
+  return chatUserAvatar(senderAddress.value, store.userProfiles)
 })
 
 function ensureSenderProfile(): void {

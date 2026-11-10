@@ -4,7 +4,8 @@ import CryptoJS from 'crypto-js'
 
 import { matrixService } from './services/matrix-service'
 import { t } from '@/i18n'
-import { shortAddress } from '@/services/user-names'
+import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { peekUserName, shortAddress, userAvatar } from '@/services/user-names'
 
 /**
  * Универсальное представление Matrix-события: либо обёртка SDK (`MatrixEvent` с
@@ -228,6 +229,9 @@ export const getAddressFromMatrixId = (matrixId: string): string | null => {
  * Bastyon-адрес. Matrix-id наших пользователей — hex адреса (`@5041…:server`),
  * и Matrix подставляет его же в имя участника: человек видел длинную
  * hex-строку, похожую на публичный ключ. Её не показываем никогда.
+ *
+ * Пока профиль не пришёл (запуск, нет сети) — логин из общего кэша имён: он
+ * помнит и прошлые запуски (user-names-saved).
  */
 export function chatUserName(
   matrixId: string,
@@ -238,12 +242,33 @@ export function chatUserName(
   const profile = address ? profiles[address] : undefined
   if (profile?.name) return profile.name
   if (profile?.deleted) return t('common.deletedAccount')
+  const saved = address && !profile ? peekUserName(address) : ''
+  if (saved) return saved
   const name = knownName?.trim()
   if (name && name !== matrixId && name !== address && !/^@?[0-9a-f]{16,}/i.test(name)) {
     return name
   }
   if (address) return shortAddress(address)
   return matrixId
+}
+
+/**
+ * Аватар собеседника по адресу: из кэша профилей мессенджера, а пока профиль
+ * не пришёл — из общего кэша имён (помнит и прошлые запуски). Профиль без
+ * картинки — аватара нет: сохранённый мог устареть.
+ */
+export function chatUserAvatar(
+  address: string | null | undefined,
+  profiles: Record<
+    string,
+    { name?: unknown; i?: unknown; avatar?: unknown; image?: unknown } | undefined
+  >
+): string | undefined {
+  if (!address) return undefined
+  const profile = profiles[address]
+  if (!profile) return userAvatar(address) ?? undefined
+  const img = profile.i || profile.avatar || profile.image
+  return typeof img === 'string' ? resolveImageUrl(img) : undefined
 }
 
 // --- Работа с таймлайном ---

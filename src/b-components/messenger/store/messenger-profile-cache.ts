@@ -7,6 +7,7 @@ import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { rememberUsers } from '@/services/user-names'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
@@ -117,6 +118,10 @@ export const useMessengerProfileCache = defineStore('messenger-profile-cache', (
               verifyPeerKeys(profile)
             }
           })
+          // Имена и аватары собеседников — в общий кэш имён: он сохраняет их
+          // на устройстве, и после перезапуска список чатов сразу с никами.
+          // Сам кэш профилей (с ключами шифрования) на диск не идёт.
+          rememberUsers(profiles as UserProfile[])
         }
         batch.forEach((addr) => failedAddresses.delete(addr))
       } catch (e) {

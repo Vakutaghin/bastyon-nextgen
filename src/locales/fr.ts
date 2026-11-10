@@ -747,7 +747,7 @@ export default {
       storageTitle: 'Données locales',
       clearCache: 'Effacer les données enregistrées',
       clearCacheHint:
-        'Supprime les positions de lecture, les messages déchiffrés, les notifications et les fils enregistrés. Les comptes, clés, paramètres et favoris sont conservés.',
+        'Supprime les positions de lecture, les messages déchiffrés, les notifications, les fils enregistrés ainsi que les noms et avatars des utilisateurs. Les comptes, clés, paramètres et favoris sont conservés.',
       clearButton: 'Vider',
       clearing: 'Nettoyage…',
       cancel: 'Annuler',

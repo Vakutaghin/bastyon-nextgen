@@ -740,7 +740,7 @@ export default {
       storageTitle: 'Datos locales',
       clearCache: 'Borrar datos guardados',
       clearCacheHint:
-        'Elimina las posiciones de reproducción, los mensajes descifrados, las notificaciones y los feeds guardados. Se conservan las cuentas, las claves, los ajustes y los favoritos.',
+        'Elimina las posiciones de reproducción, los mensajes descifrados, las notificaciones, los feeds guardados y los nombres y avatares de usuarios. Se conservan las cuentas, las claves, los ajustes y los favoritos.',
       clearButton: 'Borrar',
       clearing: 'Borrando…',
       cancel: 'Cancelar',

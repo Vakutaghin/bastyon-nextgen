@@ -4,13 +4,14 @@
 // чтобы логику можно было гонять на фейковой комнате без pinia/Matrix.
 
 import { t } from '@/i18n'
-import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { peekUserName } from '@/services/user-names'
 import { isUserVerified } from '@/helpers/profile/is-user-verified'
 import { userMark, type UserMark } from '@/helpers/profile/user-mark'
 
 import { matrixService } from '../../services/matrix-service'
 import type { Dialog, DialogGroup, Message } from '../../types'
 import {
+  chatUserAvatar,
   chatUserName,
   getAddressFromMatrixId,
   getEventTs,
@@ -106,8 +107,13 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
     if (address) {
       if (!profileCache.userProfiles[address]) profileCache.fetchProfiles([address])
       const p = profileCache.userProfiles[address]
+      // Профиля ещё нет (запуск, нет сети) — логин из общего кэша имён, он
+      // помнит и прошлые запуски.
+      const saved = p ? '' : peekUserName(address)
       if (p?.name) {
         name = p.name
+      } else if (saved) {
+        name = saved
       } else {
         // Логин ещё не подгрузился (свежий аккаунт / лаг распространения имени
         // по нодам), а у matrix-юзера нет displayname — поэтому name сейчас
@@ -117,12 +123,8 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
         const localpart = partnerId.slice(1).split(':')[0]
         if (name === localpart || TETATET_ROOM_NAME.test(name)) name = address
       }
-      const imgCandidate = p?.i || p?.avatar || p?.image
-      const img = typeof imgCandidate === 'string' ? imgCandidate : undefined
-      if (img) {
-        const url = resolveImageUrl(img)
-        if (url) avatar = url
-      }
+      const url = chatUserAvatar(address, profileCache.userProfiles)
+      if (url) avatar = url
       verified = isUserVerified(p, address)
       mark = userMark(p, address)
     }
