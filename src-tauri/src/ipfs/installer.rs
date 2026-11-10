@@ -456,6 +456,8 @@ fn prepare_binary(binary: &Path, dir: &Path) -> Result<(), InstallError> {
     }
     #[cfg(not(target_os = "macos"))]
     let _ = dir;
+    #[cfg(not(unix))]
+    let _ = binary;
     Ok(())
 }
 

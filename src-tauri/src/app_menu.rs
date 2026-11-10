@@ -7,9 +7,11 @@
 use serde::Deserialize;
 use tauri::AppHandle;
 
-/// Подписи меню. `{name}` в тексте — название приложения.
+/// Подписи меню. `{name}` в тексте — название приложения. Меню собирается только
+/// на macOS: на других системах подписи принимаются и не читаются.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub struct MenuLabels {
   pub about: String,
   pub services: String,
@@ -65,6 +67,7 @@ impl Default for MenuLabels {
 
 impl MenuLabels {
   /// `{name}` → название приложения; пустые и слишком длинные подписи — по умолчанию.
+  #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
   fn resolved(mut self, name: &str) -> Self {
     let fallback = Self::default();
     let fix = |text: &mut String, default: String| {
