@@ -372,6 +372,26 @@ test.describe('на телефоне', () => {
     test.setTimeout(120_000)
     await signIn(page)
     await readAliceInMessenger(page)
+    // Тост на телефоне — сверху, сразу под шапкой: кнопки шапки и поле ввода
+    // с кнопками снизу он не закрывает (внизу он 4,5 с лежал на поле ввода).
+    const toast = page
+      .locator('.ant-notification-notice')
+      .filter({ hasText: 'Публикации alice_ng теперь в мессенджере' })
+    const headerBottom = await page
+      .locator('body > #app header')
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().bottom)
+    // Тост въезжает сверху — меряем, когда анимация закончилась.
+    await expect
+      .poll(async () => (await toast.boundingBox())?.y ?? -1)
+      .toBeGreaterThanOrEqual(headerBottom)
+    const toastBox = (await toast.boundingBox())!
+    expect(toastBox.y - headerBottom).toBeLessThanOrEqual(16)
+    expect(toastBox.y + toastBox.height).toBeLessThan(844 / 2)
+    // Сверху тост лежит поверх шапки окон во весь экран (пост, модалки) — его
+    // закрывают крестиком, дальше проверяется раскладка без него.
+    await toast.locator('.ant-notification-notice-close').click()
+    await expect(toast).toBeHidden()
     await page.getByTestId('profile-channel').filter({ visible: true }).click()
     await checkChannelFeed(page)
     // Без пузырей: пост во всю ширину экрана.
@@ -399,12 +419,6 @@ test.describe('на телефоне', () => {
     const hint = page.getByText(/Напишите первое сообщение/)
     await expect(hint).toBeVisible()
     expect(await hint.evaluate(uncovered)).toBe(true)
-    // Тосты на телефоне — внизу, поверх поля ввода, пока не уйдут (4,5 с);
-    // здесь проверяется раскладка, поэтому ждём, пока тост «теперь в
-    // мессенджере» закроется.
-    await expect(onScreen(page).getByText('Публикации alice_ng теперь в мессенджере')).toBeHidden({
-      timeout: 15_000,
-    })
     const input = page.getByPlaceholder('Введите сообщение...').filter({ visible: true })
     expect(await input.evaluate(uncovered)).toBe(true)
   })
