@@ -58,6 +58,7 @@ async function purgeAccountScopedIdb(address: Address): Promise<void> {
     { SEARCH_HISTORY_STORAGE_KEY },
     { NOTIFICATION_FILTERS_KEY },
     { forgetSavedUserNames },
+    { forgetAvatarThumbs },
   ] = await Promise.all([
     import('@/db/apis/favorites-api'),
     import('@/db/apis/settings-api'),
@@ -65,6 +66,7 @@ async function purgeAccountScopedIdb(address: Address): Promise<void> {
     import('@/stores/search-store-consts'),
     import('@/stores/notification-settings-store'),
     import('@/services/user-names-saved'),
+    import('@/services/avatar-thumbs'),
   ])
   await favoritesAPI.purge(address)
   await settingsAPI.set(`${SEARCH_HISTORY_STORAGE_KEY}:${address}`, undefined)
@@ -73,25 +75,30 @@ async function purgeAccountScopedIdb(address: Address): Promise<void> {
   await settingsAPI.remove(accountScopedKey(POST_DRAFT_IMAGES_KEY, address))
   // Сохранённые ленты аккаунта: в «Подписках» видно, на кого он подписан.
   await feedSnapshotAPI.forgetAccount(address)
-  // Сохранённые имена общие для аккаунтов, а среди них — собеседники этого.
+  // Сохранённые имена и аватарки общие для аккаунтов, а среди них —
+  // собеседники этого.
   await forgetSavedUserNames()
+  await forgetAvatarThumbs()
 }
 
 /**
  * Черновики постов в IDB (картинки, теги, опрос…) при выходе — как их текст
  * в localStorage (V14): следующему человеку на устройстве они не принадлежат.
- * Сохранённые ленты — туда же: они тоже по аккаунтам. И сохранённые имена:
- * по ним видно, с кем человек переписывался.
+ * Сохранённые ленты — туда же: они тоже по аккаунтам. И сохранённые имена с
+ * аватарками: по ним видно, с кем человек переписывался.
  */
 async function purgePostDraftsIdb(): Promise<void> {
-  const [{ settingsAPI }, { feedSnapshotAPI }, { forgetSavedUserNames }] = await Promise.all([
-    import('@/db/apis/settings-api'),
-    import('@/db/apis/feed-snapshot-api'),
-    import('@/services/user-names-saved'),
-  ])
+  const [{ settingsAPI }, { feedSnapshotAPI }, { forgetSavedUserNames }, { forgetAvatarThumbs }] =
+    await Promise.all([
+      import('@/db/apis/settings-api'),
+      import('@/db/apis/feed-snapshot-api'),
+      import('@/services/user-names-saved'),
+      import('@/services/avatar-thumbs'),
+    ])
   await settingsAPI.removeByPrefix(POST_DRAFT_KEY)
   await feedSnapshotAPI.clear()
   await forgetSavedUserNames()
+  await forgetAvatarThumbs()
 }
 
 // Общий промис активного restoreSession(). На старте restore зовётся и из

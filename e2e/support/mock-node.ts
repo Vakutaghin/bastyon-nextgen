@@ -14,6 +14,8 @@ import type { Page, Route } from '@playwright/test'
 export interface MockProfile {
   address: string
   name: string
+  /** Аватар (`i`): адрес картинки. */
+  avatar?: string
   reputation?: number
   /** Открытые ключи мессенджера через запятую — без них чат не шифрует. */
   k?: string
@@ -208,7 +210,7 @@ function profileJson(p: MockProfile) {
     address: p.address,
     id: 1000 + p.name.length,
     name: p.name,
-    i: '',
+    i: p.avatar ?? '',
     b: JSON.stringify(p.donations ?? []),
     r: '',
     postcnt: 3,

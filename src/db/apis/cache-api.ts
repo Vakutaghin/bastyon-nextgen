@@ -1,6 +1,7 @@
 import { db, withDb } from '../database'
 import { feedSnapshotAPI } from './feed-snapshot-api'
 import { knownUsersAPI } from './known-users-api'
+import { avatarThumbsAPI } from './avatar-thumbs-api'
 
 /**
  * Очистка локального кэша (в старом клиенте — «очистить локальное хранилище»).
@@ -9,8 +10,9 @@ import { knownUsersAPI } from './known-users-api'
  * вместе с кэшем улетали бы черновики и незавершённые действия. Поэтому здесь
  * перечислены ровно те таблицы, содержимое которых приложение умеет получить
  * заново, — а аккаунты, ключи, настройки, избранное и неотправленные оценки
- * не трогаются. Сохранённые ленты и имена пользователей лежат в таблице
- * настроек, их стирают feed-snapshot-api и known-users-api по своим префиксам.
+ * не трогаются. Сохранённые ленты, имена и превью аватарок лежат в таблице
+ * настроек, их стирают свои API (feed-snapshot, known-users, avatar-thumbs)
+ * по своим префиксам.
  */
 const CACHE_TABLES = ['videoProgress', 'decryptedMessages', 'notifications'] as const
 
@@ -29,7 +31,8 @@ export const cacheAPI = {
       }
       return total
     })
-    return tables + (await feedSnapshotAPI.count()) + (await knownUsersAPI.count())
+    const people = (await knownUsersAPI.count()) + (await avatarThumbsAPI.count())
+    return tables + (await feedSnapshotAPI.count()) + people
   },
 
   /** Очистить кэш. Возвращает, сколько записей было удалено. */
@@ -44,6 +47,7 @@ export const cacheAPI = {
       return { removed }
     })
     const snapshots = await feedSnapshotAPI.clear()
-    return { removed: result.removed + snapshots + (await knownUsersAPI.clear()) }
+    const people = (await knownUsersAPI.clear()) + (await avatarThumbsAPI.clear())
+    return { removed: result.removed + snapshots + people }
   },
 }

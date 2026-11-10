@@ -8,6 +8,7 @@ import { getInitials as getInitialsUtil } from '@/helpers/common/initials'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { useTorMedia } from '@/composables/use-tor-media'
 import { torMediaUrl } from '@/helpers/tor/tor-media-proxy'
+import { avatarSource, fallbackThumb, rememberThumb } from '@/services/avatar-thumbs'
 
 export function useAvatar(p: AvatarProps) {
   // Получаем attrs для проверки header avatar
@@ -17,7 +18,8 @@ export function useAvatar(p: AvatarProps) {
   const { mediaBlocked } = useTorMedia()
 
   const showPlaceholder = ref(false)
-  const actualSrc = ref<string | undefined>(undefined)
+  /** Сеть картинку не дала: показываем запасное превью, если оно есть. */
+  const networkFailed = ref(false)
   const rootEl = ref<HTMLElement | null>(null)
 
   // Проверяем, это header avatar
@@ -51,31 +53,46 @@ export function useAvatar(p: AvatarProps) {
   const fallbackColor = computed(() => avatarFallbackBackground(hue.value))
   const textColor = computed(() => avatarFallbackText(hue.value))
 
+  // resolveImageUrl: разворачивает голый хеш в полный URL + нормализует домен
+  // (раньше тут был только swap домена — голый хеш оставался сломанным src).
+  const imageUrl = computed(() => resolveImageUrl(p.src))
+
+  /**
+   * Превью с устройства (services/avatar-thumbs): небольшая аватарка берёт его
+   * вместо картинки — без сети и без запроса. Пока превью читается, ни
+   * картинки, ни инициалов: это миллисекунды.
+   */
+  const source = computed(() => avatarSource(imageUrl.value, sizePx.value))
+  const waiting = computed(() => source.value.wait)
+
+  const actualSrc = computed<string | undefined>(() => {
+    const url = imageUrl.value
+    if (!url) return undefined
+    if (networkFailed.value) return fallbackThumb(url)
+    const src = source.value.src
+    return src === url && mediaBlocked.value ? torMediaUrl(url) : src
+  })
+
   const handleImageError = (_e: Event) => {
+    // Картинка из сети не пришла — попробуем превью (без сети, крупная аватарка).
+    if (!actualSrc.value?.startsWith('data:')) networkFailed.value = true
     showPlaceholder.value = true
   }
 
-  const handleImageLoad = () => {
+  const handleImageLoad = (e?: Event) => {
     showPlaceholder.value = false
+    rememberThumb(imageUrl.value, e?.target ?? null)
   }
 
-  // Обновляем фактический src сразу
-  watch(
-    [() => p.src, mediaBlocked],
-    ([newSrc, blocked], [oldSrc, wasBlocked]) => {
-      if (!newSrc) {
-        actualSrc.value = undefined
-        showPlaceholder.value = true
-      } else if (newSrc !== oldSrc || blocked !== wasBlocked || !actualSrc.value) {
-        showPlaceholder.value = false
-        // resolveImageUrl: разворачивает голый хеш в полный URL + нормализует домен
-        // (раньше тут был только swap домена — голый хеш оставался сломанным src).
-        const url = resolveImageUrl(newSrc)
-        actualSrc.value = url && blocked ? torMediaUrl(url) : url
-      }
-    },
-    { immediate: true }
-  )
+  // Новая картинка или режим Tor — пробуем заново.
+  watch([imageUrl, mediaBlocked], () => {
+    networkFailed.value = false
+    showPlaceholder.value = false
+  })
+  // Пришло превью (прочиталось с устройства после сбоя сети) — показываем его.
+  watch(actualSrc, (src, old) => {
+    if (src && src !== old) showPlaceholder.value = false
+  })
 
   return {
     Avatar,
@@ -92,6 +109,7 @@ export function useAvatar(p: AvatarProps) {
     handleImageError,
     handleImageLoad,
     actualSrc,
+    waiting,
     rootEl,
   }
 }

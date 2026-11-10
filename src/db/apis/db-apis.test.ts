@@ -24,6 +24,7 @@ import {
 import { favoritesAPI } from './favorites-api'
 import { FEED_SNAPSHOT_MAX, feedSnapshotAPI } from './feed-snapshot-api'
 import { KNOWN_USER_PREFIX, KNOWN_USERS_MAX, knownUsersAPI } from './known-users-api'
+import { AVATAR_THUMBS_MAX, avatarThumbsAPI, thumbKey } from './avatar-thumbs-api'
 import { notificationsAPI } from './notifications-api'
 import { postRatingPendingAPI } from './post-rating-pending-api'
 import { settingsAPI } from './settings-api'
@@ -118,11 +119,13 @@ describe('локальная база', () => {
 
     await feedSnapshotAPI.save('PA', 'feed-1', [{ id: 'p' } as never])
     await knownUsersAPI.save([['PB', { name: 'bob' }]])
+    await avatarThumbsAPI.save([{ url: 'https://x/a.jpg', data: 'data:image/webp;base64,A' }])
 
-    expect(await cacheAPI.size()).toBe(5)
-    await expect(cacheAPI.clear()).resolves.toEqual({ removed: 5 })
+    expect(await cacheAPI.size()).toBe(6)
+    await expect(cacheAPI.clear()).resolves.toEqual({ removed: 6 })
     expect(await feedSnapshotAPI.load('feed-1')).toBeNull()
     expect(await knownUsersAPI.load()).toEqual([])
+    expect(await avatarThumbsAPI.count()).toBe(0)
     expect(await cacheAPI.size()).toBe(0)
     expect(await favoritesAPI.getAllIds('PA')).toEqual(['p1'])
     expect(await settingsAPI.get('theme')).toBe('dark')
@@ -226,6 +229,47 @@ describe('локальная база', () => {
       expect(await settingsAPI.get('theme')).toBe('dark')
 
       await expect(knownUsersAPI.clear()).resolves.toBe(KNOWN_USERS_MAX)
+      expect(await settingsAPI.get('theme')).toBe('dark')
+    })
+  })
+
+  describe('превью аватарок', () => {
+    const A = 'https://pocketnet.app:8092/i/aaa.jfif'
+    const B = 'https://pocketnet.app:8092/i/bbb.jfif'
+
+    it('читаются по ключу и адресу: чужой адрес под тем же ключом не отдаётся', async () => {
+      await avatarThumbsAPI.save([
+        { url: A, data: 'data:a' },
+        { url: B, data: 'data:b' },
+      ])
+      expect(await avatarThumbsAPI.keys()).toEqual(new Set([thumbKey(A), thumbKey(B)]))
+      const rows = await avatarThumbsAPI.get([
+        [thumbKey(A), A],
+        [thumbKey(B), 'https://other/b.jpg'],
+        [thumbKey('https://none'), 'https://none'],
+      ])
+      expect(rows.map((r) => [r.url, r.data])).toEqual([[A, 'data:a']])
+      expect(rows[0]!.savedAt).toBeGreaterThan(0)
+      expect(thumbKey(A)).not.toBe(thumbKey(B))
+    })
+
+    it('сверх AVATAR_THUMBS_MAX стираются самые давние; чужие строки не трогаются', async () => {
+      await settingsAPI.set('theme', 'dark')
+      const now = Date.now()
+      await db.settings.bulkPut(
+        Array.from({ length: AVATAR_THUMBS_MAX + 3 }, (_, i) => ({
+          key: thumbKey('https://x/' + i),
+          value: { url: 'https://x/' + i, data: 'data:' + i },
+          createdAt: now + i,
+          updatedAt: now + i,
+        }))
+      )
+      const keys = await avatarThumbsAPI.keys()
+      expect(keys?.size).toBe(AVATAR_THUMBS_MAX)
+      expect(keys?.has(thumbKey('https://x/0'))).toBe(false)
+      expect(keys?.has(thumbKey('https://x/' + (AVATAR_THUMBS_MAX + 2)))).toBe(true)
+      expect(await avatarThumbsAPI.count()).toBe(AVATAR_THUMBS_MAX)
+      await expect(avatarThumbsAPI.clear()).resolves.toBe(AVATAR_THUMBS_MAX)
       expect(await settingsAPI.get('theme')).toBe('dark')
     })
   })

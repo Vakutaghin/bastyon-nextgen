@@ -181,6 +181,10 @@ const { _savedNames } = vi.hoisted(() => ({
   _savedNames: { forgetSavedUserNames: vi.fn().mockResolvedValue(0) },
 }))
 vi.mock('@/services/user-names-saved', () => _savedNames)
+const { _thumbs } = vi.hoisted(() => ({
+  _thumbs: { forgetAvatarThumbs: vi.fn().mockResolvedValue(0) },
+}))
+vi.mock('@/services/avatar-thumbs', () => _thumbs)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -574,6 +578,7 @@ describe('auth-store', () => {
       await store.signOut()
       expect(_feedSnapshots.clear).toHaveBeenCalled()
       expect(_savedNames.forgetSavedUserNames).toHaveBeenCalled()
+      expect(_thumbs.forgetAvatarThumbs).toHaveBeenCalled()
     })
 
     it('should call clearAllUserData()', async () => {
@@ -658,6 +663,7 @@ describe('auth-store', () => {
         expect(_settings.remove).toHaveBeenCalledWith('bastyon_post_draft_images:POther')
         expect(_feedSnapshots.forgetAccount).toHaveBeenCalledWith('POther')
         expect(_savedNames.forgetSavedUserNames).toHaveBeenCalled()
+        expect(_thumbs.forgetAvatarThumbs).toHaveBeenCalled()
       })
       expect(_settings.removeByPrefix).not.toHaveBeenCalled()
       expect(_feedSnapshots.clear).not.toHaveBeenCalled()

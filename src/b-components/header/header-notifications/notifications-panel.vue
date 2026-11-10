@@ -99,11 +99,13 @@
                   :class="{ loaded: loadedAvatars.has(avatarOf(item)!) }"
                 >
                   <img
-                    :src="avatarOf(item)!"
+                    v-if="avatarSrcOf(item)"
+                    :src="avatarSrcOf(item)"
                     :alt="getDisplayName(item)"
                     loading="lazy"
                     decoding="async"
-                    @load="loadedAvatars.add(avatarOf(item)!)"
+                    crossorigin="anonymous"
+                    @load="onAvatarLoad(item, $event)"
                     @error="brokenAvatars.add(avatarOf(item)!)"
                   />
                 </SC_NotificationAvatar>
@@ -236,6 +238,7 @@ import Skeleton from '@/components/skeleton'
 import { userMarkOf } from '@/services/user-marks'
 import { userAvatar, userName } from '@/services/user-names'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
+import { avatarSource, rememberThumb } from '@/services/avatar-thumbs'
 import {
   trimText,
   COMMENT_PREVIEW_LIMIT,
@@ -435,6 +438,18 @@ function avatarOf(item: NotificationItem): string | null {
   const url =
     resolveImageUrl(from?.avatar) ?? userAvatar(item.from ?? from?.address ?? null) ?? null
   return url && !brokenAvatars.has(url) ? url : null
+}
+
+/** Что показать: превью с устройства или картинку; пока превью читается — ничего. */
+function avatarSrcOf(item: NotificationItem): string | undefined {
+  return avatarSource(avatarOf(item), 28).src
+}
+
+function onAvatarLoad(item: NotificationItem, e: Event): void {
+  const url = avatarOf(item)
+  if (!url) return
+  loadedAvatars.add(url)
+  rememberThumb(url, e.target)
 }
 
 function getActionLine(item: NotificationItem): string {

@@ -123,9 +123,14 @@ describe('имена между запусками', () => {
     await forget
     expect(forgotten).toBe(true)
     expect(api.clear).toHaveBeenCalledTimes(1)
-    // Накопленное до стирания (BOB) на диск уже не уйдёт.
+    // Накопленное до стирания (BOB) на диск уже не уйдёт — и со следующей
+    // записью тоже.
     await vi.advanceTimersByTimeAsync(SAVE_DELAY_MS)
     expect(api.save).toHaveBeenCalledTimes(1)
+    const CAROL = 'PBXC5v3VYuYMCT5nQKNd1VJp2oMqccKtPy'
+    rememberUsers([{ address: CAROL, name: 'carol' }])
+    await vi.advanceTimersByTimeAsync(SAVE_DELAY_MS)
+    expect(savedAddresses(1)).toEqual([CAROL])
   })
 
   it('без запуска ничего не сохраняется: база не открылась — кэш живёт в памяти', async () => {

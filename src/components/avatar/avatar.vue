@@ -48,15 +48,15 @@
       :src="actualSrc && !showPlaceholder ? actualSrc : undefined"
       :class="['bastyon-avatar', avatarClass]"
       :style="{
-        backgroundColor: !src || showPlaceholder ? fallbackColor : undefined,
-        color: !src || showPlaceholder ? textColor : undefined,
+        backgroundColor: !src || showPlaceholder || waiting ? fallbackColor : undefined,
+        color: !src || showPlaceholder || waiting ? textColor : undefined,
         marginRight: 0,
       }"
       @error="handleImageError"
       @load="handleImageLoad"
     >
       <slot>
-        <template v-if="!actualSrc || showPlaceholder">
+        <template v-if="(!actualSrc || showPlaceholder) && !waiting">
           {{ getInitials() }}
         </template>
       </slot>
@@ -107,5 +107,6 @@ const {
   handleImageError,
   handleImageLoad,
   actualSrc,
+  waiting,
 } = useAvatar(p)
 </script>

@@ -286,12 +286,13 @@ describe('userBadges', () => {
     expect(getByPRC).toHaveBeenCalledTimes(1)
   })
 
-  it('профиль без бейджей не стирает уже известные, удалённый аккаунт не спрашивается', () => {
+  it('профиль без бейджей не стирает уже известные, удалённый аккаунт не спрашивается', async () => {
     rememberUsers([{ address: ALICE, name: 'SergiyKir', badges: ['moderator'] }])
     rememberUsers([{ address: ALICE, name: 'SergiyKir' }])
     expect(userBadges(ALICE)).toEqual(['moderator'])
     rememberUsers([{ address: GONE, deleted: true }])
     expect(userBadges(GONE)).toEqual([])
+    await settle()
     expect(getByPRC).not.toHaveBeenCalled()
   })
 })

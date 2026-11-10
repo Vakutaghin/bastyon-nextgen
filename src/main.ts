@@ -54,6 +54,7 @@ import { installPopupClickShield } from '@/helpers/common/popup-click-shield'
 import { watchMainThreadStalls } from '@/helpers/diagnostics/main-thread-stalls'
 import { initDatabase } from '@/db/database'
 import { startSavedUserNames } from '@/services/user-names-saved'
+import { startAvatarThumbs } from '@/services/avatar-thumbs'
 import { useAuthStore } from '@/blockchain'
 import {
   useNotificationsStore,
@@ -78,8 +79,9 @@ import './style.css'
 // без этого Dexie открывала её сама — мимо проверки старой схемы в
 // initDatabase. Обращения через withDb ждут открытия.
 const dbReady = initDatabase()
-// Имена и аватары прошлых запусков: подписи сразу с ником, и без сети тоже.
-void dbReady.then(() => startSavedUserNames()).catch(() => {})
+// Имена и превью аватарок прошлых запусков: подписи сразу с ником и
+// аватаркой, и без сети тоже.
+void dbReady.then(() => Promise.all([startAvatarThumbs(), startSavedUserNames()])).catch(() => {})
 
 const app = createApp(App)
 const pinia = createPinia()
