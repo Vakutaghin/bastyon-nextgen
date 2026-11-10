@@ -12,7 +12,8 @@
  * цветовой профиль (APP2 ICC) и Adobe (APP14) — без них цвета или декодирование
  * поедут. Если EXIF поворачивает кадр (Orientation ≠ 1), вырезать его нельзя —
  * фото ляжет на бок; тогда `null`, и вызывающий берёт перекодированный кадр
- * (canvas уже рисует его повёрнутым).
+ * (canvas уже рисует его повёрнутым). С `keepOrientation` вместо EXIF остаётся
+ * минимальный EXIF с одним тегом поворота — фото уходит без перекодирования.
  *
  * PNG: убираются eXIf, текстовые чанки (tEXt/zTXt/iTXt — в них бывает XMP с
  * GPS) и tIME, а также всё после IEND.
@@ -101,9 +102,33 @@ function dropsSegment(bytes: Uint8Array, marker: number, dataStart: number): boo
 }
 
 /**
- * JPEG без метаданных. `null` — файл битый или EXIF поворачивает кадр.
+ * APP1 c EXIF из одного тега Orientation (IFD0, порядок байтов MM): 36 байт,
+ * больше в нём ничего нет — ни места съёмки, ни модели, ни времени.
  */
-export function stripJpegMetadata(bytes: Uint8Array): Uint8Array | null {
+export function orientationOnlyExif(orientation: number): Uint8Array {
+  return Uint8Array.from([
+    ...[0xff, APP1, 0x00, 0x22], // длина 34 — вместе с самими двумя байтами длины
+    ...[0x45, 0x78, 0x69, 0x66, 0x00, 0x00], // Exif\0\0
+    ...[0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08], // TIFF MM, IFD0 по смещению 8
+    ...[0x00, 0x01], // один тег
+    ...[0x01, 0x12, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, orientation & 0xff, 0x00, 0x00],
+    ...[0x00, 0x00, 0x00, 0x00], // следующего IFD нет
+  ])
+}
+
+export interface StripJpegOptions {
+  /** Повёрнутый кадр: вместо `null` оставить минимальный EXIF с поворотом. */
+  keepOrientation?: boolean
+}
+
+/**
+ * JPEG без метаданных. `null` — файл битый или EXIF поворачивает кадр (без
+ * `keepOrientation`).
+ */
+export function stripJpegMetadata(
+  bytes: Uint8Array,
+  options: StripJpegOptions = {}
+): Uint8Array | null {
   if (sniffImage(bytes) !== 'jpeg') return null
   const parts: Uint8Array[] = [bytes.subarray(0, 2)]
   let pos = 2
@@ -130,7 +155,12 @@ export function stripJpegMetadata(bytes: Uint8Array): Uint8Array | null {
     const segmentEnd = pos + length
     if (marker === APP1) {
       const orientation = exifOrientation(bytes, dataStart, segmentEnd)
-      if (orientation !== 1) return null
+      if (orientation === null) return null
+      // Значения вне 2…8 браузер не поворачивает — как 1.
+      if (orientation >= 2 && orientation <= 8) {
+        if (!options.keepOrientation) return null
+        parts.push(orientationOnlyExif(orientation))
+      }
     }
     if (!dropsSegment(bytes, marker, dataStart)) parts.push(bytes.subarray(markerAt, segmentEnd))
     pos = segmentEnd

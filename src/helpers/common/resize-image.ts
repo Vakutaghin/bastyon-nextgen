@@ -161,8 +161,8 @@ export function resizeImageBase64(base64: string, options: ResizeOptions = {}): 
   })
 }
 
-/** Читает File в data-URL (base64). */
-export function fileToBase64(file: File): Promise<string> {
+/** Читает File (любой Blob) в data-URL (base64). */
+export function fileToBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result))

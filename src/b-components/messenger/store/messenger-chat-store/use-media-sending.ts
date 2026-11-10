@@ -8,7 +8,11 @@ import { matrixService } from '../../services/matrix-service'
 import { encryptAudioBlob, sealWaveform } from '../../services/encryption-service'
 import { decodeVoice, hasWaveformShape, waveformToInfo } from '../../lib/voice-waveform'
 import { encryptBlobWithRandomKey, wrapKeyForRoom } from '../../services/media-encrypt'
-import { extractImageDimensions, extractVideoMetadata } from '../../services/media-metadata'
+import {
+  extractImageDimensions,
+  extractVideoMetadata,
+  stripPhotoMetadata,
+} from '../../services/media-metadata'
 import { isTetatetchat } from '../../helpers'
 import { DEFAULT_ENCRYPTION_BLOCK } from '../consts'
 import type { Message } from '../../types'
@@ -277,14 +281,16 @@ export function useMediaSending(
       return
     }
     const name = (file instanceof File ? file.name : undefined) || meta?.name || 'image'
-    const dims = await extractImageDimensions(file)
-    const payload: MediaPayload = { kind: 'image', blob: file, name }
+    // Без EXIF: зашифрованное фото собеседник всё равно откроет вместе с местом съёмки.
+    const photo = await stripPhotoMetadata(file)
+    const dims = await extractImageDimensions(photo)
+    const payload: MediaPayload = { kind: 'image', blob: photo, name }
     await start(
       chatId,
       payload,
       draft(chatId, 'image', mediaUrl(payload), {
-        mimetype: file.type || 'image/jpeg',
-        size: file.size,
+        mimetype: photo.type || 'image/jpeg',
+        size: photo.size,
         w: dims?.w,
         h: dims?.h,
       })

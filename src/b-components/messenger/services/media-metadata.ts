@@ -3,7 +3,64 @@
  * - {@link extractImageDimensions} — натуральные размеры (или null если не картинка)
  * - {@link extractVideoMetadata} — duration + размеры + first-frame poster (JPEG blob).
  *   Poster НЕ шифруется — клиенты видят превью до расшифровки самого видео.
+ * - {@link stripPhotoMetadata} — фото без EXIF (место съёмки, модель, время).
  */
+
+import {
+  dataUrlBytes,
+  sniffImage,
+  stripJpegMetadata,
+  stripPngMetadata,
+} from '@/helpers/common/image-metadata'
+import { fileToBase64, resizeImageBase64 } from '@/helpers/common/resize-image'
+
+/** Наибольшая сторона, если битый файл пришлось перерисовать. */
+const REDRAW_MAX_SIDE = 4096
+
+/**
+ * Фото без метаданных — перед отправкой в чат. Шифрование их не прячет от
+ * собеседника: EXIF телефона выдаёт, где и когда снято фото.
+ *
+ * JPEG и PNG уходят без перекодирования, с теми же пикселями: метаданные
+ * вырезаются из байтов. У повёрнутого фото остаётся один тег поворота, иначе
+ * оно ляжет на бок. Битый JPEG или PNG разобрать нельзя — его перерисовывает
+ * canvas (не больше 4096 по стороне); не вышло и это — уходит как был.
+ * GIF, WebP и прочее — как есть: canvas убил бы анимацию.
+ */
+export async function stripPhotoMetadata(blob: Blob): Promise<Blob> {
+  let bytes: Uint8Array
+  try {
+    bytes = new Uint8Array(await blob.arrayBuffer())
+  } catch {
+    return blob
+  }
+  const kind = sniffImage(bytes)
+  if (kind === 'other') return blob
+  if (kind === 'jpeg') {
+    const out = stripJpegMetadata(bytes, { keepOrientation: true })
+    if (out) return new Blob([out as BlobPart], { type: 'image/jpeg' })
+  } else {
+    const out = stripPngMetadata(bytes)
+    if (out) return new Blob([out.bytes as BlobPart], { type: 'image/png' })
+  }
+  try {
+    const source = await fileToBase64(blob)
+    const dataUrl = await resizeImageBase64(source, {
+      maxWidth: REDRAW_MAX_SIDE,
+      maxHeight: REDRAW_MAX_SIDE,
+    })
+    // Без размеров или без canvas resize отдаёт исходник — это не перерисовка.
+    const redrawn = dataUrl === source ? null : dataUrlBytes(dataUrl)
+    if (redrawn && sniffImage(redrawn) !== 'other') {
+      const type = sniffImage(redrawn) === 'png' ? 'image/png' : 'image/jpeg'
+      return new Blob([redrawn as BlobPart], { type })
+    }
+  } catch {
+    // Браузер картинку не декодирует — ниже.
+  }
+  console.warn('[media-metadata] photo sent as is: cannot read or redraw', kind)
+  return blob
+}
 
 /** Натуральные размеры картинки. null если файл не декодируется. */
 export function extractImageDimensions(blob: Blob): Promise<{ w: number; h: number } | null> {

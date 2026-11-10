@@ -51,6 +51,8 @@ vi.mock('../../services/media-encrypt', () => ({
 }))
 vi.mock('../../services/media-metadata', () => ({
   extractImageDimensions: vi.fn(async () => ({ w: 10, h: 20 })),
+  // По умолчанию фото уже чистое; свой тест подменяет результат.
+  stripPhotoMetadata: vi.fn(async (blob: Blob) => blob),
   extractVideoMetadata: vi.fn(async () => ({ duration: 1.5, w: 30, h: 40, posterBlob: null })),
 }))
 vi.mock('../../helpers', () => ({ isTetatetchat: () => chat.direct }))
@@ -58,6 +60,7 @@ vi.mock('../../helpers', () => ({ isTetatetchat: () => chat.direct }))
 import { useMediaSending } from './use-media-sending'
 import { encryptAudioBlob } from '../../services/encryption-service'
 import { encryptBlobWithRandomKey } from '../../services/media-encrypt'
+import { extractImageDimensions, stripPhotoMetadata } from '../../services/media-metadata'
 
 /** Outbox без базы: что сохранили бы на устройстве. */
 function fakeOutbox() {
@@ -155,6 +158,26 @@ describe('useMediaSending', () => {
       expect.objectContaining({ width: 10, height: 20, mimetype: 'image/jpeg' }),
       expect.any(Function)
     )
+  })
+
+  it('sendImage: уходит фото без метаданных — и в пузырь, и в загрузку', async () => {
+    const { api, messages } = setup()
+    const original = new File(['exif+pixels'], 'IMG_1.jpg')
+    // Файл без типа (облако на Android): тип — по байтам очищенного.
+    const clean = new Blob(['pixels'], { type: 'image/png' })
+    vi.mocked(stripPhotoMetadata).mockResolvedValueOnce(clean)
+    let shown: Record<string, unknown> | undefined
+    matrix.sendImage.mockImplementationOnce(async () => {
+      shown = (messages['!c:host']![0] as { info?: Record<string, unknown> }).info
+    })
+    await api.sendImage('!c:host', original)
+    expect(stripPhotoMetadata).toHaveBeenCalledWith(original)
+    // Пузырь до отправки — с размером очищенного файла.
+    expect(shown).toMatchObject({ mimetype: 'image/png', size: 6 })
+    expect(extractImageDimensions).toHaveBeenCalledWith(clean)
+    expect(encryptBlobWithRandomKey).toHaveBeenCalledWith(clean)
+    const data = matrix.sendImage.mock.calls[0]![1] as Record<string, unknown>
+    expect(data).toMatchObject({ name: 'IMG_1.jpg', mimetype: 'image/png' })
   })
 
   it('sendAudio: DM → дефолтный блок, ключ заворачивается через pcrypto.encryptKey', async () => {

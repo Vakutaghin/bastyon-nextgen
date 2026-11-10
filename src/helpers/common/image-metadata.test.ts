@@ -5,6 +5,7 @@ import {
   dataUrlByteLength,
   dataUrlBytes,
   exifOrientation,
+  orientationOnlyExif,
   sniffImage,
   stripImageMetadata,
   stripJpegMetadata,
@@ -200,12 +201,63 @@ describe('stripJpegMetadata', () => {
   it('EXIF поворачивает кадр — null: без него фото ляжет на бок', () => {
     expect(stripJpegMetadata(jpeg(seg(0xe1, exif(6)), DQT, SOS, SCAN, EOI))).toBeNull()
     expect(stripJpegMetadata(jpeg(seg(0xe1, exif(3, false)), DQT, SOS, SCAN, EOI))).toBeNull()
+    // Крайние значения поворота.
+    expect(stripJpegMetadata(jpeg(seg(0xe1, exif(2)), DQT, SOS, SCAN, EOI))).toBeNull()
+    expect(stripJpegMetadata(jpeg(seg(0xe1, exif(8)), DQT, SOS, SCAN, EOI))).toBeNull()
+  })
+
+  it('keepOrientation: вместо EXIF — один тег поворота, остальное как без него', () => {
+    const src = jpeg(JFIF, seg(0xe1, exif(6)), XMP, ICC, DQT, SOS, SCAN, EOI, [0xaa])
+    const out = stripJpegMetadata(src, { keepOrientation: true })!
+    expect(Array.from(out)).toEqual([
+      ...SOI,
+      ...JFIF,
+      ...orientationOnlyExif(6),
+      ...ICC,
+      ...DQT,
+      ...SOS,
+      ...SCAN,
+      ...EOI,
+    ])
+    expect(contains(out, ascii('GPS!'))).toBe(false)
+    // Обратно читается тем же разбором, что у браузера: поворот на месте.
+    expect(exifOrientation(out, 2 + JFIF.length + 4, out.length)).toBe(6)
+  })
+
+  it('keepOrientation: порядок байтов исходника не важен; без поворота EXIF уходит целиком', () => {
+    const turned = stripJpegMetadata(jpeg(seg(0xe1, exif(3, false)), DQT, SOS, SCAN, EOI), {
+      keepOrientation: true,
+    })!
+    expect(exifOrientation(turned, 6, turned.length)).toBe(3)
+    const straight = stripJpegMetadata(jpeg(seg(0xe1, exif(1)), DQT, SOS, SCAN, EOI), {
+      keepOrientation: true,
+    })!
+    expect(Array.from(straight)).toEqual([...SOI, ...DQT, ...SOS, ...SCAN, ...EOI])
+  })
+
+  it('минимальный EXIF: 36 байт, длина сегмента сходится, кроме поворота ничего', () => {
+    const app1 = orientationOnlyExif(8)
+    expect(app1).toHaveLength(36)
+    expect((app1[2]! << 8) | app1[3]!).toBe(app1.length - 2)
+    expect(exifOrientation(app1, 4, app1.length)).toBe(8)
+    // В IFD0 ровно один тег.
+    expect((app1[18]! << 8) | app1[19]!).toBe(1)
+  })
+
+  it('поворот вне 2…8 браузер не применяет — EXIF вырезается и без keepOrientation', () => {
+    for (const value of [0, 9]) {
+      const out = stripJpegMetadata(jpeg(seg(0xe1, exif(value)), DQT, SOS, SCAN, EOI))!
+      expect(Array.from(out)).toEqual([...SOI, ...DQT, ...SOS, ...SCAN, ...EOI])
+    }
   })
 
   it('EXIF не читается — null (не знаем, повёрнут ли кадр)', () => {
     const broken = exif(1)
     broken[6] = 0
     expect(stripJpegMetadata(jpeg(seg(0xe1, broken), SOS, SCAN, EOI))).toBeNull()
+    expect(
+      stripJpegMetadata(jpeg(seg(0xe1, broken), SOS, SCAN, EOI), { keepOrientation: true })
+    ).toBeNull()
   })
 
   it('обрезанный или битый файл — null', () => {
