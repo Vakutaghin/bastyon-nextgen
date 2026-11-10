@@ -44,6 +44,8 @@ export interface MockPeerTubeOptions {
    * («Audio»), прямых файлов нет.
    */
   audioOnly?: boolean
+  /** Субтитры ролика: язык, название и текст VTT. */
+  captions?: Array<{ language: string; label: string; vtt: string }>
 }
 
 export interface MockPeerTube {
@@ -145,9 +147,35 @@ export async function useMockPeerTube(
       return route.fulfill({ json: info }).catch(() => {})
     })
   }
+  const captions = options.captions ?? []
+  const captionPath = (language: string) =>
+    `/lazy-static/video-captions/${VIDEO_ID}-${language}.vtt`
   await page.route(`**/api/peertube/${host}/api/v1/videos/${VIDEO_ID}/captions`, (route) =>
-    route.fulfill({ json: { total: 0, data: [] } })
+    route.fulfill({
+      json: {
+        total: captions.length,
+        data: captions.map((c) => ({
+          language: { id: c.language, label: c.label },
+          captionPath: captionPath(c.language),
+        })),
+      },
+    })
   )
+  for (const c of captions) {
+    // Плеер берёт дорожку через прокси dev-сервера, скачивание — с самого хоста.
+    for (const url of [
+      `**/api/peertube/${host}${captionPath(c.language)}`,
+      `https://${host}${captionPath(c.language)}`,
+    ]) {
+      await page.route(url, (route) =>
+        route.fulfill({
+          body: c.vtt,
+          contentType: 'text/vtt',
+          headers: { 'Access-Control-Allow-Origin': '*' },
+        })
+      )
+    }
+  }
   await page.route(`https://${host}/static/thumbnails/${VIDEO_ID}.jpg`, (route) =>
     route.fulfill({
       path: fixture(options.portrait ? 'test-video-portrait.jpg' : 'test-video.jpg'),
