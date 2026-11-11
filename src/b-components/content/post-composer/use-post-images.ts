@@ -21,8 +21,20 @@ export interface ComposerImage {
 let seq = 0
 const nextId = (): string => `img-${(seq += 1)}`
 
+/** Повороты картинки: от чего и на сколько четвертей оборота. */
+interface Turns {
+  source: string
+  quarters: number
+}
+
 export function usePostImages() {
   const images = ref<ComposerImage[]>([])
+  /**
+   * Поворот считается от картинки до первого поворота, а не от уже повёрнутой:
+   * каждое перекодирование JPEG теряет качество, а четыре нажатия давали бы
+   * четыре круга потерь. Правка в редакторе начинает отсчёт заново.
+   */
+  const turns = new Map<string, Turns>()
 
   const full = computed(() => images.value.length >= MAX_IMAGES)
   const base64List = computed(() => images.value.map((i) => i.base64))
@@ -51,6 +63,7 @@ export function usePostImages() {
   }
 
   const remove = (id: string): void => {
+    turns.delete(id)
     images.value = images.value.filter((i) => i.id !== id)
   }
 
@@ -58,10 +71,21 @@ export function usePostImages() {
   const rotate = async (id: string): Promise<void> => {
     const img = images.value.find((i) => i.id === id)
     if (!img) return
+    const state = turns.get(id) ?? { source: img.base64, quarters: 0 }
+    // Счёт — до ожидания: быстрые нажатия подряд не теряют поворотов.
+    const quarters = (state.quarters + 1) % 4
+    turns.set(id, { source: state.source, quarters })
     try {
-      const rotated = await rotateBase64(img.base64, 90)
+      // Полный оборот — исходник как был, без перекодирования.
+      const rotated = await rotateBase64(state.source, quarters * 90)
+      // Пока поворачивалось, нажали ещё раз или открыли редактор — этот кадр устарел.
+      const now = turns.get(id)
+      if (now?.source !== state.source || now.quarters !== quarters) return
       images.value = images.value.map((i) => (i.id === id ? { ...i, base64: rotated } : i))
     } catch (e) {
+      // Картинка не повернулась — и счёт назад, иначе следующий поворот перескочит.
+      const now = turns.get(id)
+      if (now?.source === state.source && now.quarters === quarters) turns.set(id, state)
       console.warn('[post-composer] image rotate failed', e)
       appToast.error({ message: t('postComposer.imageReadError') })
     }
@@ -79,15 +103,18 @@ export function usePostImages() {
 
   /** Заменяет base64 картинки (результат редактора crop/фильтры). */
   const replace = (id: string, base64: string): void => {
+    turns.delete(id)
     images.value = images.value.map((i) => (i.id === id ? { ...i, base64 } : i))
   }
 
   const clear = (): void => {
+    turns.clear()
     images.value = []
   }
 
   /** Заполняет список готовыми URL (для префилла при редактировании). */
   const setFromUrls = (urls: string[]): void => {
+    turns.clear()
     images.value = urls.map((url) => ({ id: nextId(), base64: url }))
   }
 

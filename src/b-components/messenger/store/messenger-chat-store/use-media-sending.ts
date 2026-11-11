@@ -11,6 +11,7 @@ import { encryptBlobWithRandomKey, wrapKeyForRoom } from '../../services/media-e
 import {
   extractImageDimensions,
   extractVideoMetadata,
+  prepareChatPhoto,
   stripPhotoMetadata,
 } from '../../services/media-metadata'
 import { isTetatetchat } from '../../helpers'
@@ -304,8 +305,9 @@ export function useMediaSending(
       return
     }
     const name = (file instanceof File ? file.name : undefined) || meta?.name || 'image'
-    // Без EXIF: зашифрованное фото собеседник всё равно откроет вместе с местом съёмки.
-    const photo = await stripPhotoMetadata(file)
+    // Без EXIF: зашифрованное фото собеседник всё равно откроет вместе с местом
+    // съёмки. И не больше 2048 px: снимок с телефона каждый скачивал целиком.
+    const photo = await prepareChatPhoto(file)
     const dims = await extractImageDimensions(photo)
     const payload: MediaPayload = { kind: 'image', blob: photo, name }
     await start(
@@ -344,13 +346,17 @@ export function useMediaSending(
       return
     }
     const name = (file instanceof File ? file.name : undefined) || meta?.name || 'file'
-    const payload: MediaPayload = { kind: 'file', blob: file, name }
+    // Картинка файлом — оригинал без уменьшения, но тоже без места съёмки.
+    // Тип пустой — файл из облака на Android: картинку узнаём по байтам.
+    const blob =
+      !file.type || file.type.startsWith('image/') ? await stripPhotoMetadata(file) : file
+    const payload: MediaPayload = { kind: 'file', blob, name }
     await start(
       chatId,
       payload,
       draft(chatId, 'file', undefined, {
-        mimetype: file.type || 'application/octet-stream',
-        size: file.size,
+        mimetype: blob.type || 'application/octet-stream',
+        size: blob.size,
         name,
       })
     )

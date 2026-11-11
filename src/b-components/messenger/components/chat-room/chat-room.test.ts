@@ -284,6 +284,27 @@ describe('полоса ввода чата', () => {
     expect(mocks.sendImage).toHaveBeenCalledTimes(2)
   })
 
+  it('картинка через «Фото» уходит фото, через «Файл» — файлом (оригиналом)', async () => {
+    const w = open('!a:host')
+    await flushPromises()
+    const photo = new File(['x'], 'sea.jpg', { type: 'image/jpeg' })
+    const pick = async (input: Element) => {
+      Object.defineProperty(input, 'files', { value: [photo], configurable: true })
+      input.dispatchEvent(new Event('change'))
+      await flushPromises()
+    }
+    const photoInput = w.find('input[type="file"][accept="image/*"]').element
+    const fileInput = w.findAll('input[type="file"]').find((i) => !i.attributes('accept'))!.element
+
+    await pick(photoInput)
+    expect(mocks.sendImage).toHaveBeenCalledWith('!a:host', photo, { name: 'sea.jpg' })
+    expect(mocks.sendFile).not.toHaveBeenCalled()
+
+    await pick(fileInput)
+    expect(mocks.sendFile).toHaveBeenCalledWith('!a:host', photo, { name: 'sea.jpg' })
+    expect(mocks.sendImage).toHaveBeenCalledTimes(1)
+  })
+
   it('кнопка «Сведения о приложении» — только в чате с поддержкой', async () => {
     mocks.store.getDirectPartnerAddress = () => 'PAlice'
     let w = open('!a:host')

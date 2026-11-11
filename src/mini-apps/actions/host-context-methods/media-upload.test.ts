@@ -8,6 +8,7 @@ function make(over: Partial<MediaUploadDeps> = {}) {
   const deps: MediaUploadDeps = {
     useAuthStore: (() => ({ getKeyPair: keyPair, address: 'PADDR' })) as never,
     uploadImages: vi.fn(async (imgs: string[]) => imgs.map((_, i) => `u${i}`)),
+    resizeImage: vi.fn(async (img: string) => `${img}#small`),
     removeVideoByPointer: vi.fn(async () => ({ ok: true }) as never),
     parsePointer: (url: string) => {
       const m = /^peertube:\/\/([^/]+)\/([^/]+)/.exec(url)
@@ -21,6 +22,45 @@ function make(over: Partial<MediaUploadDeps> = {}) {
 }
 
 beforeEach(() => vi.clearAllMocks())
+
+describe('uploadImages', () => {
+  it('картинки вписываются в 1080×1080 до загрузки, порядок тот же', async () => {
+    const { api, deps } = make()
+    const urls = await api.uploadImages(['data:image/jpeg;base64,AA', 'data:image/png;base64,BB'])
+    expect(urls).toEqual(['u0', 'u1'])
+    expect(deps.resizeImage).toHaveBeenCalledWith('data:image/jpeg;base64,AA', {
+      maxWidth: 1080,
+      maxHeight: 1080,
+    })
+    expect(deps.uploadImages).toHaveBeenCalledWith([
+      'data:image/jpeg;base64,AA#small',
+      'data:image/png;base64,BB#small',
+    ])
+  })
+
+  it('готовый адрес — без ресайза', async () => {
+    const { api, deps } = make()
+    await api.uploadImages(['https://cdn/x.jpg'])
+    expect(deps.resizeImage).not.toHaveBeenCalled()
+    expect(deps.uploadImages).toHaveBeenCalledWith(['https://cdn/x.jpg'])
+  })
+
+  it('окно картинку не декодирует — уходит как есть, остальные уменьшены', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const resizeImage = vi.fn(async (img: string) => {
+      if (img.includes('heic')) throw new Error('Failed to load image for resize')
+      return `${img}#small`
+    })
+    const { api, deps } = make({ resizeImage })
+    await api.uploadImages(['data:image/heic;base64,AA', 'data:image/jpeg;base64,BB'])
+    expect(deps.uploadImages).toHaveBeenCalledWith([
+      'data:image/heic;base64,AA',
+      'data:image/jpeg;base64,BB#small',
+    ])
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+  })
+})
 
 describe('removeVideo (K2)', () => {
   it('известный хост + подтверждение → DELETE с ключами пользователя', async () => {

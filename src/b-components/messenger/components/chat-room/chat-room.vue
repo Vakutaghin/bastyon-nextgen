@@ -655,12 +655,17 @@ const { available: canShareMesh, shareAddress: shareMeshAddress } = useMeshShare
 /** mesh-маршрут собеседника (он поделился адресом Reticulum). */
 const meshRoute = computed(() => store.activeMeshRoute)
 
-async function handlePickFiles(files: File[]): Promise<void> {
+/**
+ * Картинка уходит фото — уменьшенной до 2048 px. Выбранная через «Файл» —
+ * файлом, в исходном размере (брошенная на чат и вставленная — фото).
+ */
+async function handlePickFiles(files: File[], options?: { asFile: boolean }): Promise<void> {
   // До принятия приглашения отправлять некуда: файл, брошенный на чат, не вступает за вас.
   if (!store.activeChatId || pendingInvite.value) return
+  const asFile = options?.asFile === true
   for (const file of files) {
-    if (tooLargeForChat(file, canSendIpfs)) continue
-    if (file.type.startsWith('image/')) {
+    if (tooLargeForChat(file, canSendIpfs, asFile)) continue
+    if (!asFile && file.type.startsWith('image/')) {
       await store.sendImage(store.activeChatId, file, { name: file.name })
     } else {
       // Видео и прочие файлы отправляются как m.file — отдельный m.video отключён.

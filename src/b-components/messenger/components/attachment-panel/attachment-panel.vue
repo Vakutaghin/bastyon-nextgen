@@ -57,7 +57,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'pickFiles', files: File[]): void
+  /** `asFile` — выбрано через «Файл»: картинка уходит оригиналом, файлом, а не фото. */
+  (e: 'pickFiles', files: File[], options?: { asFile: boolean }): void
   (e: 'pickPkoin'): void
   (e: 'pickIpfs'): void
   (e: 'pickMesh'): void
@@ -125,14 +126,14 @@ const pickMesh = () => {
   emit('pickMesh')
 }
 
-const collectAndEmit = (input: HTMLInputElement) => {
+const collectAndEmit = (input: HTMLInputElement, asFile: boolean) => {
   const files = input.files ? Array.from(input.files) : []
-  if (files.length > 0) emit('pickFiles', files)
+  if (files.length > 0) emit('pickFiles', files, { asFile })
   input.value = ''
 }
 
-const onImageFiles = (event: Event) => collectAndEmit(event.target as HTMLInputElement)
-const onFileFiles = (event: Event) => collectAndEmit(event.target as HTMLInputElement)
+const onImageFiles = (event: Event) => collectAndEmit(event.target as HTMLInputElement, false)
+const onFileFiles = (event: Event) => collectAndEmit(event.target as HTMLInputElement, true)
 
 const onClickOutside = (e: MouseEvent) => {
   if (!menuOpen.value) return

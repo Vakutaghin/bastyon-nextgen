@@ -279,6 +279,7 @@ export async function createDefaultHostContext(
   const { rpcEndpoints } = await import('@/helpers/api/rpc-endpoints')
   const { unwrapRpcResponse } = await import('@/helpers/common/response-parser')
   const { uploadImages } = await import('@/services/image-upload-service')
+  const { resizeImageBase64 } = await import('@/helpers/common/resize-image')
   const { removeVideoByPointer, getVideosInfo } =
     await import('@/services/peertube/peertube-videos')
   const { thumbnailOf } = await import('@/services/media/media-info')
@@ -350,6 +351,7 @@ export async function createDefaultHostContext(
   const mediaUpload = createMediaUploadMethods({
     useAuthStore,
     uploadImages,
+    resizeImage: resizeImageBase64,
     removeVideoByPointer,
     parsePointer: parsePeerTubeUrl,
     fetchHostAllowlist: () => fetchPeertubeHostAllowlist(),

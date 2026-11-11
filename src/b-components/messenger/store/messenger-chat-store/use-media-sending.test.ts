@@ -52,8 +52,9 @@ vi.mock('../../services/media-encrypt', () => ({
 }))
 vi.mock('../../services/media-metadata', () => ({
   extractImageDimensions: vi.fn(async () => ({ w: 10, h: 20 })),
-  // По умолчанию фото уже чистое; свой тест подменяет результат.
+  // По умолчанию фото уже чистое и небольшое; свой тест подменяет результат.
   stripPhotoMetadata: vi.fn(async (blob: Blob) => blob),
+  prepareChatPhoto: vi.fn(async (blob: Blob) => blob),
   extractVideoMetadata: vi.fn(async () => ({ duration: 1.5, w: 30, h: 40, posterBlob: null })),
 }))
 vi.mock('../../helpers', async (importOriginal) => ({
@@ -66,7 +67,11 @@ vi.mock('../../helpers', async (importOriginal) => ({
 import { useMediaSending } from './use-media-sending'
 import { encryptAudioBlob } from '../../services/encryption-service'
 import { encryptBlobWithRandomKey } from '../../services/media-encrypt'
-import { extractImageDimensions, stripPhotoMetadata } from '../../services/media-metadata'
+import {
+  extractImageDimensions,
+  prepareChatPhoto,
+  stripPhotoMetadata,
+} from '../../services/media-metadata'
 
 /** Outbox без базы: что сохранили бы на устройстве. */
 function fakeOutbox() {
@@ -166,24 +171,49 @@ describe('useMediaSending', () => {
     )
   })
 
-  it('sendImage: уходит фото без метаданных — и в пузырь, и в загрузку', async () => {
+  it('sendImage: уходит уменьшенное фото без метаданных — и в пузырь, и в загрузку', async () => {
     const { api, messages } = setup()
     const original = new File(['exif+pixels'], 'IMG_1.jpg')
     // Файл без типа (облако на Android): тип — по байтам очищенного.
     const clean = new Blob(['pixels'], { type: 'image/png' })
-    vi.mocked(stripPhotoMetadata).mockResolvedValueOnce(clean)
+    vi.mocked(prepareChatPhoto).mockResolvedValueOnce(clean)
     let shown: Record<string, unknown> | undefined
     matrix.sendImage.mockImplementationOnce(async () => {
       shown = (messages['!c:host']![0] as { info?: Record<string, unknown> }).info
     })
     await api.sendImage('!c:host', original)
-    expect(stripPhotoMetadata).toHaveBeenCalledWith(original)
+    expect(prepareChatPhoto).toHaveBeenCalledWith(original)
+    expect(stripPhotoMetadata).not.toHaveBeenCalled()
     // Пузырь до отправки — с размером очищенного файла.
     expect(shown).toMatchObject({ mimetype: 'image/png', size: 6 })
     expect(extractImageDimensions).toHaveBeenCalledWith(clean)
     expect(encryptBlobWithRandomKey).toHaveBeenCalledWith(clean)
     const data = matrix.sendImage.mock.calls[0]![1] as Record<string, unknown>
     expect(data).toMatchObject({ name: 'IMG_1.jpg', mimetype: 'image/png' })
+  })
+
+  it('sendFile: картинка файлом — оригинал без уменьшения, но без метаданных', async () => {
+    const { api, messages } = setup()
+    const original = new File(['exif+pixels'], 'IMG_2.jpg', { type: 'image/jpeg' })
+    const clean = new Blob(['pixels'], { type: 'image/jpeg' })
+    vi.mocked(stripPhotoMetadata).mockResolvedValueOnce(clean)
+    let shown: Record<string, unknown> | undefined
+    matrix.sendFile.mockImplementationOnce(async () => {
+      shown = (messages['!c:host']![0] as { info?: Record<string, unknown> }).info
+    })
+    await api.sendFile('!c:host', original)
+    expect(stripPhotoMetadata).toHaveBeenCalledWith(original)
+    expect(prepareChatPhoto).not.toHaveBeenCalled()
+    expect(shown).toMatchObject({ mimetype: 'image/jpeg', size: 6, name: 'IMG_2.jpg' })
+    expect(encryptBlobWithRandomKey).toHaveBeenCalledWith(clean)
+  })
+
+  it('sendFile: не картинка — те же байты, без разбора', async () => {
+    const { api } = setup()
+    const doc = new File(['%PDF'], 'a.pdf', { type: 'application/pdf' })
+    await api.sendFile('!c:host', doc)
+    expect(stripPhotoMetadata).not.toHaveBeenCalled()
+    expect(encryptBlobWithRandomKey).toHaveBeenCalledWith(doc)
   })
 
   it('sendAudio: DM → дефолтный блок, ключ заворачивается через pcrypto.encryptKey', async () => {

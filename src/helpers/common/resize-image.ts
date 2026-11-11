@@ -11,8 +11,12 @@ import { dataUrlByteLength, dataUrlBytes, sniffImage, stripImageMetadata } from 
 /** Целевой бокс по умолчанию (как в legacy share-композере). */
 export const MAX_IMAGE_WIDTH = 1920
 export const MAX_IMAGE_HEIGHT = 1080
-/** Качество JPEG по умолчанию. */
-export const IMAGE_QUALITY = 0.92
+/**
+ * Качество JPEG по умолчанию — как у прежнего клиента (functions.js `resize`).
+ * С 0.92 фото 1620×1080 весило 492 КБ, с 0.85 — 361 КБ на глаз без разницы, а
+ * каждую картинку поста скачивает каждый, кто листает ленту.
+ */
+export const IMAGE_QUALITY = 0.85
 /**
  * Предел PNG с прозрачностью. Логотип или стикер в PNG весит сотни КБ, а
  * вырезанное фото 1920×1080 — несколько МБ: такое уходит JPEG на белом фоне.
@@ -67,16 +71,19 @@ function hasTransparency(ctx: CanvasRenderingContext2D, width: number, height: n
  * Кадр с холста. Прозрачная картинка — PNG: в JPEG прозрачные места
  * становились чёрными. PNG тяжелее предела — JPEG, но на белом фоне.
  */
-function encodeCanvas(
+export function encodeCanvas(
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
   transparent: boolean,
-  quality: number
+  quality: number = IMAGE_QUALITY
 ): string {
   if (!transparent) return canvas.toDataURL('image/jpeg', quality)
   const png = canvas.toDataURL('image/png')
   if (dataUrlByteLength(png) <= MAX_PNG_BYTES) return png
-  // Белый фон под уже нарисованной картинкой.
+  // Белый фон под уже нарисованной картинкой — на весь холст: поворот и
+  // фильтр редактора, оставшиеся у контекста, повернули бы и тонировали его.
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.filter = 'none'
   ctx.globalCompositeOperation = 'destination-over'
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, canvas.width, canvas.height)

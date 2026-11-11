@@ -34,4 +34,9 @@ describe('tooLargeForChat', () => {
       description: 'messenger.fileTooLargeDesktop',
     })
   })
+
+  it('картинка через «Файл» уходит файлом — и предел у неё файловый', () => {
+    expect(tooLargeForChat(file('a.png', 'image/png', 26 * MB), true, true)).toBe(true)
+    expect(tooLargeForChat(file('a.png', 'image/png', 25 * MB), true, true)).toBe(false)
+  })
 })

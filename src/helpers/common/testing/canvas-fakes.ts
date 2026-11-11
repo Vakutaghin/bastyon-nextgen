@@ -1,6 +1,7 @@
 // Заменители Image и canvas для тестов обработки картинок: в happy-dom нет
 // декодера и 2D-контекста. Картинка «грузится» по размерам из реестра, canvas
-// записывает вызовы, toDataURL отдаёт строку с форматом, качеством и размером.
+// записывает вызовы, toDataURL отдаёт строку с форматом, качеством и размером,
+// toBlob — Blob с той же строкой (или заданного размера).
 
 import { vi } from 'vitest'
 
@@ -16,8 +17,10 @@ export interface FakeCanvas {
   height: number
   ctx: FakeContext | null
   dataUrlCalls: Array<[string | undefined, number | undefined]>
+  blobCalls: Array<[string | undefined, number | undefined]>
   getContext(type: string): FakeContext | null
   toDataURL(type?: string, quality?: number): string
+  toBlob(callback: (blob: Blob | null) => void, type?: string, quality?: number): void
 }
 
 export interface CanvasFakes {
@@ -35,6 +38,8 @@ export interface CanvasFakes {
    * телом (размер важен, когда код сравнивает его с оригиналом).
    */
   exportBody: ((type: string, width: number, height: number) => string) | null
+  /** Размер Blob из toBlob, байт; не задан — Blob со строкой формата, качества и размера. */
+  blobSize: ((type: string, width: number, height: number) => number) | null
   restore(): void
 }
 
@@ -44,7 +49,10 @@ export function installCanvasFakes(): CanvasFakes {
   let noContext = false
   let throwOnExport = false
   const transparent = new Set<string>()
-  const fakes = { exportBody: null as CanvasFakes['exportBody'] }
+  const fakes = {
+    exportBody: null as CanvasFakes['exportBody'],
+    blobSize: null as CanvasFakes['blobSize'],
+  }
 
   class FakeImage {
     onload: (() => void) | null = null
@@ -116,7 +124,16 @@ export function installCanvasFakes(): CanvasFakes {
       height: 150,
       ctx: withoutContext ? null : ctx,
       dataUrlCalls: [],
+      blobCalls: [],
       getContext: () => (withoutContext ? null : recorder),
+      toBlob(callback, type, quality) {
+        canvas.blobCalls.push([type, quality])
+        const mime = type ?? 'image/png'
+        const body = fakes.blobSize
+          ? new Uint8Array(fakes.blobSize(mime, canvas.width, canvas.height))
+          : `${mime};q=${quality ?? '-'};${canvas.width}x${canvas.height}`
+        queueMicrotask(() => callback(new Blob([body], { type: mime })))
+      },
       toDataURL(type?: string, quality?: number) {
         canvas.dataUrlCalls.push([type, quality])
         if (throwOnExport) {
@@ -143,6 +160,12 @@ export function installCanvasFakes(): CanvasFakes {
     },
     set exportBody(value) {
       fakes.exportBody = value
+    },
+    get blobSize() {
+      return fakes.blobSize
+    },
+    set blobSize(value) {
+      fakes.blobSize = value
     },
     noContextOnce: () => {
       noContext = true

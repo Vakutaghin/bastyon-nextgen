@@ -2,7 +2,12 @@
  * Трансформации картинок композера на стороне клиента (canvas). Работаем с
  * base64 data-URL (формат, в котором use-post-images хранит превью) → на выходе
  * снова base64. Без сети — чистая локальная операция перед загрузкой.
+ *
+ * Кодирование — как при добавлении картинки (resize-image): то же качество JPEG
+ * и тот же предел PNG, иначе правка в редакторе утяжеляла бы картинку.
  */
+
+import { encodeCanvas, IMAGE_QUALITY } from '@/helpers/common/resize-image'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -17,6 +22,16 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 function mimeFromDataUrl(dataUrl: string): string {
   const m = /^data:(image\/[a-z+.-]+);/i.exec(dataUrl)
   return m ? m[1] : 'image/png'
+}
+
+/**
+ * Кадр с холста в формате исходника: JPEG — с общим качеством, остальное — PNG
+ * не тяжелее предела (GIF холст всё равно отдал бы PNG, первым кадром).
+ */
+function encode(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, mime: string): string {
+  if (mime === 'image/jpeg') return canvas.toDataURL(mime, IMAGE_QUALITY)
+  if (mime === 'image/webp') return canvas.toDataURL(mime)
+  return encodeCanvas(canvas, ctx, true)
 }
 
 /**
@@ -39,9 +54,7 @@ export async function rotateBase64(base64: string, degrees: number): Promise<str
   ctx.rotate((deg * Math.PI) / 180)
   ctx.drawImage(img, -img.width / 2, -img.height / 2)
 
-  const mime = mimeFromDataUrl(base64)
-  // Для jpeg задаём качество, чтобы не раздувать; png/webp игнорируют второй арг.
-  return canvas.toDataURL(mime, mime === 'image/jpeg' ? 0.9 : undefined)
+  return encode(canvas, ctx, mimeFromDataUrl(base64))
 }
 
 /** Прямоугольник кропа в процентах (0..100) от размеров изображения. */
@@ -115,6 +128,5 @@ export async function applyCropFilter(
   }
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
 
-  const mime = mimeFromDataUrl(base64)
-  return canvas.toDataURL(mime, mime === 'image/jpeg' ? 0.9 : undefined)
+  return encode(canvas, ctx, mimeFromDataUrl(base64))
 }

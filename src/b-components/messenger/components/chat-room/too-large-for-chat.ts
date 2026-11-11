@@ -9,9 +9,13 @@ import {
   IMAGE_SIZE_LIMIT_BYTES,
 } from '../../store/messenger-chat-store/use-media-sending'
 
-/** true — файл слишком большой для чата, человеку показано предупреждение. */
-export function tooLargeForChat(file: File, canSendIpfs: boolean): boolean {
-  const limit = file.type.startsWith('image/') ? IMAGE_SIZE_LIMIT_BYTES : FILE_SIZE_LIMIT_BYTES
+/**
+ * true — файл слишком большой для чата, человеку показано предупреждение.
+ * `asFile` — картинка уходит файлом (через «Файл»), и предел у неё файловый.
+ */
+export function tooLargeForChat(file: File, canSendIpfs: boolean, asFile = false): boolean {
+  const limit =
+    !asFile && file.type.startsWith('image/') ? IMAGE_SIZE_LIMIT_BYTES : FILE_SIZE_LIMIT_BYTES
   if (file.size <= limit) return false
   appToast.warning({
     message: t('messenger.fileTooLarge', { name: file.name, limit: formatFileSize(limit) }),

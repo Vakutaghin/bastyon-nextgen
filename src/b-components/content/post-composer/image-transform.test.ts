@@ -2,8 +2,12 @@
 // формат и качество на выходе, отказ загрузки и браузер без 2D-контекста.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { IMAGE_QUALITY, MAX_PNG_BYTES } from '@/helpers/common/resize-image'
 import { installCanvasFakes, type CanvasFakes } from '@/helpers/common/testing/canvas-fakes'
 import { rotateBase64, applyCropFilter, FILTER_PRESETS } from './image-transform'
+
+/** base64-тело не меньше чем из `bytes` байт (с округлением до трёх). */
+const bodyOfBytes = (bytes: number): string => 'A'.repeat(4 * Math.ceil(bytes / 3))
 
 const JPEG = 'data:image/jpeg;base64,AAAA'
 const PNG = 'data:image/png;base64,BBBB'
@@ -38,7 +42,7 @@ describe('rotateBase64', () => {
       ['rotate', Math.PI / 2],
       ['drawImage', expect.anything(), -200, -150],
     ])
-    expect(out).toBe('data:image/jpeg;q=0.9;300x400')
+    expect(out).toBe(`data:image/jpeg;q=${IMAGE_QUALITY};300x400`)
   })
 
   it('180° — размеры прежние', async () => {
@@ -57,6 +61,35 @@ describe('rotateBase64', () => {
   it('формат сохраняется; качество задаётся только JPEG', async () => {
     expect(await rotateBase64(PNG, 90)).toBe('data:image/png;q=-;300x400')
     expect(await rotateBase64(WEBP, 90)).toBe('data:image/webp;q=-;300x400')
+  })
+
+  it('GIF — PNG: холст анимацию не сохраняет, а GIF не кодирует', async () => {
+    const gif = 'data:image/gif;base64,R0lG'
+    fakes.sizes.set(gif, { width: 40, height: 30 })
+    expect(await rotateBase64(gif, 90)).toBe('data:image/png;q=-;30x40')
+  })
+
+  it('PNG тяжелее предела — JPEG на белом фоне без поворота самого фона', async () => {
+    fakes.exportBody = (type) => (type === 'image/png' ? bodyOfBytes(MAX_PNG_BYTES + 3) : 'SlBH')
+    expect(await rotateBase64(PNG, 90)).toBe('data:image/jpeg;base64,SlBH')
+    const { calls, props } = fakes.canvases[0]!.ctx!
+    expect(calls.map((c) => c[0])).toEqual([
+      'translate',
+      'rotate',
+      'drawImage',
+      'setTransform',
+      'fillRect',
+    ])
+    expect(calls[3]).toEqual(['setTransform', 1, 0, 0, 1, 0, 0])
+    expect(calls[4]).toEqual(['fillRect', 0, 0, 300, 400])
+    expect(props).toMatchObject({
+      globalCompositeOperation: 'destination-over',
+      fillStyle: '#ffffff',
+    })
+    expect(fakes.canvases[0]!.dataUrlCalls).toEqual([
+      ['image/png', undefined],
+      ['image/jpeg', IMAGE_QUALITY],
+    ])
   })
 
   it('без формата в data-URL — PNG, чтобы не потерять прозрачность', async () => {
@@ -92,7 +125,7 @@ describe('applyCropFilter', () => {
       ['drawImage', expect.anything(), 100, 30, 200, 150, 0, 0, 200, 150],
     ])
     expect(canvas!.ctx!.filter).toBe('none')
-    expect(out).toBe('data:image/jpeg;q=0.9;200x150')
+    expect(out).toBe(`data:image/jpeg;q=${IMAGE_QUALITY};200x150`)
   })
 
   it('фильтр без кропа — вся картинка с фильтром холста', async () => {
@@ -113,6 +146,15 @@ describe('applyCropFilter', () => {
       400,
       300,
     ])
+  })
+
+  it('PNG с фильтром тяжелее предела — белый фон без фильтра', async () => {
+    fakes.exportBody = (type) => (type === 'image/png' ? bodyOfBytes(MAX_PNG_BYTES + 3) : 'SlBH')
+    expect(await applyCropFilter(PNG, null, 'sepia(0.65)')).toBe('data:image/jpeg;base64,SlBH')
+    const ctx = fakes.canvases[0]!.ctx!
+    // Фильтр снят до заливки: иначе белый фон под картинкой стал бы бежевым.
+    expect(ctx.filter).toBe('none')
+    expect(ctx.calls.map((c) => c[0])).toEqual(['drawImage', 'setTransform', 'fillRect'])
   })
 
   it('значения за пределами 0..100 прижимаются; кусок не меньше пикселя', async () => {
