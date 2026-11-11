@@ -677,17 +677,44 @@
   --leading-scale: 0.93;
 }
 
-:root[data-shell='rail'] .ant-modal-wrap:not(.ant-modal-centered) .ant-modal {
-  top: 8px;
-  padding-bottom: 8px;
+/* ── Окна antd и системные полосы ──
+   На Android приложение рисуется под строкой состояния и кнопками навигации
+   (MainActivity), на iOS — под вырезом и полосой «домой». antd о них не знает:
+   высокое окно заходило под полосы, и кнопки «Отмена» и «Отправить» ложились
+   под кнопки навигации. Отступ — полями самого окна: .ant-modal прозрачен и
+   касаний не ловит. Центрированное окно по полям находит середину видимой
+   части, остальные — конец прокрутки. Сильнее правил antd (у центрированного
+   они на :where) и слабее правил окон во весь экран: пост и редактор на
+   телефоне, уведомления, шторка профиля отступают внутри сами (ниже). */
+.ant-modal-root .ant-modal {
+  padding-bottom: calc(24px + var(--safe-bottom));
 }
 
-/* Окно — колонкой не выше экрана: заголовок и кнопки на месте, прокручивается
-   только тело, и ему достаётся вся остальная высота. */
+body .ant-modal-root .ant-modal-centered .ant-modal {
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+/* На телефоне высокое окно не прилипает к полосам: 8 px зазора. */
+:root:is([data-shell='compact'], [data-shell='rail']) .ant-modal-centered .ant-modal {
+  padding-top: calc(var(--safe-top) + 8px);
+  padding-bottom: calc(var(--safe-bottom) + 8px);
+}
+
+/* Телефон боком: окна — от самого верха, под строкой состояния. :where —
+   чтобы окна во весь экран со своими правилами были сильнее. */
+:root[data-shell='rail'] :where(.ant-modal-wrap:not(.ant-modal-centered)) .ant-modal {
+  top: calc(var(--safe-top) + 8px);
+  padding-bottom: calc(var(--safe-bottom) + 8px);
+}
+
+/* Окно — колонкой не выше видимой части экрана: заголовок и кнопки на месте,
+   прокручивается только тело, и ему достаётся вся остальная высота. */
 :root[data-shell='rail'] .ant-modal-content {
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 16px);
+  max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 16px);
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 16px);
 }
 
 :root[data-shell='rail'] .ant-modal-body {
@@ -1425,6 +1452,13 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
     padding-bottom: 0;
   }
 
+  /* Полей под системные полосы (правила окон выше) этим окнам не нужно:
+     полосы обходит их содержимое. */
+  body .ant-modal-root .ant-modal-centered .ant-modal:is(.post-modal, .post-composer-modal) {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
   .ant-modal.post-modal .ant-modal-content {
     display: flex;
     flex-direction: column;
@@ -1446,7 +1480,8 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
     flex: 1 1 auto;
     min-height: 0;
     max-height: none !important;
-    padding: 0 12px 12px;
+    /* Конец поста — над кнопками навигации, а не под ними. */
+    padding: 0 12px calc(12px + var(--safe-bottom));
   }
 
   /* Пост в окне — без своей рамки и отступов (как post-modal/styled.ts на
