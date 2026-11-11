@@ -21,6 +21,11 @@ const mocks = vi.hoisted(() => ({
   progress: null as ((e: { payload: { received: number; total: number } }) => void) | null,
 }))
 
+// Монеты на комиссию заранее — без сети.
+vi.mock('@/blockchain/core/transactions/unspents-manager', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/blockchain/core/transactions/unspents-manager')>()),
+  prefetchFeeUnspents: vi.fn(),
+}))
 vi.mock('@/b-components/video-uploader/utils/environment', () => ({
   isTauri: () => mocks.desktop,
 }))

@@ -10,6 +10,11 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 
 import { i18n, setI18nLocale } from '@/i18n'
 
+// Монеты на комиссию заранее — без сети.
+vi.mock('@/blockchain/core/transactions/unspents-manager', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/blockchain/core/transactions/unspents-manager')>()),
+  prefetchFeeUnspents: vi.fn(),
+}))
 vi.mock('@/services/peertube/peertube-videos', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/services/peertube/peertube-videos')>()),
   // Обложка от видеосервера — без сети.

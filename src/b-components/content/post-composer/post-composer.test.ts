@@ -28,6 +28,11 @@ const mocks = vi.hoisted(() => ({
 }))
 
 const idb = vi.hoisted(() => new Map<string, unknown>())
+// Монеты на комиссию заранее — без сети.
+vi.mock('@/blockchain/core/transactions/unspents-manager', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/blockchain/core/transactions/unspents-manager')>()),
+  prefetchFeeUnspents: vi.fn(),
+}))
 vi.mock('@/db/apis/settings-api', () => ({
   settingsAPI: {
     get: async (key: string) => idb.get(key),

@@ -15,6 +15,11 @@ const mocks = vi.hoisted(() => ({
   track: vi.fn(),
 }))
 
+// Монеты на комиссию заранее — без сети.
+vi.mock('@/blockchain/core/transactions/unspents-manager', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/blockchain/core/transactions/unspents-manager')>()),
+  prefetchFeeUnspents: vi.fn(),
+}))
 vi.mock('@/services/peertube/peertube-videos', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/services/peertube/peertube-videos')>()),
   // Обложка от видеосервера — без сети.
@@ -456,6 +461,20 @@ describe('video-uploads-store', () => {
   })
 
   describe('пост к ролику', () => {
+    it('монеты на комиссию — заранее: при открытии окна и когда ролик загрузился', async () => {
+      const store = useVideoUploadsStore()
+      const up = controllableUpload()
+      const prefetchFee = vi.fn()
+      store.setDepsForTests({ upload: up.upload as never, rename: vi.fn(), prefetchFee })
+      store.openDialog()
+      expect(prefetchFee).toHaveBeenCalledWith('PMe')
+      store.start(file())
+      prefetchFee.mockClear()
+      up.finish()
+      await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('done'))
+      expect(prefetchFee).toHaveBeenCalledWith('PMe')
+    })
+
     it('«Опубликовать» во время загрузки — пост уходит сам, когда ролик загрузился', async () => {
       const store = useVideoUploadsStore()
       const up = controllableUpload()

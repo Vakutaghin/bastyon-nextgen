@@ -10,8 +10,8 @@ import {
 } from '@/blockchain/core/actions/post-action'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import {
+  feeUnspents,
   filterAvailableUnspents,
-  getUnspents,
   lockUTXOs,
   selectBestUnspents,
 } from '@/blockchain/core/transactions/unspents-manager'
@@ -28,7 +28,7 @@ import { pendingSnippet } from '@/blockchain/core/transactions/broadcast-events'
  * Флоу (идентичен comment-sender):
  *   1. Проверка авторизации и валидация поста.
  *   2. Сериализация (для OP_RETURN-хэша) и экспорт payload.
- *   3. Подбор и лок UTXO под комиссию.
+ *   3. Подбор и лок UTXO под комиссию (монеты запрошены заранее — feeUnspents).
  *   4. Сборка и подпись транзакции (operationType → OP_RETURN + 3-й параметр RPC).
  *   5. Отправка sendrawtransactionwithmessage.
  *
@@ -48,11 +48,14 @@ export async function sendPost(post: SharePostData): Promise<string> {
   const serializedData = serializePost(post)
   const operationType = resolvePostOperationType(post)
 
-  let unspents = await getUnspents(address, 1, 9999999)
-  unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) throw new Error(t('postMsg.errNoUnspents'))
-
-  const selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
+  let unspents = filterAvailableUnspents(await feeUnspents(address), false)
+  let selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
+  // Запомненный список мог устареть: пришли новые монеты, дозрели старые.
+  if (selectedUnspents.length === 0) {
+    unspents = filterAvailableUnspents(await feeUnspents(address, { fresh: true }), false)
+    selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
+  }
+  if (!unspents.length) throw new Error(t('postMsg.errNoUnspents'))
   if (selectedUnspents.length === 0) throw new Error(t('postMsg.errSelectUnspents'))
 
   lockUTXOs(selectedUnspents)

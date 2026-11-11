@@ -5,6 +5,10 @@ import {
   lockUTXOs,
   selectAndLockUnspents,
   getUnspents,
+  feeUnspents,
+  prefetchFeeUnspents,
+  forgetFeeUnspentsForTests,
+  FEE_UNSPENTS_FRESH_MS,
 } from './unspents-manager'
 import type { UTXO } from '@/composables/use-wallet-queries'
 import { DUST_VALUE } from '@/blockchain/constants/transactions'
@@ -205,5 +209,102 @@ describe('getUnspents', () => {
     _rpcCall.mockRejectedValueOnce(new Error('rpc down'))
 
     await expect(getUnspents('Paddr')).rejects.toThrow('rpc down')
+  })
+})
+
+// Монеты на комиссию поста — заранее: «Опубликовать» не ждёт txunspent
+// (2–9 с у активных авторов), упавший запрос сам повторяется один раз.
+describe('feeUnspents', () => {
+  const ADDR = 'PAuthor'
+  beforeEach(() => {
+    _rpcCall.mockReset()
+    forgetFeeUnspentsForTests()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    forgetFeeUnspentsForTests()
+  })
+
+  it('запрошенные заранее монеты берутся без нового запроса', async () => {
+    const utxos = [makeUTXO(1)]
+    _rpcCall.mockResolvedValue(utxos)
+    prefetchFeeUnspents(ADDR)
+    prefetchFeeUnspents(ADDR) // второй раз — уже есть
+    await expect(feeUnspents(ADDR)).resolves.toBe(utxos)
+    expect(_rpcCall).toHaveBeenCalledTimes(1)
+    expect(_rpcCall.mock.calls[0]![0]).toMatchObject({ parameters: [[ADDR], 1, 9999999] })
+  })
+
+  it('идущий запрос не дублируется: «Опубликовать» ждёт его', async () => {
+    let resolve!: (v: UTXO[]) => void
+    _rpcCall.mockReturnValue(new Promise<UTXO[]>((r) => (resolve = r)))
+    prefetchFeeUnspents(ADDR)
+    const pending = feeUnspents(ADDR)
+    const utxos = [makeUTXO(2)]
+    resolve(utxos)
+    await expect(pending).resolves.toBe(utxos)
+    expect(_rpcCall).toHaveBeenCalledTimes(1)
+  })
+
+  it('устаревший список, fresh и своя трата — новый запрос', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    _rpcCall.mockImplementation(async () => [makeUTXO(1)])
+    await feeUnspents(ADDR)
+    vi.setSystemTime(Date.now() + FEE_UNSPENTS_FRESH_MS + 1)
+    await feeUnspents(ADDR)
+    expect(_rpcCall).toHaveBeenCalledTimes(2)
+
+    await feeUnspents(ADDR, { fresh: true })
+    expect(_rpcCall).toHaveBeenCalledTimes(3)
+
+    // Своя трата: потраченный вход вернулся бы в подбор после снятия лока.
+    lockUTXOs([makeUTXO(5)])
+    await feeUnspents(ADDR)
+    expect(_rpcCall).toHaveBeenCalledTimes(4)
+  })
+
+  it('упавший запрос повторяется один раз', async () => {
+    vi.useFakeTimers()
+    const utxos = [makeUTXO(3)]
+    _rpcCall.mockRejectedValueOnce(new Error('All RPC servers failed')).mockResolvedValueOnce(utxos)
+    const pending = feeUnspents(ADDR)
+    await vi.advanceTimersByTimeAsync(1_000)
+    await expect(pending).resolves.toBe(utxos)
+    expect(_rpcCall).toHaveBeenCalledTimes(2)
+
+    // Два сбоя подряд — ошибка, и неудача не запоминается.
+    _rpcCall.mockReset().mockRejectedValue(new Error('down'))
+    const failed = feeUnspents(ADDR, { fresh: true }).catch((e: Error) => e.message)
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(await failed).toBe('down')
+    expect(_rpcCall).toHaveBeenCalledTimes(2)
+    _rpcCall.mockReset().mockResolvedValue(utxos)
+    await expect(feeUnspents(ADDR)).resolves.toBe(utxos)
+  })
+
+  it('упала предзагрузка — «Опубликовать» спрашивает заново', async () => {
+    vi.useFakeTimers()
+    _rpcCall.mockRejectedValue(new Error('down'))
+    prefetchFeeUnspents(ADDR)
+    await vi.advanceTimersByTimeAsync(1_000)
+    const utxos = [makeUTXO(4)]
+    _rpcCall.mockReset().mockResolvedValue(utxos)
+    await expect(feeUnspents(ADDR)).resolves.toBe(utxos)
+  })
+
+  it('без сети — ни предзагрузки, ни повтора', async () => {
+    vi.stubGlobal('navigator', { onLine: false })
+    prefetchFeeUnspents(ADDR)
+    expect(_rpcCall).not.toHaveBeenCalled()
+    _rpcCall.mockRejectedValue(new Error('offline'))
+    await expect(feeUnspents(ADDR)).rejects.toThrow('offline')
+    expect(_rpcCall).toHaveBeenCalledTimes(1)
+  })
+
+  it('без адреса — ничего', () => {
+    prefetchFeeUnspents(null)
+    prefetchFeeUnspents('')
+    expect(_rpcCall).not.toHaveBeenCalled()
   })
 })

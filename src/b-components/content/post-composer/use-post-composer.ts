@@ -39,6 +39,7 @@ import {
 } from './composer-source'
 import { firstLinkUrl, firstVideoUrl, parseVideoUrl } from './parse-video-url'
 import { sendPost } from './post-sender'
+import { prefetchFeeUnspents } from '@/blockchain/core/transactions/unspents-manager'
 import { trackPendingPost } from './pending-post'
 import { usePostImages } from './use-post-images'
 import { usePostTags } from './use-post-tags'
@@ -82,6 +83,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   const authStore = useAuthStore()
   const modalStore = useModalStore()
   const queryClient = useQueryClient()
+  // Монеты на комиссию — пока пишется пост: «Опубликовать» их не ждёт.
+  prefetchFeeUnspents(authStore.getUserAddress)
 
   const mode = options.mode ?? 'create'
   const isEdit = mode === 'edit'

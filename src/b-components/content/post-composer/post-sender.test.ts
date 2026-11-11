@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   keyPair: { ecPair: {} } as unknown,
   address: 'PSenderAddr' as unknown,
   buildTransaction: vi.fn(),
-  getUnspents: vi.fn(),
+  feeUnspents: vi.fn(),
   filterAvailableUnspents: vi.fn(),
   selectBestUnspents: vi.fn(),
   lockUTXOs: vi.fn(),
@@ -26,7 +26,7 @@ vi.mock('@/blockchain/core/transactions/transaction-builder', () => ({
   buildTransaction: mocks.buildTransaction,
 }))
 vi.mock('@/blockchain/core/transactions/unspents-manager', () => ({
-  getUnspents: mocks.getUnspents,
+  feeUnspents: mocks.feeUnspents,
   filterAvailableUnspents: mocks.filterAvailableUnspents,
   selectBestUnspents: mocks.selectBestUnspents,
   lockUTXOs: mocks.lockUTXOs,
@@ -45,7 +45,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.keyPair = { ecPair: {} }
   mocks.address = 'PSenderAddr'
-  mocks.getUnspents.mockResolvedValue(utxos)
+  mocks.feeUnspents.mockResolvedValue(utxos)
   mocks.filterAvailableUnspents.mockReturnValue(utxos)
   mocks.selectBestUnspents.mockReturnValue(utxos)
   mocks.buildTransaction.mockResolvedValue({
@@ -79,6 +79,21 @@ describe('sendPost', () => {
   it('нет доступных unspents → errNoUnspents', async () => {
     mocks.filterAvailableUnspents.mockReturnValue([])
     await expect(sendPost(validPost)).rejects.toThrow('postMsg.errNoUnspents')
+  })
+
+  it('монеты запрошены заранее; в запомненных пусто — спрашивает ноду заново', async () => {
+    await sendPost(validPost)
+    expect(mocks.feeUnspents).toHaveBeenCalledTimes(1)
+    expect(mocks.feeUnspents).toHaveBeenCalledWith('PSenderAddr')
+
+    vi.clearAllMocks()
+    const fresh = [{ txid: 'u2', vout: 1, amount: 1, scriptPubKey: '00' }]
+    mocks.feeUnspents.mockResolvedValueOnce([]).mockResolvedValueOnce(fresh)
+    mocks.filterAvailableUnspents.mockImplementation((list: unknown[]) => list)
+    mocks.selectBestUnspents.mockImplementation((list: unknown[]) => list)
+    await sendPost(validPost)
+    expect(mocks.feeUnspents).toHaveBeenLastCalledWith('PSenderAddr', { fresh: true })
+    expect(mocks.lockUTXOs).toHaveBeenCalledWith(fresh)
   })
 
   it('не удалось подобрать unspents → errSelectUnspents', async () => {

@@ -34,6 +34,7 @@ import {
   titleFromFileName,
 } from '@/b-components/content/post-composer/use-composer-video'
 import { sendPost } from '@/b-components/content/post-composer/post-sender'
+import { prefetchFeeUnspents } from '@/blockchain/core/transactions/unspents-manager'
 import { trackPendingPost } from '@/b-components/content/post-composer/pending-post'
 import { withTypedTag } from '@/b-components/content/post-composer/use-post-tags'
 import { UPLOADING_VIDEO_POINTER } from '@/b-components/content/post-composer/consts'
@@ -143,6 +144,8 @@ export interface VideoUploadsDeps {
   saveCover: typeof saveVideoCover
   serverCover: typeof getInstanceVideoCover
   send: typeof sendPost
+  /** Монеты на комиссию поста — заранее, чтобы «Опубликовать» их не ждал. */
+  prefetchFee: (address: string | null | undefined) => void
 }
 
 const defaultDeps = (): VideoUploadsDeps => ({
@@ -157,6 +160,7 @@ const defaultDeps = (): VideoUploadsDeps => ({
   saveCover: saveVideoCover,
   serverCover: getInstanceVideoCover,
   send: sendPost,
+  prefetchFee: prefetchFeeUnspents,
 })
 
 /** Сколько ждать обложку, прежде чем сказать «Медиастудии», что ролик загружен. */
@@ -206,6 +210,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
   function openDialog(jobId: string | null = null): void {
     dialogJobId.value = jobId && find(jobId) ? jobId : null
     dialogOpen.value = true
+    deps.prefetchFee(useAuthStore().getUserAddress)
   }
 
   /** Закрыть окно; идущая загрузка продолжается в плашке. */
@@ -306,6 +311,8 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       job.result = { ...result }
       job.status = 'done'
       job.progress = 100
+      // Пост — уже скоро: монеты на комиссию заранее (окно открыто давно).
+      deps.prefetchFee(job.owner)
       // Название дописали, пока шла загрузка, — пусть и на сервере будет оно.
       void commitTitle(id)
       rt.cover?.attach({ host: result.host, uuid: result.uuid }, { audio: result.isAudio })

@@ -4,6 +4,7 @@
 
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCall } from '@/helpers/api/request'
+import { isOfflineError, isOfflineNow } from '@/helpers/api/offline'
 import type { UTXO } from '@/composables/use-wallet-queries'
 import {
   DUST_VALUE,
@@ -25,6 +26,9 @@ const lockedUTXOs = new Map<string, ReturnType<typeof setTimeout>>()
  * @param ttl - Time to live in ms (default 60000ms = 1 min)
  */
 export function lockUTXOs(utxos: UTXO[], ttl: number = 60000) {
+  // Своя трата: запомненные списки монет её не знают, а лок через минуту
+  // снимется — потраченный вход вернулся бы в подбор (feeUnspents).
+  if (utxos.length) feeLists.clear()
   utxos.forEach((u) => {
     const key = `${u.txid}:${u.vout}`
     const prev = lockedUTXOs.get(key)
@@ -88,6 +92,83 @@ export async function getUnspents(
     },
     server
   )
+}
+
+// ── Монеты на комиссию заранее ──
+// txunspent у активных авторов идёт 2–9 с (нода думает до 6 с; замер 11.11),
+// и по «Опубликовать» человек ждал этот запрос, а при сбое сети пост не уходил
+// вовсе — «с третьего раза». Как в старом клиенте, список берётся заранее
+// (окно загрузки ролика, редактор поста) и переиспользуется, пока свежий.
+// Свои траты сбрасывают его (lockUTXOs); монет в нём не хватило — вызывающий
+// спрашивает заново (`fresh`). Монеты, потраченные с другого устройства,
+// нода отвергнет («подождите предыдущую транзакцию»), а повтор возьмёт свежий
+// список: лок при подборе его уже сбросил.
+
+/** Сколько запомненный список монет годится для подбора. */
+export const FEE_UNSPENTS_FRESH_MS = 10 * 60_000
+/** Пауза перед повтором упавшего запроса монет. */
+const FEE_UNSPENTS_RETRY_MS = 1_000
+
+interface FeeList {
+  at: number
+  promise: Promise<UTXO[]>
+}
+const feeLists = new Map<string, FeeList>()
+
+/** Подтверждённые монеты адреса; упал не из-за отсутствия сети — ещё раз. */
+async function loadWithRetry(address: string): Promise<UTXO[]> {
+  try {
+    return await getUnspents(address, 1, 9999999)
+  } catch (error) {
+    if (isOfflineError(error) || isOfflineNow()) throw error
+    await new Promise((resolve) => setTimeout(resolve, FEE_UNSPENTS_RETRY_MS))
+    return getUnspents(address, 1, 9999999)
+  }
+}
+
+function startLoad(address: string): Promise<UTXO[]> {
+  const entry: FeeList = { at: Date.now(), promise: loadWithRetry(address) }
+  feeLists.set(address, entry)
+  entry.promise.catch(() => {
+    if (feeLists.get(address) === entry) feeLists.delete(address)
+  })
+  return entry.promise
+}
+
+function freshList(address: string): FeeList | null {
+  const entry = feeLists.get(address)
+  return entry && Date.now() - entry.at < FEE_UNSPENTS_FRESH_MS ? entry : null
+}
+
+/** Запросить монеты адреса заранее — в фоне, ошибки молчат. */
+export function prefetchFeeUnspents(address: string | null | undefined): void {
+  if (!address || isOfflineNow() || freshList(address)) return
+  startLoad(address).catch(() => {})
+}
+
+/**
+ * Подтверждённые монеты адреса для подбора под комиссию: запомненные, если
+ * свежие (и идущий запрос, если он уже начат), иначе — новый запрос с одним
+ * повтором. `fresh` — только новый запрос.
+ */
+export async function feeUnspents(
+  address: string,
+  options: { fresh?: boolean } = {}
+): Promise<UTXO[]> {
+  const entry = options.fresh ? null : freshList(address)
+  if (entry) {
+    try {
+      return await entry.promise
+    } catch {
+      // Заранее не вышло — спрашиваем сейчас.
+    }
+  }
+  return startLoad(address)
+}
+
+/** Для тестов. */
+export function forgetFeeUnspentsForTests(): void {
+  feeLists.clear()
 }
 
 /**

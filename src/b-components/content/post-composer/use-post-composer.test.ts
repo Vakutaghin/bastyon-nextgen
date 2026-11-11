@@ -36,6 +36,11 @@ const idb = vi.hoisted(() => ({
   store: new Map<string, unknown>(),
   writes: new Map<string, number>(),
 }))
+// Монеты на комиссию заранее — без сети.
+vi.mock('@/blockchain/core/transactions/unspents-manager', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/blockchain/core/transactions/unspents-manager')>()),
+  prefetchFeeUnspents: vi.fn(),
+}))
 vi.mock('@/db/apis/settings-api', () => ({
   settingsAPI: {
     get: async (key: string) => idb.store.get(key),
@@ -102,6 +107,7 @@ vi.mock('./use-post-images', async () => {
 
 import { postDraftKey } from './post-draft'
 import { usePostComposer, type UsePostComposerOptions } from './use-post-composer'
+import { prefetchFeeUnspents } from '@/blockchain/core/transactions/unspents-manager'
 
 const ME = 'PMe'
 const TEXT = 'Вчера съездили на море, вода тёплая'
@@ -252,6 +258,12 @@ describe('usePostComposer', () => {
   })
 
   describe('публикация', () => {
+    it('монеты на комиссию запрашиваются, пока пишется пост', () => {
+      vi.mocked(prefetchFeeUnspents).mockClear()
+      compose()
+      expect(prefetchFeeUnspents).toHaveBeenCalledWith(ME)
+    })
+
     it('гостя просит войти и ничего не отправляет', async () => {
       mocks.auth.isUserAuthenticated = false
       const c = compose()
