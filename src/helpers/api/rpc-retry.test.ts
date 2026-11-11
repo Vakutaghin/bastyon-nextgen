@@ -5,7 +5,7 @@
 //
 // Сеть есть, а интернета нет (reachability): долгий запрос пингует свой
 // прокси и, если тот молчит, обрывается; после сбоя остальные спрашиваются,
-// только если кто-то ответил на пинг, — первыми ответившие.
+// только если кто-то ответил на пинг, — первыми ответившие, промолчавшие никогда.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -256,7 +256,7 @@ describe('сеть есть, интернета нет', () => {
     expect(noProxyAnswered(error)).toBe(false)
   })
 
-  it('после сбоя первыми — ответившие на пинг, неизвестные — следом, молчавшие — в конце', async () => {
+  it('после сбоя первыми — ответившие на пинг, неизвестные — следом', async () => {
     pings({ [A.host]: false, [B.host]: false, [C.host]: undefined, [D.host]: true })
     const request = vi.fn(async (_p: unknown, host: string) => {
       if (host === C.host) return 'ok'
@@ -266,6 +266,21 @@ describe('сеть есть, интернета нет', () => {
       retryWithBackoff({}, { servers: [A, B, C, D], request, protocolName: 'RPC' })
     ).resolves.toBe('ok')
     expect(request.mock.calls.map(([, host]) => host)).toEqual([A.host, D.host, C.host])
+  })
+
+  it('промолчавшие на пинг после сбоя не спрашиваются: причина — от живого прокси', async () => {
+    // B — как висящий 4.pocketnet.app: на пинг молчит, запрос обрывался бы через 13–30 с.
+    pings({ [A.host]: false, [B.host]: false, [C.host]: true })
+    const request = vi.fn(async (_p: unknown, host: string) => {
+      throw new Error(`${host.slice(0, 1)} down`)
+    })
+    const error = (await retryWithBackoff(
+      {},
+      { servers: [A, B, C], request, protocolName: 'RPC' }
+    ).catch((e: unknown) => e)) as Error
+    expect(request.mock.calls.map(([, host]) => host)).toEqual([A.host, C.host])
+    expect(error.message).toBe('All RPC servers failed. Last error: c down. First error: a down')
+    expect(noProxyAnswered(error)).toBe(false)
   })
 
   it('прокси молчит дольше LIVENESS_AFTER_MS и не отвечает на пинг — обрыв, а не 30 с', async () => {

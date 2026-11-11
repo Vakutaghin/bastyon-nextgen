@@ -14,8 +14,9 @@
  * LIVENESS_AFTER_MS, пингует свой прокси и, если тот молчит, обрывается, не
  * дожидаясь 30 с (молчит и на пинг дольше SUSPECT_AFTER_MS — заодно пингуются
  * остальные). После сбоя остальные прокси спрашиваются, только если
- * кто-то ответил на пинг (первыми — ответившие); не ответил никто — перебор
- * кончается с `noProxyAnswered`, а не ждёт таймаута каждого.
+ * кто-то ответил на пинг (первыми — ответившие, промолчавшие — никогда); не
+ * ответил никто — перебор кончается с `noProxyAnswered`, а не ждёт таймаута
+ * каждого.
  */
 
 import { orderedProxies, markProxyAlive, markProxyDead } from './node-selector'
@@ -109,9 +110,18 @@ export async function retryWithBackoff<P, R>(
   const lastError: Error[] = []
   let nodeTimeouts = 0
   let silent = false
+  /**
+   * Круг пинга после последнего сбоя. Через `as`: иначе TS сужает его до
+   * null и не видит присваивания в catch внутри цикла.
+   */
+  let round = null as ProbeRound | null
 
   for (let i = 0; i < queue.length; i++) {
     const server = queue[i]!
+    // Промолчал на пинг после сбоя — в этом переборе не спрашиваем: висящий
+    // прокси стоил 13–30 с на попытку (4.pocketnet.app, замер 11.11), а его
+    // «Request canceled» затирал настоящую причину. Пинг ещё идёт — спрашиваем.
+    if (round?.known(server) === false) continue
     const startedAt = Date.now()
     const controller = new AbortController()
     let suspect: ReturnType<typeof setTimeout> | undefined
@@ -154,7 +164,7 @@ export async function retryWithBackoff<P, R>(
       // Остальных спрашиваем, только если кто-то ответил на пинг (начатый
       // уже после этой попытки), — первыми ответивших. Молчат все — связи нет
       // (или прокси недоступны): не ждём таймаута каждого.
-      const round = probeRound(servers, startedAt)
+      round = probeRound(servers, startedAt)
       if (!(await round.any)) {
         silent = true
         break
