@@ -548,6 +548,23 @@ describe('video-uploads-store', () => {
       expect(send).toHaveBeenCalledTimes(2)
     })
 
+    it('ни один сервер не ответил — словами, а не «All RPC servers failed»', async () => {
+      const store = useVideoUploadsStore()
+      const failed = Object.assign(
+        new Error('All RPC servers failed. Last error: Request canceled'),
+        { allErrors: [new Error('Request canceled')] }
+      )
+      const send = vi.fn().mockRejectedValueOnce(failed)
+      store.setDepsForTests({ upload: vi.fn(async () => RESULT) as never, rename: vi.fn(), send })
+      const id = store.start(file())!
+      await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('done'))
+      store.updatePost(id, { tags: ['отпуск'] })
+      store.publish(id)
+      await vi.waitFor(() => expect(store.jobs[0]!.postStatus).toBe('error'))
+      // Переводы здесь подменены: t отдаёт ключ («Сеть Bastyon не отвечает…»).
+      expect(store.jobs[0]!.postError).toBe('common.networkUnavailable')
+    })
+
     it('ролик загрузился под другим аккаунтом — пост ждёт, пока вернутся на автора', async () => {
       const store = useVideoUploadsStore()
       const up = controllableUpload()

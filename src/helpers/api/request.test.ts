@@ -149,6 +149,30 @@ describe('request', () => {
       await assertion
     })
 
+    it('обрыв узнаётся по сигналу, а не по виду ошибки (plugin-http Tauri: строка)', async () => {
+      vi.useFakeTimers()
+      // Так отвечает Rust-часть плагина: не AbortError, а строка.
+      mocks.appFetch.mockImplementation(
+        (_url: string, init: { signal: AbortSignal }) =>
+          new Promise((_, reject) =>
+            init.signal.addEventListener('abort', () => reject('Request canceled'))
+          )
+      )
+      const rpc = getByPRC({ method: 'm', parameters: [], options: { timeout: 5000 } }, NODE)
+      const rpcFailed = expect(rpc).rejects.toThrow('RPC request timeout after 5000ms')
+      await vi.advanceTimersByTimeAsync(5000)
+      await rpcFailed
+
+      const http = fetchHttp({
+        path: 'x',
+        data: {},
+        options: { host: NODE.host, port: NODE.port, timeout: 5000 },
+      } as never)
+      const httpFailed = expect(http).rejects.toThrow('Request timeout')
+      await vi.advanceTimersByTimeAsync(5000)
+      await httpFailed
+    })
+
     it('бродкаст (noFailover): одна нода, при сбое та же транзакция не уходит на вторую (V1)', async () => {
       mocks.appFetch.mockRejectedValue(new Error('ECONNRESET'))
       await expect(

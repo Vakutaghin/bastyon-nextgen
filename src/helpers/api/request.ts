@@ -84,6 +84,12 @@ function requestGuard(timeoutMs: number, outer?: AbortSignal) {
   outer?.addEventListener('abort', onOuter, { once: true })
   return {
     signal: controller.signal,
+    /**
+     * Запрос оборван — своим таймером или снаружи. По сигналу, а не по виду
+     * ошибки: fetch браузера бросает AbortError, plugin-http Tauri — что-то
+     * своё (appFetch это сглаживает, но решает здесь сигнал).
+     */
+    aborted: () => controller.signal.aborted,
     /** Оборван снаружи: прокси молчит и на пинг. */
     silenced: () => outer?.aborted === true,
     stop() {
@@ -122,7 +128,7 @@ async function requestRpc(
     })
   } catch (error) {
     guard.stop()
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (guard.aborted()) {
       const why = guard.silenced()
         ? 'RPC proxy did not answer a ping'
         : `RPC request timeout after ${timeout}ms`
@@ -246,7 +252,7 @@ async function tryHttpRequest(
   } catch (error) {
     guard.stop()
 
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (guard.aborted()) {
       const why = guard.silenced() ? 'HTTP proxy did not answer a ping' : 'Request timeout'
       throw new Error(why, { cause: error })
     }

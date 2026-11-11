@@ -22,6 +22,7 @@ import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 import { encodeArticleContent } from '@/helpers/content/article-codec'
 import { parsePoll } from '@/helpers/content/poll'
 import { haptic } from '@/helpers/common/haptics'
+import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import { uploadImages } from '@/services/image-upload-service'
 import { useModalStore } from '@/stores'
 import { t } from '@/i18n'
@@ -571,7 +572,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     } catch (e) {
       const cause = e instanceof Error ? e.cause : undefined
       appToast.error({
-        message: e instanceof Error ? e.message : t('postMsg.errSendFailed'),
+        // Сетевой сбой — словами, а не «All RPC servers failed…».
+        message: e instanceof Error ? extractErrorMessage(e) : t('postMsg.errSendFailed'),
         ...(cause instanceof Error ? { description: cause.message } : {}),
       })
     } finally {

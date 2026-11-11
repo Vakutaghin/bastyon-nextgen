@@ -123,6 +123,51 @@ describe('appFetch × Tor', () => {
     expect(mocks.torFetch.mock.lastCall![2]).toEqual({ timeoutMs: 600_000 })
   })
 
+  /** plugin-http: оборванный запрос отклоняется тем, что дал Rust или JS-часть. */
+  function rejectOnAbort(value: unknown) {
+    mocks.tauriFetch.mockImplementation(
+      (_url: string, init?: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          // appFetch доходит до плагина не сразу: сигнал мог оборваться раньше.
+          if (init?.signal?.aborted) reject(value)
+          init?.signal?.addEventListener('abort', () => reject(value))
+        })
+    )
+  }
+
+  it('обрыв, на который plugin-http ответил строкой «Request canceled», — AbortError', async () => {
+    rejectOnAbort('Request canceled')
+    const ctrl = new AbortController()
+    const p = appFetch('https://1.pocketnet.app:8899/rpc/x', { signal: ctrl.signal })
+    ctrl.abort()
+    await expect(p).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('обрыв, на который ответила JS-часть плагина, — тоже AbortError', async () => {
+    rejectOnAbort(new Error('Request cancelled'))
+    const ctrl = new AbortController()
+    const p = appFetch('https://1.pocketnet.app:8899/rpc/x', { signal: ctrl.signal })
+    ctrl.abort()
+    await expect(p).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('обрыв со своей причиной — эта причина, как у fetch браузера', async () => {
+    rejectOnAbort('Request canceled')
+    const ctrl = new AbortController()
+    const reason = new Error('мой таймер')
+    const p = appFetch('https://1.pocketnet.app:8899/rpc/x', { signal: ctrl.signal })
+    ctrl.abort(reason)
+    await expect(p).rejects.toBe(reason)
+  })
+
+  it('ошибка без обрыва — как есть', async () => {
+    mocks.tauriFetch.mockRejectedValue('error sending request')
+    const ctrl = new AbortController()
+    await expect(
+      appFetch('https://1.pocketnet.app:8899/rpc/x', { signal: ctrl.signal })
+    ).rejects.toBe('error sending request')
+  })
+
   it('same-origin всегда через глобальный fetch (dev-proxy)', async () => {
     torStore('bootstrapping')
     const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('same'))

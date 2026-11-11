@@ -29,6 +29,34 @@ export async function appFetch(
   init?: RequestInit,
   torOpts?: TorFetchOptions
 ): Promise<Response> {
+  try {
+    return await routeFetch(input, init, torOpts)
+  } catch (error) {
+    throw asAbortError(error, init?.signal)
+  }
+}
+
+/**
+ * Обрыв сигналом — ошибка обрыва, как у fetch браузера: причина сигнала
+ * (по умолчанию DOMException AbortError). plugin-http Tauri отвечает на
+ * обрыв строкой «Request canceled» (из Rust) или Error «Request cancelled»
+ * (из JS), и проверки `name === 'AbortError'` его не узнавали: таймаут
+ * запроса к ноде выглядел как непонятная ошибка, а таймаут отправки
+ * транзакции — как отказ, без проверки, дошла ли она.
+ */
+function asAbortError(error: unknown, signal?: AbortSignal | null): unknown {
+  if (!signal?.aborted) return error
+  if (error === signal.reason || (error as { name?: unknown } | null)?.name === 'AbortError') {
+    return error
+  }
+  return signal.reason ?? new DOMException('The operation was aborted.', 'AbortError')
+}
+
+async function routeFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  torOpts?: TorFetchOptions
+): Promise<Response> {
   const url =
     typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
 

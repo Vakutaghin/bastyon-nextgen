@@ -166,8 +166,14 @@ export async function retryWithBackoff<P, R>(
     }
   }
 
+  // Первым спрашивался прокси, который считался живым: его ошибка обычно и
+  // есть причина. Последняя — часто от мёртвого прокси из хвоста очереди, и
+  // по ней одной причину было не понять («Request canceled» висящего 4-го).
+  const first = lastError[0]
   const last = lastError[lastError.length - 1]
-  const errorMessage = `All ${protocolName} servers failed. Last error: ${last?.message ?? 'unknown error'}`
+  const firstPart =
+    first && first.message !== last?.message ? `. First error: ${first.message}` : ''
+  const errorMessage = `All ${protocolName} servers failed. Last error: ${last?.message ?? 'unknown error'}${firstPart}`
   const combinedError = new Error(errorMessage) as Error & {
     allErrors: Error[]
     noProxyAnswered?: true

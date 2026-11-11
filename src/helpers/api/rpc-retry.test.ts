@@ -166,7 +166,7 @@ describe('retryWithBackoff', () => {
     ).resolves.toBe('ok')
   })
 
-  it('все ноды упали — одна ошибка с последней причиной и списком всех', async () => {
+  it('все ноды упали — одна ошибка с последней и первой причиной и списком всех', async () => {
     const request = vi
       .fn()
       .mockRejectedValueOnce(new Error('first'))
@@ -175,8 +175,20 @@ describe('retryWithBackoff', () => {
       {},
       { servers: [A, B], request, protocolName: 'HTTP' }
     ).catch((e: unknown) => e)) as Error & { allErrors: Error[] }
-    expect(error.message).toBe('All HTTP servers failed. Last error: second as string')
+    // Первая — от прокси, который считался живым: обычно она и есть причина.
+    expect(error.message).toBe(
+      'All HTTP servers failed. Last error: second as string. First error: first'
+    )
     expect(error.allErrors.map((e) => e.message)).toEqual(['first', 'second as string'])
+  })
+
+  it('одна и та же причина у всех — без повтора', async () => {
+    const request = vi.fn().mockRejectedValue(new Error('same'))
+    const error = (await retryWithBackoff(
+      {},
+      { servers: [A, B], request, protocolName: 'HTTP' }
+    ).catch((e: unknown) => e)) as Error
+    expect(error.message).toBe('All HTTP servers failed. Last error: same')
   })
 
   it('пустой список серверов — понятная ошибка', async () => {

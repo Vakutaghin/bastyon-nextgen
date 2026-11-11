@@ -365,6 +365,18 @@ describe('usePostComposer', () => {
       expect(mocks.addPending).not.toHaveBeenCalled()
     })
 
+    it('ни один сервер не ответил — тост словами, а не «All RPC servers failed»', async () => {
+      mocks.sendPost.mockRejectedValue(
+        Object.assign(new Error('All RPC servers failed. Last error: Request canceled'), {
+          allErrors: [new Error('Request canceled')],
+        })
+      )
+      const c = compose()
+      fillValidPost(c)
+      await c.publish()
+      expect(mocks.toastError).toHaveBeenCalledWith({ message: 'common.networkUnavailable' })
+    })
+
     it('картинка не загрузилась: понятный тост, коды причин строкой ниже, пост не отправлен', async () => {
       mocks.uploadImages.mockRejectedValue(
         new Error('peertube: peertube_image_token_400; up1: up1_timeout')
