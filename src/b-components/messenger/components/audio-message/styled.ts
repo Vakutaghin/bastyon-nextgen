@@ -96,6 +96,33 @@ export const SC_TimeLabel = styled.div`
   flex-shrink: 0;
 `
 
+/* Скорость: место под самую длинную подпись («1,75×»), чтобы пузырь не дёргался. */
+export const SC_RateButton = styled.button`
+  flex-shrink: 0;
+  min-width: 5.5ch;
+  height: 20px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--ui-radius-full);
+  background: rgb(var(--ui-primary-rgb) / 14%);
+  color: var(--ui-primary);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 20px;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background: rgb(var(--ui-primary-rgb) / 22%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 1px;
+  }
+`
+
 export const SC_Error = styled.div`
   font-size: 12px;
   color: var(--color-red-dark);

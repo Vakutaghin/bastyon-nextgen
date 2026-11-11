@@ -7,11 +7,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixFetch } from '@/helpers/api/request'
 import { clearVoiceCache } from '../../services/voice-cache'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import type { Message } from '../../types'
 import { useAudioPlayback, type AudioPlayback } from './use-audio-playback'
 import { positionKey, rememberedPosition } from './audio-positions'
+import { nextVoiceRate, reloadVoiceRateForTests, voiceRate } from '../../services/voice-rate'
 
 vi.mock('@/helpers/api/request', () => ({ matrixFetch: vi.fn() }))
 /** Звук уже на устройстве (своё, mesh) или только на сервере. */
@@ -47,6 +48,8 @@ class FakeAudio extends EventTarget {
   duration = Number.NaN
   ended = false
   paused = true
+  playbackRate = 1
+  defaultPlaybackRate = 1
 
   constructor() {
     super()
@@ -66,8 +69,10 @@ class FakeAudio extends EventTarget {
   }
 
   loads = 0
+  /** Как в браузере: load() возвращает скорость к defaultPlaybackRate. */
   load(): void {
     this.loads += 1
+    this.playbackRate = this.defaultPlaybackRate
   }
 
   meta(duration: number): void {
@@ -151,6 +156,8 @@ afterEach(() => {
   localBlob = new Blob(['voice'])
   fetchMock.mockReset()
   clearVoiceCache()
+  localStorage.clear()
+  reloadVoiceRateForTests()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
@@ -310,6 +317,28 @@ describe('useAudioPlayback', () => {
     await slowPressed
     expect(slow.isPlaying.value).toBe(false)
     expect(quick.isPlaying.value).toBe(true)
+  })
+
+  it('скорость голосовых — с первого звука, меняется на ходу, load() её не сбрасывает', async () => {
+    voiceRate.value = 1.5
+    const api = useVoice(voice())
+    await api.togglePlay()
+    const el = lastAudio()
+    expect(el.playbackRate).toBe(1.5)
+
+    // Сменили во время прослушивания — играет быстрее сразу.
+    expect(nextVoiceRate()).toBe(1.75)
+    await nextTick()
+    expect(el.playbackRate).toBe(1.75)
+    // Новый источник (починка MIME) — скорость та же.
+    el.load()
+    expect(el.playbackRate).toBe(1.75)
+
+    // Следующее голосовое начинает с выбранной.
+    const next = useVoice(voice())
+    await next.togglePlay()
+    expect(lastAudio()).not.toBe(el)
+    expect(lastAudio().playbackRate).toBe(1.75)
   })
 
   it('сервер не отдал — ошибка, а нажатие пробует снова', async () => {

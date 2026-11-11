@@ -112,3 +112,38 @@ test('меню уведомлений и аккаунта стоят под ша
     account.getByRole('menuitem').first()
   )
 })
+
+/** Строк в подписи пункта меню. */
+async function lineCounts(panel: Locator): Promise<Record<string, number>> {
+  const rows = await panel.getByRole('menuitem').evaluateAll((els) =>
+    els.map((el) => {
+      const title = el.querySelector<HTMLElement>('.ant-dropdown-menu-title-content') ?? el
+      const lineHeight = parseFloat(getComputedStyle(title).lineHeight) || 22
+      return [
+        title.textContent ?? '',
+        Math.round(title.getBoundingClientRect().height / lineHeight),
+      ]
+    })
+  )
+  return Object.fromEntries(rows)
+}
+
+// Слой закреплённых панелей был шириной 0, и antd сжимал меню до самого
+// длинного слова: «Сменить аккаунт», «Платные подписки» — в две строки.
+test('пункты меню аккаунта — в одну строку, от компьютера до телефона', async ({ page }) => {
+  test.setTimeout(90_000)
+  await signIn(page)
+  const trigger = page.locator('.ant-dropdown-trigger:has([data-header-avatar])')
+  const account = page.locator('.header-user-dropdown')
+  for (const width of [1400, 390]) {
+    await page.setViewportSize({ width, height: 900 })
+    await trigger.click()
+    await expect(account.getByRole('menuitem', { name: 'Сменить аккаунт' })).toBeVisible()
+    await expect.poll(() => account.getAttribute('class')).not.toMatch(/-(enter|appear)/)
+    const lines = await lineCounts(account)
+    expect(lines['Сменить аккаунт']).toBe(1)
+    expect(Object.entries(lines).filter(([, n]) => n !== 1)).toEqual([])
+    await trigger.click()
+    await expect(account).toBeHidden()
+  }
+})

@@ -7,15 +7,15 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n, setI18nLocale } from '@/i18n'
 
 const h = vi.hoisted(() => ({ downloadMedia: vi.fn() }))
-vi.mock('@/helpers/common/download-media', () => ({ downloadMedia: h.downloadMedia }))
+vi.mock('@/helpers/common/download-media', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/helpers/common/download-media')>()),
+  downloadMedia: h.downloadMedia,
+}))
 
 import MediaDownloadButton from './media-download-button.vue'
 
-const render = () =>
-  mount(MediaDownloadButton, {
-    props: { src: 'blob:app/1', name: 'cat.jpg' },
-    global: { plugins: [i18n] },
-  })
+const render = (props: { src: string; name?: string } = { src: 'blob:app/1', name: 'cat.jpg' }) =>
+  mount(MediaDownloadButton, { props, global: { plugins: [i18n] } })
 
 describe('MediaDownloadButton', () => {
   beforeAll(async () => {
@@ -33,6 +33,20 @@ describe('MediaDownloadButton', () => {
     await flushPromises()
     expect(h.downloadMedia).toHaveBeenCalledWith('blob:app/1', 'cat.jpg')
     expect(w.text()).not.toContain('Не удалось')
+  })
+
+  it('без имени — image_from_bastyon_ и время нажатия', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 10, 12, 9, 5, 7))
+    h.downloadMedia.mockResolvedValue('saved')
+    const w = render({ src: 'blob:app/1' })
+    await w.get('[data-testid="media-download"]').trigger('click')
+    await flushPromises()
+    expect(h.downloadMedia).toHaveBeenCalledWith(
+      'blob:app/1',
+      'image_from_bastyon_2026-11-12_09-05-07'
+    )
+    vi.useRealTimers()
   })
 
   it('не вышло — говорит об этом; отмена диалога — молча', async () => {

@@ -2565,6 +2565,7 @@ export default {
     pause: 'Pausa',
     audioLoading: 'Cargando audio',
     audioCancel: 'Cancelar la carga',
+    voiceSpeed: 'Velocidad de reproducción: {rate}',
   },
   miniapps: {
     pageTitle: 'Servicios',

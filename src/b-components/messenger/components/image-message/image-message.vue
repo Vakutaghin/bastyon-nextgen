@@ -29,7 +29,7 @@
     <Teleport to="body">
       <SC_Lightbox v-if="lightboxOpen" @click.self="closeLightbox">
         <SC_LightboxImg :src="resolvedSrc || ''" :alt="alt" @click.stop />
-        <MediaDownloadButton v-if="downloadSrc" :src="downloadSrc" :name="downloadName" />
+        <MediaDownloadButton v-if="downloadSrc" :src="downloadSrc" />
       </SC_Lightbox>
     </Teleport>
   </SC_ImageMessage>
@@ -101,7 +101,6 @@ const decryptFailed = ref(false)
 const lightboxOpen = ref(false)
 /** Что сохраняет «Скачать» в просмотрщике: расшифрованная картинка или её адрес. */
 const downloadSrc = computed<string>(() => resolvedSrc.value ?? '')
-const downloadName = computed<string>(() => String(alt.value))
 
 const needsDecrypt = computed(() => {
   if (isLocal.value) return false

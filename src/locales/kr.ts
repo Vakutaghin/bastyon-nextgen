@@ -2518,6 +2518,7 @@ export default {
     pause: '일시정지',
     audioLoading: '오디오를 불러오는 중',
     audioCancel: '불러오기 취소',
+    voiceSpeed: '재생 속도: {rate}',
   },
   miniapps: {
     pageTitle: '서비스',

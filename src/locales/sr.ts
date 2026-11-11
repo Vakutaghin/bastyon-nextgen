@@ -2541,6 +2541,7 @@ export default {
     pause: 'Пауза',
     audioLoading: 'Учитавање звука',
     audioCancel: 'Откажи учитавање',
+    voiceSpeed: 'Брзина репродукције: {rate}',
   },
   miniapps: {
     pageTitle: 'Сервиси',

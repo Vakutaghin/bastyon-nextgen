@@ -16,6 +16,10 @@ export function popupContainer(trigger: HTMLElement): HTMLElement {
  * оставалась на месте. Слой закреплён, как шапка, и панель не отходит от своей
  * кнопки. Слой свой на каждый `zIndex`: панель стоит на том же уровне, что
  * стояла в body, — над мессенджером, но не выше, чем прежде.
+ *
+ * Ширина слоя — во всё окно: панель сжимается до места справа от своего
+ * левого края в слое, и при ширине 0 пункты меню («Сменить аккаунт»)
+ * переносились по словам. Высота 0 — слой не перехватывает нажатия.
  */
 export function fixedPopupLayer(zIndex: number): HTMLElement {
   const id = `fixed-popup-layer-${zIndex}`
@@ -23,7 +27,7 @@ export function fixedPopupLayer(zIndex: number): HTMLElement {
   if (found) return found
   const layer = document.createElement('div')
   layer.id = id
-  layer.style.cssText = `position:fixed;top:0;left:0;width:0;height:0;z-index:${zIndex}`
+  layer.style.cssText = `position:fixed;top:0;left:0;width:100%;height:0;z-index:${zIndex}`
   document.body.appendChild(layer)
   return layer
 }

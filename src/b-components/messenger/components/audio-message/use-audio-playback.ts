@@ -18,11 +18,15 @@
  *
  * На onerror пробуем MIME-fixup `audio/mpeg` — типичная починка для серверов,
  * отдающих octet-stream вместо реального MIME аудио.
+ *
+ * Скорость — общая для всех голосовых (`voice-rate`): сменили во время
+ * прослушивания — меняется сразу, и у этого голосового, и у следующих.
  */
-import { computed, onBeforeUnmount, ref, type ComputedRef, type Ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { matrixFetch } from '@/helpers/api/request'
 import { localMediaBlob } from '../../services/local-media'
 import { cachedVoice, cacheVoice, learnDuration, learnedDuration } from '../../services/voice-cache'
+import { voiceRate } from '../../services/voice-rate'
 import type { Message } from '../../types'
 import { t } from '@/i18n'
 import { positionKey, rememberPosition, rememberedPosition } from './audio-positions'
@@ -116,11 +120,21 @@ export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
     }
   }
 
+  /**
+   * Скорость звука. `defaultPlaybackRate` — тоже: load() (новый источник,
+   * починка MIME) сбрасывает `playbackRate` к нему.
+   */
+  function applyRate(el: HTMLAudioElement, rate: number): void {
+    el.defaultPlaybackRate = rate
+    el.playbackRate = rate
+  }
+
   /** Элемент звука — один на сообщение, с первого нажатия. */
   function element(): HTMLAudioElement {
     if (audioEl.value) return audioEl.value
     const el = new Audio()
     el.preload = 'auto'
+    applyRate(el, voiceRate.value)
 
     el.addEventListener('loadedmetadata', () => {
       setDuration(el.duration)
@@ -310,6 +324,10 @@ export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
     if (el && hasMetadata(el)) el.currentTime = t
     if (!isPlaying.value) rememberPosition(key, t)
   }
+
+  watch(voiceRate, (rate) => {
+    if (audioEl.value) applyRate(audioEl.value, rate)
+  })
 
   onBeforeUnmount(() => {
     disposed = true

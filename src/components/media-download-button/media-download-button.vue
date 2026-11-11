@@ -18,16 +18,18 @@
 <script setup lang="ts">
 // Кнопка «Скачать» в просмотрщике картинок (лента, чат): на компьютере —
 // системный диалог «Сохранить», на телефоне — «Поделиться» (downloadMedia).
+// Имя — image_from_bastyon_<дата_время скачивания>: исходное имя вложения
+// (IMG_4021.jpg, image.png) или хэш из адреса ничего не говорили.
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { DownloadOutlined, LoadingOutlined } from '@/components/icons'
-import { downloadMedia } from '@/helpers/common/download-media'
+import { bastyonImageName, downloadMedia } from '@/helpers/common/download-media'
 import { SC_DownloadBtn, SC_DownloadError } from './media-download-button.styled'
 
 const props = defineProps<{
   src: string
-  /** Имя файла; нет — из адреса. */
+  /** Имя файла; нет — image_from_bastyon_<дата_время>. */
   name?: string
 }>()
 
@@ -41,7 +43,7 @@ async function onDownload(): Promise<void> {
   busy.value = true
   failed.value = false
   try {
-    const result = await downloadMedia(props.src, props.name)
+    const result = await downloadMedia(props.src, props.name || bastyonImageName())
     if (result === 'failed') {
       failed.value = true
       clearTimeout(hideError)

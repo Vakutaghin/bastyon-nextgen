@@ -34,6 +34,9 @@ describe('fixedPopupLayer', () => {
     expect(a.parentElement).toBe(document.body)
     expect(a.style.position).toBe('fixed')
     expect(a.style.zIndex).toBe('3000')
+    // Во всё окно, но без высоты: пункты меню не сжимаются, нажатия проходят.
+    expect(a.style.width).toBe('100%')
+    expect(a.style.height).toBe('0px')
     expect(fixedPopupLayer(3000)).toBe(a)
     expect(fixedPopupLayer(1050)).not.toBe(a)
   })

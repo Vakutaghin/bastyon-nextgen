@@ -2544,6 +2544,7 @@ export default {
     pause: 'Pause',
     audioLoading: 'Loading audio',
     audioCancel: 'Cancel loading',
+    voiceSpeed: 'Playback speed: {rate}',
   },
   miniapps: {
     pageTitle: 'Services',

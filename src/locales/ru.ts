@@ -2426,6 +2426,7 @@ export default {
     pause: 'Пауза',
     audioLoading: 'Загрузка аудио',
     audioCancel: 'Отменить загрузку',
+    voiceSpeed: 'Скорость воспроизведения: {rate}',
   },
   /** «Кто оценил» — окно по числу оценок под звёздами (post-scores-modal). */
   postScores: {

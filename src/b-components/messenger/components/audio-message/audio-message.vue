@@ -34,6 +34,18 @@
       </SC_WaveSpinnerOverlay>
     </SC_WaveContainer>
     <SC_TimeLabel data-testid="audio-time">{{ timeLabel }}</SC_TimeLabel>
+    <!-- Скорость — с первого «Слушать», как в Telegram: 1× → 1,25× → … → 2× → 1×.
+         Общая для всех голосовых. -->
+    <SC_RateButton
+      v-if="showsPosition"
+      type="button"
+      data-testid="voice-rate"
+      :aria-label="t('chat.voiceSpeed', { rate: rateLabel })"
+      :title="t('chat.voiceSpeed', { rate: rateLabel })"
+      @click.stop="nextVoiceRate"
+    >
+      {{ rateLabel }}
+    </SC_RateButton>
     <SC_Error v-if="hasError">{{ hasError }}</SC_Error>
   </SC_AudioMessage>
 </template>
@@ -45,6 +57,7 @@ import { isMeshTransport, type Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { localMediaBlob } from '../../services/local-media'
 import { learnWave, learnedWave } from '../../services/voice-cache'
+import { nextVoiceRate, voiceRate } from '../../services/voice-rate'
 import {
   decodeVoice,
   hasWaveformShape,
@@ -54,6 +67,7 @@ import {
 import { useCanvasWaveform } from './use-canvas-waveform'
 import { useAudioPlayback } from './use-audio-playback'
 import { PauseIcon, PlayIcon } from '@/components/icons'
+import { bcp47 } from '@/i18n'
 import {
   SC_AudioMessage,
   SC_PlayButton,
@@ -64,6 +78,7 @@ import {
   SC_Spinner,
   SC_SpinnerRow,
   SC_UploadProgress,
+  SC_RateButton,
 } from './styled'
 
 const BAR_COUNT = 64
@@ -77,7 +92,12 @@ const props = withDefaults(
 )
 
 const store = useMessengerStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+/** «1,5×» — дробь по языку интерфейса. */
+const rateLabel = computed<string>(
+  () => `${voiceRate.value.toLocaleString(bcp47(String(locale.value)))}×`
+)
 
 // === Волна: из события, без скачивания звука ===
 // Волна в событии (Forta Chat, NextGen) — сразу; зашифрованная — по ключу

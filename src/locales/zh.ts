@@ -2441,6 +2441,7 @@ export default {
     pause: '暂停',
     audioLoading: '正在加载音频',
     audioCancel: '取消加载',
+    voiceSpeed: '播放速度：{rate}',
   },
   miniapps: {
     pageTitle: '服务',
