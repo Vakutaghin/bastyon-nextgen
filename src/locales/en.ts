@@ -2164,6 +2164,27 @@ export default {
     searchMore: 'Show more',
     searchEmpty: 'Nothing found',
     searchEnd: 'Nothing more found',
+    videos: {
+      searchPlaceholder: 'Search videos',
+      results: 'Videos for “{q}”',
+      nothingFound: 'Nothing found',
+      orderLabel: 'Video order',
+      order: {
+        new: 'Latest',
+        popular: 'Popular',
+        discussed: 'Most discussed',
+        old: 'Oldest',
+      },
+      tagLabel: 'Topic',
+      allTags: 'All topics',
+      capped: {
+        popular:
+          'These are the 20 most popular — the network returns no more in this order. All videos are under “Latest”.',
+        discussed:
+          'These are the 20 most discussed — the network returns no more in this order. All videos are under “Latest”.',
+        old: 'These are the author’s first 20 videos — the network returns no more in this order. All videos are under “Latest”.',
+      },
+    },
   },
   subscriptions: {
     subscribe: 'Subscribe',

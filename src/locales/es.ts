@@ -2184,6 +2184,27 @@ export default {
     searchMore: 'Mostrar más',
     searchEmpty: 'No se encontró nada',
     searchEnd: 'No se encontró nada más',
+    videos: {
+      searchPlaceholder: 'Buscar vídeos',
+      results: 'Vídeos para «{q}»',
+      nothingFound: 'No se encontró nada',
+      orderLabel: 'Orden de los vídeos',
+      order: {
+        new: 'Recientes',
+        popular: 'Populares',
+        discussed: 'Más comentados',
+        old: 'Antiguos',
+      },
+      tagLabel: 'Tema',
+      allTags: 'Todos los temas',
+      capped: {
+        popular:
+          'Estos son los 20 más populares: en este orden la red no devuelve más. Todos los vídeos están en «Recientes».',
+        discussed:
+          'Estos son los 20 más comentados: en este orden la red no devuelve más. Todos los vídeos están en «Recientes».',
+        old: 'Estos son los 20 primeros vídeos del autor: en este orden la red no devuelve más. Todos los vídeos están en «Recientes».',
+      },
+    },
   },
   subscriptions: {
     subscribe: 'Suscribirse',

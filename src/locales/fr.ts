@@ -2197,6 +2197,27 @@ export default {
     searchMore: 'Afficher plus',
     searchEmpty: 'Aucun résultat',
     searchEnd: 'Aucun autre résultat',
+    videos: {
+      searchPlaceholder: 'Rechercher des vidéos',
+      results: 'Vidéos pour « {q} »',
+      nothingFound: 'Aucun résultat',
+      orderLabel: 'Ordre des vidéos',
+      order: {
+        new: 'Récentes',
+        popular: 'Populaires',
+        discussed: 'Les plus commentées',
+        old: 'Anciennes',
+      },
+      tagLabel: 'Thème',
+      allTags: 'Tous les thèmes',
+      capped: {
+        popular:
+          'Voici les 20 plus populaires : dans cet ordre, le réseau n’en renvoie pas davantage. Toutes les vidéos sont dans « Récentes ».',
+        discussed:
+          'Voici les 20 plus commentées : dans cet ordre, le réseau n’en renvoie pas davantage. Toutes les vidéos sont dans « Récentes ».',
+        old: 'Voici les 20 premières vidéos de l’auteur : dans cet ordre, le réseau n’en renvoie pas davantage. Toutes les vidéos sont dans « Récentes ».',
+      },
+    },
   },
   subscriptions: {
     subscribe: 'S’abonner',

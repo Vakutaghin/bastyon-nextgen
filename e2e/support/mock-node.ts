@@ -44,6 +44,8 @@ export interface MockPost {
   caption?: string
   settings?: Record<string, unknown>
   comments?: number
+  /** Сколько оценок (`scoreCnt`); сумма — по пять звёзд за каждую. */
+  scores?: number
   /** Картинки поста (`i`). */
   images?: string[]
   /** Сколько секунд назад опубликован; по умолчанию — по порядку в списке, через 10 минут. */
@@ -252,8 +254,8 @@ function postJson(post: MockPost, data: MockNodeData, index: number) {
     t: post.tags ?? ['bastyon'],
     i: post.images ?? [],
     s: { a: '', v: '', videos: [], image: '', f: '0', c: '', t: '0', ...post.settings },
-    scoreCnt: 0,
-    scoreSum: 0,
+    scoreCnt: post.scores ?? 0,
+    scoreSum: (post.scores ?? 0) * 5,
     reposted: 0,
     comments: post.comments ?? 0,
     versions: [],
@@ -370,18 +372,29 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
     }
     case 'getprofilefeed': {
       // Лента автора, как у ноды: свежие первыми, страница — после поста `txid`.
-      const [, fromTxid, count, , , , , , , , address] = params as [
+      // Типы и теги отбирают посты; порядок — по оценкам, комментариям или
+      // от старых (orderby, ascdesc), как у ноды.
+      const [, fromTxid, count, , tags, types, , , , , address, , orderby, ascdesc] = params as [
         unknown,
         string,
         number,
+        unknown,
+        string[] | undefined,
+        string[] | undefined,
         ...unknown[],
       ]
+      const wantTags = (Array.isArray(tags) ? tags : []).map((t) => decodeURIComponent(t))
+      const wantTypes = Array.isArray(types) ? types : []
+      const rank = (p: ReturnType<typeof postJson>): number =>
+        orderby === 'score' ? p.scoreCnt : orderby === 'comment' ? p.comments : p.time
       const own = data.posts
         .map((p, i) => [p, i] as const)
         .filter(([p]) => inLanguage(p, params))
+        .filter(([p]) => !wantTypes.length || wantTypes.includes(p.type ?? 'share'))
         .map(([p, i]) => postJson(p, data, i))
+        .filter((p) => !wantTags.length || p.t.some((t) => wantTags.includes(t)))
         .filter((p) => !address || p.address === address)
-        .sort((a, b) => b.time - a.time)
+        .sort((a, b) => (ascdesc === 'asc' ? rank(a) - rank(b) : rank(b) - rank(a)))
       const start = fromTxid ? own.findIndex((p) => p.txid === fromTxid) + 1 : 0
       return {
         height: HEIGHT,
@@ -444,8 +457,9 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
         .map(profileJson)
     }
     case 'search': {
-      // [текст, тип, блок, сдвиг, сколько, автор?]: посты, где слово есть в
-      // заголовке или тексте; с автором — только его (поиск в профиле).
+      // [текст, тип, блок, сдвиг, сколько, автор?]: посты (у `videos` — только
+      // ролики), где слово есть в заголовке или тексте; с автором — только его
+      // (поиск в профиле).
       const [text, type, , start = 0, count = 10, author] = params as [
         string,
         string,
@@ -454,10 +468,11 @@ function rpcResult(method: string, params: unknown[], data: MockNodeData): unkno
         number?,
         string?,
       ]
-      if (type !== 'posts') return {}
+      if (type !== 'posts' && type !== 'videos') return {}
       const needle = String(text ?? '').toLowerCase()
       const found = data.posts
         .map((p, i) => [p, i] as const)
+        .filter(([p]) => type !== 'videos' || p.type === 'video')
         .filter(([p]) => !author || p.address === author)
         .filter(([p]) => `${p.caption ?? ''} ${p.message}`.toLowerCase().includes(needle))
         .map(([p, i]) => postJson(p, data, i))

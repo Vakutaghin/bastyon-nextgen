@@ -2147,6 +2147,27 @@ export default {
     searchMore: '더 보기',
     searchEmpty: '찾은 결과가 없습니다',
     searchEnd: '더 이상 결과가 없습니다',
+    videos: {
+      searchPlaceholder: '동영상 검색',
+      results: '“{q}” 동영상',
+      nothingFound: '검색 결과가 없습니다',
+      orderLabel: '동영상 정렬',
+      order: {
+        new: '최신순',
+        popular: '인기순',
+        discussed: '댓글 많은 순',
+        old: '오래된 순',
+      },
+      tagLabel: '주제',
+      allTags: '모든 주제',
+      capped: {
+        popular:
+          '가장 인기 있는 20개입니다. 이 정렬로는 네트워크가 더 보내지 않습니다. 모든 동영상은 ‘최신순’에 있습니다.',
+        discussed:
+          '댓글이 가장 많은 20개입니다. 이 정렬로는 네트워크가 더 보내지 않습니다. 모든 동영상은 ‘최신순’에 있습니다.',
+        old: '작성자의 첫 동영상 20개입니다. 이 정렬로는 네트워크가 더 보내지 않습니다. 모든 동영상은 ‘최신순’에 있습니다.',
+      },
+    },
   },
   subscriptions: {
     subscribe: '구독',

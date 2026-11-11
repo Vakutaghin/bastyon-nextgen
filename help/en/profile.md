@@ -1,5 +1,5 @@
 ---
-keywords: [profile, user page, subscribers, badges, avatar, address, established, cover, check mark, verified, moderator, shark, crown, flag]
+keywords: [profile, user page, person’s videos, search videos, popular videos, sort videos, subscribers, badges, avatar, address, established, cover, check mark, verified, moderator, shark, crown, flag]
 ---
 
 # Profile
@@ -18,6 +18,16 @@ A profile opens when you click a person’s name or avatar — in the feed, in c
 - **A website**, if there is one, **“Publications:”** — how many posts the person has, and **“Registered:”** — when they registered.
 - **The feed of this person’s posts**, newest first. Above it is the **“Search posts”** field: type a word and press Enter — only this person’s posts that contain it remain, best matches first. The cross in the field brings the feed back.
 - **The pinned post** comes first in the feed, marked **“Pinned”**. The author chooses it; only one post can be pinned.
+
+## A person’s videos <!-- #videos -->
+
+The **“Video”** tab above the feed holds the person’s playlists and all their videos. Above the videos:
+
+- **“Search videos”** — type a word and press Enter: only this person’s videos with it in the title or description remain. The cross in the field brings all videos back.
+- The order: **“Latest”**, **“Popular”** — most ratings, **“Most discussed”** — most comments, and **“Oldest”**. In “Latest” more videos load as you scroll down. In the other orders the network returns only the first 20 videos — a note under them says so.
+- **“All topics”** — a list of tags: pick one, and only videos with it remain. The list has the most frequent tags of the videos already shown; scroll further and it grows.
+
+The search, order and topic stay in the page address, so a link with them can be shared.
 
 ## Pin your post
 

@@ -2078,6 +2078,25 @@ export default {
     searchMore: '显示更多',
     searchEmpty: '没有找到结果',
     searchEnd: '没有更多结果',
+    videos: {
+      searchPlaceholder: '搜索视频',
+      results: '“{q}”的视频',
+      nothingFound: '未找到结果',
+      orderLabel: '视频排序',
+      order: {
+        new: '最新',
+        popular: '最受欢迎',
+        discussed: '评论最多',
+        old: '最早',
+      },
+      tagLabel: '主题',
+      allTags: '全部主题',
+      capped: {
+        popular: '这是最受欢迎的 20 个视频：按此排序网络不再返回更多。全部视频请看“最新”。',
+        discussed: '这是评论最多的 20 个视频：按此排序网络不再返回更多。全部视频请看“最新”。',
+        old: '这是作者最早的 20 个视频：按此排序网络不再返回更多。全部视频请看“最新”。',
+      },
+    },
   },
   subscriptions: {
     subscribe: '关注',

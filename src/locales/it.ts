@@ -2178,6 +2178,27 @@ export default {
     searchMore: 'Mostra altro',
     searchEmpty: 'Nessun risultato',
     searchEnd: 'Nessun altro risultato',
+    videos: {
+      searchPlaceholder: 'Cerca video',
+      results: 'Video per «{q}»',
+      nothingFound: 'Nessun risultato',
+      orderLabel: 'Ordine dei video',
+      order: {
+        new: 'Recenti',
+        popular: 'Popolari',
+        discussed: 'Più commentati',
+        old: 'Meno recenti',
+      },
+      tagLabel: 'Tema',
+      allTags: 'Tutti i temi',
+      capped: {
+        popular:
+          'Questi sono i 20 più popolari: in quest’ordine la rete non ne restituisce altri. Tutti i video sono in «Recenti».',
+        discussed:
+          'Questi sono i 20 più commentati: in quest’ordine la rete non ne restituisce altri. Tutti i video sono in «Recenti».',
+        old: 'Questi sono i primi 20 video dell’autore: in quest’ordine la rete non ne restituisce altri. Tutti i video sono in «Recenti».',
+      },
+    },
   },
   subscriptions: {
     subscribe: 'Iscriviti',

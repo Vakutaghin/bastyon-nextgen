@@ -2196,6 +2196,27 @@ export default {
     searchMore: 'Mehr anzeigen',
     searchEmpty: 'Nichts gefunden',
     searchEnd: 'Nichts weiter gefunden',
+    videos: {
+      searchPlaceholder: 'Videos durchsuchen',
+      results: 'Videos zu „{q}“',
+      nothingFound: 'Nichts gefunden',
+      orderLabel: 'Reihenfolge der Videos',
+      order: {
+        new: 'Neueste',
+        popular: 'Beliebt',
+        discussed: 'Meistdiskutiert',
+        old: 'Älteste',
+      },
+      tagLabel: 'Thema',
+      allTags: 'Alle Themen',
+      capped: {
+        popular:
+          'Das sind die 20 beliebtesten – mehr liefert das Netzwerk in dieser Reihenfolge nicht. Alle Videos stehen unter „Neueste“.',
+        discussed:
+          'Das sind die 20 meistdiskutierten – mehr liefert das Netzwerk in dieser Reihenfolge nicht. Alle Videos stehen unter „Neueste“.',
+        old: 'Das sind die ersten 20 Videos des Autors – mehr liefert das Netzwerk in dieser Reihenfolge nicht. Alle Videos stehen unter „Neueste“.',
+      },
+    },
   },
   subscriptions: {
     subscribe: 'Abonnieren',

@@ -46,7 +46,7 @@ vi.mock('@/helpers/api/request', () => ({
 vi.mock('@/services/media/media-info', () => ({ fetchMediaInfo: m.fetchMediaInfo }))
 vi.mock('@/services/media/audio-search', () => ({ searchAudio: m.searchAudio }))
 
-import { useMediaFeed, type MediaFeedSource } from './use-media-feed'
+import { useMediaFeed, type AuthorOrder, type MediaFeedSource } from './use-media-feed'
 
 type Post = Partial<AdaptedPost>
 const video = (n: number, over: Post = {}): Post => ({
@@ -77,6 +77,7 @@ function feed(opts: {
   query?: string
   author?: string
   tags?: string[]
+  order?: AuthorOrder
   enabled?: boolean
   pageSize?: number
 }) {
@@ -84,6 +85,7 @@ function feed(opts: {
   const query = ref(opts.query ?? '')
   const author = ref(opts.author ?? '')
   const tags = ref(opts.tags ?? [])
+  const order = ref<AuthorOrder>(opts.order ?? 'new')
   const enabled = ref(opts.enabled ?? true)
   const api = effectScope().run(() =>
     useMediaFeed({
@@ -92,11 +94,12 @@ function feed(opts: {
       query,
       author,
       tags,
+      order,
       enabled,
       pageSize: opts.pageSize ?? 3,
     })
   )!
-  return { ...api, source, query, author, tags, enabled }
+  return { ...api, source, query, author, tags, order, enabled }
 }
 
 beforeEach(() => {
@@ -229,6 +232,51 @@ describe('вкладки', () => {
     expect(m.getByPRCWithAuth.mock.calls[1]![0].parameters[1]).toBe('v3')
   })
 
+  it('ролики автора по оценкам — score desc, одна страница и подпись «первые»', async () => {
+    m.getByPRCWithAuth.mockResolvedValue(strip(range(1, 3)))
+    const f = feed({ source: 'author', author: 'PAuthor', order: 'popular' })
+    await flush()
+    const [req] = m.getByPRCWithAuth.mock.calls[0]!
+    expect(req.parameters.slice(12)).toEqual(['score', 'desc'])
+    expect(f.hasMore.value).toBe(false)
+    expect(f.capped.value).toBe(true)
+    await f.loadMore()
+    expect(m.getByPRCWithAuth).toHaveBeenCalledTimes(1)
+  })
+
+  it('обсуждаемые — comment desc, старые — asc; меньше страницы — без подписи', async () => {
+    m.getByPRCWithAuth.mockResolvedValue(strip(range(1, 2)))
+    const f = feed({ source: 'author', author: 'PAuthor', order: 'discussed' })
+    await flush()
+    expect(m.getByPRCWithAuth.mock.calls[0]![0].parameters.slice(12)).toEqual(['comment', 'desc'])
+    expect(f.capped.value).toBe(false)
+    f.order.value = 'old'
+    await flush()
+    expect(m.getByPRCWithAuth.mock.calls[1]![0].parameters.slice(12)).toEqual(['', 'asc'])
+    expect(m.getByPRCWithAuth.mock.calls[1]![0].parameters[1]).toBe('')
+  })
+
+  it('вернулись к «Новым» — подписи нет, лента снова листается', async () => {
+    m.getByPRCWithAuth.mockResolvedValue(strip(range(1, 3)))
+    const f = feed({ source: 'author', author: 'PAuthor', order: 'popular' })
+    await flush()
+    expect(f.capped.value).toBe(true)
+    f.order.value = 'new'
+    await flush()
+    expect(f.capped.value).toBe(false)
+    expect(f.hasMore.value).toBe(true)
+    expect(m.getByPRCWithAuth.mock.calls[1]![0].parameters.slice(12)).toEqual(['', 'desc'])
+  })
+
+  it('тема у роликов автора — тег на месте 4, как в рубриках', async () => {
+    m.getByPRCWithAuth.mockResolvedValue(strip(range(1, 3)))
+    feed({ source: 'author', author: 'PAuthor', tags: ['Музыка'] })
+    await flush()
+    expect(m.getByPRCWithAuth.mock.calls[0]![0].parameters[4]).toEqual([
+      encodeURIComponent('музыка'),
+    ])
+  })
+
   it('автор не выбран — пусто без запроса', async () => {
     const f = feed({ source: 'author' })
     await flush()
@@ -288,6 +336,18 @@ describe('поиск', () => {
     expect(m.rpcCall.mock.calls[1]![0].parameters).toEqual(['котики', 'videos', 0, 3, 3])
     expect(f.posts.value).toHaveLength(5)
     expect(f.hasMore.value).toBe(false)
+  })
+
+  it('в профиле — адрес автора шестым параметром, чужие ролики не попадают', async () => {
+    m.rpcCall.mockResolvedValue({
+      posts: {
+        data: [video(1, { author: { address: 'PAuthor' } as AdaptedPost['author'] }), video(2)],
+      },
+    })
+    const f = feed({ source: 'search', query: 'котики', author: 'PAuthor' })
+    await flush()
+    expect(m.rpcCall.mock.calls[0]![0].parameters).toEqual(['котики', 'videos', 0, 0, 3, 'PAuthor'])
+    expect(f.posts.value.map((p) => p.txid)).toEqual(['v1'])
   })
 
   it('пустая строка — без запроса', async () => {
