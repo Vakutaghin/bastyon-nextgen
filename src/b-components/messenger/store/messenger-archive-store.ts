@@ -376,12 +376,13 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
   /**
    * Лента сервера вместе с копией. `exhausted` — сервер старше ничего не
    * отдаст: тогда показываем сохранённое раньше его ленты, страницу за
-   * страницей (`older` — следующую). `more` — в копии есть ещё раньше.
+   * страницей (`older` — следующую; с `until` — страницы до этого времени,
+   * переход к найденному поиском). `more` — в копии есть ещё раньше.
    */
   async function mergeInto(
     chatId: string,
     server: Message[],
-    opts: { exhausted: boolean; reachedStart: boolean; older?: boolean }
+    opts: { exhausted: boolean; reachedStart: boolean; older?: boolean; until?: number }
   ): Promise<{ messages: Message[]; more: boolean }> {
     if (!ready.value || !key || !hasCopy(chatId)) return { messages: server, more: false }
     const view = views.get(chatId) ?? { messages: [], floor: Infinity, exhausted: false }
@@ -395,11 +396,31 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
     if (exhausted && !view.exhausted) {
       const haveOlder = view.messages.some((m) => m.timestamp < minServer)
       if (opts.older || !haveOlder) await loadPage(chatId, view, Math.min(view.floor, minServer))
+      while (opts.until !== undefined && !view.exhausted && view.floor > opts.until) {
+        await loadPage(chatId, view, view.floor)
+      }
     }
     return {
       messages: mergeWithArchive(server, view.messages, goneBefore[chatId] ?? 0),
       more: exhausted && !view.exhausted,
     }
+  }
+
+  /**
+   * Вся копия чата, расшифрованная в памяти, — для поиска по переписке
+   * (chat-room/use-history-search). На диск расшифрованное не пишется.
+   */
+  async function readChat(chatId: string): Promise<Message[]> {
+    const address = account.value
+    if (!ready.value || !key || !address || !hasCopy(chatId)) return []
+    const mine = generation
+    const rows = await chatArchiveAPI.since(address, chatId, 0)
+    const out: Message[] = []
+    for (let i = 0; i < rows.length; i += ARCHIVE_PAGE) {
+      if (mine !== generation) return []
+      out.push(...(await readRecords(rows.slice(i, i + ARCHIVE_PAGE))))
+    }
+    return out
   }
 
   async function noteGone(chatId: string, ts: number): Promise<void> {
@@ -489,6 +510,7 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
     removeAll,
     onChatRemoved,
     mergeInto,
+    readChat,
     probeGone,
     oldestId,
     meta,

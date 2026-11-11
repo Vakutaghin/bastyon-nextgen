@@ -15,13 +15,19 @@ import { i18n, setI18nLocale } from '@/i18n'
 const mocks = vi.hoisted(() => ({
   store: null as unknown as Record<string, unknown> & { activeChatId: string | null },
   drafts: {} as Record<string, string>,
+  scanHistory: vi.fn(),
+  revealMessage: vi.fn(),
   sendImage: vi.fn(),
   sendFile: vi.fn(),
 }))
 
 vi.mock('../../store', () => ({ useMessengerStore: () => mocks.store }))
 vi.mock('../../store/messenger-chat-store', () => ({
-  useMessengerChatStore: () => ({ drafts: mocks.drafts }),
+  useMessengerChatStore: () => ({
+    drafts: mocks.drafts,
+    scanHistory: mocks.scanHistory,
+    revealMessage: mocks.revealMessage,
+  }),
 }))
 vi.mock('../../store/messenger-profile-cache', () => ({
   useMessengerProfileCache: () => ({ changedKeyPeers: {}, acceptChangedKeys: vi.fn() }),
@@ -314,5 +320,113 @@ describe('полоса ввода чата', () => {
     mocks.store.getDirectPartnerAddress = () => 'PSupport'
     w = open('!support:host')
     expect(w.findComponent({ name: 'SupportReportBar' }).props('chatId')).toBe('!support:host')
+  })
+})
+
+describe('поиск по переписке', () => {
+  const at = (id: string, text: string, timestamp: number): Message => ({
+    ...MESSAGE,
+    id,
+    text,
+    timestamp,
+  })
+  // Лента — с сентября 2026; прочитанное глубже неё — раньше.
+  const SEPT = new Date(2026, 8, 1).getTime()
+  const FEED = [
+    at('$1', 'Привет, как дела?', SEPT + 1),
+    at('$2', 'Пока ничего', SEPT + 2),
+    at('$3', 'привет ещё раз', SEPT + 3),
+  ]
+
+  async function search(w: VueWrapper, text: string): Promise<void> {
+    await w.find('[data-testid="chat-search"]').setValue(text)
+    await new Promise((r) => setTimeout(r, 250))
+    await flushPromises()
+  }
+
+  beforeEach(() => {
+    mocks.scanHistory.mockReset()
+    mocks.scanHistory.mockResolvedValue({ messages: [], exhausted: true })
+    mocks.revealMessage.mockReset()
+  })
+  afterEach(close)
+
+  it('лента остаётся целиком, найденное — «1 из 2», самое свежее, слова — ленте', async () => {
+    const w = open('!a:host', { messages: FEED })
+    await search(w, 'прив')
+    const list = w.findComponent({ name: 'MessageList' })
+    expect(list.props('messages')).toHaveLength(3)
+    expect(list.props('focusId')).toBe('$3')
+    expect(list.props('highlight')).toEqual(['прив'])
+    expect(w.find('[data-testid="chat-search-count"]').text()).toBe('1 из 2')
+  })
+
+  it('Enter — старше, Shift+Enter — обратно; кнопки — то же', async () => {
+    const w = open('!a:host', { messages: FEED })
+    await search(w, 'прив')
+    const input = w.find('[data-testid="chat-search"]')
+    await input.trigger('keydown', { key: 'Enter' })
+    const list = () => w.findComponent({ name: 'MessageList' })
+    expect(list().props('focusId')).toBe('$1')
+    expect(w.find('[data-testid="chat-search-count"]').text()).toBe('2 из 2')
+    expect(w.find('[data-testid="chat-search-older"]').attributes('disabled')).toBeDefined()
+    await input.trigger('keydown', { key: 'Enter', shiftKey: true })
+    expect(list().props('focusId')).toBe('$3')
+    await w.find('[data-testid="chat-search-older"]').trigger('click')
+    expect(list().props('focusId')).toBe('$1')
+  })
+
+  it('ничего — «Не найдено», лента на месте', async () => {
+    const w = open('!a:host', { messages: FEED })
+    await search(w, 'самокат')
+    expect(w.find('[data-testid="chat-search-count"]').text()).toBe('Не найдено')
+    expect(w.findComponent({ name: 'MessageList' }).props('messages')).toHaveLength(3)
+  })
+
+  it('Esc сбрасывает поиск и не закрывает чат', async () => {
+    const w = open('!a:host', { messages: FEED })
+    await search(w, 'прив')
+    const outer = vi.fn()
+    window.addEventListener('keydown', outer)
+    await w.find('[data-testid="chat-search"]').trigger('keydown', { key: 'Escape' })
+    window.removeEventListener('keydown', outer)
+    await new Promise((r) => setTimeout(r, 250))
+    await flushPromises()
+    expect(outer).not.toHaveBeenCalled()
+    expect((w.find('[data-testid="chat-search"]').element as HTMLInputElement).value).toBe('')
+    expect(w.findComponent({ name: 'MessageList' }).props('focusId')).toBeNull()
+  })
+
+  it('пока читается история — «1 из 2+», дата и «Стоп»; нашлось глубже — в счёте', async () => {
+    let finish: (v: unknown) => void = () => {}
+    mocks.scanHistory
+      .mockResolvedValueOnce({
+        messages: [at('$0', 'Привет из прошлого', new Date(2026, 7, 12).getTime())],
+        exhausted: false,
+      })
+      .mockImplementationOnce(() => new Promise((r) => (finish = r)))
+    const w = open('!a:host', { messages: FEED })
+    await search(w, 'привет')
+    await new Promise((r) => setTimeout(r, 400))
+    await flushPromises()
+    expect(w.find('[data-testid="chat-search-count"]').text()).toBe('1 из 3+')
+    const status = w.find('[data-testid="chat-search-status"]')
+    expect(status.text()).toContain('просмотрено до 12 августа 2026')
+    await w.find('[data-testid="chat-search-action"]').trigger('click')
+    finish({ messages: [], exhausted: false })
+    await flushPromises()
+    expect(w.find('[data-testid="chat-search-status"]').text()).toContain('остановлен')
+    expect(w.find('[data-testid="chat-search-count"]').text()).toBe('1 из 3')
+  })
+
+  it('найденное глубже ленты — сначала догрузить ленту до него', async () => {
+    const deep = at('$0', 'давнее сообщение', 0)
+    mocks.scanHistory.mockResolvedValueOnce({ messages: [deep], exhausted: true })
+    mocks.revealMessage.mockResolvedValue(true)
+    const w = open('!a:host', { messages: FEED })
+    await search(w, 'давнее')
+    await flushPromises()
+    expect(mocks.revealMessage).toHaveBeenCalledWith('!a:host', deep, expect.any(Function))
+    expect(w.findComponent({ name: 'MessageList' }).props('focusId')).toBe('$0')
   })
 })

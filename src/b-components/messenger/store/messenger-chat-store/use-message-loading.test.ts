@@ -316,3 +316,100 @@ describe('useMessageLoading: копия переписки на устройст
     expect(api.history['!a:host']?.archiveMore).toBe(true)
   })
 })
+
+describe('useMessageLoading: поиск по чату листает историю глубже ленты', () => {
+  const ev = (n: number) => ({ id: `$${n}`, ts: n, event_id: `$${n}` })
+  const range = (from: number, to: number) =>
+    Array.from({ length: to - from }, (_, i) => ev(from + i))
+
+  /** Комната: в ленте `live`, на сервере старше — `older`; страница — `limit` самых поздних из них. */
+  function roomWithHistory(live: Ev[], older: Ev[]) {
+    const events = [...live] as Ev[]
+    const timeline = {
+      getEvents: () => events,
+      getPaginationToken: () => (older.length ? 'token' : null),
+    }
+    const room = {
+      roomId: '!a:host',
+      events,
+      loadMembersIfNeeded: vi.fn(async () => {}),
+      getLiveTimeline: () => timeline,
+    }
+    client.paginateEventTimeline.mockImplementation((async (
+      _timeline: unknown,
+      opts: { limit: number }
+    ) => {
+      events.unshift(...older.splice(Math.max(0, older.length - opts.limit)))
+      return older.length > 0
+    }) as never)
+    return room
+  }
+
+  async function opened(live: Ev[], older: Ev[]) {
+    const s = setup()
+    const room = roomWithHistory(live, older)
+    matrixReady(s.uiStore, [room])
+    await s.api.loadMessages('!a:host')
+    client.paginateEventTimeline.mockClear()
+    return { ...s, room }
+  }
+
+  it('страница истории — поиску, а лента чата не меняется', async () => {
+    const { api, messages } = await opened(range(200, 240), range(0, 200))
+    const page = await api.scanHistory('!a:host')
+    expect(page.messages.map((m) => m.id)).toEqual(range(100, 200).map((e) => e.id))
+    expect(page.exhausted).toBe(false)
+    expect(messages['!a:host']).toHaveLength(40)
+    const last = await api.scanHistory('!a:host')
+    expect(last.exhausted).toBe(true)
+    expect((await api.scanHistory('!a:host')).messages).toEqual([])
+  })
+
+  it('после поиска подгрузка выше разбирает уже долистанное, не спрашивая сервер', async () => {
+    const { api, messages } = await opened(range(200, 240), range(0, 200))
+    await api.scanHistory('!a:host')
+    await api.loadMoreMessages('!a:host')
+    expect(client.paginateEventTimeline).toHaveBeenCalledTimes(1)
+    expect(messages['!a:host']).toHaveLength(140)
+    // Разобрано — следующая подгрузка снова идёт к серверу.
+    await api.loadMoreMessages('!a:host')
+    expect(client.paginateEventTimeline).toHaveBeenCalledTimes(2)
+  })
+
+  it('пришло новое сообщение — подгрузка выше всё равно идёт к серверу', async () => {
+    const { api, room, messages } = await opened(range(200, 240), range(0, 200))
+    room.events.push(ev(300))
+    await api.loadMoreMessages('!a:host')
+    expect(client.paginateEventTimeline).toHaveBeenCalledTimes(1)
+    expect(messages['!a:host']?.[0]?.id).toBe('$170')
+  })
+
+  it('переход к найденному — лента догружается до него страницами поиска', async () => {
+    const { api, messages, archive } = await opened(range(200, 240), range(0, 200))
+    expect(await api.revealMessage('!a:host', { id: '$50', timestamp: 50 })).toBe(true)
+    expect(messages['!a:host']?.some((m) => m.id === '$50')).toBe(true)
+    expect(client.paginateEventTimeline).toHaveBeenCalledTimes(2)
+    expect(archive.mergeInto).toHaveBeenLastCalledWith(
+      '!a:host',
+      expect.any(Array),
+      expect.objectContaining({ until: 50 })
+    )
+  })
+
+  it('сообщения нет нигде — false, а не бесконечная подгрузка', async () => {
+    const { api } = await opened(range(200, 240), range(100, 200))
+    expect(await api.revealMessage('!a:host', { id: '$5', timestamp: 5 })).toBe(false)
+    expect(client.paginateEventTimeline.mock.calls.length).toBeLessThan(5)
+  })
+
+  it('поиск сбросили посреди перехода — останавливается', async () => {
+    const { api } = await opened(range(200, 240), range(0, 200))
+    let stop = false
+    client.paginateEventTimeline.mockImplementationOnce((async () => {
+      stop = true
+      return true
+    }) as never)
+    expect(await api.revealMessage('!a:host', { id: '$5', timestamp: 5 }, () => stop)).toBe(false)
+    expect(client.paginateEventTimeline).toHaveBeenCalledTimes(1)
+  })
+})

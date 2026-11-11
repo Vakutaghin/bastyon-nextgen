@@ -17,6 +17,7 @@ import {
 import type { Message } from '../../types'
 import { useMessengerPrivacyStore } from '../messenger-privacy-store'
 import {
+  HISTORY_SCAN_PAGE,
   HISTORY_STEP_TIMEOUT,
   KNOWN_DECRYPT_TIMEOUT,
   MESSAGES_PER_PAGE,
@@ -40,6 +41,21 @@ function acceptsInvitesOnOpen(): boolean {
 /** Сколько сообщений нужно на экране сразу, и сколько страниц листать ради них. */
 const MIN_SHOWN_MESSAGES = 10
 const MAX_HISTORY_PAGES = 5
+/** id события: у MatrixEvent — getId(), у сырого — event_id. */
+function eventIdOf(e: unknown): string | undefined {
+  const ev = e as { getId?: () => string | undefined; event_id?: string } | null | undefined
+  return typeof ev?.getId === 'function' ? ev.getId() : ev?.event_id
+}
+
+/** Переход к найденному: столько подгрузок ленты, не больше. */
+const MAX_REVEAL_STEPS = 200
+
+export interface LoadMoreOptions {
+  /** Событий за страницу; по умолчанию MESSAGES_PER_PAGE. */
+  limit?: number
+  /** Копию на устройстве подмешать до этого времени (переход к найденному). */
+  until?: number
+}
 
 export function useMessageLoading(
   ctx: ChatContext,
@@ -73,6 +89,26 @@ export function useMessageLoading(
 
   /** Чаты, где уже спрашивали сервер, что из сохранённого он стёр (раз за запуск). */
   const probed = new Set<string>()
+
+  /**
+   * С какого события ленты комнаты разобрана лента чата. Поиск листает
+   * историю, не трогая ленту чата (scanHistory): если ниже этого события
+   * появились старые, следующая подгрузка разбирает их без запроса к серверу.
+   * По первому событию, а не по числу: новые сообщения приходят в конец.
+   * Лента комнаты сменилась (пропуск в синке) — отметка уже не про неё.
+   */
+  const mappedFrom = new Map<string, { timeline: unknown; first: string | undefined }>()
+  const firstEventId = (timeline: { getEvents(): MxEvent[] }): string | undefined =>
+    eventIdOf(timeline.getEvents()[0])
+  /** Отметку снимают до разбора: страница поиска могла прийти, пока он шёл. */
+  const markOf = (room: MxRoom) => {
+    const timeline = room.getLiveTimeline?.()
+    return { timeline, first: timeline ? firstEventId(timeline) : undefined }
+  }
+  const hasUnmapped = (chatId: string, timeline: { getEvents(): MxEvent[] }): boolean => {
+    const mark = mappedFrom.get(chatId)
+    return !!mark && mark.timeline === timeline && firstEventId(timeline) !== mark.first
+  }
 
   /**
    * Сервер больше не листает, а начала ленты не видно — что из показанного
@@ -258,8 +294,10 @@ export function useMessageLoading(
         )
         const { exhausted, slow } = await paginateRoomHistory(room)
         const incomplete = !members.done || slow
+        const mark = markOf(room)
         const mapped = await Promise.all(timelineOf(room).map((e) => mapForOpen(e)))
         const list = mapped.filter((m): m is Message => Boolean(m))
+        mappedFrom.set(chatId, mark)
         // Расшифровки дочитываются цепочкой микрозадач, и отрисовка ленты шла
         // с ними одной длинной задачей: между ними — передышка вводу.
         await yieldToMain()
@@ -304,7 +342,7 @@ export function useMessageLoading(
     }
   }
 
-  const loadMoreMessages = async (chatId: string) => {
+  const loadMoreMessages = async (chatId: string, opts: LoadMoreOptions = {}) => {
     // Открытие чата само листает историю и пересобирает ленту целиком.
     if (!chatId || isLoadingMore.value || opening.has(chatId)) return
     const room = matrixService.getRoom(chatId)
@@ -319,19 +357,23 @@ export function useMessageLoading(
 
       // Сервер дошёл до начала или перестал листать — дальше только сохранённое на устройстве.
       let exhausted = reachedHistoryStart(historyRoom)
-      if (!exhausted) {
+      // Поиск уже долистал глубже ленты — сначала разобрать то, что есть.
+      const unmapped = hasUnmapped(chatId, liveTimeline)
+      if (!exhausted && !unmapped) {
         const more = await client.paginateEventTimeline(liveTimeline, {
           backwards: true,
-          limit: MESSAGES_PER_PAGE,
+          limit: opts.limit ?? MESSAGES_PER_PAGE,
         })
         exhausted = !more || reachedHistoryStart(historyRoom)
       }
       const finalCount = liveTimeline.getEvents().length
-      const added = finalCount > initialCount
+      const added = finalCount > initialCount || unmapped
       let archiveMore = false
 
       if (added || (exhausted && history[chatId]?.archiveMore)) {
+        const mark = markOf(room)
         const mapped = await Promise.all(timelineOf(room).map((e) => mapEventToMessage(e)))
+        mappedFrom.set(chatId, mark)
         const list = keepPending(
           mapped.filter((m): m is Message => Boolean(m)),
           messages[chatId]
@@ -342,6 +384,7 @@ export function useMessageLoading(
           exhausted,
           reachedStart,
           older: !added,
+          until: opts.until,
         })
         messages[chatId] = merged.messages
         archiveMore = merged.more
@@ -359,7 +402,69 @@ export function useMessageLoading(
     }
   }
 
-  return { history, isLoadingMore, loadMessages, loadMoreMessages }
+  /**
+   * Поиск по чату листает историю глубже ленты, не трогая её: события копятся
+   * в ленте комнаты matrix-js-sdk, сообщения отдаются поиску. Ленту чата с
+   * ними пересоберёт следующая подгрузка или переход к найденному
+   * (mappedFrom). `slow` — страница не пришла за HISTORY_STEP_TIMEOUT.
+   */
+  const scanHistory = async (
+    chatId: string,
+    limit = HISTORY_SCAN_PAGE
+  ): Promise<{ messages: Message[]; exhausted: boolean; slow?: boolean }> => {
+    const client = matrixService.getClient()
+    const room = matrixService.getRoom(chatId)
+    if (!client || !room || typeof room.getLiveTimeline !== 'function') {
+      return { messages: [], exhausted: true }
+    }
+    const historyRoom = room as unknown as HistoryRoom
+    if (reachedHistoryStart(historyRoom)) return { messages: [], exhausted: true }
+    const timeline = room.getLiveTimeline()
+    const before = timeline.getEvents().length
+    const more = await within(
+      client.paginateEventTimeline(timeline, { backwards: true, limit }),
+      HISTORY_STEP_TIMEOUT
+    )
+    if (!more.done) return { messages: [], exhausted: false, slow: true }
+    const events = timeline.getEvents()
+    // Листают назад — новое в начале ленты комнаты; local-echo (`~`) не берём.
+    const fresh = events.slice(0, Math.max(0, events.length - before)).filter((e: MxEvent) => {
+      const id = eventIdOf(e)
+      return typeof id !== 'string' || !id.startsWith('~')
+    })
+    const mapped = await Promise.all(fresh.map((e: MxEvent) => mapForOpen(e)))
+    return {
+      messages: mapped.filter((m): m is Message => Boolean(m)),
+      exhausted: !more.value || reachedHistoryStart(historyRoom),
+    }
+  }
+
+  /**
+   * Догрузить ленту чата до сообщения, найденного поиском глубже неё:
+   * историю сервера — страницами HISTORY_SCAN_PAGE, копию на устройстве — до
+   * его времени. false — не дошли (листать некуда или `stop`).
+   */
+  const revealMessage = async (
+    chatId: string,
+    target: { id: string; timestamp: number },
+    stop?: () => boolean
+  ): Promise<boolean> => {
+    const has = () => !!messages[chatId]?.some((m) => m.id === target.id)
+    for (let step = 0; step < MAX_REVEAL_STEPS && !has(); step++) {
+      if (stop?.()) return false
+      const room = matrixService.getRoom(chatId)
+      if (!room) return false
+      const before = messages[chatId]?.length ?? 0
+      const events = room.getLiveTimeline().getEvents().length
+      await loadMoreMessages(chatId, { limit: HISTORY_SCAN_PAGE, until: target.timestamp })
+      const grown = (messages[chatId]?.length ?? 0) > before
+      const paged = room.getLiveTimeline().getEvents().length > events
+      if (!grown && !paged && !history[chatId]?.archiveMore) break
+    }
+    return has()
+  }
+
+  return { history, isLoadingMore, loadMessages, loadMoreMessages, scanHistory, revealMessage }
 }
 
 export type MessageLoading = ReturnType<typeof useMessageLoading>

@@ -884,6 +884,15 @@ a:active {
   text-shadow: none;
 }
 
+/* Найденные поиском по чату слова (message-list/use-search-highlight). */
+::highlight(chat-search) {
+  background-color: rgb(var(--ui-warning-rgb) / 0.3);
+}
+
+::highlight(chat-search-current) {
+  background-color: rgb(var(--ui-warning-rgb) / 0.7);
+}
+
 /* Фокус с клавиатуры — ореол как у Nuxt UI. :where() обнуляет специфичность,
    поэтому собственный фокус компонента всегда важнее. */
 :where(a, button, [role='button'], [tabindex]):focus-visible {

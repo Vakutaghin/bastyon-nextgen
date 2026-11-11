@@ -1,6 +1,30 @@
 import styled from 'vue3-styled-components'
 import { noSelect } from '@/styles/chrome-styles'
 
+/** «К последним»: ленту открыли на найденном выше конца. Прилипает к низу ленты. */
+export const SC_ToLatest = styled.button`
+  position: sticky;
+  bottom: 0;
+  align-self: flex-end;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-bg);
+  box-shadow: var(--shadow-md);
+  color: var(--ui-text);
+  font-size: 18px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--ui-primary);
+  }
+`
+
 export const SC_MessageList = styled.div`
   flex: 1;
   /* Вбок не листается: см. ответ смахиванием ниже. */

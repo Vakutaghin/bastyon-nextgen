@@ -87,9 +87,17 @@ On a computer the chat window stays open and the profile opens beneath it. On a 
 
 A group has its name and member count in the header instead of a profile link; they open the group window. A chat over the radio network ([Mesh](mesh.md)) has no link: it has no Bastyon profile.
 
-## Search
+## Search <!-- #search -->
 
-The **“Search in conversation…”** field is at the top of an open chat. It searches the messages that are already loaded: to find an old one, scroll the conversation up first — earlier messages load as you scroll.
+The **“Search in conversation…”** field is at the top of an open chat. Start typing: the conversation stays where it is, and the newest message with those words moves to the middle of the screen in a frame, with the words highlighted. On the right you see how many were found — for example, “1 of 12”.
+
+- **Enter** or the **up** arrow — the next match, earlier; **Shift+Enter** or the **down** arrow — back.
+- The start of a word is matched: “hel” finds “Hello”. Case does not matter. Several words find messages that contain all of them, in any order. For files and voice messages the name is searched.
+- **Esc** clears the search. If the match was far up, the **↓** button at the bottom right takes you back to the latest messages.
+
+Not only what is already loaded is searched. The conversation is encrypted and the server cannot search it, so the app pages back through the history on the server and decrypts it itself. While it does, the line under the field says how far back it has checked, and the count has a plus: “3 of 12+”. **“Stop”** stops it, **“Search further”** continues. What has been read stays while the chat is open, so the next search is instant.
+
+The server keeps messages for three months. Older ones are found only if saving chats on this device is on: the saved copy is searched too — see [Chats on this device](chat-archive.md).
 
 ## Group chats
 

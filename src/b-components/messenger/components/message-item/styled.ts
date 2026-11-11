@@ -25,6 +25,11 @@ export const SC_MessageItem = styled.div`
     color: var(--color-text-primary);
     border-bottom-left-radius: var(--ui-radius-sm);
   }
+
+  /* Найденное поиском по чату (chat-room, use-room-search). */
+  &.found {
+    box-shadow: 0 0 0 2px rgb(var(--ui-warning-rgb) / 80%);
+  }
 `
 
 export const SC_AudioUrlMissing = styled.div`

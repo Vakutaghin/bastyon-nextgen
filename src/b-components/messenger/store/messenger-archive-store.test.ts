@@ -203,3 +203,44 @@ describe('messenger-archive-store', () => {
     expect(archive.infos[CHAT]).toEqual({ name: 'bob_ng' })
   })
 })
+
+describe('messenger-archive-store: поиск по переписке', () => {
+  const sixty = () =>
+    Array.from({ length: 60 }, (_, i) => msg(`$${String(i).padStart(3, '0')}`, 1000 + i))
+
+  it('вся копия чата — расшифрованной, по порядку времени; без копии — пусто', async () => {
+    const archive = await opened()
+    expect(await archive.readChat(CHAT)).toEqual([])
+    await archive.setEnabled(true)
+    await archive.save(CHAT, sixty())
+    const all = await archive.readChat(CHAT)
+    expect(all).toHaveLength(60)
+    expect(all[0]).toMatchObject({ id: '$000', text: 'секрет $000', timestamp: 1000 })
+    expect(all[59]!.id).toBe('$059')
+  })
+
+  it('чужой аккаунт копию для поиска не читает', async () => {
+    const archive = await opened()
+    await archive.setEnabled(true)
+    await archive.save(CHAT, sixty())
+    await archive.attach(BOB, keyOf(2))
+    expect(await archive.readChat(CHAT)).toEqual([])
+  })
+
+  it('переход к найденному: сохранённое подмешивается сразу до его времени', async () => {
+    const archive = await opened()
+    await archive.setEnabled(true)
+    const saved = Array.from({ length: 200 }, (_, i) =>
+      msg(`$${String(i).padStart(3, '0')}`, 1000 + i)
+    )
+    await archive.save(CHAT, saved)
+    const server = [msg('$new', 5000)]
+    const merged = await archive.mergeInto(CHAT, server, {
+      exhausted: true,
+      reachedStart: false,
+      until: 1010,
+    })
+    expect(merged.messages.some((m) => m.id === '$010')).toBe(true)
+    expect(merged.more).toBe(true)
+  })
+})

@@ -26,7 +26,7 @@
       </ProfileLink>
     </SC_AvatarSlot>
 
-    <SC_MessageItem :class="isMine ? 'mine' : 'others'">
+    <SC_MessageItem :class="[isMine ? 'mine' : 'others', { found }]">
       <SC_MessageMeta v-if="showName && !isMine">
         <span>{{ displayName }}</span>
       </SC_MessageMeta>
@@ -349,6 +349,8 @@ const props = withDefaults(
     /** Включён режим выделения: кружок слева, меню и реакции спрятаны. */
     selecting?: boolean
     selected?: boolean
+    /** Сообщение, на котором стоит поиск по чату: рамка вокруг. */
+    found?: boolean
   }>(),
   {
     showName: true,
@@ -357,6 +359,7 @@ const props = withDefaults(
     selectable: false,
     selecting: false,
     selected: false,
+    found: false,
   }
 )
 

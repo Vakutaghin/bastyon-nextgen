@@ -43,6 +43,7 @@
       <MessageItem
         v-if="row.kind === 'message'"
         data-row
+        :data-message-id="row.message.id"
         :data-select-id="selection ? row.message.id : undefined"
         :data-reply-id="canReplyTo(row.message) ? row.message.id : undefined"
         :message="row.message"
@@ -52,6 +53,7 @@
         :selectable="!!selection"
         :selecting="!!selection?.active"
         :selected="!!selection?.active && selection.has(row.message.id)"
+        :found="row.message.id === focusId"
         @reply="emit('reply', $event)"
         @select="selection?.toggle($event.id)"
       />
@@ -68,6 +70,17 @@
     >
       <span>{{ t('messenger.archive.dividerAll') }}</span>
     </SC_ArchiveDivider>
+    <!-- Ленту открыли на найденном выше конца: ниже ещё не нарисовано. -->
+    <SC_ToLatest
+      v-if="hiddenBelow > 0"
+      type="button"
+      data-testid="to-latest"
+      :aria-label="t('messenger.search.toLatest')"
+      :title="t('messenger.search.toLatest')"
+      @click="toLatest"
+    >
+      <ArrowDownOutlined />
+    </SC_ToLatest>
   </SC_MessageList>
 </template>
 
@@ -75,10 +88,12 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatMessageTime } from '@/helpers/common/date-formatter'
+import { ArrowDownOutlined } from '@/components/icons'
 import type { Message } from '../../types'
 import { chatUserName } from '../../helpers'
 import { historyRows, type ChatHistory, type HistoryRow } from '../../lib/chat-history'
 import { useRowWindow } from './use-row-window'
+import { useSearchHighlight } from './use-search-highlight'
 import type { MessageSelection } from './use-message-selection'
 import { useSelectGestures } from './use-select-gestures'
 import { useSwipeReply } from './use-swipe-reply'
@@ -92,6 +107,7 @@ import {
   SC_HistoryLoading,
   SC_HistoryLoadingSpinner,
   SC_MessageList,
+  SC_ToLatest,
 } from './styled'
 
 const props = withDefaults(
@@ -103,18 +119,21 @@ const props = withDefaults(
     history?: ChatHistory | null
     /** История ещё грузится, а на экране то, что уже есть. */
     loading?: boolean
-    /** Сменился — другая лента (поиск по чату): снова только последние строки. */
-    windowKey?: string
     /** Выделение сообщений (use-message-selection); нет — в этой ленте не выделяют. */
     selection?: MessageSelection | null
+    /** Сообщение, на котором стоит поиск по чату: рамка вокруг. */
+    focusId?: string | null
+    /** Слова поиска по чату (lib/message-search): подсвечиваются в тексте. */
+    highlight?: readonly string[]
   }>(),
   {
     messages: () => [],
     seenIds: () => new Set<string>(),
     history: null,
     loading: false,
-    windowKey: '',
     selection: null,
+    focusId: null,
+    highlight: () => [],
   }
 )
 
@@ -134,11 +153,12 @@ const rowKey = (row: HistoryRow): string => (row.kind === 'message' ? row.messag
 const {
   shown: shownRows,
   hidden: hiddenRows,
+  hiddenBelow,
   showMore,
-} = useRowWindow(rows, rowKey, () => {
-  const chatId = props.messages[props.messages.length - 1]?.chatId ?? ''
-  return `${chatId}|${props.windowKey}`
-})
+  showNewer,
+  focus,
+  toBottom,
+} = useRowWindow(rows, rowKey, () => props.messages[props.messages.length - 1]?.chatId ?? '')
 
 /** Граница стёртого сервером стоит после всех сообщений: на сервере их нет совсем. */
 const ARCHIVE_TAIL = 'archive-tail'
@@ -218,6 +238,58 @@ async function scrollToBottom(): Promise<void> {
   const el = getListEl()
   if (el) el.scrollTop = el.scrollHeight
 }
+
+/** Снова последние сообщения внизу — после перехода к найденному выше. */
+function toLatest(): void {
+  toBottom()
+  void scrollToBottom()
+}
+
+/**
+ * Где элемент в прокрутке ленты. По offsetTop, а не по getBoundingClientRect:
+ * окно мессенджера раскрывается с transform: scale (см. revealOlder).
+ */
+function offsetIn(target: HTMLElement, container: HTMLElement): number {
+  let top = 0
+  let node: HTMLElement | null = target
+  while (node && node !== container) {
+    top += node.offsetTop
+    const parent = node.offsetParent as HTMLElement | null
+    // Лента не задаёт отсчёт (не positioned): оба отсчитаны от одного предка.
+    if (!parent || !container.contains(parent)) return top - container.offsetTop
+    node = parent
+  }
+  return top
+}
+
+/**
+ * Прокрутить к сообщению и поставить его посередине; не нарисовано — лента
+ * открывается на нём (use-row-window). false — такого сообщения в ленте нет.
+ */
+async function scrollToMessage(id: string): Promise<boolean> {
+  if (!props.messages.some((m) => m.id === id)) return false
+  if (!shownRows.value.some((row) => rowKey(row) === id)) {
+    focus(id)
+    await nextTick()
+  }
+  const el = getListEl()
+  // Сравнением, а не селектором: в id Matrix бывают знаки, которые пришлось бы экранировать.
+  const target = [...(el?.querySelectorAll<HTMLElement>('[data-message-id]') ?? [])].find(
+    (node) => node.dataset.messageId === id
+  )
+  if (!el || !target) return false
+  el.scrollTop = offsetIn(target, el) - (el.clientHeight - target.offsetHeight) / 2
+  return true
+}
+
+defineExpose({ scrollToMessage })
+
+useSearchHighlight({
+  list: getListEl,
+  tokens: () => props.highlight,
+  currentId: () => props.focusId,
+  rows: () => shownRows.value,
+})
 
 /**
  * Дорисовать строки сверху так, чтобы то, что на экране, осталось на месте:
@@ -301,6 +373,10 @@ let revealing = false
 
 function handleScroll(e: Event): void {
   const target = e.target as HTMLElement
+  // Открыта на найденном выше конца: у низа дорисовываем следующие строки.
+  if (hiddenBelow.value > 0 && target.scrollHeight - target.scrollTop - target.clientHeight < 200) {
+    showNewer()
+  }
   if (target.scrollTop < 200) {
     // Выше ещё есть нарисованное не всё — дорисовываем, к серверу не ходим.
     if (hiddenRows.value > 0) {

@@ -96,6 +96,17 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     redecrypt.watchChat(chatId)
   }
 
+  /** Догрузить ленту до сообщения, найденного поиском по чату глубже неё. */
+  const revealMessage = async (
+    chatId: string,
+    target: { id: string; timestamp: number },
+    stop?: () => boolean
+  ): Promise<boolean> => {
+    const ok = await loading.revealMessage(chatId, target, stop)
+    redecrypt.watchChat(chatId)
+    return ok
+  }
+
   /** Повтор неотправленного: вложение — тем же файлом, текст — заново (S35). */
   const retryMessage = async (chatId: string, messageId: string): Promise<void> => {
     if (await mediaSending.retryMedia(chatId, messageId)) return
@@ -136,6 +147,9 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     localMessengerKeys: chatCrypto.localMessengerKeys,
     loadMessages,
     loadMoreMessages,
+    /** Поиск по чату: страница истории глубже ленты; сама лента не меняется. */
+    scanHistory: loading.scanHistory,
+    revealMessage,
     /** В чате появились заглушки «*** Encrypted Message ***» — повторять расшифровку. */
     watchUndecrypted: redecrypt.watchChat,
     /** Повод расшифровать заглушки сразу: ключ группы пришёл, связь вернулась. */

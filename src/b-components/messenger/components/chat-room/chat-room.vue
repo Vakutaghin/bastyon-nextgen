@@ -75,9 +75,38 @@
         <SC_SearchInput
           v-model="searchQuery"
           :placeholder="t('messenger.searchPlaceholder')"
+          :aria-label="t('messenger.searchPlaceholder')"
           type="search"
+          enterkeyhint="search"
+          data-testid="chat-search"
+          @keydown="onSearchKeydown"
         />
-        <SC_SearchCount v-if="searchQuery.trim()">{{ displayedMessages.length }}</SC_SearchCount>
+        <!-- Найденное перебирается, лента остаётся на месте: «3 из 17», вверх — старше. -->
+        <template v-if="searchActive">
+          <SC_SearchCount data-testid="chat-search-count" aria-live="polite">{{
+            searchCounter
+          }}</SC_SearchCount>
+          <SC_SearchNav
+            type="button"
+            data-testid="chat-search-older"
+            :disabled="searchIndex >= searchHits.length - 1"
+            :aria-label="t('messenger.search.older')"
+            :title="t('messenger.search.older')"
+            @click="searchOlder"
+          >
+            <CaretUpOutlined />
+          </SC_SearchNav>
+          <SC_SearchNav
+            type="button"
+            data-testid="chat-search-newer"
+            :disabled="searchIndex <= 0"
+            :aria-label="t('messenger.search.newer')"
+            :title="t('messenger.search.newer')"
+            @click="searchNewer"
+          >
+            <CaretDownOutlined />
+          </SC_SearchNav>
+        </template>
         <!-- Здесь именно «скрыть сообщения» (matrix-ignore), а не блокировка в
              социальном графе: она живёт в профиле и дополнительно глушит чат
              (решение Р3, S43). В группе кнопка скрывала бы случайного
@@ -103,6 +132,23 @@
         </Popconfirm>
       </SC_SearchRow>
 
+      <!-- Как идёт поиск глубже загруженного: история сервера, копия на устройстве. -->
+      <SC_SearchStatus
+        v-if="searchActive && searchStatus"
+        role="status"
+        data-testid="chat-search-status"
+      >
+        <span>{{ searchStatus.text }}</span>
+        <SC_SearchStatusAction
+          v-if="searchStatus.action"
+          type="button"
+          data-testid="chat-search-action"
+          @click="searchStatus.action.run"
+        >
+          {{ searchStatus.action.label }}
+        </SC_SearchStatusAction>
+      </SC_SearchStatus>
+
       <!-- Ключи шифрования собеседника отличаются от закреплённых при первом
            контакте (TOFU, аудит P3-3): возможная подмена нодой. Показываем,
            пока пользователь явно не примет новые ключи. -->
@@ -121,17 +167,15 @@
         @retry="retryHistory"
       />
 
-      <SC_ChatRoomEmptyHint v-else-if="searchQuery.trim() && displayedMessages.length === 0">
-        {{ t('messenger.searchNoResults') }}
-      </SC_ChatRoomEmptyHint>
-
       <MessageList
-        :messages="displayedMessages"
+        ref="listRef"
+        :messages="messages"
         :seen-ids="seenIds"
-        :history="searchQuery.trim() ? null : store.activeHistory"
+        :history="store.activeHistory"
         :loading="isLoading"
-        :window-key="searchQuery.trim()"
         :selection="selection"
+        :focus-id="searchCurrentId"
+        :highlight="searchTokens"
         @load-more="emit('load-more')"
         @reply="onReplyTo"
         @retry="retryHistory"
@@ -169,7 +213,7 @@
     <MessageSelectionBar
       v-if="selection.active && !pendingInvite"
       :selection="selection"
-      :messages="displayedMessages"
+      :messages="messages"
       @reply="onReplyTo"
     />
 
@@ -302,6 +346,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
+  CaretDownOutlined,
+  CaretUpOutlined,
   LeftOutlined,
   LockOutlined,
   MicIcon,
@@ -314,10 +360,14 @@ import {
 import { Popconfirm } from 'ant-design-vue'
 import { Z_INDEX } from '@/styles/design-tokens'
 import { debugLog } from '@/helpers/common/debug-log'
+import { formatLongDate } from '@/helpers/common/date-formatter'
 import type { Message } from '../../types'
 import { matrixService } from '../../services/matrix-service'
 import { useMessengerUiStore } from '../../store/messenger-ui-store'
 import { useMessengerChatStore } from '../../store/messenger-chat-store'
+import { useMessengerArchiveStore } from '../../store/messenger-archive-store'
+import { useRoomSearch } from './use-room-search'
+import { useHistorySearch } from './use-history-search'
 import { useTypingIndicator } from './use-typing-indicator'
 import { useReadReceipts } from './use-read-receipts'
 import { useBlockUser } from './use-block-user'
@@ -370,12 +420,14 @@ import {
   SC_ChatRoomLoader,
   SC_ChatRoomSpinner,
   SC_ChatRoomLoaderText,
-  SC_ChatRoomEmptyHint,
   SC_TypingIndicator,
   SC_SearchRow,
   SC_SearchIcon,
   SC_SearchInput,
   SC_SearchCount,
+  SC_SearchNav,
+  SC_SearchStatus,
+  SC_SearchStatusAction,
   SC_BlockBtn,
   SC_ReplyBanner,
   SC_ReplyBannerBar,
@@ -430,6 +482,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useMessengerStore()
+const chatStore = useMessengerChatStore()
 const uiStore = useMessengerUiStore()
 const { t, locale } = useI18n()
 
@@ -452,13 +505,96 @@ const { recordingName } = useRecordingIndicator(activeRoomId)
 const { seenIds } = useReadReceipts(activeRoomId)
 const { isBlocked, busy: blockBusy, toggleBlock } = useBlockUser(activeRoomId)
 
-// Локальный поиск по сообщениям текущего диалога (фильтр по тексту).
-const searchQuery = ref('')
-const displayedMessages = computed<Message[]>(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return props.messages
-  return props.messages.filter((m) => (m.text || '').toLowerCase().includes(q))
+// --- Поиск по переписке (use-room-search, use-history-search) ---
+const listRef = ref<InstanceType<typeof MessageList> | null>(null)
+const archiveStore = useMessengerArchiveStore()
+let historySearch: ReturnType<typeof useHistorySearch> | null = null
+const roomSearch = useRoomSearch({
+  messages: () => props.messages,
+  extra: () => historySearch?.found.value ?? [],
+  reveal: async (id) => (await listRef.value?.scrollToMessage?.(id)) ?? false,
+  load: (message) =>
+    activeRoomId.value
+      ? chatStore.revealMessage(activeRoomId.value, message, () => !roomSearch.active.value)
+      : Promise.resolve(false),
 })
+historySearch = useHistorySearch({
+  chatId: () => activeRoomId.value,
+  active: () => roomSearch.active.value && !props.inviteMode && !pendingInvite.value,
+  scan: (id) => chatStore.scanHistory(id),
+  readArchive: (id) => archiveStore.readChat(id),
+})
+const {
+  query: searchQuery,
+  tokens: searchTokens,
+  active: searchActive,
+  hits: searchHits,
+  index: searchIndex,
+  currentId: searchCurrentId,
+  older: searchOlder,
+  newer: searchNewer,
+  clear: clearSearch,
+} = roomSearch
+const deep = historySearch
+
+/** «3 из 17»; пока история ещё читается — «3 из 17+». */
+const searchCounter = computed<string>(() => {
+  const total = searchHits.value.length
+  if (!total) {
+    return deep.scanning.value ? t('messenger.search.searching') : t('messenger.search.nothing')
+  }
+  const key = deep.scanning.value ? 'messenger.search.counterMore' : 'messenger.search.counter'
+  return t(key, { n: searchIndex.value + 1, total })
+})
+
+/** Строка под поиском: что с историей глубже ленты и что можно сделать. */
+const searchStatus = computed<{
+  text: string
+  action?: { label: string; run: () => void }
+} | null>(() => {
+  if (roomSearch.opening.value) return { text: t('messenger.search.opening') }
+  if (deep.failed.value) {
+    return {
+      text: t('messenger.search.failed'),
+      action: { label: t('messenger.search.retry'), run: deep.resume },
+    }
+  }
+  // Остановили — сразу так и пишем, даже если последняя страница ещё в пути.
+  if (deep.stopped.value && !deep.done.value) {
+    return {
+      text: t('messenger.search.stopped'),
+      action: { label: t('messenger.search.resume'), run: deep.resume },
+    }
+  }
+  if (deep.scanning.value) {
+    const at = deep.reached.value
+    return {
+      text: at
+        ? t('messenger.search.scanningTo', { date: formatLongDate(at) })
+        : t('messenger.search.scanning'),
+      action: { label: t('messenger.search.stop'), run: deep.stop },
+    }
+  }
+  // Сервер стёр старое, а копии на устройстве нет — дальше искать негде.
+  const chatId = activeRoomId.value
+  if (deep.done.value && store.activeHistory?.purged && chatId && !archiveStore.hasCopy(chatId)) {
+    return { text: t('messenger.search.serverLimit') }
+  }
+  return null
+})
+
+/** Enter — старше, Shift+Enter — новее, Esc — сбросить поиск (а не закрыть чат). */
+function onSearchKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    if (e.shiftKey) searchNewer()
+    else searchOlder()
+  } else if (e.key === 'Escape' && searchQuery.value) {
+    e.preventDefault()
+    e.stopPropagation()
+    clearSearch()
+  }
+}
 // --- Ответ на сообщение (reply) ---
 const replyingTo = ref<Message | null>(null)
 const replyPreviewName = computed<string>(() => {
@@ -487,7 +623,7 @@ const selection = useMessageSelection()
 
 // Сброс поиска, ответа и выделения при смене диалога.
 watch(activeRoomId, () => {
-  searchQuery.value = ''
+  clearSearch()
   replyingTo.value = null
   selection.clear()
 })
@@ -566,7 +702,6 @@ const dictationRef = ref<InstanceType<typeof VoiceInputButton> | null>(null)
 // Недописанное сообщение ждёт в своём чате: ушли к списку или в другой чат —
 // текст на месте, когда вернулись. Только в памяти, до выхода из аккаунта:
 // переписка шифруется, и черновик на диск не пишем.
-const chatStore = useMessengerChatStore()
 const draftKey = (): string | null => (props.inviteMode ? null : activeRoomId.value)
 const restoredDraft = draftKey() ? chatStore.drafts[draftKey()!] : undefined
 if (restoredDraft) inputValue.value = restoredDraft

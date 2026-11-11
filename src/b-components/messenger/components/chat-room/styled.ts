@@ -520,6 +520,60 @@ export const SC_SearchCount = styled.span`
   color: var(--ui-text-dimmed);
 `
 
+/** Вверх — найденное старше, вниз — новее. */
+export const SC_SearchNav = styled.button`
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--ui-radius-sm);
+  background: none;
+  color: var(--ui-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+`
+
+/** Под строкой поиска: как идёт поиск в истории глубже загруженного. */
+export const SC_SearchStatus = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--ui-border);
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: calc(1.4 * var(--leading-scale));
+  color: var(--ui-text-muted);
+`
+
+export const SC_SearchStatusAction = styled.button`
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ui-primary);
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
 export const SC_BlockBtn = styled.button`
   flex-shrink: 0;
   display: inline-flex;
