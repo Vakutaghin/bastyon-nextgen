@@ -2,6 +2,8 @@
 keywords:
   - message
   - reply
+  - quote
+  - original message
   - swipe
   - reaction
   - delete message
@@ -33,6 +35,7 @@ To send a photo, a file or a voice message, see [Photos, videos and files in cha
 ## Replies and reactions
 
 - The three-dot button on a message is **“Actions”**. **“Reply”** — your reply will quote the original message; above the input field you see what you are replying to, and the cross cancels the reply.
+- The quote in a reply leads to the original message: tap it and the conversation scrolls to it, briefly highlighted. If it is far back in the history, the app loads it — under the search you see **“Looking for the original message…”** and **“Stop”**. To get back to the reply, use the **↓** button at the bottom right. A quote of a deleted message leads nowhere.
 - On a phone there is a quicker way: swipe the message to the left with your finger, as in Telegram. An arrow appears on the right; when it turns coloured, let go and the reply is set. If you stop short or bring your finger back, nothing happens. Swiping does not work while selecting messages or on messages that have not been sent yet.
 - The smiley button on someone else’s message is **“Reaction”**: 👍 ❤️ 😂 😮 😢 🙏. Reactions show under the message with a count.
 

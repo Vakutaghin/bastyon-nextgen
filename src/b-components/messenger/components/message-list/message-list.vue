@@ -54,8 +54,11 @@
         :selecting="!!selection?.active"
         :selected="!!selection?.active && selection.has(row.message.id)"
         :found="row.message.id === focusId"
+        :flash="row.message.id === flashId"
+        :quote-link="quoteLinks"
         @reply="emit('reply', $event)"
         @select="selection?.toggle($event.id)"
+        @open-reply="emit('open-reply', $event)"
       />
       <!-- Удалённое сообщение — отметка, кто удалил: раньше оно пропадало без следа. -->
       <SC_DeletedMark v-else data-row data-testid="deleted-mark">
@@ -70,9 +73,20 @@
     >
       <span>{{ t('messenger.archive.dividerAll') }}</span>
     </SC_ArchiveDivider>
-    <!-- Ленту открыли на найденном выше конца: ниже ещё не нарисовано. -->
+    <!-- Перешли по цитате — стрелка ведёт обратно к ответу, как в Telegram.
+         Ленту открыли на найденном выше конца — к последним: ниже не нарисовано. -->
     <SC_ToLatest
-      v-if="hiddenBelow > 0"
+      v-if="returnId"
+      type="button"
+      data-testid="jump-back"
+      :aria-label="t('messenger.jump.back')"
+      :title="t('messenger.jump.back')"
+      @click="emit('back')"
+    >
+      <ArrowDownOutlined />
+    </SC_ToLatest>
+    <SC_ToLatest
+      v-else-if="hiddenBelow > 0"
       type="button"
       data-testid="to-latest"
       :aria-label="t('messenger.search.toLatest')"
@@ -125,6 +139,12 @@ const props = withDefaults(
     focusId?: string | null
     /** Слова поиска по чату (lib/message-search): подсвечиваются в тексте. */
     highlight?: readonly string[]
+    /** К сообщению только что перешли (use-chat-jump): на миг подсвечено. */
+    flashId?: string | null
+    /** Перешли по цитате от этого ответа: стрелка внизу ведёт к нему. */
+    returnId?: string | null
+    /** Цитаты ответов ведут к исходным сообщениям (`open-reply`). */
+    quoteLinks?: boolean
   }>(),
   {
     messages: () => [],
@@ -134,6 +154,9 @@ const props = withDefaults(
     selection: null,
     focusId: null,
     highlight: () => [],
+    flashId: null,
+    returnId: null,
+    quoteLinks: false,
   }
 )
 
@@ -141,6 +164,12 @@ const emit = defineEmits<{
   'load-more': []
   reply: [message: Message]
   retry: []
+  /** Нажали цитату ответа. */
+  'open-reply': [message: Message]
+  /** Стрелка «обратно к ответу». */
+  back: []
+  /** Ответ, к которому вела стрелка, снова на экране. */
+  returned: []
 }>()
 
 const { t } = useI18n()
@@ -273,16 +302,44 @@ async function scrollToMessage(id: string): Promise<boolean> {
     await nextTick()
   }
   const el = getListEl()
-  // Сравнением, а не селектором: в id Matrix бывают знаки, которые пришлось бы экранировать.
-  const target = [...(el?.querySelectorAll<HTMLElement>('[data-message-id]') ?? [])].find(
-    (node) => node.dataset.messageId === id
-  )
+  const target = messageEl(id)
   if (!el || !target) return false
   el.scrollTop = offsetIn(target, el) - (el.clientHeight - target.offsetHeight) / 2
   return true
 }
 
 defineExpose({ scrollToMessage })
+
+/** Нарисованная строка сообщения; не нарисована — null. */
+function messageEl(id: string): HTMLElement | null {
+  const el = getListEl()
+  // Сравнением, а не селектором: в id Matrix бывают знаки, которые пришлось бы экранировать.
+  const rows = el?.querySelectorAll<HTMLElement>('[data-message-id]') ?? []
+  return [...rows].find((node) => node.dataset.messageId === id) ?? null
+}
+
+/** Сообщение хоть частью на экране ленты. */
+function inView(id: string): boolean {
+  const el = getListEl()
+  const target = messageEl(id)
+  if (!el || !target) return false
+  const top = offsetIn(target, el)
+  return top < el.scrollTop + el.clientHeight && top + target.offsetHeight > el.scrollTop
+}
+
+/** Ответ, к которому ведёт стрелка, снова на экране — возвращаться не к чему. */
+function checkReturned(): void {
+  if (props.returnId && inView(props.returnId)) emit('returned')
+}
+// Исходное было рядом с ответом — после перехода оба на экране, стрелка не нужна.
+watch(
+  () => props.returnId,
+  async (id) => {
+    if (!id) return
+    await nextTick()
+    checkReturned()
+  }
+)
 
 useSearchHighlight({
   list: getListEl,
@@ -373,6 +430,7 @@ let revealing = false
 
 function handleScroll(e: Event): void {
   const target = e.target as HTMLElement
+  checkReturned()
   // Открыта на найденном выше конца: у низа дорисовываем следующие строки.
   if (hiddenBelow.value > 0 && target.scrollHeight - target.scrollTop - target.clientHeight < 200) {
     showNewer()

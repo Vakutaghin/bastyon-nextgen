@@ -473,29 +473,82 @@ export function useMessageLoading(
   /** Выход из аккаунта: расшифрованное из лент комнат забываем. */
   const forgetRecent = () => recentCache.clear()
 
+  /** Время самого раннего сообщения в ленте чата; ленты нет — бесконечность. */
+  const oldestLoaded = (chatId: string): number => messages[chatId]?.[0]?.timestamp ?? Infinity
+
   /**
-   * Догрузить ленту чата до сообщения, найденного поиском глубже неё:
-   * историю сервера — страницами HISTORY_SCAN_PAGE, копию на устройстве — до
-   * его времени. false — не дошли (листать некуда или `stop`).
+   * Догружать ленту чата, пока не `reached`: историю сервера — страницами
+   * HISTORY_SCAN_PAGE, копию на устройстве — до `until`. Листать некуда или
+   * `stop` — хватит.
+   */
+  const revealUntil = async (
+    chatId: string,
+    reached: () => boolean,
+    until: number | undefined,
+    stop?: () => boolean
+  ): Promise<void> => {
+    for (let step = 0; step < MAX_REVEAL_STEPS && !reached(); step++) {
+      if (stop?.()) return
+      const room = matrixService.getRoom(chatId)
+      if (!room) return
+      const before = messages[chatId]?.length ?? 0
+      const events = room.getLiveTimeline().getEvents().length
+      await loadMoreMessages(chatId, { limit: HISTORY_SCAN_PAGE, until })
+      const grown = (messages[chatId]?.length ?? 0) > before
+      const paged = room.getLiveTimeline().getEvents().length > events
+      if (!grown && !paged && !history[chatId]?.archiveMore) return
+    }
+  }
+
+  /**
+   * Догрузить ленту чата до сообщения: найденного поиском глубже неё или
+   * того, на которое отвечают. Время известно — лента, ушедшая раньше него,
+   * дальше не листается: его там нет (удалено, не разобралось). false — не
+   * дошли (листать некуда или `stop`).
    */
   const revealMessage = async (
     chatId: string,
-    target: { id: string; timestamp: number },
+    target: { id: string; timestamp?: number },
     stop?: () => boolean
   ): Promise<boolean> => {
     const has = () => !!messages[chatId]?.some((m) => m.id === target.id)
-    for (let step = 0; step < MAX_REVEAL_STEPS && !has(); step++) {
-      if (stop?.()) return false
-      const room = matrixService.getRoom(chatId)
-      if (!room) return false
-      const before = messages[chatId]?.length ?? 0
-      const events = room.getLiveTimeline().getEvents().length
-      await loadMoreMessages(chatId, { limit: HISTORY_SCAN_PAGE, until: target.timestamp })
-      const grown = (messages[chatId]?.length ?? 0) > before
-      const paged = room.getLiveTimeline().getEvents().length > events
-      if (!grown && !paged && !history[chatId]?.archiveMore) break
-    }
+    const passed = () => target.timestamp !== undefined && oldestLoaded(chatId) < target.timestamp
+    await revealUntil(chatId, () => has() || passed(), target.timestamp, stop)
     return has()
+  }
+
+  /**
+   * Переход к дате: догрузить ленту, пока в ней не появится то, что было до
+   * `at`. false — переписка начинается позже (или `stop`).
+   */
+  const revealDate = async (chatId: string, at: number, stop?: () => boolean): Promise<boolean> => {
+    const reached = () => oldestLoaded(chatId) < at
+    await revealUntil(chatId, reached, at, stop)
+    return reached()
+  }
+
+  /**
+   * Когда отправлено сообщение — чтобы догрузить ленту до него (переход по
+   * цитате ответа): из ленты комнаты, из копии на устройстве, у сервера.
+   * null — не узнали: стёрто, нет связи.
+   */
+  const messageTime = async (chatId: string, id: string): Promise<number | null> => {
+    const room = matrixService.getRoom(chatId)
+    const known = room?.findEventById?.(id)?.getTs?.()
+    if (typeof known === 'number' && known > 0) return known
+    if (archive.hasCopy(chatId)) {
+      const saved = (await archive.readChat(chatId)).find((m) => m.id === id)
+      if (saved) return saved.timestamp
+    }
+    const client = matrixService.getClient()
+    if (!client?.fetchRoomEvent) return null
+    try {
+      const got = await within(client.fetchRoomEvent(chatId, id), HISTORY_STEP_TIMEOUT)
+      const at = got.done ? (got.value as { origin_server_ts?: unknown })?.origin_server_ts : null
+      return typeof at === 'number' ? at : null
+    } catch {
+      return null
+    }
   }
 
   return {
@@ -505,6 +558,8 @@ export function useMessageLoading(
     loadMoreMessages,
     scanHistory,
     revealMessage,
+    revealDate,
+    messageTime,
     recentMessages,
     forgetRecent,
   }

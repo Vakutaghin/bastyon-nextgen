@@ -170,3 +170,61 @@ describe('меню «⋯» у сообщения', () => {
     expect(mark.attributes('title')).toContain('на сервере сообщения уже нет')
   })
 })
+
+describe('цитата ответа', () => {
+  const ORIGINAL: Message = { ...message('Летим в июле'), id: '$orig' }
+
+  function reply(props: Record<string, unknown> = {}, original: Message = ORIGINAL) {
+    mocks.store.messages = { '!support:host': [original] }
+    const page = { render: () => null }
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: page }],
+    })
+    return mount(MessageItem, {
+      props: { message: { ...message('Отлично'), id: '$r', replyTo: { id: '$orig' } }, ...props },
+      attachTo: document.body,
+      global: { plugins: [i18n, router], provide: { theme: {} }, stubs: { LinkPreview: true } },
+    })
+  }
+
+  it('ведёт к исходному сообщению: щелчок, Enter и пробел', async () => {
+    const w = reply({ quoteLink: true })
+    const quote = w.get('[data-testid="reply-quote"]')
+    expect(quote.attributes('role')).toBe('button')
+    expect(quote.attributes('tabindex')).toBe('0')
+    expect(quote.attributes('title')).toBe('К исходному сообщению')
+    await quote.trigger('click')
+    await quote.trigger('keydown', { key: 'Enter' })
+    await quote.trigger('keydown', { key: ' ' })
+    expect(w.emitted('open-reply')).toHaveLength(3)
+    expect((w.emitted('open-reply')![0]![0] as Message).id).toBe('$r')
+  })
+
+  it('исходное удалено, лента не умеет или идёт выделение — цитата не ссылка', async () => {
+    const deleted = { ...ORIGINAL, deleted: { by: '@alice:host', at: 2 } }
+    const cases: [Record<string, unknown>, Message][] = [
+      [{ quoteLink: true }, deleted],
+      [{}, ORIGINAL],
+      [{ quoteLink: true, selecting: true }, ORIGINAL],
+    ]
+    for (const [props, original] of cases) {
+      const w = reply(props, original)
+      const quote = w.get('[data-testid="reply-quote"]')
+      expect(quote.attributes('role')).toBeUndefined()
+      await quote.trigger('click')
+      expect(w.emitted('open-reply')).toBeUndefined()
+      w.unmount()
+    }
+  })
+
+  it('к сообщению перешли — подсвечено', () => {
+    const w = render('Привет', undefined)
+    expect(w.find('.flash').exists()).toBe(false)
+    const flashed = mount(MessageItem, {
+      props: { message: message('Привет'), flash: true },
+      global: { plugins: [i18n], provide: { theme: {} }, stubs: { LinkPreview: true } },
+    })
+    expect(flashed.find('.flash').exists()).toBe(true)
+  })
+})

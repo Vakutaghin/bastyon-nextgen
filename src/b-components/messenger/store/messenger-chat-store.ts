@@ -96,13 +96,20 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     redecrypt.watchChat(chatId)
   }
 
-  /** Догрузить ленту до сообщения, найденного поиском по чату глубже неё. */
+  /** Догрузить ленту до сообщения: найденного поиском глубже неё, процитированного в ответе. */
   const revealMessage = async (
     chatId: string,
-    target: { id: string; timestamp: number },
+    target: { id: string; timestamp?: number },
     stop?: () => boolean
   ): Promise<boolean> => {
     const ok = await loading.revealMessage(chatId, target, stop)
+    redecrypt.watchChat(chatId)
+    return ok
+  }
+
+  /** Переход к дате: догрузить ленту до того, что было раньше `at`. */
+  const revealDate = async (chatId: string, at: number, stop?: () => boolean): Promise<boolean> => {
+    const ok = await loading.revealDate(chatId, at, stop)
     redecrypt.watchChat(chatId)
     return ok
   }
@@ -151,6 +158,9 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     /** Поиск по чату: страница истории глубже ленты; сама лента не меняется. */
     scanHistory: loading.scanHistory,
     revealMessage,
+    revealDate,
+    /** Когда отправлено сообщение (переход по цитате ответа); null — не узнали. */
+    messageTime: loading.messageTime,
     /** Поиск по всем чатам: что уже есть в ленте комнаты на устройстве; лента чата не меняется. */
     recentMessages: loading.recentMessages,
     /** В чате появились заглушки «*** Encrypted Message ***» — повторять расшифровку. */

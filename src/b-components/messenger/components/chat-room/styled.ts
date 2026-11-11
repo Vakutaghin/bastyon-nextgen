@@ -478,8 +478,9 @@ export const SC_TypingIndicator = styled.div`
 
 export const SC_SearchRow = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--ui-border);
   flex-shrink: 0;
@@ -492,6 +493,24 @@ export const SC_SearchRow = styled.div`
       display: none;
     }
   }
+`
+
+/** Значок, участник и поле: не уже 160 px — иначе кнопки переносятся второй строкой. */
+export const SC_SearchField = styled.div`
+  flex: 1 1 160px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+`
+
+/** Счёт, стрелки, участник, дата, «скрыть сообщения» — переносятся вместе, справа. */
+export const SC_SearchTools = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
 `
 
 export const SC_SearchIcon = styled.span`
@@ -541,10 +560,158 @@ export const SC_SearchNav = styled.button`
     color: var(--ui-text);
   }
 
+  /* Включено: выбирают участника или ищут его сообщения. */
+  &.on,
+  &.on:hover:not(:disabled) {
+    color: var(--ui-primary);
+  }
+
   &:disabled {
     opacity: 0.4;
     cursor: default;
   }
+`
+
+/**
+ * Переход к дате (date-jump-button): значок, поверх — прозрачное поле даты.
+ * Касание открывает календарь системы само, щелчок — через showPicker.
+ */
+export const SC_DateJump = styled.span`
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-muted);
+  font-size: 16px;
+
+  &:hover {
+    background: var(--ui-bg-elevated);
+    color: var(--ui-text);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 1px;
+  }
+
+  input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    cursor: pointer;
+    /* iOS не приближает экран, когда поле в фокусе. */
+    font-size: 16px;
+  }
+
+  /* Значок календаря Chromium — на всю кнопку: щелчок открывает его и без showPicker. */
+  input::-webkit-calendar-picker-indicator {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+`
+
+/** Выбранный участник в строке поиска: «От: Боб ×». */
+export const SC_SenderChip = styled.span`
+  flex-shrink: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 40%;
+  padding: 2px 2px 2px 8px;
+  border-radius: var(--ui-radius-full);
+  background: rgb(var(--ui-primary-rgb) / 12%);
+  color: var(--ui-primary);
+  font-size: 12px;
+  line-height: calc(1.4 * var(--leading-scale));
+
+  span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  button {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: inherit;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: rgb(var(--ui-primary-rgb) / 15%);
+  }
+`
+
+/** Участники группы под строкой поиска: чьи сообщения искать. */
+export const SC_SenderList = styled.div`
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--ui-border);
+  flex-shrink: 0;
+`
+
+export const SC_SenderOption = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: var(--ui-text);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+
+  .name {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &:hover,
+  &.active {
+    background: var(--ui-bg-elevated);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: -2px;
+  }
+`
+
+export const SC_SenderEmpty = styled.div`
+  padding: 8px 12px;
+  color: var(--ui-text-dimmed);
+  font-size: 13px;
 `
 
 /** Под строкой поиска: как идёт поиск в истории глубже загруженного. */

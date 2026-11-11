@@ -187,3 +187,71 @@ describe('useRoomSearch', () => {
     expect(s.active.value).toBe(false)
   })
 })
+
+describe('useRoomSearch: сообщения участника', () => {
+  const GROUP = [
+    { ...msg('$1', 'Привет всем', 1), senderId: '@bob' },
+    { ...msg('$2', 'Привет, Боб', 2), senderId: '@eve' },
+    { ...msg('$3', '', 3), senderId: '@bob', type: 'image' as const },
+    { ...msg('$4', 'привет снова', 4), senderId: '@bob' },
+    { ...msg('$5', 'удалено', 5), senderId: '@bob', deleted: { by: '@bob', at: 6 } },
+  ]
+
+  function group() {
+    const s = setup()
+    s.feed.value = [...GROUP]
+    return s
+  }
+
+  it('без слов — все его сообщения, от новых к старым, и сразу к самому свежему', async () => {
+    const s = group()
+    s.setSender('@bob')
+    await nextTick()
+    expect(s.active.value).toBe(true)
+    expect(s.hits.value.map((m) => m.id)).toEqual(['$4', '$3', '$1'])
+    expect(s.revealed).toEqual(['$4'])
+  })
+
+  it('со словами — только его сообщения с ними; сменили участника — снова с самого свежего', async () => {
+    const s = group()
+    await type(s, 'привет')
+    expect(s.hits.value.map((m) => m.id)).toEqual(['$4', '$2', '$1'])
+    s.older()
+    await nextTick()
+    s.setSender('@bob')
+    await nextTick()
+    expect(s.hits.value.map((m) => m.id)).toEqual(['$4', '$1'])
+    expect(s.index.value).toBe(0)
+    s.setSender(null)
+    await nextTick()
+    expect(s.hits.value).toHaveLength(3)
+  })
+
+  it('сброс убирает и участника', async () => {
+    const s = group()
+    s.setSender('@bob')
+    s.clear()
+    await nextTick()
+    expect(s.sender.value).toBeNull()
+    expect(s.active.value).toBe(false)
+  })
+
+  it('свои сообщения с id «me» — тоже свои', async () => {
+    const feed = shallowRef<Message[]>([
+      { ...msg('$1', 'одно', 1), senderId: 'me' },
+      { ...msg('$2', 'другое', 2), senderId: '@me' },
+    ])
+    const scope = effectScope()
+    const s = scope.run(() =>
+      useRoomSearch({
+        messages: () => feed.value,
+        reveal: async () => true,
+        fromSender: (m, who) => m.senderId === who || (who === '@me' && m.senderId === 'me'),
+      })
+    )!
+    s.setSender('@me')
+    await nextTick()
+    expect(s.hits.value.map((m) => m.id)).toEqual(['$2', '$1'])
+    scope.stop()
+  })
+})

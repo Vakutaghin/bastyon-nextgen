@@ -10,6 +10,9 @@
  *
  * Из поиска по всем чатам чат открывается сразу на выбранном сообщении
  * (`openAt`), с тем же запросом.
+ *
+ * В группе можно искать сообщения одного участника (`sender`): со словами —
+ * его сообщения с ними, без слов — все его сообщения.
  */
 
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
@@ -28,12 +31,17 @@ export interface RoomSearchOptions {
   reveal: (id: string) => Promise<boolean>
   /** Догрузить ленту до сообщения; false — не вышло. */
   load?: (message: Message) => Promise<boolean>
+  /** Сообщение от этого участника; по умолчанию — совпадение id. */
+  fromSender?: (message: Message, sender: string) => boolean
 }
 
 export function useRoomSearch(opts: RoomSearchOptions) {
   const query = ref('')
   const tokens = ref<string[]>([])
+  /** Искать только сообщения этого участника (Matrix id). */
+  const sender = ref<string | null>(null)
   const index = ref(0)
+  const fromSender = opts.fromSender ?? ((m: Message, who: string) => m.senderId === who)
   /** Идёт переход к сообщению, которого ещё нет в ленте. */
   const opening = ref(false)
 
@@ -52,7 +60,14 @@ export function useRoomSearch(opts: RoomSearchOptions) {
     if (timer) clearTimeout(timer)
   })
 
-  const active = computed(() => tokens.value.length > 0)
+  const active = computed(() => tokens.value.length > 0 || sender.value !== null)
+
+  /** Подходит ли сообщение: все слова запроса и, если выбран, — от участника. */
+  function matches(m: Message, words: readonly string[], who: string | null): boolean {
+    if (who === null) return messageMatches(m, words)
+    if (m.deleted || !fromSender(m, who)) return false
+    return !words.length || messageMatches(m, words)
+  }
 
   /**
    * Сообщение, выбранное в поиске по всем чатам (openAt): в найденном с
@@ -66,12 +81,13 @@ export function useRoomSearch(opts: RoomSearchOptions) {
   const hits = computed<Message[]>(() => {
     if (!active.value) return []
     const words = tokens.value
+    const who = sender.value
     const seen = new Set<string>()
     const out: Message[] = []
     const sources = [...opts.messages(), ...(opts.extra?.() ?? [])]
     if (pinned.value) sources.push(pinned.value)
     for (const m of sources) {
-      if (seen.has(m.id) || !messageMatches(m, words)) continue
+      if (seen.has(m.id) || !matches(m, words, who)) continue
       seen.add(m.id)
       out.push(m)
     }
@@ -97,10 +113,10 @@ export function useRoomSearch(opts: RoomSearchOptions) {
     }
   }
 
-  // Новый запрос — с самого свежего найденного. Тот же запрос, а нашлось ещё
-  // (подгрузили историю, пришло новое) — стоим на том же сообщении.
-  watch([tokens, hits], ([words, list], [wordsBefore, before]) => {
-    if (words !== wordsBefore) {
+  // Новый запрос (слова или участник) — с самого свежего найденного. Тот же
+  // запрос, а нашлось ещё (подгрузили историю, пришло новое) — стоим на том же.
+  watch([tokens, sender, hits], ([words, who, list], [wordsBefore, whoBefore, before]) => {
+    if (words !== wordsBefore || who !== whoBefore) {
       const at = startAt ? list.findIndex((m) => m.id === startAt) : -1
       startAt = null
       index.value = Math.max(0, at)
@@ -131,9 +147,16 @@ export function useRoomSearch(opts: RoomSearchOptions) {
 
   function clear(): void {
     query.value = ''
+    sender.value = null
     pinned.value = null
     startAt = null
     flush()
+  }
+
+  /** Искать сообщения участника (null — всех). Набранные слова остаются. */
+  function setSender(id: string | null): void {
+    flush()
+    sender.value = id
   }
 
   /**
@@ -153,6 +176,7 @@ export function useRoomSearch(opts: RoomSearchOptions) {
   return {
     query,
     tokens,
+    sender,
     active,
     hits,
     index,
@@ -162,6 +186,7 @@ export function useRoomSearch(opts: RoomSearchOptions) {
     older,
     newer,
     clear,
+    setSender,
     openAt,
   }
 }

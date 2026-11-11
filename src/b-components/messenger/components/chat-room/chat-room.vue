@@ -69,83 +69,131 @@
     <template v-else>
       <SC_SearchRow
         v-if="messages && messages.length > 0"
-        :class="{ searching: !!searchQuery.trim() }"
+        :class="{ searching: !!searchQuery.trim() || searchActive || pickingSender }"
       >
-        <SC_SearchIcon><SearchOutlined /></SC_SearchIcon>
-        <SC_SearchInput
-          v-model="searchQuery"
-          :placeholder="t('messenger.searchPlaceholder')"
-          :aria-label="t('messenger.searchPlaceholder')"
-          type="search"
-          enterkeyhint="search"
-          data-testid="chat-search"
-          @keydown="onSearchKeydown"
-        />
-        <!-- Найденное перебирается, лента остаётся на месте: «3 из 17», вверх — старше. -->
-        <template v-if="searchActive">
-          <SC_SearchCount data-testid="chat-search-count" aria-live="polite">{{
-            searchCounter
-          }}</SC_SearchCount>
-          <SC_SearchNav
-            type="button"
-            data-testid="chat-search-older"
-            :disabled="searchIndex >= searchHits.length - 1"
-            :aria-label="t('messenger.search.older')"
-            :title="t('messenger.search.older')"
-            @click="searchOlder"
+        <!-- Узко — кнопки уходят второй строкой, полю остаётся место. -->
+        <SC_SearchField>
+          <SC_SearchIcon><SearchOutlined /></SC_SearchIcon>
+          <!-- Ищем сообщения одного участника группы: «От: Боб ×». -->
+          <SC_SenderChip
+            v-if="searchSender && !pickingSender"
+            data-testid="chat-search-sender-chip"
           >
-            <CaretUpOutlined />
-          </SC_SearchNav>
+            <span>{{ t('messenger.search.fromName', { name: senderName }) }}</span>
+            <button
+              type="button"
+              data-testid="chat-search-sender-clear"
+              :aria-label="t('messenger.search.allSenders')"
+              :title="t('messenger.search.allSenders')"
+              @click="clearSender"
+            >
+              <CloseOutlined />
+            </button>
+          </SC_SenderChip>
+          <!-- Пока выбирают участника, поле ищет его по имени. -->
+          <SC_SearchInput
+            ref="searchInputRef"
+            :value="pickingSender ? senderQuery : searchQuery"
+            :placeholder="searchPlaceholder"
+            :aria-label="searchPlaceholder"
+            :role="pickingSender ? 'combobox' : undefined"
+            :aria-expanded="pickingSender ? true : undefined"
+            :aria-controls="pickingSender ? SENDER_LIST_ID : undefined"
+            :aria-activedescendant="pickingSender ? senderActiveId : undefined"
+            type="search"
+            enterkeyhint="search"
+            data-testid="chat-search"
+            @input="onSearchInput"
+            @keydown="onSearchKeydown"
+            @blur="onSearchBlur"
+          />
+        </SC_SearchField>
+        <SC_SearchTools>
+          <!-- Найденное перебирается, лента остаётся на месте: «3 из 17», вверх — старше. -->
+          <template v-if="searchActive">
+            <SC_SearchCount data-testid="chat-search-count" aria-live="polite">{{
+              searchCounter
+            }}</SC_SearchCount>
+            <SC_SearchNav
+              type="button"
+              data-testid="chat-search-older"
+              :disabled="searchIndex >= searchHits.length - 1"
+              :aria-label="t('messenger.search.older')"
+              :title="t('messenger.search.older')"
+              @click="searchOlder"
+            >
+              <CaretUpOutlined />
+            </SC_SearchNav>
+            <SC_SearchNav
+              type="button"
+              data-testid="chat-search-newer"
+              :disabled="searchIndex <= 0"
+              :aria-label="t('messenger.search.newer')"
+              :title="t('messenger.search.newer')"
+              @click="searchNewer"
+            >
+              <CaretDownOutlined />
+            </SC_SearchNav>
+          </template>
           <SC_SearchNav
+            v-if="isGroupChat"
             type="button"
-            data-testid="chat-search-newer"
-            :disabled="searchIndex <= 0"
-            :aria-label="t('messenger.search.newer')"
-            :title="t('messenger.search.newer')"
-            @click="searchNewer"
+            data-testid="chat-search-sender"
+            :class="{ on: pickingSender || !!searchSender }"
+            :aria-pressed="pickingSender"
+            :aria-label="t('messenger.search.sender')"
+            :title="t('messenger.search.sender')"
+            @mousedown.prevent
+            @click="toggleSenderPicker"
           >
-            <CaretDownOutlined />
+            <UserOutlined />
           </SC_SearchNav>
-        </template>
-        <!-- Здесь именно «скрыть сообщения» (matrix-ignore), а не блокировка в
+          <DateJumpButton :min="dateMin" :max="dateMax" @pick="jumpToDate" />
+          <!-- Здесь именно «скрыть сообщения» (matrix-ignore), а не блокировка в
              социальном графе: она живёт в профиле и дополнительно глушит чат
              (решение Р3, S43). В группе кнопка скрывала бы случайного
              участника — там это делается в списке участников. -->
-        <Popconfirm
-          v-if="!isGroupChat"
-          :title="isBlocked ? t('messenger.unmuteConfirmTitle') : t('messenger.muteConfirmTitle')"
-          :description="t('messenger.muteExplain')"
-          :ok-text="isBlocked ? t('messenger.unmuteUser') : t('messenger.muteUser')"
-          :cancel-text="t('messenger.cancel')"
-          placement="bottomRight"
-          :overlay-style="BLOCK_CONFIRM_OVERLAY_STYLE"
-          @confirm="toggleBlock"
-        >
-          <SC_BlockBtn
-            type="button"
-            :class="{ blocked: isBlocked }"
-            :title="isBlocked ? t('messenger.unmuteUser') : t('messenger.muteUser')"
-            :disabled="blockBusy"
+          <Popconfirm
+            v-if="!isGroupChat"
+            :title="isBlocked ? t('messenger.unmuteConfirmTitle') : t('messenger.muteConfirmTitle')"
+            :description="t('messenger.muteExplain')"
+            :ok-text="isBlocked ? t('messenger.unmuteUser') : t('messenger.muteUser')"
+            :cancel-text="t('messenger.cancel')"
+            placement="bottomRight"
+            :overlay-style="BLOCK_CONFIRM_OVERLAY_STYLE"
+            @confirm="toggleBlock"
           >
-            <StopOutlined />
-          </SC_BlockBtn>
-        </Popconfirm>
+            <SC_BlockBtn
+              type="button"
+              :class="{ blocked: isBlocked }"
+              :title="isBlocked ? t('messenger.unmuteUser') : t('messenger.muteUser')"
+              :disabled="blockBusy"
+            >
+              <StopOutlined />
+            </SC_BlockBtn>
+          </Popconfirm>
+        </SC_SearchTools>
       </SC_SearchRow>
 
-      <!-- Как идёт поиск глубже загруженного: история сервера, копия на устройстве. -->
-      <SC_SearchStatus
-        v-if="searchActive && searchStatus"
-        role="status"
-        data-testid="chat-search-status"
-      >
-        <span>{{ searchStatus.text }}</span>
+      <SenderPicker
+        v-if="pickingSender"
+        ref="senderPickerRef"
+        :list-id="SENDER_LIST_ID"
+        :room-id="activeRoomId"
+        :query="senderQuery"
+        @pick="onPickSender"
+      />
+
+      <!-- Как идёт переход (по цитате, к дате) и поиск глубже загруженного. -->
+      <SC_SearchStatus v-if="statusLine" role="status" data-testid="chat-search-status">
+        <span>{{ statusLine.text }}</span>
         <SC_SearchStatusAction
-          v-if="searchStatus.action"
+          v-if="statusLine.action"
           type="button"
           data-testid="chat-search-action"
-          @click="searchStatus.action.run"
+          @click="statusLine.action.run"
         >
-          {{ searchStatus.action.label }}
+          {{ statusLine.action.label }}
         </SC_SearchStatusAction>
       </SC_SearchStatus>
 
@@ -176,9 +224,15 @@
         :selection="selection"
         :focus-id="searchCurrentId"
         :highlight="searchTokens"
+        :flash-id="jumpFlashId"
+        :return-id="jumpReturnTo"
+        quote-links
         @load-more="emit('load-more')"
         @reply="onReplyTo"
         @retry="retryHistory"
+        @open-reply="jump.toReply"
+        @back="jump.back"
+        @returned="jump.forgetReturn"
       />
     </template>
 
@@ -343,11 +397,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   CaretDownOutlined,
   CaretUpOutlined,
+  CloseOutlined,
   LeftOutlined,
   LockOutlined,
   MicIcon,
@@ -356,11 +411,13 @@ import {
   SmileOutlined,
   StopOutlined,
   UpOutlined,
+  UserOutlined,
 } from '@/components/icons'
 import { Popconfirm } from 'ant-design-vue'
 import { Z_INDEX } from '@/styles/design-tokens'
 import { debugLog } from '@/helpers/common/debug-log'
 import { formatLongDate } from '@/helpers/common/date-formatter'
+import { appToast } from '@/b-components/app-toast'
 import type { Message } from '../../types'
 import { matrixService } from '../../services/matrix-service'
 import { useMessengerUiStore } from '../../store/messenger-ui-store'
@@ -368,6 +425,9 @@ import { useMessengerChatStore } from '../../store/messenger-chat-store'
 import { useMessengerArchiveStore } from '../../store/messenger-archive-store'
 import { useRoomSearch } from './use-room-search'
 import { useHistorySearch } from './use-history-search'
+import { useChatJump } from './use-chat-jump'
+import DateJumpButton from './date-jump-button.vue'
+import SenderPicker from './sender-picker.vue'
 import { useTypingIndicator } from './use-typing-indicator'
 import { useReadReceipts } from './use-read-receipts'
 import { useBlockUser } from './use-block-user'
@@ -422,12 +482,15 @@ import {
   SC_ChatRoomLoaderText,
   SC_TypingIndicator,
   SC_SearchRow,
+  SC_SearchField,
+  SC_SearchTools,
   SC_SearchIcon,
   SC_SearchInput,
   SC_SearchCount,
   SC_SearchNav,
   SC_SearchStatus,
   SC_SearchStatusAction,
+  SC_SenderChip,
   SC_BlockBtn,
   SC_ReplyBanner,
   SC_ReplyBannerBar,
@@ -509,6 +572,8 @@ const { isBlocked, busy: blockBusy, toggleBlock } = useBlockUser(activeRoomId)
 const listRef = ref<InstanceType<typeof MessageList> | null>(null)
 const archiveStore = useMessengerArchiveStore()
 let historySearch: ReturnType<typeof useHistorySearch> | null = null
+/** Своё сообщение: Matrix id или «me» у только что отправленного. */
+const isOwn = (m: Message): boolean => m.senderId === 'me' || m.senderId === store.currentUser.id
 const roomSearch = useRoomSearch({
   messages: () => props.messages,
   extra: () => historySearch?.found.value ?? [],
@@ -517,6 +582,7 @@ const roomSearch = useRoomSearch({
     activeRoomId.value
       ? chatStore.revealMessage(activeRoomId.value, message, () => !roomSearch.active.value)
       : Promise.resolve(false),
+  fromSender: (m, who) => m.senderId === who || (who === store.currentUser.id && isOwn(m)),
 })
 historySearch = useHistorySearch({
   chatId: () => activeRoomId.value,
@@ -534,8 +600,89 @@ const {
   older: searchOlder,
   newer: searchNewer,
   clear: clearSearch,
+  sender: searchSender,
 } = roomSearch
 const deep = historySearch
+
+// --- Сообщения одного участника группы (sender-picker) ---
+const SENDER_LIST_ID = `chat-senders-${useId()}`
+/** Выбирают участника: поле поиска ищет его по имени, под строкой — список. */
+const pickingSender = ref(false)
+const senderQuery = ref('')
+const senderPickerRef = ref<InstanceType<typeof SenderPicker> | null>(null)
+const searchInputRef = ref<{ $el?: HTMLInputElement } | null>(null)
+const senderActiveId = computed<string | undefined>(() => senderPickerRef.value?.activeId)
+/** Имя выбранного — как в списке участников, когда его выбрали. */
+const senderName = ref('')
+const searchPlaceholder = computed<string>(() =>
+  pickingSender.value ? t('messenger.search.senderPlaceholder') : t('messenger.searchPlaceholder')
+)
+
+function focusSearch(): void {
+  void nextTick(() => searchInputRef.value?.$el?.focus())
+}
+function stopPickingSender(): void {
+  pickingSender.value = false
+  senderQuery.value = ''
+}
+function toggleSenderPicker(): void {
+  if (pickingSender.value) stopPickingSender()
+  else pickingSender.value = true
+  focusSearch()
+}
+function onPickSender(id: string, name: string): void {
+  stopPickingSender()
+  senderName.value = name
+  roomSearch.setSender(id)
+  focusSearch()
+}
+function clearSender(): void {
+  roomSearch.setSender(null)
+  focusSearch()
+}
+function onSearchInput(e: Event): void {
+  const value = (e.target as HTMLInputElement).value
+  if (pickingSender.value) senderQuery.value = value
+  else searchQuery.value = value
+}
+/** Ушли из поля — список участников закрывается (его варианты фокус не берут). */
+function onSearchBlur(): void {
+  if (pickingSender.value) stopPickingSender()
+}
+
+// --- Переходы: по цитате ответа, к дате (use-chat-jump) ---
+const jump = useChatJump({
+  chatId: () => activeRoomId.value,
+  messages: () => props.messages,
+  reveal: async (id) => (await listRef.value?.scrollToMessage?.(id)) ?? false,
+  load: (chatId, target, stop) => chatStore.revealMessage(chatId, target, stop),
+  loadDate: (chatId, at, stop) => chatStore.revealDate(chatId, at, stop),
+  timeOf: (chatId, id) => chatStore.messageTime(chatId, id),
+  missing: (why) =>
+    appToast.info({
+      message: t(why === 'deleted' ? 'messenger.jump.deleted' : 'messenger.jump.gone'),
+    }),
+})
+const { flashId: jumpFlashId, returnTo: jumpReturnTo } = jump
+function jumpToDate(at: number): void {
+  void jump.toDate(at)
+}
+
+/** День в формате поля даты (YYYY-MM-DD), по местному времени. */
+function dayValue(ms: number): string {
+  const d = new Date(ms)
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+// Календарь — от создания чата (если известно) до сегодня; пересчёт — при смене чата.
+const dateMax = computed<string>(() => {
+  void activeRoomId.value
+  return dayValue(Date.now())
+})
+const dateMin = computed<string | undefined>(() => {
+  const at = store.activeHistory?.createdAt
+  return at ? dayValue(at) : undefined
+})
 
 /** «3 из 17»; пока история ещё читается — «3 из 17+». */
 const searchCounter = computed<string>(() => {
@@ -583,16 +730,52 @@ const searchStatus = computed<{
   return null
 })
 
-/** Enter — старше, Shift+Enter — новее, Esc — сбросить поиск (а не закрыть чат). */
+/** Строка под поиском: сначала переход (он идёт сейчас), потом поиск в истории. */
+const statusLine = computed<typeof searchStatus.value>(() => {
+  const work = jump.work.value
+  if (work) {
+    return {
+      text:
+        work.kind === 'date'
+          ? t('messenger.jump.toDate', { date: formatLongDate(work.at) })
+          : t('messenger.jump.findingOriginal'),
+      action: { label: t('messenger.search.stop'), run: jump.stop },
+    }
+  }
+  return searchActive.value ? searchStatus.value : null
+})
+
+/**
+ * Enter — старше, Shift+Enter — новее, Esc — сбросить поиск (а не закрыть
+ * чат), Backspace в пустом поле — убрать участника. Пока выбирают участника:
+ * стрелки — по списку, Enter — выбрать, Esc — закрыть список.
+ */
 function onSearchKeydown(e: KeyboardEvent): void {
+  if (pickingSender.value) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      senderPickerRef.value?.move(e.key === 'ArrowDown' ? 1 : -1)
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      senderPickerRef.value?.pickActive()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+      stopPickingSender()
+    }
+    return
+  }
   if (e.key === 'Enter') {
     e.preventDefault()
     if (e.shiftKey) searchNewer()
     else searchOlder()
-  } else if (e.key === 'Escape' && searchQuery.value) {
+  } else if (e.key === 'Escape' && (searchQuery.value || searchSender.value)) {
     e.preventDefault()
     e.stopPropagation()
     clearSearch()
+  } else if (e.key === 'Backspace' && !searchQuery.value && searchSender.value) {
+    e.preventDefault()
+    roomSearch.setSender(null)
   }
 }
 // --- Ответ на сообщение (reply) ---
@@ -621,9 +804,11 @@ function cancelReply(): void {
 // Выделение сообщений (message-list, message-selection-bar).
 const selection = useMessageSelection()
 
-// Сброс поиска, ответа и выделения при смене диалога.
+// Сброс поиска, переходов, ответа и выделения при смене диалога.
 watch(activeRoomId, () => {
   clearSearch()
+  stopPickingSender()
+  jump.reset()
   replyingTo.value = null
   selection.clear()
 })

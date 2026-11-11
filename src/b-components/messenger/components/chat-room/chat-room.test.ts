@@ -17,6 +17,9 @@ const mocks = vi.hoisted(() => ({
   drafts: {} as Record<string, string>,
   scanHistory: vi.fn(),
   revealMessage: vi.fn(),
+  revealDate: vi.fn(),
+  messageTime: vi.fn(),
+  toast: vi.fn(),
   sendImage: vi.fn(),
   sendFile: vi.fn(),
 }))
@@ -27,8 +30,26 @@ vi.mock('../../store/messenger-chat-store', () => ({
     drafts: mocks.drafts,
     scanHistory: mocks.scanHistory,
     revealMessage: mocks.revealMessage,
+    revealDate: mocks.revealDate,
+    messageTime: mocks.messageTime,
   }),
 }))
+vi.mock('@/b-components/app-toast', () => ({
+  appToast: { info: mocks.toast, error: vi.fn(), success: vi.fn(), warning: vi.fn() },
+}))
+// Участники группы — для «Сообщения участника».
+vi.mock('../group-info/use-group-members', async () => {
+  const { ref } = await import('vue')
+  return {
+    useGroupMembers: () => ({
+      members: ref([
+        { id: '@bob:host', name: 'Боб', membership: 'join', isMe: false },
+        { id: '@eve:host', name: 'Ева', membership: 'join', isMe: false },
+        { id: '@zed:host', name: 'Зед', membership: 'invite', isMe: false },
+      ]),
+    }),
+  }
+})
 vi.mock('../../store/messenger-profile-cache', () => ({
   useMessengerProfileCache: () => ({ changedKeyPeers: {}, acceptChangedKeys: vi.fn() }),
 }))
@@ -452,5 +473,156 @@ describe('поиск по переписке', () => {
     await flushPromises()
     expect(ui.searchJump).not.toBeNull()
     expect((w.find('[data-testid="chat-search"]').element as HTMLInputElement).value).toBe('')
+  })
+
+  describe('сообщения участника группы', () => {
+    const GROUP = [
+      { ...at('$1', 'Привет всем', SEPT + 1), senderId: '@bob:host' },
+      { ...at('$2', 'Привет, Боб', SEPT + 2), senderId: '@eve:host' },
+      { ...at('$3', 'Как дела?', SEPT + 3), senderId: '@bob:host' },
+    ]
+    const input = (w: VueWrapper) => w.find('[data-testid="chat-search"]')
+
+    beforeEach(() => {
+      mocks.store.activeDialog = { id: '!g:host', group: { memberCount: 3 } }
+    })
+
+    it('в личном чате кнопки нет', () => {
+      mocks.store.activeDialog = { id: '!a:host' }
+      const w = open('!a:host', { messages: FEED })
+      expect(w.find('[data-testid="chat-search-sender"]').exists()).toBe(false)
+    })
+
+    it('список по имени, Enter — выбрать: все его сообщения, «От: Боб»; Backspace — у всех', async () => {
+      const w = open('!g:host', { messages: GROUP })
+      await w.find('[data-testid="chat-search-sender"]').trigger('click')
+      // Приглашённый ещё ничего не писал — его в списке нет.
+      const options = () =>
+        w.findAll('[data-testid="chat-search-sender-option"]').map((o) => o.find('.name').text())
+      expect(options()).toEqual(['Боб', 'Ева'])
+      expect(input(w).attributes('placeholder')).toBe('Имя участника')
+      await input(w).setValue('бо')
+      expect(options()).toEqual(['Боб'])
+      await input(w).trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+
+      expect(w.find('[data-testid="chat-search-senders"]').exists()).toBe(false)
+      expect(w.get('[data-testid="chat-search-sender-chip"]').text()).toContain('От: Боб')
+      expect((input(w).element as HTMLInputElement).value).toBe('')
+      expect(w.find('[data-testid="chat-search-count"]').text()).toBe('1 из 2')
+      expect(w.findComponent({ name: 'MessageList' }).props('focusId')).toBe('$3')
+
+      // Со словами — только его сообщения с ними.
+      await search(w, 'привет')
+      expect(w.find('[data-testid="chat-search-count"]').text()).toBe('1 из 1')
+      expect(w.findComponent({ name: 'MessageList' }).props('focusId')).toBe('$1')
+
+      await search(w, '')
+      await input(w).trigger('keydown', { key: 'Backspace' })
+      expect(w.find('[data-testid="chat-search-sender-chip"]').exists()).toBe(false)
+      expect(w.find('[data-testid="chat-search-count"]').exists()).toBe(false)
+    })
+
+    it('стрелки двигают выбор в списке, Esc закрывает список, не сбрасывая поиск', async () => {
+      const w = open('!g:host', { messages: GROUP })
+      await search(w, 'привет')
+      await w.find('[data-testid="chat-search-sender"]').trigger('click')
+      await input(w).trigger('keydown', { key: 'ArrowDown' })
+      expect(input(w).attributes('aria-activedescendant')).toMatch(/-1$/)
+      await input(w).trigger('keydown', { key: 'Escape' })
+      expect(w.find('[data-testid="chat-search-senders"]').exists()).toBe(false)
+      expect((input(w).element as HTMLInputElement).value).toBe('привет')
+      expect(w.find('[data-testid="chat-search-count"]').text()).toBe('1 из 2')
+    })
+
+    it('щелчок по участнику и × у него', async () => {
+      const w = open('!g:host', { messages: GROUP })
+      await w.find('[data-testid="chat-search-sender"]').trigger('click')
+      await w.findAll('[data-testid="chat-search-sender-option"]')[1]!.trigger('click')
+      expect(w.get('[data-testid="chat-search-sender-chip"]').text()).toContain('Ева')
+      expect(w.findComponent({ name: 'MessageList' }).props('focusId')).toBe('$2')
+      await w.find('[data-testid="chat-search-sender-clear"]').trigger('click')
+      expect(w.find('[data-testid="chat-search-sender-chip"]').exists()).toBe(false)
+    })
+  })
+})
+
+describe('переходы по ленте', () => {
+  const SEPT = new Date(2026, 8, 1).getTime()
+  const FEED: Message[] = [
+    { ...MESSAGE, id: '$5', text: 'Летим в июле', timestamp: SEPT + 5 },
+    { ...MESSAGE, id: '$6', text: 'Отлично', timestamp: SEPT + 6, replyTo: { id: '$1' } },
+  ]
+  const list = (w: VueWrapper) => w.findComponent({ name: 'MessageList' })
+
+  beforeEach(() => {
+    mocks.revealMessage.mockReset()
+    mocks.revealDate.mockReset()
+    mocks.messageTime.mockReset()
+    mocks.toast.mockReset()
+  })
+
+  it('цитата ответа ведёт ленту к исходному: время, догрузка, «Ищу исходное сообщение…» со «Стоп»', async () => {
+    let found: (ok: boolean) => void = () => {}
+    mocks.messageTime.mockResolvedValue(SEPT - 1000)
+    mocks.revealMessage.mockImplementation(() => new Promise((r) => (found = r)))
+    const w = open('!a:host', { messages: FEED })
+    expect(list(w).props('quoteLinks')).toBe(true)
+    list(w).vm.$emit('open-reply', FEED[1])
+    await flushPromises()
+    expect(mocks.messageTime).toHaveBeenCalledWith('!a:host', '$1')
+    expect(mocks.revealMessage).toHaveBeenCalledWith(
+      '!a:host',
+      { id: '$1', timestamp: SEPT - 1000 },
+      expect.any(Function)
+    )
+    expect(w.get('[data-testid="chat-search-status"]').text()).toContain('Ищу исходное сообщение…')
+    await w.get('[data-testid="chat-search-action"]').trigger('click')
+    expect(w.find('[data-testid="chat-search-status"]').exists()).toBe(false)
+    found(false)
+    await flushPromises()
+    // Остановили — молча, без «не найдено».
+    expect(mocks.toast).not.toHaveBeenCalled()
+  })
+
+  it('исходного нет нигде — так и говорим', async () => {
+    mocks.messageTime.mockResolvedValue(null)
+    mocks.revealMessage.mockResolvedValue(false)
+    const w = open('!a:host', { messages: FEED })
+    list(w).vm.$emit('open-reply', FEED[1])
+    await flushPromises()
+    expect(mocks.toast).toHaveBeenCalledWith({
+      message: 'Исходное сообщение не найдено — возможно, сервер его уже стёр',
+    })
+  })
+
+  it('календарь: день раньше ленты — догрузка до него, «Перехожу к …» со «Стоп»', async () => {
+    mocks.revealDate.mockImplementation(() => new Promise(() => {}))
+    const w = open('!a:host', { messages: FEED })
+    const day = w.get('[data-testid="chat-date-jump"]')
+    expect(day.attributes('aria-label')).toBe('Перейти к дате')
+    ;(day.element as HTMLInputElement).value = '2026-08-12'
+    await day.trigger('change')
+    await flushPromises()
+    expect(mocks.revealDate).toHaveBeenCalledWith(
+      '!a:host',
+      new Date(2026, 7, 12).getTime(),
+      expect.any(Function)
+    )
+    expect(w.get('[data-testid="chat-search-status"]').text()).toContain(
+      'Перехожу к 12 августа 2026'
+    )
+    await w.get('[data-testid="chat-search-action"]').trigger('click')
+    expect(w.find('[data-testid="chat-search-status"]').exists()).toBe(false)
+  })
+
+  it('день в ленте (и до него есть сообщения) — без догрузки', async () => {
+    const before = { ...MESSAGE, id: '$4', timestamp: new Date(2026, 7, 30).getTime() }
+    const w = open('!a:host', { messages: [before, ...FEED] })
+    const day = w.get('[data-testid="chat-date-jump"]')
+    ;(day.element as HTMLInputElement).value = '2026-09-01'
+    await day.trigger('change')
+    await flushPromises()
+    expect(mocks.revealDate).not.toHaveBeenCalled()
   })
 })

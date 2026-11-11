@@ -30,6 +30,35 @@ export const SC_MessageItem = styled.div`
   &.found {
     box-shadow: 0 0 0 2px rgb(var(--ui-warning-rgb) / 80%);
   }
+
+  /* К сообщению только что перешли — по цитате или к дате (use-chat-jump):
+     подсветка гаснет сама. С «уменьшить движение» — держится и пропадает. */
+  &.flash::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgb(var(--ui-primary-rgb) / 22%);
+    pointer-events: none;
+    animation: message-flash 1.6s ease-out forwards;
+  }
+
+  @keyframes message-flash {
+    0%,
+    40% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &.flash::after {
+      animation: none;
+    }
+  }
 `
 
 export const SC_AudioUrlMissing = styled.div`
@@ -366,6 +395,21 @@ export const SC_ReplyQuote = styled.div`
   border-radius: var(--ui-radius-sm);
   background: var(--color-overlay-6);
   max-width: 100%;
+
+  /* Ведёт к исходному сообщению. */
+  &.link {
+    cursor: pointer;
+    transition: background var(--transition-fast);
+  }
+
+  &.link:hover {
+    background: var(--color-overlay-10);
+  }
+
+  &.link:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+  }
 `
 
 export const SC_ReplyQuoteName = styled.div`

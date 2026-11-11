@@ -23,6 +23,7 @@ vi.mock('../../helpers', () => ({
 
 import { useMessageLoading } from './use-message-loading'
 import { useMessengerPrivacyStore } from '../messenger-privacy-store'
+import type { Message } from '../../types'
 
 type Ev = { id: string; ts: number }
 
@@ -434,6 +435,52 @@ describe('useMessageLoading: поиск по чату листает истор�
     expect((await pending).map((m) => m.id)).toEqual(['$ok'])
     stuckDecrypt.clear()
     expect((await api.recentMessages('!b:host')).map((m) => m.id)).toEqual(['$ok', '$stuck'])
+  })
+
+  it('цитата на сообщение, которого нет, — лента, ушедшая раньше его времени, дальше не листается', async () => {
+    const { api } = await opened(range(200, 240), range(0, 200))
+    expect(await api.revealMessage('!a:host', { id: '$gone', timestamp: 150 })).toBe(false)
+    expect(client.paginateEventTimeline).toHaveBeenCalledTimes(1)
+  })
+
+  it('переход к дате — лента догружается, пока не появится то, что было раньше', async () => {
+    const { api, messages, archive } = await opened(range(200, 240), range(0, 200))
+    expect(await api.revealDate('!a:host', 150)).toBe(true)
+    expect((messages['!a:host']?.[0] as Message | undefined)?.timestamp).toBeLessThan(150)
+    expect(client.paginateEventTimeline).toHaveBeenCalledTimes(1)
+    expect(archive.mergeInto).toHaveBeenLastCalledWith(
+      '!a:host',
+      expect.any(Array),
+      expect.objectContaining({ until: 150 })
+    )
+    // Переписка начинается позже даты — дошли до начала, false.
+    expect(await api.revealDate('!a:host', -5)).toBe(false)
+    expect(messages['!a:host']?.[0]?.id).toBe('$0')
+  })
+
+  it('время процитированного: из ленты комнаты, из копии на устройстве, у сервера', async () => {
+    const { api, room, archive } = await opened(range(200, 240), [])
+    const withLookup = room as typeof room & { findEventById?: (id: string) => unknown }
+    withLookup.findEventById = (id) => (id === '$210' ? { getTs: () => 210 } : undefined)
+    expect(await api.messageTime('!a:host', '$210')).toBe(210)
+
+    Object.assign(archive, {
+      hasCopy: () => true,
+      readChat: vi.fn(async () => [{ id: '$old', timestamp: 7 }]),
+    })
+    expect(await api.messageTime('!a:host', '$old')).toBe(7)
+
+    const fetchRoomEvent = vi.fn(async (_room: string, id: string) => {
+      if (id === '$srv') return { origin_server_ts: 42 }
+      throw new Error('M_NOT_FOUND')
+    })
+    Object.assign(client, { fetchRoomEvent })
+    try {
+      expect(await api.messageTime('!a:host', '$srv')).toBe(42)
+      expect(await api.messageTime('!a:host', '$nowhere')).toBeNull()
+    } finally {
+      delete (client as { fetchRoomEvent?: unknown }).fetchRoomEvent
+    }
   })
 
   it('поиск сбросили посреди перехода — останавливается', async () => {

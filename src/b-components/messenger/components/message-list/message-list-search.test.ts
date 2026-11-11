@@ -136,3 +136,54 @@ describe('лента: поиск по чату', () => {
     expect(highlights.has(HIGHLIGHT_ALL)).toBe(false)
   })
 })
+
+describe('лента: переход по цитате', () => {
+  /** Размеры ленты и строк (в jsdom их нет): экран — 300 px, строка — 40 px. */
+  function sized(scrollTop: number): void {
+    const list = document.querySelector<HTMLElement>('[data-testid="message-list"]')!
+    Object.defineProperty(list, 'clientHeight', { configurable: true, value: 300 })
+    Object.defineProperty(list, 'scrollTop', {
+      configurable: true,
+      writable: true,
+      value: scrollTop,
+    })
+    for (const row of document.querySelectorAll<HTMLElement>('[data-message-id]')) {
+      Object.defineProperty(row, 'offsetHeight', { configurable: true, value: 40 })
+    }
+  }
+
+  it('цитата ведёт к исходному: лента отдаёт нажатие наверх', async () => {
+    const reply = { ...msg(2), replyTo: { id: '$1' } }
+    const w = render({ messages: [msg(1), reply], quoteLinks: true })
+    await nextTick()
+    rowOf('$2')!.querySelector<HTMLElement>('[data-testid="reply-quote"]')!.click()
+    expect((w.emitted('open-reply')![0]![0] as Message).id).toBe('$2')
+  })
+
+  it('к сообщению перешли — подсвечено только оно', async () => {
+    render({ messages: many(5), flashId: '$2' })
+    await nextTick()
+    expect(rowOf('$2')!.querySelector('.flash')).not.toBeNull()
+    expect(rowOf('$3')!.querySelector('.flash')).toBeNull()
+  })
+
+  it('стрелка внизу ведёт обратно к ответу; ответ снова на экране — стрелка не нужна', async () => {
+    const w = render({ messages: many(5) })
+    await nextTick()
+    // Ответ ниже экрана: стрелка «Вернуться к ответу» вместо «к последним».
+    sized(1000)
+    await w.setProps({ returnId: '$4' })
+    await nextTick()
+    const back = document.querySelector<HTMLButtonElement>('[data-testid="jump-back"]')!
+    expect(back.getAttribute('aria-label')).toBe('Вернуться к ответу')
+    expect(document.querySelector('[data-testid="to-latest"]')).toBeNull()
+    expect(w.emitted('returned')).toBeUndefined()
+    back.click()
+    expect(w.emitted('back')).toHaveLength(1)
+
+    // Долистали до ответа сами.
+    sized(0)
+    document.querySelector('[data-testid="message-list"]')!.dispatchEvent(new Event('scroll'))
+    expect(w.emitted('returned')).toHaveLength(1)
+  })
+})

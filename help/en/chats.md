@@ -9,6 +9,9 @@ keywords:
   - mute notifications
   - search in chat
   - search all chats
+  - messages from a member
+  - jump to date
+  - calendar
   - find a message
   - find a chat
   - find a person
@@ -99,6 +102,10 @@ The **“Search in conversation…”** field is at the top of an open chat. Sta
 - **Enter** or the **up** arrow — the next match, earlier; **Shift+Enter** or the **down** arrow — back.
 - The start of a word is matched: “hel” finds “Hello”. Case does not matter. Several words find messages that contain all of them, in any order. For files and voice messages the name is searched.
 - **Esc** clears the search. If the match was far up, the **↓** button at the bottom right takes you back to the latest messages.
+
+**Messages from a member.** In a group there is a button with a person next to the search field. It opens the list of members, and the field searches them by name. Tap the one you need — or pick them with the arrows and press **Enter**. The field then shows “From: name”: with no words you see all their messages, with words only their messages that contain them. The cross next to the name, or **Backspace** in an empty field, searches everyone again.
+
+**Jump to date.** The calendar button next to the search field opens a calendar. Pick a day and the conversation scrolls to its first message, briefly highlighted. If that day is not loaded yet, the app loads the history: the line under the field says which date it is going to, with **“Stop”**. A day after the last message takes you to the last one, a day before the conversation began — to the earliest one there is.
 
 Not only what is already loaded is searched. The conversation is encrypted and the server cannot search it, so the app pages back through the history on the server and decrypts it itself. While it does, the line under the field says how far back it has checked, and the count has a plus: “3 of 12+”. **“Stop”** stops it, **“Search further”** continues. What has been read stays while the chat is open, so the next search is instant.
 

@@ -26,12 +26,23 @@
       </ProfileLink>
     </SC_AvatarSlot>
 
-    <SC_MessageItem :class="[isMine ? 'mine' : 'others', { found }]">
+    <SC_MessageItem :class="[isMine ? 'mine' : 'others', { found, flash }]">
       <SC_MessageMeta v-if="showName && !isMine">
         <span>{{ displayName }}</span>
       </SC_MessageMeta>
 
-      <SC_ReplyQuote v-if="repliedPreview">
+      <!-- Цитата ведёт к исходному сообщению, как в Telegram (кроме удалённого). -->
+      <SC_ReplyQuote
+        v-if="repliedPreview"
+        data-testid="reply-quote"
+        :class="{ link: quoteOpens }"
+        :role="quoteOpens ? 'button' : undefined"
+        :tabindex="quoteOpens ? 0 : undefined"
+        :title="quoteOpens ? t('messenger.jump.original') : undefined"
+        @click="openReply"
+        @keydown.enter.prevent="openReply"
+        @keydown.space.prevent="openReply"
+      >
         <SC_ReplyQuoteName>{{ repliedPreview.name }}</SC_ReplyQuoteName>
         <SC_ReplyQuoteText>{{ repliedPreview.text }}</SC_ReplyQuoteText>
       </SC_ReplyQuote>
@@ -351,6 +362,10 @@ const props = withDefaults(
     selected?: boolean
     /** Сообщение, на котором стоит поиск по чату: рамка вокруг. */
     found?: boolean
+    /** К сообщению только что перешли (цитата, дата): на миг подсвечено. */
+    flash?: boolean
+    /** Цитата ответа ведёт к исходному сообщению (лента это умеет). */
+    quoteLink?: boolean
   }>(),
   {
     showName: true,
@@ -360,10 +375,16 @@ const props = withDefaults(
     selecting: false,
     selected: false,
     found: false,
+    flash: false,
+    quoteLink: false,
   }
 )
 
-const emit = defineEmits<{ reply: [message: Message]; select: [message: Message] }>()
+const emit = defineEmits<{
+  reply: [message: Message]
+  select: [message: Message]
+  'open-reply': [message: Message]
+}>()
 
 const store = useMessengerStore()
 const router = useRouter()
@@ -635,7 +656,8 @@ const canShowActions = computed<boolean>(
  *  загруженным сообщениям диалога; если оригинал не в списке — общий плейсхолдер. */
 const undecryptable = computed<boolean>(() => props.message.text === ENCRYPTED_MESSAGE_PLACEHOLDER)
 
-const repliedPreview = computed<{ name: string; text: string } | null>(() => {
+/** `deleted` — исходное удалено: переходить не к чему. */
+const repliedPreview = computed<{ name: string; text: string; deleted?: boolean } | null>(() => {
   const rid = props.message.replyTo?.id
   if (!rid) return null
   const chatId = props.message.chatId
@@ -657,7 +679,7 @@ const repliedPreview = computed<{ name: string; text: string } | null>(() => {
   const name = isRefMine
     ? store.currentUser.name || t('messenger.you')
     : chatUserName(ref.senderId, store.userProfiles, ref.senderName)
-  if (ref.deleted) return { name, text: t('messenger.history.deletedPreview') }
+  if (ref.deleted) return { name, text: t('messenger.history.deletedPreview'), deleted: true }
   if (ref.text === ENCRYPTED_MESSAGE_PLACEHOLDER) {
     return { name, text: t('messenger.history.undecryptable') }
   }
@@ -667,6 +689,16 @@ const repliedPreview = computed<{ name: string; text: string } | null>(() => {
       : (supportReportPreview(ref.text || '') ?? (ref.text || '').slice(0, 80))
   return { name, text }
 })
+
+/** Цитата — ссылка на исходное: лента умеет переходить, и оно не удалено. */
+const quoteOpens = computed<boolean>(
+  () =>
+    props.quoteLink && !props.selecting && !!repliedPreview.value && !repliedPreview.value.deleted
+)
+
+function openReply(): void {
+  if (quoteOpens.value) emit('open-reply', props.message)
+}
 
 function onReply(): void {
   actionsOpen.value = false
