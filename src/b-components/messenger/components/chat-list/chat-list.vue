@@ -76,7 +76,7 @@
       <SC_SearchNote v-if="tooShort">{{ t('messenger.listSearch.typeMore') }}</SC_SearchNote>
       <template v-else>
         <SC_PersonRow
-          v-for="u in people"
+          v-for="u in shownPeople"
           :key="u.address"
           type="button"
           data-testid="chat-search-person"
@@ -95,6 +95,15 @@
             <SC_PersonAddress>{{ shortAddress(u.address) }}</SC_PersonAddress>
           </SC_PersonInfo>
         </SC_PersonRow>
+        <!-- Людей из сети сначала три, как в Telegram: ниже — сообщения. -->
+        <SC_SearchMore
+          v-if="people.length > shownPeople.length"
+          type="button"
+          data-testid="chat-search-all-people"
+          @click="peopleExpanded = true"
+        >
+          {{ t('messenger.listSearch.allPeople', { n: people.length }) }}
+        </SC_SearchMore>
         <SC_ChatsLoading v-if="peopleLoading && people.length === 0">
           <SC_ChatsLoadingSpinner aria-hidden="true" />
           {{ t('messenger.listSearch.searching') }}
@@ -105,6 +114,36 @@
         <SC_SearchNote v-else-if="peopleDone && people.length === 0">
           {{ t('messenger.listSearch.noPeople') }}
         </SC_SearchNote>
+      </template>
+
+      <!-- Сообщения во всех чатах — то, что есть на устройстве (use-message-search). -->
+      <template v-if="messagesActive">
+        <SC_SearchSection>{{ t('messenger.listSearch.messages') }}</SC_SearchSection>
+        <template v-for="hit in foundMessages" :key="`${hit.chatId} ${hit.message.id}`">
+          <MessageHitRow
+            v-if="dialogById.get(hit.chatId)"
+            :dialog="dialogById.get(hit.chatId)!"
+            :message="hit.message"
+            :tokens="messageTokens"
+            @click="pickMessage(hit)"
+          />
+        </template>
+        <SC_SearchMore
+          v-if="messagesHasMore"
+          type="button"
+          data-testid="chat-search-more-messages"
+          @click="moreMessages"
+        >
+          {{ t('messenger.listSearch.moreMessages') }}
+        </SC_SearchMore>
+        <SC_ChatsLoading v-if="messagesReading" data-testid="chat-search-reading">
+          <SC_ChatsLoadingSpinner aria-hidden="true" />
+          {{ t('messenger.listSearch.readingMessages') }}
+        </SC_ChatsLoading>
+        <SC_SearchNote v-else-if="foundMessages.length === 0">
+          {{ t('messenger.listSearch.noMessages') }}
+        </SC_SearchNote>
+        <SC_SearchHint>{{ t('messenger.listSearch.messagesScope') }}</SC_SearchHint>
       </template>
     </SC_ChatList>
     <SC_ChatList v-else>
@@ -181,16 +220,21 @@ import { shortAddress } from '@/services/user-names'
 import type { SearchUserResult } from '@/types/rpc-responses/search-users'
 import type { UserProfile } from '@/types/rpc-responses/user-get'
 import { isGroupDialog, type Dialog } from '../../types'
+import { isMeshDialogId } from '@/mesh/ids'
 import { useMessengerStore } from '../../store'
 import { useMessengerChannelsStore } from '../../store/messenger-channels-store'
 import { useMessengerScreenStore } from '../../store/messenger-screen-store'
+import { useMessengerChatStore } from '../../store/messenger-chat-store'
+import { useMessengerArchiveStore } from '../../store/messenger-archive-store'
 import { channelChatId } from '../../lib/channels'
 import { getAddressFromMatrixId } from '../../helpers'
-import type { ChatKind } from '../../store/messenger-ui-store'
+import { useMessengerUiStore, type ChatKind } from '../../store/messenger-ui-store'
 import ChatListItem from '../chat-list-item/chat-list-item.vue'
 import ChannelListItem from '../channel-list-item/channel-list-item.vue'
 import { useChatSearch, type SearchCandidate } from './use-chat-search'
+import { useMessageSearch, type MessageHit } from './use-message-search'
 import { chatSearchOpen } from './chat-search-state'
+import MessageHitRow from './message-hit-row.vue'
 import {
   SC_ChatFilter,
   SC_ChatList,
@@ -207,10 +251,15 @@ import {
   SC_PersonRow,
   SC_SearchBar,
   SC_SearchClose,
+  SC_SearchHint,
   SC_SearchInput,
+  SC_SearchMore,
   SC_SearchNote,
   SC_SearchSection,
 } from './styled'
+
+/** Людей из сети в выдаче сразу — столько, остальные по «Показать всех». */
+const PEOPLE_COLLAPSED = 3
 
 const KIND_CHIPS: Array<{ id: ChatKind; label: string }> = [
   { id: 'direct', label: 'messenger.filterDirect' },
@@ -330,6 +379,36 @@ const {
   close: closeSearch,
 } = useChatSearch(searchCandidates, () => auth.address, chatSearchOpen)
 
+const peopleExpanded = ref(false)
+watch(searchQuery, () => (peopleExpanded.value = false))
+const shownPeople = computed<SearchUserResult[]>(() =>
+  peopleExpanded.value ? people.value : people.value.slice(0, PEOPLE_COLLAPSED)
+)
+
+// Сообщения во всех чатах: в переписках Matrix, куда вступили.
+const chatStore = useMessengerChatStore()
+const archive = useMessengerArchiveStore()
+const uiStore = useMessengerUiStore()
+const messageChats = computed<Dialog[]>(() =>
+  props.dialogs.filter((d) => !d.invite && !isMeshDialogId(d.id))
+)
+const dialogById = computed(() => new Map(props.dialogs.map((d) => [d.id, d])))
+const {
+  active: messagesActive,
+  tokens: messageTokens,
+  shown: foundMessages,
+  hasMore: messagesHasMore,
+  reading: messagesReading,
+  more: moreMessages,
+} = useMessageSearch({
+  query: searchQuery,
+  open: () => searchOpen.value,
+  chats: () => messageChats.value,
+  loaded: (id) => chatStore.messages[id],
+  recent: (id) => chatStore.recentMessages(id),
+  archived: (id) => archive.readChat(id),
+})
+
 const searchInputRef = ref<{ $el?: HTMLInputElement } | HTMLInputElement | null>(null)
 
 // Лупа в шапке открыла поле — сразу в него ввод.
@@ -363,12 +442,23 @@ function pickPerson(u: SearchUserResult): void {
   void store.openInviteWithAddress(u.address, u as UserProfile)
 }
 
-/** Enter — первый найденный: сначала свои чаты, потом люди. */
+/**
+ * Найденное сообщение: чат открывается на нём, с тем же запросом в поиске по
+ * переписке (chat-room). Выдача остаётся — к ней можно вернуться, как в Telegram.
+ */
+function pickMessage(hit: MessageHit): void {
+  uiStore.searchJump = { chatId: hit.chatId, query: searchQuery.value, message: hit.message }
+  onSelect(hit.chatId)
+}
+
+/** Enter — первое найденное: сначала свои чаты, потом люди, потом сообщения. */
 function pickFirst(): void {
   const chat = foundChats.value[0]
   if (chat) return pickChat(chat.id)
   const person = people.value[0]
-  if (person) pickPerson(person)
+  if (person) return pickPerson(person)
+  const hit = foundMessages.value[0]
+  if (hit) pickMessage(hit)
 }
 
 /** Пустой список без каналов: чего именно нет. С каналами — подсказка, как их завести. */

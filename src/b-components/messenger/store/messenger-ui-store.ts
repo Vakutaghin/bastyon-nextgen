@@ -4,7 +4,15 @@ import { defineStore } from 'pinia'
 import { ref, computed, shallowRef, watch, onScopeDispose } from 'vue'
 
 import { isAppHidden, onAppForeground } from '@/helpers/common/app-foreground'
-import type { Dialog } from '../types'
+import type { Dialog, Message } from '../types'
+
+/** Переход к сообщению из поиска по всем чатам. */
+export interface SearchJump {
+  chatId: string
+  /** Запрос, как его набрали: им же ищет переписка. */
+  query: string
+  message: Message
+}
 
 /** Виды строк списка: личные переписки, группы (и каналы/комнаты mesh), каналы авторов. */
 export type ChatKind = 'direct' | 'groups' | 'channels'
@@ -66,6 +74,12 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
   const isMessagesLoading = ref(false)
   /** true после первой успешной загрузки списка диалогов */
   const dialogsLoadedOnce = ref(false)
+
+  /**
+   * Сообщение, выбранное в поиске над списком чатов: открытый чат встаёт на
+   * нём с тем же запросом в поиске по переписке (chat-room) и забывает это.
+   */
+  const searchJump = shallowRef<SearchJump | null>(null)
 
   const chatFilter = ref<ChatFilter>(readChatFilter())
   /** Группа, чьё окно с участниками сейчас открыто. */
@@ -284,6 +298,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     isSyncStarted.value = false
     isInitInProgress.value = false
     groupInfoChatId.value = null
+    searchJump.value = null
   }
 
   return {
@@ -305,6 +320,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     isInitInProgress,
     chatFilter,
     groupInfoChatId,
+    searchJump,
     activeDialog,
     totalUnreadCount,
     setDialogs,

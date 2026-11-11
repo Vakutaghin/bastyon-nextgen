@@ -7,9 +7,12 @@
  * Найденное — из загруженной ленты и из `extra`: того, что поиск нашёл в
  * истории глубже неё (use-history-search). Переход к такому сообщению
  * сначала догружает ленту до него (`load`).
+ *
+ * Из поиска по всем чатам чат открывается сразу на выбранном сообщении
+ * (`openAt`), с тем же запросом.
  */
 
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 import type { Message } from '../../types'
 import { messageMatches, searchTokens } from '../../lib/message-search'
 
@@ -51,13 +54,23 @@ export function useRoomSearch(opts: RoomSearchOptions) {
 
   const active = computed(() => tokens.value.length > 0)
 
+  /**
+   * Сообщение, выбранное в поиске по всем чатам (openAt): в найденном с
+   * самого начала, даже если его ещё нет ни в ленте, ни в прочитанной истории.
+   */
+  const pinned = shallowRef<Message | null>(null)
+  /** На каком сообщении встать при следующем новом запросе вместо самого свежего. */
+  let startAt: string | null = null
+
   /** Найденное, от новых к старым, без повторов: из ленты — её экземпляр. */
   const hits = computed<Message[]>(() => {
     if (!active.value) return []
     const words = tokens.value
     const seen = new Set<string>()
     const out: Message[] = []
-    for (const m of [...opts.messages(), ...(opts.extra?.() ?? [])]) {
+    const sources = [...opts.messages(), ...(opts.extra?.() ?? [])]
+    if (pinned.value) sources.push(pinned.value)
+    for (const m of sources) {
       if (seen.has(m.id) || !messageMatches(m, words)) continue
       seen.add(m.id)
       out.push(m)
@@ -88,7 +101,9 @@ export function useRoomSearch(opts: RoomSearchOptions) {
   // (подгрузили историю, пришло новое) — стоим на том же сообщении.
   watch([tokens, hits], ([words, list], [wordsBefore, before]) => {
     if (words !== wordsBefore) {
-      index.value = 0
+      const at = startAt ? list.findIndex((m) => m.id === startAt) : -1
+      startAt = null
+      index.value = Math.max(0, at)
       void go()
       return
     }
@@ -116,8 +131,37 @@ export function useRoomSearch(opts: RoomSearchOptions) {
 
   function clear(): void {
     query.value = ''
+    pinned.value = null
+    startAt = null
     flush()
   }
 
-  return { query, tokens, active, hits, index, current, currentId, opening, older, newer, clear }
+  /**
+   * Открыть поиск сразу на сообщении: выбрали в поиске по всем чатам. Запрос
+   * тот же, стрелки дальше перебирают найденное в этом чате.
+   */
+  function openAt(text: string, message: Message): void {
+    if (timer) clearTimeout(timer)
+    timer = null
+    pinned.value = message
+    startAt = message.id
+    query.value = text
+    // Новый массив, даже если слова те же: встать нужно на это сообщение.
+    tokens.value = searchTokens(text)
+  }
+
+  return {
+    query,
+    tokens,
+    active,
+    hits,
+    index,
+    current,
+    currentId,
+    opening,
+    older,
+    newer,
+    clear,
+    openAt,
+  }
 }

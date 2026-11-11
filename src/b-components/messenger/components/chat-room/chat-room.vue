@@ -628,6 +628,19 @@ watch(activeRoomId, () => {
   selection.clear()
 })
 
+// Сообщение выбрали в поиске по всем чатам: когда лента этого чата собралась,
+// встаём на нём с тем же запросом. После сброса выше — он для смены чата.
+watch(
+  () => [activeRoomId.value, uiStore.searchJump, props.isLoading] as const,
+  async ([chatId, jump, loading]) => {
+    if (!jump || jump.chatId !== chatId || loading || props.inviteMode) return
+    uiStore.searchJump = null
+    await nextTick()
+    if (activeRoomId.value === jump.chatId) roomSearch.openAt(jump.query, jump.message)
+  },
+  { immediate: true, flush: 'post' }
+)
+
 // Отправка собственного typing-статуса (throttle: не чаще раза в 3с).
 // «Показывать, что я печатаю» выключено в настройках — не шлём вовсе.
 let lastTypingSent = 0

@@ -4,8 +4,8 @@ import { settleOfflineMessenger } from './support/offline-messenger'
 
 /**
  * Поиск в списке чатов: лупа раскрывает поле, свои чаты и группы находятся
- * сразу (не больше пяти), люди Bastyon — после паузы в наборе (не больше
- * пятнадцати), пока ищем — крутится значок. Диалоги подставлены в стор,
+ * сразу (не больше пяти), люди Bastyon — после паузы в наборе (трое, по
+ * «Показать всех» — до пятнадцати), пока ищем — крутится значок. Диалоги подставлены в стор,
  * сервер чатов закрыт, поиск людей отвечает подменная нода.
  */
 
@@ -107,9 +107,12 @@ test('лупа: свои чаты сразу, люди из сети после 
   await expect(results).toContainText('Ищу…')
 
   release()
-  await expect(results.getByTestId('chat-search-person')).toHaveCount(15, { timeout: 15_000 })
+  // Сначала трое, как в Telegram; «Показать всех» — до пятнадцати.
+  await expect(results.getByTestId('chat-search-person')).toHaveCount(3, { timeout: 15_000 })
   await expect(page.getByTestId('chat-search-loading')).toBeHidden()
   await expect(results.getByTestId('chat-search-person').first()).toContainText('anna_0')
+  await results.getByTestId('chat-search-all-people').click()
+  await expect(results.getByTestId('chat-search-person')).toHaveCount(15)
 
   // Ничего похожего: и в чатах, и в сети пусто.
   await input.fill('zzz')

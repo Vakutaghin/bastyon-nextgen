@@ -144,6 +144,11 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
   const goneBefore = reactive<Record<string, number>>({})
 
   const views = new Map<string, ChatView>()
+  /**
+   * Копия чата, прочитанная поиском целиком (readChat), — только в памяти и
+   * до выхода из аккаунта. Сколько сохранено поменялось — читается заново.
+   */
+  const readCache = new Map<string, { count: number; messages: Message[] }>()
   const known = new Map<string, Set<string>>()
   const metas = new Map<string, ChatArchiveChat>()
   const removedListeners = new Set<(chatId: string) => void>()
@@ -196,6 +201,7 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
     for (const id of Object.keys(infos)) delete infos[id]
     for (const id of Object.keys(goneBefore)) delete goneBefore[id]
     views.clear()
+    readCache.clear()
     known.clear()
     metas.clear()
   }
@@ -279,6 +285,7 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
     if (!present.length) return
     await chatArchiveAPI.remove(address, chatId, present)
     for (const id of present) saved.delete(id)
+    readCache.delete(chatId)
     const view = views.get(chatId)
     if (view) view.messages = view.messages.filter((m) => !present.includes(m.id))
     const row = stats[chatId]
@@ -342,6 +349,7 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
     delete infos[chatId]
     delete goneBefore[chatId]
     views.delete(chatId)
+    readCache.delete(chatId)
     known.delete(chatId)
     metas.delete(chatId)
   }
@@ -408,11 +416,15 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
 
   /**
    * Вся копия чата, расшифрованная в памяти, — для поиска по переписке
-   * (chat-room/use-history-search). На диск расшифрованное не пишется.
+   * (chat-room/use-history-search) и по всем чатам (chat-list/use-message-search).
+   * На диск расшифрованное не пишется; в памяти держится до выхода из аккаунта.
    */
   async function readChat(chatId: string): Promise<Message[]> {
     const address = account.value
     if (!ready.value || !key || !address || !hasCopy(chatId)) return []
+    const count = stats[chatId]?.count ?? 0
+    const cached = readCache.get(chatId)
+    if (cached?.count === count) return cached.messages
     const mine = generation
     const rows = await chatArchiveAPI.since(address, chatId, 0)
     const out: Message[] = []
@@ -420,6 +432,8 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
       if (mine !== generation) return []
       out.push(...(await readRecords(rows.slice(i, i + ARCHIVE_PAGE))))
     }
+    if (mine !== generation) return []
+    readCache.set(chatId, { count, messages: out })
     return out
   }
 

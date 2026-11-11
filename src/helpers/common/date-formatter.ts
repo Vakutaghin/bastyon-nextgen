@@ -181,6 +181,29 @@ export function formatMessageTime(ms: number, now: number = Date.now()): string 
 }
 
 /**
+ * Дата в строке списка — коротко, как в списке чатов Telegram: сегодня
+ * «14:30», в этом году «12 мар.», раньше «12.03.2023».
+ *
+ * @param ms - метка времени в миллисекундах
+ * @param now - «сейчас» в миллисекундах (для тестов)
+ */
+export function formatShortDate(ms: number, now: number = Date.now()): string {
+  const date = validDate(ms)
+  if (!date) return ''
+  const locale = dateLocale()
+  const today = new Date(now)
+  if (localDayNumber(today) - localDayNumber(date) <= 0) {
+    return dateTimeFormat(locale, CLOCK).format(date)
+  }
+  return dateTimeFormat(
+    locale,
+    date.getFullYear() === today.getFullYear()
+      ? { day: 'numeric', month: 'short' }
+      : { day: '2-digit', month: '2-digit', year: 'numeric' }
+  ).format(date)
+}
+
+/**
  * Подпись дня над сообщениями ленты: «Сегодня», «Вчера», «12 октября», в
  * прошлые годы — с годом. «Сегодня» и «вчера» даёт Intl на языке интерфейса.
  *

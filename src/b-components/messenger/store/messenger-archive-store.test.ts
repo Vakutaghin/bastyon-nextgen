@@ -10,6 +10,7 @@ import { createPinia, setActivePinia } from 'pinia'
 vi.mock('../services/matrix-service', () => ({ matrixService: { getClient: () => null } }))
 
 import { db } from '@/db/database'
+import { chatArchiveAPI } from '@/db/apis/chat-archive-api'
 import type { Message } from '../types'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from './consts'
 import { useMessengerArchiveStore } from './messenger-archive-store'
@@ -217,6 +218,23 @@ describe('messenger-archive-store: поиск по переписке', () => {
     expect(all).toHaveLength(60)
     expect(all[0]).toMatchObject({ id: '$000', text: 'секрет $000', timestamp: 1000 })
     expect(all[59]!.id).toBe('$059')
+  })
+
+  it('прочитанное поиском помнится, пока копия та же; сохранили ещё или стёрли — заново', async () => {
+    const archive = await opened()
+    await archive.setEnabled(true)
+    await archive.save(CHAT, sixty())
+    const since = vi.spyOn(chatArchiveAPI, 'since')
+    const first = await archive.readChat(CHAT)
+    expect(await archive.readChat(CHAT)).toBe(first)
+    expect(since).toHaveBeenCalledTimes(1)
+
+    await archive.save(CHAT, [msg('$new', 9000)])
+    expect(await archive.readChat(CHAT)).toHaveLength(61)
+    await archive.remove(CHAT, ['$new'])
+    expect(await archive.readChat(CHAT)).toHaveLength(60)
+    expect(since).toHaveBeenCalledTimes(3)
+    since.mockRestore()
   })
 
   it('чужой аккаунт копию для поиска не читает', async () => {

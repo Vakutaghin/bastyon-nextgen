@@ -17,6 +17,7 @@ import {
 import type { Message } from '../../types'
 import { useMessengerPrivacyStore } from '../messenger-privacy-store'
 import {
+  ENCRYPTED_MESSAGE_PLACEHOLDER,
   HISTORY_SCAN_PAGE,
   HISTORY_STEP_TIMEOUT,
   KNOWN_DECRYPT_TIMEOUT,
@@ -440,6 +441,39 @@ export function useMessageLoading(
   }
 
   /**
+   * Сообщения, которые уже есть на устройстве в ленте комнаты (синк, прошлые
+   * подгрузки), — для поиска по всем чатам; ленту чата не трогает. Что не
+   * расшифровалось за KNOWN_DECRYPT_TIMEOUT, в выдачу не идёт: расшифровка
+   * доходит в фоне, следующий поиск его найдёт. Разобранное помнится, пока
+   * лента комнаты та же и в ней нет заглушек.
+   */
+  const recentCache = new Map<string, { key: string; list: Message[] }>()
+  const recentMessages = async (chatId: string): Promise<Message[]> => {
+    const room = matrixService.getRoom(chatId)
+    if (!room || typeof room.getLiveTimeline !== 'function') return []
+    if (room.getMyMembership?.() === 'invite') return []
+    const events = timelineOf(room)
+    const key = `${events.length}:${eventIdOf(events[0])}:${eventIdOf(events[events.length - 1])}`
+    const cached = recentCache.get(chatId)
+    if (cached?.key === key) return cached.list
+    let late = false
+    const mapped = await Promise.all(
+      events.map(async (e) => {
+        const r = await within(mapEventToMessage(e), KNOWN_DECRYPT_TIMEOUT)
+        if (!r.done) late = true
+        return r.done ? r.value : null
+      })
+    )
+    const list = mapped.filter((m): m is Message => Boolean(m))
+    if (!late && !list.some((m) => m.text === ENCRYPTED_MESSAGE_PLACEHOLDER)) {
+      recentCache.set(chatId, { key, list })
+    }
+    return list
+  }
+  /** Выход из аккаунта: расшифрованное из лент комнат забываем. */
+  const forgetRecent = () => recentCache.clear()
+
+  /**
    * Догрузить ленту чата до сообщения, найденного поиском глубже неё:
    * историю сервера — страницами HISTORY_SCAN_PAGE, копию на устройстве — до
    * его времени. false — не дошли (листать некуда или `stop`).
@@ -464,7 +498,16 @@ export function useMessageLoading(
     return has()
   }
 
-  return { history, isLoadingMore, loadMessages, loadMoreMessages, scanHistory, revealMessage }
+  return {
+    history,
+    isLoadingMore,
+    loadMessages,
+    loadMoreMessages,
+    scanHistory,
+    revealMessage,
+    recentMessages,
+    forgetRecent,
+  }
 }
 
 export type MessageLoading = ReturnType<typeof useMessageLoading>

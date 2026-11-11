@@ -8,6 +8,8 @@ keywords:
   - leave group
   - mute notifications
   - search in chat
+  - search all chats
+  - find a message
   - find a chat
   - find a person
   - online
@@ -29,7 +31,7 @@ How to start a conversation, find a chat or a message, see a group’s members, 
 
 You start a conversation with someone from their profile — the **“Start chat”** button — or with the chat button next to their name in a post header. A card with the person opens: name, reputation, followers and following, and a field for the first message. The other person gets the chat only once you send it: a single press of the button used to leave them an empty chat. If they have not published their encryption keys yet, the app says so and the text stays in the field. You can also write to someone who has never opened chats: the message waits for them. The first message goes out once the chat server confirms the other person is invited, usually within a second. If the server does not answer, the app says it could not create the chat, the text stays in the field, and you can send it again.
 
-You can find a person right in the messenger — with the magnifier above the chat list, see [below](#find-a-chat-or-a-person) — or by name with [search](search.md).
+You can find a person right in the messenger — with the magnifier above the chat list, see [below](#find-a-chat-a-person-or-a-message) — or by name with [search](search.md).
 
 ## Invitations <!-- #invites -->
 
@@ -70,14 +72,17 @@ The three-dot button on a chat:
 - **“Delete dialog”** — the app asks again: **“Delete dialog?”** You leave the conversation, and it disappears from your list. The other person keeps it, and if either of you starts a chat again, it will be a new conversation. The copy of the chat saved on this device, if any, is deleted with it.
 - **“Leave group”** — what groups have instead of deleting. You leave the group and stop receiving its messages. You can return to a private group only with a new invitation.
 
-## Find a chat or a person
+## Find a chat, a person or a message
 
-The magnifier in the messenger header, next to the cross, opens a search field above the list. As you type, two sections appear below:
+The magnifier in the messenger header, next to the cross, opens a search field above the list. As you type, three sections appear below:
 
 - **“Chats and groups”** — your conversations, groups and channels whose name contains what you typed, up to five. Those whose name starts with it come first. All chats are searched, whichever switch is on;
-- **“People on Bastyon”** — network accounts with that name, up to fifteen. The app searches from two letters and once you pause typing; while it searches, a spinner turns in the field.
+- **“People on Bastyon”** — network accounts with that name. The app searches from two letters and once you pause typing; while it searches, a spinner turns in the field. Three are shown first; “Show all” opens the rest, up to fifteen;
+- **“Messages”** — messages from all chats with those words, newest first. Each shows the chat, the date, who wrote it and the words in their context, with the match highlighted. Words are matched as [in a conversation](#search): by the start of a word, ignoring case. Twenty are shown first, then **“Show more”**.
 
-Tap a chat to open it, or a person to open your conversation with them: the existing one or a new one, as with the **“Start chat”** button. **Enter** opens the first result. To close the search, use the cross in the field, **Esc** or the magnifier again.
+Tap a chat to open it, or a person to open your conversation with them: the existing one or a new one, as with the **“Start chat”** button. Tap a message to open the chat right at it, with the same words already in the conversation search: the arrows take you to the other matches in that chat. The results stay, so you can come back to them. **Enter** opens the first result. To close the search, use the cross in the field, **Esc** or the magnifier again.
+
+The server cannot search encrypted conversations, so messages are searched among the ones on this device: chats opened this time, the latest messages of every chat, and the saved history if saving chats is on — see [Chats saved on this device](chat-archive.md). While the app reads it, the line under the section says **“Searching messages on this device…”**. To search a chat’s whole history on the server, use the [conversation search](#search) inside the chat.
 
 ## The other person’s profile
 

@@ -402,6 +402,40 @@ describe('useMessageLoading: поиск по чату листает истор�
     expect(client.paginateEventTimeline.mock.calls.length).toBeLessThan(5)
   })
 
+  it('поиск по всем чатам: лента комнаты с устройства — без запросов и не трогая ленту чата', async () => {
+    const { api, uiStore, messages } = setup()
+    const room = fakeRoom('!b:host', [
+      { id: '$1', ts: 1 },
+      { id: '$2', ts: 2 },
+    ])
+    matrixReady(uiStore, [room])
+    const first = await api.recentMessages('!b:host')
+    expect(first.map((m) => m.id)).toEqual(['$1', '$2'])
+    expect(messages['!b:host']).toBeUndefined()
+    expect(client.paginateEventTimeline).not.toHaveBeenCalled()
+    // Та же лента — разобранное помнится; пришло новое — разбирается заново.
+    expect(await api.recentMessages('!b:host')).toBe(first)
+    room.events.push({ id: '$3', ts: 3 })
+    expect((await api.recentMessages('!b:host')).map((m) => m.id)).toEqual(['$1', '$2', '$3'])
+    expect(await api.recentMessages('!none:host')).toEqual([])
+  })
+
+  it('поиск по всем чатам: что не расшифровалось быстро — не ждёт и найдётся в следующий раз', async () => {
+    const { api, uiStore } = setup()
+    matrixReady(uiStore, [
+      fakeRoom('!b:host', [
+        { id: '$ok', ts: 1 },
+        { id: '$stuck', ts: 2 },
+      ]),
+    ])
+    stuckDecrypt.add('$stuck')
+    const pending = api.recentMessages('!b:host')
+    await vi.advanceTimersByTimeAsync(1_500)
+    expect((await pending).map((m) => m.id)).toEqual(['$ok'])
+    stuckDecrypt.clear()
+    expect((await api.recentMessages('!b:host')).map((m) => m.id)).toEqual(['$ok', '$stuck'])
+  })
+
   it('поиск сбросили посреди перехода — останавливается', async () => {
     const { api } = await opened(range(200, 240), range(0, 200))
     let stop = false

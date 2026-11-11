@@ -5,11 +5,14 @@ import { describe, expect, it } from 'vitest'
 import type { Message } from '../types'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../store/consts'
 import {
+  SNIPPET_BEFORE,
+  SNIPPET_MAX,
   matchRanges,
   matchesTokens,
   messageMatches,
   searchTokens,
   searchableText,
+  snippetParts,
 } from './message-search'
 
 const msg = (over: Partial<Message>): Message => ({
@@ -88,5 +91,41 @@ describe('matchRanges', () => {
 
   it('ничего не совпало — пусто', () => {
     expect(matchRanges('Привет', searchTokens('пока'))).toEqual([])
+  })
+})
+
+describe('messageMatches', () => {
+  it('текст сообщения поменялся (дорасшифровалось) — ищется по новому', () => {
+    const m = msg({ text: ENCRYPTED_MESSAGE_PLACEHOLDER })
+    expect(messageMatches(m, ['отпуск'])).toBe(false)
+    m.text = 'Планы на отпуск'
+    expect(messageMatches(m, ['отпуск'])).toBe(true)
+    m.text = 'Планы на выходные'
+    expect(messageMatches(m, ['отпуск'])).toBe(false)
+  })
+})
+
+describe('snippetParts', () => {
+  const join = (parts: { text: string; mark?: boolean }[]) =>
+    parts.map((p) => (p.mark ? `[${p.text}]` : p.text)).join('')
+
+  it('короткое — целиком, совпавшее отдельно, переводы строк — пробелы', () => {
+    expect(join(snippetParts('Планы\nна отпуск', searchTokens('отпу')))).toBe('Планы на [отпу]ск')
+  })
+
+  it('совпадение далеко от начала — начало срезано по слову, с многоточием', () => {
+    const text = `${'слово '.repeat(10)}про отпуск и море`
+    const out = join(snippetParts(text, searchTokens('отпуск')))
+    expect(out.startsWith('…')).toBe(true)
+    expect(out).toContain('[отпуск] и море')
+    expect(out.indexOf('[')).toBeLessThanOrEqual(SNIPPET_BEFORE + 1)
+    expect(out.slice(1, 2)).not.toBe(' ')
+  })
+
+  it('длинное — обрезано, с многоточием в конце', () => {
+    const out = snippetParts(`отпуск ${'а'.repeat(500)}`, searchTokens('отпуск'))
+    expect(out[0]).toEqual({ text: 'отпуск', mark: true })
+    expect(out[out.length - 1]).toEqual({ text: '…' })
+    expect(out.map((p) => p.text).join('').length).toBeLessThanOrEqual(SNIPPET_MAX + 1)
   })
 })

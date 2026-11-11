@@ -354,6 +354,80 @@ export const SC_PersonAddress = styled.span`
   font-size: 12px;
 `
 
+/** «Показать всех», «Показать ещё» под разделом выдачи. */
+export const SC_SearchMore = styled.button`
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 1px solid var(--color-bg-hover);
+  background: transparent;
+  color: var(--ui-primary);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg-tertiary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: -2px;
+  }
+`
+
+/** Подсказка мелко под выдачей: где искали сообщения. */
+export const SC_SearchHint = styled.div`
+  padding: 8px 16px 16px;
+  color: var(--ui-text-dimmed);
+  font-size: 12px;
+  line-height: calc(1.4 * var(--leading-scale));
+`
+
+/** Найденное сообщение: чат и дата сверху, автор и слова в контексте — ниже. */
+export const SC_HitInfo = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+`
+
+export const SC_HitHead = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+`
+
+export const SC_HitTime = styled.span`
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ui-text-dimmed);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+`
+
+export const SC_HitText = styled.span`
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  mark {
+    border-radius: var(--ui-radius-xs);
+    background: rgb(var(--ui-warning-rgb) / 35%);
+    color: inherit;
+  }
+`
+
+export const SC_HitSender = styled.span`
+  color: var(--color-text-primary);
+`
+
 /** Меню глаза: как показывать скрытые, окно «Скрытые чаты», правила фильтра. */
 export const SC_ScreenMenu = styled.div`
   ${noSelect}

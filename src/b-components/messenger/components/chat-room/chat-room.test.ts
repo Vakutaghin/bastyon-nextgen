@@ -429,4 +429,28 @@ describe('поиск по переписке', () => {
     expect(mocks.revealMessage).toHaveBeenCalledWith('!a:host', deep, expect.any(Function))
     expect(w.findComponent({ name: 'MessageList' }).props('focusId')).toBe('$0')
   })
+
+  it('выбрали сообщение в поиске по всем чатам — чат встаёт на нём, когда лента собралась', async () => {
+    const ui = useMessengerUiStore()
+    ui.searchJump = { chatId: '!a:host', query: 'прив', message: FEED[0]! }
+    const w = open('!a:host', { messages: FEED, isLoading: true })
+    await flushPromises()
+    // Лента ещё грузится — ждём.
+    expect(ui.searchJump).not.toBeNull()
+    await w.setProps({ isLoading: false })
+    await flushPromises()
+    expect(ui.searchJump).toBeNull()
+    expect((w.find('[data-testid="chat-search"]').element as HTMLInputElement).value).toBe('прив')
+    expect(w.findComponent({ name: 'MessageList' }).props('focusId')).toBe('$1')
+    expect(w.find('[data-testid="chat-search-count"]').text()).toBe('2 из 2')
+  })
+
+  it('переход к сообщению другого чата этот чат не трогает', async () => {
+    const ui = useMessengerUiStore()
+    ui.searchJump = { chatId: '!b:host', query: 'прив', message: FEED[0]! }
+    const w = open('!a:host', { messages: FEED })
+    await flushPromises()
+    expect(ui.searchJump).not.toBeNull()
+    expect((w.find('[data-testid="chat-search"]').element as HTMLInputElement).value).toBe('')
+  })
 })

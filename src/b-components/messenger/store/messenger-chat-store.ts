@@ -125,6 +125,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     Object.keys(drafts).forEach((key) => delete drafts[key])
     Object.keys(receiptsVersion).forEach((key) => delete receiptsVersion[key])
     Object.keys(loading.history).forEach((key) => delete loading.history[key])
+    loading.forgetRecent()
     currentUser.value = {
       id: 'me',
       name: t('appMsg.messenger.me'),
@@ -150,6 +151,8 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     /** Поиск по чату: страница истории глубже ленты; сама лента не меняется. */
     scanHistory: loading.scanHistory,
     revealMessage,
+    /** Поиск по всем чатам: что уже есть в ленте комнаты на устройстве; лента чата не меняется. */
+    recentMessages: loading.recentMessages,
     /** В чате появились заглушки «*** Encrypted Message ***» — повторять расшифровку. */
     watchUndecrypted: redecrypt.watchChat,
     /** Повод расшифровать заглушки сразу: ключ группы пришёл, связь вернулась. */

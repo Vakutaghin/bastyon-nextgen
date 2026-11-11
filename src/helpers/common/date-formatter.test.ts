@@ -10,6 +10,7 @@ import {
   formatLongDate,
   formatMessageTime,
   formatDayLabel,
+  formatShortDate,
 } from './date-formatter'
 
 const NOW = 1_700_000_000 // секунды
@@ -150,6 +151,17 @@ describe('formatMessageTime — время у сообщения в чате', (
   it('часы отправителя чуть впереди — всё равно «сегодня»; битая метка — пусто', () => {
     expect(formatMessageTime(now + 60_000, now)).toBe('15:01')
     expect(formatMessageTime(NaN, now)).toBe('')
+  })
+})
+
+describe('formatShortDate — дата в строке списка', () => {
+  const now = new Date(2026, 8, 30, 15, 0).getTime()
+
+  it('сегодня — время, в этом году — день и месяц, раньше — дата цифрами', () => {
+    expect(formatShortDate(new Date(2026, 8, 30, 9, 5).getTime(), now)).toBe('09:05')
+    expect(formatShortDate(new Date(2026, 8, 29, 23, 59).getTime(), now)).toBe('29 сент.')
+    expect(formatShortDate(new Date(2025, 11, 31, 18, 0).getTime(), now)).toBe('31.12.2025')
+    expect(formatShortDate(NaN, now)).toBe('')
   })
 })
 

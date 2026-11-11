@@ -146,6 +146,41 @@ describe('useRoomSearch', () => {
     expect(s.hits.value).toEqual([])
   })
 
+  it('открыли из поиска по всем чатам — стоит на выбранном, стрелки — по найденному в чате', async () => {
+    const s = setup()
+    s.openAt('прив', FEED[2]!)
+    await nextTick()
+    expect(s.query.value).toBe('прив')
+    expect(s.currentId.value).toBe('$3')
+    expect(s.revealed).toEqual(['$3'])
+    s.older()
+    await nextTick()
+    expect(s.currentId.value).toBe('$1')
+  })
+
+  it('выбранного ещё нет в ленте — оно в найденном сразу, лента догружается до него', async () => {
+    const s = setup()
+    const deep = msg('$-5', 'привет из архива', -5)
+    s.openAt('привет', deep)
+    await vi.runAllTimersAsync()
+    expect(s.hits.value.map((m) => m.id)).toEqual(['$4', '$3', '$1', '$-5'])
+    expect(s.currentId.value).toBe('$-5')
+    expect(s.load).toHaveBeenCalledWith(deep)
+  })
+
+  it('тот же запрос уже набран — всё равно встаёт на выбранное', async () => {
+    const s = setup()
+    await type(s, 'прив')
+    expect(s.currentId.value).toBe('$4')
+    s.openAt('прив', FEED[0]!)
+    await nextTick()
+    expect(s.currentId.value).toBe('$1')
+    // Пауза в наборе после этого ничего не сбивает.
+    await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS)
+    await nextTick()
+    expect(s.currentId.value).toBe('$1')
+  })
+
   it('из одних знаков — не поиск', async () => {
     const s = setup()
     await type(s, ' ?! ')
