@@ -20,6 +20,10 @@ Your own transfers and the change from your own actions are not counted.
 
 The main way to earn as an author is tips from readers. They send them with the gift button on your posts and the **“Tip”** item in the menu of your comments. The coins arrive at your main wallet at once, with no middleman, and you get a **“Tip received”** notification — see [Tipping the author](tips.md).
 
+## Monetization
+
+Authors with the “Verified” mark whom the Bastyon team has added receive payouts from advertisers’ money — for readers’ ratings and comments under their posts. They arrive as transfers and are part of **“Received as transfers and tips”**; in the transaction history they are labeled **“Monetization”**. Below the amounts on the **“Earnings”** tab there is a **“Monetization for authors”** card — a page with a diagram of the program. More in [Monetization for authors](monetization.md).
+
 ## The block lottery
 
 With every new block the network issues new coins, and most of the block reward goes to the node that produced it. The lottery distributes the rest.

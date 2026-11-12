@@ -34,6 +34,7 @@ vi.mock('@/pages/home-page/home-page.vue', () => page)
 vi.mock('@/pages/profile-page/profile-page.vue', () => page)
 vi.mock('@/pages/settings-page/settings-page.vue', () => page)
 vi.mock('@/pages/limits-page/limits-page.vue', () => page)
+vi.mock('@/pages/monetization-page/monetization-page.vue', () => page)
 vi.mock('@/pages/wallets-page/wallets-page.vue', () => page)
 vi.mock('@/pages/my-videos-page/my-videos-page.vue', () => page)
 vi.mock('@/pages/my-files-page/my-files-page.vue', () => page)
@@ -71,6 +72,7 @@ describe('router: сопоставление путей', () => {
     ['/help', 'help'],
     ['/help/faq', 'help'],
     ['/embed/post/abc123', 'embed-post'],
+    ['/monetization', 'monetization'],
     ['/someuser', 'profile'],
     ['/PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM', 'profile'],
   ])('%s → %s', (path, name) => {
@@ -136,7 +138,7 @@ describe('router: страницы аккаунта', () => {
     expect(router.currentRoute.value.name).toBe('wallets')
   })
 
-  it.each(['/help/faq', '/explorer', '/search', '/someuser', '/post/abc'])(
+  it.each(['/help/faq', '/explorer', '/search', '/someuser', '/post/abc', '/monetization'])(
     '%s открывается без входа и без restoreSession',
     async (path) => {
       await router.push(path)

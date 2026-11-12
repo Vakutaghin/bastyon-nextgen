@@ -69,6 +69,7 @@
   - [Переводы и комиссии](send-pkoin.md)
   - [История операций](wallet-history.md)
   - [Заработок](earnings.md)
+  - [Монетизация для авторов](monetization.md)
 - [Мессенджер](messenger.md)
   - [Чаты](chats.md)
   - [Каналы](channels.md)

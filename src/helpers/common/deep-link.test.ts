@@ -110,6 +110,11 @@ describe('resolveDeepLink — разделы и мусор', () => {
     expect(resolveDeepLink('bastyon://wallets')).toBe('/wallets')
   })
 
+  it('bastyon.com/monetization прежнего приложения — страница монетизации, а не профиль', () => {
+    expect(resolveDeepLink('https://bastyon.com/monetization')).toBe('/monetization')
+    expect(resolveDeepLink('bastyon://monetization')).toBe('/monetization')
+  })
+
   it('справка и её статья', () => {
     expect(resolveDeepLink('bastyon://help')).toBe('/help')
     expect(resolveDeepLink('bastyon://help/faq')).toBe('/help/faq')

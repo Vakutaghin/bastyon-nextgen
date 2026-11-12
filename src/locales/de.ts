@@ -150,6 +150,7 @@ export default {
     home: 'Startseite',
     settings: 'Einstellungen',
     limits: 'Limits',
+    monetization: 'Monetarisierung',
     wallets: 'Wallets',
     'my-videos': 'Medienstudio',
     'paid-subscriptions': 'Bezahlte Abonnements',
@@ -899,6 +900,42 @@ export default {
       show: 'Privaten Schlüssel anzeigen',
     },
   },
+  monetization: {
+    title: 'Monetarisierung für Autoren',
+    lead: 'Bastyon zahlt Autoren PKOIN für die Aktivität der Leser: Bewertungen und Kommentare unter ihren Beiträgen. Das Geld für die Auszahlungen kommt von Werbetreibenden.',
+    moreInHelp: 'Mehr in der Hilfe',
+    flowTitle: 'So funktioniert es',
+    flowAdvertiserTitle: 'Werbetreibender',
+    flowAdvertiserText: 'Kauft PKOIN und bewirbt seinen Beitrag.',
+    flowBoostTitle: 'Werbung',
+    flowBoostText: 'Beworbene Beiträge erscheinen im Feed und auf den Kanälen der Autoren.',
+    flowReadersTitle: 'Leser',
+    flowReadersText: 'Bewerten die Beiträge der Autoren und schreiben Kommentare.',
+    flowPayoutTitle: 'Auszahlung',
+    flowPayoutText:
+      'Bastyon verteilt die Auszahlungen nach Aktivität und überweist PKOIN an die Autoren.',
+    flowLoop:
+      'Der Autor verkauft PKOIN an einer Börse oder von Hand zu Hand – und die Münzen gelangen wieder zu Werbetreibenden.',
+    whoTitle: 'Wer teilnimmt',
+    whoText:
+      'Autoren mit der Markierung „Verifiziert“, die das Bastyon-Team aufgenommen hat. Später sollen weitere aktive Kanäle dazukommen.',
+    whoAction: 'Um teilzunehmen, schreiben Sie dem Bastyon-Team:',
+    copyEmail: 'Adresse kopieren',
+    emailCopied: 'Adresse kopiert',
+    whenTitle: 'Wann Auszahlungen kommen',
+    whenText:
+      'Für Aktivität unter neueren Beiträgen; 2026 lagen zwischen den Auszahlungen bis zu drei Wochen. Im Wallet-Verlauf ist eine Auszahlung mit „Monetarisierung“ gekennzeichnet.',
+    whenLink: 'Transaktionsverlauf',
+    withdrawTitle: 'Wie man auszahlt',
+    withdrawText:
+      'PKOIN wird an Börsen oder von Hand zu Hand gegen Euro, Dollar und andere Währungen verkauft.',
+    withdrawLink: 'Wo man PKOIN kauft und verkauft',
+    growTitle: 'Wie man mehr verdient',
+    growMore: 'Veröffentlichen Sie öfter.',
+    growPeople: 'Laden Sie Leute ein, Ihre Beiträge zu diskutieren.',
+    growVideo:
+      'Die Videolänge spielt keine Rolle: Werbung wird nicht in das Video eingefügt, es zählt die Aktivität unter dem Beitrag.',
+  },
   wallet: {
     errorForeignNetworkAddress:
       'Diese Adresse gehört zu einem anderen Netzwerk. Eine Bastyon-Adresse beginnt mit „P“.',
@@ -924,6 +961,9 @@ export default {
     earningsLottery: 'Aus der Blockchain-Lotterie',
     earningsDonation: 'Mit Kommentaren erhalten',
     earningsTransfer: 'Als Überweisungen und Trinkgeld erhalten',
+    monetizationBannerTitle: 'Monetarisierung für Autoren',
+    monetizationBannerText:
+      'Wie Bastyon Autoren PKOIN für Bewertungen und Kommentare der Leser zahlt',
     history: {
       hint: 'Gesendete und empfangene PKOIN deiner Haupt-Wallet.',
       loading: 'Transaktionen werden geladen…',

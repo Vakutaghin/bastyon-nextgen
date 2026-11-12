@@ -21,6 +21,16 @@
     </SC_EarningsCards>
 
     <SC_EarningsState v-else>{{ t('wallet.earningsEmpty') }}</SC_EarningsState>
+
+    <!-- Выплаты монетизации приходят переводами — они в «Получено переводами и чаевыми». -->
+    <SC_MonetizationBanner :to="{ name: 'monetization' }" data-testid="earnings-monetization">
+      <SC_MonetizationIcon aria-hidden="true"><DollarOutlined /></SC_MonetizationIcon>
+      <SC_MonetizationBody>
+        <SC_MonetizationTitle>{{ t('wallet.monetizationBannerTitle') }}</SC_MonetizationTitle>
+        <SC_MonetizationText>{{ t('wallet.monetizationBannerText') }}</SC_MonetizationText>
+      </SC_MonetizationBody>
+      <SC_MonetizationChevron aria-hidden="true"><RightOutlined /></SC_MonetizationChevron>
+    </SC_MonetizationBanner>
   </SC_Earnings>
 </template>
 
@@ -37,8 +47,15 @@ import {
   SC_EarningsValue,
   SC_EarningsUnit,
   SC_EarningsState,
+  SC_MonetizationBanner,
+  SC_MonetizationBody,
+  SC_MonetizationChevron,
+  SC_MonetizationIcon,
+  SC_MonetizationText,
+  SC_MonetizationTitle,
 } from './wallet-earnings.styled'
 import HelpLink from '@/b-components/help/help-link.vue'
+import { DollarOutlined, RightOutlined } from '@/components/icons'
 
 const { t } = useI18n()
 const { earnings, isLoading, error } = useAccountEarnings()

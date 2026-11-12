@@ -69,6 +69,7 @@ How Bastyon works and how to use it. The help is built into the app and updated 
   - [Transfers and fees](send-pkoin.md)
   - [Transaction history](wallet-history.md)
   - [Earnings](earnings.md)
+  - [Monetization for authors](monetization.md)
 - [Messenger](messenger.md)
   - [Chats](chats.md)
   - [Channels](channels.md)

@@ -11,6 +11,7 @@ const HomePage = () => import('@/pages/home-page/home-page.vue')
 const ProfilePage = () => import('@/pages/profile-page/profile-page.vue')
 const SettingsPage = () => import('@/pages/settings-page/settings-page.vue')
 const LimitsPage = () => import('@/pages/limits-page/limits-page.vue')
+const MonetizationPage = () => import('@/pages/monetization-page/monetization-page.vue')
 const WalletsPage = () => import('@/pages/wallets-page/wallets-page.vue')
 const MyVideosPage = () => import('@/pages/my-videos-page/my-videos-page.vue')
 const PaidSubscriptionsPage = () =>
@@ -80,6 +81,13 @@ const router = createRouter({
       name: 'limits',
       component: LimitsPage,
       meta: { titleKey: 'routes.limits', helpTopic: 'limits' },
+    },
+    {
+      // О программе монетизации — без входа, как /monetization прежнего приложения.
+      path: '/monetization',
+      name: 'monetization',
+      component: MonetizationPage,
+      meta: { titleKey: 'routes.monetization', helpTopic: 'monetization' },
     },
     {
       path: '/wallets',

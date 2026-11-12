@@ -150,6 +150,7 @@ export default {
     home: 'Inicio',
     settings: 'Ajustes',
     limits: 'Límites',
+    monetization: 'Monetización',
     wallets: 'Billeteras',
     'my-videos': 'Estudio multimedia',
     'paid-subscriptions': 'Suscripciones de pago',
@@ -896,6 +897,42 @@ export default {
       show: 'Mostrar la clave privada',
     },
   },
+  monetization: {
+    title: 'Monetización para autores',
+    lead: 'Bastyon paga PKOIN a los autores por la actividad de los lectores: valoraciones y comentarios en sus publicaciones. El dinero de los pagos lo aportan los anunciantes.',
+    moreInHelp: 'Más información en la ayuda',
+    flowTitle: 'Cómo funciona',
+    flowAdvertiserTitle: 'Anunciante',
+    flowAdvertiserText: 'Compra PKOIN y promociona su publicación.',
+    flowBoostTitle: 'Publicidad',
+    flowBoostText:
+      'Las publicaciones promocionadas aparecen en el feed y en los canales de los autores.',
+    flowReadersTitle: 'Lectores',
+    flowReadersText: 'Valoran las publicaciones de los autores y escriben comentarios.',
+    flowPayoutTitle: 'Pago',
+    flowPayoutText: 'Bastyon reparte los pagos según la actividad y envía PKOIN a los autores.',
+    flowLoop:
+      'El autor vende PKOIN en un exchange o de mano en mano, y las monedas vuelven a los anunciantes.',
+    whoTitle: 'Quién participa',
+    whoText:
+      'Autores con la marca «Verificado» que ha incorporado el equipo de Bastyon. El equipo prevé sumar otros canales activos con el tiempo.',
+    whoAction: 'Para participar, escribe al equipo de Bastyon:',
+    copyEmail: 'Copiar la dirección',
+    emailCopied: 'Dirección copiada',
+    whenTitle: 'Cuándo llegan los pagos',
+    whenText:
+      'Por la actividad en publicaciones recientes; en 2026 entre pagos pasaron hasta tres semanas. En el historial del monedero el pago aparece como «Monetización».',
+    whenLink: 'Historial de operaciones',
+    withdrawTitle: 'Cómo retirar',
+    withdrawText:
+      'Los PKOIN se venden en exchanges o de mano en mano por dólares, euros y otras monedas.',
+    withdrawLink: 'Dónde comprar y vender PKOIN',
+    growTitle: 'Cómo ganar más',
+    growMore: 'Publica más a menudo.',
+    growPeople: 'Invita a la gente a comentar tus publicaciones.',
+    growVideo:
+      'La duración del vídeo no importa: la publicidad no se inserta en el vídeo, cuenta la actividad bajo la publicación.',
+  },
   wallet: {
     errorForeignNetworkAddress:
       'Esta dirección pertenece a otra red. Una dirección de Bastyon empieza por «P».',
@@ -921,6 +958,9 @@ export default {
     earningsLottery: 'De la lotería de la blockchain',
     earningsDonation: 'Recibido con comentarios',
     earningsTransfer: 'Recibido en transferencias y propinas',
+    monetizationBannerTitle: 'Monetización para autores',
+    monetizationBannerText:
+      'Cómo Bastyon paga PKOIN a los autores por las valoraciones y comentarios de los lectores',
     history: {
       hint: 'PKOIN enviados y recibidos en tu billetera principal.',
       loading: 'Cargando transacciones…',

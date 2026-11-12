@@ -16,7 +16,7 @@ The wallet’s **“History”** tab shows **“Sent and received PKOIN for your
   - **“Tip”**;
   - **“Subscription”** — a [paid subscription](paid-subscriptions.md) payment;
   - **“With a comment”** — coins attached to a comment under your post;
-  - **“Monetization”** — a monetization payout from Bastyon;
+  - **“Monetization”** — a [monetization](monetization.md) payout from Bastyon;
   - **“Lottery”** — a [block lottery](earnings.md) win;
   - **“Stake”** — a reward for a block your wallet produced;
   - **“Boost”** — promoting a post: the whole boost amount goes to the network;

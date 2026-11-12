@@ -146,6 +146,7 @@ export default {
     home: 'Home',
     settings: 'Settings',
     limits: 'Limits',
+    monetization: 'Monetization',
     wallets: 'Wallets',
     'my-videos': 'Media studio',
     'paid-subscriptions': 'Paid subscriptions',
@@ -884,6 +885,41 @@ export default {
       show: 'Reveal private key',
     },
   },
+  monetization: {
+    title: 'Monetization for authors',
+    lead: 'Bastyon pays authors PKOIN for reader activity: ratings and comments under their posts. The money for payouts comes from advertisers.',
+    moreInHelp: 'Learn more in Help',
+    flowTitle: 'How it works',
+    flowAdvertiserTitle: 'Advertiser',
+    flowAdvertiserText: 'Buys PKOIN and promotes their post.',
+    flowBoostTitle: 'Ads',
+    flowBoostText: 'Promoted posts show in the feed and on authors’ channels.',
+    flowReadersTitle: 'Readers',
+    flowReadersText: 'Rate authors’ posts and write comments.',
+    flowPayoutTitle: 'Payout',
+    flowPayoutText: 'Bastyon splits payouts by activity and sends PKOIN to authors.',
+    flowLoop:
+      'An author sells PKOIN on an exchange or person to person, and the coins go back to advertisers.',
+    whoTitle: 'Who takes part',
+    whoText:
+      'Authors with the “Verified” mark whom the Bastyon team has added. The team plans to add other active channels over time.',
+    whoAction: 'To take part, write to the Bastyon team:',
+    copyEmail: 'Copy address',
+    emailCopied: 'Address copied',
+    whenTitle: 'When payouts arrive',
+    whenText:
+      'For activity on recent posts; in 2026 the gaps between payouts were up to three weeks. In the wallet history a payout is labeled “Monetization”.',
+    whenLink: 'Transaction history',
+    withdrawTitle: 'How to cash out',
+    withdrawText:
+      'PKOIN is sold on exchanges or person to person for dollars, rubles and other currencies.',
+    withdrawLink: 'Where to buy and sell PKOIN',
+    growTitle: 'How to earn more',
+    growMore: 'Post more often.',
+    growPeople: 'Invite people to discuss your posts.',
+    growVideo:
+      'Video length does not matter: ads are not inserted into the video, activity under the post is what counts.',
+  },
   wallet: {
     errorForeignNetworkAddress:
       'This address belongs to another network. A Bastyon address starts with "P".',
@@ -909,6 +945,8 @@ export default {
     earningsLottery: 'From blockchain lottery',
     earningsDonation: 'Received with comments',
     earningsTransfer: 'Received as transfers and tips',
+    monetizationBannerTitle: 'Monetization for authors',
+    monetizationBannerText: 'How Bastyon pays authors PKOIN for readers’ ratings and comments',
     history: {
       hint: 'Sent and received PKOIN for your main wallet.',
       loading: 'Loading transactions…',

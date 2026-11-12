@@ -85,6 +85,8 @@ export const DEEP_LINK_SECTIONS: ReadonlySet<string> = new Set([
   'settings',
   'wallets',
   'limits',
+  // Страница прежнего приложения bastyon.com/monetization — не профиль с таким ником.
+  'monetization',
   'miniapps',
   'explorer',
   'my-videos',
