@@ -572,6 +572,11 @@ export default {
       chatButton: '悬浮聊天按钮',
       chatButtonHint: '右下角的圆形按钮。关闭后，用页眉图标打开聊天。',
     },
+    usageStats: {
+      title: '统计',
+      toggle: '匿名使用统计',
+      hint: '完全匿名：不发送账户和设备标识，服务器也不记录您的 IP 地址。您使用应用期间，它每 15 分钟只报告自己的版本和设备类型，让团队了解有多少人在使用新版 Bastyon。',
+    },
     chats: {
       signIn: '请登录：每个账号的聊天保存设置各自独立。',
       privacy: '隐私',

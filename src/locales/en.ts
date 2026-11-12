@@ -604,6 +604,11 @@ export default {
       chatButtonHint:
         'The round button in the bottom right corner. Without it, the header icon opens the chats.',
     },
+    usageStats: {
+      title: 'Statistics',
+      toggle: 'Anonymous usage statistics',
+      hint: 'Completely anonymous: no account, no device ID, and the server does not record your IP address. While you use the app, once every 15 minutes it reports only its version and device type, so the team can see how many people use the new Bastyon.',
+    },
     chats: {
       signIn: 'Sign in: each account has its own chat saving.',
       privacy: 'Privacy',

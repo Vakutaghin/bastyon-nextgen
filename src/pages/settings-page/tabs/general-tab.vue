@@ -152,6 +152,24 @@
       />
     </SC_SystemRow>
   </SC_SystemSection>
+
+  <!-- Анонимная статистика — только в сборке с адресом сервера (usage-stats-config). -->
+  <template v-if="usageStatsShown">
+    <SC_SettingsSectionTitle>{{ t('settings.usageStats.title') }}</SC_SettingsSectionTitle>
+    <SC_SystemSection>
+      <SC_SystemRow data-testid="usage-stats-setting">
+        <SC_SystemLabel>
+          <SC_SystemTitle>{{ t('settings.usageStats.toggle') }}</SC_SystemTitle>
+          <SC_SystemHint>{{ t('settings.usageStats.hint') }}</SC_SystemHint>
+        </SC_SystemLabel>
+        <Switch
+          :checked="prefs.usageStats"
+          :aria-label="t('settings.usageStats.toggle')"
+          @change="setFlag('usageStats', $event)"
+        />
+      </SC_SystemRow>
+    </SC_SystemSection>
+  </template>
   <!-- Скачиваемые модули (IPFS, Tor, голосовой ввод, сжатие видео, mesh) — на
        вкладке «Модули». -->
 </template>
@@ -179,6 +197,7 @@ import { useViewport } from '@/composables/use-viewport'
 import { useHeaderLayoutStore } from '@/stores/header-layout-store'
 import { SC_SettingsSectionTitle } from '../settings-page.styled'
 import HelpLink from '@/b-components/help/help-link.vue'
+import { usageStatsEnabled } from '@/helpers/usage-stats/usage-stats-config'
 
 const uiStore = useUIStore()
 const { language: appLanguage } = storeToRefs(uiStore)
@@ -216,6 +235,7 @@ const widthButtonShown = computed(
 // Настройки содержимого — те, что в старом клиенте жили в группах «посты»,
 // «видео» и «интерфейс».
 const prefs = useAppPreferencesStore()
+const usageStatsShown = usageStatsEnabled()
 
 const COMMENTS_ORDER_OPTIONS: {
   value: AppPreferencesState['commentsOrder']
@@ -236,6 +256,7 @@ type BooleanPreferenceKey =
   | 'linkPreviews'
   | 'chatButton'
   | 'highContrast'
+  | 'usageStats'
 
 function setFlag(key: BooleanPreferenceKey, checked: SwitchValue): void {
   void prefs.set(key, Boolean(checked))

@@ -53,6 +53,12 @@ export interface AppPreferencesState {
    * быстрее, но тексты лежат в IndexedDB незашифрованными.
    */
   storeDecryptedMessages: boolean
+  /**
+   * Анонимная статистика использования: раз в 15 минут, пока приложением
+   * пользуются, — версия и платформа, без аккаунта и идентификатора
+   * (helpers/usage-stats).
+   */
+  usageStats: boolean
 }
 
 export const DEFAULT_APP_PREFERENCES: AppPreferencesState = {
@@ -66,6 +72,7 @@ export const DEFAULT_APP_PREFERENCES: AppPreferencesState = {
   highContrast: false,
   autostart: false,
   storeDecryptedMessages: true,
+  usageStats: true,
 }
 
 /** Значения, которым нельзя верить из хранилища, чинятся до дефолтных. */
@@ -82,6 +89,7 @@ function sanitize(raw: Partial<AppPreferencesState> | null): AppPreferencesState
     'autostart',
     'storeDecryptedMessages',
     'highContrast',
+    'usageStats',
   ] as const) {
     if (typeof raw[key] === 'boolean') next[key] = raw[key]
   }
@@ -146,6 +154,7 @@ export const useAppPreferencesStore = defineStore('appPreferences', {
         highContrast,
         autostart,
         storeDecryptedMessages,
+        usageStats,
       } = this
       await settingsAPI.set(APP_PREFERENCES_KEY, {
         animations,
@@ -158,6 +167,7 @@ export const useAppPreferencesStore = defineStore('appPreferences', {
         highContrast,
         autostart,
         storeDecryptedMessages,
+        usageStats,
       })
     },
   },

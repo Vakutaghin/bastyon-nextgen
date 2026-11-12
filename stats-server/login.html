@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Статистика — вход</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --page: #f9f9f7;
+        --surface: #fcfcfb;
+        --ink: #0b0b0b;
+        --ink-2: #52514e;
+        --line: rgb(11 11 11 / 10%);
+        --accent: #2a78d6;
+        --critical: #d03b3b;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --page: #0d0d0d;
+          --surface: #1a1a19;
+          --ink: #f0efec;
+          --ink-2: #c3c2b7;
+          --line: rgb(255 255 255 / 10%);
+          --accent: #3987e5;
+          --critical: #e66767;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: var(--page);
+        color: var(--ink);
+        font: 15px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      form {
+        width: 100%;
+        max-width: 340px;
+        display: grid;
+        gap: 14px;
+        padding: 28px 24px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 19px;
+      }
+      p {
+        margin: 0;
+        color: var(--ink-2);
+        font-size: 13px;
+      }
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--ink-2);
+      }
+      input {
+        font: inherit;
+        padding: 9px 11px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--page);
+        color: var(--ink);
+      }
+      input:focus-visible,
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      button {
+        font: inherit;
+        font-weight: 600;
+        padding: 10px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+      }
+      .error {
+        color: var(--critical);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <form method="post" action="/login">
+      <div>
+        <h1>Bastyon NextGen</h1>
+        <p>Анонимная статистика использования</p>
+      </div>
+      {{error}}
+      <label>Логин <input name="login" autocomplete="username" required autofocus /></label>
+      <label
+        >Пароль <input name="password" type="password" autocomplete="current-password" required
+      /></label>
+      <button type="submit">Войти</button>
+    </form>
+  </body>
+</html>

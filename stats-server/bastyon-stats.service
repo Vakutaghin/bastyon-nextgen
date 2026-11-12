@@ -1,0 +1,48 @@
+# Анонимная статистика использования Bastyon NextGen (stats-server/README.md).
+# /etc/systemd/system/bastyon-stats.service
+
+[Unit]
+Description=Bastyon NextGen anonymous usage statistics
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 -I /opt/bastyon-stats/server.py serve
+Restart=on-failure
+RestartSec=5
+
+# Своя временная учётка без прав; база — в /var/lib/bastyon-stats.
+DynamicUser=yes
+StateDirectory=bastyon-stats
+StateDirectoryMode=0700
+# Ключ сертификата и пароль админки читает root и передаёт службе копией.
+# tls/ — ссылки на файлы certbot (README.md, «Выкладка»).
+LoadCredential=config:/etc/bastyon-stats/config.json
+LoadCredential=cert:/etc/bastyon-stats/tls/fullchain.pem
+LoadCredential=key:/etc/bastyon-stats/tls/privkey.pem
+
+# Журнала запросов нет и в systemd: сервер сам ничего не печатает, кроме строки запуска.
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+MemoryMax=96M
+CPUQuota=25%
+# По 64 соединения на порт (MAX_CONNECTIONS) и главный поток.
+TasksMax=160
+
+[Install]
+WantedBy=multi-user.target

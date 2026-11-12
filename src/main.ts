@@ -48,6 +48,7 @@ import { initCapacitor } from '@mobile/bootstrap'
 import { setupDeepLinks } from '@/composables/use-deep-links'
 import { setupBackButton } from '@/composables/use-back-button'
 import { setupAppPreferences } from '@/composables/use-app-preferences-effects'
+import { startUsageHeartbeat } from '@/helpers/usage-stats/usage-heartbeat'
 import { setupQuitShortcut } from '@/helpers/desktop/quit-shortcut'
 import { installDropGuard } from '@/helpers/common/drop-guard'
 import { installPopupClickShield } from '@/helpers/common/popup-click-shield'
@@ -147,6 +148,8 @@ watchMainThreadStalls()
 
 void router.isReady().then(() => {
   if (isEmbedRoute()) return
+  // Анонимная статистика использования; встроенный на чужой сайт пост её не шлёт.
+  startUsageHeartbeat()
   // Fire-and-forget: модалка (если нужна) появится сразу после mount; restoreSession
   // дедупится тем же мемоизированным промисом (ensureVaultUnlocked) [A5].
   ensureVaultUnlocked().catch(() => {})

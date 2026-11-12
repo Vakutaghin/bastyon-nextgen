@@ -615,6 +615,11 @@ export default {
       chatButtonHint:
         'Le bouton rond en bas à droite. Sans lui, l’icône de l’en-tête ouvre les discussions.',
     },
+    usageStats: {
+      title: 'Statistiques',
+      toggle: 'Statistiques d’utilisation anonymes',
+      hint: 'Entièrement anonyme : ni compte, ni identifiant d’appareil, et le serveur n’enregistre pas votre adresse IP. Tant que vous utilisez l’application, elle indique toutes les 15 minutes uniquement sa version et le type d’appareil : l’équipe voit ainsi combien de personnes utilisent le nouveau Bastyon.',
+    },
     chats: {
       signIn: 'Connectez-vous : chaque compte enregistre ses conversations séparément.',
       privacy: 'Confidentialité',

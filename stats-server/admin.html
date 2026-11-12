@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Статистика NextGen</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --page: #f9f9f7;
+        --surface: #fcfcfb;
+        --ink: #0b0b0b;
+        --ink-2: #52514e;
+        --muted: #898781;
+        --grid: #e1e0d9;
+        --axis: #c3c2b7;
+        --line: rgb(11 11 11 / 10%);
+        --wash: rgb(11 11 11 / 5%);
+        --series: #2a78d6;
+        --series-hover: #256abf;
+        --good: #006300;
+        --seq-0: #f0efec;
+        --seq-1: #cde2fb;
+        --seq-2: #9ec5f4;
+        --seq-3: #6da7ec;
+        --seq-4: #3987e5;
+        --seq-5: #256abf;
+        --seq-6: #184f95;
+        --seq-7: #0d366b;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --page: #0d0d0d;
+          --surface: #1a1a19;
+          --ink: #f0efec;
+          --ink-2: #c3c2b7;
+          --muted: #898781;
+          --grid: #2c2c2a;
+          --axis: #383835;
+          --line: rgb(255 255 255 / 10%);
+          --wash: rgb(255 255 255 / 6%);
+          --series: #3987e5;
+          --series-hover: #5598e7;
+          --good: #0ca30c;
+          --seq-0: #262624;
+          --seq-1: #104281;
+          --seq-2: #184f95;
+          --seq-3: #1c5cab;
+          --seq-4: #2a78d6;
+          --seq-5: #5598e7;
+          --seq-6: #86b6ef;
+          --seq-7: #b7d3f6;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--ink);
+        font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      main {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+        display: grid;
+        gap: 16px;
+      }
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.25;
+      }
+      h2 {
+        margin: 0;
+        font-size: 15px;
+      }
+      .sub {
+        margin: 4px 0 0;
+        color: var(--ink-2);
+        font-size: 13px;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+      }
+      button:focus-visible,
+      summary:focus-visible,
+      [tabindex]:focus-visible {
+        outline: 2px solid var(--series);
+        outline-offset: 2px;
+      }
+      .ghost {
+        padding: 6px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+      .seg {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        padding: 2px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--surface);
+      }
+      .seg button {
+        padding: 5px 12px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--ink-2);
+      }
+      .seg button:hover {
+        background: var(--wash);
+      }
+      .seg button[aria-pressed='true'] {
+        background: var(--ink);
+        color: var(--surface);
+        font-weight: 600;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+      }
+      .tile,
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      .tile {
+        padding: 14px 16px;
+      }
+      .tile .label {
+        color: var(--ink-2);
+        font-size: 13px;
+      }
+      .tile .value {
+        margin-top: 2px;
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+      .tile .delta {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .card {
+        padding: 16px;
+        min-width: 0;
+      }
+      .card-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px 16px;
+        margin-bottom: 12px;
+      }
+      .chart {
+        position: relative;
+        width: 100%;
+      }
+      .chart svg {
+        display: block;
+        overflow: visible;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+      }
+      details {
+        margin-top: 10px;
+      }
+      summary {
+        color: var(--ink-2);
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th,
+      td {
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--grid);
+        text-align: left;
+        white-space: nowrap;
+      }
+      th {
+        color: var(--ink-2);
+        font-weight: 500;
+      }
+      td.num,
+      th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .partial {
+        color: var(--muted);
+      }
+      .empty {
+        color: var(--muted);
+        padding: 12px 0;
+      }
+      .heat-legend {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .heat-legend .ramp {
+        display: flex;
+        gap: 2px;
+      }
+      .heat-legend .ramp span {
+        width: 18px;
+        height: 10px;
+        border-radius: 2px;
+      }
+      .tooltip {
+        position: fixed;
+        z-index: 10;
+        pointer-events: none;
+        padding: 7px 10px;
+        border-radius: 8px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
+        font-size: 12px;
+        line-height: 1.35;
+        max-width: 240px;
+      }
+      .tooltip strong {
+        display: block;
+        font-size: 14px;
+      }
+      .tooltip span {
+        color: var(--ink-2);
+      }
+      .loading {
+        opacity: 0.55;
+        transition: opacity 0.15s;
+      }
+      .error {
+        color: #d03b3b;
+      }
+      @media (max-width: 560px) {
+        header {
+          flex-direction: column;
+        }
+        .tile .value {
+          font-size: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="app">
+      <header>
+        <div>
+          <h1>Bastyon NextGen: использование</h1>
+          <p class="sub">
+            Анонимные отметки — одна за 15 минут использования с устройства. Сутки, недели и
+            месяцы — по Москве.
+          </p>
+        </div>
+        <form method="post" action="/logout"><button class="ghost" type="submit">Выйти</button></form>
+      </header>
+
+      <div class="seg" id="period" role="group" aria-label="Период">
+        <button type="button" data-days="7">7 дней</button>
+        <button type="button" data-days="30">30 дней</button>
+        <button type="button" data-days="90">90 дней</button>
+        <button type="button" data-days="365">Год</button>
+      </div>
+      <p class="error" id="error" role="alert" hidden></p>
+
+      <section class="tiles" id="tiles" aria-label="Главное"></section>
+
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h2 id="days-title">Устройства за сутки</h2>
+            <p class="sub" id="days-sub"></p>
+          </div>
+          <div class="seg" id="metric" role="group" aria-label="Что показать">
+            <button type="button" data-metric="devices">Устройства</button>
+            <button type="button" data-metric="hours">Часы</button>
+            <button type="button" data-metric="installs">Новые</button>
+          </div>
+        </div>
+        <div class="chart" id="days-chart"></div>
+        <details>
+          <summary>Таблица</summary>
+          <div class="table-wrap" id="days-table"></div>
+        </details>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h2>Когда пользуются</h2>
+            <p class="sub">
+              Сколько устройств в среднем активно в каждый час, по дням недели. Сегодняшний день не
+              входит.
+            </p>
+          </div>
+        </div>
+        <div class="chart" id="heat"></div>
+        <div class="heat-legend" id="heat-legend"></div>
+        <details>
+          <summary>Таблица</summary>
+          <div class="table-wrap" id="heat-table"></div>
+        </details>
+      </section>
+
+      <div class="grid2">
+        <section class="card">
+          <h2>По неделям</h2>
+          <p class="sub">Разные устройства за неделю</p>
+          <div class="table-wrap" id="weeks"></div>
+        </section>
+        <section class="card">
+          <h2>По месяцам</h2>
+          <p class="sub">Разные устройства за месяц</p>
+          <div class="table-wrap" id="months"></div>
+        </section>
+      </div>
+
+      <div class="grid2">
+        <section class="card">
+          <h2>Платформы</h2>
+          <p class="sub">Устройства за сутки и часы за период</p>
+          <div class="table-wrap" id="platforms"></div>
+        </section>
+        <section class="card">
+          <h2>Версии</h2>
+          <p class="sub">Устройства за сутки</p>
+          <div class="table-wrap" id="versions"></div>
+        </section>
+      </div>
+    </main>
+    <div class="tooltip" id="tooltip" role="status" hidden></div>
+    <script src="/admin.js"></script>
+  </body>
+</html>
