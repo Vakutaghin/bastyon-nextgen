@@ -21,8 +21,16 @@
         <SC_RetryLink>{{ t('chat.retry') }}</SC_RetryLink>
       </SC_ErrorBadge>
 
-      <SC_ProgressBadge v-if="uploadProgress != null && uploadProgress < 100">
-        {{ uploadProgress }}%
+      <!-- Отправляется: кольцо крутится с первой секунды — и пока фото готовится
+           и шифруется (процентов ещё нет), а не «0%», похожие на зависание. -->
+      <SC_ProgressBadge
+        v-if="uploading"
+        data-testid="image-uploading"
+        role="status"
+        :aria-label="t('chat.uploading', { progress: uploadProgress ?? 0 })"
+      >
+        <SC_ProgressRing aria-hidden="true" />
+        <span v-if="uploadProgress" aria-hidden="true">{{ uploadProgress }}%</span>
       </SC_ProgressBadge>
     </SC_ImageFrame>
 
@@ -49,6 +57,7 @@ import {
   SC_Image,
   SC_Spinner,
   SC_ProgressBadge,
+  SC_ProgressRing,
   SC_ErrorBadge,
   SC_RetryLink,
   SC_Lightbox,
@@ -70,6 +79,11 @@ const uploadProgress = computed(() => {
   const p = props.message.info?.uploadProgress
   return typeof p === 'number' ? p : null
 })
+const uploading = computed<boolean>(
+  () =>
+    props.message.status === 'sending' ||
+    (uploadProgress.value != null && uploadProgress.value < 100)
+)
 
 const MAX_WIDTH = 280
 
@@ -179,6 +193,17 @@ watch(
     ensureSrc()
   },
   { immediate: true }
+)
+
+// Своё фото: пока готовилось — выбранный снимок, потом — подготовленный
+// (новая ссылка). Выбранный мог и не показаться (HEIC) — подготовленный покажем.
+watch(
+  () => props.message.url,
+  (url) => {
+    if (!isLocal.value || !url || url === resolvedSrc.value) return
+    resolvedSrc.value = url
+    decryptFailed.value = false
+  }
 )
 
 watch(lightboxOpen, (open) => {

@@ -26,6 +26,7 @@ import {
   markSendingFailed,
   pushOptimistic,
   removeOptimistic,
+  revokeObjectUrlQuiet,
 } from './media-sending-helpers'
 import { createOutbox, mediaUrl, releaseMediaUrls, type MediaPayload, type Outbox } from './outbox'
 import { txnState } from './txn-state'
@@ -299,27 +300,63 @@ export function useMediaSending(
     )
   }
 
-  const sendImage = async (chatId: string, file: File | Blob, meta?: { name?: string }) => {
+  /**
+   * Фото: пузырь — сразу, с выбранным снимком на экране (он только у нас; на
+   * сервер уходит подготовленный). Подготовка на телефоне занимает секунды, и
+   * раньше до её конца в чате не было ничего — непонятно, выбралось ли фото и
+   * грузится ли. Возвращает отправку (null — фото не отправить): фото одного
+   * выбора уходят по очереди — у собеседника тот же порядок, а несколько
+   * больших снимков не разжимаются в памяти разом, — но пузыри видны все.
+   */
+  const stageImage = (
+    chatId: string,
+    file: File | Blob,
+    meta?: { name?: string }
+  ): (() => Promise<void>) | null => {
     if (file.size > IMAGE_SIZE_LIMIT_BYTES) {
       console.error('[ChatStore] Image too large:', file.size, 'limit:', IMAGE_SIZE_LIMIT_BYTES)
-      return
+      return null
     }
     const name = (file instanceof File ? file.name : undefined) || meta?.name || 'image'
-    // Без EXIF: зашифрованное фото собеседник всё равно откроет вместе с местом
-    // съёмки. И не больше 2048 px: снимок с телефона каждый скачивал целиком.
-    const photo = await prepareChatPhoto(file)
-    const dims = await extractImageDimensions(photo)
-    const payload: MediaPayload = { kind: 'image', blob: photo, name }
-    await start(
-      chatId,
-      payload,
-      draft(chatId, 'image', mediaUrl(payload), {
+    const id = makeTempId()
+    const preview = URL.createObjectURL(file)
+    pushOptimistic(messages, chatId, {
+      ...draft(chatId, 'image', preview, { mimetype: file.type || 'image/jpeg', size: file.size }),
+      id,
+    })
+    return async () => {
+      // Без EXIF: зашифрованное фото собеседник всё равно откроет вместе с местом
+      // съёмки. И не больше 2048 px: снимок с телефона каждый скачивал целиком.
+      let photo: Blob
+      let dims: Awaited<ReturnType<typeof extractImageDimensions>>
+      try {
+        photo = await prepareChatPhoto(file)
+        dims = await extractImageDimensions(photo)
+      } catch (e) {
+        removeOptimistic(messages, chatId, id)
+        revokeObjectUrlQuiet(preview)
+        throw e
+      }
+      const message = find(chatId, id)
+      revokeObjectUrlQuiet(preview)
+      // Пузырь убрали, пока фото готовилось, — не отправляем.
+      if (!message) return
+      const payload: MediaPayload = { kind: 'image', blob: photo, name }
+      message.url = mediaUrl(payload)
+      message.info = {
+        ...message.info,
         mimetype: photo.type || 'image/jpeg',
         size: photo.size,
         w: dims?.w,
         h: dims?.h,
-      })
-    )
+      }
+      outbox.hold(id, payload)
+      await run(chatId, id, payload)
+    }
+  }
+
+  const sendImage = async (chatId: string, file: File | Blob, meta?: { name?: string }) => {
+    await stageImage(chatId, file, meta)?.()
   }
 
   const sendVideo = async (chatId: string, file: File | Blob, meta?: { name?: string }) => {
@@ -376,7 +413,7 @@ export function useMediaSending(
     return true
   }
 
-  return { sendAudio, sendImage, sendVideo, sendFile, retryMedia }
+  return { sendAudio, stageImage, sendImage, sendVideo, sendFile, retryMedia }
 }
 
 export type MediaSending = ReturnType<typeof useMediaSending>

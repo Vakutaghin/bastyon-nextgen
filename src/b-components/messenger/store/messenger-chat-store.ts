@@ -180,6 +180,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     deleteMessage: sending.deleteMessage,
     sendReaction: sending.sendReaction,
     sendAudio: mediaSending.sendAudio,
+    stageImage: mediaSending.stageImage,
     sendImage: mediaSending.sendImage,
     sendVideo: mediaSending.sendVideo,
     sendFile: mediaSending.sendFile,

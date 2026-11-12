@@ -157,8 +157,11 @@ describe('useMediaSending', () => {
 
   it('sendImage: object-URL освобождается только после отправки', async () => {
     const { api, messages } = setup()
+    // Первая ссылка — выбранный снимок в пузыре до подготовки.
+    vi.mocked(URL.createObjectURL).mockReturnValueOnce('blob:preview')
     matrix.sendImage.mockImplementationOnce(async () => {
-      expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+      expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1)
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview')
       expect(messages['!c:host']![0]!.url).toBe('blob:local')
     })
     await api.sendImage('!c:host', new Blob(['img']))
@@ -169,6 +172,68 @@ describe('useMediaSending', () => {
       expect.objectContaining({ width: 10, height: 20, mimetype: 'image/jpeg' }),
       expect.any(Function)
     )
+  })
+
+  it('stageImage: пузырь — сразу, до подготовки фото; отправка — по вызову', async () => {
+    const { api, messages, outbox } = setup()
+    let prepared: (blob: Blob) => void = () => {}
+    vi.mocked(prepareChatPhoto).mockImplementationOnce(
+      () => new Promise<Blob>((resolve) => (prepared = resolve))
+    )
+    vi.mocked(URL.createObjectURL).mockReturnValueOnce('blob:preview')
+    const original = new File(['exif+pixels'], 'IMG_3.jpg', { type: 'image/jpeg' })
+
+    const send = api.stageImage('!c:host', original)
+    // Ещё ничего не ждали — пузырь уже в ленте, с выбранным снимком и «0%».
+    expect(messages['!c:host']).toEqual([
+      expect.objectContaining({
+        type: 'image',
+        status: 'sending',
+        url: 'blob:preview',
+        info: expect.objectContaining({ uploadProgress: 0, size: original.size }),
+      }),
+    ])
+    expect(prepareChatPhoto).not.toHaveBeenCalled()
+
+    const sending = send!()
+    await Promise.resolve()
+    expect(prepareChatPhoto).toHaveBeenCalledWith(original)
+    expect(matrix.sendImage).not.toHaveBeenCalled()
+    // До конца подготовки в outbox (на повтор и на устройство) — ничего: там
+    // мог бы оказаться снимок с местом съёмки.
+    expect(outbox.payload(messages['!c:host']![0]!.id)).toBeUndefined()
+
+    prepared(new Blob(['pixels'], { type: 'image/jpeg' }))
+    await sending
+    expect(matrix.sendImage).toHaveBeenCalledTimes(1)
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview')
+    expect(messages['!c:host']).toEqual([])
+  })
+
+  it('stageImage: подготовка не удалась — пузырь убирается, ошибка наружу', async () => {
+    const { api, messages } = setup()
+    vi.mocked(prepareChatPhoto).mockRejectedValueOnce(new Error('decode'))
+    vi.mocked(URL.createObjectURL).mockReturnValueOnce('blob:preview')
+    const send = api.stageImage('!c:host', new Blob(['img']))
+    await expect(send!()).rejects.toThrow('decode')
+    expect(messages['!c:host']).toEqual([])
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview')
+    expect(matrix.sendImage).not.toHaveBeenCalled()
+  })
+
+  it('stageImage: пузырь убрали, пока фото готовилось, — не отправляется', async () => {
+    const { api, messages } = setup()
+    const send = api.stageImage('!c:host', new Blob(['img']))
+    messages['!c:host']!.splice(0, 1)
+    await send!()
+    expect(matrix.sendImage).not.toHaveBeenCalled()
+  })
+
+  it('stageImage: больше лимита — ни пузыря, ни отправки', () => {
+    const { api, messages } = setup()
+    const huge = { size: 101 * 1024 * 1024, type: 'image/jpeg' } as Blob
+    expect(api.stageImage('!c:host', huge)).toBeNull()
+    expect(messages['!c:host']).toBeUndefined()
   })
 
   it('sendImage: уходит уменьшенное фото без метаданных — и в пузырь, и в загрузку', async () => {

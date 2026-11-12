@@ -31,6 +31,15 @@ import { isOfflineNow } from '@/helpers/api/offline'
 
 const log = logger.scope('[MessengerStore]')
 
+/** Комната из `Room.myMembership`: своё событие членства — кто и когда пригласил. */
+interface InvitedRoom {
+  roomId?: string
+  getMember?: (id: string) => {
+    name?: string
+    events?: { member?: { getSender?: () => string; getTs?: () => number } | null }
+  } | null
+}
+
 /** Сколько после возврата в приложение переподключаемся без паузы SDK (мс). */
 const FOREGROUND_RETRY_WINDOW_MS = 10_000
 
@@ -97,6 +106,52 @@ export function registerMatrixListeners(
     archive,
     silences,
   } = callbacks
+
+  /** Имя в уведомлении — из профиля Bastyon, а не hex-локалпарт матрикса. */
+  const nameForNotice = (
+    room: { getMember?: (id: string) => { name?: string } | null } | null | undefined,
+    senderId: string
+  ): string => {
+    let address: string | null
+    try {
+      address = getAddressFromMatrixId(senderId)
+    } catch {
+      address = null
+    }
+    return senderDisplayName({
+      profileName: address ? ctx.profileCache?.userProfiles?.[address]?.name : undefined,
+      roomMemberName: room?.getMember?.(senderId)?.name,
+      address,
+      matrixId: senderId,
+    })
+  }
+
+  /**
+   * Новое приглашение — как новое сообщение: звук и уведомление. Только
+   * свежее: на старте SDK сообщает и о давних приглашениях. Не звенит, если
+   * чат на экране или фильтр входящих прячет пригласившего.
+   */
+  const noticeInvite = (room: InvitedRoom | undefined): void => {
+    const roomId = room?.roomId
+    const myId = matrixService.getClient()?.getUserId?.()
+    if (!roomId || !myId) return
+    const invite = room.getMember?.(myId)?.events?.member
+    const at = getEventTs(invite)
+    if (!at || Date.now() - at >= SOUND_MAX_AGE || uiStore.isChatOnScreen(roomId)) return
+    const inviter = invite?.getSender?.() || ''
+    void (async () => {
+      if (inviter && (await silences?.(roomId, inviter).catch(() => false))) return
+      playSound('message')
+      try {
+        notifyMessage(
+          inviter ? nameForNotice(room, inviter) : '',
+          t('messenger.history.invitePreview')
+        )
+      } catch {
+        /* ignore */
+      }
+    })()
+  }
 
   matrixService.on(
     'Room.timeline',
@@ -186,26 +241,10 @@ export function registerMatrixListeners(
               if (await silences?.(roomId, senderId).catch(() => false)) return
               playSound('message')
               // Браузерное уведомление о новом сообщении (если вкладка в фоне
-              // и пользователь включил браузерные уведомления).
+              // и пользователь включил браузерные уведомления). Текст —
+              // человеческое описание, а не шифротекст (S41).
               try {
-                // Имя — из профиля Bastyon, а не hex-локалпарт матрикса; текст —
-                // человеческое описание, а не шифротекст (S41).
-                let address: string | null = null
-                try {
-                  address = getAddressFromMatrixId(senderId)
-                } catch {
-                  address = null
-                }
-                const profileName = address
-                  ? ctx.profileCache?.userProfiles?.[address]?.name
-                  : undefined
-                const senderName = senderDisplayName({
-                  profileName,
-                  roomMemberName: room.getMember?.(senderId)?.name,
-                  address,
-                  matrixId: senderId,
-                })
-                notifyMessage(senderName, notificationPreviewFor(event))
+                notifyMessage(nameForNotice(room, senderId), notificationPreviewFor(event))
               } catch {
                 /* ignore */
               }
@@ -265,8 +304,9 @@ export function registerMatrixListeners(
   matrixService.on('Room.name', reloadDialogs)
   matrixService.on(
     'Room.myMembership',
-    (room?: { roomId?: string }, membership?: string, prevMembership?: string) => {
+    (room?: InvitedRoom, membership?: string, prevMembership?: string) => {
       reloadDialogs()
+      if (membership === 'invite' && prevMembership !== 'invite') noticeInvite(room)
       // Приглашение приняли — в окне чата или на другом устройстве. У открытого
       // чата до этого не было ленты: у приглашённого её нет. Теперь — история.
       const roomId = room?.roomId

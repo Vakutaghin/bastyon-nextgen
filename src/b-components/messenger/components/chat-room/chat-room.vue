@@ -994,15 +994,29 @@ const meshRoute = computed(() => store.activeMeshRoute)
  */
 async function handlePickFiles(files: File[], options?: { asFile: boolean }): Promise<void> {
   // До принятия приглашения отправлять некуда: файл, брошенный на чат, не вступает за вас.
-  if (!store.activeChatId || pendingInvite.value) return
+  const chatId = store.activeChatId
+  if (!chatId || pendingInvite.value) return
   const asFile = options?.asFile === true
+  // Пузыри фото — сразу, все: раньше каждое следующее появлялось, только когда
+  // догрузилось предыдущее. Уходят по очереди, в порядке выбора, и в тот чат,
+  // где их выбрали, — даже если за время загрузки открыли другой.
+  const queue: Array<() => Promise<void>> = []
   for (const file of files) {
     if (tooLargeForChat(file, canSendIpfs, asFile)) continue
     if (!asFile && file.type.startsWith('image/')) {
-      await store.sendImage(store.activeChatId, file, { name: file.name })
+      const send = store.stageImage(chatId, file, { name: file.name })
+      if (send) queue.push(send)
     } else {
       // Видео и прочие файлы отправляются как m.file — отдельный m.video отключён.
-      await store.sendFile(store.activeChatId, file, { name: file.name })
+      queue.push(() => store.sendFile(chatId, file, { name: file.name }))
+    }
+  }
+  for (const send of queue) {
+    try {
+      await send()
+    } catch (e) {
+      // Не ушло одно — остальные всё равно уходят.
+      console.error('[ChatRoom] attachment not sent:', e)
     }
   }
 }

@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   revealDate: vi.fn(),
   messageTime: vi.fn(),
   toast: vi.fn(),
-  sendImage: vi.fn(),
+  stageImage: vi.fn(),
   sendFile: vi.fn(),
 }))
 
@@ -175,7 +175,7 @@ beforeAll(() => setI18nLocale('ru'))
 beforeEach(() => {
   setActivePinia(createPinia())
   for (const key of Object.keys(mocks.drafts)) delete mocks.drafts[key]
-  mocks.sendImage.mockReset()
+  mocks.stageImage.mockReset()
   mocks.sendFile.mockReset()
   voice.calls.length = 0
   voice.listeners.clear()
@@ -188,7 +188,7 @@ beforeEach(() => {
     toggleMeshRoute: vi.fn(),
     shareMeshBinding: vi.fn(),
     replyToMessage: vi.fn(),
-    sendImage: mocks.sendImage,
+    stageImage: mocks.stageImage,
     sendFile: mocks.sendFile,
     sendAudio: vi.fn(),
     getDirectPartnerAddress: () => null,
@@ -300,15 +300,15 @@ describe('полоса ввода чата', () => {
     // Мимо полосы ввода — на строку поиска над лентой.
     w.find('input[type="search"]').element.dispatchEvent(withFiles('drop', 'dataTransfer'))
     await flushPromises()
-    expect(mocks.sendImage).toHaveBeenCalledWith('!a:host', photo, { name: 'sea.jpg' })
+    expect(mocks.stageImage).toHaveBeenCalledWith('!a:host', photo, { name: 'sea.jpg' })
 
     w.find('input[type="search"]').element.dispatchEvent(withFiles('paste', 'clipboardData'))
     await flushPromises()
-    expect(mocks.sendImage).toHaveBeenCalledTimes(1)
+    expect(mocks.stageImage).toHaveBeenCalledTimes(1)
 
     w.find('textarea').element.dispatchEvent(withFiles('paste', 'clipboardData'))
     await flushPromises()
-    expect(mocks.sendImage).toHaveBeenCalledTimes(2)
+    expect(mocks.stageImage).toHaveBeenCalledTimes(2)
   })
 
   it('картинка через «Фото» уходит фото, через «Файл» — файлом (оригиналом)', async () => {
@@ -324,12 +324,62 @@ describe('полоса ввода чата', () => {
     const fileInput = w.findAll('input[type="file"]').find((i) => !i.attributes('accept'))!.element
 
     await pick(photoInput)
-    expect(mocks.sendImage).toHaveBeenCalledWith('!a:host', photo, { name: 'sea.jpg' })
+    expect(mocks.stageImage).toHaveBeenCalledWith('!a:host', photo, { name: 'sea.jpg' })
     expect(mocks.sendFile).not.toHaveBeenCalled()
 
     await pick(fileInput)
     expect(mocks.sendFile).toHaveBeenCalledWith('!a:host', photo, { name: 'sea.jpg' })
-    expect(mocks.sendImage).toHaveBeenCalledTimes(1)
+    expect(mocks.stageImage).toHaveBeenCalledTimes(1)
+  })
+
+  it('несколько фото: пузыри всех — сразу, уходят по очереди и в тот чат, где выбраны', async () => {
+    const w = open('!a:host')
+    await flushPromises()
+    const log: string[] = []
+    const finish: Array<() => void> = []
+    mocks.stageImage.mockImplementation((_chat: string, file: File) => {
+      log.push(`пузырь ${file.name}`)
+      return () =>
+        new Promise<void>((resolve) => {
+          log.push(`отправка ${file.name}`)
+          finish.push(resolve)
+        })
+    })
+    const photos = ['1.jpg', '2.jpg', '3.jpg'].map(
+      (name) => new File(['x'], name, { type: 'image/jpeg' })
+    )
+    const input = w.find('input[type="file"][accept="image/*"]').element
+    Object.defineProperty(input, 'files', { value: photos, configurable: true })
+    input.dispatchEvent(new Event('change'))
+    await flushPromises()
+    expect(log).toEqual(['пузырь 1.jpg', 'пузырь 2.jpg', 'пузырь 3.jpg', 'отправка 1.jpg'])
+
+    // Пока первое грузится, открыли другой чат — остальные уходят туда, где выбраны.
+    mocks.store.activeChatId = '!b:host'
+    finish[0]!()
+    await flushPromises()
+    finish[1]!()
+    await flushPromises()
+    expect(log.slice(3)).toEqual(['отправка 1.jpg', 'отправка 2.jpg', 'отправка 3.jpg'])
+    expect(mocks.stageImage.mock.calls.map((c) => c[0])).toEqual(['!a:host', '!a:host', '!a:host'])
+    finish[2]!()
+  })
+
+  it('одно фото не ушло — следующие всё равно уходят', async () => {
+    const w = open('!a:host')
+    await flushPromises()
+    const sent: string[] = []
+    mocks.stageImage.mockImplementation((_chat: string, file: File) => async () => {
+      if (file.name === '1.jpg') throw new Error('decode')
+      sent.push(file.name)
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const photos = ['1.jpg', '2.jpg'].map((name) => new File(['x'], name, { type: 'image/jpeg' }))
+    const input = w.find('input[type="file"][accept="image/*"]').element
+    Object.defineProperty(input, 'files', { value: photos, configurable: true })
+    input.dispatchEvent(new Event('change'))
+    await flushPromises()
+    expect(sent).toEqual(['2.jpg'])
   })
 
   it('кнопка «Сведения о приложении» — только в чате с поддержкой', async () => {

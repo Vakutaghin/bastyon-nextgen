@@ -43,12 +43,25 @@ export const SC_ProgressBadge = styled.div`
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
+  gap: 6px;
   align-items: center;
   justify-content: center;
   background: var(--color-overlay-25);
   color: var(--color-white);
   font-size: 12px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+`
+
+/* Белое кольцо поверх затемнённого снимка: отправка идёт. */
+export const SC_ProgressRing = styled.div`
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-white-20);
+  border-top-color: var(--color-white);
+  border-radius: 50%;
+  animation: spin 1s linear infinite; /* @keyframes spin — глобально в style.css */
 `
 
 export const SC_ErrorBadge = styled.button`

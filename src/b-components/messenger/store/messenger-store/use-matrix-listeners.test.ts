@@ -348,6 +348,50 @@ describe('Room.receipt', () => {
     expect(chatStore.loadMessages).not.toHaveBeenCalled()
   })
 
+  /** Комната приглашения: своё событие членства — от кого и когда. */
+  const invitedRoom = (ts: number, by = '@peer:host') => ({
+    roomId: '!invite:host',
+    getMember: (id: string) =>
+      id === '@me:host'
+        ? { events: { member: { getSender: () => by, getTs: () => ts } } }
+        : { name: `name-of-${id}` },
+  })
+  const settle = () => new Promise((r) => setTimeout(r, 0))
+
+  it('новое приглашение — как новое сообщение: звук и уведомление от пригласившего', async () => {
+    setup(null)
+    handlers['Room.myMembership']!(invitedRoom(Date.now()), 'invite', undefined)
+    await settle()
+    expect(audioPlay).toHaveBeenCalledTimes(1)
+    expect(notifyMessage).toHaveBeenCalledWith(
+      'name-of-@peer:host',
+      'messenger.history.invitePreview'
+    )
+  })
+
+  it('давнее приглашение (SDK сообщает о нём на старте), открытый чат, фильтр входящих — тихо', async () => {
+    setup(null)
+    handlers['Room.myMembership']!(invitedRoom(Date.now() - 61_000), 'invite', undefined)
+    setup('!invite:host')
+    handlers['Room.myMembership']!(invitedRoom(Date.now()), 'invite', undefined)
+    const silences = vi.fn(async () => true)
+    setup(null, { silences })
+    handlers['Room.myMembership']!(invitedRoom(Date.now()), 'invite', undefined)
+    await settle()
+    expect(silences).toHaveBeenCalledWith('!invite:host', '@peer:host')
+    expect(audioPlay).not.toHaveBeenCalled()
+    expect(notifyMessage).not.toHaveBeenCalled()
+  })
+
+  it('вступили, вышли или приглашение повторилось — не звенит', async () => {
+    setup(null)
+    handlers['Room.myMembership']!(invitedRoom(Date.now()), 'join', 'invite')
+    handlers['Room.myMembership']!(invitedRoom(Date.now()), 'leave', 'invite')
+    handlers['Room.myMembership']!(invitedRoom(Date.now()), 'invite', 'invite')
+    await settle()
+    expect(audioPlay).not.toHaveBeenCalled()
+  })
+
   it('квитанция о прочтении пересчитывает галочки своей комнаты', () => {
     const { chatStore } = setup(ROOM)
     handlers['Room.receipt']!({}, room)

@@ -1149,6 +1149,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     deleteMessage: chatStore.deleteMessage,
     sendReaction: chatStore.sendReaction,
     sendAudio: chatStore.sendAudio,
+    stageImage: chatStore.stageImage,
     sendImage: chatStore.sendImage,
     sendVideo: chatStore.sendVideo,
     sendFile: chatStore.sendFile,

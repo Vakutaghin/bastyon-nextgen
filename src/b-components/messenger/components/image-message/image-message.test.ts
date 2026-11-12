@@ -6,6 +6,7 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reactive } from 'vue'
 import { i18n, setI18nLocale } from '@/i18n'
 
 vi.mock('@/helpers/common/download-media', () => ({ downloadMedia: vi.fn() }))
@@ -57,5 +58,37 @@ describe('ImageMessage', () => {
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(messenger).toHaveBeenCalledTimes(1)
     window.removeEventListener('keydown', messenger)
+  })
+
+  it('своё фото отправляется: кольцо сразу, проценты — когда пошла загрузка; снимок сменяется подготовленным', async () => {
+    const sending = reactive({
+      id: 'local-1',
+      url: 'blob:app/picked',
+      status: 'sending',
+      info: { name: 'IMG_1.jpg', uploadProgress: 0 },
+    }) as unknown as Message
+    wrapper = mount(ImageMessage, {
+      props: { message: sending },
+      global: { plugins: [i18n] },
+    })
+    await flushPromises()
+    const badge = () => wrapper!.find('[data-testid="image-uploading"]')
+    expect(badge().exists()).toBe(true)
+    expect(badge().text()).toBe('')
+    expect(wrapper.get('img').attributes('src')).toBe('blob:app/picked')
+
+    // Фото подготовлено — новая ссылка; загрузка пошла.
+    sending.url = 'blob:app/prepared'
+    sending.info!.uploadProgress = 40
+    await flushPromises()
+    expect(wrapper.get('img').attributes('src')).toBe('blob:app/prepared')
+    expect(badge().text()).toBe('40%')
+    expect(badge().attributes('aria-label')).toBe('загрузка 40%')
+
+    // Ушло (у неудачи статус failed) — кольца нет.
+    sending.status = 'failed'
+    delete sending.info!.uploadProgress
+    await flushPromises()
+    expect(badge().exists()).toBe(false)
   })
 })

@@ -54,10 +54,18 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
   const { uiStore, chatStore, profileCache } = ctx
 
   /** Непрочитанные по счётчику сервера; у открытого чата — ноль. */
-  const unreadCountOf = (room: LooseRoom): number =>
-    uiStore.activeChatId === room.roomId
-      ? 0
-      : room.getUnreadNotificationCount('total') || room.getUnreadNotificationCount('ns.total') || 0
+  /**
+   * Непрочитанные по числам сервера. Приглашение — новое сообщение, как в
+   * переписке: в счётчике на кнопке чата и на значке приложения, в списке —
+   * «1». Сколько в нём сообщений, до вступления не узнать, а сервер его не
+   * считает вовсе — была лишь точка, и приглашение легко было не заметить.
+   */
+  const unreadCountOf = (room: LooseRoom): number => {
+    if (uiStore.activeChatId === room.roomId) return 0
+    const count =
+      room.getUnreadNotificationCount('total') || room.getUnreadNotificationCount('ns.total') || 0
+    return room.getMyMembership?.() === 'invite' ? Math.max(count, 1) : count
+  }
 
   /**
    * Счётчики списка — по свежим числам сервера, без пересборки списка. Число
@@ -282,16 +290,15 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
 
     const muted = matrixService.isRoomMuted(room.roomId)
     // Без звука сервер непрочитанные не считает: новое видно по отметке прочтения.
-    // В приглашении сообщения есть, но сосчитать их до вступления нельзя.
+    // Приглашение считается само (unreadCountOf).
     const hasUnread =
       uiStore.activeChatId !== room.roomId &&
-      (invited ||
-        (muted &&
-          !!lastMessage &&
-          !!myUserId &&
-          lastMessage.senderId !== myUserId &&
-          typeof room.hasUserReadEvent === 'function' &&
-          !room.hasUserReadEvent(myUserId, lastMessage.id)))
+      muted &&
+      !!lastMessage &&
+      !!myUserId &&
+      lastMessage.senderId !== myUserId &&
+      typeof room.hasUserReadEvent === 'function' &&
+      !room.hasUserReadEvent(myUserId, lastMessage.id)
 
     return {
       id: room.roomId,

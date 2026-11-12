@@ -352,17 +352,29 @@ describe('useDialogMapping — mapRoomToDialog', () => {
         ...over,
       })
 
-    it('время — когда пригласили, а не 0 (чат не уходит в низ списка); отмечен новым', async () => {
+    it('время — когда пригласили, а не 0 (чат не уходит в низ списка)', async () => {
       const { ctx: c } = ctx()
       const d = await useDialogMapping(c).mapRoomToDialog(invitedRoom())
       expect(d.lastMessage).toBeUndefined()
       expect(d.createdAt).toBe(5000)
-      expect(d.hasUnread).toBe(true)
+    })
+
+    it('приглашение — новое сообщение: непрочитанных 1 (сервер его не считает), не точка', async () => {
+      const { ctx: c } = ctx()
+      const d = await useDialogMapping(c).mapRoomToDialog(invitedRoom())
+      expect(d.unreadCount).toBe(1)
+      expect(d.hasUnread).toBeUndefined()
+      // Сервер что-то насчитал — его число.
+      const counted = await useDialogMapping(c).mapRoomToDialog(
+        invitedRoom({ getUnreadNotificationCount: () => 3 })
+      )
+      expect(counted.unreadCount).toBe(3)
     })
 
     it('чат открыт — без отметки нового', async () => {
       const { ctx: c } = ctx({ activeChatId: '!room:host' })
       const d = await useDialogMapping(c).mapRoomToDialog(invitedRoom())
+      expect(d.unreadCount).toBe(0)
       expect(d.hasUnread).toBeUndefined()
     })
 
@@ -394,16 +406,27 @@ describe('useDialogMapping — mapRoomToDialog', () => {
 
 describe('useDialogMapping — refreshUnreadCounts', () => {
   it('счётчики — по свежим числам сервера; открытый чат — ноль, чужие id не трогаются', () => {
-    const counts: Record<string, number> = { '!a:host': 0, '!b:host': 5, '!open:host': 2 }
+    const counts: Record<string, number> = {
+      '!a:host': 0,
+      '!b:host': 5,
+      '!open:host': 2,
+      '!invite:host': 0,
+    }
     rooms.clear()
     for (const id of Object.keys(counts)) {
-      rooms.set(id, { roomId: id, getUnreadNotificationCount: () => counts[id] })
+      rooms.set(id, {
+        roomId: id,
+        getUnreadNotificationCount: () => counts[id],
+        getMyMembership: () => (id === '!invite:host' ? 'invite' : 'join'),
+      })
     }
     const dialogs = [
       { id: '!a:host', unreadCount: 3 },
       { id: '!b:host', unreadCount: 1 },
       { id: '!open:host', unreadCount: 4 },
       { id: 'channel:PAuthor', unreadCount: 7 },
+      // Приглашение сервер не считает — остаётся одним новым.
+      { id: '!invite:host', unreadCount: 1 },
     ]
     const uiStore = { activeChatId: '!open:host', dialogs }
     const { refreshUnreadCounts } = useDialogMapping({
@@ -414,6 +437,6 @@ describe('useDialogMapping — refreshUnreadCounts', () => {
 
     refreshUnreadCounts()
 
-    expect(dialogs.map((d) => d.unreadCount)).toEqual([0, 5, 0, 7])
+    expect(dialogs.map((d) => d.unreadCount)).toEqual([0, 5, 0, 7, 1])
   })
 })
