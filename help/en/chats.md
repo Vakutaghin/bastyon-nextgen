@@ -7,6 +7,8 @@ keywords:
   - group members
   - leave group
   - mute notifications
+  - pin a chat
+  - pinned chats
   - search in chat
   - search all chats
   - messages from a member
@@ -68,6 +70,7 @@ Above the list there are **“All”**, **“Personal”**, **“Groups”** and
 
 The three-dot button on a chat:
 
+- **“Pin”** — the chat moves to the top of the list and stays there even when new messages arrive in other chats. Handy for the people you write to most. A pinned chat shows a pin on the right while it has nothing new. The most recently pinned chat goes above the other pinned ones. **“Unpin”** puts the chat back in its place by the time of the last message. Pinning is stored on the chat server and applies on all your devices with this app. The previous Bastyon app does not show pinned chats. Channels, invitations and radio network chats cannot be pinned.
 - **“Members”** — groups only: opens the group window, see [below](#group-chats).
 - **“Save on this device”** — keep this chat on the device so it stays when the server deletes it. The app asks again. **“Stop saving on this device”** turns it back off, see [Chats saved on this device](chat-archive.md).
 - **“Mute notifications”** — the chat stops making sounds and sending notifications. A crossed-out bell appears next to the name, the unread count turns grey, and if the server sent no count, a grey dot takes its place. **“Unmute notifications”** puts it back. The setting is kept on the chat server, so it applies on all your devices and in the previous Bastyon app.

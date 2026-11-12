@@ -239,6 +239,14 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     delete dialog.hasUnread
   }
 
+  /** Закрепление в списке — сразу, не дожидаясь сервера; `undefined` — открепить. */
+  const setDialogPinned = (chatId: string, order: number | undefined): void => {
+    const dialog = dialogs.value.find((d) => d.id === chatId)
+    if (!dialog) return
+    if (order === undefined) delete dialog.pinned
+    else dialog.pinned = order
+  }
+
   const setChatFilter = (kinds: readonly ChatKind[]): void => {
     chatFilter.value = normalizeChatFilter(kinds)
     try {
@@ -335,6 +343,7 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     closeFullScreen,
     markDialogRead,
     setDialogMuted,
+    setDialogPinned,
     setChatFilter,
     toggleChatKind,
     openGroupInfo,

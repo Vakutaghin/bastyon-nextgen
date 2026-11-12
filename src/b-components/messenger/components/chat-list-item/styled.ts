@@ -167,6 +167,14 @@ export const SC_UnreadDot = styled.span`
   background-color: var(--ui-text-dimmed);
 `
 
+/** Закреплён сверху списка — булавка на месте счётчика, когда нового нет. */
+export const SC_PinMark = styled.span`
+  display: inline-flex;
+  margin: 0 2px;
+  font-size: 13px;
+  color: var(--ui-text-dimmed);
+`
+
 export const SC_MenuWrap = styled.div`
   position: relative;
   display: flex;

@@ -279,6 +279,24 @@ describe('useDialogMapping — mapRoomToDialog', () => {
     })
   })
 
+  describe('закрепление', () => {
+    it('метка m.favourite → pinned с её порядком', async () => {
+      const d = await useDialogMapping(ctx().ctx).mapRoomToDialog(
+        fakeRoom({ tags: { 'm.favourite': { order: 0.25 } } })
+      )
+      expect(d.pinned).toBe(0.25)
+    })
+
+    it('без метки и у приглашения — не закреплён', async () => {
+      const plain = await useDialogMapping(ctx().ctx).mapRoomToDialog(fakeRoom({ tags: {} }))
+      expect(plain.pinned).toBeUndefined()
+      const invite = await useDialogMapping(ctx().ctx).mapRoomToDialog(
+        fakeRoom({ tags: { 'm.favourite': { order: 0.5 } }, getMyMembership: () => 'invite' })
+      )
+      expect(invite.pinned).toBeUndefined()
+    })
+  })
+
   describe('личная комната «#<sha224>»', () => {
     const TETATET_NAME = `#${tetatetid('0a0b0c', PEER_HEX)}`
     const me = { userId: '@0a0b0c:host', name: 'me', membership: 'join' }

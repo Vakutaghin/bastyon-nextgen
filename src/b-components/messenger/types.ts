@@ -128,6 +128,8 @@ export interface Dialog {
   invite?: { by: string }
   /** Личный чат начали вы (создатель комнаты): фильтр входящих его не прячет. */
   startedByMe?: boolean
+  /** Закреплён сверху списка: порядок метки `m.favourite`, меньше — выше (lib/chat-pins). */
+  pinned?: number
 }
 
 /** Переписка на несколько человек: группа Matrix, канал или комната mesh-сети. */

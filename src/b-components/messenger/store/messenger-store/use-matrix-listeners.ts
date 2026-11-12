@@ -302,6 +302,8 @@ export function registerMatrixListeners(
   const reloadDialogs = (): void => scheduleLoadDialogs()
   matrixService.on('Room', reloadDialogs)
   matrixService.on('Room.name', reloadDialogs)
+  // Чат закрепили или открепили на другом устройстве (метки комнаты).
+  matrixService.on('Room.tags', reloadDialogs)
   matrixService.on(
     'Room.myMembership',
     (room?: InvitedRoom, membership?: string, prevMembership?: string) => {

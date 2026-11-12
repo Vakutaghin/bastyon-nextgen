@@ -109,6 +109,15 @@
           :title="t('messenger.group.unread')"
           :aria-label="t('messenger.group.unread')"
         />
+        <SC_PinMark
+          v-else-if="pinned && !menuOpen"
+          data-testid="chat-pinned-mark"
+          role="img"
+          :title="t('messenger.pinnedMark')"
+          :aria-label="t('messenger.pinnedMark')"
+        >
+          <PushpinOutlined />
+        </SC_PinMark>
 
         <SC_DotsBtn
           class="dots-btn"
@@ -129,6 +138,17 @@
               :aria-label="t('a11y.chatActions')"
               :style="dropdownStyle"
             >
+              <SC_DropdownItem
+                role="menuitem"
+                tabindex="-1"
+                v-if="canPin"
+                data-testid="pin-toggle"
+                @click.stop="onTogglePinned"
+              >
+                <UnpinOutlined v-if="pinned" />
+                <PushpinOutlined v-else />
+                {{ pinned ? t('messenger.unpinChat') : t('messenger.pinChat') }}
+              </SC_DropdownItem>
               <SC_DropdownItem
                 role="menuitem"
                 tabindex="-1"
@@ -231,8 +251,10 @@ import {
   EyeOffIcon,
   EyeOutlined,
   LogoutOutlined,
+  PushpinOutlined,
   RadioTowerIcon,
   TeamOutlined,
+  UnpinOutlined,
 } from '@/components/icons'
 import { isMeshDialogId } from '@/mesh/ids'
 import { isGroupDialog, isMeshTransport, type Dialog, type Message } from '../../types'
@@ -277,6 +299,7 @@ import {
   SC_CancelBtn,
   SC_ConfirmDeleteBtn,
   SC_NetworkMark,
+  SC_PinMark,
 } from './styled'
 
 const props = defineProps<{ dialog: Dialog }>()
@@ -513,6 +536,18 @@ function toggleMenu(e: MouseEvent): void {
 function onShowMembers(): void {
   menuOpen.value = false
   store.openGroupInfo(props.dialog.id)
+}
+
+/**
+ * Закрепить сверху списка — комнаты Matrix, куда вступили: метка комнаты на
+ * сервере (lib/chat-pins). У mesh-диалогов и приглашений её нет.
+ */
+const canPin = computed<boolean>(() => !isMeshDialogId(props.dialog.id) && !props.dialog.invite)
+const pinned = computed<boolean>(() => props.dialog.pinned !== undefined)
+
+function onTogglePinned(): void {
+  menuOpen.value = false
+  void store.setDialogPinned(props.dialog.id, !pinned.value)
 }
 
 function onToggleMuted(): void {

@@ -23,6 +23,7 @@ import { groupMembers, membersTitle, previewMemberIds, readGroupState } from '..
 import { PCRYPTO_DIALOG_TIMEOUT } from '../consts'
 import { groupPlaintextReason } from '../messenger-chat-store/encryption-rule'
 import type { MessengerStoreContext } from './types'
+import { pinOrderFromTags } from '../../lib/chat-pins'
 
 /**
  * Участник комнаты в «старом» (loose) виде, как его отдаёт matrix-сервер в раннере:
@@ -289,6 +290,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
     const startedByMe = !!creator && creator === myUserId
 
     const muted = matrixService.isRoomMuted(room.roomId)
+    const pinned = invited ? undefined : pinOrderFromTags(room.tags)
     // Без звука сервер непрочитанные не считает: новое видно по отметке прочтения.
     // Приглашение считается само (unreadCountOf).
     const hasUnread =
@@ -311,6 +313,7 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
       ...(hasUnread ? { hasUnread } : {}),
       ...(invited ? { invite: { by: invitedBy } } : {}),
       ...(startedByMe ? { startedByMe } : {}),
+      ...(pinned !== undefined ? { pinned } : {}),
     }
   }
 

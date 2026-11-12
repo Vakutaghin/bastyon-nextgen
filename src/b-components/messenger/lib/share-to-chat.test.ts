@@ -44,6 +44,21 @@ describe('отправить в чат: куда', () => {
     expect(shareTargets(list, '  РАБ ', hidden).map((d) => d.id)).toEqual(['!mid:host'])
   })
 
+  it('закреплённые — сверху, как в списке чатов', () => {
+    const list = [
+      dialog('!new:host', 'Новый', 30),
+      dialog('!pinned:host', 'Закреплённый', 10, { pinned: 0.5 }),
+      dialog('!top:host', 'Самый верхний', 5, { pinned: 0.25 }),
+      dialog('!mid:host', 'Средний', 20),
+    ]
+    expect(shareTargets(list).map((d) => d.id)).toEqual([
+      '!top:host',
+      '!pinned:host',
+      '!new:host',
+      '!mid:host',
+    ])
+  })
+
   it('без шифрования — открытая или большая группа; личный чат шифруется всегда', () => {
     expect(isOpenChat({ group: { unencrypted: 'public' } as Dialog['group'] })).toBe(true)
     expect(isOpenChat({ group: { unencrypted: 'large' } as Dialog['group'] })).toBe(true)

@@ -41,6 +41,7 @@ import { logger } from '@/services/logger'
 import type { MatrixClient, MatrixEventContent } from './matrix-service/types'
 import type { MatrixClient as SdkMatrixClient, ICreateClientOpts } from 'matrix-js-sdk'
 import { Preset, PushRuleActionName, Visibility } from 'matrix-js-sdk'
+import { PIN_TAG } from '../lib/chat-pins'
 
 const log = logger.scope('[matrix]')
 
@@ -692,6 +693,17 @@ export class MatrixService {
   public async setRoomMuted(roomId: string, muted: boolean): Promise<void> {
     if (!this.client) throw new Error('Client not initialized')
     await this.client.setRoomMutePushRule('global', roomId, muted)
+  }
+
+  /**
+   * Закрепить чат сверху списка: метка комнаты `m.favourite` с порядком
+   * (lib/chat-pins); `null` — открепить. Метки — личные данные аккаунта,
+   * общие для всех его устройств.
+   */
+  public async setRoomPinned(roomId: string, order: number | null): Promise<void> {
+    if (!this.client) throw new Error('Client not initialized')
+    if (order === null) await this.client.deleteRoomTag(roomId, PIN_TAG)
+    else await this.client.setRoomTag(roomId, PIN_TAG, { order })
   }
 
   /** Данные аккаунта на сервере (одни на все устройства); undefined — нет клиента или записи. */

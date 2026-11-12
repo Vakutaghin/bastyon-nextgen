@@ -18,6 +18,7 @@ import { t } from '@/i18n'
 
 import { MatrixService, matrixService } from '../services/matrix-service'
 import { isMeshDialogId } from '@/mesh/ids'
+import { nextPinOrder } from '../lib/chat-pins'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'
 import { useMeshtasticConnectionStore } from '@/mesh/store/meshtastic-connection-store'
@@ -879,6 +880,31 @@ export const useMessengerStore = defineStore('messenger', () => {
   }
 
   /**
+   * Закрепить чат сверху списка или открепить: метка комнаты на сервере, общая
+   * для устройств аккаунта (lib/chat-pins). В списке меняется сразу; сервер не
+   * принял — возвращаем как было.
+   */
+  const setDialogPinned = async (chatId: string, pinned: boolean): Promise<void> => {
+    if (isMeshDialogId(chatId)) return
+    const dialog = uiStore.dialogs.find((d) => d.id === chatId)
+    if (!dialog || dialog.invite) return
+    const was = dialog.pinned
+    if ((was !== undefined) === pinned) return
+    const order = pinned ? nextPinOrder(uiStore.dialogs) : undefined
+    uiStore.setDialogPinned(chatId, order)
+    try {
+      await matrixService.setRoomPinned(chatId, order ?? null)
+      persistDialogs()
+    } catch (e) {
+      log.error('Не удалось закрепить чат:', e)
+      uiStore.setDialogPinned(chatId, was)
+      appToast.error({
+        message: t(pinned ? 'messenger.pinFailed' : 'messenger.unpinFailed'),
+      })
+    }
+  }
+
+  /**
    * @param opts.purge — стереть с диска sync-state и кэш расшифровок текущего
    *   юзера (signOut / удаление аккаунта, V15/Р6). При смене аккаунта — false:
    *   кэши per-user и пригодятся при возврате.
@@ -1166,6 +1192,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     canDeleteOthers: (chatId: string): boolean =>
       canRedactOthers(matrixService.getRoom(chatId), matrixService.getClient()?.getUserId() ?? ''),
     setDialogMuted,
+    setDialogPinned,
     setChatFilter: uiStore.setChatFilter,
     toggleChatKind: uiStore.toggleChatKind,
     openGroupInfo: uiStore.openGroupInfo,

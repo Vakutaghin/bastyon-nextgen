@@ -58,6 +58,8 @@ function trimDialog(d: Dialog): Dialog {
     hasUnread: d.hasUnread,
     // Иначе до первого синка фильтр входящих прятал бы чаты, начатые вами.
     startedByMe: d.startedByMe,
+    // Закреплённые и до первого синка сверху.
+    pinned: d.pinned,
   }
 }
 

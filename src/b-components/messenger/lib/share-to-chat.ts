@@ -7,6 +7,7 @@
  */
 
 import { isMeshDialogId } from '@/mesh/ids'
+import { pinnedFirst } from './chat-pins'
 
 import { isMeshTransport, type Dialog } from '../types'
 import { isChannelChatId } from './channels'
@@ -30,7 +31,7 @@ export function isOpenChat(dialog: Pick<Dialog, 'group'>): boolean {
 const normalize = (s: string): string => s.toLocaleLowerCase().replace(/ё/g, 'е').trim()
 
 /**
- * Чаты для выбора: свежие сверху, как в списке чатов; `query` — по названию
+ * Чаты для выбора: закреплённые и свежие сверху, как в списке чатов; `query` — по названию
  * или нику собеседника. `hidden` — спрятанные фильтром входящих: их нет и в
  * списке чатов, пока их не показали.
  */
@@ -40,12 +41,13 @@ export function shareTargets(
   hidden: ReadonlySet<string> = new Set()
 ): Dialog[] {
   const q = normalize(query)
-  return dialogs
+  const byTime = dialogs
     .filter((d) => isShareTarget(d) && !hidden.has(d.id))
     .filter((d) => !q || normalize(d.partner.name || '').includes(q))
     .map((d, i) => ({ d, i, time: d.lastMessage?.timestamp ?? d.createdAt ?? 0 }))
     .sort((a, b) => b.time - a.time || a.i - b.i)
     .map(({ d }) => d)
+  return pinnedFirst(byTime, (d) => d.pinned)
 }
 
 /** Текст сообщения: подпись, если есть, и ссылка отдельной строкой. */

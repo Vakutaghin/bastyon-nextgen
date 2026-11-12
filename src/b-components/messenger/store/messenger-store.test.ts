@@ -34,6 +34,7 @@ const h = vi.hoisted(() => {
     setPresenceVisible: vi.fn(async () => {}),
     createDirectRoom: vi.fn(async (): Promise<string | null> => '!new:host'),
     joinIfInvited: vi.fn(async () => {}),
+    setRoomPinned: vi.fn(async () => {}),
   }
   /** Синк принёс собеседника в новую комнату (MatrixService.waitForMember). */
   const service = { waitForMember: vi.fn(async () => true) }
@@ -600,5 +601,47 @@ describe('messenger-ui-store: фильтр списка', () => {
     setActivePinia(createPinia())
     localStorage.setItem('BST_MSG_CHAT_FILTER', 'junk')
     expect(useMessengerUiStore().chatFilter).toEqual([])
+  })
+})
+
+describe('messenger-store: закрепление чатов', () => {
+  it('закреплённый встаёт выше прежних закреплённых, метка уходит на сервер', async () => {
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    ui.setDialogs([dialog('a'), { ...dialog('b'), pinned: 0.5 }])
+    await store.setDialogPinned('a', true)
+    expect(h.matrix.setRoomPinned).toHaveBeenCalledWith('a', 0.25)
+    expect(ui.dialogs.find((d) => d.id === 'a')?.pinned).toBe(0.25)
+  })
+
+  it('открепить — метка снимается', async () => {
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    ui.setDialogs([{ ...dialog('b'), pinned: 0.5 }])
+    await store.setDialogPinned('b', false)
+    expect(h.matrix.setRoomPinned).toHaveBeenCalledWith('b', null)
+    expect(ui.dialogs[0]?.pinned).toBeUndefined()
+  })
+
+  it('сервер не принял — как было, и сказано об этом', async () => {
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    ui.setDialogs([dialog('a')])
+    h.matrix.setRoomPinned.mockRejectedValueOnce(new Error('500'))
+    await store.setDialogPinned('a', true)
+    expect(ui.dialogs[0]?.pinned).toBeUndefined()
+    expect(h.toast.error).toHaveBeenCalledWith({ message: 'messenger.pinFailed' })
+  })
+
+  it('приглашение и уже закреплённый — без запроса', async () => {
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    ui.setDialogs([
+      { ...dialog('inv'), invite: { by: '@x:host' } },
+      { ...dialog('p'), pinned: 0.5 },
+    ])
+    await store.setDialogPinned('inv', true)
+    await store.setDialogPinned('p', true)
+    expect(h.matrix.setRoomPinned).not.toHaveBeenCalled()
   })
 })

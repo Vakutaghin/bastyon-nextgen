@@ -227,6 +227,7 @@ import { useMessengerScreenStore } from '../../store/messenger-screen-store'
 import { useMessengerChatStore } from '../../store/messenger-chat-store'
 import { useMessengerArchiveStore } from '../../store/messenger-archive-store'
 import { channelChatId } from '../../lib/channels'
+import { pinnedFirst } from '../../lib/chat-pins'
 import { getAddressFromMatrixId } from '../../helpers'
 import { useMessengerUiStore, type ChatKind } from '../../store/messenger-ui-store'
 import ChatListItem from '../chat-list-item/chat-list-item.vue'
@@ -342,13 +343,24 @@ function mergeByTime(dialogs: Row[], channelList: Row[]): Row[] {
   return out.concat(channelList.slice(i))
 }
 
+/** Закреплённые чаты — сверху по порядку закрепления (lib/chat-pins). */
+const pinOfRow = (row: Row): number | undefined => row.dialog?.pinned
+
 const shown = computed<Row[]>(() => {
   // Каналы фильтр не прячет — среди «только скрытых» их нет.
-  if (screen.view === 'only') return dialogRows.value
-  if (!showAll.value && !isOn('channels')) return dialogRows.value
+  if (screen.view === 'only') return pinnedFirst(dialogRows.value, pinOfRow)
+  if (!showAll.value && !isOn('channels')) return pinnedFirst(dialogRows.value, pinOfRow)
   if (!showAll.value && !isOn('direct') && !isOn('groups')) return channelRows.value
-  return mergeByTime(dialogRows.value, channelRows.value)
+  // Каналы закрепить нельзя: встают по времени среди незакреплённых.
+  const [pinned, rest] = splitPinned(dialogRows.value)
+  return [...pinned, ...mergeByTime(rest, channelRows.value)]
 })
+
+function splitPinned(rows: Row[]): [Row[], Row[]] {
+  const ordered = pinnedFirst(rows, pinOfRow)
+  const count = ordered.findIndex((r) => pinOfRow(r) === undefined)
+  return count === -1 ? [ordered, []] : [ordered.slice(0, count), ordered.slice(count)]
+}
 
 // Поиск идёт по всем чатам, какой бы раздел ни был выбран.
 const searchCandidates = computed<SearchCandidate<Row>[]>(() =>
