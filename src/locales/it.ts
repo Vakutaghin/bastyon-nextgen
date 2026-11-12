@@ -1223,6 +1223,9 @@ export default {
       lastSeen: 'ultimo accesso {ago}',
     },
     searchPlaceholder: 'Cerca nella conversazione…',
+    mention: {
+      title: 'Menziona un membro',
+    },
     search: {
       older: 'Risultato precedente',
       newer: 'Risultato successivo',

@@ -1227,6 +1227,9 @@ export default {
       lastSeen: 'visto por última vez {ago}',
     },
     searchPlaceholder: 'Buscar en la conversación…',
+    mention: {
+      title: 'Mencionar a un miembro',
+    },
     search: {
       older: 'Resultado anterior',
       newer: 'Resultado posterior',

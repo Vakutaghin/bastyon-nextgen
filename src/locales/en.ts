@@ -1214,6 +1214,9 @@ export default {
       lastSeen: 'last seen {ago}',
     },
     searchPlaceholder: 'Search in conversation…',
+    mention: {
+      title: 'Mention a member',
+    },
     search: {
       older: 'Earlier match',
       newer: 'Later match',

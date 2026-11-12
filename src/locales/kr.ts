@@ -1208,6 +1208,9 @@ export default {
       lastSeen: '마지막 접속 {ago}',
     },
     searchPlaceholder: '대화에서 검색…',
+    mention: {
+      title: '멤버 언급',
+    },
     search: {
       older: '이전 결과',
       newer: '다음 결과',

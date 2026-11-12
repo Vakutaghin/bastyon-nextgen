@@ -139,3 +139,101 @@ test('упоминание из прежнего Bastyon: «@имя» ссылк
   await mentions.nth(0).click()
   await expect(page).toHaveURL(new RegExp(`/${BOB}$`))
 })
+
+/**
+ * Состав группы — у Matrix-комнаты, а сервера чатов в тесте нет: клиент
+ * подменён на такой, у которого есть только эта комната и её участники.
+ */
+async function fakeGroupRoom(page: Page): Promise<void> {
+  await page.evaluate(
+    async ({ group, me, bob, carol }) => {
+      const { matrixService } =
+        await import('/src/b-components/messenger/services/matrix-service.ts')
+      const member = (userId: string) => ({ userId, membership: 'join' })
+      const room = {
+        roomId: group,
+        currentState: {
+          getMembers: () => [member(me), member(bob), member(carol)],
+          getStateEvents: () => null,
+        },
+        getJoinRule: () => 'invite',
+        loadMembersIfNeeded: async () => true,
+      }
+      const real = matrixService.getClient.bind(matrixService)
+      ;(matrixService as unknown as { getClient: () => unknown }).getClient = () => ({
+        ...(real() ?? {}),
+        getUserId: () => me,
+        getRoom: (id: string) => (id === group ? room : null),
+        getIgnoredUsers: () => [],
+      })
+    },
+    { group: GROUP, me: mx(ME), bob: mx(BOB), carol: mx(CAROL) }
+  )
+}
+
+test('«@» в группе: список участников, выбор стрелками, Enter и нажатием; уходит @hex:имя', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await signIn(page)
+  await page.setViewportSize({ width: 1400, height: 900 })
+  await fakeGroupRoom(page)
+  await openGroup(page, 'Кто посмотрит?')
+
+  const field = page.getByRole('textbox', { name: 'Введите сообщение...' })
+  const picker = page.getByTestId('mention-picker')
+  const options = picker.getByTestId('mention-option')
+  await expect(page.getByText('Кто посмотрит?').first()).toBeVisible({ timeout: 30_000 })
+
+  // «@» — все, кроме вас; буквы сужают.
+  await field.click()
+  await field.pressSequentially('Привет @')
+  await expect(options.locator('.name')).toHaveText(['bob_ng', 'carol_ng'])
+  await expect(field).toHaveAttribute('aria-expanded', 'true')
+  await field.press('c')
+  await expect(options.locator('.name')).toHaveText(['carol_ng'])
+  await field.press('Backspace')
+
+  // Стрелка вниз и Enter — второй; в поле «@имя ».
+  await field.press('ArrowDown')
+  await expect(options.nth(1)).toHaveAttribute('aria-selected', 'true')
+  await field.press('Enter')
+  await expect(picker).toBeHidden()
+  await expect(field).toHaveValue('Привет @carol_ng ')
+
+  // Нажатием — тоже; Esc закрывает только список, чат остаётся.
+  await field.pressSequentially('и @')
+  await options.filter({ hasText: 'bob_ng' }).click()
+  await expect(field).toHaveValue('Привет @carol_ng и @bob_ng ')
+  await expect(field).toBeFocused()
+  await field.pressSequentially('@')
+  await expect(picker).toBeVisible()
+  await field.press('Escape')
+  await expect(picker).toBeHidden()
+  await expect(field).toBeVisible()
+  await field.press('Backspace')
+
+  // Отправили — в сообщении @hex:имя, в пузыре — «@имя» ссылками.
+  await field.pressSequentially('глянь')
+  await field.press('Enter')
+  const sent = `Привет @${hex(CAROL)}:carol_ng и @${hex(BOB)}:bob_ng глянь`
+  await expect
+    .poll(() =>
+      page.evaluate((group) => {
+        const s = (
+          document.querySelector('#app') as unknown as {
+            __vue_app__: { config: { globalProperties: { $pinia: { _s: Stores } } } }
+          }
+        ).__vue_app__.config.globalProperties.$pinia._s
+        const list = (
+          s.get('messenger-chat') as unknown as {
+            messages: Record<string, { text?: string }[]>
+          }
+        ).messages[group]
+        return list?.[list.length - 1]?.text
+      }, GROUP)
+    )
+    .toBe(sent)
+  const bubble = page.getByTestId('message-list').locator('.message-text').last()
+  await expect(bubble.getByTestId('mention')).toHaveText(['@carol_ng', '@bob_ng'])
+})

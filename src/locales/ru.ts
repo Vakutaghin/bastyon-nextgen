@@ -1217,6 +1217,9 @@ export default {
       lastSeen: 'был(а) в сети {ago}',
     },
     searchPlaceholder: 'Поиск в переписке…',
+    mention: {
+      title: 'Упомянуть участника',
+    },
     search: {
       older: 'Найденное раньше',
       newer: 'Найденное позже',

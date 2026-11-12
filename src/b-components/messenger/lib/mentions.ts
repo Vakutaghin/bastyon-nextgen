@@ -85,3 +85,66 @@ export function mentionName(name: string, address: string): string {
 export function mentionToken(address: string, name: string): string {
   return `@${addressToHex(address)}:${mentionName(name, address)}`
 }
+
+/** Набирают упоминание: «@» в начале слова и буквы после него до каретки. */
+export interface MentionQuery {
+  /** Где «@». */
+  start: number
+  /** Набранное после «@» (может быть пусто). */
+  query: string
+}
+
+/**
+ * Набирается ли упоминание у каретки: «@» в начале текста или после пробела,
+ * между ним и кареткой — только буквы, цифры и «_». Иначе null.
+ */
+export function mentionQueryAt(text: string, caret: number): MentionQuery | null {
+  const before = text.slice(0, caret)
+  const m = /(?:^|\s)@([\p{L}\p{N}_]{0,50})$/u.exec(before)
+  if (!m) return null
+  return { start: caret - m[1]!.length - 1, query: m[1]! }
+}
+
+/**
+ * Выбрали участника: набранное «@бо» становится «@имя » (с пробелом — можно
+ * писать дальше). В поле — имя, в сообщение уйдёт `@hex:имя` (encodeMentions).
+ */
+export function insertMentionAt(
+  text: string,
+  at: MentionQuery,
+  caret: number,
+  name: string,
+  address: string
+): { text: string; caret: number } {
+  const inserted = `@${mentionName(name, address)} `
+  const rest = text.slice(caret).replace(/^ /, '')
+  return {
+    text: text.slice(0, at.start) + inserted + rest,
+    caret: at.start + inserted.length,
+  }
+}
+
+/** Участник группы для упоминания. */
+export interface MentionMember {
+  address: string
+  name: string
+}
+
+/**
+ * Перед отправкой: «@имя» участника группы — в `@hex:имя`, как пишут прежний
+ * Bastyon и Forta Chat. Имена в Bastyon уникальны, так что «@имя», набранное
+ * руками, — тоже упоминание, как в Telegram. Почта (x@имя) и часть слова
+ * (@имя2) не трогаются; уже готовые `@hex:имя` — тоже.
+ */
+export function encodeMentions(text: string, members: readonly MentionMember[]): string {
+  if (!text.includes('@') || !members.length) return text
+  const byName = new Map<string, MentionMember>()
+  for (const m of members) byName.set(mentionName(m.name, m.address).toLowerCase(), m)
+  return text.replace(
+    /(^|[^\p{L}\p{N}_@])@([\p{L}\p{N}_]{1,50})(?![\p{L}\p{N}_])/gu,
+    (whole, lead: string, name: string) => {
+      const member = byName.get(name.toLowerCase())
+      return member ? `${lead}${mentionToken(member.address, member.name)}` : whole
+    }
+  )
+}

@@ -853,3 +853,48 @@ export const SC_KeyChangedAccept = styled.button`
     color: var(--ui-text-inverted);
   }
 `
+
+/** Кого упомянуть: над полосой ввода, по её ширине (mention-picker). */
+export const SC_MentionList = styled.div`
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% + 4px);
+  display: flex;
+  flex-direction: column;
+  max-height: min(240px, 40vh);
+  overflow-y: auto;
+  padding: 4px 0;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+`
+
+export const SC_MentionOption = styled.button`
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: var(--ui-text);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+
+  .name {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &:hover,
+  &.active {
+    background: var(--ui-bg-elevated);
+  }
+`

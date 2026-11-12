@@ -1161,6 +1161,9 @@ export default {
       lastSeen: '最后在线：{ago}',
     },
     searchPlaceholder: '在对话中搜索…',
+    mention: {
+      title: '提及成员',
+    },
     search: {
       older: '更早的结果',
       newer: '更晚的结果',

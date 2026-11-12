@@ -1212,6 +1212,9 @@ export default {
       lastSeen: 'последњи пут на мрежи {ago}',
     },
     searchPlaceholder: 'Претрага у разговору…',
+    mention: {
+      title: 'Помени члана',
+    },
     search: {
       older: 'Раније пронађено',
       newer: 'Касније пронађено',

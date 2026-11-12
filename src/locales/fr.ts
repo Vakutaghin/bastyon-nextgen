@@ -1238,6 +1238,9 @@ export default {
       lastSeen: 'vu {ago}',
     },
     searchPlaceholder: 'Rechercher dans la conversation…',
+    mention: {
+      title: 'Mentionner un membre',
+    },
     search: {
       older: 'Résultat précédent',
       newer: 'Résultat suivant',

@@ -1236,6 +1236,9 @@ export default {
       lastSeen: 'zuletzt online {ago}',
     },
     searchPlaceholder: 'Im Gespräch suchen…',
+    mention: {
+      title: 'Mitglied erwähnen',
+    },
     search: {
       older: 'Früherer Treffer',
       newer: 'Späterer Treffer',

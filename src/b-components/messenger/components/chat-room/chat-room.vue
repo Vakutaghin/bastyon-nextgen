@@ -303,6 +303,13 @@
       <!-- NORMAL STATE -->
       <template v-else>
         <EmojiPicker v-if="showEmojiPicker" @select="onEmojiSelect" />
+        <MentionPicker
+          v-if="mentionOpen"
+          :members="mentionShown"
+          :active="mentionActive"
+          :list-id="MENTION_LIST_ID"
+          @pick="pickMention"
+        />
 
         <!-- До первого сообщения комнаты нет: файлы, PKOIN и голосовые — после него. -->
         <SC_InputSlot v-if="!inviteMode">
@@ -324,8 +331,15 @@
           :aria-label="t('messenger.inputPlaceholder')"
           rows="1"
           enterkeyhint="send"
-          @keydown="handleKeydown"
-          @input="handleInput"
+          aria-autocomplete="list"
+          :aria-expanded="mentionOpen ? 'true' : undefined"
+          :aria-controls="mentionOpen ? MENTION_LIST_ID : undefined"
+          :aria-activedescendant="mentionOpen ? `${MENTION_LIST_ID}-${mentionActive}` : undefined"
+          @keydown="onInputKeydown"
+          @keyup="onInputKeyup"
+          @input="onInput"
+          @click="updateMention"
+          @blur="closeMention"
         />
 
         <SC_InputSlot>
@@ -439,6 +453,8 @@ import ChatInvite from '../chat-invite/chat-invite.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import VoiceInputButton from '@/b-components/voice-input/voice-input-button.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
+import MentionPicker from './mention-picker.vue'
+import { useMentionPicker } from './use-mention-picker'
 import { plainMentions } from '../../lib/mentions'
 import PkoinTransferModal from '../pkoin-transfer-modal/pkoin-transfer-modal.vue'
 import { useMessengerStore } from '../../store'
@@ -874,7 +890,9 @@ const {
   focusInput,
   adjustHeight,
 } = useChatInput({
-  onSend: (text) => {
+  onSend: (typed) => {
+    // «@имя» участников группы — упоминания в формате прежнего Bastyon.
+    const text = encodeMentionText(typed)
     stopTyping()
     // Сообщение ушло — голосовой ввод выключается без хвоста: дораспознанная
     // фраза и новые слова не начнут следующее сообщение сами.
@@ -898,6 +916,40 @@ const {
 /** Поле ввода сообщения — для голосового ввода. */
 function getInputEl(): HTMLTextAreaElement | null {
   return inputRef.value?.$el ?? null
+}
+
+// Упоминания в группе: «@» — список участников над полем (use-mention-picker).
+const MENTION_LIST_ID = 'chat-mention-list'
+const mentionRoom = computed<string | null>(() =>
+  isGroupChat.value && !props.inviteMode ? activeRoomId.value : null
+)
+const {
+  open: mentionOpen,
+  shown: mentionShown,
+  active: mentionActive,
+  update: updateMention,
+  close: closeMention,
+  pick: pickMention,
+  keydown: mentionKeydown,
+  encode: encodeMentionText,
+} = useMentionPicker({
+  roomId: mentionRoom,
+  text: inputValue,
+  input: getInputEl,
+  onChange: adjustHeight,
+})
+/** Список участников открыт — стрелки, Enter и Esc его. */
+function onInputKeydown(e: KeyboardEvent): void {
+  if (mentionKeydown(e)) return
+  handleKeydown(e)
+}
+function onInput(): void {
+  handleInput()
+  updateMention()
+}
+/** Каретку сдвинули стрелками — может, она теперь в «@имени» или вышла из него. */
+function onInputKeyup(e: KeyboardEvent): void {
+  if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) updateMention()
 }
 const dictationRef = ref<InstanceType<typeof VoiceInputButton> | null>(null)
 
