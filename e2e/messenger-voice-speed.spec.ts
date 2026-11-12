@@ -78,6 +78,30 @@ test('голосовое в группе: скорость 1× → 2× по кр
 }) => {
   skipWithoutWebKitMedia()
   test.setTimeout(120_000)
+  // Как звучало: скорость при старте и сколько играло — по часам страницы,
+  // от «playing» до «ended» (задержки самого теста в замер не входят).
+  await page.addInitScript(() => {
+    const w = window as unknown as { __plays: Array<{ rate: number; ms?: number; dur?: number }> }
+    w.__plays = []
+    const play = HTMLMediaElement.prototype.play
+    HTMLMediaElement.prototype.play = function () {
+      const el = this as HTMLMediaElement & { __timed?: boolean }
+      if (!el.__timed) {
+        el.__timed = true
+        let entry: { rate: number; ms?: number; dur?: number; at: number } | null = null
+        el.addEventListener('playing', () => {
+          entry = { rate: el.playbackRate, at: performance.now() }
+          w.__plays.push(entry)
+        })
+        el.addEventListener('ended', () => {
+          if (!entry) return
+          entry.ms = performance.now() - entry.at
+          entry.dur = el.duration
+        })
+      }
+      return play.call(this)
+    }
+  })
   await signIn(page)
   const voice = await recordVoice(page, SECONDS)
   await page.route('**/e2e-media/voice', (route) =>
@@ -162,15 +186,22 @@ test('голосовое в группе: скорость 1× → 2× по кр
   await expect(play(bubble)).toBeVisible({ timeout: 10_000 })
   await expect(rate).toHaveCount(0)
 
-  // Другое голосовое — сразу при 2×: 4 с записи — около 2 с, а не 4.
+  // Другое голосовое — сразу при 2×: запись играет вдвое быстрее, а не как есть.
   await expect(otherRate).toHaveCount(0)
-  const started = Date.now()
   await play(other).click()
   await expect(otherRate).toHaveText('2×')
   await expect(play(other)).toBeVisible({ timeout: 10_000 })
-  const took = Date.now() - started
-  expect(took).toBeLessThan(SECONDS * 1000 * 0.75)
-  expect(took).toBeGreaterThan(SECONDS * 1000 * 0.4)
+  const last = await page.evaluate(() => {
+    const plays = (
+      window as unknown as { __plays: Array<{ rate: number; ms?: number; dur?: number }> }
+    ).__plays
+    return plays[plays.length - 1]!
+  })
+  expect(last.rate).toBe(2)
+  const real = (last.dur ?? 0) * 1000
+  expect(real).toBeGreaterThan(SECONDS * 1000 * 0.8)
+  expect(last.ms!).toBeLessThan(real * 0.7)
+  expect(last.ms!).toBeGreaterThan(real * 0.4)
 
   // После 2× — снова 1×, и запись убрана.
   await play(other).click()
