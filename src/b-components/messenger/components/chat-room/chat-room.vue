@@ -439,6 +439,7 @@ import ChatInvite from '../chat-invite/chat-invite.vue'
 import EmojiPicker from '../emoji-picker/emoji-picker.vue'
 import VoiceInputButton from '@/b-components/voice-input/voice-input-button.vue'
 import AttachmentPanel from '../attachment-panel/attachment-panel.vue'
+import { plainMentions } from '../../lib/mentions'
 import PkoinTransferModal from '../pkoin-transfer-modal/pkoin-transfer-modal.vue'
 import { useMessengerStore } from '../../store'
 import { chatUserName } from '../../helpers'
@@ -791,7 +792,10 @@ const replyPreviewText = computed<string>(() => {
   if (!m) return ''
   // Для медиа показываем тип-плейсхолдер, для текста — обрезанный текст.
   if (m.type && m.type !== 'text') return `[${m.type}]`
-  return supportReportPreview(m.text || '') ?? (m.text || '').slice(0, 80)
+  return (
+    supportReportPreview(m.text || '') ??
+    plainMentions(m.text || '', (address) => store.userProfiles[address]?.name).slice(0, 80)
+  )
 })
 function onReplyTo(message: Message): void {
   replyingTo.value = message

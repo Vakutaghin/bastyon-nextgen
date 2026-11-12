@@ -9,6 +9,7 @@
 import { toRaw } from 'vue'
 import type { Message } from '../types'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../store/consts'
+import { plainMentions } from './mentions'
 
 /** Слово: буквы, знаки при буквах и цифры подряд. */
 const WORD = /[\p{L}\p{M}\p{N}]+/gu
@@ -32,11 +33,14 @@ export function searchTokens(query: string): string[] {
   return [...new Set(words)]
 }
 
-/** Текст сообщения, по которому ищут; пусто — сообщение в поиске не участвует. */
+/**
+ * Текст сообщения, по которому ищут; пусто — сообщение в поиске не участвует.
+ * Упоминание — «@имя», как в пузыре: hex адреса не находится по цифрам.
+ */
 export function searchableText(message: Message): string {
   if (message.deleted || message.type === 'transaction') return ''
   const text = message.text || ''
-  return text === ENCRYPTED_MESSAGE_PLACEHOLDER ? '' : text
+  return text === ENCRYPTED_MESSAGE_PLACEHOLDER ? '' : plainMentions(text)
 }
 
 /** Все слова запроса — начала слов текста. */

@@ -5,6 +5,7 @@ import { escapeHtml } from '@/helpers/common/html-escape'
 import { MESSAGE_URL_PATTERN } from './consts'
 import { BASTYON_LINK_RE, parseBasytonLink, type BastyonLinkTarget } from '../../lib/bastyon-link'
 import { ENTITY_LINK_RE, entityOfMatch, type EntityLinkTarget } from '../../lib/entity-link'
+import { findMentions } from '../../lib/mentions'
 
 /** Базовые проверки безопасности URL: только http(s), без javascript:/data:/blob:. */
 const isSafeHttpUrl = (raw: string): boolean => {
@@ -56,6 +57,8 @@ export type MessageSegment =
   | { kind: 'bastyon'; target: BastyonLinkTarget; raw: string }
   /** Ссылка на профиль или коллекцию (lib/entity-link) — карточкой. */
   | { kind: 'entity'; target: EntityLinkTarget; raw: string }
+  /** Упоминание (lib/mentions) — «@имя» ссылкой на профиль, в строке. */
+  | { kind: 'mention'; address: string; name: string; raw: string }
 
 type EmbedSegment = Exclude<MessageSegment, { kind: 'html' }>
 type EmbedMatch = { start: number; end: number; segment: EmbedSegment }
@@ -91,10 +94,33 @@ function embedMatches(text: string): EmbedMatch[] {
   return matches.sort((a, b) => a.start - b.start)
 }
 
+/** Карточки и упоминания вместе; упоминание внутри ссылки — часть ссылки. */
+function segmentMatches(text: string): EmbedMatch[] {
+  const matches = embedMatches(text)
+  const mentions = findMentions(text)
+  if (!mentions.length) return matches
+  MESSAGE_URL_PATTERN.lastIndex = 0
+  const urls = [...text.matchAll(MESSAGE_URL_PATTERN)].map((m) => [
+    m.index!,
+    m.index! + m[0].length,
+  ])
+  const taken = [...matches.map((m) => [m.start, m.end]), ...urls]
+  for (const m of mentions) {
+    if (taken.some(([start, end]) => m.start < end! && m.end > start!)) continue
+    matches.push({
+      start: m.start,
+      end: m.end,
+      segment: { kind: 'mention', address: m.address, name: m.name, raw: m.raw },
+    })
+  }
+  return matches.sort((a, b) => a.start - b.start)
+}
+
 /**
  * Разбивает текст сообщения на сегменты:
  *  - ссылки на пост (post/index/comment) — сегменты 'bastyon' под <PostEmbed>,
  *    на профиль и коллекцию — 'entity' под их карточки;
+ *  - упоминания — 'mention', «@имя» в строке;
  *  - оставшийся текст обрабатываем как обычный (URL → <a>, остальное — escape).
  *
  * Если таких ссылок несколько — все попадают как embed-сегменты в исходном порядке.
@@ -103,7 +129,7 @@ export function formatMessageSegments(rawText: string): MessageSegment[] {
   const text = trimBlankLines(rawText)
   if (!text) return []
 
-  const matches = embedMatches(text)
+  const matches = segmentMatches(text)
   if (matches.length === 0) {
     return [{ kind: 'html', html: formatMessageText(text) }]
   }

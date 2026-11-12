@@ -214,6 +214,7 @@
 import { formatClock } from '@/helpers/common/date-formatter'
 import { parseIpfsFileLink, parseIpfsNameLink } from '@/helpers/ipfs/ipfs-link'
 import { supportReportPreview } from '../../lib/support-report-preview'
+import { plainMentions } from '../../lib/mentions'
 import { computed, nextTick, ref } from 'vue'
 import { focusMenu, isKeyboardClick, vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useI18n } from 'vue-i18n'
@@ -425,8 +426,11 @@ const lastMessagePreview = computed<string>(() => {
       const ipfsFile = parseIpfsFileLink(m.text)
       if (ipfsFile) return `📎 ${ipfsFile.name || t('messenger.ipfsCardNoName')}`
       if (parseIpfsNameLink(m.text)) return `🔗 ${t('messenger.ipnsCardTitle')}`
-      // Сведения для поддержки: в списке подпись, а не JSON.
-      return supportReportPreview(m.text) ?? m.text
+      // Сведения для поддержки: в списке подпись, а не JSON. Упоминания — «@имя».
+      return (
+        supportReportPreview(m.text) ??
+        plainMentions(m.text, (address) => store.userProfiles[address]?.name)
+      )
     }
   }
 })

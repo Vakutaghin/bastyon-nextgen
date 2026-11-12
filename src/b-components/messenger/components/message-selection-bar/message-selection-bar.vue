@@ -69,6 +69,7 @@ import { useMessengerStore } from '../../store'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../../store/consts'
 import { chatUserName } from '../../helpers'
 import { canDeleteAll, canReplyTo, selectionText } from '../../lib/message-selection'
+import { plainMentions } from '../../lib/mentions'
 import type { MessageSelection } from '../message-list/use-message-selection'
 import { SC_SelectionBar, SC_SelectionButton, SC_SelectionCount } from './styled'
 
@@ -133,7 +134,8 @@ function body(m: Message): string {
       return `[${t('messenger.notifyFile')}]${name ? ` ${name}` : ''}`
     }
     default:
-      return m.text || ''
+      // Упоминание — «@имя», а не hex адреса.
+      return plainMentions(m.text || '', (address) => store.userProfiles[address]?.name)
   }
 }
 

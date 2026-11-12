@@ -99,6 +99,7 @@
         <template v-for="(seg, idx) in messageSegments" :key="idx">
           <span v-if="seg.kind === 'html'" v-html="seg.html" />
           <PostEmbed v-else-if="seg.kind === 'bastyon'" :target="seg.target" />
+          <MentionLink v-else-if="seg.kind === 'mention'" :address="seg.address" :name="seg.name" />
           <EntityEmbed v-else :target="seg.target" />
         </template>
         <LinkPreview v-if="previewUrl" :url="previewUrl" />
@@ -303,6 +304,8 @@ import SupportReportBox from '../support-report/support-report-box.vue'
 import { supportReportPreview } from '../../lib/support-report-preview'
 import PostEmbed from '../post-embed/post-embed.vue'
 import EntityEmbed from '../entity-embed/entity-embed.vue'
+import MentionLink from '../mention-link/mention-link.vue'
+import { plainMentions } from '../../lib/mentions'
 import LinkPreview from '../link-preview/link-preview.vue'
 import { formatMessageSegments, extractFirstExternalUrl } from './helpers'
 import { useReactionPicker } from './use-reaction-picker'
@@ -686,7 +689,8 @@ const repliedPreview = computed<{ name: string; text: string; deleted?: boolean 
   const text =
     ref.type && ref.type !== 'text'
       ? `[${ref.type}]`
-      : (supportReportPreview(ref.text || '') ?? (ref.text || '').slice(0, 80))
+      : (supportReportPreview(ref.text || '') ??
+        plainMentions(ref.text || '', (address) => store.userProfiles[address]?.name).slice(0, 80))
   return { name, text }
 })
 

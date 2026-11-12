@@ -5,6 +5,7 @@ import {
   extractFirstExternalUrl,
   trimBlankLines,
 } from './helpers'
+import { addressToHex } from '../../services/matrix-service/address-codec'
 
 const TXID = 'a'.repeat(64)
 const TXID2 = 'f'.repeat(64)
@@ -45,6 +46,19 @@ describe('formatMessageSegments', () => {
 
   it('returns empty array for empty text', () => {
     expect(formatMessageSegments('')).toEqual([])
+  })
+
+  it('упоминание @hex:имя — сегмент mention в строке, вокруг — экранированный текст', () => {
+    const bob = 'PR7srzZt4EfcNb3s27grgmiG8aB9vYNV82'
+    const token = `@${addressToHex(bob)}:bob_ng`
+    expect(formatMessageSegments(`<b>Hi</b> ${token}, look`)).toEqual([
+      { kind: 'html', html: '&lt;b&gt;Hi&lt;/b&gt; ' },
+      { kind: 'mention', address: bob, name: 'bob_ng', raw: token },
+      { kind: 'html', html: ', look' },
+    ])
+    // Внутри ссылки — часть ссылки, а не упоминание.
+    const inUrl = formatMessageSegments(`https://x.test/${token}`)
+    expect(inUrl.map((s) => s.kind)).toEqual(['html'])
   })
 
   it('extracts a single bastyon embed surrounded by text', () => {

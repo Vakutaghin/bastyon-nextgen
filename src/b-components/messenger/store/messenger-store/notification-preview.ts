@@ -12,6 +12,7 @@
 import { t } from '@/i18n'
 
 import { supportReportPreview } from '../../lib/support-report-preview'
+import { plainMentions } from '../../lib/mentions'
 
 interface EventLike {
   getContent?: () => Record<string, unknown> | undefined
@@ -43,7 +44,7 @@ export function notificationPreviewFor(event: EventLike): string {
     return t('messenger.notifyEncrypted')
   }
   if (typeof body !== 'string' || !body) return t('messenger.notifyEncrypted')
-  return supportReportPreview(body) ?? body
+  return supportReportPreview(body) ?? plainMentions(body)
 }
 
 /** Имя отправителя: профиль Bastyon → имя участника комнаты → адрес. */
