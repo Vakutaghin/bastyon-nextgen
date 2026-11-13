@@ -277,6 +277,17 @@ const router = createRouter({
     { path: '/info/faq', redirect: '/help/faq' },
     { path: '/info/help', redirect: '/help/getting-started' },
     { path: '/info/howtobuy', redirect: '/help/how-to-buy-pkoin' },
+    // Витрина общих компонентов — только в dev: в боевой сборке ветка и её
+    // чанк выпадают (import.meta.env.DEV подставляется как false).
+    ...(import.meta.env.DEV
+      ? [
+          {
+            path: '/dev/ui',
+            name: 'dev-ui',
+            component: () => import('@/pages/dev-ui-page/dev-ui-page.vue'),
+          },
+        ]
+      : []),
     // Встраиваемая (iframe) вьюха поста — без chrome (meta.embed). ДО catch-all /:userName.
     {
       path: '/embed/post/:txid',

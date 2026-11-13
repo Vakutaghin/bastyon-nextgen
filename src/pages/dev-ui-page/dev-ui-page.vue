@@ -1,0 +1,18 @@
+<template>
+  <SC_DevUiPage>
+    <SC_DevUiTitle>Витрина компонентов</SC_DevUiTitle>
+    <SC_DevUiLead>
+      Общие компоненты из @/components во всех вариантах и состояниях. Страница есть только в
+      dev-сборке. Тему и режим контраста переключать в шапке и настройках.
+    </SC_DevUiLead>
+    <ButtonSection />
+  </SC_DevUiPage>
+</template>
+
+<script setup lang="ts">
+// Витрина своих компонентов, которые заменяют ant-design-vue: место для
+// визуальной сверки в обеих темах и для проверок с клавиатуры. Каждый новый
+// компонент добавляет сюда свой раздел (sections/<имя>-section.vue).
+import ButtonSection from './sections/button-section.vue'
+import { SC_DevUiLead, SC_DevUiPage, SC_DevUiTitle } from './dev-ui-page.styled'
+</script>
