@@ -169,8 +169,10 @@ test('«Скачать всё» у плейлиста: одно качество
   const sheet = page.getByRole('dialog', { name: 'Качество для 1 ролика' })
   await expect(sheet).toBeVisible({ timeout: 30_000 })
   await sheet.getByTestId('offline-quality-240').click()
-  await expect(page.getByText('В «Скачанном» 1 ролик')).toBeVisible()
-  await expect(page.getByText(/Ещё 1 пока не скачать/)).toBeVisible()
+  // Текст тоста уходит и в область диктора (#a11y-live-polite) — ищем в тосте.
+  const toast = page.locator(UI.toastHost)
+  await expect(toast).toContainText('В «Скачанном» 1 ролик')
+  await expect(toast).toContainText(/Ещё 1 пока не скачать/)
 
   await goTo(page, '/video/downloads')
   const card = page.getByTestId('offline-card')
