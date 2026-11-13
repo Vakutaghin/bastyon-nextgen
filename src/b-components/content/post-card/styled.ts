@@ -12,7 +12,7 @@ export const SC_PostCard = styled(Card)`
 
   /* Телефон: пост во всю ширину экрана, как в Instagram, — поверх полей
      страницы (--page-gutter задают страницы с лентой). Рамку и отступы тела
-     карточки снимает style.css: до .ant-card-body отсюда не дотянуться. */
+     карточки снимает style.css (.post-card.ui-card). */
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     margin-bottom: 0;
     margin-inline: calc(-1 * var(--page-gutter, 0px));

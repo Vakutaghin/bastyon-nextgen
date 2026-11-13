@@ -67,7 +67,7 @@ describe('шапка чата ведёт в профиль собеседник�
     expect(link.attributes('href')).toBe(`/${ALICE}`)
     expect(link.attributes('aria-label')).toBe('Открыть профиль: Алиса')
     expect(link.text()).toContain('Алиса')
-    expect(link.find('.bastyon-avatar, img').exists()).toBe(true)
+    expect(link.find('.ui-avatar, img').exists()).toBe(true)
   })
 
   it('окошко на компьютере: профиль открывается под ним, чат остаётся', async () => {

@@ -34,7 +34,7 @@ export const SC_Mosaic = styled('div', { size: Number })`
   }
 
   /* Плитки стыкуются без скруглений: аватар ставит радиус и инлайном. */
-  .ant-avatar,
+  .ui-avatar,
   img,
   div[style] {
     border-radius: 0 !important;

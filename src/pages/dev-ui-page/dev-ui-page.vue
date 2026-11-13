@@ -1,23 +1,24 @@
 <template>
   <SC_DevUiPage>
-    <SC_DevUiTitle>Р’РёС‚СЂРёРЅР° РєРѕРјРїРѕРЅРµРЅС‚РѕРІ</SC_DevUiTitle>
+    <SC_DevUiTitle>Витрина компонентов</SC_DevUiTitle>
     <SC_DevUiLead>
-      РћР±С‰РёРµ РєРѕРјРїРѕРЅРµРЅС‚С‹ РёР· @/components РІРѕ РІСЃРµС… РІР°СЂРёР°РЅС‚Р°С… Рё
-      СЃРѕСЃС‚РѕСЏРЅРёСЏС…. РЎС‚СЂР°РЅРёС†Р° РµСЃС‚СЊ С‚РѕР»СЊРєРѕ РІ dev-СЃР±РѕСЂРєРµ. РўРµРјСѓ Рё
-      СЂРµР¶РёРј РєРѕРЅС‚СЂР°СЃС‚Р° РїРµСЂРµРєР»СЋС‡Р°С‚СЊ РІ С€Р°РїРєРµ Рё РЅР°СЃС‚СЂРѕР№РєР°С….
+      Общие компоненты из @/components во всех вариантах и состояниях. Страница есть только в
+      dev-сборке. Тему и режим контраста переключать в шапке и настройках.
     </SC_DevUiLead>
     <ButtonSection />
     <FeedbackSection />
     <ChoiceSection />
+    <DisplaySection />
   </SC_DevUiPage>
 </template>
 
 <script setup lang="ts">
-// Р’РёС‚СЂРёРЅР° СЃРІРѕРёС… РєРѕРјРїРѕРЅРµРЅС‚РѕРІ, РєРѕС‚РѕСЂС‹Рµ Р·Р°РјРµРЅСЏСЋС‚ ant-design-vue: РјРµСЃС‚Рѕ РґР»СЏ
-// РІРёР·СѓР°Р»СЊРЅРѕР№ СЃРІРµСЂРєРё РІ РѕР±РµРёС… С‚РµРјР°С… Рё РґР»СЏ РїСЂРѕРІРµСЂРѕРє СЃ РєР»Р°РІРёР°С‚СѓСЂС‹. РљР°Р¶РґС‹Р№ РЅРѕРІС‹Р№
-// РєРѕРјРїРѕРЅРµРЅС‚ РґРѕР±Р°РІР»СЏРµС‚ СЃСЋРґР° СЃРІРѕР№ СЂР°Р·РґРµР» (sections/<РёРјСЏ>-section.vue).
+// Витрина своих компонентов, которые заменяют ant-design-vue: место для
+// визуальной сверки в обеих темах и для проверок с клавиатуры. Каждый новый
+// компонент добавляет сюда свой раздел (sections/<имя>-section.vue).
 import ButtonSection from './sections/button-section.vue'
 import FeedbackSection from './sections/feedback-section.vue'
 import ChoiceSection from './sections/choice-section.vue'
+import DisplaySection from './sections/display-section.vue'
 import { SC_DevUiLead, SC_DevUiPage, SC_DevUiTitle } from './dev-ui-page.styled'
 </script>

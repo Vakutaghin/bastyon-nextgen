@@ -25,9 +25,9 @@ export const SC_ModalBody = styled.div`
 
 // SC_Modal оборачивает antd <Modal>, но antd телепортит содержимое модалки в
 // <body>, поэтому стили .ant-modal-* отсюда через :deep() до него НЕ доходят
-// (vue3-styled-components не пробрасывает :deep сквозь телепорт — см. коммент у
-// .ant-card в src/style.css). Поэтому тема/оформление .ant-modal-* живут
-// через тему antd (src/styles/antd-theme.ts), маска — её токеном colorBgMask.
+// (vue3-styled-components не пробрасывает :deep сквозь телепорт). Поэтому
+// тема и оформление .ant-modal-* живут через тему antd
+// (src/styles/antd-theme.ts), маска — её токеном colorBgMask.
 // Сама обёртка лейаут не формирует — content уезжает в телепорт.
 export const SC_Modal = styled.div`
   display: contents;

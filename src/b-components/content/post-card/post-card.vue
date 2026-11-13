@@ -1,11 +1,11 @@
 <template>
-  <SC_PostCard v-if="deleted" class="post-card" hoverable role="article">
+  <SC_PostCard v-if="deleted" class="post-card" role="article">
     <SC_RepostDeleted>
       <DeleteOutlined class="repost-deleted-icon" />
       <span>{{ t('postCard.deleted') }}</span>
     </SC_RepostDeleted>
   </SC_PostCard>
-  <SC_PostCard v-else ref="postCardRef" class="post-card" hoverable role="article">
+  <SC_PostCard v-else ref="postCardRef" class="post-card" role="article">
     <SC_BoostedBadge v-if="boosted">
       <RiseOutlined />
       {{ t('postCard.boosted') }}

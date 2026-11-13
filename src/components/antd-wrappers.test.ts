@@ -8,7 +8,6 @@ import { nextTick } from 'vue'
 import Input from './input/input.vue'
 import InputSearch from './input-search/input-search.vue'
 import Modal from './modal/modal.vue'
-import Card from './card/card.vue'
 import Empty from './empty/empty.vue'
 import Select from './select/select.vue'
 import { CloseOutlined } from './icons'
@@ -141,14 +140,7 @@ describe('Modal (обёртка)', () => {
   })
 })
 
-describe('Card / Empty (обёртки)', () => {
-  it('Card: title-проп рендерится, слот #extra — только если дан', () => {
-    const w = keep(mount(Card, { props: { title: 'Карточка', bordered: false } }))
-    expect(w.find('.ant-card-head-title').text()).toBe('Карточка')
-    expect(w.find('.ant-card-extra').exists()).toBe(false)
-    expect(w.find('.ant-card').classes()).not.toContain('ant-card-bordered')
-  })
-
+describe('Empty', () => {
   it('Empty: подпись из пропа и иконка в круге, как UEmpty', () => {
     const w = keep(mount(Empty, { props: { description: 'Пусто' } }))
     expect(w.text()).toBe('Пусто')

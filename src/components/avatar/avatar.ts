@@ -1,8 +1,8 @@
 import { ref, computed, watch, useAttrs } from 'vue'
-import { Avatar } from 'ant-design-vue'
 
 import { avatarFallbackBackground, avatarFallbackText, avatarHue } from './color-utils'
 import { SC_Avatar } from './styled'
+import { useFitInitials } from './fit-initials'
 import type { AvatarProps } from './types'
 import { getInitials as getInitialsUtil } from '@/helpers/common/initials'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
@@ -94,9 +94,12 @@ export function useAvatar(p: AvatarProps) {
     if (src && src !== old) showPlaceholder.value = false
   })
 
+  // Инициалы ужимаются под круг, как было у antd Avatar.
+  const { bind: bindInitials } = useFitInitials(sizePx)
+
   return {
-    Avatar,
     SC_Avatar,
+    bindInitials,
     attrs,
     showPlaceholder,
     isHeaderAvatar,

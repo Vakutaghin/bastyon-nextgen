@@ -12,15 +12,27 @@ export const SC_Avatar = styled.div<{
   border-radius: ${(p) => (p.shape === 'square' ? 'var(--ui-radius-sm)' : '50%')};
   overflow: visible;
 
-  .ant-avatar {
-    border: 0;
+  /* Круг с инициалами (нет фото или оно не пришло) — как был antd Avatar:
+     текст 18px, строка по центру; ужимает её fit-initials.ts. Цвета задаёт
+     оттенок пользователя инлайном, здесь — запасные. */
+  .ui-avatar {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
     border-radius: ${(p) => (p.shape === 'square' ? 'var(--ui-radius-sm)' : '50%')};
+    background: var(--ui-text-dimmed);
+    color: var(--color-white);
+    font-size: 18px;
     font-weight: 500;
+    white-space: nowrap;
+    text-align: center;
+    vertical-align: middle;
   }
 
-  .ant-avatar img {
-    object-fit: cover;
-    border-radius: ${(p) => (p.shape === 'square' ? 'var(--ui-radius-sm)' : '50%')};
+  .ui-avatar__string {
+    position: absolute;
+    left: 50%;
+    transform-origin: 0 center;
   }
 
   .pending-badge {

@@ -1474,20 +1474,20 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Отступ тела карточки (.bastyon-card): как у Nuxt UI — 24px, на узких
-   экранах 16px. vue3-styled-components не доводит :deep() до .ant-card-body,
-   поэтому правило глобальное; другие ant-card (модалки и т.д.) не задевает.
+   Отступ тела карточки (components/card): как у Nuxt UI — 24px, на узких
+   экранах 16px. Переменная, а не padding: стили карточки вставляются позже
+   style.css с той же специфичностью.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
   /* BREAKPOINTS.TABLET */
-  .bastyon-card .ant-card-body {
-    padding: 16px;
+  .ui-card {
+    --ui-card-padding: 16px;
   }
 }
 
-:root[data-shell='rail'] .bastyon-card .ant-card-body {
-  padding: 16px;
+:root[data-shell='rail'] .ui-card {
+  --ui-card-padding: 16px;
 }
 
 /* Пост на телефоне — как в Instagram: во всю ширину экрана, без рамки и
@@ -1495,16 +1495,13 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
    их обёртка уходит в отступ тела карточки (--post-bleed, post-card/styled.ts). */
 @media (max-width: 480px) {
   /* BREAKPOINTS.MOBILE */
-  .post-card.bastyon-card.ant-card {
-    border-width: 0 0 1px;
-    border-radius: 0;
-  }
-
-  .post-card.bastyon-card > .ant-card-body {
+  .post-card.ui-card {
+    --ui-card-padding: 12px;
     --post-bleed: 12px;
     --post-media-radius: 0px;
 
-    padding: 12px;
+    border-width: 0 0 1px;
+    border-radius: 0;
   }
 
   /* Окно поста — во весь экран, пост в нём такой же, как в ленте: раньше поля
@@ -1553,12 +1550,10 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   /* Пост в окне — без своей рамки и отступов (как post-modal/styled.ts на
      любом экране); картинки уходят в отступ тела окна. Явно и сильнее правил
      карточки выше: порядок стилей в WebKit и Chromium разный. */
-  .ant-modal.post-modal .post-card.bastyon-card.ant-card {
-    border: 0;
-  }
+  .ant-modal.post-modal .post-card.ui-card {
+    --ui-card-padding: 0;
 
-  .ant-modal.post-modal .post-card.bastyon-card > .ant-card-body {
-    padding: 0;
+    border: 0;
   }
 
   /* Правка и репост поста — тоже во весь экран, с узкими полями: в окне

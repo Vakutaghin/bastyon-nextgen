@@ -41,26 +41,26 @@
       </div>
     </template>
 
-    <Avatar
+    <span
       v-else
       v-bind="$attrs"
-      :size="size"
-      :src="actualSrc && !showPlaceholder ? actualSrc : undefined"
-      :class="['bastyon-avatar', avatarClass]"
+      :class="['ui-avatar', avatarClass]"
       :style="{
+        width: sizePx + 'px',
+        height: sizePx + 'px',
+        lineHeight: sizePx + 'px',
         backgroundColor: !src || showPlaceholder || waiting ? fallbackColor : undefined,
         color: !src || showPlaceholder || waiting ? textColor : undefined,
-        marginRight: 0,
       }"
-      @error="handleImageError"
-      @load="handleImageLoad"
     >
-      <slot>
-        <template v-if="(!actualSrc || showPlaceholder) && !waiting">
-          {{ getInitials() }}
-        </template>
-      </slot>
-    </Avatar>
+      <span :ref="bindInitials" class="ui-avatar__string">
+        <slot>
+          <template v-if="(!actualSrc || showPlaceholder) && !waiting">
+            {{ getInitials() }}
+          </template>
+        </slot>
+      </span>
+    </span>
     <div
       v-if="p.pending"
       class="pending-badge"
@@ -94,8 +94,8 @@ const p = withDefaults(defineProps<AvatarProps>(), {
 const mark = computed<UserMark | null>(() => p.mark ?? (p.verified ? 'verified' : null))
 
 const {
-  Avatar,
   SC_Avatar,
+  bindInitials,
   showPlaceholder,
   isHeaderAvatar,
   avatarClass,

@@ -12,14 +12,12 @@ export const SC_PostModalWrapper = styled.div`
 export const SC_PostModalContent = styled.div`
   padding: 0;
 
-  .bastyon-card.ant-card {
+  .ui-card {
+    --ui-card-padding: 0;
+
     border: 0;
     margin-bottom: 0;
     box-shadow: none;
-  }
-
-  .bastyon-card > .ant-card-body {
-    padding: 0;
   }
 `
 
