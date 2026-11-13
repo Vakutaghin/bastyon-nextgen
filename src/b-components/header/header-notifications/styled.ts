@@ -11,6 +11,8 @@ export const SC_NotificationsWrapper = styled.div`
   border-radius: var(--ui-radius-md);
   transition: background-color var(--transition-fast);
   color: var(--color-text-primary);
+  /* Счётчик чуть ниже угла значка. */
+  --ui-badge-offset-y: 5px;
 
   &:hover {
     background-color: var(--ui-bg-elevated);

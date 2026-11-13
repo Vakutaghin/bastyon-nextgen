@@ -566,6 +566,7 @@ export default {
   },
   a11y: {
     skipToContent: '본문으로 건너뛰기',
+    loading: '불러오는 중',
     withUnread: '{name}, 읽지 않음: {n}',
     search: '검색',
     account: '계정 {name}',

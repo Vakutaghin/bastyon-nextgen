@@ -151,7 +151,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input, Modal, Select, Spin } from 'ant-design-vue'
+import { Input, Modal, Select } from 'ant-design-vue'
+import Spin from '@/components/spin'
 import Button from '@/components/button'
 import {
   AppstoreOutlined,

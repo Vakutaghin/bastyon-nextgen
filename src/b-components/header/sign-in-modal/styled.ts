@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { Alert } from 'ant-design-vue'
+import Alert from '@/components/alert'
 import Input from '@/components/input/input.vue'
 
 export const SC_SignInForm = styled.div`

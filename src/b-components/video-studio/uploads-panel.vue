@@ -34,7 +34,6 @@
             :show-info="false"
             size="small"
             status="active"
-            stroke-color="var(--ui-primary)"
           />
         </SC_RowMain>
         <!-- Пост к ролику пишут в его окне: «Опубликовать» открывает его. -->
@@ -53,8 +52,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Progress } from 'ant-design-vue'
-
+import Progress from '@/components/progress'
 import { bcp47 } from '@/i18n'
 import { CaretDownOutlined, CaretUpOutlined, CloseOutlined } from '@/components/icons'
 import { useVideoUploadsStore, type VideoUploadJob } from '@/stores/video-uploads-store'

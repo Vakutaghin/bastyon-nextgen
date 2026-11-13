@@ -180,17 +180,7 @@ export const SC_FeedLoading = styled.div`
   padding: 100px 20px;
   width: 100%;
 
-  .ant-spin {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 32px;
-  }
-
-  .ant-spin-spinning {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  .ui-spin {
     gap: 32px;
   }
 
@@ -199,11 +189,12 @@ export const SC_FeedLoading = styled.div`
     color: var(--color-primary) !important;
   }
 
-  .ant-spin-text {
-    font-size: 24px !important;
-    color: var(--color-text-primary) !important;
+  /* Двойной класс: стили самого Spin вставляются позже, с той же специфичностью. */
+  .ui-spin .ui-spin__tip {
+    padding-top: 0;
+    font-size: 24px;
+    color: var(--color-text-primary);
     font-weight: 500;
-    margin-top: 0;
     letter-spacing: 1px;
   }
 `

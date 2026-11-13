@@ -48,6 +48,24 @@ export const SC_DevUiRow = styled.div`
   }
 `
 
+/** Образцы во всю оставшуюся ширину строки, столбиком. */
+export const SC_DevUiStack = styled.div`
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+`
+
+/** Значок со счётчиком — с запасом под счётчик, как в шапке. */
+export const SC_DevUiBadgeBox = styled.span`
+  --ui-badge-offset-y: 5px;
+
+  display: inline-flex;
+  padding: 6px 12px 6px 6px;
+  color: var(--ui-text);
+`
+
 export const SC_DevUiRowLabel = styled.span`
   flex: 0 0 120px;
   font-size: 13px;

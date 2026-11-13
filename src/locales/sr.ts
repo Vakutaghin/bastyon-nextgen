@@ -563,6 +563,7 @@ export default {
   },
   a11y: {
     skipToContent: 'Пређи на садржај',
+    loading: 'Учитавање',
     withUnread: '{name}, непрочитано: {n}',
     search: 'Пронађи',
     account: 'Налог {name}',

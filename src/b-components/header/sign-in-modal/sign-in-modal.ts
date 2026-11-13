@@ -1,5 +1,4 @@
 import { ref, watch, computed } from 'vue'
-import { Alert } from 'ant-design-vue'
 import Modal from '@/components/modal/modal.vue'
 import Button from '@/components/button/button.vue'
 import { useAuthStore } from '@/blockchain'
@@ -163,7 +162,6 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
   return {
     Modal,
     Button,
-    Alert,
     SC_SignInForm,
     SC_FormItem,
     SC_FormLabel,

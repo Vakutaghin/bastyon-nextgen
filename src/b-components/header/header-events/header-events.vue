@@ -14,11 +14,7 @@
       aria-haspopup="true"
       :aria-expanded="visible ? 'true' : 'false'"
     >
-      <Badge
-        :count="pendingCount"
-        :offset="[0, 5]"
-        :number-style="{ backgroundColor: 'var(--ui-primary)' }"
-      >
+      <Badge :count="pendingCount">
         <HourglassOutlined :style="ICON_SIZE_XL" />
       </Badge>
     </SC_EventsWrapper>
@@ -145,7 +141,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Badge } from 'ant-design-vue'
+import { Dropdown } from 'ant-design-vue'
+import Badge from '@/components/badge'
 import Button from '@/components/button'
 import {
   HourglassOutlined,

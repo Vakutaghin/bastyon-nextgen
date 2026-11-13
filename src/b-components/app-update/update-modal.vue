@@ -21,12 +21,7 @@
         {{ t('update.published', { date: publishedLabel }) }}
       </SC_Meta>
       <template v-if="installing">
-        <Progress
-          :percent="progressPercent"
-          :show-info="false"
-          status="active"
-          stroke-color="var(--ui-primary)"
-        />
+        <Progress :percent="progressPercent" :show-info="false" status="active" />
         <SC_Meta role="status">{{ progressLabel }}</SC_Meta>
       </template>
       <SC_Meta v-else>{{ hint }}</SC_Meta>
@@ -61,7 +56,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { bcp47 } from '@/i18n'
-import { Checkbox, Modal, Progress } from 'ant-design-vue'
+import { Checkbox, Modal } from 'ant-design-vue'
+import Progress from '@/components/progress'
 import { appToast } from '@/b-components/app-toast'
 import { useAppUpdate } from '@/composables/use-app-update'
 import { copyText } from '@/helpers/common/clipboard'

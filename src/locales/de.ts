@@ -574,6 +574,7 @@ export default {
   },
   a11y: {
     skipToContent: 'Zum Inhalt springen',
+    loading: 'Wird geladen',
     withUnread: '{name}, ungelesen: {n}',
     search: 'Suchen',
     account: 'Konto {name}',

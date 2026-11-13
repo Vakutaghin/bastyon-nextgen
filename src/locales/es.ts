@@ -573,6 +573,7 @@ export default {
   },
   a11y: {
     skipToContent: 'Saltar al contenido',
+    loading: 'Cargando',
     withUnread: '{name}, sin leer: {n}',
     search: 'Buscar',
     account: 'Cuenta {name}',

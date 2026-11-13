@@ -210,7 +210,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input, Modal, Spin } from 'ant-design-vue'
+import { Input, Modal } from 'ant-design-vue'
+import Spin from '@/components/spin'
 import Button from '@/components/button'
 import { DeleteOutlined, EditOutlined, PlayCircleOutlined, StatsIcon } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'

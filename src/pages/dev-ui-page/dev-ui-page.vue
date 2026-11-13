@@ -6,6 +6,7 @@
       dev-сборке. Тему и режим контраста переключать в шапке и настройках.
     </SC_DevUiLead>
     <ButtonSection />
+    <FeedbackSection />
   </SC_DevUiPage>
 </template>
 
@@ -14,5 +15,6 @@
 // визуальной сверки в обеих темах и для проверок с клавиатуры. Каждый новый
 // компонент добавляет сюда свой раздел (sections/<имя>-section.vue).
 import ButtonSection from './sections/button-section.vue'
+import FeedbackSection from './sections/feedback-section.vue'
 import { SC_DevUiLead, SC_DevUiPage, SC_DevUiTitle } from './dev-ui-page.styled'
 </script>

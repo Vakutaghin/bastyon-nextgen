@@ -568,6 +568,7 @@ export default {
   /** Для экранного диктора (helpers/a11y): названия кнопок, областей, объявления. */
   a11y: {
     skipToContent: 'Перейти к содержимому',
+    loading: 'Загрузка',
     withUnread: '{name}, непрочитанных: {n}',
     search: 'Найти',
     account: 'Аккаунт {name}',

@@ -10,7 +10,6 @@ import InputSearch from './input-search/input-search.vue'
 import Modal from './modal/modal.vue'
 import Card from './card/card.vue'
 import Empty from './empty/empty.vue'
-import Spin from './spin/spin.vue'
 import Select from './select/select.vue'
 import { CloseOutlined } from './icons'
 
@@ -142,7 +141,7 @@ describe('Modal (обёртка)', () => {
   })
 })
 
-describe('Card / Empty / Spin (обёртки)', () => {
+describe('Card / Empty (обёртки)', () => {
   it('Card: title-проп рендерится, слот #extra — только если дан', () => {
     const w = keep(mount(Card, { props: { title: 'Карточка', bordered: false } }))
     expect(w.find('.ant-card-head-title').text()).toBe('Карточка')
@@ -165,12 +164,6 @@ describe('Card / Empty / Spin (обёртки)', () => {
     expect(w.text()).toContain('Нет видео')
     expect(w.text()).toContain('Загрузите первое')
     expect(w.find('.anticon').exists()).toBe(true)
-  })
-
-  it('Spin: spinning/tip доходят до antd', () => {
-    const w = keep(mount(Spin, { props: { spinning: true, tip: 'Загрузка' } }))
-    expect(w.find('.ant-spin-text').text()).toBe('Загрузка')
-    expect(w.find('.ant-spin-spinning').exists()).toBe(true)
   })
 })
 

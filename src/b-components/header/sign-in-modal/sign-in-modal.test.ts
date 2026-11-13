@@ -14,7 +14,6 @@ vi.mock('@/blockchain', () => ({
   useAuthStore: () => ({ signIn: mocks.signIn, revertSignIn: mocks.revertSignIn }),
 }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
-vi.mock('ant-design-vue', () => ({ Alert: {} }))
 vi.mock('@/components/modal/modal.vue', () => ({ default: {} }))
 vi.mock('@/components/button/button.vue', () => ({ default: {} }))
 vi.mock('./styled', () =>

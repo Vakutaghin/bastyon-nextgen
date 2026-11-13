@@ -97,7 +97,8 @@
 // HTML на origin приложения открывать нельзя.
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Spin } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Spin from '@/components/spin'
 import Button from '@/components/button'
 import { appToast } from '@/b-components/app-toast'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'

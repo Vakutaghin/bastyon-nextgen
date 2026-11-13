@@ -20,11 +20,7 @@
         aria-haspopup="true"
         :aria-expanded="visible ? 'true' : 'false'"
       >
-        <Badge
-          :count="unreadCount"
-          :offset="[0, 5]"
-          :number-style="{ backgroundColor: 'var(--ui-primary)' }"
-        >
+        <Badge :count="unreadCount">
           <BellOutlined :style="ICON_SIZE_XL" />
         </Badge>
       </SC_NotificationsWrapper>
@@ -51,7 +47,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Badge } from 'ant-design-vue'
+import { Dropdown } from 'ant-design-vue'
+import Badge from '@/components/badge'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import { BellOutlined } from '@/components/icons'
 import { fixedPopupLayer } from '@/components/popup-container'

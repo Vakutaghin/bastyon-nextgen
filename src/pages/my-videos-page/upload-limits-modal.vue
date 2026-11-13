@@ -28,11 +28,7 @@
                 })
               }}
             </SC_QuotaValue>
-            <Progress
-              :percent="limits.usedPercent.value"
-              :show-info="false"
-              stroke-color="var(--ui-primary)"
-            />
+            <Progress :percent="limits.usedPercent.value" :show-info="false" />
           </template>
           <SC_Muted>{{ t('mediaStudio.limits.window') }}</SC_Muted>
         </template>
@@ -94,7 +90,9 @@
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Modal, Progress, Spin } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Progress from '@/components/progress'
+import Spin from '@/components/spin'
 import Button from '@/components/button'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'

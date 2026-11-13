@@ -536,6 +536,7 @@ export default {
   },
   a11y: {
     skipToContent: '跳到内容',
+    loading: '加载中',
     withUnread: '{name}，未读：{n}',
     search: '搜索',
     account: '账户 {name}',

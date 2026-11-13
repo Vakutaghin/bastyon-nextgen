@@ -41,12 +41,7 @@
         <SC_Module v-else-if="compression.supported">
           <SC_Hint>{{ t('videoStudio.module.offer', { size: moduleSize }) }}</SC_Hint>
           <template v-if="compression.installing">
-            <Progress
-              :percent="compression.percent"
-              :show-info="false"
-              status="active"
-              stroke-color="var(--ui-primary)"
-            />
+            <Progress :percent="compression.percent" :show-info="false" status="active" />
             <SC_ModuleRow>
               <SC_Status role="status">{{
                 t('videoStudio.module.downloading', { percent: percent(compression.percent) })
@@ -93,13 +88,7 @@
         @pick="(image, source, time) => store.setCover(job!.id, image, source, time)"
         @retry="store.retryCover(job!.id)"
       />
-      <Progress
-        v-if="active"
-        :percent="job.progress"
-        :show-info="false"
-        status="active"
-        stroke-color="var(--ui-primary)"
-      />
+      <Progress v-if="active" :percent="job.progress" :show-info="false" status="active" />
       <SC_Status role="status" :class="{ error: job.status === 'error' }">{{
         statusText
       }}</SC_Status>
@@ -208,8 +197,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Checkbox, Input, Modal, Progress } from 'ant-design-vue'
-
+import { Checkbox, Input, Modal } from 'ant-design-vue'
+import Progress from '@/components/progress'
 import { bcp47 } from '@/i18n'
 import { CaretDownOutlined, SettingOutlined, UploadOutlined } from '@/components/icons'
 import { useAuthStore } from '@/blockchain/store/auth-store'

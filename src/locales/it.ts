@@ -566,6 +566,7 @@ export default {
   },
   a11y: {
     skipToContent: 'Vai al contenuto',
+    loading: 'Caricamento',
     withUnread: '{name}, non letti: {n}',
     search: 'Cerca',
     account: 'Account {name}',
