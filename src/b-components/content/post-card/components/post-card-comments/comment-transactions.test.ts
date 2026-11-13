@@ -2,7 +2,8 @@
 // удаление и оценка. Форматы payload и serializedData — как у старого
 // клиента (kit.js): нода сверяет хеш по этой строке, ошибка в ней = отказ.
 // Правка меняет только текст: картинки, ссылка и info исходного комментария
-// сохраняются.
+// сохраняются. Новый комментарий может быть из одних картинок; тело длиннее
+// 2000 байт (предел ноды) не отправляется.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -36,7 +37,8 @@ vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { deleteComment } from './comment-deleter'
 import { sendCommentScore } from './comment-scoring'
-import { editedBody, sendComment, sendPollVote } from './comment-sender'
+import { editedBody, sendComment, sendNewComment, sendPollVote } from './comment-sender'
+import { COMMENT_PAYLOAD_MAX_BYTES, commentBodyFits } from './comment-payload'
 
 const UTXO = [{ txid: 'u1', vout: 0, amount: 1 }]
 
@@ -176,6 +178,92 @@ describe('транзакции комментариев', () => {
     ])('%s — понятная ошибка, транзакции нет', async (_name, run, key) => {
       await expect(run()).rejects.toThrow(`commentsMsg.${key}`)
       expect(mocks.broadcastTransaction).not.toHaveBeenCalled()
+    })
+
+    it('правка с картинками, не влезающая в предел ноды, — «уберите картинку»', async () => {
+      const original = JSON.stringify({
+        message: 'было',
+        url: '',
+        images: [`https://img/${'x'.repeat(300)}.jpg`],
+        info: '',
+      })
+      await expect(
+        sendComment('post1', '', '', 'ж'.repeat(900), 'comment1', original)
+      ).rejects.toThrow('commentsMsg.tooLongWithImages')
+      expect(mocks.broadcastTransaction).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('sendNewComment', () => {
+    it('текст и картинки: адреса в images, формат как у прежнего клиента', async () => {
+      const images = ['https://img/1.jpg', 'https://img/2.jpg']
+      await sendNewComment('post1', '', '', ' смотри ', images)
+      const msg = JSON.stringify({ message: 'смотри', url: '', images, info: '' })
+      expect(lastBuild().serializedData).toBe(`post1${msg}`)
+      expect(lastBroadcast().messageData).toEqual({
+        postid: 'post1',
+        answerid: '',
+        parentid: '',
+        msg,
+      })
+    })
+
+    it('из одних картинок — допустим', async () => {
+      await sendNewComment('post1', 'p1', 'a1', '   ', ['https://img/1.jpg'])
+      expect(JSON.parse(lastBroadcast().messageData.msg!)).toEqual({
+        message: '',
+        url: '',
+        images: ['https://img/1.jpg'],
+        info: '',
+      })
+    })
+
+    it('ни текста, ни картинок — ошибка, транзакции нет', async () => {
+      await expect(sendNewComment('post1', '', '', ' ', [])).rejects.toThrow(
+        'commentsMsg.errPostAndTextRequired'
+      )
+      expect(mocks.buildTransaction).not.toHaveBeenCalled()
+    })
+
+    it('тело длиннее 2000 байт — ошибка до сборки транзакции', async () => {
+      // Эмодзи — 4 байта: 600 штук — 2400 байт при 600 «символах».
+      await expect(sendNewComment('post1', '', '', '😀'.repeat(600))).rejects.toThrow(
+        'commentsMsg.tooLong'
+      )
+      await expect(
+        sendNewComment('post1', '', '', 'ж'.repeat(900), [`https://img/${'x'.repeat(300)}`])
+      ).rejects.toThrow('commentsMsg.tooLongWithImages')
+      expect(mocks.buildTransaction).not.toHaveBeenCalled()
+      expect(mocks.lockUTXOs).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('commentBodyFits', () => {
+    const body = (message: string, images: string[] = []) => ({
+      message,
+      url: '',
+      images,
+      info: '',
+    })
+    const overhead = JSON.stringify(body('')).length
+
+    it('считает байты UTF-8, а не символы', () => {
+      const room = COMMENT_PAYLOAD_MAX_BYTES - overhead
+      expect(commentBodyFits(body('a'.repeat(room)))).toBe(true)
+      expect(commentBodyFits(body('a'.repeat(room + 1)))).toBe(false)
+      // Кириллица — по два байта.
+      const cyr = Math.floor(room / 2)
+      expect(commentBodyFits(body('ж'.repeat(cyr)))).toBe(true)
+      expect(commentBodyFits(body('ж'.repeat(cyr + 1)))).toBe(false)
+    })
+
+    it('адреса картинок входят в предел', () => {
+      const ten = Array.from(
+        { length: 10 },
+        (_, i) => `https://peertube101.pocketnet.app/images/${i}`
+      )
+      expect(commentBodyFits(body('ж'.repeat(700), ten))).toBe(true)
+      expect(commentBodyFits(body('ж'.repeat(900), ten))).toBe(false)
     })
   })
 

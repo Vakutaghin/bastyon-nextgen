@@ -2,9 +2,10 @@
  * Форма ответа на пост / комментарий + @mention-меню.
  *
  * Управляет:
- * - replyTarget (root | ветка), replyDraft (текст), submit state
+ * - replyTarget (root | ветка), replyDraft (текст), картинки, submit state
  * - mention state: showMentionList, mentionQuery, highlightIndex, текстовые offsets
- * - sendReply: optimistic pending + sendComment + reconcile через refreshAllComments
+ * - sendReply: загрузка картинок + optimistic pending + sendNewComment +
+ *   reconcile через refreshAllComments
  *
  * Ссылки на textarea/mention-list передаются caller-ом через refs (компонент
  * держит шаблонные ref-ы и пробрасывает их сюда — для фокуса/скролла после
@@ -18,10 +19,12 @@ import { haptic } from '@/helpers/common/haptics'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
 import { useCommentsStore, useNotificationsStore, usePostsStore } from '@/stores'
 import { PENDING_COMMENT_TTL_MS } from '@/stores/comments-store'
-import { sendComment } from '../comment-sender'
+import { sendNewComment } from '../comment-sender'
+import { commentBodyFits } from '../comment-payload'
 import { isCommentLengthValid, getCommentLengthHint } from '../helpers'
 import { COMMENTS_PAGE_SIZE, COMMENTS_ALREADY_SHOWN } from '../consts'
 import { readCommentDraft, writeCommentDraft, clearCommentDraft } from './comment-draft-storage'
+import { imageFilesFromClipboard, useCommentImages } from './use-comment-images'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import { userNameIfKnown } from '@/services/user-names'
 import type { MentionUser } from '../types'
@@ -57,6 +60,14 @@ export function useCommentForm(opts: UseCommentFormOptions) {
   const mentionEndOffset = ref(0)
   const mentionHighlightIndex = ref(0)
   const replySubmitting = ref(false)
+  /** Картинки формы — одни на корневую форму и плашку ответа: открыта одна. */
+  const images = useCommentImages()
+  /** Картинки грузятся перед отправкой: текст и список картинок не меняются. */
+  const replyUploading = ref(false)
+  /** Есть что отправить: текст или картинка. */
+  const hasReplyContent = computed(
+    () => !!(replyDraft.value || '').trim() || images.hasImages.value
+  )
 
   // --- Черновик корневого комментария: автосохранение в localStorage ---
   // Сохраняется только текст корневой формы (composer к посту) по ключу postId,
@@ -93,7 +104,9 @@ export function useCommentForm(opts: UseCommentFormOptions) {
   const openReplyToPost = (): void => {
     replyTarget.value = { commentId: 'root', parentId: '', prefix: '' }
     // Восстанавливаем сохранённый черновик корневой формы, если он есть.
+    // Картинки в черновике не хранятся: они были у закрытой плашки ответа.
     replyDraft.value = readSavedDraft()
+    images.clear()
     showCancelReplyModal.value = false
     showMentionList.value = false
     mentionQuery.value = ''
@@ -112,6 +125,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
       replyDraft.value = (replyDraft.value || '').slice(oldPrefix.length).trim()
     } else if (!sameComment) {
       replyDraft.value = ''
+      images.clear()
     }
   }
 
@@ -127,23 +141,47 @@ export function useCommentForm(opts: UseCommentFormOptions) {
       replyDraft.value = prefix + (replyDraft.value || '')
     } else if (!sameComment) {
       replyDraft.value = prefix
+      images.clear()
     }
   }
 
   const closeReply = (): void => {
     replyTarget.value = null
     replyDraft.value = ''
+    images.clear()
     showCancelReplyModal.value = false
     showMentionList.value = false
     mentionQuery.value = ''
   }
 
   const requestCloseReply = (): void => {
-    if ((replyDraft.value || '').trim() && replyDraft.value !== (replyTarget.value?.prefix || '')) {
+    const typed =
+      (replyDraft.value || '').trim() && replyDraft.value !== (replyTarget.value?.prefix || '')
+    if (typed || images.hasImages.value) {
       showCancelReplyModal.value = true
     } else {
       closeReply()
     }
+  }
+
+  // --- Картинки ---
+  /** Файлы с кнопки «Прикрепить картинку». Пока идёт загрузка, список не трогаем. */
+  const addReplyImages = (files: FileList | File[]): void => {
+    if (replyUploading.value) return
+    void images.addFiles(files)
+  }
+
+  const removeReplyImage = (id: string): void => {
+    if (replyUploading.value) return
+    images.remove(id)
+  }
+
+  /** Вставка в поле: картинка из буфера прикладывается, текст вставляется как обычно. */
+  const handleReplyPaste = (e: ClipboardEvent): void => {
+    const files = imageFilesFromClipboard(e)
+    if (!files.length) return
+    e.preventDefault()
+    addReplyImages(files)
   }
 
   const confirmCancelReply = (): void => {
@@ -213,8 +251,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
   const handleReplyKeydown = (e: KeyboardEvent): void => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault()
-      const text = (replyDraft.value || '').trim()
-      if (text && replyTarget.value && !replySubmitting.value) {
+      if (hasReplyContent.value && replyTarget.value && !replySubmitting.value) {
         void sendReply()
       }
       return
@@ -301,9 +338,36 @@ export function useCommentForm(opts: UseCommentFormOptions) {
   }
 
   // --- Отправка ---
+  /** Чья форма: корневая или ответ на комментарий. */
+  const targetKey = (target: { commentId: string } | null): string => target?.commentId ?? 'root'
+
+  /**
+   * Картинки → адреса. `null` — отправлять нечего: загрузка не удалась (тост
+   * показан, картинки в форме) или, пока грузилось, форму закрыли либо открыли
+   * ответ другому.
+   */
+  const uploadReplyImages = async (snapshotKey: string): Promise<string[] | null> => {
+    replyUploading.value = true
+    try {
+      const urls = await images.uploadAll()
+      return targetKey(replyTarget.value) === snapshotKey ? urls : null
+    } catch (e) {
+      console.warn('[comments] image upload failed', e)
+      appToast.error({
+        message: t('commentsMsg.imageUploadError'),
+        ...(e instanceof Error ? { description: e.message } : {}),
+      })
+      return null
+    } finally {
+      replyUploading.value = false
+    }
+  }
+
   const sendReply = async (): Promise<void> => {
     const text = (replyDraft.value || '').trim()
-    if (!text || replySubmitting.value) return
+    if (!hasReplyContent.value || replySubmitting.value) return
+    // Картинка ещё сжимается: без неё отправлять нельзя, с ней — рано.
+    if (images.processing.value > 0) return
     if (!isCommentLengthValid(text)) {
       appToast.error({ message: t('commentsMsg.tooLong') })
       return
@@ -320,6 +384,25 @@ export function useCommentForm(opts: UseCommentFormOptions) {
     const answerId = isRootComment ? '' : replyTarget.value!.commentId
     const replyTargetSnapshot = replyTarget.value ? { ...replyTarget.value } : null
 
+    // Картинки — до оптимистичной вставки: грузятся секунды, и форма с
+    // картинками остаётся на месте, пока они не загрузятся. Без картинок
+    // ждать нечего: форма закрывается сразу, как раньше.
+    const imageUrls = images.hasImages.value
+      ? await uploadReplyImages(targetKey(replyTargetSnapshot))
+      : []
+    if (!imageUrls) {
+      replySubmitting.value = false
+      return
+    }
+    // Предел ноды — в байтах, и адреса картинок в него входят.
+    if (!commentBodyFits({ message: text, url: '', images: imageUrls, info: '' })) {
+      appToast.error({
+        message: t(imageUrls.length ? 'commentsMsg.tooLongWithImages' : 'commentsMsg.tooLong'),
+      })
+      replySubmitting.value = false
+      return
+    }
+
     // Оптимистичный insert: показать комментарий со значком часов сразу
     const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const me = opts.currentUserAddress.value
@@ -332,6 +415,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
       id: localId,
       postId: opts.postId.value,
       message: text,
+      ...(imageUrls.length ? { images: imageUrls } : {}),
       parentId: parentId || '',
       answerId: answerId || '',
       address: me,
@@ -362,7 +446,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
       : Promise.resolve()
 
     try {
-      const txid = await sendComment(opts.postId.value, parentId, answerId, text)
+      const txid = await sendNewComment(opts.postId.value, parentId, answerId, text, imageUrls)
       haptic('small')
       if (isRootComment) clearSavedDraft()
       appToast.success({ message: t('commentsMsg.sendSuccess') })
@@ -380,6 +464,8 @@ export function useCommentForm(opts: UseCommentFormOptions) {
         replyTarget.value = { commentId: 'root', parentId: '', prefix: '' }
       }
       replyDraft.value = text
+      // Картинки возвращаются адресами: второй раз их грузить не придётся.
+      images.restore(imageUrls)
       appToast.error({
         message: e instanceof Error ? e.message : t('commentsMsg.sendError'),
       })
@@ -420,6 +506,11 @@ export function useCommentForm(opts: UseCommentFormOptions) {
     mentionEndOffset,
     mentionHighlightIndex,
     replySubmitting,
+    replyUploading,
+    replyImages: images.images,
+    replyImagesProcessing: images.processing,
+    replyImagesFull: images.full,
+    hasReplyContent,
     replyPanelKey,
     isRootReplyActive,
     rootLengthHint,
@@ -431,6 +522,9 @@ export function useCommentForm(opts: UseCommentFormOptions) {
     closeReply,
     requestCloseReply,
     confirmCancelReply,
+    addReplyImages,
+    removeReplyImage,
+    handleReplyPaste,
     onRootBarFocus,
     handleRootReplyInput,
     handleReplyInput,

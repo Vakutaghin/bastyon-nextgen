@@ -90,6 +90,21 @@ export interface RawFeedPost {
 }
 
 /**
+ * Картинки последнего комментария — адресами для показа. Прежнее приложение
+ * кодировало их через encodeURIComponent, отсюда safeDecode.
+ */
+function lastCommentImages(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  const out: string[] = []
+  for (const item of raw) {
+    if (typeof item !== 'string' || !item) continue
+    const url = resolveImageUrl(safeDecode(item))
+    if (url) out.push(url)
+  }
+  return out
+}
+
+/**
  * Адаптирует данные поста из API в формат компонента
  */
 export function adaptPostData(
@@ -149,9 +164,11 @@ export function adaptPostData(
   let lastComment
   if (post.lastComment && post.lastComment.msg && parseVote(post.lastComment.msg) === null) {
     let msg: string
+    let images: string[] = []
     try {
       const parsed = JSON.parse(post.lastComment.msg)
       msg = safeDecode(parsed?.message || '')
+      images = lastCommentImages(parsed?.images)
     } catch {
       msg = safeDecode(String(post.lastComment.msg || ''))
     }
@@ -169,6 +186,7 @@ export function adaptPostData(
       avatar: commenterAvatar || null,
       time: Number(post.lastComment.time || 0),
       message: msg,
+      ...(images.length ? { images } : {}),
       children: Number(post.lastComment.children || 0),
       scoreUp: Number(post.lastComment.scoreUp || 0),
       scoreDown: Number(post.lastComment.scoreDown || 0),

@@ -61,6 +61,8 @@ export interface AdaptedPost {
     avatar: string | null
     time: number
     message: string
+    /** Адреса картинок комментария. */
+    images?: string[]
     children: number
     scoreUp: number
     scoreDown: number

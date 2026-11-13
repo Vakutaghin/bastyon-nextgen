@@ -34,6 +34,10 @@
         <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
         <SC_CommentText v-else v-html="lastCommentMessageHtml"></SC_CommentText>
 
+        <SC_CommentImages v-if="!lastCommentHidden && lastCommentImages.length > 0">
+          <PostCardImages :images="lastCommentImages" />
+        </SC_CommentImages>
+
         <SC_CommentActions v-if="!lastCommentHidden">
           <button
             type="button"
@@ -138,6 +142,7 @@ import { ClockCircleOutlined, StopOutlined } from '@/components/icons'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { userAvatar, userName, userNameIfKnown } from '@/services/user-names'
 import type { PostForComments } from './types'
+import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
 import CommentAvatar from './comment-avatar.vue'
 import BoundReplyPanel from './bound-reply-panel.vue'
 import {
@@ -153,6 +158,7 @@ import {
   SC_CommentMetaRight,
   SC_CommentAuthor,
   SC_CommentText,
+  SC_CommentImages,
   SC_CommentDate,
   SC_CommentActions,
   SC_CommentRepliesLink,
@@ -189,6 +195,7 @@ const { isReplyPanelOpen } = form
 const { shouldHideContent, hiddenLabelKey, revealHiddenComment } = ctx.visibility
 
 // --- Last comment отображение. ---
+const lastCommentImages = computed<string[]>(() => props.post.lastComment?.images ?? [])
 const lastCommentMessageHtml = computed<string>(() =>
   formatCommentMessageHtmlRaw({ msg: props.post.lastComment?.message || '' } as GetComment)
 )

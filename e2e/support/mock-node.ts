@@ -66,6 +66,8 @@ export interface MockComment {
   postid: string
   address: string
   message: string
+  /** Адреса картинок комментария (`images` в msg). */
+  images?: string[]
   /** Номер варианта опроса: такой комментарий — голос (helpers/content/poll.ts). */
   pollVote?: { index: number; option: string }
   /** Автор поста заблокировал комментатора: нода ставит `blck_cnt_cmt: 1`. */
@@ -287,7 +289,7 @@ function commentJson(c: MockComment, index: number, data: MockNodeData) {
         images: [],
         info: JSON.stringify({ poll: c.pollVote.index }),
       }
-    : { message: c.message, url: '', images: [], info: '' }
+    : { message: c.message, url: '', images: c.images ?? [], info: '' }
   return {
     id: c.id,
     cid: 37_100_000 + index,

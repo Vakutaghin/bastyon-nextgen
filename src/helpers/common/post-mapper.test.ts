@@ -41,6 +41,28 @@ describe('adaptPostData', () => {
     expect(withLast(text).lastComment?.message).toBe('Согласен')
   })
 
+  it('картинки последнего комментария — адресами; без картинок поля нет', () => {
+    const withLast = (msg: object) =>
+      adaptPostData(
+        { ...rawPost, lastComment: { id: 'c1', address: 'P1', msg: JSON.stringify(msg), time: 1 } },
+        0
+      ).lastComment
+    const images = [
+      'https://peertube101.pocketnet.app/images/a/a-original.jpg',
+      // Прежнее приложение кодировало адреса через encodeURIComponent.
+      encodeURIComponent('https://pocketnet.app:8092/i/b.jpg'),
+      '',
+      7,
+    ]
+    expect(withLast({ message: '', url: '', images, info: '' })?.images).toEqual([
+      'https://peertube101.pocketnet.app/images/a/a-original.jpg',
+      'https://pocketnet.app:8092/i/b.jpg',
+    ])
+    expect(withLast({ message: 'текст', url: '', images: [], info: '' })).not.toHaveProperty(
+      'images'
+    )
+  })
+
   it('adapts post data correctly', () => {
     const result = adaptPostData(rawPost, 0)
     expect(result.id).toBe('tx123')

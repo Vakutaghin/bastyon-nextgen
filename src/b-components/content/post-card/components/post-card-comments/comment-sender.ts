@@ -18,16 +18,16 @@ import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { broadcastTransaction } from '@/blockchain/core/transactions/transaction-sender'
 import { pendingSnippet, type PendingMeta } from '@/blockchain/core/transactions/broadcast-events'
 import { voteCommentBody } from '@/helpers/content/poll'
+import { commentBodyFits } from './comment-payload'
 
-/** Тело обычного комментария: только текст. */
-function textBody(message: string): CommentMessageBody {
-  return { message: message.trim(), url: '', images: [], info: '' }
+/** Тело нового комментария: текст и адреса уже загруженных картинок. */
+function newBody(message: string, images: readonly string[] = []): CommentMessageBody {
+  return { message: message.trim(), url: '', images: [...images], info: '' }
 }
 
 /**
- * Тело правки: новый текст, а картинки, ссылка и `info` — из исходного `msg`.
- * Новый клиент картинки к комментариям не прикладывает, но у комментариев из
- * старого приложения они бывают, и правка только текстом стёрла бы их.
+ * Тело правки: новый текст, а картинки, ссылка и `info` — из исходного `msg`:
+ * правка только текстом стёрла бы картинки комментария.
  */
 export function editedBody(originalMsg: string | undefined, message: string): CommentMessageBody {
   let original: Partial<Record<keyof CommentMessageBody, unknown>> = {}
@@ -72,14 +72,40 @@ export async function sendComment(
   editId?: string,
   originalMsg?: string
 ): Promise<string> {
+  if (!editId) return sendNewComment(postId, parentId, answerId, messageText)
   if (!postId || !messageText.trim()) throw new Error(t('commentsMsg.errPostAndTextRequired'))
-  const body = editId ? editedBody(originalMsg, messageText) : textBody(messageText)
-  // Правка — в общих «песочных часах». Новый комментарий часы показывают из
-  // comments-store, но блок за ним следит тот же трекер.
-  const pending: PendingMeta = editId
-    ? { postId, title: pendingSnippet(messageText) }
-    : { kind: 'comment', postId }
-  return sendCommentBody(postId, parentId, answerId, body, pending, editId)
+  // Правка — в общих «песочных часах».
+  const pending: PendingMeta = { postId, title: pendingSnippet(messageText) }
+  return sendCommentBody(
+    postId,
+    parentId,
+    answerId,
+    editedBody(originalMsg, messageText),
+    pending,
+    editId
+  )
+}
+
+/**
+ * Новый комментарий или ответ: текст и картинки (адреса уже загруженных —
+ * use-comment-images). Комментарий из одних картинок допустим, как у прежнего
+ * приложения (kit.js pComment.validation). Часы показывает comments-store,
+ * а за блоком следит общий трекер.
+ */
+export function sendNewComment(
+  postId: string,
+  parentId: string,
+  answerId: string,
+  messageText: string,
+  images: readonly string[] = []
+): Promise<string> {
+  if (!postId || (!messageText.trim() && images.length === 0)) {
+    return Promise.reject(new Error(t('commentsMsg.errPostAndTextRequired')))
+  }
+  return sendCommentBody(postId, parentId, answerId, newBody(messageText, images), {
+    kind: 'comment',
+    postId,
+  })
 }
 
 /**
@@ -108,6 +134,10 @@ async function sendCommentBody(
   const address = authStore.getUserAddress
 
   if (!keyPair || !address) throw new Error(t('commentsMsg.errAuthRequiredSend'))
+  // Сеть такую транзакцию отклонит — не тратим на неё монеты и время.
+  if (!commentBodyFits(body)) {
+    throw new Error(t(body.images.length ? 'commentsMsg.tooLongWithImages' : 'commentsMsg.tooLong'))
+  }
 
   const msg = JSON.stringify(body)
   const messagePayload: CommentMessagePayload = {

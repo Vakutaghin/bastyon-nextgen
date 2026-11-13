@@ -19,7 +19,7 @@ export function pendingToGetComment(p: PendingComment): GetComment {
     time: Math.floor(p.createdAt / 1000),
     timeUpd: Math.floor(p.createdAt / 1000),
     block: 0,
-    msg: JSON.stringify({ message: p.message, url: '', images: [], info: '' }),
+    msg: JSON.stringify({ message: p.message, url: '', images: p.images ?? [], info: '' }),
     scoreUp: 0,
     scoreDown: 0,
     children: 0,

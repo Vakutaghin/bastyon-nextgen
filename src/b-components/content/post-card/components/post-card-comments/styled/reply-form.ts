@@ -206,6 +206,104 @@ export const SC_EmojiTriggerBtn = styled.button`
   }
 `
 
+/** Кнопка «Прикрепить картинку» — как кнопка эмодзи, стоит перед ней. */
+export const SC_AttachImageBtn = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:not(:disabled):hover {
+    background: var(--color-overlay-6);
+    color: var(--color-text-primary);
+  }
+
+  &:disabled {
+    color: var(--ui-text-dimmed);
+    cursor: not-allowed;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`
+
+/** Миниатюры прикреплённых картинок под полем ввода. */
+export const SC_ReplyImages = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+`
+
+export const SC_ReplyImageThumb = styled.div`
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--ui-radius-md);
+  overflow: hidden;
+  background: var(--color-overlay-6);
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  &.is-processing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ui-primary);
+  }
+
+  &.is-processing svg {
+    width: 18px;
+    height: 18px;
+  }
+`
+
+export const SC_ReplyImageRemove = styled.button`
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  /* Как у миниатюр редактора поста (composer-images.styled.ts). */
+  background: var(--color-overlay-55);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:not(:disabled):hover {
+    background: var(--color-overlay-70);
+  }
+
+  &:disabled {
+    display: none;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+`
+
 export const SC_ReplyCancelBtn = styled.button`
   width: 36px;
   height: 36px;

@@ -2608,6 +2608,10 @@ export default {
     extMerchantFailed: '付款已发送，但 {host} 未确认收到。交易记录在钱包中。',
   },
   comments: {
+    attachImage: '附加图片',
+    removeImage: '移除图片',
+    imageAlt: '评论图片',
+    cancelConfirmDraft: '已输入的文字和图片将被删除。',
     title: '评论（{count}）',
     replies: '回复（{count}）',
     reply: '回复',
@@ -3399,6 +3403,8 @@ export default {
     pkoinChartPeriod12m: '12 个月',
   },
   commentsMsg: {
+    imageUploadError: '图片上传失败，请重新发送。',
+    tooLongWithImages: '带图片的评论太长：请缩短文字或移除一张图片。',
     loadTimeout: '评论未能及时加载',
     charsLeft: '还可输入 {n} 个字符',
     charsOver: '超出限制 {n} 个字符',

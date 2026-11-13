@@ -12,7 +12,9 @@
 
   <!-- Cancel confirmation -->
   <SC_ConfirmWrap v-if="showCancelModal">
-    <SC_ConfirmMessage>{{ t('comments.cancelConfirmMessage') }}</SC_ConfirmMessage>
+    <SC_ConfirmMessage>
+      {{ t(replyImages.length ? 'comments.cancelConfirmDraft' : 'comments.cancelConfirmMessage') }}
+    </SC_ConfirmMessage>
     <SC_ConfirmActions>
       <SC_ConfirmBtn type="button" @click.stop.prevent="emit('update:showCancelModal', false)">
         {{ t('comments.no') }}
@@ -37,8 +39,10 @@
         :placeholder="t('comments.replyPlaceholder')"
         :aria-label="t('comments.replyPlaceholder')"
         rows="2"
+        :readonly="replyUploading"
         @input="onInput"
         @keydown="(e: KeyboardEvent) => emit('keydown', e)"
+        @paste="(e: ClipboardEvent) => emit('paste', e)"
       />
       <SC_MentionList
         ref="mentionListRef"
@@ -54,10 +58,20 @@
           {{ u.name }}
         </SC_MentionItem>
       </SC_MentionList>
+      <CommentImageStrip
+        :images="replyImages"
+        :processing="replyImagesProcessing"
+        :locked="replyUploading"
+        @remove="(id: string) => emit('remove-image', id)"
+      />
       <SC_LengthCounter v-if="lengthHint" :class="{ 'length-counter--bad': lengthHint.isOver }">
         {{ lengthHint.text }}
       </SC_LengthCounter>
     </SC_ReplyInputWrap>
+    <CommentImageAttach
+      :disabled="replyImagesFull || replyUploading"
+      @files="(files: File[]) => emit('add-images', files)"
+    />
     <APopover v-model:open="emojiOpen" trigger="click" placement="topRight">
       <template #content>
         <CommentEmojiPicker @select="insertEmoji" />
@@ -76,7 +90,7 @@
     <SC_ReplySendBtn
       type="button"
       :title="t('comments.send')"
-      :disabled="!(replyDraft || '').trim() || replySubmitting || !lengthValid"
+      :disabled="!hasContent || replySubmitting || !lengthValid || replyImagesProcessing > 0"
       @click.stop.prevent="emit('send')"
     >
       <LoadingOutlined v-if="replySubmitting" :style="ICON_SIZE_SM" spin />
@@ -107,6 +121,9 @@ import {
   SC_EmojiTriggerBtn,
 } from './styled'
 import CommentEmojiPicker from './comment-emoji-picker.vue'
+import CommentImageAttach from './comment-image-attach.vue'
+import CommentImageStrip from './comment-image-strip.vue'
+import type { CommentImage } from './composables/use-comment-images'
 import { getCommentLengthHint, isCommentLengthValid } from './helpers'
 
 const APopover = Popover
@@ -126,12 +143,19 @@ const props = defineProps<{
   showMentionList: boolean
   filteredMentionUsers: Array<MentionUser>
   mentionHighlightIndex: number
+  replyImages: CommentImage[]
+  replyImagesProcessing: number
+  replyImagesFull: boolean
+  /** Картинки грузятся перед отправкой: текст и картинки не меняются. */
+  replyUploading: boolean
 }>()
 
 const { t } = useI18n()
 
 const lengthHint = computed(() => getCommentLengthHint(props.replyDraft || ''))
 const lengthValid = computed(() => isCommentLengthValid(props.replyDraft || ''))
+/** Комментарий может состоять из одних картинок. */
+const hasContent = computed(() => !!(props.replyDraft || '').trim() || props.replyImages.length > 0)
 
 const emit = defineEmits<{
   'update:replyDraft': [value: string]
@@ -142,6 +166,9 @@ const emit = defineEmits<{
   'select-mention': [user: MentionUser]
   'request-close': []
   send: []
+  paste: [event: ClipboardEvent]
+  'add-images': [files: File[]]
+  'remove-image': [id: string]
 }>()
 
 const replyTextareaRef = ref<InstanceType<typeof SC_ReplyTextarea> | null>(null)

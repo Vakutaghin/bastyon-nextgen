@@ -2746,6 +2746,10 @@ export default {
       'Pago enviado, pero {host} no confirmó haberlo recibido. La transacción está en tu monedero.',
   },
   comments: {
+    attachImage: 'Adjuntar imagen',
+    removeImage: 'Quitar imagen',
+    imageAlt: 'Imagen del comentario',
+    cancelConfirmDraft: 'Se eliminarán el texto y las imágenes que añadiste.',
     title: 'Comentarios ({count})',
     replies: 'Respuestas ({count})',
     reply: 'Responder',
@@ -3603,6 +3607,9 @@ export default {
     pkoinChartPeriod12m: '12 meses',
   },
   commentsMsg: {
+    imageUploadError: 'No se pudo subir la imagen. Inténtalo de nuevo.',
+    tooLongWithImages:
+      'El comentario con imágenes es demasiado largo: acorta el texto o quita una imagen.',
     loadTimeout: 'Los comentarios no se cargaron a tiempo',
     charsLeft: 'Queda {n} carácter | Quedan {n} caracteres',
     charsOver: '{n} carácter por encima del límite | {n} caracteres por encima del límite',

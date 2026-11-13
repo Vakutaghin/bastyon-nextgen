@@ -32,6 +32,8 @@ export interface PendingComment {
   postId: string
   /** Текст */
   message: string
+  /** Адреса загруженных картинок. */
+  images?: string[]
   /** ID родительского комментария ветки (пусто для корневого) */
   parentId: string
   /** ID комментария, на который отвечаем (пусто для корневого) */

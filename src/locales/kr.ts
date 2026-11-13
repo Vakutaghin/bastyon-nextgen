@@ -2692,6 +2692,10 @@ export default {
       '결제는 전송되었지만 {host}에서 수신을 확인하지 않았습니다. 거래는 지갑에 있습니다.',
   },
   comments: {
+    attachImage: '이미지 첨부',
+    removeImage: '이미지 제거',
+    imageAlt: '댓글 이미지',
+    cancelConfirmDraft: '입력한 텍스트와 이미지가 삭제됩니다.',
     title: '댓글({count})',
     replies: '답글({count})',
     reply: '답글',
@@ -3530,6 +3534,8 @@ export default {
     pkoinChartPeriod12m: '12개월',
   },
   commentsMsg: {
+    imageUploadError: '이미지를 올리지 못했습니다. 다시 보내 보세요.',
+    tooLongWithImages: '이미지를 포함한 댓글이 너무 깁니다. 텍스트를 줄이거나 이미지를 제거하세요.',
     loadTimeout: '댓글을 제시간에 불러오지 못했습니다',
     charsLeft: '{n}자 남음',
     charsOver: '{n}자 초과',

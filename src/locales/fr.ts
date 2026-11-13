@@ -2763,6 +2763,10 @@ export default {
       'Paiement envoyé, mais {host} n’a pas confirmé la réception. La transaction figure dans le portefeuille.',
   },
   comments: {
+    attachImage: 'Joindre une image',
+    removeImage: 'Retirer l’image',
+    imageAlt: 'Image du commentaire',
+    cancelConfirmDraft: 'Le texte et les images saisis seront supprimés.',
     title: 'Commentaires ({count})',
     replies: 'Réponses ({count})',
     reply: 'Répondre',
@@ -3625,6 +3629,9 @@ export default {
     pkoinChartPeriod12m: '12 mois',
   },
   commentsMsg: {
+    imageUploadError: 'Impossible de téléverser l’image. Réessayez d’envoyer.',
+    tooLongWithImages:
+      'Le commentaire avec images est trop long : raccourcissez le texte ou retirez une image.',
     loadTimeout: 'Les commentaires n’ont pas pu être chargés à temps',
     charsLeft: '{n} caractère restant | {n} caractères restants',
     charsOver: '{n} caractère de trop | {n} caractères de trop',

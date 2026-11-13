@@ -2759,6 +2759,10 @@ export default {
       'Zahlung gesendet, aber {host} hat den Empfang nicht bestätigt. Die Transaktion steht im Wallet.',
   },
   comments: {
+    attachImage: 'Bild anhängen',
+    removeImage: 'Bild entfernen',
+    imageAlt: 'Bild zum Kommentar',
+    cancelConfirmDraft: 'Der eingegebene Text und die Bilder werden gelöscht.',
     title: 'Kommentare ({count})',
     replies: 'Antworten ({count})',
     reply: 'Antworten',
@@ -3620,6 +3624,9 @@ export default {
     pkoinChartPeriod12m: '12 Mon.',
   },
   commentsMsg: {
+    imageUploadError: 'Das Bild konnte nicht hochgeladen werden. Versuchen Sie es erneut.',
+    tooLongWithImages:
+      'Der Kommentar mit Bildern ist zu lang: Kürzen Sie den Text oder entfernen Sie ein Bild.',
     loadTimeout: 'Die Kommentare wurden nicht rechtzeitig geladen',
     charsLeft: 'Noch {n} Zeichen | Noch {n} Zeichen',
     charsOver: '{n} Zeichen über dem Limit | {n} Zeichen über dem Limit',

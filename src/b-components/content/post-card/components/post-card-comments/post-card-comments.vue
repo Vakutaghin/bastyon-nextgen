@@ -154,6 +154,7 @@
           :placeholder="t('comments.composerPlaceholder')"
           :aria-label="t('comments.composerPlaceholder')"
           rows="2"
+          :readonly="replyUploading"
           @input="
             (e) => {
               if (isRootReplyActive) handleRootReplyInput(e)
@@ -161,6 +162,7 @@
           "
           @focus="onComposerFocus"
           @keydown="handleReplyKeydown"
+          @paste="handleReplyPaste"
         />
         <SC_MentionList
           ref="rootMentionListRef"
@@ -176,6 +178,12 @@
             {{ u.name }}
           </SC_MentionItem>
         </SC_MentionList>
+        <CommentImageStrip
+          :images="replyImages"
+          :processing="replyImagesProcessing"
+          :locked="replyUploading"
+          @remove="removeReplyImage"
+        />
         <SC_LengthCounter
           v-if="isRootReplyActive && rootLengthHint"
           :class="{ 'length-counter--bad': rootLengthHint.isOver }"
@@ -183,6 +191,7 @@
           {{ rootLengthHint.text }}
         </SC_LengthCounter>
       </SC_ReplyInputWrap>
+      <CommentImageAttach :disabled="replyImagesFull || replyUploading" @files="addReplyImages" />
       <APopover v-model:open="emojiOpenRoot" trigger="click" placement="topRight">
         <template #content>
           <CommentEmojiPicker @select="onRootEmojiSelect" />
@@ -195,7 +204,11 @@
         type="button"
         :title="t('comments.send')"
         :disabled="
-          !isRootReplyActive || !(replyDraft || '').trim() || replySubmitting || !rootLengthValid
+          !isRootReplyActive ||
+          !hasReplyContent ||
+          replySubmitting ||
+          !rootLengthValid ||
+          replyImagesProcessing > 0
         "
         @click.stop.prevent="sendReply"
       >
@@ -226,6 +239,8 @@ import LastCommentPreview from './last-comment-preview.vue'
 import CommentCard from './comment-card.vue'
 import BoundReplyPanel from './bound-reply-panel.vue'
 import CommentEmojiPicker from './comment-emoji-picker.vue'
+import CommentImageAttach from './comment-image-attach.vue'
+import CommentImageStrip from './comment-image-strip.vue'
 import {
   formatCommentMessageHtml as formatCommentMessageHtmlRaw,
   formatCommentDateAndTime,
@@ -461,7 +476,8 @@ const actualCommentsCount = computed<number>(
 )
 const hasUserComments = computed<boolean>(() => {
   const lc = props.post.lastComment
-  return !!lc && !!lc.message && (props.post.comments || 0) > 0
+  // Комментарий может состоять из одних картинок.
+  return !!lc && (!!lc.message || !!lc.images?.length) && (props.post.comments || 0) > 0
 })
 /** Есть комментарии сверх показанного в превью (последнего). */
 const moreThanPreview = computed<boolean>(
@@ -722,6 +738,11 @@ const {
   showMentionList,
   mentionHighlightIndex,
   replySubmitting,
+  replyUploading,
+  replyImages,
+  replyImagesProcessing,
+  replyImagesFull,
+  hasReplyContent,
   replyPanelKey,
   isRootReplyActive,
   rootLengthHint,
@@ -730,6 +751,9 @@ const {
   onRootBarFocus,
   handleRootReplyInput,
   handleReplyKeydown,
+  handleReplyPaste,
+  addReplyImages,
+  removeReplyImage,
   selectMentionUser,
   insertRootEmoji,
   sendReply,

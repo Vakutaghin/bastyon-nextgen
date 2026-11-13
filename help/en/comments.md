@@ -19,7 +19,15 @@ A comment can be up to 915 characters long. When fewer than 500 are left, a coun
 
 An unfinished comment on a post is not lost: come back to the post and the text will be in the field. The draft is kept on this device, separately for each account. Unfinished replies are not saved.
 
-Images in comments written in the previous Bastyon app are shown, but you cannot attach an image to a comment in this app.
+### Images
+
+The **“Attach an image”** button next to the field adds up to 10 images to a comment or reply. You can also paste an image into the field from the clipboard. Thumbnails appear under the field; the cross on a thumbnail is **“Remove image”**. A comment can consist of images only.
+
+Before sending, the app scales large images down to 1920×1080 and removes shooting details such as the location from them — the same as for post images. They are uploaded to the same place as post images, and the comment stores their addresses. These images are visible in the previous Bastyon app too.
+
+The network accepts a comment of up to 2000 bytes, image addresses count towards this limit, and a Cyrillic letter takes two bytes. If a long text together with images does not fit, the app asks you to shorten the text or remove an image. The uploaded images stay in the field. If an image fails to upload, it also stays in the field — click **“Send”** again.
+
+The images of a published comment do not change: editing changes only the text.
 
 ## Replying
 

@@ -1,14 +1,15 @@
 // Форма ответа: parentid/answerid как в legacy (K4), черновик корневой формы в
 // localStorage, переключение цели ответа с префиксом @ника, @-меню с клавиатуры,
-// эмодзи в позицию курсора, проверки перед отправкой и откат при ошибке.
+// эмодзи в позицию курсора, проверки перед отправкой и откат при ошибке,
+// картинки: загрузка перед отправкой, предел размера, возврат при ошибке.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { computed, nextTick, ref, type Ref } from 'vue'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
 import type { MentionUser } from '../types'
 import type { DisableReason } from '../visibility'
 
-const { sendComment, commentsStore, toast } = vi.hoisted(() => ({
-  sendComment: vi.fn(async (..._args: unknown[]): Promise<string> => 'TXID'),
+const { sendNewComment, commentsStore, toast } = vi.hoisted(() => ({
+  sendNewComment: vi.fn(async (..._args: unknown[]): Promise<string> => 'TXID'),
   commentsStore: { addPending: vi.fn(), replacePendingId: vi.fn(), removePending: vi.fn() },
   toast: { success: vi.fn(), error: vi.fn() },
 }))
@@ -24,7 +25,15 @@ vi.mock('@/stores', () => ({
   usePostsStore: () => ({ getPostByShareId: () => undefined }),
   useNotificationsStore: () => notificationsStore,
 }))
-vi.mock('../comment-sender', () => ({ sendComment }))
+vi.mock('../comment-sender', () => ({ sendNewComment }))
+const { uploadImage } = vi.hoisted(() => ({
+  uploadImage: vi.fn(async (src: string): Promise<string> => `https://img.test/${src.slice(-3)}`),
+}))
+vi.mock('@/services/image-upload-service', () => ({ uploadImage }))
+vi.mock('@/helpers/common/resize-image', () => ({
+  fileToBase64: async (f: File) => `data:image/png;base64,${f.name}`,
+  resizeImageBase64: async (src: string) => src,
+}))
 
 import { useCommentForm } from './use-comment-form'
 import { commentDraftKey } from './comment-draft-storage'
@@ -109,7 +118,157 @@ const reply = { id: 'r1', parentid: 'c1', address: 'B', userprofile: { name: 'bo
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
-  sendComment.mockImplementation(async () => 'TXID')
+  sendNewComment.mockImplementation(async () => 'TXID')
+  uploadImage.mockImplementation(async (src: string) => `https://img.test/${src.slice(-3)}`)
+})
+
+/** Файл-картинка с именем из трёх букв: адрес после загрузки — `https://img.test/<имя>`. */
+const png = (name: string) => new File(['x'], name, { type: 'image/png' })
+
+describe('картинки', () => {
+  it('из одних картинок: грузятся, уходят адресами, pending с картинками', async () => {
+    const { api } = form()
+    api.openReplyToPost()
+    await api.addReplyImages([png('aaa'), png('bbb')])
+    await vi.waitFor(() => expect(api.replyImages.value).toHaveLength(2))
+    expect(api.hasReplyContent.value).toBe(true)
+    await api.sendReply()
+    expect(uploadImage).toHaveBeenCalledTimes(2)
+    const urls = ['https://img.test/aaa', 'https://img.test/bbb']
+    expect(sendNewComment).toHaveBeenCalledWith('POST', '', '', '', urls)
+    expect(commentsStore.addPending).toHaveBeenCalledWith(
+      expect.objectContaining({ message: '', images: urls })
+    )
+    // Форма закрыта — картинок в ней больше нет.
+    expect(api.replyImages.value).toEqual([])
+  })
+
+  it('не картинки пропускаются, больше десяти — тост, лишние не добавляются', async () => {
+    const { api } = form()
+    const files = [new File(['x'], 'doc.pdf', { type: 'application/pdf' })]
+    for (let i = 0; i < 11; i += 1) files.push(png(`i${String(i).padStart(2, '0')}`))
+    await api.addReplyImages(files)
+    await vi.waitFor(() => expect(api.replyImages.value).toHaveLength(10))
+    expect(api.replyImagesFull.value).toBe(true)
+    expect(toast.error).toHaveBeenCalledWith({ message: 'postComposer.tooManyImages' })
+  })
+
+  it('загрузка не удалась: тост, ничего не уходит, форма с картинками остаётся', async () => {
+    uploadImage.mockRejectedValueOnce(new Error('peertube_upload_500'))
+    const { api } = form()
+    api.onReplyToFirstLevel(root)
+    api.replyDraft.value = 'смотри'
+    await api.addReplyImages([png('aaa')])
+    await vi.waitFor(() => expect(api.replyImages.value).toHaveLength(1))
+    await api.sendReply()
+    expect(sendNewComment).not.toHaveBeenCalled()
+    expect(commentsStore.addPending).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalledWith({
+      message: 'commentsMsg.imageUploadError',
+      description: 'peertube_upload_500',
+    })
+    expect(api.replyDraft.value).toBe('смотри')
+    expect(api.replyImages.value).toHaveLength(1)
+    expect(api.replySubmitting.value).toBe(false)
+    expect(api.replyUploading.value).toBe(false)
+  })
+
+  it('уже загруженная картинка второй раз не грузится', async () => {
+    const { api } = form()
+    api.openReplyToPost()
+    await api.addReplyImages([png('aaa'), png('bbb')])
+    await vi.waitFor(() => expect(api.replyImages.value).toHaveLength(2))
+    // Первая загрузилась, вторая — нет.
+    uploadImage.mockImplementationOnce(async () => 'https://img.test/aaa')
+    uploadImage.mockRejectedValueOnce(new Error('timeout'))
+    await api.sendReply()
+    expect(api.replyImages.value.map((i) => i.src)).toEqual([
+      'https://img.test/aaa',
+      'data:image/png;base64,bbb',
+    ])
+    await api.sendReply()
+    expect(uploadImage).toHaveBeenCalledTimes(3)
+    expect(uploadImage).toHaveBeenLastCalledWith('data:image/png;base64,bbb')
+    expect(sendNewComment).toHaveBeenCalledWith('POST', '', '', '', [
+      'https://img.test/aaa',
+      'https://img.test/bbb',
+    ])
+  })
+
+  it('с картинками не помещается в 2000 байт — тост, ничего не уходит', async () => {
+    // 900 кириллических символов — 1800 байт, плюс адрес картинки.
+    uploadImage.mockImplementationOnce(async () => `https://img.test/${'x'.repeat(200)}`)
+    const { api } = form()
+    api.openReplyToPost()
+    api.replyDraft.value = 'ж'.repeat(900)
+    await api.addReplyImages([png('aaa')])
+    await vi.waitFor(() => expect(api.replyImages.value).toHaveLength(1))
+    await api.sendReply()
+    expect(sendNewComment).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalledWith({ message: 'commentsMsg.tooLongWithImages' })
+    // Картинка осталась в форме уже адресом — убрать её или сократить текст.
+    expect(api.replyImages.value[0]?.src).toMatch(/^https:/)
+  })
+
+  it('ошибка отправки: картинки возвращаются в форму адресами', async () => {
+    sendNewComment.mockRejectedValueOnce(new Error('node'))
+    const { api } = form()
+    api.onReplyToFirstLevel(root)
+    await api.addReplyImages([png('aaa')])
+    await vi.waitFor(() => expect(api.replyImages.value).toHaveLength(1))
+    await api.sendReply()
+    expect(commentsStore.removePending).toHaveBeenCalled()
+    expect(api.replyImages.value.map((i) => i.src)).toEqual(['https://img.test/aaa'])
+  })
+
+  it('пока грузилось, открыли ответ другому — не отправляется', async () => {
+    let finish: (url: string) => void = () => {}
+    uploadImage.mockImplementationOnce(() => new Promise<string>((r) => (finish = r)))
+    const { api } = form()
+    api.onReplyToFirstLevel(root)
+    await api.addReplyImages([png('aaa')])
+    await vi.waitFor(() => expect(api.replyImages.value).toHaveLength(1))
+    const sending = api.sendReply()
+    await vi.waitFor(() => expect(api.replyUploading.value).toBe(true))
+    // Пока грузится, картинку не убрать и новую не добавить.
+    api.removeReplyImage(api.replyImages.value[0]!.id)
+    expect(api.replyImages.value).toHaveLength(1)
+    api.onReplyToFirstLevel({ ...(root as object), id: 'c2' } as never)
+    finish('https://img.test/aaa')
+    await sending
+    expect(sendNewComment).not.toHaveBeenCalled()
+    expect(api.replySubmitting.value).toBe(false)
+  })
+
+  it('смена цели и закрытие формы убирают картинки; закрытие с картинками переспрашивает', async () => {
+    const { api } = form()
+    api.onReplyToFirstLevel(root)
+    await api.addReplyImages([png('aaa')])
+    await vi.waitFor(() => expect(api.replyImages.value).toHaveLength(1))
+    api.requestCloseReply()
+    expect(api.showCancelReplyModal.value).toBe(true)
+    api.confirmCancelReply()
+    expect(api.replyImages.value).toEqual([])
+
+    api.onReplyToFirstLevel(root)
+    await api.addReplyImages([png('bbb')])
+    await vi.waitFor(() => expect(api.replyImages.value).toHaveLength(1))
+    api.onReplyToSecondLevel(reply)
+    expect(api.replyImages.value).toEqual([])
+  })
+
+  it('вставка картинки из буфера прикладывает её, текст вставляется как обычно', async () => {
+    const { api } = form()
+    const preventDefault = vi.fn()
+    const file = png('aaa')
+    const paste = (items: unknown[]) =>
+      ({ clipboardData: { items }, preventDefault }) as unknown as ClipboardEvent
+    api.handleReplyPaste(paste([{ kind: 'string', type: 'text/plain', getAsFile: () => null }]))
+    expect(preventDefault).not.toHaveBeenCalled()
+    api.handleReplyPaste(paste([{ kind: 'file', type: 'image/png', getAsFile: () => file }]))
+    expect(preventDefault).toHaveBeenCalled()
+    await vi.waitFor(() => expect(api.replyImages.value).toHaveLength(1))
+  })
 })
 
 describe('sendReply — parentid/answerid как в legacy (K4)', () => {
@@ -118,7 +277,7 @@ describe('sendReply — parentid/answerid как в legacy (K4)', () => {
     api.onReplyToSecondLevel(reply)
     api.replyDraft.value = 'hi'
     await api.sendReply()
-    expect(sendComment).toHaveBeenCalledWith('POST', 'c1', 'r1', 'hi')
+    expect(sendNewComment).toHaveBeenCalledWith('POST', 'c1', 'r1', 'hi', [])
     expect(commentsStore.addPending).toHaveBeenCalledWith(
       expect.objectContaining({ parentId: 'c1', answerId: 'r1', postId: 'POST' })
     )
@@ -136,7 +295,7 @@ describe('sendReply — parentid/answerid как в legacy (K4)', () => {
     expect(api.replyDraft.value).toBe('@bob, ')
     api.replyDraft.value = '@bob, ok'
     await api.sendReply()
-    expect(sendComment).toHaveBeenCalledWith('POST', 'c1', 'r1', '@bob, ok')
+    expect(sendNewComment).toHaveBeenCalledWith('POST', 'c1', 'r1', '@bob, ok', [])
   })
 
   it('ответ на корневой комментарий: parentid = answerid = его id', async () => {
@@ -144,7 +303,7 @@ describe('sendReply — parentid/answerid как в legacy (K4)', () => {
     api.onReplyToFirstLevel(root)
     api.replyDraft.value = 'yo'
     await api.sendReply()
-    expect(sendComment).toHaveBeenCalledWith('POST', 'c1', 'c1', 'yo')
+    expect(sendNewComment).toHaveBeenCalledWith('POST', 'c1', 'c1', 'yo', [])
     // В уведомлении об этом комментарии — «Вы ответили».
     expect(notificationsStore.markAnswered).toHaveBeenCalledWith('c1')
   })
@@ -154,12 +313,12 @@ describe('sendReply — parentid/answerid как в legacy (K4)', () => {
     api.openReplyToPost()
     api.replyDraft.value = 'root'
     await api.sendReply()
-    expect(sendComment).toHaveBeenCalledWith('POST', '', '', 'root')
+    expect(sendNewComment).toHaveBeenCalledWith('POST', '', '', 'root', [])
     expect(notificationsStore.markAnswered).not.toHaveBeenCalled()
   })
 
   it('ошибка отправки: pending снимается, черновик и цель возвращаются', async () => {
-    sendComment.mockRejectedValueOnce(new Error('node'))
+    sendNewComment.mockRejectedValueOnce(new Error('node'))
     const { api } = form()
     api.onReplyToSecondLevel(reply)
     api.replyDraft.value = 'hi'
@@ -178,7 +337,7 @@ describe('sendReply — parentid/answerid как в legacy (K4)', () => {
     expect(api.replyDraft.value).toBe('@alice, ')
     api.replyDraft.value = '@alice, да'
     await api.sendReply()
-    expect(sendComment).toHaveBeenCalledWith('POST', 'c1', 'c1', '@alice, да')
+    expect(sendNewComment).toHaveBeenCalledWith('POST', 'c1', 'c1', '@alice, да', [])
   })
 })
 
@@ -188,7 +347,7 @@ describe('sendReply — проверки перед отправкой', () => {
     api.openReplyToPost()
     api.replyDraft.value = '   \n '
     await api.sendReply()
-    expect(sendComment).not.toHaveBeenCalled()
+    expect(sendNewComment).not.toHaveBeenCalled()
     expect(commentsStore.addPending).not.toHaveBeenCalled()
   })
 
@@ -200,7 +359,7 @@ describe('sendReply — проверки перед отправкой', () => {
     expect(api.rootLengthHint.value?.isOver).toBe(true)
     await api.sendReply()
     expect(toast.error).toHaveBeenCalledWith({ message: 'commentsMsg.tooLong' })
-    expect(sendComment).not.toHaveBeenCalled()
+    expect(sendNewComment).not.toHaveBeenCalled()
   })
 
   it('комментировать нельзя (бан, лимит…) — тост с причиной, ничего не уходит', async () => {
@@ -209,13 +368,13 @@ describe('sendReply — проверки перед отправкой', () => {
     api.replyDraft.value = 'hi'
     await api.sendReply()
     expect(toast.error).toHaveBeenCalledWith({ message: 'Вы забанены' })
-    expect(sendComment).not.toHaveBeenCalled()
+    expect(sendNewComment).not.toHaveBeenCalled()
     expect(api.replyDraft.value).toBe('hi')
   })
 
   it('повторная отправка, пока первая в пути, игнорируется', async () => {
     let finish!: (txid: string) => void
-    sendComment.mockImplementationOnce(() => new Promise<string>((r) => (finish = r)))
+    sendNewComment.mockImplementationOnce(() => new Promise<string>((r) => (finish = r)))
     const { api } = form()
     api.openReplyToPost()
     api.replyDraft.value = 'раз'
@@ -226,7 +385,7 @@ describe('sendReply — проверки перед отправкой', () => {
     await api.sendReply()
     finish('TX1')
     await first
-    expect(sendComment).toHaveBeenCalledTimes(1)
+    expect(sendNewComment).toHaveBeenCalledTimes(1)
     expect(api.replySubmitting.value).toBe(false)
   })
 })
@@ -254,7 +413,7 @@ describe('sendReply — корневой комментарий', () => {
 
   it('форма закрывается сразу, до ответа ноды; успех — тост', async () => {
     let finish!: (txid: string) => void
-    sendComment.mockImplementationOnce(() => new Promise<string>((r) => (finish = r)))
+    sendNewComment.mockImplementationOnce(() => new Promise<string>((r) => (finish = r)))
     const { api } = form()
     api.openReplyToPost()
     api.replyDraft.value = 'hi'
@@ -278,7 +437,7 @@ describe('sendReply — корневой комментарий', () => {
   })
 
   it('нода не вернула txid — временный id не подменяется', async () => {
-    sendComment.mockResolvedValueOnce('')
+    sendNewComment.mockResolvedValueOnce('')
     const { api } = form()
     api.openReplyToPost()
     api.replyDraft.value = 'hi'
@@ -296,7 +455,7 @@ describe('sendReply — корневой комментарий', () => {
   })
 
   it('ошибка из корневой формы без явной цели возвращает корневую форму и текст', async () => {
-    sendComment.mockRejectedValueOnce('строка вместо Error')
+    sendNewComment.mockRejectedValueOnce('строка вместо Error')
     const { api } = form()
     // replyTarget === null — активна корневая форма-бар.
     api.replyDraft.value = 'текст'
@@ -337,7 +496,7 @@ describe('черновик корневой формы', () => {
   it('успешная отправка стирает черновик, неудачная — оставляет', async () => {
     const { api } = form()
     api.handleRootReplyInput(inputEvent('первый'))
-    sendComment.mockRejectedValueOnce(new Error('node'))
+    sendNewComment.mockRejectedValueOnce(new Error('node'))
     await api.sendReply()
     expect(savedDraft()).toBe('первый')
     await api.sendReply()
@@ -396,7 +555,7 @@ describe('смена цели ответа', () => {
     api.onReplyToSecondLevel({ id: 'x1', parentid: '', address: 'C', userprofile: {} } as never)
     api.replyDraft.value = 'hi'
     await api.sendReply()
-    expect(sendComment).toHaveBeenCalledWith('POST', 'x1', 'x1', 'hi')
+    expect(sendNewComment).toHaveBeenCalledWith('POST', 'x1', 'x1', 'hi', [])
   })
 
   it('закрытие: только префикс или пусто — сразу, есть текст — переспрашивает', () => {
@@ -562,7 +721,9 @@ describe('Ctrl/Cmd+Enter', () => {
     const ev = keydown('Enter', { ctrlKey: true })
     api.handleReplyKeydown(ev.event)
     expect(ev.preventDefault).toHaveBeenCalled()
-    await vi.waitFor(() => expect(sendComment).toHaveBeenCalledWith('POST', 'c1', 'c1', 'быстро'))
+    await vi.waitFor(() =>
+      expect(sendNewComment).toHaveBeenCalledWith('POST', 'c1', 'c1', 'быстро', [])
+    )
   })
 
   it('с пустым текстом или без открытой формы ничего не отправляет', () => {
@@ -572,7 +733,7 @@ describe('Ctrl/Cmd+Enter', () => {
     api.onReplyToFirstLevel(root)
     api.replyDraft.value = '  '
     api.handleReplyKeydown(keydown('Enter', { metaKey: true }).event)
-    expect(sendComment).not.toHaveBeenCalled()
+    expect(sendNewComment).not.toHaveBeenCalled()
   })
 })
 

@@ -9,12 +9,19 @@
     :show-mention-list="showMentionList"
     :filtered-mention-users="filteredMentionUsers"
     :mention-highlight-index="mentionHighlightIndex"
+    :reply-images="replyImages"
+    :reply-images-processing="replyImagesProcessing"
+    :reply-images-full="replyImagesFull"
+    :reply-uploading="replyUploading"
     @confirm-cancel="confirmCancelReply"
     @input="handleReplyInput"
     @keydown="handleReplyKeydown"
+    @paste="handleReplyPaste"
     @select-mention="selectMentionUser"
     @request-close="requestCloseReply"
     @send="sendReply"
+    @add-images="addReplyImages"
+    @remove-image="removeReplyImage"
   />
 </template>
 
@@ -34,11 +41,18 @@ const {
   replySubmitting,
   showMentionList,
   mentionHighlightIndex,
+  replyImages,
+  replyImagesProcessing,
+  replyImagesFull,
+  replyUploading,
   confirmCancelReply,
   handleReplyInput,
   handleReplyKeydown,
+  handleReplyPaste,
   selectMentionUser,
   requestCloseReply,
   sendReply,
+  addReplyImages,
+  removeReplyImage,
 } = ctx.form
 </script>
