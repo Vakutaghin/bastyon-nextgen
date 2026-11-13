@@ -107,7 +107,8 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Button, Dropdown, Menu } from 'ant-design-vue'
+import { Dropdown, Menu } from 'ant-design-vue'
+import Button from '@/components/button'
 import {
   CloseOutlined,
   MoreOutlined,

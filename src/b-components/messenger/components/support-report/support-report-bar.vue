@@ -62,7 +62,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Modal, Spin } from 'ant-design-vue'
+import { Modal, Spin } from 'ant-design-vue'
+import Button from '@/components/button'
 import { FileTextOutlined } from '@/components/icons'
 import { SC_ModalActions, SC_ModalBody } from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'

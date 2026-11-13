@@ -99,7 +99,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Button, Input } from 'ant-design-vue'
+import { Modal, Input } from 'ant-design-vue'
+import Button from '@/components/button'
 import { useIpfsStore } from '@/stores/ipfs-store'
 import { SC_ModalActions } from '@/components/modal'
 import { SC_IpfsBody, SC_IpfsText, SC_IpfsProgressOuter, SC_IpfsProgressInner } from './styled'

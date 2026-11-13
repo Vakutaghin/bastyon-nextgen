@@ -83,8 +83,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Button, Input } from 'ant-design-vue'
-
+import { Input } from 'ant-design-vue'
+import Button from '@/components/button'
 import { useAppLockStore } from '@/stores/app-lock-store'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useModalStore } from '@/stores/modal-store'

@@ -27,7 +27,8 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Button } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Button from '@/components/button'
 import { useIpfsStore } from '@/stores/ipfs-store'
 import { useStorageStore } from '@/stores/storage-store'
 import ModuleInfo from './module-info.vue'

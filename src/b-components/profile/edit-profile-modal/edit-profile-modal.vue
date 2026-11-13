@@ -145,7 +145,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Button } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Button from '@/components/button'
 import { DeleteOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { useProfileStore } from '@/blockchain/store/profile-store'

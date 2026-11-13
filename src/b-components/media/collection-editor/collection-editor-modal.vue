@@ -223,7 +223,8 @@
 import { computed, ref, shallowRef, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Button, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Button from '@/components/button'
 import {
   AudioPlaylistIcon,
   CheckOutlined,

@@ -17,7 +17,7 @@
 
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { useLoadMoreSentinel, type SentinelRef } from '@/composables/use-load-more-sentinel'
 import { SC_Status } from './media-feed-status.styled'
 

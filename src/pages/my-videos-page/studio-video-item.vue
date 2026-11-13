@@ -81,8 +81,8 @@
 <script setup lang="ts">
 import { computed, h } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Dropdown, Menu } from 'ant-design-vue'
-
+import { Dropdown, Menu } from 'ant-design-vue'
+import Button from '@/components/button'
 import {
   DeleteOutlined,
   EditOutlined,

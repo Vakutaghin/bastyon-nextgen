@@ -94,8 +94,8 @@
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Button, Modal, Progress, Spin } from 'ant-design-vue'
-
+import { Modal, Progress, Spin } from 'ant-design-vue'
+import Button from '@/components/button'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import { UPLOAD_QUOTA_TIERS } from '@/services/peertube/peertube-upload-limits'

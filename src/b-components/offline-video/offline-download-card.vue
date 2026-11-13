@@ -79,7 +79,7 @@
 
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { DeleteOutlined, PlayCircleOutlined, SoundOutlined } from '@/components/icons'
 import { formatDuration } from '@/services/media/media-post'
 import { userName } from '@/services/user-names'

@@ -68,7 +68,7 @@
 
 import { computed, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { LockOutlined, PlayIcon, ShuffleIcon } from '@/components/icons'
 import { useLibraryList } from '@/composables/use-library-list'
 import { useMediaLibrary } from '@/composables/use-media-library'

@@ -97,7 +97,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Button } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Button from '@/components/button'
 import { appToast } from '@/b-components/app-toast'
 import HelpLink from '@/b-components/help/help-link.vue'
 import { useBoostStore } from '@/stores/boost-store'

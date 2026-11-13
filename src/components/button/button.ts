@@ -46,11 +46,13 @@ export function useButton(p: ButtonProps) {
     return classes.join(' ')
   })
 
+  // Атрибуты кнопки в DOM. Размер и ширина — data-*, их видят стили; значения
+  // `undefined` Vue не выводит.
   const buttonProps = computed(() => ({
-    size: p.size || 'middle',
+    type: p.htmlType || 'button',
     disabled: p.disabled || p.loading,
-    block: p.block,
-    htmlType: p.htmlType || 'button',
+    'data-size': p.size || 'middle',
+    'data-block': p.block ? '' : undefined,
   }))
 
   return {

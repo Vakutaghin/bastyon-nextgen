@@ -31,8 +31,8 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Modal } from 'ant-design-vue'
-
+import { Modal } from 'ant-design-vue'
+import Button from '@/components/button'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
 import { useCompressionModuleStore } from '@/stores/compression-module-store'

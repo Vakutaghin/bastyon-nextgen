@@ -150,7 +150,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { FileOutlined, LinkIcon, LockOutlined } from '@/components/icons'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { formatLongDate } from '@/helpers/common/date-formatter'

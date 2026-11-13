@@ -94,7 +94,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { utf8Length } from '@/mesh/bytes'
 import {
   MAX_LONG_NAME_BYTES,

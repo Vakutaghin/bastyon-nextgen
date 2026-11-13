@@ -171,7 +171,8 @@ import {
   SkipBackIcon,
   SkipForwardIcon,
 } from '@/components/icons'
-import { Button, Dropdown, Menu } from 'ant-design-vue'
+import { Dropdown, Menu } from 'ant-design-vue'
+import Button from '@/components/button'
 import { formatDuration } from '@/services/media/media-post'
 import { acceptTorBypass } from '@/services/media/audio-engine'
 import { playlistMenuItems } from './playlist-menu'

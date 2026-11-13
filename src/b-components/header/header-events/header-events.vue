@@ -145,7 +145,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Badge, Button } from 'ant-design-vue'
+import { Dropdown, Badge } from 'ant-design-vue'
+import Button from '@/components/button'
 import {
   HourglassOutlined,
   StarFilled,

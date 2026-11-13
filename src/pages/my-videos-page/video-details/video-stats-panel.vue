@@ -99,8 +99,8 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Segmented, Spin } from 'ant-design-vue'
-
+import { Segmented, Spin } from 'ant-design-vue'
+import Button from '@/components/button'
 import { formatDuration } from '@/b-components/video-uploader/utils/video-formatter'
 import { dateLocale } from '@/helpers/common/date-formatter'
 import { formatCount, formatWatchTime } from '../studio-format'

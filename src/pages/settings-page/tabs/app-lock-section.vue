@@ -53,8 +53,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from 'ant-design-vue'
-
+import Button from '@/components/button'
 import Select, { type SelectValue } from '@/components/select'
 import { useAppLockStore } from '@/stores/app-lock-store'
 import { getVaultLevel } from '@/blockchain/storage'

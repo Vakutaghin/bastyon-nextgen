@@ -54,7 +54,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import { useMeshAction } from './use-mesh-page'
 import {

@@ -21,7 +21,8 @@
 
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Button from '@/components/button'
 import { formatBytes } from '@/services/offline-video/format-bytes'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import OfflineDownloadCard from './offline-download-card.vue'

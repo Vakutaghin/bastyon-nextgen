@@ -150,7 +150,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Checkbox, Modal, Spin } from 'ant-design-vue'
+import { Checkbox, Modal, Spin } from 'ant-design-vue'
+import Button from '@/components/button'
 import Avatar from '@/components/avatar/avatar.vue'
 import { CheckCircleOutlined } from '@/components/icons'
 import { SC_ModalActions, SC_ModalBody } from '@/components/modal'

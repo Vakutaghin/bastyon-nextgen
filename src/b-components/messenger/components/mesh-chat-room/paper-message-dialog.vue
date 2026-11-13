@@ -27,7 +27,7 @@
  */
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { appToast } from '@/b-components/app-toast'
 import { generateQRCode } from '@/blockchain/utils/qr-code'
 import {

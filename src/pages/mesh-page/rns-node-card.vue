@@ -50,7 +50,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { useReticulumStore } from '@/mesh/store/reticulum-store'
 import { useTorStore } from '@/stores/tor-store'
 import { useCopy, useMeshAction, useMeshErrorText } from './use-mesh-page'

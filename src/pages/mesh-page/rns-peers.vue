@@ -60,7 +60,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import QrScanner from '@/b-components/qr-scanner/qr-scanner.vue'
 import { rnsIngest } from '@/mesh/reticulum/rns-api'
 import { useReticulumStore } from '@/mesh/store/reticulum-store'

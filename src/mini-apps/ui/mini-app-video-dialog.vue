@@ -37,8 +37,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Modal } from 'ant-design-vue'
-
+import { Modal } from 'ant-design-vue'
+import Button from '@/components/button'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import ComposerVideo from '@/b-components/content/post-composer/composer-video.vue'
 import type { UploadedComposerVideo } from '@/b-components/content/post-composer/use-composer-video'

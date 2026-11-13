@@ -4,9 +4,9 @@
       <template #content>
         <SC_AuthPopoverContent>
           <p>{{ t('postCard.authPrompt') }}</p>
-          <AButton type="primary" size="small" @click="openAuthModal">{{
+          <Button type="primary" size="small" @click="openAuthModal">{{
             t('postCard.login')
-          }}</AButton>
+          }}</Button>
         </SC_AuthPopoverContent>
       </template>
       <!-- Обёртка перехватывает клик до popover, чтобы решить — открывать его или сразу
@@ -83,7 +83,8 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useI18n } from 'vue-i18n'
-import { Popover as APopover, Button as AButton } from 'ant-design-vue'
+import { Popover as APopover } from 'ant-design-vue'
+import Button from '@/components/button'
 import { StarOutlined, StarFilled, UserOutlined } from '@/components/icons'
 import { useStarRating } from './use-star-rating'
 import {

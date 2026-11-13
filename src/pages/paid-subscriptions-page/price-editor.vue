@@ -66,7 +66,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Button from '@/components/button'
 import { ClockCircleOutlined, LoadingOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { useAuthStore } from '@/blockchain'

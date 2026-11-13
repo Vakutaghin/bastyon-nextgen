@@ -266,14 +266,6 @@ export const SC_PostActions = styled.div`
   /* Контейнер для правила подписей в style.css: stylis 3 @container выбрасывает. */
   container: post-actions / inline-size;
 
-  .ant-btn {
-    flex: 0 0 auto;
-  }
-
-  .ant-btn:last-child {
-    margin-left: auto;
-  }
-
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     column-gap: 10px;
     padding-top: 10px;

@@ -59,7 +59,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { appToast } from '@/b-components/app-toast'
 import { utf8Length } from '@/mesh/bytes'
 import { useMeshConnectionStore } from '@/mesh/store/mesh-connection-store'

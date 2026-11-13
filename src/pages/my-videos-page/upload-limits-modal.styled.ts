@@ -96,8 +96,7 @@ export const SC_Footnote = styled.div`
   font-size: 13px;
   color: var(--color-text-secondary);
 
-  .ant-btn-link {
-    height: auto;
+  .bastyon-button-link {
     padding: 0;
   }
 `

@@ -2,6 +2,11 @@ import styled from 'vue3-styled-components'
 
 // Кнопка в оформлении Nuxt UI (UButton): высота 28 / 32 / 40, 500-е начертание,
 // радиус 6. Рамка — кольцом (box-shadow), чтобы не менять размеры.
+// Отступление от Nuxt: у маленькой текст 14px, а не 12px — как было у
+// маленьких кнопок antd, которых в приложении большинство.
+//
+// Размер и ширина — атрибутами `data-size`, `data-block` (их же можно брать в
+// styled родителя), а не пропсами: vue3-styled-components выводит пропсы в DOM.
 //
 // primary          → solid: заливка акцентом, текст --ui-text-inverted
 // primary + danger → solid цветом ошибки
@@ -24,26 +29,18 @@ export const SC_ButtonSpinner = styled.span`
   animation: spin 0.8s linear infinite;
 `
 
-export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
+export const SC_ButtonMore = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: ${(p) => (p.block ? '100%' : 'auto')};
-  padding: ${(p) => (p.size === 'large' ? '8px 12px' : '6px 10px')};
+  width: auto;
+  padding: 6px 10px;
   border: 0;
   border-radius: var(--ui-radius-md);
-  font-size: ${(p) => {
-    if (p.size === 'large') return '16px'
-    if (p.size === 'small') return '12px'
-    return '14px'
-  }};
+  font-size: 14px;
   font-weight: 500;
-  line-height: ${(p) => {
-    if (p.size === 'large') return '24px'
-    if (p.size === 'small') return '16px'
-    return '20px'
-  }};
+  line-height: 20px;
   text-align: center;
   white-space: nowrap;
   vertical-align: middle;
@@ -53,6 +50,20 @@ export const SC_ButtonMore = styled.button<{ size?: string; block?: boolean }>`
     background-color var(--transition-quick),
     color var(--transition-quick),
     box-shadow var(--transition-quick);
+
+  &[data-size='small'] {
+    padding: 4px 10px;
+  }
+
+  &[data-size='large'] {
+    padding: 8px 12px;
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  &[data-block] {
+    width: 100%;
+  }
 
   &.bastyon-button-primary {
     background: var(--ui-primary);

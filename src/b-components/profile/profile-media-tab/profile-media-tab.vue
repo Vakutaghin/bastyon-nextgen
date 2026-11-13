@@ -100,7 +100,7 @@
 
 import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { PlusOutlined } from '@/components/icons'
 import { useAuthStore } from '@/blockchain'
 import { useMediaFeed, type AuthorOrder, type MediaFeedSource } from '@/composables/use-media-feed'

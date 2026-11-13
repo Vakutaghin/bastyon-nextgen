@@ -210,8 +210,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Input, Modal, Spin } from 'ant-design-vue'
-
+import { Input, Modal, Spin } from 'ant-design-vue'
+import Button from '@/components/button'
 import { DeleteOutlined, EditOutlined, PlayCircleOutlined, StatsIcon } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import VideoCoverPicker from '@/b-components/video-studio/video-cover-picker.vue'

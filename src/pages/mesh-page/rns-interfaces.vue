@@ -76,7 +76,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { listSerialPorts } from '@/mesh/radio/platform'
 import { isRnodeSupported } from '@/mesh/reticulum/rns-api'
 import type { SerialPortInfo } from '@/mesh/radio/types'

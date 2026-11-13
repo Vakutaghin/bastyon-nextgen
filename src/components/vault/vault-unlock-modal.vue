@@ -62,8 +62,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Button, Input } from 'ant-design-vue'
-
+import { Modal, Input } from 'ant-design-vue'
+import Button from '@/components/button'
 import { useModalStore } from '@/stores/modal-store'
 import { BACK_IGNORED_CLASS } from '@/composables/use-back-button'
 import {

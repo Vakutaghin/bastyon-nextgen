@@ -21,7 +21,7 @@
 
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { CheckCircleFilled, DownloadOutlined } from '@/components/icons'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import {

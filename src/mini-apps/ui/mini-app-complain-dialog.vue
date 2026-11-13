@@ -57,8 +57,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Modal } from 'ant-design-vue'
-
+import { Modal } from 'ant-design-vue'
+import Button from '@/components/button'
 import { appToast } from '@/b-components/app-toast'
 import { SC_ModalActions, SC_ModalBody } from '@/components/modal'
 import { appFetch } from '@/helpers/api/fetch-strategies'

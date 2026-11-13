@@ -85,8 +85,8 @@
 import { formatLongDate } from '@/helpers/common/date-formatter'
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Button, Input } from 'ant-design-vue'
-
+import { Modal, Input } from 'ant-design-vue'
+import Button from '@/components/button'
 import { useVaultSecurity } from '../use-vault-security'
 import { getBackupStatus, type BackupState } from '@/helpers/backup/backup-verification'
 import { useAuthStore } from '@/stores'

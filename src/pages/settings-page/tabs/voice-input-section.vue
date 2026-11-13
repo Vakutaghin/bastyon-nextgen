@@ -115,8 +115,8 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button, Modal } from 'ant-design-vue'
-
+import { Modal } from 'ant-design-vue'
+import Button from '@/components/button'
 import { formatFileSize } from '@/b-components/video-uploader/utils/video-formatter'
 import { spokenCommandHints } from '@/helpers/voice-input/spoken-commands'
 import type { VoicePunctuation } from '@/helpers/voice-input/model-punctuation'

@@ -120,7 +120,7 @@
 <script setup lang="ts">
 import { computed, onMounted, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { BluetoothIcon, UsbIcon, WifiIcon } from '@/components/icons'
 import { portTitle, useMeshConnect, type RadioNetwork, type TransportTab } from './use-mesh-page'
 import {

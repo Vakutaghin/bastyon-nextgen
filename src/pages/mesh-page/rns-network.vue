@@ -86,7 +86,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Button } from 'ant-design-vue'
+import Button from '@/components/button'
 import { formatTimeAgo } from '@/helpers/common/date-formatter'
 import {
   ASPECT_KIND,
