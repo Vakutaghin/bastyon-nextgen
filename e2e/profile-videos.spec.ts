@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData, type MockPost } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Вкладка «Видео» в профиле на подменной ноде: подгрузка «Новых», поиск только
@@ -131,7 +132,7 @@ test('тема: только ролики с меткой, и с порядко�
   await openVideos(page)
   await ready(page)
   await page.getByTestId('profile-video-tag').click()
-  await page.locator('.ant-select-item-option', { hasText: '#music' }).click()
+  await page.locator(UI.selectOption, { hasText: '#music' }).click()
   await expect(page).toHaveURL(/tag=music/)
   await expect(cards(page)).toHaveCount(7)
   await expect(cards(page).first()).toContainText(nth(3))

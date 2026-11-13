@@ -1,6 +1,7 @@
 import { test, expect, type Page, type Route } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { useMockPeerTube, PEERTUBE_HOST, VIDEO_ID, VIDEO_URL } from './support/mock-peertube'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Очередь скачанных роликов в вебе (воркер и OPFS) посреди загрузки: пауза и
@@ -140,7 +141,7 @@ test('пауза посреди загрузки, «Продолжить» до�
     return (t.cues?.[0] as VTTCue | undefined)?.text ?? null
   })
   expect(cue).toBe('Реплика с диска')
-  await page.locator('.ant-modal-close').click()
+  await page.locator(UI.modalClose).click()
   await expect(player).toBeHidden()
 
   // Настройки: сколько занято, «Удалить всё» — и в «Скачанном» пусто.
@@ -250,13 +251,11 @@ test('две вкладки: вторая не качает тот же роли
   expect(secondFile.gate.asked).toBe(0)
   // «Приостановить» и «Отменить» там, где ролик не качается, загрузку первой
   // не ломают и не молчат: говорят, что остановить её можно только там.
-  const toast = second
-    .locator('.ant-notification-notice')
-    .filter({ hasText: 'Загрузка идёт в другой вкладке' })
+  const toast = second.locator(UI.toast).filter({ hasText: 'Загрузка идёт в другой вкладке' })
   await card.getByRole('button', { name: 'Приостановить' }).click()
   await expect(toast).toBeVisible()
   await expect(toast).toContainText('Приостановить или отменить её можно только там.')
-  await toast.locator('.ant-notification-notice-close').click()
+  await toast.locator(UI.toastClose).click()
   await expect(toast).toHaveCount(0)
   await expect(card).toHaveAttribute('data-status', 'downloading')
   await card.getByRole('button', { name: 'Отменить загрузку' }).click()

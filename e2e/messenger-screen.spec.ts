@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Фильтр входящих: чат человека с низкой репутацией пропадает из списка, не
@@ -246,7 +247,7 @@ test('меню глаза: только скрытые, окно «Скрыты�
   await expect(item).toContainText('3')
   await item.getByTestId('screen-manage-unhide').click()
   await expect(dialog.getByTestId('screen-manage-empty')).toHaveText('Скрытых чатов нет')
-  await dialog.locator('.ant-modal-close').click()
+  await dialog.locator(UI.modalClose).click()
   await expect(dialog).toBeHidden()
   // В «Только скрытые» пусто — подсказка возвращает обычный список.
   await expect(page.getByTestId('chats-none-screened')).toBeVisible()

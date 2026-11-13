@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { settleOfflineMessenger } from './support/offline-messenger'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Окна и системные полосы телефона. На Android приложение рисуется под
@@ -70,13 +71,20 @@ async function open(page: Page): Promise<void> {
 
 /** Прокрутить обёртку окна к началу или к концу и снять, где окно на экране. */
 async function scrollModal(page: Page, end: 'top' | 'bottom'): Promise<Box> {
-  return page.evaluate((to) => {
-    const content = document.querySelector<HTMLElement>('.ant-modal-wrap .ant-modal-content')!
-    const wrap = content.closest<HTMLElement>('.ant-modal-wrap')!
-    wrap.scrollTop = to === 'top' ? 0 : wrap.scrollHeight
-    const rect = content.getBoundingClientRect()
-    return { wrapScroll: wrap.scrollHeight - wrap.clientHeight, top: rect.top, bottom: rect.bottom }
-  }, end)
+  return page.evaluate(
+    ({ to, wrapSel, contentSel }) => {
+      const content = document.querySelector<HTMLElement>(`${wrapSel} ${contentSel}`)!
+      const wrap = content.closest<HTMLElement>(wrapSel)!
+      wrap.scrollTop = to === 'top' ? 0 : wrap.scrollHeight
+      const rect = content.getBoundingClientRect()
+      return {
+        wrapScroll: wrap.scrollHeight - wrap.clientHeight,
+        top: rect.top,
+        bottom: rect.bottom,
+      }
+    },
+    { to: end, wrapSel: UI.modalWrap, contentSel: UI.modalContent }
+  )
 }
 
 test('«Сведения о приложении»: окно между строкой состояния и кнопками навигации', async ({
@@ -145,7 +153,7 @@ test('«Сведения о приложении»: окно между стро
 test('окно поста во весь экран долистывается над кнопками навигации', async ({ page }) => {
   await open(page)
   await page.locator('.post-card').first().getByTestId('post-time-link').click()
-  const modal = page.locator('.ant-modal.post-modal')
+  const modal = page.locator(`${UI.modal}.post-modal`)
   await expect(modal.getByText(LAST_LINE)).toBeAttached({ timeout: 15_000 })
 
   // Окно — во весь экран, как и было: полей под полосы у него нет. Окно
@@ -156,7 +164,7 @@ test('окно поста во весь экран долистывается н
   expect(box.wrapScroll).toBe(0)
 
   // Долистано до конца: низ содержимого (под постом — кнопки и комментарии).
-  const contentEnd = await modal.locator('.ant-modal-body').evaluate((body) => {
+  const contentEnd = await modal.locator(UI.modalBody).evaluate((body) => {
     body.scrollTop = body.scrollHeight
     return Math.max(...[...body.children].map((child) => child.getBoundingClientRect().bottom))
   })

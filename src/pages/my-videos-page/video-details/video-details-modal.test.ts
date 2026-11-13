@@ -53,6 +53,7 @@ vi.mock('@/services/peertube/peertube-videos', async (importOriginal) => ({
 }))
 
 import VideoDetailsModal from './video-details-modal.vue'
+import { UI } from '@/components/testing/ui-selectors'
 
 const VIDEO = {
   host: 'pt.host',
@@ -140,7 +141,7 @@ describe('VideoDetailsModal', () => {
 
   it('закрыть с несохранённым — переспросить; без правок — сразу', async () => {
     await mountModal()
-    const close = body().querySelector<HTMLButtonElement>('.ant-modal-close')!
+    const close = body().querySelector<HTMLButtonElement>(UI.modalClose)!
     close.click()
     await flushPromises()
     expect(wrapper!.emitted('close')).toHaveLength(1)
@@ -152,9 +153,7 @@ describe('VideoDetailsModal', () => {
     close.click()
     await flushPromises()
     expect(wrapper!.emitted('close')).toHaveLength(1)
-    expect(body().querySelector('.ant-modal-confirm')?.textContent).toContain(
-      'Закрыть без сохранения?'
-    )
+    expect(body().querySelector(UI.confirm)?.textContent).toContain('Закрыть без сохранения?')
   })
 
   it('пост открывается из окна; «Удалить ролик» — наверх', async () => {

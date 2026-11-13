@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { test, expect } from '@playwright/test'
 import { useMockNode } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * «Репутация авторов» под «Языком ленты»: посты авторов с репутацией ниже
@@ -38,9 +39,9 @@ test('порог репутации прячет посты новичков; с
   const feed = page.locator('main')
   await expect(feed.getByText('Пишет новичок Боб')).toBeVisible({ timeout: 30_000 })
 
-  const field = page.locator('.ant-select', { has: page.getByLabel('Репутация авторов') })
+  const field = page.locator(UI.select, { has: page.getByLabel('Репутация авторов') })
   await field.click()
-  await page.locator('.ant-select-item-option', { hasText: 'От 100' }).first().click()
+  await page.locator(UI.selectOption, { hasText: 'От 100' }).first().click()
   await expect(feed.getByText('Пишет новичок Боб')).toHaveCount(0, { timeout: 30_000 })
   await expect(feed.getByText('Пишет Алиса')).toBeVisible()
 
@@ -53,7 +54,7 @@ test('порог репутации прячет посты новичков; с
 
   // Свой порог: 2 — Боб снова виден; в поле выбора — «От 2».
   await field.click()
-  await page.locator('.ant-select-item-option', { hasText: 'Своя…' }).click()
+  await page.locator(UI.selectOption, { hasText: 'Своя…' }).click()
   const own = page.getByTestId('feed-min-reputation-value')
   await expect(own).toBeFocused()
   await own.fill('2')
@@ -63,7 +64,7 @@ test('порог репутации прячет посты новичков; с
 
   // «Любая» — поле своего порога пропадает.
   await field.click()
-  await page.locator('.ant-select-item-option', { hasText: 'Любая' }).click()
+  await page.locator(UI.selectOption, { hasText: 'Любая' }).click()
   await expect(own).toHaveCount(0)
   await expect(feed.getByText('Пишет новичок Боб')).toBeVisible()
 })

@@ -53,6 +53,7 @@ import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 import PaidPostNotice from './paid-post-notice.vue'
 import PaidProfileButton from './paid-profile-button.vue'
 import PaidSubscriptionModal from './paid-subscription-modal.vue'
+import { UI } from '@/components/testing/ui-selectors'
 
 let mounted: VueWrapper[] = []
 
@@ -156,8 +157,7 @@ describe('окно оформления', () => {
     expect(button('Оплатить 55 PKOIN')).toBeTruthy()
   })
 
-  const confirmBox = () =>
-    body().querySelector<HTMLInputElement>('.ant-checkbox-input') ?? undefined
+  const confirmBox = () => body().querySelector<HTMLInputElement>(UI.checkboxInput) ?? undefined
 
   it('без галочки подтверждения оплатить нельзя; смена срока галочку снимает', async () => {
     await openModal()

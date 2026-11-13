@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Настройки → «Шапка и меню»: значки справа от поиска и пункты меню аватара
@@ -125,10 +126,10 @@ test('у пунктов меню аккаунта значки слева от �
   expect(count).toBeGreaterThan(5)
   for (let i = 0; i < count; i++) {
     const item = items.nth(i)
-    const icon = item.locator('.ant-dropdown-menu-item-icon svg')
+    const icon = item.locator(`${UI.menuItemIcon} svg`)
     await expect(icon, await item.innerText()).toBeVisible()
     const iconBox = (await icon.boundingBox())!
-    const labelBox = (await item.locator('.ant-dropdown-menu-title-content').boundingBox())!
+    const labelBox = (await item.locator(UI.menuItemLabel).boundingBox())!
     expect(iconBox.width).toBe(16)
     expect(iconBox.x + iconBox.width).toBeLessThanOrEqual(labelBox.x)
   }

@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData, type MockPost } from './support/mock-node'
 import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Главная лента, как в старом клиенте: просмотры под видеопостом, продвигаемые
@@ -174,9 +175,7 @@ test('жалоба: не «акуле» окно сразу объясняет �
 
   await dialog.getByRole('button', { name: 'Заблокировать автора' }).click()
   await expect(dialog).toBeHidden()
-  await expect(
-    page.locator('.ant-modal-confirm').filter({ hasText: 'Заблокировать' })
-  ).toBeVisible()
+  await expect(page.locator(UI.confirm).filter({ hasText: 'Заблокировать' })).toBeVisible()
 })
 
 test('жалоба: «акуле» — причины и отправка', async ({ page }) => {

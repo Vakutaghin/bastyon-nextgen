@@ -1,5 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Выпадашки шапки не отходят от неё, когда страница прокручивается под ними.
@@ -107,7 +108,7 @@ test('меню уведомлений и аккаунта стоят под ша
   await staysUnderHeader(
     page,
     // Кнопка меню — аватар вместе с ником.
-    page.locator('.ant-dropdown-trigger:has([data-header-avatar])'),
+    page.locator(`${UI.dropdownTrigger}:has([data-header-avatar])`),
     account,
     account.getByRole('menuitem').first()
   )
@@ -115,15 +116,17 @@ test('меню уведомлений и аккаунта стоят под ша
 
 /** Строк в подписи пункта меню. */
 async function lineCounts(panel: Locator): Promise<Record<string, number>> {
-  const rows = await panel.getByRole('menuitem').evaluateAll((els) =>
-    els.map((el) => {
-      const title = el.querySelector<HTMLElement>('.ant-dropdown-menu-title-content') ?? el
-      const lineHeight = parseFloat(getComputedStyle(title).lineHeight) || 22
-      return [
-        title.textContent ?? '',
-        Math.round(title.getBoundingClientRect().height / lineHeight),
-      ]
-    })
+  const rows = await panel.getByRole('menuitem').evaluateAll(
+    (els, labelSel) =>
+      els.map((el) => {
+        const title = el.querySelector<HTMLElement>(labelSel) ?? el
+        const lineHeight = parseFloat(getComputedStyle(title).lineHeight) || 22
+        return [
+          title.textContent ?? '',
+          Math.round(title.getBoundingClientRect().height / lineHeight),
+        ]
+      }),
+    UI.menuItemLabel
   )
   return Object.fromEntries(rows)
 }
@@ -133,7 +136,7 @@ async function lineCounts(panel: Locator): Promise<Record<string, number>> {
 test('пункты меню аккаунта — в одну строку, от компьютера до телефона', async ({ page }) => {
   test.setTimeout(90_000)
   await signIn(page)
-  const trigger = page.locator('.ant-dropdown-trigger:has([data-header-avatar])')
+  const trigger = page.locator(`${UI.dropdownTrigger}:has([data-header-avatar])`)
   const account = page.locator('.header-user-dropdown')
   for (const width of [1400, 390]) {
     await page.setViewportSize({ width, height: 900 })

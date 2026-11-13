@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Язык ленты — отдельно от языка интерфейса: «Язык ленты» под «Сначала
@@ -54,12 +55,12 @@ test('язык ленты меняет только ленту, язык из ш
   // она перехватывала нажатие, и список не открывался. Мышью в точку стрелки,
   // а не click() по ней: тот сам выбрал бы элемент.
   await expect(page.getByLabel('Язык ленты')).toBeVisible()
-  const field = page.locator('.ant-select', { has: page.getByLabel('Язык ленты') })
-  const box = (await field.locator('.ant-select-arrow').boundingBox())!
+  const field = page.locator(UI.select, { has: page.getByLabel('Язык ленты') })
+  const box = (await field.locator(UI.selectArrow).boundingBox())!
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
   // В списке отмечают несколько языков: English — добавить, «Русский» — снять.
-  await page.locator('.ant-select-item-option', { hasText: 'English' }).click()
-  await page.locator('.ant-select-item-option', { hasText: 'Русский' }).click()
+  await page.locator(UI.selectOption, { hasText: 'English' }).click()
+  await page.locator(UI.selectOption, { hasText: 'Русский' }).click()
   await page.keyboard.press('Escape')
   await expect(page.getByTestId('feed-languages')).toContainText('English')
   await expect.poll(() => langs.at(-1)).toBe('en')
@@ -247,10 +248,10 @@ test('язык ленты в меню телефона: список откры�
   await expect(page.getByText('Пост в ленте')).toBeVisible({ timeout: 30_000 })
 
   await page.getByRole('button', { name: /меню/i }).first().click()
-  const field = page.locator('.ant-select', { has: page.getByLabel('Язык ленты') })
+  const field = page.locator(UI.select, { has: page.getByLabel('Язык ленты') })
   await field.scrollIntoViewIfNeeded()
   await field.click()
-  await page.locator('.ant-select-item-option', { hasText: 'Español' }).click()
+  await page.locator(UI.selectOption, { hasText: 'Español' }).click()
   // Español добавился к русскому: лента спрашивает о нём.
   await expect.poll(() => langs.includes('es')).toBe(true)
   await expect(page.getByText('Сначала лучшее')).toBeVisible()

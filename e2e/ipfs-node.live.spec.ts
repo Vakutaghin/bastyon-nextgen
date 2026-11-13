@@ -3,6 +3,7 @@ import { test, expect, type Locator, type Page } from '@playwright/test'
 import { Ed25519PrivateKey } from '../src/helpers/ipfs/ipns-keys'
 import { putRecord, signRecord } from '../src/helpers/ipfs/ipns-names'
 import { useMockNode } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Узел IPFS в приложении вживую: окно просмотра без модуля и без шлюзов
@@ -59,7 +60,7 @@ async function follow(page: Page, href: string): Promise<Locator> {
     a.click()
     a.remove()
   }, href)
-  return page.locator('.ant-modal').last()
+  return page.locator(UI.modal).last()
 }
 
 test.describe('Узел IPFS в приложении, живая сеть', () => {

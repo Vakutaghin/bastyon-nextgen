@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * «Что нового» листается к прежним версиям, вся история — книга справки
@@ -77,7 +78,7 @@ test('«Что нового» листается к прежним версия�
   // Вся история — книга справки в боковой панели, со списком версий.
   await page.getByTestId('whats-new-all').click()
   await expect(dialog).toBeHidden()
-  const panel = page.locator('.ant-drawer-content')
+  const panel = page.locator(UI.drawer)
   await expect(panel.getByRole('heading', { level: 1, name: 'История версий' })).toBeVisible({
     timeout: 15_000,
   })
@@ -138,7 +139,7 @@ test('отметки в профиле: цвет, подсказка и спра
   await expect(hint).toContainText('Только оценки «акул» меняют репутацию авторов')
   await hint.getByRole('button', { name: 'Подробнее в справке' }).click()
   await expect(hint).toBeHidden()
-  const panel = page.locator('.ant-drawer-content').filter({ hasText: 'Отметки аккаунтов' })
+  const panel = page.locator(UI.drawer).filter({ hasText: 'Отметки аккаунтов' })
   await expect(panel).toBeVisible({ timeout: 15_000 })
   await expect(panel.getByRole('heading', { name: 'Акула' })).toBeVisible()
   await page.keyboard.press('Escape')

@@ -3,6 +3,7 @@ import { useMockNode, type MockNodeData } from './support/mock-node'
 import { onScreen } from './support/on-screen'
 import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
 import { skipWithoutWebKitMedia } from './support/webkit-media'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Каналы в мессенджере: «Читать в мессенджере» в профиле автора, канал в
@@ -121,7 +122,7 @@ async function expectPostsWhole(page: Page): Promise<void> {
 /** Пост открывается целиком в окне поста, и оно поверх мессенджера. */
 async function openPostOnTop(page: Page): Promise<void> {
   await page.getByTestId('channel-post').last().click()
-  const modal = page.locator('.ant-modal-content').filter({ hasText: 'Свежий пост Алисы' })
+  const modal = page.locator(UI.modalContent).filter({ hasText: 'Свежий пост Алисы' })
   await expect(modal).toBeVisible({ timeout: 15_000 })
   const onTop = await modal.evaluate((el) => {
     const r = el.getBoundingClientRect()
@@ -320,7 +321,7 @@ test('длинная лента: посты целиком, ролики отк�
     timeout: 15_000,
   })
   await own.click()
-  const video = page.locator('.ant-modal-content video').first()
+  const video = page.locator(`${UI.modalContent} video`).first()
   await expect
     .poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime).catch(() => 0), {
       timeout: 20_000,
@@ -329,15 +330,13 @@ test('длинная лента: посты целиком, ролики отк�
   // Ролик запустился сам, кадр-превью не показывали: заглушка превью над
   // играющим роликом мигала бы, пока его не закроют.
   await expect(
-    page.locator('.ant-modal-content [data-styled-name="SC_VideoSkeleton"]')
+    page.locator(`${UI.modalContent} [data-styled-name="SC_VideoSkeleton"]`)
   ).toHaveCount(0)
   await page.keyboard.press('Escape')
 
   // Текст без ролика открывает пост без запуска видео — и ничего не сломалось.
   await posts.filter({ hasText: 'Длинный пост 0' }).click()
-  await expect(
-    page.locator('.ant-modal-content').filter({ hasText: 'Длинный пост 0' })
-  ).toBeVisible()
+  await expect(page.locator(UI.modalContent).filter({ hasText: 'Длинный пост 0' })).toBeVisible()
 })
 
 test('вертикальный ролик в канале — обложка целиком, рамка по ролику', async ({ page }) => {
@@ -375,7 +374,7 @@ test.describe('на телефоне', () => {
     // Тост на телефоне — сверху, сразу под шапкой: кнопки шапки и поле ввода
     // с кнопками снизу он не закрывает (внизу он 4,5 с лежал на поле ввода).
     const toast = page
-      .locator('.ant-notification-notice')
+      .locator(UI.toast)
       .filter({ hasText: 'Публикации alice_ng теперь в мессенджере' })
     const headerBottom = await page
       .locator('body > #app header')
@@ -390,7 +389,7 @@ test.describe('на телефоне', () => {
     expect(toastBox.y + toastBox.height).toBeLessThan(844 / 2)
     // Сверху тост лежит поверх шапки окон во весь экран (пост, модалки) — его
     // закрывают крестиком, дальше проверяется раскладка без него.
-    await toast.locator('.ant-notification-notice-close').click()
+    await toast.locator(UI.toastClose).click()
     await expect(toast).toBeHidden()
     await page.getByTestId('profile-channel').filter({ visible: true }).click()
     await checkChannelFeed(page)

@@ -1,5 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Профиль на телефоне: боковой колонки нет, главное из неё — в шапке над
@@ -70,7 +71,9 @@ async function go(page: Page, path: string): Promise<void> {
 /** Escape — когда фокус уже в окне: antd переводит его туда после анимации. */
 async function closeSheet(page: Page, sheet: Locator): Promise<void> {
   await expect
-    .poll(() => page.evaluate(() => !!document.activeElement?.closest('.ant-modal-wrap')))
+    .poll(() =>
+      page.evaluate((wrapSel) => !!document.activeElement?.closest(wrapSel), UI.modalWrap)
+    )
     .toBe(true)
   await page.keyboard.press('Escape')
   await expect(sheet).toBeHidden()
@@ -122,7 +125,7 @@ test('чужой профиль: счётчики и начало «О себе�
 
   // Шторка — снизу во всю ширину, профиль над ней виден. Замер — после
   // анимации открытия.
-  const content = page.locator('.profile-info-modal .ant-modal-content')
+  const content = page.locator(`.profile-info-modal ${UI.modalContent}`)
   await expect.poll(async () => Math.round((await content.boundingBox())!.x)).toBe(0)
   const box = (await content.boundingBox())!
   expect(Math.round(box.width)).toBe(VIEWPORT.width)

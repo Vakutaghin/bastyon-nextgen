@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Неотправленное без сервера чатов (он недоступен — отправка не удаётся):
@@ -239,10 +240,7 @@ test('не ушедшее: видно в списке, повтор, удале�
 
   // Текст удалили — после перезапуска его нет, голосовое осталось.
   await page.getByTestId('discard-unsent').first().click()
-  await page
-    .locator('.ant-modal-confirm')
-    .getByRole('button', { name: 'Удалить', exact: true })
-    .click()
+  await page.locator(UI.confirm).getByRole('button', { name: 'Удалить', exact: true }).click()
   await expect(page.getByText('Это не уйдёт')).toHaveCount(0)
   await restart(page)
   await chat(page, DM)

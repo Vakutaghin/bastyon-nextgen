@@ -1,6 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { onScreen } from './support/on-screen'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Люди и блокировки, как в старом клиенте: комментарии, которые автор поста
@@ -75,14 +76,14 @@ async function signIn(page: Page, data: MockNodeData): Promise<void> {
 
 /** Подтверждение antd с этим заголовком — и что оно не под другим окном. */
 async function expectConfirmOnTop(page: Page, title: string): Promise<Locator> {
-  const confirm = page.locator('.ant-modal-confirm').filter({ hasText: title })
+  const confirm = page.locator(UI.confirm).filter({ hasText: title })
   await expect(confirm).toBeVisible()
   const cancel = confirm.getByRole('button', { name: 'Отмена' })
   const box = await cancel.boundingBox()
   expect(box).not.toBeNull()
   const onTop = await page.evaluate(
-    ({ x, y }) => !!document.elementFromPoint(x, y)?.closest('.ant-modal-confirm'),
-    { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 }
+    ({ x, y, confirmSel }) => !!document.elementFromPoint(x, y)?.closest(confirmSel),
+    { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2, confirmSel: UI.confirm }
   )
   expect(onTop).toBe(true)
   return confirm

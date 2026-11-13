@@ -1,6 +1,7 @@
 import { test, expect, type Page, type Route } from '@playwright/test'
 import { parseRecord } from '../src/helpers/ipfs/ipns-names'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * «Мои файлы» → постоянная ссылка: создать ссылку на файл, увидеть её с
@@ -199,8 +200,8 @@ test('постоянная ссылка: создать, QR, перевести 
   await expect.poll(() => kuboPuts).toEqual([name0])
 
   // Новая версия: выбрать файл и перевести ссылку.
-  await dialog.locator('.ant-select').click()
-  await page.locator('.ant-select-item-option', { hasText: REPORT_V2.name }).click()
+  await dialog.locator(UI.select).click()
+  await page.locator(UI.selectOption, { hasText: REPORT_V2.name }).click()
   await dialog.getByRole('button', { name: 'Перевести ссылку' }).click()
   await expect(dialog).toContainText(`Сейчас ведёт на «${REPORT_V2.name}»`)
   expect(await routing.value(name0)).toMatchObject({

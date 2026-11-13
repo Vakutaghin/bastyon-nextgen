@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Чтение статьи. Жалоба с Windows 10 (08.11.2026): статья в окне заметно уже
@@ -65,10 +66,10 @@ async function openFeed(page: Page): Promise<void> {
     .catch(() => {})
 }
 
-const modal = (page: Page) => page.locator('.ant-modal.post-modal')
+const modal = (page: Page) => page.locator(`${UI.modal}.post-modal`)
 
 async function closeModal(page: Page): Promise<void> {
-  await modal(page).locator('.ant-modal-close').click()
+  await modal(page).locator(UI.modalClose).click()
   await expect(modal(page)).toBeHidden()
 }
 
@@ -87,7 +88,7 @@ test('анонс и заголовок открывают статью; окно
   await expect
     .poll(() =>
       modal(page)
-        .locator('.ant-modal-content')
+        .locator(UI.modalContent)
         .evaluate((el) => Math.round(el.getBoundingClientRect().width))
     )
     .toBe(Math.round(cardWidth))

@@ -59,6 +59,7 @@ vi.mock('@/helpers/common/clipboard', () => ({ copyText: mocks.copyText }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: { error: mocks.toastError } }))
 
 import UpdateModal from './update-modal.vue'
+import { UI } from '@/components/testing/ui-selectors'
 
 let wrapper: VueWrapper | null = null
 
@@ -149,7 +150,7 @@ describe('UpdateModal — «Перейти к загрузке»', () => {
       await open()
       checkbox().click()
       await flushPromises()
-      document.body.querySelector<HTMLButtonElement>('.ant-modal-close')!.click()
+      document.body.querySelector<HTMLButtonElement>(UI.modalClose)!.click()
       await flushPromises()
       expect(mocks.close).toHaveBeenCalledWith(true)
     })
@@ -183,7 +184,7 @@ describe('UpdateModal — «Перейти к загрузке»', () => {
       expect(document.body.textContent).toMatch(/Скачиваю обновление: 42\s?%/)
       expect(button('Обновить')!.disabled).toBe(true)
       expect(button('Позже')!.disabled).toBe(true)
-      expect(document.body.querySelector('.ant-modal-close')).toBeNull()
+      expect(document.body.querySelector(UI.modalClose)).toBeNull()
 
       mocks.state!.installProgress.value = { phase: 'install', fraction: 1 }
       await flushPromises()

@@ -96,6 +96,7 @@ import VoiceInputButton from '@/b-components/voice-input/voice-input-button.vue'
 import ComposerArticleEditor from './composer-article-editor.vue'
 import PostComposer from './post-composer.vue'
 import { type PostDraftFields, writeDraft, writeDraftFields, writeDraftImages } from './post-draft'
+import { UI } from '@/components/testing/ui-selectors'
 
 const ME = 'PMe'
 const TEXT = 'Вчера съездили на море, вода тёплая. Фото и заметки: https://example.org/sea'
@@ -174,8 +175,8 @@ function expectLocked(w: VueWrapper): void {
   const list = controls(w)
   expect(list.length).toBeGreaterThan(5)
   expect(list.filter((el) => !el.disabled).map(describeControl)).toEqual([])
-  expect(w.findAll('.ant-select').every((s) => s.classes('ant-select-disabled'))).toBe(true)
-  expect(w.find('.ant-picker').classes()).toContain('ant-picker-disabled')
+  expect(w.findAll(UI.select).every((s) => s.element.matches(UI.selectDisabled))).toBe(true)
+  expect(w.find(UI.datePicker).element.matches(UI.datePickerDisabled)).toBe(true)
 }
 
 function expectUnlocked(w: VueWrapper): void {
@@ -184,8 +185,8 @@ function expectUnlocked(w: VueWrapper): void {
       .filter((el) => el.disabled)
       .map(describeControl)
   ).toEqual([])
-  expect(w.findAll('.ant-select-disabled')).toHaveLength(0)
-  expect(w.find('.ant-picker').classes()).not.toContain('ant-picker-disabled')
+  expect(w.findAll(UI.selectDisabled)).toHaveLength(0)
+  expect(w.find(UI.datePicker).element.matches(UI.datePickerDisabled)).toBe(false)
 }
 
 async function publish(w: VueWrapper): Promise<void> {

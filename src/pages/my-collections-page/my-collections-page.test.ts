@@ -67,6 +67,7 @@ vi.mock('@/stores/offline-videos-store', () => ({
 }))
 
 import MyCollectionsPage from './my-collections-page.vue'
+import { UI } from '@/components/testing/ui-selectors'
 
 const view = (over: Record<string, unknown>) => ({
   txid: 't1',
@@ -103,8 +104,7 @@ const rows = () => wrapper!.findAll('[data-testid="shelf-row"]')
 const row = (key: string) => wrapper!.find(`[data-testid="shelf-row"][data-key="${key}"]`)
 const builtin = (id: string) => wrapper!.find(`[data-testid="shelf-builtin-${id}"]`)
 const keys = () => rows().map((r) => r.attributes('data-key'))
-const menuItems = () =>
-  Array.from(document.body.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'))
+const menuItems = () => Array.from(document.body.querySelectorAll<HTMLElement>(UI.menuItem))
 const menuItem = (label: string) => menuItems().find((el) => el.textContent?.trim() === label)
 
 async function openRowMenu(key: string): Promise<void> {
@@ -113,7 +113,7 @@ async function openRowMenu(key: string): Promise<void> {
 }
 
 function confirmButton(label: string): HTMLButtonElement | undefined {
-  return Array.from(document.body.querySelectorAll<HTMLButtonElement>('.ant-modal button')).find(
+  return Array.from(document.body.querySelectorAll<HTMLButtonElement>(`${UI.modal} button`)).find(
     (b) => b.textContent?.trim() === label
   )
 }

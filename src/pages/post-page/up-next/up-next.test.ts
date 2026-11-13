@@ -10,6 +10,7 @@ import { defineComponent } from 'vue'
 import { i18n, setI18nLocale } from '@/i18n'
 import { usePlaybackQueueStore } from '@/stores/playback-queue-store'
 import UpNext from './up-next.vue'
+import { UI } from '@/components/testing/ui-selectors'
 
 const Stub = defineComponent({ template: '<div />' })
 
@@ -62,7 +63,7 @@ describe('UpNext', () => {
 
     await wrapper.find('[data-testid="up-next-more"]').trigger('click')
     await flushPromises()
-    const items = Array.from(document.body.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'))
+    const items = Array.from(document.body.querySelectorAll<HTMLElement>(UI.menuItem))
     expect(items.map((i) => i.textContent?.trim())).toEqual(['Открыть плейлист', 'Закрыть очередь'])
     items[1]!.click()
     await flushPromises()

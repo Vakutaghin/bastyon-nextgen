@@ -22,6 +22,7 @@ vi.mock('@tauri-apps/api/core', () => ({ invoke: mocks.invoke }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: async () => () => {} }))
 
 import CompressionModuleSection from './compression-module-section.vue'
+import { UI } from '@/components/testing/ui-selectors'
 
 let wrapper: VueWrapper | null = null
 const text = () => document.body.textContent?.replace(/\s+/g, ' ') ?? ''
@@ -86,7 +87,7 @@ describe('CompressionModuleSection', () => {
     button('Удалить')!.click()
     await flushPromises()
     expect(text()).toContain('Удалить модуль сжатия?')
-    const confirm = [...document.body.querySelectorAll('.ant-modal-confirm-btns button')].find(
+    const confirm = [...document.body.querySelectorAll(`${UI.confirmButtons} button`)].find(
       (b) => b.textContent?.trim() === 'Удалить'
     ) as HTMLButtonElement
     confirm.click()

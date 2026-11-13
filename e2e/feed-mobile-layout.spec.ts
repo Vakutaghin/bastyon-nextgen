@@ -1,6 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Пост на телефоне — как в Instagram: во всю ширину экрана, без рамки, а
@@ -109,7 +110,7 @@ test.describe('на телефоне', () => {
     const long = card(page, 'Длинный пост')
     await expect(long).toBeVisible({ timeout: 30_000 })
     await long.getByRole('button', { name: 'Показать полностью' }).click()
-    const modal = page.locator('.ant-modal-content').filter({ hasText: 'Длинный пост' })
+    const modal = page.locator(UI.modalContent).filter({ hasText: 'Длинный пост' })
     // Окно открывается с анимацией — меряем, когда она закончится.
     await expect
       .poll(async () => {
@@ -140,7 +141,7 @@ test('на компьютере карточка остаётся карточк
   expect(mediaBox.width).toBeLessThan(cardBox.width)
 
   await card(page, 'Длинный пост').getByRole('button', { name: 'Показать полностью' }).click()
-  const modal = page.locator('.ant-modal-content').filter({ hasText: 'Длинный пост' })
+  const modal = page.locator(UI.modalContent).filter({ hasText: 'Длинный пост' })
   // Первое окно поста на холодном dev-сервере WebKit открывает дольше 5 с.
   await expect(modal).toBeVisible({ timeout: 15_000 })
   await expect

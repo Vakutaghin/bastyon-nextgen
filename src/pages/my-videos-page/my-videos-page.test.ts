@@ -144,12 +144,12 @@ import { publicPostUrl } from '@/helpers/common/share-origin'
 import { useModalStore } from '@/stores/modal-store'
 import { useVideoUploadsStore } from '@/stores/video-uploads-store'
 import MyVideosPage from './my-videos-page.vue'
+import { UI } from '@/components/testing/ui-selectors'
 
 let wrapper: VueWrapper | null = null
 const button = (label: string) => wrapper!.findAll('button').find((b) => b.text().trim() === label)
 const card = (name: string) => wrapper!.findAll('li').find((li) => li.text().includes(name))!
-const menuItems = () =>
-  Array.from(document.body.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'))
+const menuItems = () => Array.from(document.body.querySelectorAll<HTMLElement>(UI.menuItem))
 
 async function openMenu(name: string): Promise<HTMLElement[]> {
   await card(name).find('button[aria-label="Ещё"]').trigger('click')
@@ -310,7 +310,7 @@ describe('MyVideosPage', () => {
       .find((b) => b.text() === 'Посты: 2')!
       .trigger('click')
     await flushPromises()
-    const items = Array.from(document.body.querySelectorAll('.ant-dropdown-menu-item'))
+    const items = Array.from(document.body.querySelectorAll(UI.menuItem))
     expect(items.map((item) => item.textContent)).toEqual([
       expect.stringContaining('Лес весной'),
       expect.stringContaining('Лес зимой'),
@@ -417,7 +417,7 @@ describe('MyVideosPage', () => {
     const items = await openMenu('Море')
     items.find((item) => item.textContent?.includes('Удалить'))!.click()
     await flushPromises()
-    const confirm = document.body.querySelector('.ant-modal-confirm')!
+    const confirm = document.body.querySelector(UI.confirm)!
     expect(confirm.textContent).toContain('В постах с ним останется только текст')
     const ok = Array.from(confirm.querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Удалить'

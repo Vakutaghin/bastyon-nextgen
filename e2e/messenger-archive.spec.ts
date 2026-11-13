@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { primeMessengerProfiles } from './support/offline-messenger'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Переписка на устройстве и меню сообщения. В полноэкранном мессенджере «⋯»
@@ -159,12 +160,12 @@ test('большой мессенджер: меню у сообщения пов
   const menu = page.locator('.message-actions-popover').filter({ visible: true })
   await expect(menu).toBeVisible()
   await expect(menu.getByRole('button', { name: 'Ответить' })).toBeVisible()
-  expect(await onTop(page, '.message-actions-popover:not(.ant-popover-hidden) button')).toBe(true)
+  expect(await onTop(page, `.message-actions-popover:not(${UI.popoverHidden}) button`)).toBe(true)
 
   await menu.getByRole('button', { name: 'Удалить' }).click()
-  const confirm = page.locator('.ant-modal-confirm').filter({ hasText: 'Удалить сообщение?' })
+  const confirm = page.locator(UI.confirm).filter({ hasText: 'Удалить сообщение?' })
   await expect(confirm).toContainText('Сообщение будет удалено у всех участников чата.')
-  expect(await onTop(page, '.ant-modal-confirm .ant-btn-dangerous')).toBe(true)
+  expect(await onTop(page, `${UI.confirm} ${UI.dangerButton}`)).toBe(true)
   await confirm.getByRole('button', { name: 'Отмена' }).click()
   await expect(confirm).toBeHidden()
   await expect(page.getByText('Моё сообщение')).toBeVisible()
@@ -204,10 +205,10 @@ test('меню чата: «Сохранять на устройстве» — с
   await row.hover()
   await row.locator('.dots-btn').click()
   await page.getByTestId('archive-toggle').click()
-  const confirm = page.locator('.ant-modal-confirm')
+  const confirm = page.locator(UI.confirm)
   await expect(confirm).toContainText('Сохранять «bob_ng» на этом устройстве?')
   await expect(confirm).toContainText('Остальные чаты сохраняться не начнут.')
-  expect(await onTop(page, '.ant-modal-confirm .ant-btn-primary')).toBe(true)
+  expect(await onTop(page, `${UI.confirm} ${UI.primaryButton}`)).toBe(true)
   await confirm.getByRole('button', { name: 'Сохранять' }).click()
 
   await expect.poll(() => archiveCall(page, 'isArchived', DM)).toBe(true)
@@ -299,10 +300,10 @@ test('настройки «Чаты»: включить, выбрать режи
 
   // Стереть всё — два вопроса подряд.
   await page.getByTestId('archive-delete-all').click()
-  const first = page.locator('.ant-modal-confirm').filter({ hasText: 'Удалить всю сохранённую' })
+  const first = page.locator(UI.confirm).filter({ hasText: 'Удалить всю сохранённую' })
   await expect(first).toContainText('С устройства удалятся 3 сообщения из чатов: 1.')
   await first.getByRole('button', { name: 'Удалить', exact: true }).click()
-  const second = page.locator('.ant-modal-confirm').filter({ hasText: 'Точно удалить всё?' })
+  const second = page.locator(UI.confirm).filter({ hasText: 'Точно удалить всё?' })
   await expect(second).toContainText('после удаления их не вернуть', { ignoreCase: true })
   await second.getByRole('button', { name: 'Удалить навсегда' }).click()
   await expect(page.getByTestId('archive-total')).toHaveText('Пока ничего не сохранено')

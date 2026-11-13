@@ -8,6 +8,7 @@ import {
   send,
   signedIn,
 } from './support/live-matrix'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Групповые чаты вживую на своём Synapse: группа в формате прежнего клиента
@@ -252,13 +253,13 @@ test('группа видна в списке, у неё участники, «�
   await clubRow.locator('.dots-btn').click()
   await b.getByText('Участники', { exact: true }).click()
   await modal.getByRole('button', { name: 'Скрыть сообщения: alice_e2e' }).click()
-  await b.locator('.ant-popover').getByRole('button', { name: 'Скрыть сообщения' }).click()
+  await b.locator(UI.popover).getByRole('button', { name: 'Скрыть сообщения' }).click()
   await expect(modal.getByRole('button', { name: 'Показать сообщения: alice_e2e' })).toBeVisible()
   await expect.poll(async () => (await roomState(b, club)).ignored).toContain(ALICE)
 
   // --- Выйти из группы ---
   await modal.getByTestId('group-leave').click()
-  await b.locator('.ant-popover').getByRole('button', { name: 'Покинуть группу' }).click()
+  await b.locator(UI.popover).getByRole('button', { name: 'Покинуть группу' }).click()
   await expect(modal).toBeHidden()
   await expect(clubRow).toHaveCount(0, { timeout: 30_000 })
   // На сервере Боб вышел; комната забыта.

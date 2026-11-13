@@ -43,6 +43,7 @@ vi.mock('./header-search-dropdown.vue', async () => {
 })
 
 import HeaderSearch from './header-search.vue'
+import { UI } from '@/components/testing/ui-selectors'
 
 const CID = 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
 let wrapper: VueWrapper | null = null
@@ -137,7 +138,7 @@ describe('HeaderSearch', () => {
     expect(wrapper!.find('.search-dropdown').exists()).toBe(false)
 
     // Крестик сам ставит фокус в поле — ни стёртый запрос, ни «Недавние» не всплывают.
-    await wrapper!.find('.ant-input-clear-icon').trigger('click')
+    await wrapper!.find(UI.inputClear).trigger('click')
     await nextTick()
     expect(mocks.store!.query).toBe('')
     expect(document.activeElement).toBe(input.element)

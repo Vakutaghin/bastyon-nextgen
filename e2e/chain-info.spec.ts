@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * «В блокчейне»: окно поверх ленты с тем, что записано о посте, комментарии
@@ -260,7 +261,7 @@ test('модалка не отбрасывает ленту наверх (окн
   const auth = page.getByRole('dialog', { name: 'Вход в аккаунт' })
   await expect(auth).toBeVisible()
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore)
-  await auth.locator('.ant-modal-close').click()
+  await auth.locator(UI.modalClose).click()
   await expect(auth).toBeHidden()
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore)
 })

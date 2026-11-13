@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { settleOfflineMessenger } from './support/offline-messenger'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Группы в списке чатов, шапке и окне группы — без сервера чатов: диалоги
@@ -159,7 +160,7 @@ async function checkGroups(page: Page): Promise<void> {
     modal.getByText('Список участников появится, когда чат подключится к серверу.')
   ).toBeVisible()
   // Окно не шире экрана, страница не уезжает вбок.
-  const box = await modal.locator('.ant-modal-content').boundingBox()
+  const box = await modal.locator(UI.modalContent).boundingBox()
   const width = await page.evaluate(() => window.innerWidth)
   expect(box!.x).toBeGreaterThanOrEqual(0)
   expect(box!.x + box!.width).toBeLessThanOrEqual(width)

@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { type MockNodeData } from './support/mock-node'
 import { newAccounts, openChatWith, send, signedIn } from './support/live-matrix'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Переписка на устройстве вживую, на своём Synapse: копия пишется у обоих;
@@ -130,9 +131,9 @@ async function deleteMessage(page: Page, text: string, confirmText: RegExp): Pro
     .filter({ visible: true })
     .getByRole('button', { name: 'Удалить' })
     .click()
-  const confirm = page.locator('.ant-modal-confirm').filter({ hasText: 'Удалить сообщение?' })
+  const confirm = page.locator(UI.confirm).filter({ hasText: 'Удалить сообщение?' })
   await expect(confirm).toContainText(confirmText)
-  await confirm.locator('.ant-btn-dangerous').click()
+  await confirm.locator(UI.dangerButton).click()
 }
 
 test('копия у обоих, удаление чужого, стёртое сервером — из копии, удаление доходит до копии собеседника', async ({

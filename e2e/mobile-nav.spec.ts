@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Навигация на телефоне для гостя на подменной ноде: меню повторяет левую
@@ -170,7 +171,7 @@ test.describe('Телефон боком', () => {
     await bottomNav(page, 'Кошелёк').click()
     const dialog = page.getByRole('dialog', { name: 'Вход в аккаунт' })
     await expect(dialog).toBeVisible()
-    const box = await page.locator('.ant-modal-content').boundingBox()
+    const box = await page.locator(UI.modalContent).boundingBox()
     expect(box!.y).toBeGreaterThanOrEqual(0)
     expect(box!.y + box!.height).toBeLessThanOrEqual(390)
   })

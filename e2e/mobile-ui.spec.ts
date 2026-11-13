@@ -1,5 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Телефон: уведомления — окном во весь экран, пост из ленты — окном, из окна —
@@ -107,7 +108,7 @@ test('уведомления — окном во весь экран, а не в
   await signIn(page)
 
   await page.getByRole('banner').getByRole('button', { name: 'Уведомления' }).click()
-  const sheet = page.locator('.notifications-modal .ant-modal-content')
+  const sheet = page.locator(`.notifications-modal ${UI.modalContent}`)
   await expect(sheet.getByText('alice_ng').first()).toBeVisible({ timeout: 30_000 })
   await expect.poll(() => rect(sheet)).toEqual([0, 0, 390, 844])
   await expect(page.locator('.header-notifications-dropdown')).toBeHidden()
@@ -136,7 +137,7 @@ test('пост из ленты — окном, из окна — отдельн�
   const time = first.getByTestId('post-time-link')
   await expect(time).toHaveAttribute('href', `/post/${FIRST}`)
   await time.click()
-  const modal = page.locator('.ant-modal.post-modal')
+  const modal = page.locator(`${UI.modal}.post-modal`)
   await expect(modal.getByText('Пост номер 1.')).toBeVisible()
   expect(new URL(page.url()).pathname).toBe('/')
 
@@ -150,7 +151,7 @@ test('пост из ленты — окном, из окна — отдельн�
   await expect(page.locator('.post-card').filter({ hasText: 'Пост номер 1.' }).first()).toBeVisible(
     { timeout: 30_000 }
   )
-  await expect(page.locator('.ant-modal.post-modal')).toHaveCount(0)
+  await expect(page.locator(`${UI.modal}.post-modal`)).toHaveCount(0)
 })
 
 test('шапка уезжает вслед за прокруткой и возвращается без рывка', async ({ page }) => {

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Профиль: закреплённый пост (поле `pin` настроек аккаунта) стоит первым с
@@ -90,7 +91,7 @@ test('поиск по постам автора: только его посты,
   await expect(results.locator('.post-card')).toHaveCount(0)
 
   // Крестик в поле — поиск сброшен, лента с закреплённым на месте.
-  await page.getByTestId('profile-search-bar').locator('.ant-input-clear-icon').click()
+  await page.getByTestId('profile-search-bar').locator(UI.inputClear).click()
   await expect(page).not.toHaveURL(/\?q=/)
   await expect(results).toBeHidden()
   await expect(page.locator('.post-card').first()).toContainText('Закреплённое приветствие')

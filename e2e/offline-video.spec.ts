@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Скачать ролик для просмотра без сети (веб: воркер и OPFS) на подменной
@@ -189,7 +190,7 @@ test('профиль без OPFS (приватное окно Safari): «Ска�
   await open(page, `/post/${VIDEO}`)
   await signIn(page)
   await page.getByTestId('offline-download').first().click()
-  await expect(page.locator('.ant-notification')).toContainText('Здесь скачивать нельзя')
+  await expect(page.locator(UI.toastHost)).toContainText('Здесь скачивать нельзя')
   await expect(page.getByTestId('offline-quality-sheet')).toHaveCount(0)
 })
 
@@ -229,7 +230,7 @@ test('аудио из ленты: файл звука качается, «Заг
   const button = card.getByTestId('offline-download')
   await button.click({ timeout: 30_000 })
   await expect(button).toHaveAttribute('data-status', 'done', { timeout: 60_000 })
-  await expect(page.locator('.ant-notification')).toContainText('Скачано: «Трек для дороги»')
+  await expect(page.locator(UI.toastHost)).toContainText('Скачано: «Трек для дороги»')
 
   // Шапка: значок «Загрузки» с историей, «Сохранить файлом» — обычный файл .m4a.
   await page.getByTestId('header-downloads').click()
@@ -243,7 +244,7 @@ test('аудио из ленты: файл звука качается, «Заг
   ])
   expect(download.suggestedFilename()).toBe('Трек для дороги.m4a')
   expect((await download.createReadStream()).readableLength >= 0).toBe(true)
-  await expect(page.locator('.ant-notification')).toContainText('Сохранено: Трек для дороги.m4a')
+  await expect(page.locator(UI.toastHost)).toContainText('Сохранено: Трек для дороги.m4a')
 
   // «Всё скачанное» — вкладка «Скачанное» раздела «Аудио».
   await page.getByTestId('header-downloads-all').click()

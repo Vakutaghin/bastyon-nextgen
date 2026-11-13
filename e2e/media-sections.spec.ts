@@ -3,6 +3,7 @@ import { test, expect, type Page, type Route } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 import { useMockPeerTube, VIDEO_URL } from './support/mock-peertube'
 import { skipWithoutWebKitMedia } from './support/webkit-media'
+import { UI } from '../src/components/testing/ui-selectors'
 
 /**
  * Разделы «Видео» и «Аудио», мини-плеер и коллекции на подменной ноде: сетка
@@ -168,7 +169,7 @@ test('раздел «Видео»: ролик играет в окне пост�
   const card = page.getByTestId('video-card').filter({ hasText: 'Первый ролик' })
   await card.getByRole('link', { name: 'Первый ролик' }).first().click()
 
-  const modal = page.locator('.ant-modal-content')
+  const modal = page.locator(UI.modalContent)
   await expect(modal).toContainText('Описание ролика')
   const video = modal.locator('video').first()
   await expect
