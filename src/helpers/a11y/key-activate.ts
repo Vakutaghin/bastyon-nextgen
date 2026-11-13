@@ -11,9 +11,13 @@
  *
  * Открытие мышью меню не трогает: фокус переносится, только если меню открыли
  * клавишей.
+ *
+ * Свои панели (src/components/ui-core) берутся из стека слоёв наравне с
+ * меню antd; Esc в такой панели просит её закрыться (`dismiss`).
  */
 
 import type { Directive } from 'vue'
+import { popupLayers } from '@/components/ui-core/layer-stack'
 
 export interface KeyActivateOptions {
   /** Элемент открывает выпадающее меню antd: фокус — в него. */
@@ -41,9 +45,17 @@ const OPEN_POPUPS = '.ant-dropdown:not(.ant-dropdown-hidden), .ant-popover:not(.
 const POPUP_POLL_MS = 40
 const POPUP_WAIT_MS = 1500
 
-/** Открытое меню antd, последнее в документе, — то, что открылось только что. */
+/** Открытые меню: antd в порядке документа, затем свои по стеку слоёв. */
+function openPopups(doc: Document): HTMLElement[] {
+  const own = popupLayers()
+    .map((layer) => layer.el())
+    .filter((el): el is HTMLElement => !!el && el.ownerDocument === doc)
+  return [...doc.querySelectorAll<HTMLElement>(OPEN_POPUPS), ...own]
+}
+
+/** Открытое меню, последнее, — то, что открылось только что. */
 export function lastOpenPopup(doc: Document = document): HTMLElement | null {
-  const all = doc.querySelectorAll<HTMLElement>(OPEN_POPUPS)
+  const all = openPopups(doc)
   return all.length > 0 ? all[all.length - 1]! : null
 }
 
@@ -85,7 +97,9 @@ export function attachPopupKeys(
     if (e.key === 'Escape') {
       e.preventDefault()
       e.stopPropagation()
+      const layer = popupLayers().find((l) => l.el() === popup)
       if (close) close()
+      else if (layer) layer.dismiss('escape')
       else if (popup.matches(OPEN_POPUPS)) trigger.click()
       trigger.focus()
       return
@@ -116,14 +130,15 @@ export function attachPopupKeys(
 /** После открытия с клавиатуры — фокус на первый пункт меню. */
 export function focusIntoPopup(trigger: HTMLElement, waitMs = POPUP_WAIT_MS): void {
   const doc = trigger.ownerDocument
-  // Меню, открытое до нажатия, — не наше: ждём новое.
-  const before = lastOpenPopup(doc)
+  // Меню, открытые до нажатия, — не наши: ждём новое.
+  const before = new Set(openPopups(doc))
   const deadline = Date.now() + waitMs
   const tick = (): void => {
-    const popup = lastOpenPopup(doc)
-    if (!popup || popup === before || popupItems(popup).length === 0) {
+    const fresh = openPopups(doc).filter((el) => !before.has(el))
+    const popup = fresh[fresh.length - 1]
+    if (!popup || popupItems(popup).length === 0) {
       if (Date.now() < deadline) setTimeout(tick, POPUP_POLL_MS)
-      else if (popup && popup !== before) attachAndFocus(popup)
+      else if (popup) attachAndFocus(popup)
       return
     }
     attachAndFocus(popup)

@@ -1252,6 +1252,66 @@ body .ant-modal-root .ant-modal.ant-zoom-leave.ant-zoom-leave-active {
   animation-name: ui-scale-out;
 }
 
+/* Свои окна и панели (src/components/ui-core) — те же движения, что у antd
+   выше: панели появляются из 95% за 100 мс от края, у которого кнопка
+   (`data-placement` ставит floating.ts), окна — за 200 мс из центра, маска
+   проявляется. Классы — для <Transition name="ui-pop | ui-zoom | ui-fade">.
+   С «уменьшить движение» ui-scale-* — только проявление (см. выше). */
+.ui-pop-enter-active,
+.ui-zoom-enter-active {
+  animation-name: ui-scale-in;
+  animation-timing-function: var(--ui-ease-out);
+}
+
+.ui-pop-leave-active,
+.ui-zoom-leave-active {
+  animation-name: ui-scale-out;
+  animation-timing-function: var(--ui-ease-out);
+}
+
+.ui-pop-enter-active,
+.ui-pop-leave-active {
+  animation-duration: 100ms;
+}
+
+.ui-zoom-enter-active,
+.ui-zoom-leave-active {
+  animation-duration: 200ms;
+}
+
+.ui-fade-enter-active,
+.ui-fade-leave-active {
+  transition: opacity 200ms var(--ui-ease-out);
+}
+
+.ui-fade-enter-from,
+.ui-fade-leave-to {
+  opacity: 0;
+}
+
+[data-ui-floating][data-placement^='bottom'] {
+  transform-origin: top;
+}
+
+[data-ui-floating][data-placement^='top'] {
+  transform-origin: bottom;
+}
+
+[data-ui-floating][data-placement^='left'] {
+  transform-origin: right;
+}
+
+[data-ui-floating][data-placement^='right'] {
+  transform-origin: left;
+}
+
+/* Прокрутка страницы под своим окном (ui-core/scroll-lock.ts). Ширина полосы
+   прокрутки вычитается, чтобы страница не прыгала, — как у antd. */
+html.ui-scroll-locked body {
+  overflow: hidden;
+  width: calc(100% - var(--ui-scroll-lock-gap, 0px));
+}
+
 /* Выпадающий список Select (components/select) — как у USelect Nuxt. Он
    рисуется вне обёртки, поэтому правило глобальное. Текст пункта стоит там же,
    где текст в поле (4 + 8 = 12px от края), подсвеченный пункт — highlighted,

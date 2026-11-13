@@ -17,9 +17,22 @@
  * приложение глохнет целиком (листается, но ни одно нажатие не доходит).
  * Поэтому маскируем, только пока меню правда видно, и не больше двух нажатий
  * подряд, если меню от них не закрывается.
+ *
+ * Свои панели (src/components/ui-core) маска берёт из стека слоёв: открытая
+ * панель там есть, пока она на экране, а закрывается она просьбой
+ * `dismiss('outside')`. Панель `hover` для мыши не маскирует — как
+ * `data-popup-hover`. Нажатие в слое, открытом позже панели (подтверждение из
+ * меню), — не мимо.
  */
 
 import { noteStall } from '@/helpers/diagnostics/main-thread-stalls'
+import {
+  dismissPopupLayers,
+  isPopupLayer,
+  layerContaining,
+  popupLayers,
+  type Layer,
+} from '@/components/ui-core/layer-stack'
 
 /** Кнопки открытых меню, всплывающих панелей и списков поля. */
 const OPEN_TRIGGER = '.ant-dropdown-open, .ant-popover-open, .ant-select-open'
@@ -67,8 +80,20 @@ function popupVisible(doc: Document): boolean {
   return Array.from(doc.querySelectorAll(POPUP)).some((el) => el.getClientRects().length > 0)
 }
 
+/** Свои открытые панели; для мыши — без панелей «по наведению». */
+function ownPopups(pointerType: string): Layer[] {
+  return popupLayers().filter((layer) => pointerType !== 'mouse' || !layer.hover)
+}
+
 function insidePopup(target: EventTarget | null): boolean {
-  return target instanceof Element && !!target.closest(`${POPUP}, ${OPEN_TRIGGER}`)
+  if (!(target instanceof Element)) return false
+  if (target.closest(`${POPUP}, ${OPEN_TRIGGER}`)) return true
+  const layer = layerContaining(target)
+  if (!layer) return false
+  if (isPopupLayer(layer)) return true
+  // Слой поверх открытых своих панелей (окно из пункта меню) — не «мимо».
+  const popups = popupLayers()
+  return popups.length > 0 && popups.every((popup) => layer.id > popup.id)
 }
 
 function closePopups(doc: Document): void {
@@ -78,6 +103,7 @@ function closePopups(doc: Document): void {
   } finally {
     closing = false
   }
+  dismissPopupLayers('outside')
 }
 
 function start(event: PointerEvent): void {
@@ -86,7 +112,9 @@ function start(event: PointerEvent): void {
   const open = doc.querySelector(
     event.pointerType === 'mouse' ? OPEN_TRIGGER_FOR_MOUSE : OPEN_TRIGGER
   )
-  if (!open || !popupVisible(doc)) {
+  const antdOpen = !!open && popupVisible(doc)
+  const own = ownPopups(event.pointerType)
+  if (!antdOpen && own.length === 0) {
     unanswered = 0
     return
   }
@@ -96,7 +124,8 @@ function start(event: PointerEvent): void {
   if (unanswered >= MAX_UNANSWERED) {
     // В сведения для поддержки — раз за случай: чья кнопка залипла.
     if (unanswered++ === MAX_UNANSWERED) {
-      noteStall({ ms: 0, kind: 'tap-shield', detail: open.className.toString().slice(0, 200) })
+      const detail = antdOpen && open ? open.className.toString() : `layer:${own[0]!.kind}`
+      noteStall({ ms: 0, kind: 'tap-shield', detail: detail.slice(0, 200) })
     }
     return
   }
