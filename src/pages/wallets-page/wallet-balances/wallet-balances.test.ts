@@ -41,6 +41,7 @@ import WalletBalances from './wallet-balances.vue'
 const router = createRouter({
   history: createMemoryHistory(),
   routes: [
+    { path: '/wallets', name: 'wallets', component: { template: '<div />' } },
     {
       path: '/explorer/address/:address',
       name: 'explorer-address',
@@ -72,6 +73,13 @@ describe('wallet-balances.vue', () => {
     expect(w.text()).toContain('PEXTRA')
     expect(w.text()).toContain('Fund')
     expect(w.findAll('a[href="/explorer/address/PMAIN"]').length).toBe(1)
+  })
+
+  it('под суммами — ссылка на вкладку «Покупка/продажа»', () => {
+    const w = mountTab()
+    const link = w.get('[data-testid="wallet-buy-link"]')
+    expect(link.text()).toContain(i18n.global.t('wallet.buySellLink'))
+    expect(link.attributes('href')).toBe('/wallets?tab=buy')
   })
 
   it('кнопка переименования открывает rename с адресом и ярлыком', async () => {

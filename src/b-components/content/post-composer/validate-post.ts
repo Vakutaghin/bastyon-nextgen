@@ -24,7 +24,7 @@ import {
 } from './consts'
 
 /** Тег биржевой торговли — несовместим с рядом полей (kit.js:1700 hasexchangetag). */
-const EXCHANGE_TAG = 'pkoin_commerce'
+export const EXCHANGE_TAG = 'pkoin_commerce'
 
 /** Коды ошибок валидации (соответствуют ключам i18n postMsg.validation.*). */
 export type PostValidationError =

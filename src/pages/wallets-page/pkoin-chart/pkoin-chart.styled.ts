@@ -1,4 +1,5 @@
 import styled from 'vue3-styled-components'
+import { BREAKPOINTS } from '@/styles/design-tokens'
 
 const SIDEBAR_WIDTH = 200
 
@@ -65,6 +66,12 @@ export const SC_PkoinChartRow = styled.div`
   width: 100%;
   min-height: 280px;
   user-select: none;
+
+  /* На телефоне рядом со сводкой графику оставалось ~140px: сводка — под ним. */
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    flex-direction: column;
+    gap: 12px;
+  }
 `
 
 export const SC_PkoinChartArea = styled.div`
@@ -111,6 +118,11 @@ export const SC_PkoinChartSidebar = styled.aside`
   background: var(--ui-bg);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
+
+  @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
+    width: auto;
+    padding: 16px;
+  }
 `
 
 export const SC_PkoinChartPriceLabel = styled.div`

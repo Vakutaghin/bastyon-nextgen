@@ -126,10 +126,14 @@ interface MarketChartResponse {
   total_volumes: [number, number][]
 }
 
+// Текущий курс — наружу: от него считает калькулятор вкладки «Покупка/продажа».
+const emit = defineEmits<{ price: [value: number | null] }>()
+
 const containerRef = ref<HTMLElement | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const currentPrice = ref<number | null>(null)
+watch(currentPrice, (p) => emit('price', p))
 const priceChange = ref<number | null>(null)
 const priceChange24h = ref<number | null>(null)
 const priceHigh30d = ref<number | null>(null)

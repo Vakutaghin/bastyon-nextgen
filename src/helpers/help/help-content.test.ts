@@ -121,7 +121,8 @@ describe('справка в help/', () => {
     const bad: string[] = []
     eachInline(libraries[locale], (node, topic) => {
       if (node.t !== 'link' || node.to.kind !== 'app') return
-      const section = node.to.path.split('/')[1] ?? ''
+      // Раздел — до query и якоря: `bastyon://wallets?tab=buy` → wallets.
+      const section = node.to.path.split(/[/?#]/)[1] ?? ''
       if (node.to.path !== '/' && !DEEP_LINK_SECTIONS.has(section))
         bad.push(`${topic}: ${node.to.href}`)
     })

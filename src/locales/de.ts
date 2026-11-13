@@ -941,6 +941,40 @@ export default {
     growVideo:
       'Die Videolänge spielt keine Rolle: Werbung wird nicht in das Video eingefügt, es zählt die Aktivität unter dem Beitrag.',
   },
+  walletBuy: {
+    calcTitle: 'Wie viel ist das in Dollar',
+    calcPkoin: 'Betrag in PKOIN',
+    calcUsd: 'Betrag in Dollar',
+    calcNote: 'Zum Börsenkurs von CoinGecko. Verkäufer haben ihren eigenen Kurs.',
+    addressTitle: 'Ihre Empfangsadresse',
+    addressHint:
+      'Geben Sie sie an der Börse als Auszahlungsadresse an oder senden Sie sie dem Verkäufer. Eine Bastyon-Adresse beginnt mit einem lateinischen P: An die Adresse eines anderen Netzwerks kommen die Coins nicht an.',
+    copy: 'Kopieren',
+    copied: 'Kopiert',
+    qrAlt: 'QR-Code Ihrer Adresse',
+    exchangesTitle: 'Börsen',
+    exchangesText:
+      'Kaufen: Eröffnen Sie ein Konto an einer Börse, kaufen Sie PKOIN gegen USDT und zahlen Sie sie an Ihre Adresse aus. Verkaufen: Senden Sie PKOIN an die Einzahlungsadresse der Börse und verkaufen Sie sie dort.',
+    open: 'Öffnen',
+    exchangesThin:
+      'Das Handelsvolumen an den Börsen ist gering: Kaufen Sie größere Beträge in Teilen oder bei Verkäufern.',
+    exchangesListNote: 'Die Liste der Börsen ändert sich — die aktuelle finden Sie bei CoinGecko',
+    p2pTitle: 'Bei Verkäufern',
+    p2pExchangeText:
+      'Verkäufer geben Preis, Währungen, Zahlungsarten und Limits an. Auftrag und Abwicklung laufen in der Mini-App.',
+    p2pCommerceText:
+      'Angebote zum Kauf und Verkauf von PKOIN sind Beiträge mit diesem Tag. Sie können auch Ihr eigenes veröffentlichen.',
+    riskTitle: 'Das Netzwerk garantiert keine Geschäfte von Person zu Person',
+    riskText:
+      'Achten Sie auf Reputation und Kontoalter des Verkäufers und zahlen Sie Fremden nicht im Voraus. Wenn Sie verkaufen, prüfen Sie den Geldeingang bei Ihrer Bank, nicht das Bild eines Belegs. PKOIN-Überweisungen sind unumkehrbar.',
+    toolsTitle: 'Nützliches',
+    toolSend: 'PKOIN senden',
+    toolHistory: 'Überweisungsverlauf',
+    toolExplorer: 'Meine Adresse im Blockchain-Explorer',
+    toolEarnings: 'Einnahmen',
+    toolLimits: 'Kontostatus und Limits',
+    toolHelp: 'Wie bekomme ich PKOIN?',
+  },
   wallet: {
     errorForeignNetworkAddress:
       'Diese Adresse gehört zu einem anderen Netzwerk. Eine Bastyon-Adresse beginnt mit „P“.',
@@ -953,7 +987,7 @@ export default {
     tabHistory: 'Verlauf',
     tabEarnings: 'Einnahmen',
     tabBuySell: 'Kaufen/Verkaufen',
-    howToBuyLink: 'Wie bekomme ich PKOIN? →',
+    buySellLink: 'PKOIN kaufen oder verkaufen →',
     renameWallet: 'Wallet umbenennen',
     walletLabelPlaceholder: 'Wallet-Bezeichnung (optional)',
     renameSave: 'Speichern',

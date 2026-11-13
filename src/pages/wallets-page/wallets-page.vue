@@ -4,39 +4,39 @@
       <SC_WalletTitle>{{ t('wallet.title') }}</SC_WalletTitle>
 
       <SC_WalletTabs>
-        <SC_WalletTabList>
+        <SC_WalletTabList data-wallet-tabs>
           <SC_WalletTabButton
             type="button"
             :class="{ active: activeTabKey === 'balances' }"
-            @click="activeTabKey = 'balances'"
+            @click="selectTab('balances')"
           >
             {{ t('wallet.tabBalances') }}
           </SC_WalletTabButton>
           <SC_WalletTabButton
             type="button"
             :class="{ active: activeTabKey === 'transfers' }"
-            @click="activeTabKey = 'transfers'"
+            @click="selectTab('transfers')"
           >
             {{ t('wallet.tabTransfers') }}
           </SC_WalletTabButton>
           <SC_WalletTabButton
             type="button"
             :class="{ active: activeTabKey === 'history' }"
-            @click="activeTabKey = 'history'"
+            @click="selectTab('history')"
           >
             {{ t('wallet.tabHistory') }}
           </SC_WalletTabButton>
           <SC_WalletTabButton
             type="button"
             :class="{ active: activeTabKey === 'earnings' }"
-            @click="activeTabKey = 'earnings'"
+            @click="selectTab('earnings')"
           >
             {{ t('wallet.tabEarnings') }}
           </SC_WalletTabButton>
           <SC_WalletTabButton
             type="button"
             :class="{ active: activeTabKey === 'buy' }"
-            @click="activeTabKey = 'buy'"
+            @click="selectTab('buy')"
           >
             {{ t('wallet.tabBuySell') }}
           </SC_WalletTabButton>
@@ -60,11 +60,7 @@
           </SC_WalletTabPanel>
 
           <SC_WalletTabPanel :class="{ active: activeTabKey === 'buy' }">
-            <PkoinChart />
-            <SC_BuyHelp>
-              <!-- Статья справки открывается сбоку: вкладка «Купить» остаётся на экране. -->
-              <HelpLink topic="how-to-buy-pkoin" :label="t('wallet.howToBuyLink')" />
-            </SC_BuyHelp>
+            <WalletBuy v-if="activeTabKey === 'buy'" />
           </SC_WalletTabPanel>
         </SC_WalletTabPanels>
       </SC_WalletTabs>
@@ -75,7 +71,7 @@
 <script setup lang="ts">
 // Страница кошелька — только каркас вкладок и ?tab= deep-link; содержимое
 // каждой вкладки живёт в саб-компоненте.
-import { onMounted, ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/blockchain'
@@ -84,8 +80,7 @@ import WalletBalances from './wallet-balances/wallet-balances.vue'
 import WalletTransfer from './wallet-transfer/wallet-transfer.vue'
 import WalletHistory from './wallet-history/wallet-history.vue'
 import WalletEarnings from './wallet-earnings/wallet-earnings.vue'
-import PkoinChart from './pkoin-chart/pkoin-chart.vue'
-import HelpLink from '@/b-components/help/help-link.vue'
+import WalletBuy from './wallet-buy/wallet-buy.vue'
 import {
   SC_WalletWork,
   SC_WalletPage,
@@ -95,7 +90,6 @@ import {
   SC_WalletTabButton,
   SC_WalletTabPanels,
   SC_WalletTabPanel,
-  SC_BuyHelp,
 } from './wallets-page.styled'
 
 const { t } = useI18n()
@@ -103,7 +97,6 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-// Ключи вкладок кошелька — для ?tab= deep-link (CTA со страницы лимитов).
 const balancesRef = ref<{ reload: () => Promise<void> } | null>(null)
 
 /** Перевод ушёл — пересчитываем балансы, не дожидаясь перезахода (S47). */
@@ -111,16 +104,39 @@ function reloadBalances(): void {
   void balancesRef.value?.reload()
 }
 
+// Вкладка — в адресе (?tab=buy): туда ведут страница лимитов, монетизация,
+// справка и ссылки между вкладками. Следим за адресом, а не только читаем его
+// при входе: ссылка на другую вкладку с открытого кошелька тоже срабатывает.
 const WALLET_TAB_KEYS = ['balances', 'transfers', 'history', 'earnings', 'buy']
 const activeTabKey = ref<string>('balances')
 
-onMounted(() => {
-  // Открываем вкладку из query (?tab=buy) — используется CTA на странице лимитов.
-  const requestedTab = route.query.tab
-  if (typeof requestedTab === 'string' && WALLET_TAB_KEYS.includes(requestedTab)) {
-    activeTabKey.value = requestedTab
-  }
-})
+watch(
+  () => route.query.tab,
+  (tab) => {
+    // Уход на другой раздел — не повод переключать вкладку перед закрытием.
+    if (route.name !== 'wallets') return
+    activeTabKey.value = typeof tab === 'string' && WALLET_TAB_KEYS.includes(tab) ? tab : 'balances'
+  },
+  { immediate: true }
+)
+
+// Открытая вкладка — в поле зрения ряда: на телефоне «Покупка/продажа» за краем.
+watch(
+  activeTabKey,
+  async () => {
+    await nextTick()
+    document
+      .querySelector('[data-wallet-tabs] .active')
+      ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+  },
+  { immediate: true }
+)
+
+function selectTab(key: string): void {
+  activeTabKey.value = key
+  if (route.query.tab === key) return
+  void router.replace({ query: { ...route.query, tab: key === 'balances' ? undefined : key } })
+}
 
 watch(
   () => authStore.isUserAuthenticated,

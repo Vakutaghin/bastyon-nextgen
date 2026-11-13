@@ -33,6 +33,14 @@
       </SC_WalletBalanceCard>
     </SC_WalletBalanceCards>
 
+    <!-- Пополнить или вывести — вкладка «Покупка/продажа». -->
+    <SC_WalletBuyLink
+      :to="{ name: 'wallets', query: { tab: 'buy' } }"
+      data-testid="wallet-buy-link"
+    >
+      {{ t('wallet.buySellLink') }}
+    </SC_WalletBuyLink>
+
     <SC_WalletTableSection>
       <SC_WalletTableTitle>{{ t('wallet.mainWallet') }}</SC_WalletTableTitle>
 
@@ -157,6 +165,7 @@ import { useAuthStore } from '@/blockchain'
 import { useWalletBalances } from './use-wallet-balances'
 import {
   SC_WalletBalanceCards,
+  SC_WalletBuyLink,
   SC_WalletBalanceCard,
   SC_WalletBalanceLabel,
   SC_WalletBalanceValue,

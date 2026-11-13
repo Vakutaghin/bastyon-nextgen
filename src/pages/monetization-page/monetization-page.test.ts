@@ -1,6 +1,6 @@
 // «Монетизация для авторов»: схема из четырёх шагов по кругу, путь в статью
 // справки, почта команды (открыть и скопировать), история кошелька — только
-// вошедшим, «Где купить и продать PKOIN» — статья сбоку.
+// вошедшим, «Где купить и продать PKOIN» — вошедшему вкладка кошелька, гостю статья сбоку.
 
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -75,11 +75,19 @@ describe('страница «Монетизация»', () => {
     expect(mocks.openTopic).toHaveBeenCalledWith('monetization')
   })
 
-  it('«Где купить и продать PKOIN» — статья про биржи', async () => {
-    const w = await render()
-    const link = w.findAll('[data-help-link]').find((b) => b.text().includes('купить и продать'))
-    await link!.trigger('click')
+  it('«Где купить и продать PKOIN»: гостю — статья про биржи, вошедшему — вкладка кошелька', async () => {
+    let w = await render()
+    expect(w.find('[data-testid="monetization-withdraw"]').exists()).toBe(false)
+    const help = w.findAll('[data-help-link]').find((b) => b.text().includes('купить и продать'))
+    await help!.trigger('click')
     expect(mocks.openTopic).toHaveBeenCalledWith('how-to-buy-pkoin')
+    w.unmount()
+
+    mocks.auth.isUserAuthenticated = true
+    w = await render()
+    const link = w.get('[data-testid="monetization-withdraw"]')
+    expect(link.text()).toContain('Где купить и продать PKOIN')
+    expect(link.attributes('href')).toBe('/wallets?tab=buy')
   })
 
   it('почта команды открывается письмом и копируется', async () => {

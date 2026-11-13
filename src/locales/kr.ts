@@ -918,6 +918,38 @@ export default {
     growVideo:
       '영상 길이는 상관없습니다. 광고는 영상 안에 삽입되지 않고, 게시물 아래의 활동이 반영됩니다.',
   },
+  walletBuy: {
+    calcTitle: '달러로 얼마인가요',
+    calcPkoin: 'PKOIN 금액',
+    calcUsd: '달러 금액',
+    calcNote: 'CoinGecko 기준 거래소 시세입니다. 판매자는 자체 시세를 적용합니다.',
+    addressTitle: '내 수신 주소',
+    addressHint:
+      '거래소의 출금 주소로 입력하거나 판매자에게 보내세요. Bastyon 주소는 라틴 문자 P로 시작합니다. 다른 네트워크의 주소로 보낸 코인은 도착하지 않습니다.',
+    copy: '복사',
+    copied: '복사됨',
+    qrAlt: '내 주소의 QR 코드',
+    exchangesTitle: '거래소',
+    exchangesText:
+      '구매: 거래소에 계정을 만들고 USDT로 PKOIN을 산 뒤 내 주소로 출금하세요. 판매: PKOIN을 거래소 입금 주소로 보내고 거래소에서 판매하세요.',
+    open: '열기',
+    exchangesThin: '거래소 거래량이 적습니다. 큰 금액은 나누어 사거나 판매자에게서 사세요.',
+    exchangesListNote: '거래소 목록은 바뀝니다 — 최신 목록은 CoinGecko에서 확인하세요',
+    p2pTitle: '판매자에게서',
+    p2pExchangeText:
+      '판매자가 가격, 통화, 결제 방법과 한도를 정합니다. 주문과 거래는 미니앱에서 진행됩니다.',
+    p2pCommerceText: 'PKOIN 구매·판매 제안은 이 태그가 달린 게시물입니다. 직접 올릴 수도 있습니다.',
+    riskTitle: '개인 간 거래는 네트워크가 보장하지 않습니다',
+    riskText:
+      '판매자의 평판과 계정 나이를 확인하고, 모르는 사람에게 선불로 결제하지 마세요. 판매할 때는 영수증 이미지가 아니라 은행에 돈이 들어왔는지 확인하세요. PKOIN 전송은 되돌릴 수 없습니다.',
+    toolsTitle: '유용한 링크',
+    toolSend: 'PKOIN 보내기',
+    toolHistory: '전송 내역',
+    toolExplorer: '블록체인 탐색기에서 내 주소',
+    toolEarnings: '수익',
+    toolLimits: '계정 상태와 한도',
+    toolHelp: 'PKOIN 얻는 방법',
+  },
   wallet: {
     errorForeignNetworkAddress:
       "이 주소는 다른 네트워크의 주소입니다. Bastyon 주소는 'P'로 시작합니다.",
@@ -930,7 +962,7 @@ export default {
     tabHistory: '내역',
     tabEarnings: '수익',
     tabBuySell: '구매/판매',
-    howToBuyLink: 'PKOIN 얻는 방법 →',
+    buySellLink: 'PKOIN 사기 또는 팔기 →',
     renameWallet: '지갑 이름 변경',
     walletLabelPlaceholder: '지갑 이름(선택 사항)',
     renameSave: '저장',

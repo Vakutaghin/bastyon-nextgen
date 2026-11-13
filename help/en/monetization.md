@@ -48,7 +48,7 @@ According to the team, a payout is for activity on posts from the last two weeks
 
 ## How to cash out
 
-PKOIN is sold on exchanges or person to person for dollars, rubles and other currencies. Where to do it is described in [How to get PKOIN](how-to-buy-pkoin.md#buying): the exchanges and dealers work both ways. Questions about cashing out go to [support@bastyon.com](mailto:support@bastyon.com).
+PKOIN is sold on exchanges or person to person for dollars, rubles and other currencies. Links to exchanges and sellers are in the [wallet](bastyon://wallets?tab=buy), on the **“Buy/Sell”** tab, and how to sell is described in [How to get PKOIN](how-to-buy-pkoin.md#on-an-exchange): the exchanges and sellers work both ways. Questions about cashing out go to [support@bastyon.com](mailto:support@bastyon.com).
 
 > [!WARNING]
 > Blockchain transfers cannot be reversed. Person-to-person deals are at your own risk: the network does not guarantee them.

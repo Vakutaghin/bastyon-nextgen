@@ -69,8 +69,15 @@
             {{ t('monetization.withdrawTitle') }}
           </SC_CardHead>
           <SC_CardText>{{ t('monetization.withdrawText') }}</SC_CardText>
+          <!-- Вошедшему — вкладка кошелька «Покупка/продажа», гостю — статья справки. -->
           <SC_CardFooter>
-            <HelpLink topic="how-to-buy-pkoin" :label="t('monetization.withdrawLink')" />
+            <SC_InlineLink
+              v-if="authStore.isUserAuthenticated"
+              :to="{ name: 'wallets', query: { tab: 'buy' } }"
+              data-testid="monetization-withdraw"
+              >{{ t('monetization.withdrawLink') }} →</SC_InlineLink
+            >
+            <HelpLink v-else topic="how-to-buy-pkoin" :label="t('monetization.withdrawLink')" />
           </SC_CardFooter>
         </SC_Card>
 

@@ -37,11 +37,20 @@ export const SC_WalletTabs = styled.div`
   margin-top: 8px;
 `
 
+/* Пять вкладок на телефоне не помещаются: ряд прокручивается вбок, страница
+   не шире экрана. Линия под рядом — тенью: рамка с margin-bottom: -1px у
+   кнопок при overflow-x давала бы вертикальную прокрутку. */
 export const SC_WalletTabList = styled.nav`
   display: flex;
   gap: 0;
-  border-bottom: 1px solid var(--color-overlay-12);
+  overflow-x: auto;
+  scrollbar-width: none;
+  box-shadow: inset 0 -1px 0 var(--color-overlay-12);
   margin-bottom: 20px;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `
 
 export const SC_WalletTabButton = styled.button`
@@ -50,10 +59,11 @@ export const SC_WalletTabButton = styled.button`
   color: var(--ui-text-muted);
   background: none;
   border: none;
+  flex: 0 0 auto;
+  white-space: nowrap;
   padding: 10px 16px;
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
 
   &:hover {
     color: var(--ui-text-highlighted);

@@ -1,6 +1,7 @@
 // Стили вкладки «Балансы» (карточки сумм, таблицы кошельков, диалог переименования).
 // Перенесены из wallets-page.styled.ts вместе с выделением саб-компонента.
 import styled from 'vue3-styled-components'
+import { RouterLink } from 'vue-router'
 import { TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
 import { nuxtField } from '@/styles/field-styles'
 
@@ -100,6 +101,20 @@ export const SC_WalletBalanceCards = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
   margin-bottom: 28px;
+`
+
+/** «Купить или продать PKOIN →» под суммами — на вкладку «Покупка/продажа». */
+export const SC_WalletBuyLink = styled(RouterLink)`
+  display: inline-block;
+  margin: -16px 0 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ui-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `
 
 /** Карточка суммы — как карточка статистики у Nuxt UI (и в эксплорере). */

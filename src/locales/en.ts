@@ -925,6 +925,40 @@ export default {
     growVideo:
       'Video length does not matter: ads are not inserted into the video, activity under the post is what counts.',
   },
+  walletBuy: {
+    calcTitle: 'How much in dollars',
+    calcPkoin: 'Amount in PKOIN',
+    calcUsd: 'Amount in dollars',
+    calcNote: 'At the exchange rate from CoinGecko. Sellers set their own rates.',
+    addressTitle: 'Your receiving address',
+    addressHint:
+      'Enter it as the withdrawal address on an exchange or send it to the seller. A Bastyon address starts with a Latin P: coins sent to an address of another network will not arrive.',
+    copy: 'Copy',
+    copied: 'Copied',
+    qrAlt: 'QR code of your address',
+    exchangesTitle: 'Exchanges',
+    exchangesText:
+      'To buy: open an account on an exchange, buy PKOIN for USDT and withdraw it to your address. To sell: send PKOIN to the exchange’s deposit address and sell it there.',
+    open: 'Open',
+    exchangesThin:
+      'Trading volume on the exchanges is small: buy a large amount in parts or from sellers.',
+    exchangesListNote: 'The list of exchanges changes — see the current one on CoinGecko',
+    p2pTitle: 'From sellers',
+    p2pExchangeText:
+      'Sellers state their price, currencies, payment methods and limits. The order and the deal happen in the mini-app.',
+    p2pCommerceText:
+      'Offers to buy and sell PKOIN are posts with this tag. You can publish your own too.',
+    riskTitle: 'The network does not guarantee person-to-person deals',
+    riskText:
+      'Look at the seller’s reputation and account age, and do not pay strangers in advance. When selling, check that the money has arrived at your bank, not a picture of a receipt. PKOIN transfers cannot be reversed.',
+    toolsTitle: 'Useful links',
+    toolSend: 'Send PKOIN',
+    toolHistory: 'Transfer history',
+    toolExplorer: 'My address in the blockchain explorer',
+    toolEarnings: 'Earnings',
+    toolLimits: 'Account status and limits',
+    toolHelp: 'How to get PKOIN',
+  },
   wallet: {
     errorForeignNetworkAddress:
       'This address belongs to another network. A Bastyon address starts with "P".',
@@ -937,7 +971,7 @@ export default {
     tabHistory: 'History',
     tabEarnings: 'Earnings',
     tabBuySell: 'Buy/Sell',
-    howToBuyLink: 'How to get PKOIN →',
+    buySellLink: 'Buy or sell PKOIN →',
     renameWallet: 'Rename wallet',
     walletLabelPlaceholder: 'Wallet label (optional)',
     renameSave: 'Save',
