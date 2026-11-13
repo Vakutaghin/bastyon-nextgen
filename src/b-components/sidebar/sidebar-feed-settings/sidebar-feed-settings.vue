@@ -2,7 +2,7 @@
   <SC_FeedSettings>
     <SC_TopFirstWrapper>
       <SC_TopFirstLabel>{{ t('sidebar.topFirst') }}</SC_TopFirstLabel>
-      <ASwitch
+      <Switch
         :aria-label="t('sidebar.topFirst')"
         :checked="filtersStore.topFirst"
         size="small"
@@ -12,7 +12,7 @@
     <!-- «Новые посты сразу» — в ленте по дате; у «Сначала лучшее» наверху не новое. -->
     <SC_TopFirstWrapper :title="t('sidebar.liveFeedHint')">
       <SC_FeedLanguageLabel :for="liveFeedId">{{ t('sidebar.liveFeed') }}</SC_FeedLanguageLabel>
-      <ASwitch
+      <Switch
         :id="liveFeedId"
         :checked="filtersStore.liveFeed"
         :disabled="filtersStore.topFirst"
@@ -82,7 +82,7 @@
 
 import { computed, nextTick, onMounted, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Switch as ASwitch } from 'ant-design-vue'
+import Switch from '@/components/switch'
 import Select, { type SelectOption } from '@/components/select'
 import { LOCALE_NAMES, SUPPORTED_LOCALES, type Locale } from '@/i18n'
 import { formatTopReputation } from '@/pages/top-accounts-page/top-format'

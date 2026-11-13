@@ -129,8 +129,7 @@
 
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Switch } from 'ant-design-vue'
-
+import Switch from '@/components/switch'
 import Avatar from '@/components/avatar/avatar.vue'
 import { CloseOutlined } from '@/components/icons'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'

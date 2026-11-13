@@ -190,13 +190,6 @@ export function buildAntdTheme(isDark: boolean): ThemeConfig {
         borderRadiusLG: 6,
         fontSizeLG: 14,
       },
-      // 36×20 с бегунком 16, выключенный — bg-accented.
-      Switch: {
-        fontSize: 14,
-        lineHeight: 20 / 14,
-        colorTextQuaternary: c.bgAccented,
-        colorTextTertiary: c.borderAccented,
-      },
     },
   }
 }

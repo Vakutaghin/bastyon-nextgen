@@ -197,7 +197,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Checkbox, Input, Modal } from 'ant-design-vue'
+import { Input, Modal } from 'ant-design-vue'
+import Checkbox from '@/components/checkbox'
 import Progress from '@/components/progress'
 import { bcp47 } from '@/i18n'
 import { CaretDownOutlined, SettingOutlined, UploadOutlined } from '@/components/icons'

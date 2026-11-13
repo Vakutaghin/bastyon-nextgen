@@ -69,7 +69,7 @@
           <SC_TorBridgeTitle>{{ t('header.torBridges') }}</SC_TorBridgeTitle>
           <RadioGroup
             :value="localKind"
-            @change="(e: RadioChangeEvent) => onSelectKind(e.target.value as TorBridgeKind)"
+            @change="(value: RadioValue) => onSelectKind(value as TorBridgeKind)"
           >
             <SC_TorRadioColumn>
               <Radio value="auto">{{ t('header.torBridgesAuto') }}</Radio>
@@ -121,9 +121,11 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Switch, Radio, Modal, Segmented } from 'ant-design-vue'
+import { Dropdown, Modal } from 'ant-design-vue'
+import Radio, { RadioGroup, type RadioValue } from '@/components/radio'
+import Segmented from '@/components/segmented'
+import Switch from '@/components/switch'
 import Button from '@/components/button'
-import type { RadioChangeEvent } from 'ant-design-vue'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import { fixedPopupLayer } from '@/components/popup-container'
 import {
@@ -161,8 +163,6 @@ import {
 } from './styled'
 import HelpLink from '@/b-components/help/help-link.vue'
 import { vKeyActivate } from '@/helpers/a11y/key-activate'
-
-const RadioGroup = Radio.Group
 
 const TOR_CONSENT_KEY = 'tor:seen-consent:v2'
 
@@ -333,7 +333,7 @@ async function onTriggerClick(): Promise<void> {
 }
 
 async function onToggleSwitch(...args: unknown[]): Promise<void> {
-  // ASwitch passes (checked, event); other elements may pass an Event.
+  // Switch passes (checked, event); other elements may pass an Event.
   // Stop propagation defensively when an Event is supplied — parent SC_TorMenu
   // also has @click.stop so this is belt-and-braces.
   for (const a of args) {

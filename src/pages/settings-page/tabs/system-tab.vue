@@ -172,8 +172,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Switch, message } from 'ant-design-vue'
-
+import { Modal, message } from 'ant-design-vue'
+import Switch from '@/components/switch'
 import { cacheAPI } from '@/db/apis/cache-api'
 import { clearAllDecrypted } from '@/db/apis/decrypted-messages-api'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'

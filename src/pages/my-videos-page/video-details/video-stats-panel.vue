@@ -99,7 +99,7 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Segmented } from 'ant-design-vue'
+import Segmented from '@/components/segmented'
 import Spin from '@/components/spin'
 import Button from '@/components/button'
 import { formatDuration } from '@/b-components/video-uploader/utils/video-formatter'

@@ -53,7 +53,7 @@
 
 import { nextTick, onBeforeUnmount, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Switch } from 'ant-design-vue'
+import Switch from '@/components/switch'
 import { DragHandleIcon } from '@/components/icons'
 import type { LayoutEntry } from '@/stores/header-layout'
 import type { LayoutItemMeta } from '@/b-components/header/header-layout/layout-items'

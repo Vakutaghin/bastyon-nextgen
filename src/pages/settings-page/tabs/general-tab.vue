@@ -178,7 +178,7 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { Switch } from 'ant-design-vue'
+import Switch from '@/components/switch'
 import { useUIStore, type AppLanguage } from '@/stores/ui-store'
 import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@/i18n'
 import { useAppPreferencesStore, type AppPreferencesState } from '@/stores/app-preferences-store'

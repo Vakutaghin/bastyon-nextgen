@@ -50,7 +50,7 @@ export const UI = {
   datePickerDisabled: '.ant-picker-disabled',
 
   /** Сам input флажка (Checkbox). */
-  checkboxInput: '.ant-checkbox-input',
+  checkboxInput: '.ui-checkbox__input',
   /** Крестик очистки поля ввода. */
   inputClear: '.ant-input-clear-icon',
 

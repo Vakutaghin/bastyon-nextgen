@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { Switch } from 'ant-design-vue'
+import Switch from '@/components/switch'
 import { useI18n } from 'vue-i18n'
 import { useNotificationSettingsStore } from '@/stores'
 import {

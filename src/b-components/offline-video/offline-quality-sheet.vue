@@ -35,7 +35,8 @@
 
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Checkbox, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Checkbox from '@/components/checkbox'
 import { formatBytes } from '@/services/offline-video/format-bytes'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import { OFFLINE_SPARE_BYTES, useOfflineDownload } from './use-offline-download'

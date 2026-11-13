@@ -159,8 +159,8 @@
 
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Switch, message } from 'ant-design-vue'
-
+import { Modal, message } from 'ant-design-vue'
+import Switch from '@/components/switch'
 import { useAuthStore } from '@/blockchain'
 import Avatar from '@/components/avatar/avatar.vue'
 import { DeleteOutlined } from '@/components/icons'

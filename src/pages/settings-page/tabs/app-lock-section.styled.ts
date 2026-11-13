@@ -25,17 +25,18 @@ export const SC_SetupBody = styled.div`
   gap: 14px;
   padding-top: 4px;
 
-  & > .ant-segmented {
+  & > .ui-segmented {
     align-self: stretch;
   }
 
-  & > .ant-segmented + .ant-segmented {
+  & > .ui-segmented + .ui-segmented {
     align-self: center;
   }
 
   /* Узкий телефон: «Графический ключ» целиком, без многоточия. */
   @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
-    .ant-segmented-item-label {
+    /* Двойной класс: стили самого Segmented вставляются позже, с той же специфичностью. */
+    .ui-segmented .ui-segmented__label {
       padding-inline: 4px;
     }
   }
