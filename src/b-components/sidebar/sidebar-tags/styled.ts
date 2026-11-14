@@ -136,8 +136,8 @@ export const SC_TagsItem = styled('button', selectedProps)`
 
       /* Счётчик — по классу части, а не подстановкой компонента SC_TagsCount:
          vue3-styled-components не умеет компонент как селектор и вписывает в
-         CSS его исходный код, а такой мусор ломает разбор всего общего \3c style>
-         (с выбранным тегом пропадала вёрстка шапки). */
+         CSS его исходный код, а такой мусор ломает разбор всего общего тега
+         style (с выбранным тегом пропадала вёрстка шапки). */
       .ui-tags__count {
         background: var(--color-overlay-15);
         color: var(--ui-text-inverted);
