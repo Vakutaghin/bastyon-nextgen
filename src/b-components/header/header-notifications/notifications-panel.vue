@@ -181,11 +181,7 @@
         </SC_NotificationItemBody>
 
         <SC_NotificationItemActions @click.stop>
-          <Dropdown
-            trigger="click"
-            placement="bottomRight"
-            :get-popup-container="getPopupContainerInner"
-          >
+          <Dropdown trigger="click" placement="bottomRight">
             <SC_NotificationItemTrigger type="button" :aria-label="t('header.more')">
               <EllipsisOutlined />
             </SC_NotificationItemTrigger>
@@ -207,7 +203,8 @@
 import { computed, reactive, ref, watch, type Component } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Menu } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
+import Menu from '@/components/menu'
 import {
   CloseOutlined,
   EllipsisOutlined,
@@ -626,21 +623,5 @@ function onItemMenuClick({ key }: { key: string | number }): void {
 /** «Убрать все» — то, что сейчас в списке: при фильтре — только комментарии. */
 function onClearAll(): void {
   notificationsStore.hideAllNotifications(source.value.map((n) => n.id))
-}
-
-function safeDocument(): Document | undefined {
-  if (typeof document !== 'undefined') return document
-  if (typeof window !== 'undefined') {
-    return (window as Window & { document?: Document }).document
-  }
-  return undefined
-}
-
-function getPopupContainerInner(
-  trigger: HTMLElement | undefined
-): Element | HTMLElement | undefined {
-  const node = trigger?.closest?.('.ant-dropdown')
-  if (node) return node
-  return safeDocument()?.body
 }
 </script>

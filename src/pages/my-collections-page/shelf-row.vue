@@ -52,7 +52,9 @@
 
 import { computed, h, ref, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Menu, type MenuProps } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
+import Menu from '@/components/menu'
+import type { MenuItem } from '@/components/menu'
 import {
   AudioPlaylistIcon,
   CollectionIcon,
@@ -139,7 +141,7 @@ watch(menuOpen, (open) => {
 
 const icon = (c: Component) => () => h(c)
 
-type MenuItems = NonNullable<MenuProps['items']>
+type MenuItems = MenuItem[]
 
 const items = computed<MenuItems>(() => {
   const { row } = props

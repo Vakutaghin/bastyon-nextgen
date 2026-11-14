@@ -978,7 +978,7 @@ main[tabindex='-1']:focus {
   .ant-btn,
   .ant-tabs-nav,
   .ant-menu,
-  .ant-dropdown-menu,
+  .ui-menu,
   .ant-select-selector,
   .ant-select-item,
   .ant-pagination,
@@ -1166,7 +1166,7 @@ body .ant-modal .ant-modal-footer {
 }
 
 body
-  :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown):is(
+  :is(.ant-select-dropdown, .ant-picker-dropdown):is(
     .ant-slide-up-enter,
     .ant-slide-up-appear,
     .ant-slide-up-leave,
@@ -1179,7 +1179,7 @@ body
 }
 
 body
-  :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown):is(
+  :is(.ant-select-dropdown, .ant-picker-dropdown):is(
     .ant-slide-up-enter.ant-slide-up-enter-active,
     .ant-slide-up-appear.ant-slide-up-appear-active,
     .ant-slide-down-enter.ant-slide-down-enter-active,
@@ -1189,7 +1189,7 @@ body
 }
 
 body
-  :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown):is(
+  :is(.ant-select-dropdown, .ant-picker-dropdown):is(
     .ant-slide-up-leave.ant-slide-up-leave-active,
     .ant-slide-down-leave.ant-slide-down-leave-active
   )[class*='-placement-'] {
@@ -1197,11 +1197,11 @@ body
 }
 
 /* Выпадашка растёт от края, у которого кнопка. */
-body :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown)[class*='-placement-bottom'] {
+body :is(.ant-select-dropdown, .ant-picker-dropdown)[class*='-placement-bottom'] {
   transform-origin: top;
 }
 
-body :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown)[class*='-placement-top'] {
+body :is(.ant-select-dropdown, .ant-picker-dropdown)[class*='-placement-top'] {
   transform-origin: bottom;
 }
 
@@ -1211,7 +1211,7 @@ body :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown)[class*='-pla
    список всю анимацию стоял в стороне и потом прыгал на место. Без transform
    замер точный, а видно выпадашку в этой фазе и так нет. */
 body
-  :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown):is(
+  :is(.ant-select-dropdown, .ant-picker-dropdown):is(
     .ant-slide-up-enter-prepare,
     .ant-slide-down-enter-prepare
   ) {
@@ -1398,25 +1398,10 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   bottom: calc(var(--safe-bottom) + 8px);
 }
 
-/* Оверлей меню профиля (header-user) — поднимаем над хедером (z 1000) и триггером
-   (z 3000). Раньше z-index навешивался хаком через класс скрытого helper-div'а,
-   но тот класс тащил ещё и visibility:hidden/pointer-events:none → меню монтировалось
-   невидимым («не открывается»). Теперь — статический класс только с z-index. */
-.header-user-dropdown {
-  z-index: 3005 !important;
-}
-
-/* Меню закреплено вместе с шапкой (fixedPopupLayer): прокрутить к низу страницей
-   его уже нельзя — на низком экране (телефон боком) прокручивается само. */
-.header-user-dropdown .ant-dropdown-menu {
-  max-height: calc(100dvh - 72px);
-  overflow-y: auto;
-}
-
-/* Значки пунктов — 16px, как в боковом меню телефона: у antd они 12px при
-   тексте 14px и терялись рядом с подписью. Селектор длиннее, чем у antd
-   (.ant-dropdown .ant-dropdown-menu .ant-dropdown-menu-item-icon). */
-.header-user-dropdown .ant-dropdown-menu .ant-dropdown-menu-item .ant-dropdown-menu-item-icon {
+/* Значки пунктов меню аккаунта — 16px, как в боковом меню телефона: обычные
+   12px при тексте 14px терялись рядом с подписью. Селектор длиннее, чем у
+   самого меню (components/menu): его стили вставляются позже. */
+.header-user-dropdown .ui-menu .ui-menu__icon {
   font-size: 16px;
   min-width: 16px;
 }
@@ -1433,11 +1418,6 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
 .star-rating .star-fill svg {
   color: var(--color-warning) !important;
   fill: var(--color-warning) !important;
-}
-
-/* Notifications dropdown z-index */
-.header-notifications-dropdown {
-  z-index: 3000 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

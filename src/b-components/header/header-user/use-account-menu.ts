@@ -5,21 +5,13 @@
  *
  * См. CODE_AUDIT.md §1.
  */
-import {
-  computed,
-  h,
-  ref,
-  watch,
-  type Component,
-  type ComputedRef,
-  type Ref,
-  type VNode,
-} from 'vue'
+import { computed, h, ref, watch, type Component, type ComputedRef, type Ref } from 'vue'
 import type { Router } from 'vue-router'
 import type { useAuthStore } from '@/blockchain'
 import type { useModalStore } from '@/stores/modal-store'
 import { t } from '@/i18n'
 import { LockOutlined, LogoutOutlined, SwapOutlined, UserAddOutlined } from '@/components/icons'
+import type { MenuItem } from '@/components/menu'
 import type { MenuItemId } from '@/stores/header-layout'
 import {
   MENU_ITEMS,
@@ -34,9 +26,7 @@ export interface AccountMenu {
   signInModalOpen: Ref<boolean>
   accountSwitcherOpen: Ref<boolean>
   confirmSignOutOpen: Ref<boolean>
-  menuItems: ComputedRef<
-    Array<{ key?: string; label?: string; type?: string; danger?: boolean; icon?: () => VNode }>
-  >
+  menuItems: ComputedRef<MenuItem[]>
   openSignInModal: () => void
   handleSignInSuccess: () => void
   handleSignInCancel: () => void
@@ -100,7 +90,7 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
 
   // Середина — из раскладки; «Завершить регистрацию» сверху и «Заблокировать»
   // / «Сменить аккаунт» / «Выйти» снизу не настраиваются.
-  const menuItems = computed(() => [
+  const menuItems = computed<MenuItem[]>(() => [
     ...(registrationUnfinished.value
       ? [
           {
@@ -108,7 +98,7 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
             label: t('accountMsg.menuFinishRegistration'),
             icon: iconOf(UserAddOutlined),
           },
-          { type: 'divider' },
+          { type: 'divider' as const },
         ]
       : []),
     ...items.value.map((id) => ({
@@ -116,7 +106,7 @@ export function useAccountMenu(opts: AccountMenuOptions): AccountMenu {
       label: t(MENU_ITEMS[id].labelKey!),
       icon: iconOf(MENU_ITEMS[id].icon),
     })),
-    { type: 'divider' },
+    { type: 'divider' as const },
     ...(lockEnabled.value
       ? [{ key: 'lockApp', label: t('appLock.menuLock'), icon: iconOf(LockOutlined) }]
       : []),

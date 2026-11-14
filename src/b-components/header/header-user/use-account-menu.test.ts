@@ -133,7 +133,8 @@ describe('useAccountMenu', () => {
     for (const item of items) expect(item.icon, item.key).toBeTypeOf('function')
 
     const wallets = items.find((i) => i.key === '/wallets')
-    expect(wallets?.icon?.().type).toBe(MENU_ITEMS.wallets.icon)
+    const icon = wallets?.icon
+    expect(typeof icon === 'function' ? icon().type : undefined).toBe(MENU_ITEMS.wallets.icon)
   })
 
   it('ссылка на профиль — по имени в нижнем регистре, иначе по адресу, иначе на главную', () => {

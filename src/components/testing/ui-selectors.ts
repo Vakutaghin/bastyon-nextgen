@@ -24,13 +24,13 @@ export const UI = {
   primaryButton: '.ant-btn-primary',
 
   /** Элемент, открывающий выпадающее меню. */
-  dropdownTrigger: '.ant-dropdown-trigger',
+  dropdownTrigger: '.ui-dropdown-trigger',
   /** Пункт выпадающего меню. */
-  menuItem: '.ant-dropdown-menu-item',
+  menuItem: '.ui-menu__item',
   /** Подпись пункта меню. */
-  menuItemLabel: '.ant-dropdown-menu-title-content',
+  menuItemLabel: '.ui-menu__label',
   /** Иконка пункта меню. */
-  menuItemIcon: '.ant-dropdown-menu-item-icon',
+  menuItemIcon: '.ui-menu__icon',
 
   /** Всплывающая панель (popover). */
   popover: '.ui-popover',

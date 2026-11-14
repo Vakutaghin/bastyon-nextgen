@@ -36,22 +36,42 @@
         <Button size="small" data-testid="dev-popconfirm">Popconfirm ({{ confirmed }})</Button>
       </Popconfirm>
     </SC_DevUiRow>
+    <SC_DevUiRow>
+      <SC_DevUiRowLabel>Dropdown</SC_DevUiRowLabel>
+      <Dropdown placement="bottomLeft">
+        <Button size="small" data-testid="dev-dropdown">меню: {{ picked }}</Button>
+        <template #overlay>
+          <Menu :items="MENU" @click="({ key }) => (picked = key)" />
+        </template>
+      </Dropdown>
+    </SC_DevUiRow>
   </DevUiSection>
 </template>
 
 <script setup lang="ts">
 // Плавающие панели: подсказка по наведению и фокусу, справка по нажатию,
 // панель у кнопки, подтверждение.
-import { ref } from 'vue'
+import { h, ref } from 'vue'
 import Button from '@/components/button'
+import Dropdown from '@/components/dropdown'
+import Menu, { type MenuItem } from '@/components/menu'
 import Popconfirm from '@/components/popconfirm'
 import Popover from '@/components/popover'
 import Tooltip from '@/components/tooltip'
-import { InfoCircleOutlined } from '@/components/icons'
+import { DeleteOutlined, EditOutlined, InfoCircleOutlined, LockOutlined } from '@/components/icons'
 import DevUiSection from '../dev-ui-section.vue'
 import { SC_DevUiRow, SC_DevUiRowLabel } from '../dev-ui-page.styled'
 
 const confirmed = ref(0)
+const picked = ref('—')
+
+const MENU: MenuItem[] = [
+  { key: 'edit', label: 'Изменить', icon: () => h(EditOutlined) },
+  { key: 'left', label: 'Осталось правок: 3 из 5', disabled: true },
+  { key: 'private', label: 'Сделать личной', icon: () => h(LockOutlined) },
+  { type: 'divider' },
+  { key: 'delete', label: 'Удалить', icon: () => h(DeleteOutlined), danger: true },
+]
 
 const SIDES = ['top', 'bottom', 'left', 'right'] as const
 

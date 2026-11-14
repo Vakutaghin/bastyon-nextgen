@@ -1,11 +1,5 @@
 <template>
-  <Dropdown
-    v-model:open="visible"
-    :trigger="['click']"
-    placement="bottomRight"
-    :overlay-style="{ zIndex: 3000 }"
-    :get-popup-container="() => fixedPopupLayer(3000)"
-  >
+  <Dropdown v-model:open="visible" :trigger="['click']" placement="bottomRight">
     <SC_IpfsWrapper
       v-key-activate="{ popup: true }"
       :variant="variant"
@@ -68,10 +62,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
 import Button from '@/components/button'
 import { GlobalOutlined, LoadingOutlined, WarningFilled } from '@/components/icons'
-import { fixedPopupLayer } from '@/components/popup-container'
 import { useIpfsStore } from '@/stores/ipfs-store'
 import IpfsBrowserDialog from './ipfs-browser-dialog.vue'
 import {

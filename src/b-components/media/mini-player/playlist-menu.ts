@@ -3,7 +3,7 @@
 // от кнопок управления, чтобы не закрыть очередь случайно.
 
 import { h, type Component } from 'vue'
-import type { MenuProps } from 'ant-design-vue'
+import type { MenuItem } from '@/components/menu'
 import { AudioPlaylistIcon } from '@/components/icons'
 
 export function playlistMenuItems(options: {
@@ -11,8 +11,8 @@ export function playlistMenuItems(options: {
   openLabel: string | null
   closeLabel: string
   closeIcon: Component
-}): NonNullable<MenuProps['items']> {
-  const items: NonNullable<MenuProps['items']> = []
+}): MenuItem[] {
+  const items: MenuItem[] = []
   if (options.openLabel)
     items.push({ key: 'open', label: options.openLabel, icon: () => h(AudioPlaylistIcon) })
   items.push({

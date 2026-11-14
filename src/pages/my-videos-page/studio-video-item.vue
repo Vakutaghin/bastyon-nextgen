@@ -81,7 +81,8 @@
 <script setup lang="ts">
 import { computed, h } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Menu } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
+import Menu from '@/components/menu'
 import Button from '@/components/button'
 import {
   DeleteOutlined,
@@ -249,7 +250,7 @@ function onMenu({ key }: { key: string | number }): void {
 function onItemClick(event: MouseEvent): void {
   if (props.layout !== 'list') return
   const target = event.target as HTMLElement | null
-  if (target?.closest('button, a, .ant-dropdown, .ant-dropdown-trigger')) return
+  if (target?.closest('button, a, .ui-dropdown-trigger')) return
   emit('details', 'details')
 }
 </script>

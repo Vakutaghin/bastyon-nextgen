@@ -62,10 +62,10 @@ function tap(target: Element, pointerType: 'mouse' | 'touch' = 'touch'): { click
   return { clicked }
 }
 
-describe('installPopupClickShield', () => {
-  it('меню открыто: нажатие мимо закрывает его и не доходит до кнопки под ним', () => {
-    mounted('ant-dropdown-trigger ant-dropdown-open')
-    popup('ant-dropdown')
+describe('installPopupClickShield: списки antd', () => {
+  it('список открыт: нажатие мимо закрывает его и не доходит до кнопки под ним', () => {
+    mounted('ant-select ant-select-open')
+    popup('ant-select-dropdown')
     const below = mounted()
     const pressed = vi.fn()
     below.addEventListener('pointerdown', pressed)
@@ -74,15 +74,15 @@ describe('installPopupClickShield', () => {
 
     expect(tap(below).clicked).toBe(false)
     expect(pressed).not.toHaveBeenCalled()
-    // Меню закрывает свой mousedown на document — им antd и закрывает меню.
+    // Список закрывает свой mousedown на document — им antd и закрывает его.
     expect(closer).toHaveBeenCalledTimes(1)
     expect(closer.mock.calls[0]![0].target).toBe(document)
     document.removeEventListener('mousedown', closer)
   })
 
-  it('внутри меню и на его кнопке нажатия работают', () => {
-    const trigger = mounted('ant-dropdown-trigger ant-dropdown-open')
-    const overlay = popup('ant-dropdown')
+  it('внутри списка и на его поле нажатия работают', () => {
+    const trigger = mounted('ant-select ant-select-open')
+    const overlay = popup('ant-select-dropdown')
     const item = document.createElement('li')
     overlay.append(item)
 
@@ -91,36 +91,23 @@ describe('installPopupClickShield', () => {
   })
 
   it('ничего не открыто — маски нет', () => {
-    mounted('ant-dropdown-trigger')
+    mounted('ant-select')
     expect(tap(mounted()).clicked).toBe(true)
   })
 
-  it('открытая панель и список поля тоже маскируют', () => {
-    const popover = mounted('ant-popover-open')
-    const panel = popup('ant-popover')
-    expect(tap(mounted()).clicked).toBe(false)
-    popover.remove()
-    panel.remove()
+  it('календарь тоже маскирует', () => {
     mounted('ant-select ant-select-open')
-    popup('ant-select-dropdown')
+    popup('ant-picker-dropdown')
     expect(tap(mounted()).clicked).toBe(false)
-  })
-
-  it('панель «по наведению»: мышью рядом жмётся, пальцем — маска', () => {
-    mounted('ant-popover-open').setAttribute('data-popup-hover', '')
-    popup('ant-popover')
-    const below = mounted()
-    expect(tap(below, 'mouse').clicked).toBe(true)
-    expect(tap(below, 'touch').clicked).toBe(false)
   })
 
   it('касание ушло в прокрутку — следующее нажатие без меню проходит', () => {
-    const trigger = mounted('ant-dropdown-open')
-    popup('ant-dropdown')
+    const trigger = mounted('ant-select ant-select-open')
+    popup('ant-select-dropdown')
     const below = mounted()
     below.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }))
     below.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerType: 'touch' }))
-    trigger.classList.remove('ant-dropdown-open')
+    trigger.classList.remove('ant-select-open')
     expect(tap(below).clicked).toBe(true)
   })
 
@@ -134,9 +121,9 @@ describe('installPopupClickShield', () => {
     expect(tap(below).clicked).toBe(true)
   })
 
-  it('меню не закрывается от нажатий мимо — гасятся только два, дальше проходят', () => {
-    mounted('ant-dropdown-open')
-    popup('ant-dropdown')
+  it('список не закрывается от нажатий мимо — гасятся только два, дальше проходят', () => {
+    mounted('ant-select ant-select-open')
+    popup('ant-select-dropdown')
     const below = mounted()
     noted.length = 0
     expect(tap(below).clicked).toBe(false)
@@ -144,7 +131,7 @@ describe('installPopupClickShield', () => {
     expect(tap(below).clicked).toBe(true)
     expect(tap(below).clicked).toBe(true)
     // Случай — в сведения для поддержки, один раз: чья кнопка залипла.
-    expect(noted).toEqual([{ ms: 0, kind: 'tap-shield', detail: 'ant-dropdown-open' }])
+    expect(noted).toEqual([{ ms: 0, kind: 'tap-shield', detail: 'ant-select ant-select-open' }])
   })
 })
 
@@ -210,6 +197,20 @@ describe('installPopupClickShield: свои панели из стека сло�
     const field = document.createElement('button')
     own.append(field)
     expect(tap(field).clicked).toBe(false)
+  })
+
+  it('нажатие во внешней панели закрывает вложенную, но само проходит', () => {
+    const outer = ownPopup('dropdown', { closes: false })
+    const inner = ownPopup('dropdown')
+    // Кнопка вложенного меню — в строке внешней панели.
+    outer.panel.append(inner.trigger)
+    const row = document.createElement('button')
+    outer.panel.append(row)
+    expect(tap(inner.trigger).clicked).toBe(true)
+    expect(inner.dismissed).toEqual([])
+    expect(tap(row).clicked).toBe(true)
+    expect(inner.dismissed).toEqual(['outside'])
+    expect(outer.dismissed).toEqual([])
   })
 
   it('панель «по наведению»: мышью рядом жмётся, пальцем — маска', () => {

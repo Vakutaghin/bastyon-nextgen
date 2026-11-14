@@ -21,8 +21,7 @@
     <Dropdown
       :trigger="['click']"
       placement="bottomRight"
-      overlay-class-name="header-user-dropdown"
-      :get-popup-container="() => fixedPopupLayer(3005)"
+      overlay-class="header-user-dropdown"
       @open-change="(open: boolean) => (menuOpen = open)"
     >
       <!-- Меню аккаунта с клавиатуры: Enter и пробел открывают, фокус — в меню. -->
@@ -122,10 +121,10 @@ import { computed, ref } from 'vue'
 import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Menu } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
+import Menu from '@/components/menu'
 import Button from '@/components/button/button.vue'
 import Avatar from '@/components/avatar/avatar.vue'
-import { fixedPopupLayer } from '@/components/popup-container'
 import Skeleton from '@/components/skeleton/skeleton.vue'
 import SignInModal from '@/b-components/header/sign-in-modal/sign-in-modal.vue'
 import RegisterModal from '@/b-components/header/register-modal/register-modal.vue'

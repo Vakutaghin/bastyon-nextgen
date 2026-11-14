@@ -12,7 +12,9 @@
 <script setup lang="ts">
 import { computed, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Menu, type MenuProps } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
+import Menu from '@/components/menu'
+import type { MenuItem } from '@/components/menu'
 import { CopyOutlined, SendOutlined, ShareAltOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { useShareToChat } from '@/composables/use-share-to-chat'
@@ -31,7 +33,7 @@ const open = ref(false)
 
 const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
-type MenuItems = NonNullable<MenuProps['items']>
+type MenuItems = MenuItem[]
 
 const items = computed<MenuItems>(() => [
   ...(canShareToChat.value

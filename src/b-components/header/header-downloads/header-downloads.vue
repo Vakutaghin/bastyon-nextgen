@@ -1,13 +1,7 @@
 <template>
   <!-- «Загрузки» в шапке: что качается сейчас и история скачанного. Значок
        остаётся, пока скачанное есть, — как история загрузок браузера. -->
-  <Dropdown
-    v-if="visible"
-    v-model:open="open"
-    :trigger="['click']"
-    placement="bottomRight"
-    :get-popup-container="popupContainer"
-  >
+  <Dropdown v-if="visible" v-model:open="open" :trigger="['click']" placement="bottomRight">
     <SC_DownloadsButton
       v-key-activate="{ popup: true }"
       role="button"
@@ -111,7 +105,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Dropdown } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
 import {
   DownloadOutlined,
   LoadingOutlined,
@@ -159,10 +153,6 @@ const auth = useAuthStore()
 const store = useOfflineVideosStore()
 const { saving, save } = useSaveOfflineFile()
 const open = ref(false)
-
-/** Шапка закреплена: панель — в ней, чтобы не уезжала с прокруткой страницы. */
-const popupContainer = (trigger: HTMLElement): HTMLElement =>
-  trigger.closest<HTMLElement>('header') ?? document.body
 
 const isActive = (item: OfflineItem): boolean =>
   item.state.status === 'downloading' || item.state.status === 'queued'

@@ -4,7 +4,6 @@
     v-model:open="visible"
     :trigger="['click']"
     placement="bottomRight"
-    :get-popup-container="(trigger) => trigger.closest('header') || document.body"
   >
     <SC_EventsWrapper
       v-key-activate="{ popup: true }"
@@ -141,7 +140,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Dropdown } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
 import Badge from '@/components/badge'
 import Button from '@/components/button'
 import {

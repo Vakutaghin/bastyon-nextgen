@@ -4,14 +4,11 @@
  * долетал до того, что под ним: на телефоне нажатие мимо меню аккаунта
  * открывало пост в ленте.
  *
- * Маска — не слой в DOM, а перехват на window в фазе захвата: открытое меню
- * видно по классу `-open` на его кнопке. Нажатие мимо меню и его кнопки
- * гасится целиком, до щелчка включительно, а меню закрываем сами: antd ждёт
- * mousedown на document, а погашенное нажатие до него уже не дойдёт.
- *
- * Свои кнопки и панели, которым нужно поведение «по наведению», помечаются
- * `data-popup-hover`: для мыши они не маскируют — такая панель закрывается
- * сама, когда курсор ушёл, а нажатие рядом должно сработать.
+ * Маска — не слой в DOM, а перехват на window в фазе захвата: открытый список
+ * antd (Select, календарь) виден по классу `-open` на его поле. Нажатие мимо
+ * списка и поля гасится целиком, до щелчка включительно, а список закрываем
+ * сами: antd ждёт mousedown на document, а погашенное нажатие до него уже не
+ * дойдёт.
  *
  * Маска — единая точка отказа: залипни класс `-open` без меню на экране, и
  * приложение глохнет целиком (листается, но ни одно нажатие не доходит).
@@ -20,9 +17,10 @@
  *
  * Свои панели (src/components/ui-core) маска берёт из стека слоёв: открытая
  * панель там есть, пока она на экране, а закрывается она просьбой
- * `dismiss('outside')`. Панель `hover` для мыши не маскирует — как
- * `data-popup-hover`. Нажатие в слое, открытом позже панели (подтверждение из
- * меню), — не мимо.
+ * `dismiss('outside')`. Панель `hover` для мыши не маскирует: она закрывается
+ * сама, когда курсор ушёл, а нажатие рядом должно сработать. Нажатие в слое,
+ * открытом позже панели (подтверждение из меню), — не мимо. Нажатие в панели
+ * закрывает вложенные в неё, открытые позже (меню пункта в списке уведомлений).
  */
 
 import { noteStall } from '@/helpers/diagnostics/main-thread-stalls'
@@ -34,14 +32,11 @@ import {
   type Layer,
 } from '@/components/ui-core/layer-stack'
 
-/** Кнопки открытых меню, всплывающих панелей и списков поля. */
-const OPEN_TRIGGER = '.ant-dropdown-open, .ant-popover-open, .ant-select-open'
-const OPEN_TRIGGER_FOR_MOUSE =
-  '.ant-dropdown-open, .ant-popover-open:not([data-popup-hover]), .ant-select-open'
+/** Поля antd с открытым списком. */
+const OPEN_TRIGGER = '.ant-select-open'
 
-/** Сами меню и панели: внутри нажатия работают как обычно. */
-const POPUP =
-  '.ant-dropdown, .ant-dropdown-menu-submenu-popup, .ant-popover, .ant-select-dropdown, .ant-picker-dropdown'
+/** Сами списки antd: внутри нажатия работают как обычно. */
+const POPUP = '.ant-select-dropdown, .ant-picker-dropdown'
 
 /** События одного нажатия: от касания до щелчка. */
 const GESTURE_EVENTS = [
@@ -96,6 +91,16 @@ function insidePopup(target: EventTarget | null): boolean {
   return popups.length > 0 && popups.every((popup) => layer.id > popup.id)
 }
 
+/** Нажатие в панели закрывает вложенные в неё панели, открытые позже. */
+function closeNested(target: EventTarget | null): void {
+  if (!(target instanceof Element)) return
+  const layer = layerContaining(target)
+  if (!layer || !isPopupLayer(layer)) return
+  for (const popup of popupLayers()) {
+    if (popup.id > layer.id && !popup.contains(target)) popup.dismiss('outside')
+  }
+}
+
 function closePopups(doc: Document): void {
   closing = true
   try {
@@ -109,16 +114,17 @@ function closePopups(doc: Document): void {
 function start(event: PointerEvent): void {
   stop()
   const doc = event.target instanceof Node ? (event.target.ownerDocument ?? document) : document
-  const open = doc.querySelector(
-    event.pointerType === 'mouse' ? OPEN_TRIGGER_FOR_MOUSE : OPEN_TRIGGER
-  )
+  const open = doc.querySelector(OPEN_TRIGGER)
   const antdOpen = !!open && popupVisible(doc)
   const own = ownPopups(event.pointerType)
   if (!antdOpen && own.length === 0) {
     unanswered = 0
     return
   }
-  if (insidePopup(event.target)) return
+  if (insidePopup(event.target)) {
+    closeNested(event.target)
+    return
+  }
   // Меню не закрывается от наших mousedown (ручное управление, сбой antd):
   // лучше лишний щелчок под меню, чем приложение, глухое к нажатиям.
   if (unanswered >= MAX_UNANSWERED) {

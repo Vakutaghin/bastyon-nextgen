@@ -5,12 +5,7 @@
     </SC_LogoLink>
 
     <!-- На телефоне язык — в «Настройках»: флаг встал бы между логотипом и меню. -->
-    <Dropdown
-      v-if="!compact"
-      :trigger="['click']"
-      placement="bottomLeft"
-      :get-popup-container="() => fixedPopupLayer(1050)"
-    >
+    <Dropdown v-if="!compact" :trigger="['click']" placement="bottomLeft">
       <!-- В шапке — только флаг: название языка видно в подсказке и в меню. -->
       <SC_LogoLang type="button" :title="languageHint" :aria-label="languageHint">
         <SC_LanguageFlag>{{ currentLanguageFlag }}</SC_LanguageFlag>
@@ -27,10 +22,10 @@
 import { computed, h } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Dropdown, Menu } from 'ant-design-vue'
-import type { MenuProps } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
+import Menu from '@/components/menu'
+import type { MenuItem } from '@/components/menu'
 import { CheckOutlined } from '@/components/icons'
-import { fixedPopupLayer } from '@/components/popup-container'
 import { logoData } from '@/b-components/header/dummy-data/logo-data'
 import { useLocale } from '@/composables/use-locale'
 import { useTheme } from '@/composables/use-theme'
@@ -66,7 +61,7 @@ const currentLanguageFlag = computed<string>(() => {
 
 const languageHint = computed<string>(() => `${t('language.label')}: ${currentLanguageName.value}`)
 
-const languageMenuItems = computed<MenuProps['items']>(() =>
+const languageMenuItems = computed<MenuItem[]>(() =>
   languageOptions.value.map((lang) => {
     const isSelected = lang.code === locale.value
     return {

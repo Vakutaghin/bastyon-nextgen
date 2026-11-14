@@ -7,9 +7,7 @@
       :open="visible && !sheet"
       :trigger="['click']"
       placement="bottomRight"
-      :get-popup-container="getPopupContainer"
-      overlay-class-name="header-notifications-dropdown"
-      :overlay-style="{ zIndex: 3000 }"
+      overlay-class="header-notifications-dropdown"
       @open-change="onOpenChange"
     >
       <SC_NotificationsWrapper
@@ -47,11 +45,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Dropdown } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
 import Badge from '@/components/badge'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
 import { BellOutlined } from '@/components/icons'
-import { fixedPopupLayer } from '@/components/popup-container'
 import Modal from '@/components/modal/modal.vue'
 import { useAuthStore, useNotificationsStore } from '@/stores'
 import { useViewport } from '@/composables/use-viewport'
@@ -106,22 +103,4 @@ function onOpenChange(open: boolean): void {
 watch(sheet, () => {
   if (visible.value) onOpenChange(false)
 })
-
-function safeDocument(): Document | undefined {
-  if (typeof document !== 'undefined') return document
-  if (typeof window !== 'undefined') {
-    return (window as Window & { document?: Document }).document
-  }
-  return undefined
-}
-
-/**
- * Контейнер для overlay: закреплённый слой на уровне 3000, чтобы выпадашка
- * была выше мессенджера и полноэкранного оверлея и не уезжала с прокруткой
- * страницы. В Tauri document может быть недоступен в момент вызова — отсюда
- * защита через `safeDocument()`.
- */
-function getPopupContainer(_trigger: HTMLElement | undefined): HTMLElement | undefined {
-  return safeDocument() ? fixedPopupLayer(3000) : undefined
-}
 </script>

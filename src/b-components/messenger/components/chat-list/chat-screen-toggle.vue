@@ -2,13 +2,7 @@
   <!-- Глаз в шапке мессенджера — меню скрытых фильтром входящих: не показывать
        их, показывать вместе со всеми или только их; окно «Скрытые чаты» и
        правила в настройках. Рядом — в скольких из них есть новое. -->
-  <Dropdown
-    v-if="visible"
-    v-model:open="menuOpen"
-    :trigger="['click']"
-    placement="bottomRight"
-    :get-popup-container="popupLayer"
-  >
+  <Dropdown v-if="visible" v-model:open="menuOpen" :trigger="['click']" placement="bottomRight">
     <SC_ScreenToggle
       type="button"
       data-testid="chat-screen-toggle"
@@ -66,7 +60,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Dropdown } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
 import {
   CheckOutlined,
   EyeOffIcon,
@@ -74,8 +68,6 @@ import {
   SettingOutlined,
   ListIcon,
 } from '@/components/icons'
-import { fixedPopupLayer } from '@/components/popup-container'
-import { Z_INDEX } from '@/styles/design-tokens'
 import {
   SCREEN_VIEWS,
   useMessengerScreenStore,
@@ -99,10 +91,6 @@ const menuOpen = ref(false)
 
 /** Глаз нужен, пока есть спрятанные — или пока список показывает их по-особому. */
 const visible = computed<boolean>(() => screen.hiddenIds.size > 0 || screen.view !== 'normal')
-
-// Панель — в закреплённом слое над полноэкранным мессенджером (2500): в body
-// она стояла бы под ним.
-const popupLayer = (): HTMLElement => fixedPopupLayer(Z_INDEX.POPOVER_OVER_MESSENGER)
 
 const title = computed<string>(() => {
   const n = screen.hiddenIds.size

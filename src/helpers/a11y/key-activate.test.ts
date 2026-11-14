@@ -1,5 +1,5 @@
 // Клавиатура для своих панелей из стека слоёв (src/components/ui-core): они
-// считаются открытыми меню наравне с меню antd. После открытия с клавиатуры
+// и есть открытые меню. После открытия с клавиатуры
 // фокус уходит в новую панель (не в ту, что была открыта до нажатия), а Esc в
 // панели просит её закрыться и возвращает фокус на кнопку.
 
@@ -34,10 +34,7 @@ function button(): HTMLButtonElement {
 
 describe('свои панели в key-activate', () => {
   it('lastOpenPopup — своя панель из стека, последняя открытая', () => {
-    const antd = document.createElement('div')
-    antd.className = 'ant-dropdown'
-    document.body.append(antd)
-    expect(lastOpenPopup()).toBe(antd)
+    expect(lastOpenPopup()).toBeNull()
     const own = panel(['a'])
     pushLayer({ kind: 'dropdown', el: () => own })
     expect(lastOpenPopup()).toBe(own)

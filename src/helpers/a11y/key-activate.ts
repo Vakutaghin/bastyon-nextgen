@@ -3,24 +3,24 @@
  *
  * - Enter и пробел на элементе (div с role=button у значков шапки и т. п.)
  *   нажимают его, как щелчок. Мышь и касание работают как раньше.
- * - `{ popup: true }` — элемент открывает выпадающее меню antd (Dropdown,
- *   Popover). У antd оно ложится в конец страницы, и Tab до него не доходит, а
- *   клавиш у его меню нет. После открытия с клавиатуры фокус уходит на первый
- *   пункт; стрелки вверх-вниз, Home и End ходят по пунктам, Enter и пробел
- *   нажимают пункт, Esc закрывает меню и возвращает фокус на кнопку.
+ * - `{ popup: true }` — элемент открывает выпадающую панель (Dropdown,
+ *   Popover). Панель лежит в конце страницы, и Tab до неё не доходит. После
+ *   открытия с клавиатуры фокус уходит на первый пункт; стрелки вверх-вниз,
+ *   Home и End ходят по пунктам, Enter и пробел нажимают пункт, Esc закрывает
+ *   панель и возвращает фокус на кнопку.
  *
  * Открытие мышью меню не трогает: фокус переносится, только если меню открыли
  * клавишей.
  *
- * Свои панели (src/components/ui-core) берутся из стека слоёв наравне с
- * меню antd; Esc в такой панели просит её закрыться (`dismiss`).
+ * Открытые панели берутся из стека слоёв (src/components/ui-core); Esc в
+ * панели просит её закрыться (`dismiss`).
  */
 
 import type { Directive } from 'vue'
 import { popupLayers } from '@/components/ui-core/layer-stack'
 
 export interface KeyActivateOptions {
-  /** Элемент открывает выпадающее меню antd: фокус — в него. */
+  /** Элемент открывает выпадающую панель: фокус — в неё. */
   popup?: boolean
 }
 
@@ -36,21 +36,18 @@ const ITEMS = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ')
 
-const OPEN_POPUPS = '.ant-dropdown:not(.ant-dropdown-hidden), .ant-popover:not(.ant-popover-hidden)'
-
 /**
- * Сколько ждать, пока antd покажет меню: при первом открытии оно монтируется
- * не сразу (в браузере — несколько сотен миллисекунд), поэтому опрос по времени.
+ * Сколько ждать, пока панель появится: она монтируется после нажатия, а
+ * floating-ui показывает её после расчёта положения, поэтому опрос по времени.
  */
 const POPUP_POLL_MS = 40
 const POPUP_WAIT_MS = 1500
 
-/** Открытые меню: antd в порядке документа, затем свои по стеку слоёв. */
+/** Открытые панели по стеку слоёв, снизу вверх. */
 function openPopups(doc: Document): HTMLElement[] {
-  const own = popupLayers()
+  return popupLayers()
     .map((layer) => layer.el())
     .filter((el): el is HTMLElement => !!el && el.ownerDocument === doc)
-  return [...doc.querySelectorAll<HTMLElement>(OPEN_POPUPS), ...own]
 }
 
 /** Открытое меню, последнее, — то, что открылось только что. */
@@ -76,8 +73,8 @@ const popupKeys = new WeakMap<HTMLElement, (e: KeyboardEvent) => void>()
 
 /**
  * Клавиши внутри меню: стрелки, Home/End, Enter/пробел на пункте, Esc.
- * `close` — как закрыть своё (не antd) меню; без него Esc повторно нажимает
- * кнопку, и меню antd закрывается само.
+ * `close` — как закрыть меню, которого нет в стеке слоёв; без него Esc просит
+ * закрыться слой панели.
  */
 export function attachPopupKeys(
   popup: HTMLElement,
@@ -100,7 +97,6 @@ export function attachPopupKeys(
       const layer = popupLayers().find((l) => l.el() === popup)
       if (close) close()
       else if (layer) layer.dismiss('escape')
-      else if (popup.matches(OPEN_POPUPS)) trigger.click()
       trigger.focus()
       return
     }
@@ -112,7 +108,7 @@ export function attachPopupKeys(
     } else if (e.key === 'Home') next = items[0]
     else if (e.key === 'End') next = items[items.length - 1]
     else if ((e.key === 'Enter' || e.key === ' ') && index >= 0) {
-      // У настоящей кнопки и ссылки Enter работает сам; пункт меню antd — <li>.
+      // У настоящей кнопки и ссылки Enter работает сам; пункт меню — <li>.
       if (target.matches('button, a[href], input, textarea, select')) return
       e.preventDefault()
       target.click()
@@ -157,7 +153,7 @@ export function focusIntoPopup(trigger: HTMLElement, waitMs = POPUP_WAIT_MS): vo
 }
 
 /**
- * Своё меню (не antd) открыли с клавиатуры: фокус на первый пункт и те же
+ * Меню вне стека слоёв открыли с клавиатуры: фокус на первый пункт и те же
  * клавиши. Вызывать после того, как меню появилось в DOM (nextTick).
  */
 export function focusMenu(menu: HTMLElement, trigger: HTMLElement, close: () => void): void {

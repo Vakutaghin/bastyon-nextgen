@@ -1,11 +1,5 @@
 <template>
-  <Dropdown
-    v-model:open="visible"
-    :trigger="['click']"
-    placement="bottomRight"
-    :overlay-style="{ zIndex: 3000 }"
-    :get-popup-container="() => fixedPopupLayer(3000)"
-  >
+  <Dropdown v-model:open="visible" :trigger="['click']" placement="bottomRight">
     <SC_TorWrapper
       v-key-activate="{ popup: true }"
       :variant="variant"
@@ -121,13 +115,13 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { Dropdown, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
 import Radio, { RadioGroup, type RadioValue } from '@/components/radio'
 import Segmented from '@/components/segmented'
 import Switch from '@/components/switch'
 import Button from '@/components/button'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'
-import { fixedPopupLayer } from '@/components/popup-container'
 import {
   SafetyOutlined,
   LoadingOutlined,

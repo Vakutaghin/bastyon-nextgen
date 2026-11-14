@@ -47,6 +47,19 @@ export function usePopup(
 
   const own = ref(false)
   const isOpen = computed<boolean>(() => p.open ?? own.value)
+  /**
+   * Что попросили у родителя, пока его `open` не обновился: закрыли пунктом
+   * меню и тут же нажали кнопку снова — второе нажатие должно открыть, а не
+   * закрыть по старому значению. Если родитель не согласился (у уведомлений на
+   * телефоне вместо панели — окно), на следующем тике снова решает его `open`.
+   */
+  let requested: boolean | null = null
+  const current = (): boolean => requested ?? isOpen.value
+  watch(
+    () => p.open,
+    () => (requested = null),
+    { flush: 'sync' }
+  )
   /** Открыта нажатием при `hover` — уход курсора её не закрывает. */
   let pinned = false
   let focusOnOpen = false
@@ -65,8 +78,12 @@ export function usePopup(
   function setOpen(value: boolean): void {
     clearTimer()
     if (!value) pinned = false
-    if (isOpen.value === value) return
+    if (current() === value) return
     own.value = value
+    if (p.open !== undefined) {
+      requested = value
+      void nextTick(() => (requested = null))
+    }
     emit('update:open', value)
     emit('openChange', value)
   }
@@ -79,7 +96,7 @@ export function usePopup(
   const triggerHandlers = {
     onClick(e: MouseEvent): void {
       if (!has('click')) return
-      if (isOpen.value) {
+      if (current()) {
         // Открыта наведением — нажатие закрепляет, второе закрывает.
         if (has('hover') && !pinned) pinned = true
         else setOpen(false)
@@ -91,7 +108,7 @@ export function usePopup(
     },
     onPointerenter(e: PointerEvent): void {
       if (e.pointerType !== 'mouse' || !has('hover')) return
-      if (isOpen.value) clearTimer()
+      if (current()) clearTimer()
       else later(() => setOpen(true), p.mouseEnterDelay ?? ENTER_DELAY)
     },
     onPointerleave(e: PointerEvent): void {

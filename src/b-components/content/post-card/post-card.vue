@@ -317,7 +317,7 @@ import {
   EyeOutlined,
   PushpinOutlined,
 } from '@/components/icons'
-import { Dropdown } from 'ant-design-vue'
+import Dropdown from '@/components/dropdown'
 import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
 import { useAuthStore } from '@/blockchain'
 import { useModalStore } from '@/stores/modal-store'
