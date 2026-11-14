@@ -5,7 +5,8 @@
 // только участники; шифр кусками (v2), так что размер не ограничен. Получатели
 // качают файл у этого компьютера или у тех, кто раздаёт его дальше.
 import { ref, type Ref } from 'vue'
-import { Modal, message } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 import { useAuthStore } from '@/blockchain'
 import { buildShareLink } from '@/helpers/ipfs/ipfs-viewer'
@@ -37,7 +38,7 @@ export function useIpfsSend(send: (text: string) => void): {
       return
     }
     sending.value = true
-    const hide = message.loading(t('messenger.ipfsPublishing'), 0)
+    const hide = appToast.loading(t('messenger.ipfsPublishing'))
     try {
       // По сообщению на файл: у каждого своя карточка и свой ключ.
       for (const file of picked) {

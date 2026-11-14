@@ -195,8 +195,8 @@ export function buildAntdTheme(isDark: boolean): ThemeConfig {
 }
 
 /**
- * Тема для Modal.confirm, notification и message: они рендерятся вне дерева
- * приложения и берут её из глобального конфига antd, а не из <ConfigProvider>.
+ * Тема для Modal.confirm: он рендерится вне дерева приложения и берёт её из
+ * глобального конфига antd, а не из <ConfigProvider>.
  *
  * `ConfigProvider.config` типизирован под тему antd 3 (`{ primaryColor }`), но
  * кладёт параметры целиком в globalConfigForApi, а modal/confirm.js отдаёт

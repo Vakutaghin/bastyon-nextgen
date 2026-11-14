@@ -20,8 +20,8 @@ vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => h.store }))
 vi.mock('@/blockchain', () => ({ useAuthStore: () => ({ address: 'PAlice' }) }))
 vi.mock('ant-design-vue', () => ({
   Modal: { confirm: h.confirm, error: h.error },
-  message: { loading: () => h.hide },
 }))
+vi.mock('@/b-components/app-toast', () => ({ appToast: { loading: () => h.hide } }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
 import { useIpfsSend } from './use-ipfs-send'

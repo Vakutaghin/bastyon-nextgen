@@ -107,7 +107,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal as AModal, message } from 'ant-design-vue'
+import { Modal as AModal } from 'ant-design-vue'
+import { appToast } from '@/b-components/app-toast'
 import Input from '@/components/input'
 import {
   CaretUpOutlined,
@@ -246,7 +247,7 @@ function addCategory(): void {
 
   if (existingCategory) {
     filtersStore.toggleCategorySelection(existingCategory.id)
-    message.info(t('sidebar.tagExistsSelected'))
+    appToast.info({ message: t('sidebar.tagExistsSelected') })
     closeModal()
     return
   }
@@ -268,7 +269,7 @@ function addCategory(): void {
   )
 
   if (isServerTag) {
-    message.info(t('sidebar.tagExistsSelected'))
+    appToast.info({ message: t('sidebar.tagExistsSelected') })
   }
 
   filtersStore.addCustomCategory(tagName)

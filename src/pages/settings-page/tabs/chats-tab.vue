@@ -159,7 +159,8 @@
 
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, message } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import { appToast } from '@/b-components/app-toast'
 import Switch from '@/components/switch'
 import { useAuthStore } from '@/blockchain'
 import Avatar from '@/components/avatar/avatar.vue'
@@ -307,7 +308,7 @@ function onDeleteChat(row: ChatRow): void {
     zIndex: Z_INDEX.CONFIRM,
     onOk: async () => {
       await archive.removeChat(row.id)
-      message.success(t('settings.chats.deleted'))
+      appToast.success({ message: t('settings.chats.deleted') })
     },
   })
 }
@@ -336,7 +337,7 @@ function onDeleteAll(): void {
         zIndex: Z_INDEX.CONFIRM,
         onOk: async () => {
           await archive.removeAll()
-          message.success(t('settings.chats.deletedAll'))
+          appToast.success({ message: t('settings.chats.deletedAll') })
         },
       })
     },

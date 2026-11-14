@@ -55,11 +55,11 @@ export const UI = {
   inputClear: '.ui-input__clear',
 
   /** Область тостов. */
-  toastHost: '.ant-notification',
+  toastHost: '.ui-toast-host',
   /** Один тост. */
-  toast: '.ant-notification-notice',
+  toast: '.ui-toast',
   /** Крестик тоста. */
-  toastClose: '.ant-notification-notice-close',
+  toastClose: '[data-testid="toast-close"]',
 
   /** Боковая шторка (Drawer). */
   drawer: '.ant-drawer-content',

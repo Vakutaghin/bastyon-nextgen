@@ -172,7 +172,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, message } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import { appToast } from '@/b-components/app-toast'
 import Switch from '@/components/switch'
 import { cacheAPI } from '@/db/apis/cache-api'
 import { clearAllDecrypted } from '@/db/apis/decrypted-messages-api'
@@ -240,7 +241,7 @@ async function saveWindowPrefs(change: Partial<DesktopPrefs>): Promise<void> {
       menuBarIcon: change.menuBarIcon ?? current.menuBarIcon,
     })
     if (saved) windowPrefs.value = saved
-    else message.error(t('settings.system.windowPrefsFailed'))
+    else appToast.error({ message: t('settings.system.windowPrefsFailed') })
   } finally {
     windowPrefsBusy.value = false
   }
@@ -286,8 +287,8 @@ const cacheRows = computed<CacheRowView[]>(() => {
 })
 
 async function onClearKind(kind: CacheKind): Promise<void> {
-  if (await storage.clear(kind)) message.success(t('settings.system.cacheCleared'))
-  else message.error(t('settings.system.cacheClearFailed'))
+  if (await storage.clear(kind)) appToast.success({ message: t('settings.system.cacheCleared') })
+  else appToast.error({ message: t('settings.system.cacheClearFailed') })
 }
 
 /** Выключили — стираем уже сохранённое: настройка про то, что лежит на диске. */
@@ -296,7 +297,7 @@ async function onStoreDecrypted(checked: SwitchValue): Promise<void> {
   await prefs.set('storeDecryptedMessages', store)
   if (!store) {
     await clearAllDecrypted()
-    message.success(t('settings.system.storeDecryptedErased'))
+    appToast.success({ message: t('settings.system.storeDecryptedErased') })
   }
 }
 
@@ -332,7 +333,7 @@ async function applyAutostart(checked: boolean): Promise<void> {
   try {
     const applied = await setAutostart(checked)
     if (!applied) {
-      message.error(t('settings.system.autostartFailed'))
+      appToast.error({ message: t('settings.system.autostartFailed') })
       return
     }
     await prefs.set('autostart', checked)
@@ -353,7 +354,7 @@ function onClearCache(): void {
       clearing.value = true
       try {
         const { removed } = await cacheAPI.clear()
-        message.success(t('settings.system.cleared', { count: removed }))
+        appToast.success({ message: t('settings.system.cleared', { count: removed }) })
       } finally {
         clearing.value = false
       }

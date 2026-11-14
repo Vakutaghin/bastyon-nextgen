@@ -24,6 +24,7 @@ import AppLockConfirmModal from '@/components/app-lock/app-lock-confirm-modal.vu
 import IpfsInstallModal from '@/components/ipfs/ipfs-install-modal.vue'
 import HelpPanel from '@/b-components/help/help-panel.vue'
 import { ImageGalleryHost } from '@/components/image-gallery'
+import ToastHost from '@/components/toast'
 import { useHelpHotkey } from '@/composables/use-help-hotkey'
 import { useHistoryHotkeys } from '@/composables/use-history-hotkeys'
 import { useIpfsLinks } from '@/composables/use-ipfs-links'
@@ -143,8 +144,8 @@ watch(
 const { isDark } = useTheme()
 const themeConfig = computed(() => buildAntdTheme(isDark.value))
 
-// Modal.confirm, notification и message рендерятся вне дерева приложения и
-// берут тему из глобального конфига, а не из <ConfigProvider>.
+// Modal.confirm рендерится вне дерева приложения и берёт тему из глобального
+// конфига, а не из <ConfigProvider>.
 watch(themeConfig, setStaticApiTheme, { immediate: true })
 
 // Подписи самого antd (кнопка Modal.info, пустой список) — на языке интерфейса.
@@ -216,5 +217,7 @@ watch(
       <AppLockConfirmModal />
       <AppLockScreen />
     </template>
+    <!-- Тосты appToast — и во встраиваемом виде: их зовут и там. -->
+    <ToastHost />
   </ConfigProvider>
 </template>

@@ -1,5 +1,4 @@
 [
-  "src/b-components/app-toast/index.ts",
   "src/b-components/app-update/update-modal.vue",
   "src/b-components/boost/boost-modal.vue",
   "src/b-components/chain-info/chain-info-modal.vue",

@@ -1113,21 +1113,6 @@ body .ant-modal .ant-modal-footer {
   padding: 16px 24px;
 }
 
-/* Тост: отступ 16, заголовок 14px/500, описание приглушённое — как у Nuxt. */
-body .ant-notification .ant-notification-notice {
-  padding: 16px;
-}
-
-body .ant-notification .ant-notification-notice .ant-notification-notice-message {
-  margin-bottom: 4px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-body .ant-notification .ant-notification-notice .ant-notification-notice-description {
-  color: var(--ui-text-muted);
-}
-
 /* Появление оверлеев antd — как у Nuxt UI: из 95% размера вместе с
    прозрачностью, кривая ease-out; выпадашки, списки Select, календарь, поповеры
    и тултипы — за 100 мс, модалки — за 200 мс. У antd выпадашки растягивались
@@ -1463,13 +1448,6 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
 
 /* Notifications dropdown z-index */
 .header-notifications-dropdown {
-  z-index: 3000 !important;
-}
-
-/* Тосты — выше модалок и их масок (N32, Z_INDEX.TOAST = 3000).
-   У ant контейнер уведомлений идёт с z-index 1050, а маски модалок — 2000+,
-   поэтому «Скопировано» из модалки с мнемоникой было не видно. */
-.ant-notification {
   z-index: 3000 !important;
 }
 

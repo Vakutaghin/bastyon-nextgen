@@ -1,37 +1,34 @@
-import { notification } from 'ant-design-vue'
 import { announce } from '@/helpers/a11y/announce'
 import { isPhoneLandscape, shellFor } from '@/composables/use-viewport'
+import { closeToast, DEFAULT_DURATION, showToast } from '@/components/toast/toast-store'
+import type { ToastPlacement } from '@/components/toast/types'
 
 /**
- * Универсальный компонент тостов (уведомлений)
- * Использует Ant Design Vue notification: на компьютере — внизу слева, на
- * телефоне — сверху, под шапкой (см. toastPlacement).
+ * Тосты приложения. Рисует их ToastHost (components/toast) в корне
+ * приложения: на компьютере — внизу слева, на телефоне — сверху, под шапкой
+ * (см. toastPlacement). Слой — над окнами и их масками (N32): «Скопировано» из
+ * окна с мнемоникой видно.
  */
-
-const DEFAULT_DURATION = 4.5
 
 /**
  * Где показывать тост. Внизу на телефоне он 4,5 с закрывал поле ввода чата
  * и кнопки снизу, поэтому в каркасе телефона (узкое окно и телефон боком) —
- * сверху, сразу под шапкой: кнопки шапки («Назад», меню) остаются доступны.
- * Решается на каждый тост — окно могли повернуть или сузить.
+ * сверху, сразу под шапкой (отступ — в стилях списка тостов): кнопки шапки
+ * («Назад», меню) остаются доступны. Решается на каждый тост — окно могли
+ * повернуть или сузить.
  */
-export function toastPlacement(): { placement: 'top' | 'bottomLeft'; top?: string } {
-  if (typeof window === 'undefined') return { placement: 'bottomLeft' }
+export function toastPlacement(): ToastPlacement {
+  if (typeof window === 'undefined') return 'bottomLeft'
   const shell = shellFor(window.innerWidth, isPhoneLandscape())
-  if (shell === 'desktop') return { placement: 'bottomLeft' }
-  // --header-height-total — шапка вместе с вырезом экрана сверху (style.css).
-  return { placement: 'top', top: 'calc(var(--header-height-total) + 8px)' }
+  return shell === 'desktop' ? 'bottomLeft' : 'top'
 }
-// Слой тостов (N32) задаётся глобально в `style.css` — `.ant-notification`
-// поднят до Z_INDEX.TOAST (3000). У ant по умолчанию 1050, а маски модалок
-// начинаются с 2000, поэтому «Скопировано» из модалки с мнемоникой было не
-// видно. Контейнер создаёт сама библиотека, задать слой из этого модуля нельзя.
 
 export interface T_ToastOptions {
   message: string
   description?: string
+  /** Секунды до закрытия, по умолчанию 4,5; 0 — пока не закроют. */
   duration?: number
+  /** Тост с тем же ключом обновляется на месте. */
   key?: string
   /** Клик по тосту (например, переход в настройки). */
   onClick?: () => void
@@ -39,28 +36,47 @@ export interface T_ToastOptions {
 
 type NotificationType = 'success' | 'error' | 'info' | 'warning'
 
-const createMethod = (type: NotificationType) => (options: T_ToastOptions) => {
-  // Тост antd диктор сам не читает (у него нет aria-live) — произносим его текст.
-  // Ошибка перебивает диктора, остальное ждёт паузы.
-  announce(
-    [options.message, options.description].filter(Boolean).join('. '),
-    type === 'error' ? 'assertive' : 'polite'
-  )
-  return notification[type]({
-    message: options.message,
-    description: options.description,
-    duration: options.duration || DEFAULT_DURATION,
-    ...toastPlacement(),
-    key: options.key,
-    onClick: options.onClick,
-  })
-}
+const createMethod =
+  (type: NotificationType) =>
+  (options: T_ToastOptions): void => {
+    // Тост диктор сам не читает (у хоста нет aria-live) — произносим его текст.
+    // Ошибка перебивает диктора, остальное ждёт паузы.
+    announce(
+      [options.message, options.description].filter(Boolean).join('. '),
+      type === 'error' ? 'assertive' : 'polite'
+    )
+    showToast({
+      type,
+      message: options.message,
+      description: options.description,
+      duration: options.duration ?? DEFAULT_DURATION,
+      key: options.key,
+      onClick: options.onClick,
+      placement: toastPlacement(),
+      closable: true,
+    })
+  }
 
 export const appToast = {
   success: createMethod('success'),
   error: createMethod('error'),
   info: createMethod('info'),
   warning: createMethod('warning'),
+  /**
+   * Тост «идёт работа» со значком загрузки: висит, пока его не закроют, и
+   * без крестика. Возвращает функцию, которая его закрывает.
+   */
+  loading(message: string): () => void {
+    announce(message, 'polite')
+    const key = showToast({
+      type: 'loading',
+      message,
+      duration: 0,
+      placement: toastPlacement(),
+      closable: false,
+    })
+    return () => closeToast(key)
+  },
   /** Убрать тост с этим `key` — например, по клику на него. */
-  close: (key: string) => notification.close(key),
+  close: (key: string) => closeToast(key),
 }

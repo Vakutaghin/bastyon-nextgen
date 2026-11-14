@@ -151,9 +151,13 @@ interface LayerImpl extends Layer {
 export function pushLayer(options: LayerOptions): Layer {
   installEscape()
   const active = document.activeElement
+  // Тост ни от чего не открыт: элемент в фокусе ему не кнопка, иначе нажатие
+  // по нему считалось бы нажатием «в тосте».
   const anchorAtOpen =
     options.anchor?.() ??
-    (active instanceof HTMLElement && active !== document.body ? active : null)
+    (options.kind !== 'toast' && active instanceof HTMLElement && active !== document.body
+      ? active
+      : null)
   const dismissable = !!options.onDismiss
   const closeOnEscape = options.closeOnEscape ?? dismissable
   const closeOnBack = options.closeOnBack ?? (dismissable && !FIXED_KINDS.has(options.kind))

@@ -93,6 +93,15 @@ describe('слой (z-index)', () => {
     expect(open({ kind: 'modal' }).layer.zIndex).toBe(2601)
   })
 
+  it('тост элемент в фокусе своей кнопкой не считает', () => {
+    const button = document.createElement('button')
+    document.body.append(button)
+    button.focus()
+    const toast = open({ kind: 'toast' }).layer
+    expect(toast.anchor()).toBeNull()
+    expect(layerContaining(button)).toBeUndefined()
+  })
+
   it('видимое окно antd (переходный период) — свой слой выше него', () => {
     const wrap = box()
     wrap.className = 'ant-modal-wrap'
