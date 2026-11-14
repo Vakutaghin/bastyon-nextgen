@@ -51,9 +51,8 @@
           :description="t('messenger.group.leaveConfirmText', { name: dialog.partner.name })"
           :ok-text="t('messenger.group.leave')"
           :cancel-text="t('messenger.cancel')"
-          :ok-button-props="{ danger: true }"
+          danger
           placement="bottom"
-          :overlay-style="CONFIRM_OVERLAY_STYLE"
           @confirm="leave"
         >
           <SC_ActionBtn type="button" class="danger" data-testid="group-leave">
@@ -117,7 +116,6 @@
               :ok-text="m.ignored ? t('messenger.unmuteUser') : t('messenger.muteUser')"
               :cancel-text="t('messenger.cancel')"
               placement="bottomRight"
-              :overlay-style="CONFIRM_OVERLAY_STYLE"
               @confirm="toggleIgnored(m.id)"
             >
               <SC_IconBtn
@@ -140,7 +138,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Popconfirm } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Popconfirm from '@/components/popconfirm'
 import Avatar from '@/components/avatar/avatar.vue'
 import {
   BellOffOutlined,
@@ -150,7 +149,6 @@ import {
   StopOutlined,
   UnlockOutlined,
 } from '@/components/icons'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { useMessengerStore } from '../../store'
 import { GROUP_ENCRYPTION_MEMBER_LIMIT } from '../../store/consts'
 import GroupAvatar from '../group-avatar/group-avatar.vue'
@@ -184,13 +182,6 @@ import HelpLink from '@/b-components/help/help-link.vue'
 
 /** Поиск по участникам — когда списком уже неудобно. */
 const SEARCH_FROM = 8
-
-// Подтверждения рендерятся в body, а окно группы стоит над полноэкранным
-// мессенджером (2700): без своего слоя поповер оказался бы под ним.
-const CONFIRM_OVERLAY_STYLE = {
-  zIndex: Z_INDEX.REACTION_PICKER,
-  width: 'min(300px, calc(100vw - 24px))',
-}
 
 const { t } = useI18n()
 const store = useMessengerStore()

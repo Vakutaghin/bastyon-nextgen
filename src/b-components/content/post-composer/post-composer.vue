@@ -218,7 +218,7 @@
         >
           <PollIcon />
         </SC_ToolButton>
-        <APopover v-model:open="emojiOpen" trigger="click" placement="topLeft">
+        <Popover v-model:open="emojiOpen" trigger="click" placement="topLeft">
           <template #content>
             <CommentEmojiPicker @select="insertEmoji" />
           </template>
@@ -231,7 +231,7 @@
           >
             <SmileOutlined />
           </SC_ToolButton>
-        </APopover>
+        </Popover>
         <!-- Голосовой ввод: речь на языке поста, текст — в позицию курсора. -->
         <VoiceInputButton
           :get-element="getTextareaEl"
@@ -297,7 +297,8 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Popover } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Popover from '@/components/popover'
 import {
   CaretDownOutlined,
   PictureOutlined,
@@ -554,7 +555,6 @@ const onEditImage = (payload: { id: string; base64: string }): void => {
 }
 
 // ── Эмодзи-пикер для тела поста ─────────────────────────────────────
-const APopover = Popover
 const textareaRef = ref<HTMLTextAreaElement | { $el?: HTMLTextAreaElement } | null>(null)
 const emojiOpen = ref(false)
 

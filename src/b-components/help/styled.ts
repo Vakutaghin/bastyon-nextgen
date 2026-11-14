@@ -314,9 +314,6 @@ export const SC_TermMore = styled.a`
   }
 `
 
-/** Всплывающее определение термина — над боковой панелью справки. */
-export const TERM_OVERLAY_STYLE = { zIndex: Z_INDEX.HELP_PANEL + 10 }
-
 export const SC_Sequence = styled.nav`
   display: grid;
   grid-template-columns: 1fr 1fr;

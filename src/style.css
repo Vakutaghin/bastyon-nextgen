@@ -1173,8 +1173,7 @@ body
     .ant-slide-down-enter,
     .ant-slide-down-appear,
     .ant-slide-down-leave
-  ),
-body .ant-popover:is(.ant-zoom-big-enter, .ant-zoom-big-appear, .ant-zoom-big-leave) {
+  ) {
   animation-duration: 100ms;
   animation-timing-function: var(--ui-ease-out);
 }
@@ -1185,12 +1184,7 @@ body
     .ant-slide-up-appear.ant-slide-up-appear-active,
     .ant-slide-down-enter.ant-slide-down-enter-active,
     .ant-slide-down-appear.ant-slide-down-appear-active
-  )[class*='-placement-'],
-body
-  .ant-popover:is(
-    .ant-zoom-big-enter.ant-zoom-big-enter-active,
-    .ant-zoom-big-appear.ant-zoom-big-appear-active
-  ) {
+  )[class*='-placement-'] {
   animation-name: ui-scale-in;
 }
 
@@ -1198,8 +1192,7 @@ body
   :is(.ant-dropdown, .ant-select-dropdown, .ant-picker-dropdown):is(
     .ant-slide-up-leave.ant-slide-up-leave-active,
     .ant-slide-down-leave.ant-slide-down-leave-active
-  )[class*='-placement-'],
-body .ant-popover.ant-zoom-big-leave.ant-zoom-big-leave-active {
+  )[class*='-placement-'] {
   animation-name: ui-scale-out;
 }
 

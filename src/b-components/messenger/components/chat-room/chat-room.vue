@@ -160,7 +160,6 @@
             :ok-text="isBlocked ? t('messenger.unmuteUser') : t('messenger.muteUser')"
             :cancel-text="t('messenger.cancel')"
             placement="bottomRight"
-            :overlay-style="BLOCK_CONFIRM_OVERLAY_STYLE"
             @confirm="toggleBlock"
           >
             <SC_BlockBtn
@@ -427,8 +426,7 @@ import {
   UpOutlined,
   UserOutlined,
 } from '@/components/icons'
-import { Popconfirm } from 'ant-design-vue'
-import { Z_INDEX } from '@/styles/design-tokens'
+import Popconfirm from '@/components/popconfirm'
 import { debugLog } from '@/helpers/common/debug-log'
 import { formatLongDate } from '@/helpers/common/date-formatter'
 import { appToast } from '@/b-components/app-toast'
@@ -531,16 +529,6 @@ const DRAG_STYLE = {
   outline: '2px dashed var(--ui-primary)',
   outlineOffset: '-4px',
   background: 'rgb(var(--ui-primary-rgb) / 6%)',
-}
-
-// Поповер подтверждения блокировки рендерится в body; мессенджер-обёртка имеет
-// z-index 2500, а дефолтный z-index ant-поповера ниже — поэтому поднимаем его.
-// Ширина — фиксированная и с зазором до краёв экрана. Без неё длинное пояснение
-// растягивало поповер во всю ширину: на узком полноэкранном виджете он упирался
-// в края, ant сдвигал его, ширина менялась — и он бесконечно перестраивался.
-const BLOCK_CONFIRM_OVERLAY_STYLE = {
-  zIndex: Z_INDEX.REACTION_PICKER,
-  width: 'min(280px, calc(100vw - 24px))',
 }
 
 const props = withDefaults(

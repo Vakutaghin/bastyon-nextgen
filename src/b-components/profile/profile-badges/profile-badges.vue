@@ -1,6 +1,6 @@
 <template>
   <SC_BadgeRow v-if="badges.length" :class="align" data-testid="profile-badges">
-    <APopover
+    <Popover
       v-for="b in badges"
       :key="b"
       :open="openBadge === b"
@@ -22,7 +22,7 @@
         <TrophyFilled v-else />
         {{ t('profile.badges.' + b) }}
       </SC_Badge>
-    </APopover>
+    </Popover>
   </SC_BadgeRow>
 </template>
 
@@ -32,7 +32,7 @@
 // её дают; «Подробнее» открывает статью справки в боковой панели.
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Popover as APopover } from 'ant-design-vue'
+import Popover from '@/components/popover'
 import { CheckCircleFilled, CrownFilled, FlagFilled, TrophyFilled } from '@/components/icons'
 import { getProfileBadges, type ProfileBadgeKey } from '@/helpers/profile/profile-badges'
 import { useHelpStore } from '@/stores/help-store'

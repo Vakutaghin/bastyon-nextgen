@@ -192,14 +192,14 @@
         </SC_LengthCounter>
       </SC_ReplyInputWrap>
       <CommentImageAttach :disabled="replyImagesFull || replyUploading" @files="addReplyImages" />
-      <APopover v-model:open="emojiOpenRoot" trigger="click" placement="topRight">
+      <Popover v-model:open="emojiOpenRoot" trigger="click" placement="topRight">
         <template #content>
           <CommentEmojiPicker @select="onRootEmojiSelect" />
         </template>
         <SC_EmojiTriggerBtn type="button" :title="t('comments.emoji')" @click.stop>
           <SmileOutlined />
         </SC_EmojiTriggerBtn>
-      </APopover>
+      </Popover>
       <SC_ReplySendBtn
         type="button"
         :title="t('comments.send')"
@@ -222,7 +222,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Popover } from 'ant-design-vue'
+import Popover from '@/components/popover'
 import { ICON_SIZE_SM, ICON_PRIMARY_16, ICON_PRIMARY_18 } from '@/styles/icon-styles'
 import { LoadingOutlined, SendOutlined, SyncOutlined, SmileOutlined } from '@/components/icons'
 import Select, { type SelectOption } from '@/components/select'
@@ -318,8 +318,6 @@ const commentSortOptions = computed<SelectOption[]>(() => [
   { value: 'newest', label: t('comments.sortNewest') },
   { value: 'oldest', label: t('comments.sortOldest') },
 ])
-
-const APopover = Popover
 
 // --- Базовая идентификация поста / пользователя. ---
 const postId = computed<string>(

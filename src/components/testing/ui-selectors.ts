@@ -33,9 +33,9 @@ export const UI = {
   menuItemIcon: '.ant-dropdown-menu-item-icon',
 
   /** Всплывающая панель (popover). */
-  popover: '.ant-popover',
-  /** Закрытая всплывающая панель: остаётся в DOM спрятанной. */
-  popoverHidden: '.ant-popover-hidden',
+  popover: '.ui-popover',
+  /** Закрытая всплывающая панель (своя убирается из DOM; на время ухода — открытая). */
+  popoverHidden: '[data-state="closed"]',
 
   /** Поле выбора (Select). */
   select: '.ant-select',

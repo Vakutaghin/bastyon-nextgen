@@ -35,7 +35,7 @@ function panel(props: Partial<InstanceType<typeof CommentReplyPanel>['$props']> 
     },
     global: {
       stubs: {
-        APopover: { template: '<span><slot /></span>' },
+        Popover: { template: '<span><slot /></span>' },
         CommentEmojiPicker: true,
       },
     },

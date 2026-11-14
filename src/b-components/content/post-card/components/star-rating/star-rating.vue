@@ -1,6 +1,6 @@
 <template>
   <SC_RatingRow>
-    <APopover v-model:open="authPopoverVisible" trigger="click" placement="bottom">
+    <Popover v-model:open="authPopoverVisible" trigger="click" placement="bottom">
       <template #content>
         <SC_AuthPopoverContent>
           <p>{{ t('postCard.authPrompt') }}</p>
@@ -49,7 +49,7 @@
           <span class="star-count">({{ optimisticAverageRating.toFixed(1) }})</span>
         </SC_StarRating>
       </SC_InlineBlock>
-    </APopover>
+    </Popover>
 
     <!-- Число оценок — кто и как оценил, как в прежнем Bastyon. Вне окна входа:
          смотреть можно и гостю. -->
@@ -83,7 +83,7 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useI18n } from 'vue-i18n'
-import { Popover as APopover } from 'ant-design-vue'
+import Popover from '@/components/popover'
 import Button from '@/components/button'
 import { StarOutlined, StarFilled, UserOutlined } from '@/components/icons'
 import { useStarRating } from './use-star-rating'

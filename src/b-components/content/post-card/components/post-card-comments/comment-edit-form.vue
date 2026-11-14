@@ -16,14 +16,14 @@
     </SC_ReplyInputWrap>
 
     <SC_EditFormActions>
-      <APopover v-model:open="emojiOpen" trigger="click" placement="topLeft">
+      <Popover v-model:open="emojiOpen" trigger="click" placement="topLeft">
         <template #content>
           <CommentEmojiPicker @select="insertEmoji" />
         </template>
         <SC_EmojiTriggerBtn type="button" :title="t('comments.emoji')" @click.stop>
           <SmileOutlined />
         </SC_EmojiTriggerBtn>
-      </APopover>
+      </Popover>
       <SC_EditFormSpacer />
       <SC_EditCancelBtn
         type="button"
@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { computed, ref, nextTick, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Popover } from 'ant-design-vue'
+import Popover from '@/components/popover'
 import { LoadingOutlined, SmileOutlined } from '@/components/icons'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import { useAutoGrow } from '@/composables/use-auto-grow'
@@ -60,8 +60,6 @@ import {
 } from './styled'
 import CommentEmojiPicker from './comment-emoji-picker.vue'
 import { getCommentLengthHint, isCommentLengthValid } from './helpers'
-
-const APopover = Popover
 
 const props = defineProps<{
   editDraft: string

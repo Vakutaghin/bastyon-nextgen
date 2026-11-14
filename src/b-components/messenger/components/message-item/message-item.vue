@@ -166,15 +166,14 @@
           <SC_ReactionEmojiIcon>😀</SC_ReactionEmojiIcon>
         </SC_ReactionButton>
 
-        <!-- Меню antd монтируется при первом нажатии: в каждой строке ленты оно
+        <!-- Меню монтируется при первом нажатии: в каждой строке ленты оно
              стоило дороже самого сообщения, а открывают его редко. -->
-        <APopover
+        <Popover
           v-if="canShowActions && actionsMounted && !selecting"
           v-model:open="actionsOpen"
           trigger="click"
           placement="topRight"
-          :overlay-class-name="'message-actions-popover'"
-          :overlay-style="ACTIONS_OVERLAY_STYLE"
+          overlay-class="message-actions-popover"
         >
           <template #content>
             <SC_ActionsMenu @click.stop>
@@ -216,7 +215,7 @@
           >
             <MoreOutlined />
           </SC_ActionsButton>
-        </APopover>
+        </Popover>
         <SC_ActionsButton
           v-else-if="canShowActions && !selecting"
           type="button"
@@ -261,7 +260,8 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Popover, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Popover from '@/components/popover'
 import {
   CheckCircleOutlined,
   CheckOutlined,
@@ -343,11 +343,6 @@ import {
   SC_LocalOnlyMark,
   SC_SelectCheck,
 } from './styled'
-
-const APopover = Popover
-
-/** Меню сообщения — над полноэкранным мессенджером, иначе оно открывалось под ним. */
-const ACTIONS_OVERLAY_STYLE = { zIndex: Z_INDEX.POPOVER_OVER_MESSENGER }
 
 const props = withDefaults(
   defineProps<{
@@ -592,7 +587,7 @@ const {
 
 // --- Действия над сообщением (ответ / удаление) ---
 const actionsOpen = ref(false)
-/** Меню уже нажимали — antd Popover смонтирован (см. шаблон). */
+/** Меню уже нажимали — Popover смонтирован (см. шаблон). */
 const actionsMounted = ref(false)
 async function openActions(): Promise<void> {
   actionsMounted.value = true

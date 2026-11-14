@@ -1,11 +1,5 @@
 <template>
-  <APopover
-    v-if="entry"
-    :trigger="['hover', 'click']"
-    placement="top"
-    :overlay-style="TERM_OVERLAY_STYLE"
-    :mouse-enter-delay="0.2"
-  >
+  <Popover v-if="entry" :trigger="['hover', 'click']" placement="top" :mouse-enter-delay="0.2">
     <template #content>
       <SC_TermCard>
         <SC_TermTitle>{{ entry.term }}</SC_TermTitle>
@@ -13,10 +7,8 @@
         <SC_TermMore :href="href" @click="more">{{ t('help.term.more') }}</SC_TermMore>
       </SC_TermCard>
     </template>
-    <!-- data-popup-hover: мышью определение открыто, пока курсор рядом, —
-         нажатие мимо него не маскируется (helpers/common/popup-click-shield). -->
-    <SC_Term type="button" data-popup-hover><slot /></SC_Term>
-  </APopover>
+    <SC_Term type="button"><slot /></SC_Term>
+  </Popover>
   <slot v-else />
 </template>
 
@@ -25,10 +17,10 @@
 // наведению или нажатию — определение, как всплывающие подсказки в CHM.
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Popover as APopover } from 'ant-design-vue'
+import Popover from '@/components/popover'
 import HelpBlocks from './help-blocks.vue'
 import { helpHref, useHelpView } from './help-view'
-import { SC_Term, SC_TermCard, SC_TermMore, SC_TermTitle, TERM_OVERLAY_STYLE } from './styled'
+import { SC_Term, SC_TermCard, SC_TermMore, SC_TermTitle } from './styled'
 
 const props = defineProps<{ anchor: string }>()
 

@@ -72,14 +72,14 @@
       :disabled="replyImagesFull || replyUploading"
       @files="(files: File[]) => emit('add-images', files)"
     />
-    <APopover v-model:open="emojiOpen" trigger="click" placement="topRight">
+    <Popover v-model:open="emojiOpen" trigger="click" placement="topRight">
       <template #content>
         <CommentEmojiPicker @select="insertEmoji" />
       </template>
       <SC_EmojiTriggerBtn type="button" :title="t('comments.emoji')" @click.stop>
         <SmileOutlined />
       </SC_EmojiTriggerBtn>
-    </APopover>
+    </Popover>
     <SC_ReplyCancelBtn
       type="button"
       :title="t('comments.cancel')"
@@ -102,7 +102,7 @@
 <script setup lang="ts">
 import { computed, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Popover } from 'ant-design-vue'
+import Popover from '@/components/popover'
 import { LoadingOutlined, CloseOutlined, SendOutlined, SmileOutlined } from '@/components/icons'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import { useAutoGrow } from '@/composables/use-auto-grow'
@@ -125,8 +125,6 @@ import CommentImageAttach from './comment-image-attach.vue'
 import CommentImageStrip from './comment-image-strip.vue'
 import type { CommentImage } from './composables/use-comment-images'
 import { getCommentLengthHint, isCommentLengthValid } from './helpers'
-
-const APopover = Popover
 
 interface MentionUser {
   address: string

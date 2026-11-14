@@ -123,8 +123,14 @@ describe('меню «⋯» у сообщения', () => {
   }
 
   it('открывается над полноэкранным мессенджером', async () => {
-    const popover = await openMenu(render('Привет'))
-    // Полноэкранный мессенджер — на 2500, а antd ставит меню на 1030.
+    // Полноэкранный мессенджер — слой 2500: меню из него стек ставит выше.
+    const w = render('Привет')
+    const shell = document.createElement('div')
+    shell.style.position = 'fixed'
+    shell.style.zIndex = '2500'
+    document.body.append(shell)
+    shell.append(w.element)
+    const popover = await openMenu(w)
     expect(Number(popover.style.zIndex)).toBeGreaterThan(2500)
   })
 

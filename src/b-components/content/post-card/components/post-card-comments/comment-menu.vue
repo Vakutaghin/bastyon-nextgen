@@ -1,9 +1,9 @@
 <template>
-  <APopover
+  <Popover
     v-model:open="open"
     trigger="click"
     placement="bottomRight"
-    :overlay-class-name="'comment-menu-popover'"
+    overlay-class="comment-menu-popover"
   >
     <template #content>
       <SC_MenuList @click.stop>
@@ -72,13 +72,13 @@
     <SC_MenuTrigger type="button" :title="t('comments.actions')" @click.stop>
       <MoreOutlined />
     </SC_MenuTrigger>
-  </APopover>
+  </Popover>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Popover } from 'ant-design-vue'
+import Popover from '@/components/popover'
 import {
   MoreOutlined,
   EditOutlined,
@@ -123,8 +123,6 @@ const { t } = useI18n()
 const { canShareToChat } = useShareToChat()
 
 const open = ref(false)
-
-const APopover = Popover
 
 function onAction(action: CommentMenuAction) {
   open.value = false

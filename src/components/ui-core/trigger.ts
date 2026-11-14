@@ -29,8 +29,11 @@ export function firstElementVNode(nodes: VNode[] | undefined): VNode | null {
   return null
 }
 
-/** Элемент кнопки: ref на элемент или на компонент (его корень). */
-export function useTriggerElement() {
+/**
+ * Элемент по ref-функции: ref на элемент или на компонент (берётся его
+ * корень) — для кнопки из слота и для styled-панели.
+ */
+export function useElementRef() {
   const el = shallowRef<HTMLElement | null>(null)
 
   function setRef(value: Element | ComponentPublicInstance | null): void {
@@ -40,6 +43,13 @@ export function useTriggerElement() {
         : value
     el.value = node instanceof HTMLElement ? node : null
   }
+
+  return { el, setRef }
+}
+
+/** Кнопка из слота: её элемент и отрисовка с добавленными свойствами. */
+export function useTriggerElement() {
+  const { el, setRef } = useElementRef()
 
   /**
    * Узел кнопки с добавленными свойствами (обработчики сливаются с её
