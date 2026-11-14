@@ -11,8 +11,7 @@ export const SC_BrowserBar = styled.form`
   display: flex;
   gap: 8px;
 
-  & > .ant-input-affix-wrapper,
-  & > input {
+  & > .ui-input {
     flex: 1;
     min-width: 0;
   }

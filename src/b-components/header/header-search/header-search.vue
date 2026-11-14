@@ -17,7 +17,7 @@
       autocapitalize="off"
       spellcheck="false"
       @search="onEnter"
-      @change="onChange"
+      @clear="onClear"
     />
 
     <HeaderSearchDropdown v-if="isOpen" :query="debouncedQuery" @close="close" />
@@ -143,9 +143,9 @@ function close(): void {
   isFocused.value = false
 }
 
-/** antd шлёт `change` с событием `click`, когда поле стёрли крестиком. */
-function onChange(e: Event): void {
-  if (e.type === 'click') dismissed.value = true
+/** Поле стёрли крестиком — выпадашка не открывается. */
+function onClear(): void {
+  dismissed.value = true
 }
 
 function onKeyUp(e: KeyboardEvent): void {

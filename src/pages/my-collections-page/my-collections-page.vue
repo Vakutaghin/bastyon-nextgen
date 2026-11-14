@@ -146,7 +146,8 @@
 
 import { computed, ref, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Input from '@/components/input'
 import Button from '@/components/button'
 import {
   BookOutlined,

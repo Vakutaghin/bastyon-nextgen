@@ -42,7 +42,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input, Modal, Select } from 'ant-design-vue'
+import { Modal, Select } from 'ant-design-vue'
+import Input from '@/components/input'
 import Button from '@/components/button'
 import { buildNameLink, buildNameValue } from '@/helpers/ipfs/ipfs-viewer'
 import type { IpfsShare } from '@/stores/ipfs-store'

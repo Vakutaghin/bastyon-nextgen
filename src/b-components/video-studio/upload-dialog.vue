@@ -100,7 +100,7 @@
       <!-- Пост к ролику: заголовок — название выше, здесь текст, теги и настройки. -->
       <SC_Field>
         <label for="video-studio-text">{{ t('videoStudio.textLabel') }}</label>
-        <Textarea
+        <TextArea
           id="video-studio-text"
           :value="job.post.message"
           :placeholder="t('videoStudio.textPlaceholder')"
@@ -197,7 +197,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Input from '@/components/input'
+import TextArea from '@/components/textarea'
 import Checkbox from '@/components/checkbox'
 import Progress from '@/components/progress'
 import { bcp47 } from '@/i18n'
@@ -234,8 +236,6 @@ import {
   SC_GhostButton,
   SC_SettingsToggle,
 } from './upload-dialog.styled'
-
-const Textarea = Input.TextArea
 
 const { t, locale } = useI18n()
 const store = useVideoUploadsStore()

@@ -37,7 +37,7 @@
       <SC_LockBody v-else-if="view === 'recover'" class="form">
         <SC_LockTitle>{{ t('appLock.recoverTitle') }}</SC_LockTitle>
         <SC_LockText>{{ t('appLock.recoverText') }}</SC_LockText>
-        <Input.TextArea
+        <TextArea
           ref="secretRef"
           v-model:value="secret"
           :auto-size="{ minRows: 3, maxRows: 5 }"
@@ -83,7 +83,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Input } from 'ant-design-vue'
+import TextArea from '@/components/textarea'
 import Button from '@/components/button'
 import { useAppLockStore } from '@/stores/app-lock-store'
 import { useAuthStore } from '@/blockchain/store/auth-store'

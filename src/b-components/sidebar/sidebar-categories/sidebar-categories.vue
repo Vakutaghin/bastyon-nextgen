@@ -76,7 +76,7 @@
         {{ t('sidebar.enterTag') }}
       </SC_ModalHint>
 
-      <AInput
+      <Input
         v-model:value="newCategoryName"
         :placeholder="t('sidebar.tagPlaceholder')"
         allow-clear
@@ -107,7 +107,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal as AModal, Input as AInput, message } from 'ant-design-vue'
+import { Modal as AModal, message } from 'ant-design-vue'
+import Input from '@/components/input'
 import {
   CaretUpOutlined,
   CaretDownOutlined,

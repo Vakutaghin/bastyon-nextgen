@@ -52,7 +52,7 @@ export const UI = {
   /** Сам input флажка (Checkbox). */
   checkboxInput: '.ui-checkbox__input',
   /** Крестик очистки поля ввода. */
-  inputClear: '.ant-input-clear-icon',
+  inputClear: '.ui-input__clear',
 
   /** Область тостов. */
   toastHost: '.ant-notification',

@@ -566,6 +566,7 @@ export default {
     loading: 'Учитавање',
     withUnread: '{name}, непрочитано: {n}',
     search: 'Пронађи',
+    clear: 'Обриши',
     account: 'Налог {name}',
     sidebarLeft: 'Одељци и филтери',
     sidebarRight: 'Препоруке и коментари',

@@ -8,6 +8,7 @@
     <ButtonSection />
     <FeedbackSection />
     <ChoiceSection />
+    <FieldsSection />
     <DisplaySection />
   </SC_DevUiPage>
 </template>
@@ -19,6 +20,7 @@
 import ButtonSection from './sections/button-section.vue'
 import FeedbackSection from './sections/feedback-section.vue'
 import ChoiceSection from './sections/choice-section.vue'
+import FieldsSection from './sections/fields-section.vue'
 import DisplaySection from './sections/display-section.vue'
 import { SC_DevUiLead, SC_DevUiPage, SC_DevUiTitle } from './dev-ui-page.styled'
 </script>

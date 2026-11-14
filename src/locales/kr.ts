@@ -569,6 +569,7 @@ export default {
     loading: '불러오는 중',
     withUnread: '{name}, 읽지 않음: {n}',
     search: '검색',
+    clear: '지우기',
     account: '계정 {name}',
     sidebarLeft: '섹션 및 필터',
     sidebarRight: '추천 및 댓글',

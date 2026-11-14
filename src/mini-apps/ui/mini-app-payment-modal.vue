@@ -86,7 +86,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input, Modal as AModal } from 'ant-design-vue'
+import { Modal as AModal } from 'ant-design-vue'
+import Input from '@/components/input'
 import { bcp47 } from '@/i18n'
 import { useAuthStore } from '@/blockchain'
 import {

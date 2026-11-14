@@ -1,56 +1,58 @@
 import styled from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 
-// Поиск в оформлении Nuxt UI: поле как UInput (фон страницы, рамка accented,
-// радиус 6, в фокусе — акцентная рамка и ореол), без «пилюли».
+// Поиск как был у antd в нашей теме: поле (components/input) и приставленная
+// справа кнопка 46×32 с заливкой акцентом; у поля срезаны правые углы, у
+// кнопки — левые. Кнопка заходит на рамку поля на 1px, в фокусе поле с
+// ореолом — поверх неё.
+//
+// Части для styled родителя: .ui-input-search, __field, __button.
 export const SC_InputSearch = styled.div`
+  display: flex;
   width: 45%;
   flex-shrink: 0;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${() => BREAKPOINTS.TABLET}) {
     width: 100%;
     flex-shrink: 1;
   }
 
-  /* Antd Input.Search не телепортится — вложенные селекторы работают напрямую
-     (:deep() в vue3-styled-components не функционирует). При allow-clear antd
-     оборачивает input в .ant-input-affix-wrapper — фон и рамку рисует он. */
-  .ant-input-affix-wrapper,
-  .ant-input-search .ant-input {
-    background: var(--ui-bg);
-    color: var(--ui-text-highlighted);
-    border-color: var(--ui-border-accented);
+  .ui-input-search__field {
+    --ui-input-radius: var(--ui-radius-md) 0 0 var(--ui-radius-md);
+
+    flex: 1 1 auto;
   }
 
-  /* Внутренний input внутри affix-wrapper прозрачный — фон несёт обёртка. */
-  .ant-input-affix-wrapper > .ant-input {
-    background: transparent;
-    border: none;
-    box-shadow: none;
+  .ui-input-search__field:focus-within {
+    z-index: 1;
   }
 
-  .ant-input-affix-wrapper:hover,
-  .ant-input-search .ant-input:hover:not(:disabled) {
-    border-color: var(--ui-border-accented);
+  .ui-input-search__button {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 46px;
+    margin: 0 0 0 -1px;
+    padding: 0 15px;
+    font-size: 14px;
+    line-height: 22px;
+    color: var(--ui-text-inverted);
+    background: var(--ui-primary);
+    border: 1px solid transparent;
+    border-radius: 0 var(--ui-radius-md) var(--ui-radius-md) 0;
+    cursor: pointer;
+    transition: background-color var(--transition-quick);
   }
 
-  .ant-input-affix-wrapper-focused,
-  .ant-input-search .ant-input:focus,
-  .ant-input-search .ant-input-focused {
-    border-color: var(--ui-primary);
-    box-shadow: 0 0 0 3px rgb(var(--ui-primary-rgb) / 25%);
+  .ui-input-search__button:hover:not(:disabled) {
+    background: rgb(var(--ui-primary-rgb) / 75%);
   }
 
-  .ant-input::placeholder {
-    color: var(--ui-text-dimmed);
-  }
-
-  .ant-input-search-icon,
-  .ant-input-clear-icon {
-    color: var(--ui-text-dimmed);
-  }
-
-  .ant-input-clear-icon:hover {
-    color: var(--ui-text);
+  .ui-input-search__button:disabled {
+    cursor: not-allowed;
+    opacity: 0.75;
   }
 `

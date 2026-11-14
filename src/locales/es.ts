@@ -576,6 +576,7 @@ export default {
     loading: 'Cargando',
     withUnread: '{name}, sin leer: {n}',
     search: 'Buscar',
+    clear: 'Borrar',
     account: 'Cuenta {name}',
     sidebarLeft: 'Secciones y filtros',
     sidebarRight: 'Recomendaciones y comentarios',

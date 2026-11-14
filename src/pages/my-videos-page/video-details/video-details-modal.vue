@@ -65,7 +65,7 @@
 
           <SC_Field>
             <label for="video-details-description">{{ t('mediaStudio.descriptionLabel') }}</label>
-            <Textarea
+            <TextArea
               id="video-details-description"
               v-model:value="details.form.description"
               :maxlength="details.limits.descriptionMax"
@@ -210,7 +210,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Input from '@/components/input'
+import TextArea from '@/components/textarea'
 import Spin from '@/components/spin'
 import Button from '@/components/button'
 import { DeleteOutlined, EditOutlined, PlayCircleOutlined, StatsIcon } from '@/components/icons'
@@ -247,8 +249,6 @@ import {
 } from './video-details-modal.styled'
 
 export type DetailsTab = 'details' | 'stats'
-
-const Textarea = Input.TextArea
 
 const props = defineProps<{
   video: ServerVideo

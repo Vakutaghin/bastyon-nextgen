@@ -1,14 +1,16 @@
-import type { VNodeChild } from 'vue'
-
 export interface InputSearchProps {
-  size?: 'large' | 'middle' | 'small'
-  disabled?: boolean
-  placeholder?: string
   value?: string
-  defaultValue?: string
+  placeholder?: string
+  disabled?: boolean
   allowClear?: boolean
-  enterButton?: boolean | VNodeChild
+  /** Идёт поиск: в кнопке крутится значок, Enter и кнопка не ищут. */
   loading?: boolean
-  onSearch?: (value: string) => void
-  maxLength?: number
+  maxlength?: number
+}
+
+export interface InputSearchEmits {
+  (e: 'update:value', value: string): void
+  /** Enter или кнопка — с текстом поля; крестик — с пустой строкой, как у antd. */
+  (e: 'search', value: string): void
+  (e: 'clear'): void
 }

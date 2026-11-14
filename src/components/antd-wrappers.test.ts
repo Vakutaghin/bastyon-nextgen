@@ -1,12 +1,10 @@
 // Обёртки antd в src/components обязаны доносить объявленные пропсы и слоты
-// до antd (аудит X8: K6 «Enter в поиске мёртв», V13 «мнемоника открытым
-// текстом», S63 «модалки без заголовка», Empty без иллюстрации).
+// до antd (аудит X8: S63 «модалки без заголовка», Empty без иллюстрации).
+// Поля (K6, V13) уже свои — их тесты рядом с ними.
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 
-import Input from './input/input.vue'
-import InputSearch from './input-search/input-search.vue'
 import Modal from './modal/modal.vue'
 import Empty from './empty/empty.vue'
 import Select from './select/select.vue'
@@ -15,74 +13,6 @@ import { CloseOutlined } from './icons'
 const mounted: Array<{ unmount: () => void }> = []
 const keep = <T extends { unmount: () => void }>(w: T): T => (mounted.push(w), w)
 afterEach(() => mounted.splice(0).forEach((w) => w.unmount()))
-
-describe('Input (обёртка)', () => {
-  it('type/placeholder/disabled/allowClear доходят до DOM (V13)', async () => {
-    const w = keep(
-      mount(Input, {
-        props: {
-          type: 'password',
-          placeholder: 'seed',
-          disabled: true,
-          allowClear: true,
-          value: 'x',
-        },
-      })
-    )
-    const input = w.find('input')
-    expect(input.attributes('type')).toBe('password')
-    expect(input.attributes('placeholder')).toBe('seed')
-    expect(input.attributes('disabled')).toBeDefined()
-    expect(w.find('.ant-input-clear-icon').exists()).toBe(true)
-    await w.setProps({ type: 'text', disabled: false })
-    expect(w.find('input').attributes('type')).toBe('text')
-    expect(w.find('input').attributes('disabled')).toBeUndefined()
-  })
-
-  it('атрибуты не дублируются на обёртке (inheritAttrs=false)', () => {
-    const w = keep(mount(Input, { attrs: { autocomplete: 'off', class: 'my' } }))
-    expect(w.find('input').attributes('autocomplete')).toBe('off')
-    expect(w.element.getAttribute('autocomplete')).toBeNull()
-  })
-})
-
-describe('InputSearch (обёртка)', () => {
-  it('@search срабатывает по Enter и по кнопке, v-model:value контролирует поле (K6)', async () => {
-    const onSearch = vi.fn()
-    const w = keep(
-      mount(InputSearch, {
-        props: {
-          value: 'abc',
-          placeholder: 'find',
-          'onUpdate:value': (v: string) => w.setProps({ value: v }),
-          onSearch,
-        },
-      })
-    )
-    expect(w.find('input').attributes('placeholder')).toBe('find')
-    expect((w.find('input').element as HTMLInputElement).value).toBe('abc')
-    await w.find('input').trigger('keydown.enter')
-    expect(onSearch).toHaveBeenCalledWith('abc', expect.anything())
-    await w.find('input').setValue('new')
-    await nextTick()
-    expect((w.find('input').element as HTMLInputElement).value).toBe('new')
-    await w.find('.ant-input-search-button').trigger('click')
-    expect(onSearch).toHaveBeenCalledTimes(2)
-  })
-
-  it('на кнопке поиска — лупа, а не ключ', () => {
-    const w = keep(mount(InputSearch, { props: { value: '' } }))
-    const icon = w.find('.ant-input-search-button svg')
-    expect(icon.classes()).toContain('lucide-search')
-    expect(icon.classes()).not.toContain('lucide-key')
-  })
-
-  it('у кнопки поиска есть название для диктора, у поля — подсказка в поле', () => {
-    const w = keep(mount(InputSearch, { props: { value: '', placeholder: 'Поиск…' } }))
-    expect(w.find('.ant-input-search-button .visually-hidden').text()).not.toBe('')
-    expect(w.find('input').attributes('aria-label')).toBe('Поиск…')
-  })
-})
 
 describe('Modal (обёртка)', () => {
   const mountModal = (props: Record<string, unknown>, slots: Record<string, string> = {}) =>

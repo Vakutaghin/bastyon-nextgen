@@ -49,7 +49,8 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input, Modal } from 'ant-design-vue'
+import { Modal } from 'ant-design-vue'
+import Input from '@/components/input'
 import Button from '@/components/button'
 import { CloseOutlined } from '@/components/icons'
 import { openIpfsViewer } from '@/composables/use-ipfs-links'

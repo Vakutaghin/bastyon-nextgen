@@ -1,6 +1,6 @@
 <template>
   <SC_PaneInput>
-    <AInput
+    <Input
       v-model:value="page.searchQuery.value"
       allow-clear
       :placeholder="t('help.search.placeholder')"
@@ -30,7 +30,7 @@
 // подсвечивает найденные слова (`?hl=`), как в CHM.
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input as AInput } from 'ant-design-vue'
+import Input from '@/components/input'
 import { topicPath } from '@/b-components/help/help-view'
 import { helpSearch } from '@/helpers/help/help-search'
 import { useHelpPageContext } from '../use-help-page'

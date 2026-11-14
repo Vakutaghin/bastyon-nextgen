@@ -1,6 +1,6 @@
 <template>
   <SC_PaneInput>
-    <AInput
+    <Input
       v-model:value="page.indexFilter.value"
       allow-clear
       :placeholder="t('help.index.placeholder')"
@@ -38,7 +38,7 @@
 // мере набора: сначала слова, которые начинаются с набранного.
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input as AInput } from 'ant-design-vue'
+import Input from '@/components/input'
 import { topicPath } from '@/b-components/help/help-view'
 import type { HelpIndexEntry } from '@/helpers/help/help-types'
 import { useHelpPageContext } from '../use-help-page'

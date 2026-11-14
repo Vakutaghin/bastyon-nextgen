@@ -1,64 +1,118 @@
 import styled from 'vue3-styled-components'
 
-// Поле ввода в оформлении Nuxt UI (UInput, вариант outline): фон страницы,
-// рамка accented, радиус 6; на hover рамка не меняется, в фокусе — акцентная
-// рамка и ореол 3px. Цвета antd уже задаёт тема (styles/antd-theme.ts), здесь —
-// то, в чём Nuxt расходится с antd.
+// Поле как было у antd в нашей теме: высота 32, поля 4/11, текст 14/22, рамка
+// border-accented, радиус 6, фон страницы. Наведение рамку не меняет (как у
+// Nuxt UInput), в фокусе — акцентная рамка и ореол 3px. Ошибка и предупреждение
+// красят рамку и ореол своим цветом.
 //
-// Antd Input НЕ телепортится — он живёт внутри этой обёртки, поэтому вложенный
-// селектор .ant-input работает напрямую (:deep() в vue3-styled-components не
-// функционирует). При allow-clear / prefix / suffix antd оборачивает input в
-// .ant-input-affix-wrapper — фон и рамку рисует он.
-export const SC_Input = styled.div`
-  /* Поле тянется на ширину контейнера (w-full у Nuxt). Класс styled-обёртки
-     уходит во внутренний antd-инпут, а этот div во flex-строке сжимался до
-     ширины содержимого — поле мнемоники при входе было узким. */
-  flex: 1 1 auto;
+// Части для styled родителя: .ui-input, __prefix, __control, __suffix, __clear,
+// __count. Переменные: --ui-input-radius (поиск срезает правые углы).
+export const SC_Input = styled.span`
+  --ui-input-ring: var(--ui-primary-rgb);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
+  padding: 4px 11px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--ui-text-highlighted);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border-accented);
+  border-radius: var(--ui-input-radius, var(--ui-radius-md));
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 
-  .ant-input,
-  .ant-input-affix-wrapper {
-    background: var(--ui-bg);
-    color: var(--ui-text-highlighted);
-    border-color: var(--ui-border-accented);
-    border-radius: var(--ui-radius-md);
+  &:focus-within {
+    border-color: rgb(var(--ui-input-ring));
+    box-shadow: 0 0 0 3px rgb(var(--ui-input-ring) / 25%);
   }
 
-  .ant-input-affix-wrapper > .ant-input {
+  &[data-status='error'] {
+    --ui-input-ring: var(--ui-error-rgb);
+
+    border-color: var(--ui-error);
+  }
+
+  &[data-status='warning'] {
+    --ui-input-ring: var(--ui-warning-rgb);
+
+    border-color: var(--ui-warning);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.75;
+  }
+
+  .ui-input__control {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    font: inherit;
+    color: inherit;
     background: transparent;
-    border: none;
+    border: 0;
+    border-radius: 0;
+    outline: 0;
     box-shadow: none;
+    /* Длинная подсказка в узком поле — с многоточием, как у antd. */
+    text-overflow: ellipsis;
   }
 
-  .ant-input:hover:not(:disabled),
-  .ant-input-affix-wrapper:hover {
-    border-color: var(--ui-border-accented);
-  }
-
-  .ant-input:focus,
-  .ant-input-focused,
-  .ant-input-affix-wrapper-focused {
-    border-color: var(--ui-primary);
-    box-shadow: 0 0 0 3px rgb(var(--ui-primary-rgb) / 25%);
-  }
-
-  .ant-input::placeholder {
+  .ui-input__control::placeholder {
     color: var(--ui-text-dimmed);
   }
 
-  .ant-input-clear-icon {
-    color: var(--ui-text-dimmed);
+  .ui-input__control:disabled {
+    cursor: not-allowed;
   }
 
-  .ant-input-clear-icon:hover {
+  .ui-input__prefix,
+  .ui-input__suffix {
+    display: flex;
+    flex: none;
+    align-items: center;
+  }
+
+  .ui-input__prefix {
+    margin-inline-end: 4px;
+  }
+
+  .ui-input__suffix {
+    gap: 8px;
+    margin-inline-start: 4px;
+  }
+
+  .ui-input__clear {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    color: var(--ui-text-dimmed);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+  }
+
+  .ui-input__clear:hover {
     color: var(--ui-text);
   }
 
-  .ant-input:disabled,
-  .ant-input-affix-wrapper-disabled {
-    background: var(--ui-bg);
-    cursor: not-allowed;
-    opacity: 0.75;
+  .ui-input__clear[data-hidden] {
+    visibility: hidden;
+  }
+
+  .ui-input__count {
+    color: var(--ui-text-muted);
+    white-space: nowrap;
   }
 `

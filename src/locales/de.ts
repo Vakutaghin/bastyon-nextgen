@@ -577,6 +577,7 @@ export default {
     loading: 'Wird geladen',
     withUnread: '{name}, ungelesen: {n}',
     search: 'Suchen',
+    clear: 'Leeren',
     account: 'Konto {name}',
     sidebarLeft: 'Bereiche und Filter',
     sidebarRight: 'Empfehlungen und Kommentare',

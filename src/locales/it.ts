@@ -569,6 +569,7 @@ export default {
     loading: 'Caricamento',
     withUnread: '{name}, non letti: {n}',
     search: 'Cerca',
+    clear: 'Cancella',
     account: 'Account {name}',
     sidebarLeft: 'Sezioni e filtri',
     sidebarRight: 'Consigli e commenti',

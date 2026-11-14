@@ -570,6 +570,7 @@ export default {
     loading: 'Loading',
     withUnread: '{name}, unread: {n}',
     search: 'Search',
+    clear: 'Clear',
     account: 'Account {name}',
     sidebarLeft: 'Sections and filters',
     sidebarRight: 'Recommendations and comments',

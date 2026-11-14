@@ -128,7 +128,7 @@
 
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input } from 'ant-design-vue'
+import Input from '@/components/input'
 import Button from '@/components/button'
 import { CheckOutlined, LoadingOutlined, PlusOutlined, SearchOutlined } from '@/components/icons'
 import Avatar from '@/components/avatar/avatar.vue'

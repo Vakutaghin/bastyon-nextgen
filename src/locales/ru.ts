@@ -571,6 +571,7 @@ export default {
     loading: 'Загрузка',
     withUnread: '{name}, непрочитанных: {n}',
     search: 'Найти',
+    clear: 'Очистить',
     account: 'Аккаунт {name}',
     sidebarLeft: 'Разделы и фильтры',
     sidebarRight: 'Рекомендации и комментарии',

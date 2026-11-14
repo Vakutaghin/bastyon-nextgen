@@ -230,6 +230,7 @@ export const CheckCircleFilled = lucideIcon('CheckCircleFilled', CircleCheck, 's
 export const CheckCircleOutlined = lucideIcon('CheckCircleOutlined', CircleCheck)
 export const CheckOutlined = lucideIcon('CheckOutlined', Check)
 export const ClockCircleOutlined = lucideIcon('ClockCircleOutlined', Clock)
+export const CloseCircleFilled = lucideIcon('CloseCircleFilled', CircleX, 'soft')
 export const CloseCircleOutlined = lucideIcon('CloseCircleOutlined', CircleX)
 export const CloseOutlined = lucideIcon('CloseOutlined', X)
 export const CodeOutlined = lucideIcon('CodeOutlined', Code)

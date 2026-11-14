@@ -16,7 +16,6 @@
         <SC_InputWrapper>
           <input
             id="register-nickname"
-            class="ant-input"
             :value="nickname"
             :placeholder="t('auth.nicknamePlaceholder')"
             :disabled="loading"

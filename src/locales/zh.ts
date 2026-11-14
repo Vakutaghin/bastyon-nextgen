@@ -539,6 +539,7 @@ export default {
     loading: '加载中',
     withUnread: '{name}，未读：{n}',
     search: '搜索',
+    clear: '清除',
     account: '账户 {name}',
     sidebarLeft: '栏目和筛选',
     sidebarRight: '推荐和评论',

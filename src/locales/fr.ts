@@ -580,6 +580,7 @@ export default {
     loading: 'Chargement',
     withUnread: '{name}, non lus : {n}',
     search: 'Rechercher',
+    clear: 'Effacer',
     account: 'Compte {name}',
     sidebarLeft: 'Sections et filtres',
     sidebarRight: 'Recommandations et commentaires',

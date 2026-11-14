@@ -1,35 +1,35 @@
-import { computed, h } from 'vue'
-import { t } from '@/i18n'
-import { Input } from 'ant-design-vue'
-import { SearchOutlined } from '@/components/icons'
-import { SC_InputSearch } from './styled'
-import { definedProps } from '../forward-props'
-import type { InputSearchProps } from './types'
+import { computed, ref } from 'vue'
+import type { InputSearchEmits, InputSearchProps } from './types'
 
-export function useInputSearch(p: InputSearchProps) {
-  const searchClass = computed(() => {
-    return {}
-  })
+/**
+ * Поиск как antd Input.Search: Enter и кнопка шлют search с текстом поля,
+ * крестик — search с пустой строкой (страницы по нему сбрасывают выдачу).
+ * Пока идёт поиск (loading), повторный не запускается.
+ */
+export function useInputSearch(p: InputSearchProps, emit: InputSearchEmits) {
+  const own = ref(p.value ?? '')
+  const current = computed<string>(() => p.value ?? own.value)
 
-  // Кнопка поиска по умолчанию — с лупой (раньше по ошибке стоял ключ). Значок
-  // скрыт от диктора, поэтому рядом — невидимое слово «Найти»: без него кнопка
-  // звучала как «кнопка» без названия.
-  const enterButtonValue = computed(() => {
-    if (p.enterButton !== undefined) {
-      return p.enterButton
-    }
-    return [h(SearchOutlined), h('span', { class: 'visually-hidden' }, t('a11y.search'))]
-  })
-
-  // Объявленные пропсы (onSearch/value/placeholder/allowClear/maxLength/…) в
-  // antd — см. forward-props.ts; enterButton собирается отдельно выше.
-  const forwarded = computed<Record<string, unknown>>(() => definedProps(p, ['enterButton']))
-
-  return {
-    Input,
-    SC_InputSearch,
-    searchClass,
-    enterButtonValue,
-    forwarded,
+  function onValue(value: string): void {
+    own.value = value
+    emit('update:value', value)
   }
+
+  function search(): void {
+    if (p.disabled || p.loading) return
+    emit('search', current.value)
+  }
+
+  function onClear(): void {
+    emit('search', '')
+    emit('clear')
+  }
+
+  // Нажатие на кнопку не уводит фокус из поля, если он там был.
+  function keepFocus(e: MouseEvent): void {
+    const root = (e.currentTarget as HTMLElement | null)?.parentElement
+    if (root?.contains(document.activeElement)) e.preventDefault()
+  }
+
+  return { current, onValue, search, onClear, keepFocus }
 }

@@ -151,7 +151,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Input, Modal, Select } from 'ant-design-vue'
+import { Modal, Select } from 'ant-design-vue'
+import Input from '@/components/input'
 import Spin from '@/components/spin'
 import Button from '@/components/button'
 import {
