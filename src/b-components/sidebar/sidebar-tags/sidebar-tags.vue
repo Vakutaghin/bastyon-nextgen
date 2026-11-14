@@ -35,7 +35,7 @@
         @click="selectTag(tag.name)"
       >
         <SC_TagsName>#{{ tag.name }}</SC_TagsName>
-        <SC_TagsCount>{{ formatCount(tag.count) }}</SC_TagsCount>
+        <SC_TagsCount class="ui-tags__count">{{ formatCount(tag.count) }}</SC_TagsCount>
       </SC_TagsItem>
     </SC_TagsList>
   </SC_Tags>
