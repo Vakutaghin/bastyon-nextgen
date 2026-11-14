@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Tooltip } from 'ant-design-vue'
+import Tooltip from '@/components/tooltip'
 
 import { DictationIcon, LoadingOutlined } from '@/components/icons'
 import { useVoiceDictation } from '@/composables/use-voice-dictation'

@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Tooltip } from 'ant-design-vue'
+import Tooltip from '@/components/tooltip'
 import { InfoCircleOutlined } from '@/components/icons'
 import { connectionRoute } from '@/helpers/api/direct-nodes/connection-route'
 import { CONNECTION_MODES as MODES, useConnectionMode } from '@/composables/use-connection-mode'

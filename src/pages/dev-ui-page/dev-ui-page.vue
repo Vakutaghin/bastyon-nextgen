@@ -11,6 +11,7 @@
     <FieldsSection />
     <DisplaySection />
     <ToastSection />
+    <FloatingSection />
   </SC_DevUiPage>
 </template>
 
@@ -24,5 +25,6 @@ import ChoiceSection from './sections/choice-section.vue'
 import FieldsSection from './sections/fields-section.vue'
 import DisplaySection from './sections/display-section.vue'
 import ToastSection from './sections/toast-section.vue'
+import FloatingSection from './sections/floating-section.vue'
 import { SC_DevUiLead, SC_DevUiPage, SC_DevUiTitle } from './dev-ui-page.styled'
 </script>

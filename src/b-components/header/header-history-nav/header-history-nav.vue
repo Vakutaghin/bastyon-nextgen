@@ -29,7 +29,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Tooltip } from 'ant-design-vue'
+import Tooltip from '@/components/tooltip'
 import { ArrowLeftIcon, ArrowRightIcon } from '@/components/icons'
 import { historyShortcutHint, isApplePlatform } from '@/composables/use-history-hotkeys'
 import { useHistoryNav } from '@/composables/use-history-nav'

@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Tooltip } from 'ant-design-vue'
+import Tooltip from '@/components/tooltip'
 import { ThemeDarkIcon, ThemeLightIcon } from '@/components/icons'
 import { useTheme } from '@/composables/use-theme'
 import { ICON_SIZE_XL } from '@/styles/icon-styles'

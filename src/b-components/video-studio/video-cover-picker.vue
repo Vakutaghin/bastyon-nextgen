@@ -7,12 +7,7 @@
          edit) кадры берутся из файла ролика на видеосервере. -->
     <SC_CoverHead>
       <SC_CoverTitle>{{ t('videoCover.title') }}</SC_CoverTitle>
-      <Tooltip
-        :title="hintText"
-        :trigger="['hover', 'focus', 'click']"
-        :get-popup-container="popupContainer"
-        placement="top"
-      >
+      <Tooltip :title="hintText" :trigger="['hover', 'focus', 'click']" placement="top">
         <SC_InfoButton type="button" :aria-label="t('videoCover.hintLabel')">
           <InfoCircleOutlined />
         </SC_InfoButton>
@@ -89,7 +84,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Tooltip } from 'ant-design-vue'
+import Tooltip from '@/components/tooltip'
 
 import { InfoCircleOutlined, PictureOutlined } from '@/components/icons'
 import { formatDuration } from '@/b-components/video-uploader/utils/video-formatter'
@@ -195,13 +190,6 @@ const emptyText = computed<string>(() => {
   if (props.cover.audio) return t('videoCover.audioServerPicks')
   return loading.value ? t('videoCover.loading') : t('videoCover.serverPicks')
 })
-
-/**
- * Подсказка — внутри окна: у всплывающих подсказок ant слой ниже, чем у окна
- * загрузки, и в body она оказалась бы под ним.
- */
-const popupContainer = (trigger: HTMLElement): HTMLElement =>
-  trigger.closest<HTMLElement>('.ant-modal-content') ?? document.body
 
 const statusError = computed(() => imageError.value || props.cover.status === 'error')
 

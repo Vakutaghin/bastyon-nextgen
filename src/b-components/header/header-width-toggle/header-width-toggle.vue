@@ -22,7 +22,7 @@
 
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Tooltip } from 'ant-design-vue'
+import Tooltip from '@/components/tooltip'
 import { PageWidthFullIcon, PageWidthLimitedIcon } from '@/components/icons'
 import { usePageWidth } from '@/composables/use-page-width'
 import { SC_WidthToggleWrapper } from './styled'

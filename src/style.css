@@ -988,7 +988,6 @@ main[tabindex='-1']:focus {
   .ant-modal-header,
   .ant-modal-close,
   .ant-drawer-header,
-  .ant-tooltip,
   .vel-modal
 ) {
   -webkit-user-select: none;
@@ -1175,9 +1174,7 @@ body
     .ant-slide-down-appear,
     .ant-slide-down-leave
   ),
-body .ant-popover:is(.ant-zoom-big-enter, .ant-zoom-big-appear, .ant-zoom-big-leave),
-body
-  .ant-tooltip:is(.ant-zoom-big-fast-enter, .ant-zoom-big-fast-appear, .ant-zoom-big-fast-leave) {
+body .ant-popover:is(.ant-zoom-big-enter, .ant-zoom-big-appear, .ant-zoom-big-leave) {
   animation-duration: 100ms;
   animation-timing-function: var(--ui-ease-out);
 }
@@ -1193,11 +1190,6 @@ body
   .ant-popover:is(
     .ant-zoom-big-enter.ant-zoom-big-enter-active,
     .ant-zoom-big-appear.ant-zoom-big-appear-active
-  ),
-body
-  .ant-tooltip:is(
-    .ant-zoom-big-fast-enter.ant-zoom-big-fast-enter-active,
-    .ant-zoom-big-fast-appear.ant-zoom-big-fast-appear-active
   ) {
   animation-name: ui-scale-in;
 }
@@ -1207,8 +1199,7 @@ body
     .ant-slide-up-leave.ant-slide-up-leave-active,
     .ant-slide-down-leave.ant-slide-down-leave-active
   )[class*='-placement-'],
-body .ant-popover.ant-zoom-big-leave.ant-zoom-big-leave-active,
-body .ant-tooltip.ant-zoom-big-fast-leave.ant-zoom-big-fast-leave-active {
+body .ant-popover.ant-zoom-big-leave.ant-zoom-big-leave-active {
   animation-name: ui-scale-out;
 }
 
@@ -1302,6 +1293,11 @@ body .ant-modal-root .ant-modal.ant-zoom-leave.ant-zoom-leave-active {
 
 [data-ui-floating][data-placement^='right'] {
   transform-origin: left;
+}
+
+/* Подсказка-справка обозревателя блоков (info-tooltip) — шире обычной. */
+.explorer-info-tooltip {
+  --ui-tooltip-max-width: 320px;
 }
 
 /* Прокрутка страницы под своим окном (ui-core/scroll-lock.ts). Ширина полосы

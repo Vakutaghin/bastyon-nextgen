@@ -1,13 +1,13 @@
 <template>
-  <ATooltip :title="text" placement="top" :overlay-style="{ maxWidth: '320px' }">
+  <Tooltip :title="text" placement="top" overlay-class="explorer-info-tooltip">
     <SC_InfoTooltipIcon><QuestionCircleOutlined /></SC_InfoTooltipIcon>
-  </ATooltip>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Tooltip as ATooltip } from 'ant-design-vue'
+import Tooltip from '@/components/tooltip'
 import { QuestionCircleOutlined } from '@/components/icons'
 import { EXPLORER_GLOSSARY, type GlossaryTerm } from './explorer-glossary'
 import { SC_InfoTooltipIcon } from './info-tooltip.styled'
