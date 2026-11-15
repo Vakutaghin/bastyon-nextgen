@@ -5,7 +5,6 @@
     :centered="true"
     :closable="true"
     :maskClosable="true"
-    :z-index="2700"
     @cancel="handleCancel"
   >
     <template #title>
@@ -28,7 +27,9 @@
     <template #footer>
       <SC_ModalActions>
         <Button type="default" @click="handleCancel">{{ t('accounts.no') }}</Button>
-        <Button type="primary" @click="handleConfirm" :loading="loading"> {{ t('accounts.yesShow') }} </Button>
+        <Button type="primary" @click="handleConfirm" :loading="loading">
+          {{ t('accounts.yesShow') }}
+        </Button>
       </SC_ModalActions>
     </template>
   </Modal>

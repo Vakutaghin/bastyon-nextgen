@@ -9,10 +9,9 @@
 // предлагает скачать. Приватный файл сразу скачивается и расшифровывается
 // ключом из ссылки на этом устройстве.
 import { h, type VNode } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { t } from '@/i18n'
 import { appToast } from '@/b-components/app-toast'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import type { IpfsSecret, IpfsTarget } from '@/helpers/ipfs/ipfs-link'
 import { sanitizeFilename } from '@/helpers/ipfs/ipfs-content'
@@ -35,8 +34,6 @@ const SECRET_V1_MAX_BYTES = 512 * 1024 * 1024 + 28
 const WRITE_SLICE_BYTES = 4 * 1024 * 1024
 /** Прогресс в окне обновляется не чаще. */
 const PROGRESS_INTERVAL_MS = 250
-/** Окна скачивания открыл сам пользователь — выше автоматических («Что нового»). */
-const MODAL_Z = Z_INDEX.MODAL
 
 // Повторный клик по той же ссылке, пока идёт первый, не открывает второе окно.
 const inFlight = new Set<string>()
@@ -94,7 +91,6 @@ function download(target: IpfsTarget, req: DownloadRequest): Promise<void> {
   return new Promise((done) => {
     const controller = new AbortController()
     const modal = Modal.confirm({
-      zIndex: MODAL_Z,
       title: t('header.ipfsWebPrivateTitle'),
       content: describe(req),
       okText: t('header.ipfsWebDownloadBtn'),
@@ -281,7 +277,6 @@ export function webErrorText(e: unknown, sink: SinkKind | null, secret = false):
 
 function showError(e: unknown, sink: SinkKind | null, secret = false): void {
   Modal.error({
-    zIndex: MODAL_Z,
     title: t('header.ipfsDownloadFailedTitle'),
     content: webErrorText(e, sink, secret),
   })

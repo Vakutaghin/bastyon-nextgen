@@ -7,7 +7,7 @@
       :maskClosable="false"
       :centered="true"
       :width="450"
-      wrapClassName="captcha-modal-wrap"
+      wrap-class="captcha-modal-wrap"
       @update:open="handleUpdateOpen"
       @cancel="handleCancel"
     >

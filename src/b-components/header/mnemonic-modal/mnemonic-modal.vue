@@ -6,7 +6,6 @@
     :closable="true"
     :mask-closable="false"
     :destroy-on-close="true"
-    :z-index="2700"
     @cancel="handleClose"
   >
     <template #title>

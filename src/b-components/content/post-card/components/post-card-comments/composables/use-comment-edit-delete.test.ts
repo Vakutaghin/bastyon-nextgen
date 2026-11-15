@@ -32,7 +32,7 @@ const mocks = vi.hoisted(() => ({
     unblock: vi.fn(),
   },
 }))
-vi.mock('ant-design-vue', () => ({ Modal: { confirm: mocks.confirm } }))
+vi.mock('@/components/modal', () => ({ default: { confirm: mocks.confirm } }))
 vi.mock('@/components/icons', () => ({ ExclamationCircleOutlined: {} }))
 vi.mock('@/b-components/app-toast', () => ({
   appToast: { error: mocks.toastError, success: mocks.toastSuccess },

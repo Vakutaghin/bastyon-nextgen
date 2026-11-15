@@ -1,8 +1,7 @@
 import styled from 'vue3-styled-components'
 
-// SC_PostModalWrapper оборачивает antd <Modal>, который телепортится в <body>,
-// поэтому :deep(.ant-modal-*) отсюда не доходил. Цвета/оформление модалок теперь
-// живут глобально в src/style.css (блок «Ant Design Modal»), общий для всех.
+// SC_PostModalWrapper оборачивает окно, которое телепортится в #ui-layers:
+// оформление окна поста на телефоне — в src/style.css (.ui-modal.post-modal).
 export const SC_PostModalWrapper = styled.div`
   display: contents;
 `

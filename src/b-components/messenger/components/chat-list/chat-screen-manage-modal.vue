@@ -5,11 +5,10 @@
     :open="screen.manageOpen"
     :width="480"
     :centered="true"
-    :z-index="2700"
     :destroy-on-close="true"
     :footer="null"
     :title="t('messenger.screen.manageTitle')"
-    wrap-class-name="chat-screen-manage"
+    wrap-class="chat-screen-manage"
     @cancel="screen.manageOpen = false"
   >
     <SC_ManageLead>{{ t('messenger.screen.manageLead') }}</SC_ManageLead>
@@ -65,7 +64,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Avatar from '@/components/avatar/avatar.vue'
 import { SettingOutlined } from '@/components/icons'
 import HelpLink from '@/b-components/help/help-link.vue'

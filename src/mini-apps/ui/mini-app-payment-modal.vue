@@ -1,5 +1,5 @@
 <template>
-  <a-modal
+  <Modal
     :open="isOpen && !!payment"
     :ok-text="sending ? t('miniapps.sending') : t('miniapps.confirm')"
     :cancel-text="t('miniapps.cancel')"
@@ -80,13 +80,13 @@
       </template>
       <SC_Error v-if="error">{{ error }}</SC_Error>
     </SC_Wrap>
-  </a-modal>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal as AModal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Input from '@/components/input'
 import { bcp47 } from '@/i18n'
 import { useAuthStore } from '@/blockchain'
@@ -124,12 +124,6 @@ import {
   SC_StoreRow,
 } from './mini-app-payment-modal.styled'
 import HelpLink from '@/b-components/help/help-link.vue'
-
-// `a-modal` зарегистрирован глобально через ant-design-vue. Но в setup нам нужно
-// именованное локальное имя, иначе TS-парсер ругается на «AModal is unused».
-// Объявлено как const referenced ниже.
-const _ = AModal
-void _
 
 const { t, locale } = useI18n()
 const authStore = useAuthStore()

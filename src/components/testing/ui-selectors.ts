@@ -6,22 +6,22 @@
 // передавать в page.evaluate аргументом (замыкание туда не доходит).
 export const UI = {
   /** Окно — корень панели; класс окна ставится на него же: `${UI.modal}.post-modal`. */
-  modal: '.ant-modal',
+  modal: '.ui-modal',
   /** Слой окна во весь экран: прокрутка, отступы под вырезы. */
-  modalWrap: '.ant-modal-wrap',
+  modalWrap: '.ui-modal-wrap',
   /** Видимая панель окна. */
-  modalContent: '.ant-modal-content',
-  modalBody: '.ant-modal-body',
+  modalContent: '.ui-modal__content',
+  modalBody: '.ui-modal__body',
   /** Крестик окна. */
-  modalClose: '.ant-modal-close',
+  modalClose: '.ui-modal__close',
   /** Окно подтверждения или сообщения (confirm / info / success / error). */
-  confirm: '.ant-modal-confirm',
+  confirm: '.ui-confirm',
   /** Ряд кнопок окна подтверждения. */
-  confirmButtons: '.ant-modal-confirm-btns',
+  confirmButtons: '.ui-confirm__buttons',
   /** Кнопка опасного действия (красная). */
-  dangerButton: '.ant-btn-dangerous',
+  dangerButton: '.bastyon-button-danger',
   /** Основная кнопка (акцентная). */
-  primaryButton: '.ant-btn-primary',
+  primaryButton: '.bastyon-button-primary',
 
   /** Элемент, открывающий выпадающее меню. */
   dropdownTrigger: '.ui-dropdown-trigger',
@@ -62,5 +62,5 @@ export const UI = {
   toastClose: '[data-testid="toast-close"]',
 
   /** Боковая шторка (Drawer). */
-  drawer: '.ant-drawer-content',
+  drawer: '.ui-drawer',
 } as const

@@ -71,7 +71,7 @@ test('окно ролика: название, описание и кадр с �
   const renamed = page.getByRole('dialog', { name: 'Закат над морем' })
   await expect(renamed.getByRole('button', { name: 'Сохранить' })).toBeDisabled()
 
-  await renamed.getByRole('button', { name: 'Close' }).click()
+  await renamed.getByRole('button', { name: 'Закрыть' }).click()
   await expect(renamed).toBeHidden()
   await expect(page.getByRole('listitem').filter({ hasText: 'Закат над морем' })).toBeVisible()
 })

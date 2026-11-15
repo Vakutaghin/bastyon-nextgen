@@ -238,10 +238,9 @@ import { plainMentions } from '../../lib/mentions'
 import { computed, nextTick, ref } from 'vue'
 import { focusMenu, isKeyboardClick, vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'
 import Avatar from '@/components/avatar/avatar.vue'
-import { Z_INDEX } from '@/styles/design-tokens'
 import {
   BellOffOutlined,
   BellOutlined,
@@ -362,7 +361,6 @@ function onToggleArchive(): void {
     okText: on ? t('messenger.archive.startOk') : t('messenger.archive.stopOk'),
     cancelText: t('messenger.cancel'),
     centered: true,
-    zIndex: Z_INDEX.CONFIRM,
     onOk: () => archive.setChat(props.dialog.id, on),
   })
 }

@@ -115,7 +115,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Dropdown from '@/components/dropdown'
 import Radio, { RadioGroup, type RadioValue } from '@/components/radio'
 import Segmented from '@/components/segmented'

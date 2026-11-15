@@ -7,7 +7,6 @@
     :title="t('mediaStudio.limits.title')"
     :footer="null"
     :width="520"
-    :z-index="1100"
     @cancel="emit('close')"
   >
     <SC_Body data-testid="upload-limits">
@@ -90,7 +89,7 @@
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Progress from '@/components/progress'
 import Spin from '@/components/spin'
 import Button from '@/components/button'

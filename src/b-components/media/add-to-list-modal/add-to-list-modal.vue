@@ -1,12 +1,5 @@
 <template>
-  <Modal
-    :open="store.isOpen"
-    :width="460"
-    :centered="true"
-    :z-index="2700"
-    :footer="null"
-    @cancel="store.close()"
-  >
+  <Modal :open="store.isOpen" :width="460" :centered="true" :footer="null" @cancel="store.close()">
     <template #title>
       {{ t('collections.addToEllipsis') }} <HelpLink topic="collections#add" />
     </template>
@@ -101,7 +94,7 @@
 
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { CheckOutlined, GlobalOutlined, LockOutlined, PlusOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import HelpLink from '@/b-components/help/help-link.vue'

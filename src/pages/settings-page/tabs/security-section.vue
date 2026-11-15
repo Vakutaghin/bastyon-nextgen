@@ -41,7 +41,6 @@
     :ok-text="t('vault.save')"
     :cancel-text="t('vault.cancel')"
     :ok-button-props="{ disabled: !canEnable }"
-    :z-index="2800"
     @ok="onEnable"
     @cancel="enableOpen = false"
   >
@@ -66,7 +65,6 @@
     :ok-text="t('vault.save')"
     :cancel-text="t('vault.cancel')"
     :ok-button-props="{ disabled: !pwCurrent }"
-    :z-index="2800"
     @ok="onDisable"
     @cancel="disableOpen = false"
   >
@@ -85,7 +83,7 @@
 import { formatLongDate } from '@/helpers/common/date-formatter'
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Input from '@/components/input'
 import Button from '@/components/button'
 import { useVaultSecurity } from '../use-vault-security'

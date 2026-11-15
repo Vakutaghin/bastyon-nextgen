@@ -4,6 +4,7 @@
        role=region с названием — для диктора это область «Сообщения». -->
   <SC_FullScreenOverlay
     v-if="isFullScreen"
+    :ref="overlay.setRef"
     role="region"
     :aria-label="t('messenger.messages')"
     data-own-hotkeys
@@ -143,6 +144,9 @@ import { useMessengerStore } from '../../store'
 import { useAuthStore } from '@/blockchain'
 import { useViewport } from '@/composables/use-viewport'
 import { closePageOverlay, openPageOverlay } from '@/composables/use-page-overlay'
+import { useLayer } from '@/components/ui-core/use-layer'
+import { useElementRef } from '@/components/ui-core/trigger'
+import { Z_INDEX } from '@/styles/design-tokens'
 import { pushBackHandler } from '@/composables/use-back-button'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
 import { useModalStore } from '@/stores/modal-store'
@@ -175,6 +179,16 @@ const {
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { isMobileOrTablet } = useViewport()
+
+// Во весь экран мессенджер — постоянная поверхность в стеке слоёв: окна и
+// панели, открытые при нём (пост из канала, меню), встают выше без расчёта
+// по кнопке.
+const overlay = useElementRef()
+useLayer(isFullScreen, {
+  kind: 'surface',
+  zIndex: Z_INDEX.MESSENGER_FULLSCREEN,
+  el: () => overlay.el.value,
+})
 
 // Без входа чата нет. Круглую кнопку можно скрыть в настройках («Общие»):
 // окно чата тогда открывает значок в шапке.

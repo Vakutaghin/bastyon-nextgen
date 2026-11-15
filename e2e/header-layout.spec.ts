@@ -118,8 +118,8 @@ test('у пунктов меню аккаунта значки слева от �
   await page.locator('[data-header-avatar]').click()
   const menu = page.locator('.header-user-dropdown')
   await expect(menu).toBeVisible()
-  // Меню выезжает с масштабом: размеры — после анимации.
-  await expect(menu).not.toHaveClass(/slide-up-enter/)
+  // Меню выезжает с масштабом: размеры — после анимации (класс ui-pop-enter-*).
+  await expect(menu).not.toHaveClass(/enter/)
 
   const items = menu.getByRole('menuitem')
   const count = await items.count()

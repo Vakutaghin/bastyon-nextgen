@@ -49,7 +49,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Input from '@/components/input'
 import Button from '@/components/button'
 import { CloseOutlined } from '@/components/icons'

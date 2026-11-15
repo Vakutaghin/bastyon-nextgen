@@ -27,7 +27,7 @@ vi.mock('@/stores/ipns-names-store', () => ({
 vi.mock('@/blockchain', () => ({ useAuthStore: () => h.auth }))
 vi.mock('@/helpers/common/clipboard', () => ({ copyText: h.copyText }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: h.toast }))
-vi.mock('ant-design-vue', () => ({ Modal: { confirm: h.confirm } }))
+vi.mock('@/components/modal', () => ({ default: { confirm: h.confirm } }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 vi.mock('@/composables/use-ipfs-share', () => ({
   useIpfsShare: () => ({ share: h.publish, sharing: { value: false } }),

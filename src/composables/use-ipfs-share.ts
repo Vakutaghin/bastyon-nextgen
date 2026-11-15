@@ -2,7 +2,7 @@
 // файла (Rust), публикация по токену, запись в «Мои файлы», ссылка в буфер
 // обмена и окно с ней.
 import { ref, type Ref } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { t } from '@/i18n'
 import { appToast } from '@/b-components/app-toast'
 import { useAuthStore } from '@/blockchain'

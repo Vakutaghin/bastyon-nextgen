@@ -57,13 +57,12 @@
  */
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { CloseOutlined, CopyOutlined, DeleteOutlined, RollbackOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { copyText } from '@/helpers/common/clipboard'
 import { formatDateTimeNumeric } from '@/helpers/common/date-formatter'
 import { useCloseOnBack } from '@/composables/use-back-button'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { isMeshTransport, type Message } from '../../types'
 import { useMessengerStore } from '../../store'
 import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../../store/consts'
@@ -178,11 +177,10 @@ function onDelete(): void {
       n === 1 ? t('messenger.deleteConfirmTitle') : t('messenger.selection.deleteTitle', { n }, n),
     content: confirmText(list),
     okText: t('messenger.deleteMessage'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('messenger.cancel'),
     centered: true,
     // Над полноэкранным мессенджером.
-    zIndex: Z_INDEX.CONFIRM,
     afterClose: () => {
       confirmOpen = false
     },

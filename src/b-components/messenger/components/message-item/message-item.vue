@@ -260,7 +260,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Popover from '@/components/popover'
 import {
   CheckCircleOutlined,
@@ -272,7 +272,6 @@ import {
   DeviceCopyIcon,
 } from '@/components/icons'
 import { downloadMedia } from '@/helpers/common/download-media'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { parseMeshDialogId } from '@/mesh/ids'
 import { useMeshChatStore } from '@/mesh/store/mesh-chat-store'
 import { useMeshRoutesStore } from '@/mesh/store/mesh-routes-store'
@@ -406,10 +405,9 @@ function onDiscard(): void {
     title: t('messenger.deleteConfirmTitle'),
     content: t('messenger.discardUnsentText'),
     okText: t('messenger.deleteMessage'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('messenger.cancel'),
     centered: true,
-    zIndex: Z_INDEX.CONFIRM,
     onOk: () => store.discardMessage(chatId, props.message.id),
   })
 }
@@ -724,11 +722,10 @@ function onDelete(): void {
     title: t('messenger.deleteConfirmTitle'),
     content,
     okText: t('messenger.deleteMessage'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('messenger.cancel'),
     centered: true,
     // Над полноэкранным мессенджером: на своих 1000 вопрос уходил под него.
-    zIndex: Z_INDEX.CONFIRM,
     onOk: async () => {
       try {
         await store.deleteMessage(chatId, props.message.id)

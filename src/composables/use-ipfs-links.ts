@@ -15,7 +15,7 @@
 // ВООБЩЕ, а флаг перечитываем после каждого await — он мог включиться, пока
 // шли consent/установка (до 10 мин).
 import { onBeforeUnmount, onMounted, watch } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import {
   parseIpfsLink,
   parseIpfsSecret,
@@ -34,7 +34,6 @@ import {
   type IpfsSaveProgress,
   type IpfsViewerStatus,
 } from '@/stores/ipfs-store'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { t } from '@/i18n'
 import { useIpfsNodeViewerStore } from '@/stores/ipfs-node-viewer-store'
@@ -114,7 +113,6 @@ function saveProgressWindow(): {
         return
       }
       modal = Modal.info({
-        zIndex: Z_INDEX.MODAL,
         title: t('header.ipfsWebDownloadingTitle'),
         content: text(p),
         okText: t('header.ipfsSaveCancel'),

@@ -7,7 +7,6 @@
     :ok-text="t('vault.backupCheckSubmit')"
     :cancel-text="t('vault.cancel')"
     :ok-button-props="{ disabled: !canSubmit || loading }"
-    :z-index="2850"
     :destroy-on-close="true"
     @ok="onSubmit"
     @cancel="onCancel"
@@ -50,7 +49,7 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Input from '@/components/input'
 import { useBackupVerification } from '../use-backup-verification'
 import { SC_SecurityForm, SC_SecurityDesc, SC_SecurityFieldError } from './security-section.styled'

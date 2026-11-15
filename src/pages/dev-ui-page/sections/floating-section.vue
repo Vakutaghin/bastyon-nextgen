@@ -1,5 +1,5 @@
 <template>
-  <DevUiSection title="Tooltip, Popover, Dropdown">
+  <DevUiSection title="Tooltip, Popover, Dropdown, Modal, Drawer">
     <SC_DevUiRow>
       <SC_DevUiRowLabel>Tooltip</SC_DevUiRowLabel>
       <Tooltip v-for="side in SIDES" :key="side" :title="`Подсказка: ${side}`" :placement="side">
@@ -45,6 +45,27 @@
         </template>
       </Dropdown>
     </SC_DevUiRow>
+    <SC_DevUiRow>
+      <SC_DevUiRowLabel>Modal</SC_DevUiRowLabel>
+      <Button size="small" data-testid="dev-modal" @click="modalOpen = true">окно</Button>
+      <Button size="small" data-testid="dev-confirm" @click="askDelete">вопрос</Button>
+      <Button size="small" data-testid="dev-drawer" @click="drawerOpen = true">шторка</Button>
+    </SC_DevUiRow>
+    <Modal
+      v-model:open="modalOpen"
+      title="Заголовок окна"
+      ok-text="Сохранить"
+      cancel-text="Отмена"
+      @ok="modalOpen = false"
+    >
+      <p>Тело окна: Esc, «Назад», маска и крестик закрывают, Tab ходит по кругу.</p>
+      <Button size="small" data-testid="dev-modal-confirm" @click="askDelete"
+        >вопрос поверх окна</Button
+      >
+    </Modal>
+    <Drawer v-model:open="drawerOpen" title="Шторка" :width="480">
+      <p>Шторка справа; на телефоне справка выезжает снизу.</p>
+    </Drawer>
   </DevUiSection>
 </template>
 
@@ -53,8 +74,10 @@
 // панель у кнопки, подтверждение.
 import { h, ref } from 'vue'
 import Button from '@/components/button'
+import Drawer from '@/components/drawer'
 import Dropdown from '@/components/dropdown'
 import Menu, { type MenuItem } from '@/components/menu'
+import Modal from '@/components/modal'
 import Popconfirm from '@/components/popconfirm'
 import Popover from '@/components/popover'
 import Tooltip from '@/components/tooltip'
@@ -64,6 +87,19 @@ import { SC_DevUiRow, SC_DevUiRowLabel } from '../dev-ui-page.styled'
 
 const confirmed = ref(0)
 const picked = ref('—')
+const modalOpen = ref(false)
+const drawerOpen = ref(false)
+
+function askDelete(): void {
+  Modal.confirm({
+    title: 'Удалить сообщение?',
+    content: 'Сообщение удалится у всех участников чата.',
+    okText: 'Удалить',
+    danger: true,
+    centered: true,
+    onOk: () => (picked.value = 'удалено'),
+  })
+}
 
 const MENU: MenuItem[] = [
   { key: 'edit', label: 'Изменить', icon: () => h(EditOutlined) },

@@ -3,7 +3,6 @@
     :open="shareStore.isOpen"
     :width="440"
     :centered="true"
-    :z-index="2700"
     :title="t('shareToChat.title')"
     :footer="null"
     @cancel="close"

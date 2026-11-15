@@ -8,7 +8,6 @@
     :width="460"
     :centered="true"
     :footer="null"
-    :z-index="2700"
     @cancel="close"
   >
     <SC_State v-if="isLoading && rows.length === 0">{{ t('postScores.loading') }}</SC_State>
@@ -56,7 +55,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { useQuery } from '@tanstack/vue-query'
 import { StarFilled } from '@/components/icons'
 import UserMark from '@/components/user-mark'

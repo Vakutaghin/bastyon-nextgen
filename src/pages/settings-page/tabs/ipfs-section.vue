@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import { useIpfsStore } from '@/stores/ipfs-store'
 import { useStorageStore } from '@/stores/storage-store'
@@ -75,7 +75,7 @@ function onUninstall(): void {
     title: t('header.ipfsUninstallConfirmTitle'),
     content: t('header.ipfsUninstallConfirmContent'),
     okText: t('header.ipfsUninstallBtn'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('common.cancel'),
     onOk: async () => {
       await ipfs.uninstall()

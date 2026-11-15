@@ -10,7 +10,6 @@
       :mask-closable="true"
       :footer="null"
       :destroy-on-close="true"
-      :z-index="zIndex"
       @cancel="closeModal"
     >
       <template #title>
@@ -60,9 +59,7 @@ import { storeToRefs } from 'pinia'
 import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import Modal from '@/components/modal/modal.vue'
-import { isPageOverlaid } from '@/composables/use-page-overlay'
 import { useCloseOnBack } from '@/composables/use-back-button'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { ExpandOutlined } from '@/components/icons'
 import { getPostShareId } from '@/b-components/content/post-card/helpers'
 import {
@@ -99,7 +96,7 @@ const BASE_WIDTH = 880
 function feedCardWidth(): number {
   let widest = 0
   for (const card of document.querySelectorAll<HTMLElement>('.post-card')) {
-    if (card.closest('.ant-modal')) continue
+    if (card.closest('.ui-modal')) continue
     widest = Math.max(widest, card.getBoundingClientRect().width)
   }
   return Math.round(widest)
@@ -120,10 +117,6 @@ watch(
       : undefined
   },
   { immediate: true }
-)
-/** Над полноэкранным мессенджером: иначе пост из канала открывался под ним, невидимым. */
-const zIndex = computed<number | undefined>(() =>
-  isPageOverlaid.value ? Z_INDEX.MODAL_OVER_MESSENGER : undefined
 )
 const postData = computed(() => postModal.value.post)
 

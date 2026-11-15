@@ -7,7 +7,7 @@
       :maskClosable="true"
       :centered="true"
       :width="500"
-      wrapClassName="registration-validation-modal-wrap"
+      wrap-class="registration-validation-modal-wrap"
       @update:open="handleUpdateOpen"
     >
       <SC_Content>
@@ -48,10 +48,5 @@ const p = defineProps<RegistrationValidationModalProps>()
 
 const emit = defineEmits<RegistrationValidationModalEmits>()
 
-const {
-  isOpen,
-  title,
-  message,
-  handleUpdateOpen,
-} = useRegistrationValidationModal(p, emit)
+const { isOpen, title, message, handleUpdateOpen } = useRegistrationValidationModal(p, emit)
 </script>

@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import { formatFileSize } from '@/b-components/messenger/components/file-message/helpers'
 import { isTauri } from '@/b-components/video-uploader/utils/environment'
@@ -68,7 +68,7 @@ function onRemove(): void {
     title: t('videoStudio.module.removeTitle'),
     content: t('videoStudio.module.removeContent'),
     okText: t('videoStudio.module.remove'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('common.cancel'),
     onOk: () => store.remove(),
   })

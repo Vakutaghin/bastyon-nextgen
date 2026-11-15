@@ -1,87 +1,145 @@
-import { computed, type CSSProperties, type Slots } from 'vue'
-import { Modal } from 'ant-design-vue'
-import { SC_Modal } from './styled'
-import { definedProps } from '../forward-props'
-import type { ModalProps, ModalEmits } from './types'
+import { computed, ref, useId, watch, type Ref, type Slots } from 'vue'
+import { useLayer } from '@/components/ui-core/use-layer'
+import { useFocusTrap } from '@/components/ui-core/focus-trap'
+import { useScrollLock } from '@/components/ui-core/scroll-lock'
+import type { ModalEmits, ModalProps } from './types'
 
-export function useModal(p: ModalProps, emit: ModalEmits, slots: Slots) {
-  // Объявленные пропсы (title/centered/destroyOnClose/okText/onOk/…) в antd —
-  // см. forward-props.ts. Исключены те, что обёртка обрабатывает сама.
-  const forwarded = computed<Record<string, unknown>>(() =>
-    definedProps(p, [
-      'modelValue',
-      'open',
-      'width',
-      'fullWidth',
-      'closable',
-      'maskClosable',
-      'footer',
-      'onCancel',
-    ])
-  )
+/** Ширина по умолчанию и «во всю ширину» — до колонки ленты. */
+const DEFAULT_WIDTH = 520
+const FULL_WIDTH = 'min(95vw, 880px)'
 
-  // Футер: явный проп (в т.ч. `null` — без футера) → слот потребителя → без
-  // футера. Дефолтные кнопки antd (OK/Cancel) обёртка не показывает никогда:
-  // ни одна модалка проекта на них не рассчитывает, а раньше пустой слот
-  // #footer их и так подавлял.
-  const footer = computed(() =>
-    p.footer !== undefined ? p.footer : slots.footer ? undefined : null
-  )
+/**
+ * Окно поверх страницы — своё, без antd.
+ *
+ * - Слой ставит стек: окно из окна выше, Esc и «Назад» закрывают только
+ *   верхнее; фокус пойман в окне и возвращается на место; страница под окном
+ *   не прокручивается.
+ * - Содержимое создаётся при первом открытии и остаётся (как у antd), с
+ *   `destroyOnClose` — снимается после анимации закрытия.
+ * - Нажатие по маске закрывает, только если и нажали, и отпустили на ней:
+ *   выделение текста, начатое в окне, окно не закрывает.
+ */
+export interface ModalElements {
+  /** Корень окна в портале: на нём слой (z-index). */
+  root: Ref<HTMLElement | null>
+  /** Само окно (role="dialog"): ширина, ловушка фокуса, слой в стеке. */
+  panel: Ref<HTMLElement | null>
+}
 
-  const isOpen = computed({
-    get: () => {
-      return p.open !== undefined ? p.open : p.modelValue !== undefined ? p.modelValue : false
-    },
-    set: (value: boolean) => {
-      emit('update:open', value)
-      emit('update:modelValue', value)
-    },
+export function useModal(
+  p: ModalProps,
+  emit: ModalEmits,
+  slots: Slots,
+  { root, panel }: ModalElements
+) {
+  const id = useId()
+
+  const isOpen = computed<boolean>(() => p.open ?? p.modelValue ?? false)
+
+  /** Однажды открыто — содержимое есть в DOM (пока его не сняли). */
+  const everOpened = ref(isOpen.value)
+  /** Идёт анимация закрытия: обёртка ещё видна. */
+  const leaving = ref(false)
+
+  watch(isOpen, (open) => {
+    if (open) {
+      everOpened.value = true
+      leaving.value = false
+    } else if (everOpened.value) {
+      leaving.value = true
+    }
   })
 
-  const handleUpdateOpen = (value: boolean) => {
-    isOpen.value = value
+  const rendered = computed<boolean>(
+    () => everOpened.value && !(p.destroyOnClose && !isOpen.value && !leaving.value)
+  )
+  const wrapVisible = computed<boolean>(() => isOpen.value || leaving.value)
+
+  function setOpen(value: boolean): void {
+    emit('update:open', value)
+    emit('update:modelValue', value)
   }
 
-  const handleCancel = () => {
-    isOpen.value = false
-    // emit('cancel') сам вызывает onCancel/@cancel родителя — явный p.onCancel()
-    // здесь давал двойной вызов.
+  function cancel(): void {
+    setOpen(false)
     emit('cancel')
   }
 
-  const modalClass = computed(() => ({}))
-  const wrapClassName = computed(() => 'bastyon-modal-wrap')
+  function onAfterLeave(): void {
+    leaving.value = false
+    if (p.destroyOnClose) everOpened.value = false
+    emit('afterClose')
+  }
 
-  // Пропсы объявлены в ModalProps, но раньше не прокидывались в AModal — из-за
-  // этого `:closable="false"` / `:maskClosable="false"` не работали (крестик и
-  // клик по маске оставались активны). Прокидываем явно; `undefined` оставляет
-  // дефолт ant (true), поэтому существующие модалки не меняют поведение.
-  const closable = computed(() => p.closable)
-  const maskClosable = computed(() => p.maskClosable)
+  const { zIndex } = useLayer(isOpen, {
+    kind: 'modal',
+    el: () => panel.value,
+    closeOnEscape: p.keyboard !== false,
+    closeOnBack: !p.ignoreBack,
+    onDismiss: (reason) => {
+      // Нажатие мимо окна — это маска, её обрабатывает само окно.
+      if (reason !== 'outside') cancel()
+    },
+  })
 
-  // «Во всю ширину» — до ширины колонки ленты: на широком экране 95vw давали
-  // строки по 200 символов, читать такое трудно.
-  const width = computed(() => (p.fullWidth ? 'min(95vw, 880px)' : p.width))
+  useFocusTrap(isOpen, () => panel.value)
+  useScrollLock(isOpen)
 
-  // --modal-body-max-height: 90vh, у телефона боком — остаток экрана (style.css).
-  const bodyStyle = computed<CSSProperties>(() => ({
-    maxHeight: 'var(--modal-body-max-height)',
-    overflowY: 'auto',
-  }))
+  // Слой и ширина — из JS: слой считается при открытии, ширина — проп.
+  watch(
+    [root, zIndex],
+    ([el, z]) => {
+      if (el && z) el.style.zIndex = String(z)
+    },
+    { immediate: true, flush: 'post' }
+  )
+  const width = computed<string>(() => {
+    if (p.fullWidth) return FULL_WIDTH
+    const w = p.width ?? DEFAULT_WIDTH
+    return typeof w === 'number' ? `${w}px` : w
+  })
+  watch(
+    [panel, width],
+    ([el, w]) => {
+      if (el) el.style.width = w
+    },
+    { immediate: true, flush: 'post' }
+  )
+
+  let downOnMask = false
+  function onWrapPointerdown(e: PointerEvent): void {
+    downOnMask = e.target === e.currentTarget
+  }
+  function onWrapClick(e: MouseEvent): void {
+    const onMask = downOnMask && e.target === e.currentTarget
+    downOnMask = false
+    if (onMask && p.maskClosable !== false) cancel()
+  }
+
+  const hasTitle = computed<boolean>(() => Boolean(p.title || slots.title))
+  /** Штатный футер — когда просили кнопку ОК. */
+  const defaultFooter = computed<boolean>(() => Boolean(p.okText || p.onOk))
+  const hasFooter = computed<boolean>(() => {
+    if (p.footer === null) return false
+    return p.footer !== undefined || Boolean(slots.footer) || defaultFooter.value
+  })
+
+  function onOk(e: MouseEvent): void {
+    p.onOk?.(e)
+  }
 
   return {
-    Modal,
-    SC_Modal,
+    id,
     isOpen,
-    forwarded,
-    footer,
-    modalClass,
-    wrapClassName,
-    width,
-    bodyStyle,
-    closable,
-    maskClosable,
-    handleUpdateOpen,
-    handleCancel,
+    rendered,
+    wrapVisible,
+    hasTitle,
+    hasFooter,
+    defaultFooter,
+    cancel,
+    onOk,
+    onAfterLeave,
+    onWrapPointerdown,
+    onWrapClick,
   }
 }

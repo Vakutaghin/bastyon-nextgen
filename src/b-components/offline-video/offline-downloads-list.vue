@@ -21,7 +21,7 @@
 
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import { formatBytes } from '@/services/offline-video/format-bytes'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
@@ -57,7 +57,6 @@ function confirmRemoveAll(): void {
     okText: t('offlineVideo.removeAll'),
     okButtonProps: { danger: true },
     cancelText: t('offlineVideo.cancelAction'),
-    zIndex: 2700,
     onOk: async () => {
       for (const item of list.value) await store.remove(item.id).catch(() => {})
     },

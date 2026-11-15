@@ -1,12 +1,5 @@
 <template>
-  <Modal
-    :open="!!choice || !!batch"
-    :width="380"
-    :centered="true"
-    :z-index="2700"
-    :footer="null"
-    @cancel="close"
-  >
+  <Modal :open="!!choice || !!batch" :width="380" :centered="true" :footer="null" @cancel="close">
     <template #title>{{ title }} <HelpLink topic="offline-video" /></template>
     <SC_SheetBody v-if="choice || batch" data-testid="offline-quality-sheet">
       <SC_QualityRow
@@ -35,7 +28,7 @@
 
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Checkbox from '@/components/checkbox'
 import { formatBytes } from '@/services/offline-video/format-bytes'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'

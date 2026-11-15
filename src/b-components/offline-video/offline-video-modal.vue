@@ -3,7 +3,6 @@
     :open="!!item"
     :width="860"
     :centered="true"
-    :z-index="2600"
     :footer="null"
     :destroy-on-close="true"
     @cancel="store.closePlayer()"
@@ -43,7 +42,7 @@
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { DeleteOutlined } from '@/components/icons'

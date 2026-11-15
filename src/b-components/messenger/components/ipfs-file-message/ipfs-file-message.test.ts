@@ -18,7 +18,7 @@ vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => h.store }))
 vi.mock('@/blockchain', () => ({ useAuthStore: () => ({ address: 'PAlice' }) }))
 vi.mock('@/composables/use-ipfs-links', () => ({ openIpfsViewer: h.openViewer }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: h.toast }))
-vi.mock('ant-design-vue', () => ({ Modal: { confirm: h.confirm } }))
+vi.mock('@/components/modal', () => ({ default: { confirm: h.confirm } }))
 
 import IpfsFileMessage from './ipfs-file-message.vue'
 import { parseIpfsFileLink, type IpfsFileLink } from '@/helpers/ipfs/ipfs-link'

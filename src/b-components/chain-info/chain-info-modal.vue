@@ -3,9 +3,8 @@
     :open="store.isOpen"
     :width="760"
     :centered="true"
-    :z-index="2700"
     :destroy-on-close="true"
-    wrap-class-name="chain-info-modal"
+    wrap-class="chain-info-modal"
     @cancel="store.close()"
   >
     <template #title>
@@ -56,7 +55,7 @@
 import { computed, nextTick, onBeforeUnmount, provide, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { ArrowLeftIcon, BlockOutlined } from '@/components/icons'
 import { useChainInfoStore } from '@/stores/chain-info-store'
 import { CHAIN_LINK_KEY, explorerRouteFor } from './chain-link'

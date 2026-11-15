@@ -208,7 +208,7 @@ test('постоянная ссылка: создать, QR, перевести 
     value: `/ipfs/${REPORT_V2.cid}/${REPORT_V2.name}`,
     sequence: 2n,
   })
-  await dialog.getByRole('button', { name: 'Close' }).click()
+  await dialog.getByRole('button', { name: 'Закрыть' }).click()
 
   // В списке постоянных ссылок — куда ведёт ссылка.
   const section = page.getByRole('heading', { name: 'Постоянные ссылки' })

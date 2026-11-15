@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS, SHELL } from '@/styles/design-tokens'
+import { BREAKPOINTS, SHELL, Z_INDEX } from '@/styles/design-tokens'
 
 export const SC_MessengerWrapper = styled.div`
   position: fixed;
@@ -45,7 +45,7 @@ export const SC_FullScreenOverlay = styled.div`
   inset: 0;
   width: 100%;
   height: 100vh;
-  z-index: 2500;
+  z-index: ${() => Z_INDEX.MESSENGER_FULLSCREEN};
   background-color: var(--color-bg-primary);
   display: flex;
   flex-direction: column;

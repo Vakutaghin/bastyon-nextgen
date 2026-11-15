@@ -63,7 +63,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import { appToast } from '@/b-components/app-toast'
 import { utf8Length } from '@/mesh/bytes'
@@ -141,7 +141,7 @@ function confirmRemove(c: SessionChannel): void {
     title: t('mesh.channels.removeConfirm', { name: c.name }),
     content: t('mesh.channels.removeHint'),
     okText: t('mesh.channels.remove'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('messenger.cancel'),
     centered: true,
     onOk: () => act(() => connection.removeChannel(c.index)),

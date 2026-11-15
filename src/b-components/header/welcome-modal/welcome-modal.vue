@@ -6,7 +6,6 @@
     :centered="true"
     :closable="true"
     :mask-closable="false"
-    :z-index="2750"
     :footer="null"
     @cancel="finish"
   >
@@ -43,7 +42,7 @@
 import { computed, ref, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { SmileOutlined, UserOutlined, SafetyCertificateOutlined } from '@/components/icons'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import {
   SC_Welcome,
   SC_WelcomeIcon,

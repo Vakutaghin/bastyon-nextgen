@@ -7,7 +7,7 @@ const { confirm, deletePost, toast } = vi.hoisted(() => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
-vi.mock('ant-design-vue', () => ({ Modal: { confirm } }))
+vi.mock('@/components/modal', () => ({ default: { confirm } }))
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: toast }))
 vi.mock('./post-deleter', () => ({ deletePost }))
@@ -26,8 +26,8 @@ describe('usePostDelete', () => {
     const { confirmDelete, deleted } = usePostDelete(() => 'tx1', onDeleted)
     confirmDelete()
     expect(deletePost).not.toHaveBeenCalled()
-    const opts = confirm.mock.calls[0]![0] as { onOk: () => Promise<void>; okType: string }
-    expect(opts.okType).toBe('danger')
+    const opts = confirm.mock.calls[0]![0] as { onOk: () => Promise<void>; danger: boolean }
+    expect(opts.danger).toBe(true)
     await opts.onOk()
     expect(deletePost).toHaveBeenCalledWith('tx1')
     expect(deleted.value).toBe(true)

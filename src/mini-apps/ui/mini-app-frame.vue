@@ -53,7 +53,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { CloseOutlined } from '@/components/icons'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { usePermissionsStore } from '@/mini-apps/store/permissions-store'
 import { miniAppsBridge } from '@/mini-apps/core/bridge'
@@ -244,7 +244,7 @@ const askClose = () => {
     content: t('miniapps.closeConfirmContent'),
     okText: t('miniapps.close'),
     cancelText: t('miniapps.stay'),
-    okType: 'danger',
+    danger: true,
     centered: true,
     onOk: leave,
   })

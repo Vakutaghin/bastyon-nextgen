@@ -19,7 +19,6 @@
 
 import { pushBackHandler } from '@/composables/use-back-button'
 import { Z_INDEX } from '@/styles/design-tokens'
-import { legacyOverlayZ } from './legacy-layers'
 
 export type LayerKind =
   | 'modal'
@@ -117,7 +116,7 @@ function computeZ(kind: LayerKind, anchor: HTMLElement | null, own?: number): nu
   for (const layer of stack) {
     if (!FIXED_KINDS.has(layer.kind)) z = Math.max(z, layer.zIndex + 1)
   }
-  return Math.max(z, contextZ(anchor) + 1, legacyOverlayZ() + 1)
+  return Math.max(z, contextZ(anchor) + 1)
 }
 
 function onEscape(e: KeyboardEvent): void {
@@ -138,8 +137,7 @@ function onEscape(e: KeyboardEvent): void {
 function installEscape(): void {
   if (escapeInstalled) return
   escapeInstalled = true
-  // Всплытие на document: раньше обработчиков страницы на window (мессенджер),
-  // но после окон antd, которые гасят свой Esc сами.
+  // Всплытие на document: раньше обработчиков страницы на window (мессенджер).
   document.addEventListener('keydown', onEscape)
 }
 

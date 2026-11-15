@@ -9,7 +9,7 @@
  */
 
 import { ref, h, type Ref } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { ExclamationCircleOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
@@ -20,7 +20,6 @@ import { sendComment } from '../comment-sender'
 import { deleteComment } from '../comment-deleter'
 import { isCommentLengthValid, getCommentTxState } from '../helpers'
 import { isWithinEditWindow } from '@/helpers/content/edit-window'
-import { Z_INDEX } from '@/styles/design-tokens'
 
 export interface UseCommentEditDeleteOptions {
   postId: Ref<string>
@@ -107,10 +106,9 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       icon: h(ExclamationCircleOutlined),
       content: t('commentsMsg.blockConfirmContent'),
       okText: t('commentsMsg.blockConfirmOk'),
-      okType: 'danger',
+      danger: true,
       cancelText: t('commentsMsg.cancel'),
       centered: true,
-      zIndex: Z_INDEX.CONFIRM,
       onOk: () => blockUserFromComment(comment),
     })
   }
@@ -162,10 +160,9 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       icon: h(ExclamationCircleOutlined),
       content: t('commentsMsg.deleteConfirmContent'),
       okText: t('commentsMsg.deleteConfirmOk'),
-      okType: 'danger',
+      danger: true,
       cancelText: t('commentsMsg.cancel'),
       centered: true,
-      zIndex: Z_INDEX.CONFIRM,
       onOk: () => deleteCommentInternal(comment),
     })
   }
@@ -238,7 +235,6 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       okText: t('commentsMsg.discardEditOk'),
       cancelText: t('commentsMsg.no'),
       centered: true,
-      zIndex: Z_INDEX.CONFIRM,
       onOk: () => closeEdit(),
     })
   }

@@ -172,7 +172,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'
 import Switch from '@/components/switch'
 import { cacheAPI } from '@/db/apis/cache-api'
@@ -347,7 +347,7 @@ function onClearCache(): void {
     title: t('settings.system.clearConfirmTitle'),
     content: t('settings.system.clearConfirmText'),
     okText: t('settings.system.clearButton'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('settings.system.cancel'),
     centered: true,
     onOk: async () => {

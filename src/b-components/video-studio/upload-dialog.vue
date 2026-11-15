@@ -9,7 +9,6 @@
     :title="job ? job.title.trim() || job.fileName : t('videoStudio.title')"
     :footer="null"
     :width="560"
-    :z-index="1100"
     @cancel="store.closeDialog()"
   >
     <SC_Body v-if="!job">
@@ -197,7 +196,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Input from '@/components/input'
 import TextArea from '@/components/textarea'
 import Checkbox from '@/components/checkbox'

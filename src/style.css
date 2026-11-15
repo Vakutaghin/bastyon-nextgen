@@ -198,6 +198,16 @@
   --ui-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --ui-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --ui-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  /* Тень шторки (components/drawer) — как у antd Drawer, от края, где она. */
+  --ui-shadow-drawer-right:
+    -6px 0 16px 0 rgb(0 0 0 / 0.08), -3px 0 6px -4px rgb(0 0 0 / 0.12),
+    -9px 0 28px 8px rgb(0 0 0 / 0.05);
+  --ui-shadow-drawer-left:
+    6px 0 16px 0 rgb(0 0 0 / 0.08), 3px 0 6px -4px rgb(0 0 0 / 0.12),
+    9px 0 28px 8px rgb(0 0 0 / 0.05);
+  --ui-shadow-drawer-bottom:
+    0 -6px 16px 0 rgb(0 0 0 / 0.08), 0 -3px 6px -4px rgb(0 0 0 / 0.12),
+    0 -9px 28px 8px rgb(0 0 0 / 0.05);
 
   /* Ореол фокуса: вокруг элемента, кольцо самого элемента становится primary. */
   --ui-focus-outline: 3px solid rgb(var(--ui-primary-rgb) / 0.25);
@@ -633,7 +643,7 @@
 
 /* Телефон боком (data-shell="rail", ставит use-viewport): разделы колонкой
    слева вместо нижней панели, шапка ниже — по высоте экран в полтора раза
-   меньше, чем стоя. Отступы — как у узкого окна. Окна antd — от самого верха,
+   меньше, чем стоя. Отступы — как у узкого окна. Окна — от самого верха,
    а их тело — по оставшейся высоте: с отступом сверху в 100 px низ окна
    уходил за край экрана. */
 :root[data-shell='rail'] {
@@ -675,52 +685,6 @@
 :root[data-shell='compact'],
 :root[data-shell='rail'] {
   --leading-scale: 0.93;
-}
-
-/* ── Окна antd и системные полосы ──
-   На Android приложение рисуется под строкой состояния и кнопками навигации
-   (MainActivity), на iOS — под вырезом и полосой «домой». antd о них не знает:
-   высокое окно заходило под полосы, и кнопки «Отмена» и «Отправить» ложились
-   под кнопки навигации. Отступ — полями самого окна: .ant-modal прозрачен и
-   касаний не ловит. Центрированное окно по полям находит середину видимой
-   части, остальные — конец прокрутки. Сильнее правил antd (у центрированного
-   они на :where) и слабее правил окон во весь экран: пост и редактор на
-   телефоне, уведомления, шторка профиля отступают внутри сами (ниже). */
-.ant-modal-root .ant-modal {
-  padding-bottom: calc(24px + var(--safe-bottom));
-}
-
-body .ant-modal-root .ant-modal-centered .ant-modal {
-  padding-top: var(--safe-top);
-  padding-bottom: var(--safe-bottom);
-}
-
-/* На телефоне высокое окно не прилипает к полосам: 8 px зазора. */
-:root:is([data-shell='compact'], [data-shell='rail']) .ant-modal-centered .ant-modal {
-  padding-top: calc(var(--safe-top) + 8px);
-  padding-bottom: calc(var(--safe-bottom) + 8px);
-}
-
-/* Телефон боком: окна — от самого верха, под строкой состояния. :where —
-   чтобы окна во весь экран со своими правилами были сильнее. */
-:root[data-shell='rail'] :where(.ant-modal-wrap:not(.ant-modal-centered)) .ant-modal {
-  top: calc(var(--safe-top) + 8px);
-  padding-bottom: calc(var(--safe-bottom) + 8px);
-}
-
-/* Окно — колонкой не выше видимой части экрана: заголовок и кнопки на месте,
-   прокручивается только тело, и ему достаётся вся остальная высота. */
-:root[data-shell='rail'] .ant-modal-content {
-  display: flex;
-  flex-direction: column;
-  max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 16px);
-  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 16px);
-}
-
-:root[data-shell='rail'] .ant-modal-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -985,8 +949,8 @@ main[tabindex='-1']:focus {
   .ant-slider,
   .ant-picker-panel,
   .ant-collapse-header,
-  .ant-modal-header,
-  .ant-modal-close,
+  .ui-modal__header,
+  .ui-modal__close,
   .ant-drawer-header,
   .vel-modal
 ) {
@@ -1107,11 +1071,6 @@ body .ant-btn-default:not(:disabled):active {
   background: var(--ui-bg-accented);
 }
 
-/* Футер модалки — отступы Nuxt (у wireframe-модалки antd 8×16). */
-body .ant-modal .ant-modal-footer {
-  padding: 16px 24px;
-}
-
 /* Появление оверлеев antd — как у Nuxt UI: из 95% размера вместе с
    прозрачностью, кривая ease-out; выпадашки, списки Select, календарь, поповеры
    и тултипы — за 100 мс, модалки — за 200 мс. У antd выпадашки растягивались
@@ -1218,23 +1177,6 @@ body
   transform: none;
 }
 
-body .ant-modal-root .ant-modal:is(.ant-zoom-enter, .ant-zoom-appear, .ant-zoom-leave) {
-  animation-duration: 200ms;
-  animation-timing-function: var(--ui-ease-out);
-  /* antd ставит инлайном точку клика, у Nuxt окно растёт из центра. */
-  transform-origin: 50% 50% !important;
-}
-
-body
-  .ant-modal-root
-  .ant-modal:is(.ant-zoom-enter.ant-zoom-enter-active, .ant-zoom-appear.ant-zoom-appear-active) {
-  animation-name: ui-scale-in;
-}
-
-body .ant-modal-root .ant-modal.ant-zoom-leave.ant-zoom-leave-active {
-  animation-name: ui-scale-out;
-}
-
 /* Свои окна и панели (src/components/ui-core) — те же движения, что у antd
    выше: панели появляются из 95% за 100 мс от края, у которого кнопка
    (`data-placement` ставит floating.ts), окна — за 200 мс из центра, маска
@@ -1308,8 +1250,8 @@ body .ui-select-dropdown .ant-select-item {
   padding-inline: 8px;
 }
 
-/* В модалке список рисуется в .ant-modal-wrap, а у центрированной модалки
-   там text-align: center — пункты вставали по центру. */
+/* Список рисуется в корне слоя (окна), где может быть text-align: center —
+   пункты вставали бы по центру. */
 body .ui-select-dropdown {
   text-align: start;
 }
@@ -1322,8 +1264,8 @@ body .ui-select-dropdown .ant-select-item-option-state {
   font-size: 16px;
 }
 
-/* Панель календаря (components/date-time-picker): в модалке она тоже рисуется
-   в .ant-modal-wrap с его text-align: center. Недоступные дни — просто бледнее,
+/* Панель календаря (components/date-time-picker): в окне она тоже рисуется
+   в корне слоя. Недоступные дни — просто бледнее,
    как у UCalendar, а не серыми плашками рядами. */
 body .ui-picker-dropdown {
   text-align: start;
@@ -1333,15 +1275,11 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   background: transparent;
 }
 
-/* Captcha-модалка — компактная ширина и паддинг. Раньше жило в
-   captcha-modal.styled.ts через :deep(.captcha-modal-wrap) (мёртвый код —
-   модалка телепортится в <body>). wrapClassName="captcha-modal-wrap". */
-.captcha-modal-wrap .ant-modal {
-  max-width: 450px;
-}
+/* Captcha-модалка — компактная ширина и паддинг (wrap-class="captcha-modal-wrap"). */
+.ui-modal-root .captcha-modal-wrap > .ui-modal {
+  --ui-modal-body-padding: 1.5em;
 
-.captcha-modal-wrap .ant-modal-body {
-  padding: 1.5em;
+  max-width: 450px;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -1452,9 +1390,9 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   }
 
   /* Окно поста — во весь экран, пост в нём такой же, как в ленте: раньше поля
-     окна и его тела отнимали по 40px с каждой стороны. Ширину antd ставит
+     окна и его тела отнимали по 40px с каждой стороны. Ширину окно ставит
      inline-стилем, поэтому !important. */
-  .ant-modal.post-modal {
+  .ui-modal-root .ui-modal-wrap > .ui-modal.post-modal {
     top: 0;
     width: 100vw !important;
     max-width: 100vw;
@@ -1464,12 +1402,12 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
 
   /* Полей под системные полосы (правила окон выше) этим окнам не нужно:
      полосы обходит их содержимое. */
-  body .ant-modal-root .ant-modal-centered .ant-modal:is(.post-modal, .post-composer-modal) {
+  .ui-modal-root .ui-modal-wrap[data-centered] > .ui-modal:is(.post-modal, .post-composer-modal) {
     padding-top: 0;
     padding-bottom: 0;
   }
 
-  .ant-modal.post-modal .ant-modal-content {
+  .ui-modal-root .ui-modal.post-modal .ui-modal__content {
     display: flex;
     flex-direction: column;
     height: 100dvh;
@@ -1478,15 +1416,15 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
     box-sizing: border-box;
   }
 
-  .ant-modal.post-modal .ant-modal-header {
+  .ui-modal-root .ui-modal.post-modal .ui-modal__header {
     padding: 12px;
   }
 
-  .ant-modal.post-modal .ant-modal-close {
+  .ui-modal-root .ui-modal.post-modal .ui-modal__close {
     top: calc(var(--safe-top) + 4px);
   }
 
-  .ant-modal.post-modal .ant-modal-body {
+  .ui-modal-root .ui-modal.post-modal .ui-modal__body {
     flex: 1 1 auto;
     min-height: 0;
     max-height: none !important;
@@ -1497,7 +1435,7 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   /* Пост в окне — без своей рамки и отступов (как post-modal/styled.ts на
      любом экране); картинки уходят в отступ тела окна. Явно и сильнее правил
      карточки выше: порядок стилей в WebKit и Chromium разный. */
-  .ant-modal.post-modal .post-card.ui-card {
+  .ui-modal-root .ui-modal.post-modal .post-card.ui-card {
     --ui-card-padding: 0;
 
     border: 0;
@@ -1505,7 +1443,7 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
 
   /* Правка и репост поста — тоже во весь экран, с узкими полями: в окне
      шириной в экран минус 32 px поля окна оставляли под текст меньше 300 px. */
-  .ant-modal.post-composer-modal {
+  .ui-modal-root .ui-modal-wrap > .ui-modal.post-composer-modal {
     top: 0;
     width: 100vw !important;
     max-width: 100vw;
@@ -1513,7 +1451,7 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
     padding-bottom: 0;
   }
 
-  .ant-modal.post-composer-modal .ant-modal-content {
+  .ui-modal-root .ui-modal.post-composer-modal .ui-modal__content {
     display: flex;
     flex-direction: column;
     height: 100dvh;
@@ -1522,11 +1460,11 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
     box-sizing: border-box;
   }
 
-  .ant-modal.post-composer-modal .ant-modal-close {
+  .ui-modal-root .ui-modal.post-composer-modal .ui-modal__close {
     top: calc(var(--safe-top) + 6px);
   }
 
-  .ant-modal.post-composer-modal .ant-modal-body {
+  .ui-modal-root .ui-modal.post-composer-modal .ui-modal__body {
     flex: 1 1 auto;
     min-height: 0;
     max-height: none !important;
@@ -1536,8 +1474,11 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
 
 /* Уведомления на телефоне — окном во весь экран (header-notifications):
    выпадашка вылезала за край экрана. Прокручивается только список. Ширину
-   antd ставит inline-стилем, поэтому !important. */
-:root:is([data-shell='compact'], [data-shell='rail']) .ant-modal.notifications-modal {
+   окно ставит inline-стилем, поэтому !important. */
+:root:is([data-shell='compact'], [data-shell='rail'])
+  .ui-modal-root
+  .ui-modal-wrap
+  > .ui-modal.notifications-modal {
   top: 0;
   width: 100vw !important;
   max-width: 100vw;
@@ -1545,7 +1486,10 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   padding-bottom: 0;
 }
 
-:root:is([data-shell='compact'], [data-shell='rail']) .notifications-modal .ant-modal-content {
+:root:is([data-shell='compact'], [data-shell='rail'])
+  .ui-modal-root
+  .ui-modal.notifications-modal
+  .ui-modal__content {
   display: flex;
   flex-direction: column;
   height: 100dvh;
@@ -1555,7 +1499,10 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   box-sizing: border-box;
 }
 
-:root:is([data-shell='compact'], [data-shell='rail']) .notifications-modal .ant-modal-body {
+:root:is([data-shell='compact'], [data-shell='rail'])
+  .ui-modal-root
+  .ui-modal.notifications-modal
+  .ui-modal__body {
   flex: 1 1 auto;
   min-height: 0;
   max-height: none !important;
@@ -1565,7 +1512,7 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
 
 /* «Подробнее» профиля на телефоне (profile-info-sheet) — шторкой снизу:
    профиль виден над ней. Прокручивается содержимое, заголовок остаётся. */
-:root[data-shell='compact'] .ant-modal.profile-info-modal {
+:root[data-shell='compact'] .ui-modal-root .ui-modal-wrap > .ui-modal.profile-info-modal {
   position: absolute;
   top: auto;
   right: 0;
@@ -1577,7 +1524,7 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   padding-bottom: 0;
 }
 
-:root[data-shell='compact'] .profile-info-modal .ant-modal-content {
+:root[data-shell='compact'] .ui-modal-root .ui-modal.profile-info-modal .ui-modal__content {
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - var(--safe-top) - 48px);
@@ -1587,17 +1534,17 @@ body .ui-picker-dropdown .ant-picker-cell-disabled::before {
   box-sizing: border-box;
 }
 
-:root[data-shell='compact'] .profile-info-modal .ant-modal-header {
+:root[data-shell='compact'] .ui-modal-root .ui-modal.profile-info-modal .ui-modal__header {
   padding-right: 32px;
 }
 
-:root[data-shell='compact'] .profile-info-modal .ant-modal-title {
+:root[data-shell='compact'] .ui-modal-root .ui-modal.profile-info-modal .ui-modal__title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-:root[data-shell='compact'] .profile-info-modal .ant-modal-body {
+:root[data-shell='compact'] .ui-modal-root .ui-modal.profile-info-modal .ui-modal__body {
   flex: 1 1 auto;
   min-height: 0;
   max-height: none !important;

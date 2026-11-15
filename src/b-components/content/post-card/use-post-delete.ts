@@ -3,13 +3,12 @@
 // tx-побочный эффект был тестируем отдельно от шаблона.
 
 import { ref } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 
 import { usePostsStore } from '@/stores/posts-store'
-import { Z_INDEX } from '@/styles/design-tokens'
 
 import { deletePost } from './post-deleter'
 
@@ -41,9 +40,8 @@ export function usePostDelete(getPostId: () => string, onDeleted: (postId: strin
       title: t('postCard.deleteConfirmTitle'),
       content: t('postCard.deleteConfirmText'),
       okText: t('postCard.deleteAction'),
-      okType: 'danger',
+      danger: true,
       cancelText: t('postCard.deleteCancel'),
-      zIndex: Z_INDEX.CONFIRM,
       onOk: doDelete,
     })
   }

@@ -6,7 +6,6 @@
     :footer="null"
     :width="500"
     :destroy-on-close="true"
-    :z-index="2600"
     @cancel="onClose"
   >
     <SC_Wrap>
@@ -101,7 +100,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 
 import { formatFileSize } from '@/b-components/video-uploader/utils/video-formatter'
 import { useTorStore } from '@/stores/tor-store'

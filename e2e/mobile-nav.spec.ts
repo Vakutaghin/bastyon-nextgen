@@ -171,7 +171,7 @@ test.describe('Телефон боком', () => {
     await bottomNav(page, 'Кошелёк').click()
     const dialog = page.getByRole('dialog', { name: 'Вход в аккаунт' })
     await expect(dialog).toBeVisible()
-    const box = await page.locator(UI.modalContent).boundingBox()
+    const box = await dialog.locator(UI.modalContent).boundingBox()
     expect(box!.y).toBeGreaterThanOrEqual(0)
     expect(box!.y + box!.height).toBeLessThanOrEqual(390)
   })

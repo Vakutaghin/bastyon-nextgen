@@ -5,7 +5,6 @@
     :centered="true"
     :closable="!saving"
     :mask-closable="!saving"
-    :z-index="2700"
     @cancel="close"
   >
     <template #title>{{ title }} <HelpLink topic="collections#create" /></template>
@@ -223,7 +222,6 @@
 import { computed, ref, shallowRef, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Modal } from 'ant-design-vue'
 import Button from '@/components/button'
 import {
   AudioPlaylistIcon,
@@ -236,7 +234,7 @@ import {
   PlusOutlined,
   VideoPlaylistIcon,
 } from '@/components/icons'
-import { SC_ModalActions, SC_ModalBody } from '@/components/modal'
+import Modal, { SC_ModalActions, SC_ModalBody } from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'
 import HelpLink from '@/b-components/help/help-link.vue'
 import { useAuthStore } from '@/blockchain'

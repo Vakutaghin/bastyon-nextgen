@@ -16,7 +16,7 @@
 
 import { h } from 'vue'
 import type { Router } from 'vue-router'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { miniAppsBridge } from '@/mini-apps/core/bridge'
 import { createFetchTunnel } from '@/mini-apps/core/fetch-tunnel'
 import { PermissionResolver } from '@/mini-apps/core/permission-resolver'

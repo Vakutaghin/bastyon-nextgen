@@ -59,15 +59,11 @@
       </SC_CategoriesItem>
     </SC_CategoriesList>
 
-    <!-- Слой модалок, а не antd-шный 1000: в мобильном меню (1101) окно иначе
-         открывалось бы под ним. -->
-    <AModal
+    <Modal
       v-model:open="isModalVisible"
-      :z-index="Z_INDEX.MODAL"
       :title="t('sidebar.addCategory')"
       :ok-text="t('sidebar.add')"
       :cancel-text="t('sidebar.cancel')"
-      :body-style="{ padding: '20px' }"
       :width="400"
       @ok="addCategory"
       @cancel="closeModal"
@@ -83,11 +79,10 @@
         @input="handleInput"
         @press-enter="addCategory"
       />
-    </AModal>
+    </Modal>
 
-    <AModal
+    <Modal
       v-model:open="isDeleteModalVisible"
-      :z-index="Z_INDEX.MODAL"
       :title="t('sidebar.deleteCategoryTitle')"
       :ok-text="t('sidebar.delete')"
       ok-type="danger"
@@ -100,14 +95,14 @@
         <ExclamationCircleOutlined :style="ICON_WARNING_ICON_22" />
         <span>{{ t('sidebar.deleteCategoryConfirm') }}</span>
       </SC_DeleteConfirmRow>
-    </AModal>
+    </Modal>
   </SC_Categories>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal as AModal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'
 import Input from '@/components/input'
 import {
@@ -124,7 +119,6 @@ import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { useRpcQuery } from '@/composables/use-rpc-query'
 import type { GetTagsResponse } from '@/types/rpc-responses/get-tags'
 import { ICON_SIZE_10, ICON_WARNING_ICON_22 } from '@/styles/icon-styles'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import {
   SC_Categories,

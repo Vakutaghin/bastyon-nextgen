@@ -24,8 +24,8 @@ const h = vi.hoisted(() => ({
   decryptSecretStream: vi.fn(),
 }))
 
-vi.mock('ant-design-vue', () => ({
-  Modal: {
+vi.mock('@/components/modal', () => ({
+  default: {
     confirm: (opts: ConfirmOpts) => {
       h.confirms.push(opts)
       return { update: h.update, destroy: vi.fn() }

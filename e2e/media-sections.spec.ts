@@ -169,7 +169,7 @@ test('раздел «Видео»: ролик играет в окне пост�
   const card = page.getByTestId('video-card').filter({ hasText: 'Первый ролик' })
   await card.getByRole('link', { name: 'Первый ролик' }).first().click()
 
-  const modal = page.locator(UI.modalContent)
+  const modal = page.locator(`${UI.modal}.post-modal ${UI.modalContent}`)
   await expect(modal).toContainText('Описание ролика')
   const video = modal.locator('video').first()
   await expect

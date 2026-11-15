@@ -49,7 +49,7 @@
 import { computed, ref, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import {
   AudioPlaylistIcon,
@@ -64,7 +64,6 @@ import { useListVisibility } from '@/b-components/media/use-list-visibility'
 import { useMediaLibrary } from '@/composables/use-media-library'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { isPlaylistId, type LibraryKind } from '@/services/media-library/media-library-doc'
-import { Z_INDEX } from '@/styles/design-tokens'
 import {
   SC_Empty,
   SC_SectionHead,
@@ -114,9 +113,8 @@ function confirmDelete(): void {
     title: t('shelf.deleteTitle', { name: title.value }),
     content: t('library.deleteConfirmText'),
     okText: t('library.delete'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('library.cancel'),
-    zIndex: Z_INDEX.CONFIRM,
     onOk: () => {
       library.deletePlaylist(listId.value)
       void router.replace('/collections')

@@ -5,7 +5,6 @@
     :centered="true"
     :closable="!paying"
     :mask-closable="!paying"
-    :z-index="2700"
     @cancel="close"
   >
     <template #title
@@ -150,13 +149,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
 import Checkbox from '@/components/checkbox'
 import Spin from '@/components/spin'
 import Button from '@/components/button'
 import Avatar from '@/components/avatar/avatar.vue'
 import { CheckCircleOutlined } from '@/components/icons'
-import { SC_ModalActions, SC_ModalBody } from '@/components/modal'
+import Modal, { SC_ModalActions, SC_ModalBody } from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'
 import { useAuthStore } from '@/blockchain'
 import {

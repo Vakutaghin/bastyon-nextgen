@@ -5,9 +5,8 @@
     :open="true"
     :footer="null"
     :width="960"
-    :z-index="1150"
     centered
-    wrap-class-name="studio-player-modal"
+    wrap-class="studio-player-modal"
     @cancel="emit('close')"
   >
     <template #title>
@@ -25,7 +24,7 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import type { ServerVideo } from './use-server-videos'
 import { SC_PlayerTitle } from './studio-player-modal.styled'

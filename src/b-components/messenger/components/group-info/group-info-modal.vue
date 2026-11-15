@@ -3,11 +3,10 @@
     :open="!!dialog?.group"
     :width="480"
     :centered="true"
-    :z-index="2700"
     :destroy-on-close="true"
     :footer="null"
     :title="t('messenger.group.info')"
-    wrap-class-name="group-info-modal"
+    wrap-class="group-info-modal"
     @cancel="store.closeGroupInfo()"
   >
     <SC_GroupBody v-if="dialog?.group">
@@ -138,7 +137,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Popconfirm from '@/components/popconfirm'
 import Avatar from '@/components/avatar/avatar.vue'
 import {

@@ -1,7 +1,7 @@
 // «Мои файлы»: что аккаунт опубликовал в IPFS с этого компьютера, раздаются ли
 // эти файлы сейчас, где их копии на удалённом сервисе и постоянные ссылки на них.
 import { computed, onBeforeUnmount, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { t } from '@/i18n'
 import { useAuthStore } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
@@ -128,7 +128,7 @@ export function useMyFiles(): MyFiles {
         ipfs.pinServiceConfigured ? 'myFiles.unshareContentRemote' : 'myFiles.unshareContent'
       ),
       okText: t('myFiles.unshare'),
-      okType: 'danger',
+      danger: true,
       cancelText: t('common.cancel'),
       onOk: async () => {
         try {

@@ -5,7 +5,6 @@
     :width="400"
     :centered="true"
     :footer="null"
-    :z-index="2800"
     :title="kind === 'pattern' ? t('appLock.setPattern') : t('appLock.setPin')"
     :destroy-on-close="true"
     @cancel="emit('cancel')"
@@ -41,7 +40,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Segmented from '@/components/segmented'
 import { useAppLockStore } from '@/stores/app-lock-store'
 import {

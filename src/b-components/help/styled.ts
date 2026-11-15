@@ -1,5 +1,5 @@
 import styled from 'vue3-styled-components'
-import { BREAKPOINTS, TRANSITIONS, Z_INDEX } from '@/styles/design-tokens'
+import { BREAKPOINTS, TRANSITIONS } from '@/styles/design-tokens'
 
 // Брейкпоинт — функцией: строка в шаблоне styled не проходит проверку типов.
 
@@ -424,13 +424,3 @@ export const SC_State = styled.div`
   font-size: 14px;
   color: var(--ui-text-muted);
 `
-
-/** Стили самой панели antd: отступы тела и шапки. */
-export const PANEL_BODY_STYLE = { padding: '20px 24px 32px' }
-export const PANEL_HEADER_STYLE = { padding: '10px 16px' }
-/**
- * Слой панели — на корне `.ant-drawer`: проп `z-index` antdv 4 кладёт на
- * внутреннюю обёртку, а корень остаётся на 1000 из CSS, и панель уходила под
- * любое окно (F1 или «?» в окне чаевых, продвижения).
- */
-export const PANEL_ROOT_STYLE = { zIndex: Z_INDEX.HELP_PANEL }

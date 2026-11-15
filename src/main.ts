@@ -35,7 +35,9 @@ await initI18n()
 import { createApp, watch } from 'vue'
 import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
+// eslint-disable-next-line no-restricted-imports -- сброс стилей antd уходит вместе с последними его компонентами
 import 'ant-design-vue/dist/reset.css'
+import { setDialogAppContext } from '@/components/modal/dialogs'
 // Шрифты интерфейса лежат в бандле, а не на Google Fonts: CSP, Tor и офлайн в
 // десктопе. Браузер качает только нужные подмножества (unicode-range).
 import '@fontsource-variable/geist'
@@ -105,6 +107,9 @@ app.use(VueQueryPlugin, { queryClient })
 app.use(router)
 // i18n: composition API mode.
 app.use(i18n)
+// Окна вопроса из кода (confirm / info / …) — с контекстом приложения: в их
+// тексте работают i18n, роутер и сторы.
+setDialogAppContext(app._context)
 
 const authStore = useAuthStore(pinia)
 // Стор мессенджера поднимаем на буте: его watch'и (профили → диалоги) должны

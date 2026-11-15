@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
   haptic: vi.fn(),
   sendCommentScore: vi.fn(),
 }))
-vi.mock('ant-design-vue', () => ({ Modal: { confirm: mocks.confirm } }))
+vi.mock('@/components/modal', () => ({ default: { confirm: mocks.confirm } }))
 vi.mock('@/components/icons', () => ({ ExclamationCircleOutlined: {} }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: { error: mocks.toastError } }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))

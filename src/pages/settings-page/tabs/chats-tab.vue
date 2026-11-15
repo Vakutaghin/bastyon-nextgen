@@ -159,14 +159,13 @@
 
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'
 import Switch from '@/components/switch'
 import { useAuthStore } from '@/blockchain'
 import Avatar from '@/components/avatar/avatar.vue'
 import { DeleteOutlined } from '@/components/icons'
 import { formatLongDate } from '@/helpers/common/date-formatter'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { useMessengerStore } from '@/b-components/messenger/store'
 import { useMessengerArchiveStore } from '@/b-components/messenger/store/messenger-archive-store'
 import { archivableChatId, type ArchiveMode } from '@/b-components/messenger/lib/archive-prefs'
@@ -302,10 +301,9 @@ function onDeleteChat(row: ChatRow): void {
     title: t('settings.chats.deleteCopyTitle', { name: row.name }),
     content: lines.join(' '),
     okText: t('settings.chats.deleteCopy'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('messenger.cancel'),
     centered: true,
-    zIndex: Z_INDEX.CONFIRM,
     onOk: async () => {
       await archive.removeChat(row.id)
       appToast.success({ message: t('settings.chats.deleted') })
@@ -322,19 +320,17 @@ function onDeleteAll(): void {
     title: t('settings.chats.deleteAllTitle'),
     content: lines.join(' '),
     okText: t('settings.chats.deleteAllOk'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('messenger.cancel'),
     centered: true,
-    zIndex: Z_INDEX.CONFIRM,
     onOk: () => {
       Modal.confirm({
         title: t('settings.chats.deleteAllSureTitle'),
         content: t('settings.chats.deleteAllSureText'),
         okText: t('settings.chats.deleteAllSureOk'),
-        okType: 'danger',
+        danger: true,
         cancelText: t('messenger.cancel'),
         centered: true,
-        zIndex: Z_INDEX.CONFIRM,
         onOk: async () => {
           await archive.removeAll()
           appToast.success({ message: t('settings.chats.deletedAll') })

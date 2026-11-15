@@ -56,7 +56,7 @@ function reveal(anchor: string | null): void {
   void nextTick(() =>
     requestAnimationFrame(() => {
       // Ищем в самой панели: та же статья может быть открыта и на странице под ней.
-      const body = document.querySelector('.ant-drawer-body')
+      const body = document.querySelector('.ui-drawer__body')
       const target = body && anchor ? findHelpSection(body, anchor) : null
       if (target) target.scrollIntoView({ block: 'start' })
       else body?.scrollTo({ top: 0 })

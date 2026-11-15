@@ -1,12 +1,10 @@
 <template>
-  <!-- Выше мобильного меню (z-index 1101): проверку запускают и из него. -->
   <!-- Пока обновление ставится, окно не закрывается: иначе не видно, что происходит. -->
   <Modal
     :open="shouldPrompt"
     :title="t('update.title')"
     :footer="null"
     :width="480"
-    :z-index="1200"
     :destroy-on-close="true"
     :closable="!installing"
     :mask-closable="!installing"
@@ -56,7 +54,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { bcp47 } from '@/i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Checkbox from '@/components/checkbox'
 import Progress from '@/components/progress'
 import { appToast } from '@/b-components/app-toast'

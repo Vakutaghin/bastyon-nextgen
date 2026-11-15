@@ -7,7 +7,6 @@
     :closable="true"
     :mask-closable="true"
     :destroy-on-close="true"
-    :z-index="2600"
     @cancel="handleCancel"
   >
     <SC_AccountSwitcher>

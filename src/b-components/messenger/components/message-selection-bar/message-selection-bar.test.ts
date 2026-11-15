@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../store', () => ({ useMessengerStore: () => mocks.store }))
 vi.mock('@/helpers/common/clipboard', () => ({ copyText: mocks.copy }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: mocks.toast }))
-vi.mock('ant-design-vue', () => ({ Modal: { confirm: mocks.confirm } }))
+vi.mock('@/components/modal', () => ({ default: { confirm: mocks.confirm } }))
 
 import type { Message } from '../../types'
 import { useMessageSelection, type MessageSelection } from '../message-list/use-message-selection'

@@ -11,6 +11,7 @@
  */
 
 import { onScopeDispose, watch, type WatchSource } from 'vue'
+import { LAYER_ROOT_ID } from './layer-root'
 
 const TABBABLE = [
   'a[href]',
@@ -26,6 +27,9 @@ const TABBABLE = [
   '[contenteditable]:not([contenteditable="false"])',
   '[tabindex]',
 ].join(', ')
+
+/** Сколько кадров ждать, пока окно станет видимым, чтобы поставить в него фокус. */
+const FOCUS_FRAMES = 5
 
 function isVisible(el: HTMLElement): boolean {
   // checkVisibility — Chromium 105+, Safari 17.4+; раньше — по прямоугольникам.
@@ -56,7 +60,24 @@ function focusInitial(el: HTMLElement, options: FocusTrapOptions): void {
 
 /** Поймать фокус в `el`; вернёт функцию, которая отпускает. */
 export function trapFocus(el: HTMLElement, options: FocusTrapOptions = {}): () => void {
-  const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  const active = document.activeElement
+  let previous = active instanceof HTMLElement && active !== document.body ? active : null
+
+  // Фокус, поставленный на странице под окном, пока оно открыто (поле с
+  // autofocus под окном «Что нового»), — туда он и вернётся, а не на прежнее
+  // место. Фокус в других слоях (окно вопроса поверх этого) — не в счёт.
+  const onFocusOutside = (e: FocusEvent): void => {
+    const target = e.target
+    if (
+      target instanceof HTMLElement &&
+      target !== document.body &&
+      !el.contains(target) &&
+      !target.closest(`#${LAYER_ROOT_ID}`)
+    ) {
+      previous = target
+    }
+  }
+  document.addEventListener('focusin', onFocusOutside, true)
 
   const onKey = (e: KeyboardEvent): void => {
     if (e.key !== 'Tab' || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return
@@ -78,13 +99,25 @@ export function trapFocus(el: HTMLElement, options: FocusTrapOptions = {}): () =
   }
 
   el.addEventListener('keydown', onKey)
-  focusInitial(el, options)
 
   let released = false
+  // Окно, открытое повторно, в этот момент ещё может быть скрыто (v-show
+  // показывает его чуть позже) — тогда фокус не встаёт: пробуем на следующих
+  // кадрах.
+  const placeFocus = (frames: number): void => {
+    if (released) return
+    focusInitial(el, options)
+    if (!el.contains(document.activeElement) && frames > 0) {
+      requestAnimationFrame(() => placeFocus(frames - 1))
+    }
+  }
+  placeFocus(FOCUS_FRAMES)
+
   return () => {
     if (released) return
     released = true
     el.removeEventListener('keydown', onKey)
+    document.removeEventListener('focusin', onFocusOutside, true)
     if (options.returnFocus !== false && previous?.isConnected) {
       previous.focus({ preventScroll: true })
     }

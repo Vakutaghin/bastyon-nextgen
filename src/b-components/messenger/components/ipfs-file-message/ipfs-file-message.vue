@@ -27,7 +27,7 @@
 // закрепить файл у себя, чтобы он жил, пока в сети хоть кто-то из получивших.
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { useAuthStore } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
 import { FileOutlined, LockOutlined } from '@/components/icons'

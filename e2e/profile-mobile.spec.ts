@@ -132,7 +132,7 @@ test('чужой профиль: счётчики и начало «О себе�
   expect(Math.abs(box.y + box.height - VIEWPORT.height)).toBeLessThanOrEqual(1)
   expect(box.y).toBeGreaterThan(48)
 
-  await sheet.getByRole('button', { name: 'Close' }).click()
+  await sheet.getByRole('button', { name: 'Закрыть' }).click()
   await expect(sheet).toBeHidden()
 
   // Нажатие на «О себе» тоже открывает «Подробнее».

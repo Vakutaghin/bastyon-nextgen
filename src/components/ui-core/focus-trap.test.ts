@@ -92,6 +92,41 @@ describe('trapFocus', () => {
     trapFocus(el, { returnFocus: false })()
     expect(document.activeElement).not.toBe(second)
   })
+
+  it('фокус, поставленный под окном, пока оно открыто, при закрытии остаётся там', () => {
+    // Окно открыли, когда фокуса ещё не было; поле страницы взяло его само.
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    const el = dialog('<button id="ok">Понятно</button>')
+    const release = trapFocus(el)
+    const field = document.createElement('input')
+    document.body.append(field)
+    field.focus()
+    ;(el.querySelector('#ok') as HTMLElement).focus()
+    release()
+    expect(document.activeElement).toBe(field)
+  })
+
+  it('окно вопроса поверх окна: закрыли оба — фокус на кнопке, открывшей первое', () => {
+    const button = opener()
+    const layers = document.createElement('div')
+    layers.id = 'ui-layers'
+    document.body.append(layers)
+    const first = document.createElement('div')
+    first.innerHTML = '<button id="ask">Спросить</button>'
+    layers.append(first)
+    const releaseFirst = trapFocus(first)
+    ;(first.querySelector('#ask') as HTMLElement).focus()
+    const second = document.createElement('div')
+    second.innerHTML = '<button id="ok">ОК</button>'
+    layers.append(second)
+    const releaseSecond = trapFocus(second)
+    ;(second.querySelector('#ok') as HTMLElement).focus()
+    releaseSecond()
+    second.remove()
+    expect(document.activeElement?.id).toBe('ask')
+    releaseFirst()
+    expect(document.activeElement).toBe(button)
+  })
 })
 
 describe('useFocusTrap', () => {

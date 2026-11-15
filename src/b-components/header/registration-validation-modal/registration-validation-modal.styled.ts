@@ -1,15 +1,8 @@
 import styled from 'vue3-styled-components'
 
+// Окно телепортируется в #ui-layers — обёртка раскладку не формирует.
 export const SC_ModalWrapper = styled.div`
-  :global(.registration-validation-modal-wrap) {
-    .ant-modal {
-      max-width: 500px;
-    }
-
-    .ant-modal-body {
-      padding: 2em;
-    }
-  }
+  display: contents;
 `
 
 export const SC_Content = styled.div`

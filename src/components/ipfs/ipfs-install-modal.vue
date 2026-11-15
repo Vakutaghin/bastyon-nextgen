@@ -6,7 +6,6 @@
     :closable="ipfs.modalPhase !== 'progress'"
     :mask-closable="ipfs.modalPhase !== 'progress'"
     :keyboard="ipfs.modalPhase !== 'progress'"
-    :z-index="3000"
     :footer="null"
     @cancel="ipfs.closeModal()"
   >
@@ -99,11 +98,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
 import Input from '@/components/input'
 import Button from '@/components/button'
 import { useIpfsStore } from '@/stores/ipfs-store'
-import { SC_ModalActions } from '@/components/modal'
+import Modal, { SC_ModalActions } from '@/components/modal'
 import { SC_IpfsBody, SC_IpfsText, SC_IpfsProgressOuter, SC_IpfsProgressInner } from './styled'
 
 const { t } = useI18n()

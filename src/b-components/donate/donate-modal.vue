@@ -5,7 +5,6 @@
     :centered="true"
     :closable="!sending"
     :mask-closable="!sending"
-    :z-index="2700"
     @cancel="handleCancel"
   >
     <template #title>{{ t('donate.title') }} <HelpLink topic="tips" /></template>
@@ -78,7 +77,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
 import Button from '@/components/button'
 import { appToast } from '@/b-components/app-toast'
 import { useDonateStore } from '@/stores'
@@ -89,7 +87,7 @@ import {
   getUnspents,
   filterAvailableUnspents,
 } from '@/blockchain/core/transactions/unspents-manager'
-import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
+import Modal, { SC_ModalBody, SC_ModalActions } from '@/components/modal'
 import { userName } from '@/services/user-names'
 import { CopyOutlined } from '@/components/icons'
 import { copyText } from '@/helpers/common/clipboard'

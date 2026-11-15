@@ -70,7 +70,6 @@
     :title="t('videoCover.title')"
     :footer="null"
     :width="560"
-    :z-index="Z_INDEX.MODAL"
     @cancel="coverOpen = false"
   >
     <SC_CoverDialog v-if="coverOpen && cover && file">
@@ -91,12 +90,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 
 import { PlayCircleOutlined, VideoCameraAddOutlined } from '@/components/icons'
 import { useComposerVideo, type UploadedComposerVideo } from './use-composer-video'
 import type { KeyPair } from '@/blockchain/types/keys'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { VIDEO_ACCEPT } from './consts'
 import { formatDuration } from '@/b-components/video-uploader/utils/video-formatter'
 import VideoCoverPicker from '@/b-components/video-studio/video-cover-picker.vue'

@@ -76,7 +76,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import { formatTimeAgo } from '@/helpers/common/date-formatter'
 import type { McContact } from '@/mesh/meshcore/codec'
@@ -172,7 +172,7 @@ function confirmRemove(c: McContact): void {
     title: t('mesh.contacts.removeConfirm', { name: c.name || c.publicKey.slice(0, 8) }),
     content: t('mesh.contacts.removeHint'),
     okText: t('mesh.contacts.remove'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('messenger.cancel'),
     centered: true,
     onOk: () => act(() => connection.removeContact(c.publicKey)),

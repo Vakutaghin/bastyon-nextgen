@@ -20,7 +20,7 @@ const h = vi.hoisted(() => ({
 vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => h.store }))
 vi.mock('@/blockchain', () => ({ useAuthStore: () => h.auth }))
 vi.mock('@/helpers/common/clipboard', () => ({ copyText: h.copyText }))
-vi.mock('ant-design-vue', () => ({ Modal: h.modal }))
+vi.mock('@/components/modal', () => ({ default: h.modal }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: h.toast }))
 vi.mock('@/i18n', () => ({
   t: (key: string, named?: Record<string, unknown>) => (named ? `${key} ${named.link}` : key),

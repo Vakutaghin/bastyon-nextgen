@@ -5,7 +5,6 @@
     :centered="true"
     :closable="!sending"
     :mask-closable="!sending"
-    :z-index="2700"
     @cancel="handleCancel"
   >
     <template #title>{{ title }} <HelpLink topic="reports" /></template>
@@ -71,13 +70,12 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
 import Button from '@/components/button'
 import { appToast } from '@/b-components/app-toast'
 import { useReportStore, useUserRelationsStore } from '@/stores'
 import { useAuthStore } from '@/blockchain'
 import { useRelationActions } from '@/composables/use-relation-actions'
-import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
+import Modal, { SC_ModalBody, SC_ModalActions } from '@/components/modal'
 import {
   SC_ReportBody,
   SC_ReportIntro,

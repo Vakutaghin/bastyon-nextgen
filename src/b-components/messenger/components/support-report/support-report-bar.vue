@@ -23,7 +23,6 @@
     :centered="true"
     :closable="!sending"
     :mask-closable="!sending"
-    :z-index="2700"
     :title="t('messenger.supportReport.consentTitle')"
     @cancel="close"
   >
@@ -62,11 +61,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
 import Spin from '@/components/spin'
 import Button from '@/components/button'
 import { FileTextOutlined } from '@/components/icons'
-import { SC_ModalActions, SC_ModalBody } from '@/components/modal'
+import Modal, { SC_ModalActions, SC_ModalBody } from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'
 import { buildReportMessages } from '../../lib/support-report'
 import { collectSupportReport, reportJson } from '../../lib/support-report-data'

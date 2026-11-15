@@ -115,7 +115,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import { formatFileSize } from '@/b-components/video-uploader/utils/video-formatter'
 import { spokenCommandHints } from '@/helpers/voice-input/spoken-commands'
@@ -178,7 +178,7 @@ function onRemove(id: VoiceModelId): void {
     title: t('voiceInput.settings.removeTitle', { name: t(`voiceInput.models.${id}`) }),
     content: t('voiceInput.settings.removeContent'),
     okText: t('voiceInput.settings.remove'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('common.cancel'),
     onOk: () => store.removeModel(id),
   })

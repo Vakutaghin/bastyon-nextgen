@@ -7,7 +7,6 @@
     :closable="true"
     :mask-closable="true"
     :footer="null"
-    :z-index="2700"
     @cancel="close"
   >
     <!-- Поиск по нику и адресу и порядок: новые сверху или по репутации. -->
@@ -115,7 +114,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { CheckOutlined, PlusOutlined, LoadingOutlined, SearchOutlined } from '@/components/icons'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Input from '@/components/input'
 import HelpLink from '@/b-components/help/help-link.vue'
 import UserMark from '@/components/user-mark'

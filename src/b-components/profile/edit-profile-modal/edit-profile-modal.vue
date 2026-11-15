@@ -5,7 +5,6 @@
     :centered="true"
     :closable="!saving"
     :mask-closable="!saving"
-    :z-index="2700"
     :title="t('editProfile.title')"
     @cancel="handleCancel"
   >
@@ -145,7 +144,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
 import Button from '@/components/button'
 import { DeleteOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
@@ -164,7 +162,7 @@ import {
   parseDonationAddresses,
   type DonationAddress,
 } from '@/helpers/profile/donation-addresses'
-import { SC_ModalBody, SC_ModalActions } from '@/components/modal'
+import Modal, { SC_ModalBody, SC_ModalActions } from '@/components/modal'
 import Select from '@/components/select'
 import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@/i18n'
 import {

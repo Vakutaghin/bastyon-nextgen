@@ -297,7 +297,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Popover from '@/components/popover'
 import {
   CaretDownOutlined,
@@ -455,7 +455,7 @@ function confirmReset(): void {
     title: t('postComposer.resetConfirmTitle'),
     content: t('postComposer.resetConfirmText'),
     okText: t('postComposer.reset'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('common.cancel'),
     onOk: reset,
   })

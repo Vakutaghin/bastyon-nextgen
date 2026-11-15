@@ -56,7 +56,7 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { bcp47 } from '@/i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { usePermissionsStore } from '@/mini-apps/store/permissions-store'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { useFavoriteMiniAppsStore } from '@/mini-apps/store/favorites-store'
@@ -128,7 +128,7 @@ function askRemove(app: { appId: string; name: string }): void {
     content: t('miniapps.deleteConfirmContent'),
     okText: t('miniapps.deleteApp'),
     cancelText: t('miniapps.cancel'),
-    okType: 'danger',
+    danger: true,
     centered: true,
     onOk: async () => {
       await appsStore.uninstall(app.appId)

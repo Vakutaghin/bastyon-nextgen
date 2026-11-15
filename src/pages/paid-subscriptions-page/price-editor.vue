@@ -66,7 +66,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import { ClockCircleOutlined, LoadingOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
@@ -173,7 +173,7 @@ function confirmDisable(): void {
     title: t('paidSubscriptions.price.disableTitle'),
     content: t('paidSubscriptions.price.disableConfirm'),
     okText: t('paidSubscriptions.price.disable'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('paidSubscriptions.cancel'),
     onOk: () => save(-1),
   })

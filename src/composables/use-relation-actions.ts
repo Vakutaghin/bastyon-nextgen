@@ -9,12 +9,11 @@
  */
 
 import { h } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { ExclamationCircleOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { useUserRelationsStore } from '@/stores'
 import { t } from '@/i18n'
-import { Z_INDEX } from '@/styles/design-tokens'
 
 interface ConfirmOptions {
   title: string
@@ -33,7 +32,6 @@ function confirm(opts: ConfirmOptions): void {
     okType: opts.danger ? 'danger' : 'primary',
     cancelText: t('commentsMsg.cancel'),
     centered: true,
-    zIndex: Z_INDEX.CONFIRM,
     onOk: opts.onOk,
   })
 }

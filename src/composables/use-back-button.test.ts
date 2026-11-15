@@ -1,7 +1,6 @@
 // Системная «Назад» на Android: обработчики стопкой — верхний первым, взял —
-// дальше не идёт; окно antd закрывается Esc, если открыто позже верхнего
-// обработчика; никто не взял — назад по истории роутера, на первой странице
-// приложение сворачивается (не закрывается).
+// дальше не идёт; окна кладут свой обработчик через стек слоёв; никто не взял —
+// назад по истории роутера, на первой странице приложение сворачивается.
 
 import { effectScope, nextTick, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -21,8 +20,8 @@ vi.mock('@capacitor/app', () => ({
   },
 }))
 
+import { pushLayer, resetLayersForTests } from '@/components/ui-core/layer-stack'
 import {
-  BACK_IGNORED_CLASS,
   handleBack,
   pushBackHandler,
   resetBackHandlersForTests,
@@ -30,27 +29,21 @@ import {
   useCloseOnBack,
 } from './use-back-button'
 
-/** Открытое окно antd с полем в фокусе; escapes — сколько Esc оно получило. */
-function openDialog(className = ''): {
-  wrap: HTMLElement
-  input: HTMLInputElement
-  escapes: number[]
-} {
-  const wrap = document.createElement('div')
-  wrap.className = `ant-modal-wrap ${className}`.trim()
-  wrap.getClientRects = () => ({ length: 1 }) as unknown as DOMRectList
-  const modal = document.createElement('div')
-  modal.className = 'ant-modal'
-  const input = document.createElement('input')
-  modal.append(input)
-  wrap.append(modal)
-  document.body.append(wrap)
-  const escapes: number[] = []
-  wrap.addEventListener('keydown', (e) => {
-    if (e.keyCode === 27) escapes.push(e.keyCode)
+/** Открытое окно в стеке слоёв; closes — сколько раз его попросили закрыться. */
+function openDialog(closeOnBack?: boolean): { closes: string[]; close: () => void } {
+  const el = document.createElement('div')
+  document.body.append(el)
+  const closes: string[] = []
+  const layer = pushLayer({
+    kind: 'modal',
+    el: () => el,
+    closeOnBack,
+    onDismiss: (reason) => {
+      closes.push(reason)
+      layer.close()
+    },
   })
-  input.focus()
-  return { wrap, input, escapes }
+  return { closes, close: () => layer.close() }
 }
 
 const later = () => new Promise((resolve) => setTimeout(resolve, 5))
@@ -59,6 +52,7 @@ const pressBack = (canGoBack: boolean) => listeners[listeners.length - 1]!({ can
 
 describe('use-back-button', () => {
   beforeEach(() => {
+    resetLayersForTests()
     resetBackHandlersForTests()
     listeners.length = 0
     platform.name = 'android'
@@ -149,24 +143,17 @@ describe('use-back-button', () => {
     expect(minimizeApp).not.toHaveBeenCalled()
   })
 
-  it('окно, открытое поверх чата, закрывается первым; Esc дальше окна не уходит', async () => {
+  it('окно, открытое поверх чата, закрывается первым, потом чат', async () => {
     minimizeApp.mockClear()
     await setupBackButton()
     const chat = vi.fn(() => true)
     pushBackHandler(chat)
-    await later()
-    const onWindow = vi.fn()
-    window.addEventListener('keydown', onWindow)
     const dialog = openDialog()
 
     pressBack(false)
-    expect(dialog.escapes).toEqual([27])
+    expect(dialog.closes).toEqual(['back'])
     expect(chat).not.toHaveBeenCalled()
-    expect(onWindow).not.toHaveBeenCalled()
-    window.removeEventListener('keydown', onWindow)
 
-    // Окно закрыли — дальше чат.
-    dialog.wrap.remove()
     pressBack(false)
     expect(chat).toHaveBeenCalledTimes(1)
     expect(minimizeApp).not.toHaveBeenCalled()
@@ -177,25 +164,24 @@ describe('use-back-button', () => {
     const dialog = openDialog()
     await later()
     const picture = vi.fn(() => true)
-    pushBackHandler(picture)
+    const release = pushBackHandler(picture)
     pressBack(false)
     expect(picture).toHaveBeenCalledTimes(1)
-    expect(dialog.escapes).toEqual([])
+    expect(dialog.closes).toEqual([])
 
-    // Обработчика больше нет — следующее «Назад» закрывает окно, даже без фокуса.
-    resetBackHandlersForTests()
-    dialog.input.blur()
+    release()
     pressBack(false)
-    expect(dialog.escapes).toEqual([27])
+    expect(dialog.closes).toEqual(['back'])
   })
 
-  it('окно, которое Esc не закрывает (сейф), «Назад» пропускает — приложение сворачивается', async () => {
+  it('окно, которое «Назад» не закрывает (сейф), пропускается — приложение сворачивается', async () => {
     minimizeApp.mockClear()
     await setupBackButton()
-    const dialog = openDialog(BACK_IGNORED_CLASS)
+    const dialog = openDialog(false)
     pressBack(false)
-    expect(dialog.escapes).toEqual([])
+    expect(dialog.closes).toEqual([])
     expect(minimizeApp).toHaveBeenCalledTimes(1)
+    dialog.close()
   })
 
   it('на компьютере и в браузере кнопку не перехватываем', async () => {

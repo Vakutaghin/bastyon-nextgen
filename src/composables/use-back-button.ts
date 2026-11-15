@@ -8,13 +8,9 @@
  * менялась. Теперь обработчики — стопкой: последний добавленный спрашивается
  * первым, вернул true — шаг съеден.
  *
- * Свои окна и панели (src/components/ui-core) кладут обработчик в эту стопку
- * сами — через стек слоёв, при открытии.
- *
- * Окна ant-design (Modal, Drawer — вход, подтверждения, настройки) своего
- * обработчика не ставят: их закрывает Esc, как на компьютере. Окно в фокусе
- * (antd ставит его туда при открытии), открытое позже верхнего обработчика,
- * закрывается первым; иначе — после стопки.
+ * Окна, шторки и панели (src/components/ui-core) кладут обработчик в эту
+ * стопку сами — через стек слоёв, при открытии. Окно, которое «Назад» не
+ * закрывает нарочно (`ignoreBack`, разблокировка сейфа), обработчика не ставит.
  *
  * Никто не взял — назад по истории, а на первой странице приложение
  * сворачивается. Есть ли куда назад, решает история роутера, а не
@@ -58,80 +54,6 @@ export function handleBack(): boolean {
   return false
 }
 
-/**
- * Окно, которое Esc не закрывает нарочно (`keyboard: false`, например
- * разблокировка сейфа): «Назад» его пропускает и сворачивает приложение.
- * Ставить в `wrap-class-name` у Modal.
- */
-export const BACK_IGNORED_CLASS = 'back-ignored'
-
-/** Открытые окна antd: обёртка Modal и корень Drawer ловят Esc. */
-const DIALOGS = `.ant-modal-wrap:not(.${BACK_IGNORED_CLASS}), .ant-drawer.ant-drawer-open`
-
-/** Когда фокус последний раз переходил (performance.now). */
-let focusedAt = 0
-
-function shown(el: HTMLElement): boolean {
-  return el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden'
-}
-
-/**
- * Esc окну, как с клавиатуры: antd закрывает Modal и Drawer по нему сам.
- * Дальше окна он не идёт — иначе его поймали бы и те, кто ждёт Esc на
- * странице (мессенджер закрыл бы чат под окном).
- */
-function pressEscape(target: Element): void {
-  const root = target.closest(DIALOGS) ?? target
-  const event = new KeyboardEvent('keydown', {
-    key: 'Escape',
-    code: 'Escape',
-    bubbles: true,
-    cancelable: true,
-  })
-  // rc-dialog и rc-drawer сверяют keyCode, а в KeyboardEventInit его нет.
-  Object.defineProperty(event, 'keyCode', { get: () => 27 })
-  Object.defineProperty(event, 'which', { get: () => 27 })
-  const stop = (e: Event) => e.stopPropagation()
-  root.addEventListener('keydown', stop)
-  try {
-    target.dispatchEvent(event)
-  } finally {
-    root.removeEventListener('keydown', stop)
-  }
-}
-
-/** Окно antd, в котором фокус; иначе null. */
-function focusedDialog(): Element | null {
-  const active = document.activeElement
-  const dialog = active?.closest<HTMLElement>(DIALOGS)
-  return dialog && shown(dialog) ? active : null
-}
-
-/** Верхнее открытое окно antd (позже открытые — ниже в DOM). */
-function topDialog(): Element | null {
-  const open = [...document.querySelectorAll<HTMLElement>(DIALOGS)].filter(shown)
-  const top = open[open.length - 1]
-  return top ? (top.querySelector('.ant-modal, .ant-drawer-content-wrapper') ?? top) : null
-}
-
-/**
- * Что закрыть на «Назад»: окно в фокусе, открытое позже верхнего обработчика,
- * потом стопку, потом любое открытое окно. false — закрывать нечего.
- */
-export function closeTopOnBack(): boolean {
-  const focused = focusedDialog()
-  const top = handlers[handlers.length - 1]
-  if (focused && (!top || focusedAt > top.at)) {
-    pressEscape(focused)
-    return true
-  }
-  if (handleBack()) return true
-  const dialog = focused ?? topDialog()
-  if (!dialog) return false
-  pressEscape(dialog)
-  return true
-}
-
 /** Есть ли куда назад: запись роутера о прошлой странице или ответ WebView. */
 function hasPreviousPage(canGoBack: boolean): boolean {
   const state = window.history.state as { back?: unknown } | null
@@ -169,9 +91,8 @@ export async function setupBackButton(): Promise<void> {
   if (Capacitor.getPlatform() !== 'android') return
   try {
     const { App } = await import('@capacitor/app')
-    document.addEventListener('focusin', () => (focusedAt = performance.now()), true)
     await App.addListener('backButton', ({ canGoBack }) => {
-      if (closeTopOnBack()) return
+      if (handleBack()) return
       if (hasPreviousPage(canGoBack)) window.history.back()
       // Первая страница: свернуть, как принято на Android, — открытые чаты,
       // ролик и место в ленте остаются.

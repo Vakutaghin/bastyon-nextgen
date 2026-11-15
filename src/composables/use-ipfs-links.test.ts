@@ -29,7 +29,7 @@ const h = vi.hoisted(() => ({
 
 vi.mock('@/helpers/ipfs/ipfs-download', () => ({ probeContent: h.probe }))
 vi.mock('@/stores/ipfs-store', () => ({ useIpfsStore: () => h.store }))
-vi.mock('ant-design-vue', () => ({ Modal: h.modal }))
+vi.mock('@/components/modal', () => ({ default: h.modal }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 vi.mock('./ipfs-browser-open', () => ({ openIpfsInBrowser: h.openInBrowser }))
 vi.mock('@/helpers/common/open-external', () => ({ openExternal: h.openExternal }))

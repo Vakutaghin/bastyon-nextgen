@@ -5,7 +5,6 @@
     :width="380"
     :centered="true"
     :footer="null"
-    :z-index="Z_INDEX.CONFIRM + 50"
     :title="t('appLock.confirmTitle')"
     :destroy-on-close="true"
     @cancel="appLock.finishConfirm(false)"
@@ -37,12 +36,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 
 import { useAppLockStore } from '@/stores/app-lock-store'
 import { useCloseOnBack } from '@/composables/use-back-button'
 import { patternToCode } from '@/helpers/app-lock/app-lock-config'
-import { Z_INDEX } from '@/styles/design-tokens'
 import PinPad from './pin-pad.vue'
 import PatternGrid from './pattern-grid.vue'
 import { useCodeEntry, type CodeInput } from './use-code-entry'

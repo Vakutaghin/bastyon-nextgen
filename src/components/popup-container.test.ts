@@ -1,5 +1,5 @@
-// Выпадающая панель поля рисуется над слоем, в котором стоит поле: в окне
-// модалки — в его обёртке, в меню телефона — в нём самом, иначе — в body.
+// Выпадающая панель поля рисуется в слое, в котором стоит поле (корень окна,
+// шторки, меню телефона — data-popup-host), иначе — в body.
 
 import { describe, expect, it } from 'vitest'
 import { popupContainer } from './popup-container'
@@ -10,11 +10,6 @@ function inside(html: string): HTMLElement {
 }
 
 describe('popupContainer', () => {
-  it('в окне модалки — обёртка окна', () => {
-    const trigger = inside('<div class="ant-modal-wrap" id="w"><span id="trigger"></span></div>')
-    expect(popupContainer(trigger).id).toBe('w')
-  })
-
   it('в слое с data-popup-host — сам слой', () => {
     const trigger = inside(
       '<aside data-popup-host id="d"><div><span id="trigger"></span></div></aside>'

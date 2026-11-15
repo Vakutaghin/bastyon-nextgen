@@ -9,12 +9,11 @@
 // — личный уже есть, ничего не теряется. Описание и обложку личный не хранит.
 
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'
 import { useMediaLibrary } from '@/composables/use-media-library'
 import { useCollectionEditorStore } from '@/stores/collection-editor-store'
 import { draftOf, type CollectionView } from '@/stores/collections-store'
-import { Z_INDEX } from '@/styles/design-tokens'
 
 export function useListVisibility() {
   const { t } = useI18n()
@@ -48,7 +47,6 @@ export function useListVisibility() {
       content: t('lists.makePrivateText'),
       okText: t('lists.makePrivate'),
       cancelText: t('collections.cancel'),
-      zIndex: Z_INDEX.CONFIRM,
       onOk: async () => {
         const listId = library.createPlaylist(collection.kind, name, collection.contentIds)
         if (!listId) {

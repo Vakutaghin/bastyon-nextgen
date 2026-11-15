@@ -29,6 +29,7 @@
             :options="options"
             :placeholder="t('myFiles.permanent.choose')"
             :not-found-content="t('myFiles.permanent.noOther')"
+            :get-popup-container="popupContainer"
           />
           <Button type="primary" :disabled="!next" :loading="busy" @click="apply">
             {{ t('myFiles.permanent.apply') }}
@@ -42,7 +43,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Select } from 'ant-design-vue'
+import { Select } from 'ant-design-vue'
+import Modal from '@/components/modal'
+import { popupContainer } from '@/components/popup-container'
 import Input from '@/components/input'
 import Button from '@/components/button'
 import { buildNameLink, buildNameValue } from '@/helpers/ipfs/ipfs-viewer'

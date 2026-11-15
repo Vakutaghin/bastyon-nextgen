@@ -59,7 +59,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Capacitor } from '@capacitor/core'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Switch from '@/components/switch'
 import { formatBytes } from '@/services/offline-video/format-bytes'
 import { OFFLINE_QUALITY_CHOICES, useOfflineVideosStore } from '@/stores/offline-videos-store'
@@ -105,7 +105,7 @@ function onClear(): void {
     title: t('offlineVideo.removeAllTitle'),
     content: t('offlineVideo.removeAllDeviceText'),
     okText: t('offlineVideo.removeAll'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('settings.system.cancel'),
     centered: true,
     onOk: async () => {

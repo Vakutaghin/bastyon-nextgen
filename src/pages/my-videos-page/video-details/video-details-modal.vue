@@ -6,8 +6,7 @@
     :open="true"
     :footer="null"
     :width="980"
-    :z-index="1100"
-    wrap-class-name="video-details-modal"
+    wrap-class="video-details-modal"
     @cancel="requestClose"
   >
     <template #title>
@@ -210,7 +209,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Input from '@/components/input'
 import TextArea from '@/components/textarea'
 import Spin from '@/components/spin'
@@ -220,7 +219,6 @@ import { appToast } from '@/b-components/app-toast'
 import VideoCoverPicker from '@/b-components/video-studio/video-cover-picker.vue'
 import { formatDuration } from '@/b-components/video-uploader/utils/video-formatter'
 import { useTorMedia } from '@/composables/use-tor-media'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { formatCount, formatSize, formatStudioDateTime } from '../studio-format'
 import type { ServerVideo } from '../use-server-videos'
 import { useVideoDetails, type ListChanges, type VideoDetailsDeps } from '../use-video-details'
@@ -333,7 +331,6 @@ function requestClose(): void {
     okText: t('mediaStudio.closeUnsavedOk'),
     cancelText: t('mediaStudio.closeUnsavedCancel'),
     okButtonProps: { danger: true },
-    zIndex: Z_INDEX.CONFIRM,
     onOk: () => emit('close'),
   })
 }

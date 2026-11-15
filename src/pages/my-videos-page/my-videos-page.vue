@@ -151,7 +151,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal, Select } from 'ant-design-vue'
+import { Select } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Input from '@/components/input'
 import Spin from '@/components/spin'
 import Button from '@/components/button'
@@ -167,7 +168,6 @@ import { appToast } from '@/b-components/app-toast'
 import { useModalStore } from '@/stores/modal-store'
 import { useVideoUploadsStore } from '@/stores/video-uploads-store'
 import { useOpenComposerWithVideo } from '@/b-components/video-studio/use-open-composer-with-video'
-import { Z_INDEX } from '@/styles/design-tokens'
 import { useServerVideos, type ServerVideo } from './use-server-videos'
 import { fetchVideoPost } from './fetch-video-post'
 import {
@@ -339,7 +339,6 @@ function confirmRemove(video: ServerVideo): void {
     okText: t('videoStudio.delete'),
     cancelText: t('videoStudio.cancel'),
     okButtonProps: { danger: true },
-    zIndex: Z_INDEX.CONFIRM,
     onOk: () => removeVideo(video),
   })
 }

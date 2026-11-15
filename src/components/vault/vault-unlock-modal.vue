@@ -6,8 +6,7 @@
     :closable="false"
     :mask-closable="false"
     :keyboard="false"
-    :wrap-class-name="BACK_IGNORED_CLASS"
-    :z-index="3000"
+    ignore-back
     :footer="null"
   >
     <template #title>{{ isReset ? t('vault.resetTitle') : t('vault.unlockTitle') }}</template>
@@ -62,18 +61,16 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
 import Input from '@/components/input'
 import Button from '@/components/button'
 import { useModalStore } from '@/stores/modal-store'
-import { BACK_IGNORED_CLASS } from '@/composables/use-back-button'
 import {
   submitUnlockPassphrase,
   requestUnlockReset,
   dismissUnlockReset,
   getUnlockAttemptState,
 } from '@/blockchain/storage/vault/vault-unlock'
-import { SC_ModalActions } from '@/components/modal'
+import Modal, { SC_ModalActions } from '@/components/modal'
 import { SC_VaultBody, SC_VaultPrompt, SC_VaultError, SC_VaultForgot } from './styled'
 
 const { t } = useI18n()
@@ -154,9 +151,8 @@ function onForgot(): void {
     title: t('vault.resetConfirmTitle'),
     content: t('vault.resetConfirmBody'),
     okText: t('vault.resetConfirmYes'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('vault.cancel'),
-    zIndex: 3100,
     onOk: () => {
       requestUnlockReset()
     },

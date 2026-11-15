@@ -57,7 +57,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import { formatTimeAgo } from '@/helpers/common/date-formatter'
 import type { MtNode } from '@/mesh/meshtastic/codec'
@@ -141,7 +141,7 @@ function confirmRemove(n: MtNode): void {
     title: t('mesh.mt.nodes.removeConfirm', { name: nameOf(n) }),
     content: t('mesh.mt.nodes.removeHint'),
     okText: t('mesh.mt.nodes.remove'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('messenger.cancel'),
     centered: true,
     onOk: () => act(() => connection.removeNode(n.num)),

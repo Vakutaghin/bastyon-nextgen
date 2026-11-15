@@ -1,12 +1,5 @@
 <template>
-  <Modal
-    :open="viewer.open"
-    :title="title"
-    :footer="null"
-    :width="760"
-    :z-index="MODAL_Z"
-    @cancel="viewer.close()"
-  >
+  <Modal :open="viewer.open" :title="title" :footer="null" :width="760" @cancel="viewer.close()">
     <SC_ViewerBody>
       <SC_Address v-if="current">{{ ipfsAddress(current) }}</SC_Address>
       <SC_Note v-if="nameText">{{ nameText }}</SC_Note>
@@ -97,7 +90,7 @@
 // HTML на origin приложения открывать нельзя.
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Spin from '@/components/spin'
 import Button from '@/components/button'
 import { appToast } from '@/b-components/app-toast'
@@ -116,7 +109,6 @@ import { MAX_FILE_BYTES, openSaveSink } from '@/helpers/ipfs/ipfs-save-sinks'
 import { guessContentType } from '@/helpers/ipfs/ipfs-sniff'
 import { buildIpfsWebUrl } from '@/helpers/ipfs/ipfs-viewer'
 import { useIpfsNodeViewerStore } from '@/stores/ipfs-node-viewer-store'
-import { Z_INDEX } from '@/styles/design-tokens'
 import {
   SC_Actions,
   SC_Address,
@@ -137,8 +129,6 @@ import {
   SC_ViewerBody,
 } from './ipfs-node-viewer.styled'
 
-/** Окно открыл сам пользователь — выше автоматических («Что нового»). */
-const MODAL_Z = Z_INDEX.MODAL
 /** Через столько окно объясняет, что поиск бывает долгим. */
 const SLOW_HINT_MS = 8_000
 /** Сколько записей папки показывается. */

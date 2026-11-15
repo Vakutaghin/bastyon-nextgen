@@ -133,7 +133,7 @@
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Button from '@/components/button'
 import {
   AudioPlaylistIcon,
@@ -168,7 +168,6 @@ import { userName, userAvatar } from '@/services/user-names'
 import { copyText } from '@/helpers/common/clipboard'
 import { chatLinks, publicCollectionUrl } from '@/helpers/common/share-origin'
 import { useShareToChat } from '@/composables/use-share-to-chat'
-import { Z_INDEX } from '@/styles/design-tokens'
 import type { QueueItem } from '@/stores/playback-queue-store'
 import type { AdaptedPost } from '@/types/adapted-post'
 import { SC_SectionPage, SC_SectionWork } from '../media-section/media-section.styled'
@@ -335,9 +334,8 @@ function confirmDelete(): void {
     title: t('collections.deleteConfirmTitle'),
     content: t('collections.deleteConfirmText'),
     okText: t('collections.delete'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('collections.cancel'),
-    zIndex: Z_INDEX.CONFIRM,
     onOk: async () => {
       try {
         await collections.remove(c.txid, draftOf(c))

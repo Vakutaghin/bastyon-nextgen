@@ -37,7 +37,7 @@ const mocks = vi.hoisted(() => ({
   address: 'PQ8AiCHJaTZAThr2TnpkQYDyVd1Hidq4PM',
 }))
 
-vi.mock('ant-design-vue', () => ({ Modal: { confirm: mocks.confirm } }))
+vi.mock('@/components/modal', () => ({ default: { confirm: mocks.confirm } }))
 vi.mock('@/i18n', () => ({
   t: (key: string, params?: Record<string, unknown>) =>
     params ? `${key}|${JSON.stringify(params)}` : key,

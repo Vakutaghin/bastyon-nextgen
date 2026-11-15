@@ -9,7 +9,6 @@
     :maskClosable="!loading"
     :keyboard="!loading"
     :destroyOnClose="true"
-    :z-index="2700"
     @cancel="handleCancel"
   >
     <SC_SignInForm>

@@ -5,7 +5,7 @@
 // только участники; шифр кусками (v2), так что размер не ограничен. Получатели
 // качают файл у этого компьютера или у тех, кто раздаёт его дальше.
 import { ref, type Ref } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
 import { useAuthStore } from '@/blockchain'

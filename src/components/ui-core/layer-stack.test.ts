@@ -102,16 +102,6 @@ describe('слой (z-index)', () => {
     expect(layerContaining(button)).toBeUndefined()
   })
 
-  it('видимое окно antd (переходный период) — свой слой выше него', () => {
-    const wrap = box()
-    wrap.className = 'ant-modal-wrap'
-    wrap.style.zIndex = '2700'
-    expect(open({ kind: 'modal' }).layer.zIndex).toBe(2701)
-    wrap.style.display = 'none'
-    resetLayersForTests()
-    expect(open({ kind: 'modal' }).layer.zIndex).toBe(Z_INDEX.MODAL)
-  })
-
   it('surface — со своим уровнем; следующее окно встаёт над ней', () => {
     expect(open({ kind: 'surface', zIndex: 2500 }).layer.zIndex).toBe(2500)
     expect(open({ kind: 'modal' }).layer.zIndex).toBe(2501)

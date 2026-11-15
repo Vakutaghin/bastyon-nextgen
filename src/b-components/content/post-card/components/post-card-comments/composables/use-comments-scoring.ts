@@ -11,7 +11,7 @@
  */
 
 import { ref, computed, h, type Ref, type ComputedRef } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { ExclamationCircleOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
@@ -27,7 +27,6 @@ import {
   type DisableReason,
 } from '../visibility'
 import type { PostForComments } from '../types'
-import { Z_INDEX } from '@/styles/design-tokens'
 
 export interface UseCommentsScoringOptions {
   post: PostForComments | Ref<PostForComments>
@@ -111,10 +110,9 @@ export function useCommentsScoring(opts: UseCommentsScoringOptions) {
           icon: h(ExclamationCircleOutlined),
           content: t('commentsMsg.dislikeConfirmContent'),
           okText: t('commentsMsg.dislikeConfirmOk'),
-          okType: 'danger',
+          danger: true,
           cancelText: t('commentsMsg.cancel'),
           centered: true,
-          zIndex: Z_INDEX.CONFIRM,
           onOk: () => resolve(true),
           onCancel: () => resolve(false),
         })

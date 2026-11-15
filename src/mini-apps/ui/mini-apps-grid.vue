@@ -104,7 +104,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { useFavoriteMiniAppsStore } from '@/mini-apps/store/favorites-store'
 import { useServicesShelfStore } from '@/mini-apps/store/shelf-store'
@@ -227,7 +227,7 @@ const askRemove = (app: InstalledApp) => {
     content: t('miniapps.deleteConfirmContent'),
     okText: t('miniapps.deleteApp'),
     cancelText: t('miniapps.cancel'),
-    okType: 'danger',
+    danger: true,
     centered: true,
     onOk: async () => {
       await appsStore.uninstall(app.manifest.id)

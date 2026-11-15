@@ -146,7 +146,7 @@
 
 import { computed, ref, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Modal } from 'ant-design-vue'
+import Modal from '@/components/modal'
 import Input from '@/components/input'
 import Button from '@/components/button'
 import {
@@ -174,7 +174,6 @@ import { copyText } from '@/helpers/common/clipboard'
 import { chatLinks, publicCollectionUrl } from '@/helpers/common/share-origin'
 import { useShareToChat } from '@/composables/use-share-to-chat'
 import { WATCH_LATER } from '@/services/media-library/media-library-doc'
-import { Z_INDEX } from '@/styles/design-tokens'
 import {
   SC_Chip,
   SC_Chips,
@@ -376,9 +375,8 @@ function confirmDeletePublic(row: ShelfRow): void {
     title: t('shelf.deleteTitle', { name: labelOf(row) }),
     content: t('collections.deleteConfirmText'),
     okText: t('collections.delete'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('collections.cancel'),
-    zIndex: Z_INDEX.CONFIRM,
     onOk: async () => {
       try {
         await collections.remove(c.txid, draftOf(c))
@@ -395,9 +393,8 @@ function confirmDeletePrivate(row: ShelfRow): void {
     title: t('shelf.deleteTitle', { name: labelOf(row) }),
     content: t('library.deleteConfirmText'),
     okText: t('library.delete'),
-    okType: 'danger',
+    danger: true,
     cancelText: t('library.cancel'),
-    zIndex: Z_INDEX.CONFIRM,
     onOk: () => {
       if (library.deletePlaylist(row.key)) appToast.success({ message: t('shelf.deleted') })
     },
