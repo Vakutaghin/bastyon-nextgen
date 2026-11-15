@@ -64,8 +64,11 @@ export interface FloatingOptions {
   /** Зазор между кнопкой и панелью, px. */
   offset?: number
   strategy?: Strategy
-  /** Ширина панели — не меньше ширины кнопки (список поля выбора). */
-  matchWidth?: boolean
+  /**
+   * Ширина панели по кнопке: `true` — не меньше кнопки, `'exact'` — ровно
+   * как кнопка (список поля выбора).
+   */
+  matchWidth?: boolean | 'exact'
   /** Отступ от края экрана, px. */
   padding?: number
 }
@@ -100,7 +103,9 @@ export function anchorFloating(
             const style = elements.floating.style
             style.setProperty('--ui-floating-available-height', `${Math.floor(availableHeight)}px`)
             style.setProperty('--ui-floating-available-width', `${Math.floor(availableWidth)}px`)
-            if (options.matchWidth) style.minWidth = `${Math.round(rects.reference.width)}px`
+            const width = `${Math.round(rects.reference.width)}px`
+            if (options.matchWidth) style.minWidth = width
+            if (options.matchWidth === 'exact') style.width = width
           },
         }),
       ],

@@ -943,8 +943,6 @@ main[tabindex='-1']:focus {
   .ant-tabs-nav,
   .ant-menu,
   .ui-menu,
-  .ant-select-selector,
-  .ant-select-item,
   .ant-pagination,
   .ant-slider,
   .ant-picker-panel,
@@ -1125,7 +1123,7 @@ body .ant-btn-default:not(:disabled):active {
 }
 
 body
-  :is(.ant-select-dropdown, .ant-picker-dropdown):is(
+  .ant-picker-dropdown:is(
     .ant-slide-up-enter,
     .ant-slide-up-appear,
     .ant-slide-up-leave,
@@ -1138,7 +1136,7 @@ body
 }
 
 body
-  :is(.ant-select-dropdown, .ant-picker-dropdown):is(
+  .ant-picker-dropdown:is(
     .ant-slide-up-enter.ant-slide-up-enter-active,
     .ant-slide-up-appear.ant-slide-up-appear-active,
     .ant-slide-down-enter.ant-slide-down-enter-active,
@@ -1148,7 +1146,7 @@ body
 }
 
 body
-  :is(.ant-select-dropdown, .ant-picker-dropdown):is(
+  .ant-picker-dropdown:is(
     .ant-slide-up-leave.ant-slide-up-leave-active,
     .ant-slide-down-leave.ant-slide-down-leave-active
   )[class*='-placement-'] {
@@ -1156,11 +1154,11 @@ body
 }
 
 /* Выпадашка растёт от края, у которого кнопка. */
-body :is(.ant-select-dropdown, .ant-picker-dropdown)[class*='-placement-bottom'] {
+body .ant-picker-dropdown[class*='-placement-bottom'] {
   transform-origin: top;
 }
 
-body :is(.ant-select-dropdown, .ant-picker-dropdown)[class*='-placement-top'] {
+body .ant-picker-dropdown[class*='-placement-top'] {
   transform-origin: bottom;
 }
 
@@ -1169,11 +1167,7 @@ body :is(.ant-select-dropdown, .ant-picker-dropdown)[class*='-placement-top'] {
    края (см. выше) замер врал на полширины, а у открытых вверх — и на всю высоту:
    список всю анимацию стоял в стороне и потом прыгал на место. Без transform
    замер точный, а видно выпадашку в этой фазе и так нет. */
-body
-  :is(.ant-select-dropdown, .ant-picker-dropdown):is(
-    .ant-slide-up-enter-prepare,
-    .ant-slide-down-enter-prepare
-  ) {
+body .ant-picker-dropdown:is(.ant-slide-up-enter-prepare, .ant-slide-down-enter-prepare) {
   transform: none;
 }
 
@@ -1240,28 +1234,6 @@ body
 html.ui-scroll-locked body {
   overflow: hidden;
   width: calc(100% - var(--ui-scroll-lock-gap, 0px));
-}
-
-/* Выпадающий список Select (components/select) — как у USelect Nuxt. Он
-   рисуется вне обёртки, поэтому правило глобальное. Текст пункта стоит там же,
-   где текст в поле (4 + 8 = 12px от края), подсвеченный пункт — highlighted,
-   галочка выбранного 16px. Фон, тень с кольцом, hover и выбранный — из темы. */
-body .ui-select-dropdown .ant-select-item {
-  padding-inline: 8px;
-}
-
-/* Список рисуется в корне слоя (окна), где может быть text-align: center —
-   пункты вставали бы по центру. */
-body .ui-select-dropdown {
-  text-align: start;
-}
-
-body .ui-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-  color: var(--ui-text-highlighted);
-}
-
-body .ui-select-dropdown .ant-select-item-option-state {
-  font-size: 16px;
 }
 
 /* Панель календаря (components/date-time-picker): в окне она тоже рисуется

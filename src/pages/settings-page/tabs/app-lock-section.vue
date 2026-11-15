@@ -30,6 +30,7 @@
           :value="appLock.autoLockAfter"
           :options="autoLockOptions"
           size="middle"
+          :aria-label="t('appLock.autoLockLabel')"
           @change="onAutoLock"
         />
         <SC_AppLockHint>{{ t('appLock.autoLockHint') }}</SC_AppLockHint>
@@ -85,7 +86,7 @@ const autoLockOptions = computed(() =>
   AUTO_LOCK_OPTIONS.map((value) => ({ value, label: t(`appLock.autoLock.${value}`) }))
 )
 
-function onAutoLock(value: SelectValue): void {
+function onAutoLock(value: SelectValue | SelectValue[]): void {
   appLock.setAutoLock(value as AutoLockAfter)
 }
 

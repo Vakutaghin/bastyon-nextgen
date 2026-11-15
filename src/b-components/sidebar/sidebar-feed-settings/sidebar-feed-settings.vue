@@ -32,10 +32,7 @@
           size="middle"
           :value="uiStore.contentLanguages"
           :options="FEED_LANGUAGE_OPTIONS"
-          :max-tag-count="0"
-          :max-tag-placeholder="languagesSummary"
-          :show-search="false"
-          show-arrow
+          :format-value="languagesSummary"
           @change="onFeedLanguagesChange"
         />
       </SC_FeedLanguageSelect>

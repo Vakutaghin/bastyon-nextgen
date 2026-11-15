@@ -38,12 +38,12 @@ export const UI = {
   popoverHidden: '[data-state="closed"]',
 
   /** Поле выбора (Select). */
-  select: '.ant-select',
-  selectDisabled: '.ant-select-disabled',
+  select: '.ui-select',
+  selectDisabled: '.ui-select[data-disabled]',
   /** Стрелка поля выбора. */
-  selectArrow: '.ant-select-arrow',
+  selectArrow: '.ui-select__arrow',
   /** Вариант в открытом списке поля выбора. */
-  selectOption: '.ant-select-item-option',
+  selectOption: '.ui-select__option',
 
   /** Поле даты и времени. */
   datePicker: '.ant-picker',

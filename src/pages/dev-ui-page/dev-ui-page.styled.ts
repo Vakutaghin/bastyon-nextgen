@@ -57,6 +57,11 @@ export const SC_DevUiStack = styled.div`
   min-width: 0;
 `
 
+/** Узкое поле, как в боковой панели ленты (132px). */
+export const SC_DevUiNarrow = styled.div`
+  width: 132px;
+`
+
 /** Значок со счётчиком — с запасом под счётчик, как в шапке. */
 export const SC_DevUiBadgeBox = styled.span`
   --ui-badge-offset-y: 5px;

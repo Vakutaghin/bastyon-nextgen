@@ -563,6 +563,7 @@ export default {
       'Connected, but Bastyon is not answering. On café or hotel Wi-Fi, sign in on its page first. It will load by itself once the connection is back.',
     cancel: 'Cancel',
     close: 'Close',
+    noData: 'No data',
     deletedAccount: 'Account deleted',
   },
   a11y: {

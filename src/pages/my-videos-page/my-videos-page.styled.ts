@@ -86,12 +86,14 @@ export const SC_Toolbar = styled.div`
   gap: ${() => SPACING.SM};
   margin-bottom: ${() => SPACING.MD};
 
-  .ant-select {
+  /* Фильтр и порядок — по ширине подписи, но не уже 150px. */
+  .ui-select {
+    width: auto;
     min-width: 150px;
   }
 
   @media (max-width: ${() => BREAKPOINTS.TABLET}) {
-    .ant-select {
+    .ui-select {
       flex: 1;
       min-width: 0;
     }

@@ -570,6 +570,7 @@ export default {
       'Verbunden, aber Bastyon antwortet nicht. Melden Sie sich im WLAN eines Cafés oder Hotels zuerst auf dessen Seite an. Es lädt von selbst, sobald die Verbindung da ist.',
     cancel: 'Abbrechen',
     close: 'Schließen',
+    noData: 'Keine Daten',
     deletedAccount: 'Konto gelöscht',
   },
   a11y: {

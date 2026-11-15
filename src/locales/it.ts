@@ -562,6 +562,7 @@ export default {
       'C’è rete, ma Bastyon non risponde. Sul Wi-Fi di un bar o di un hotel, accedi prima dalla sua pagina. Si caricherà da solo quando torna la connessione.',
     cancel: 'Annulla',
     close: 'Chiudi',
+    noData: 'Nessun dato',
     deletedAccount: 'Account eliminato',
   },
   a11y: {

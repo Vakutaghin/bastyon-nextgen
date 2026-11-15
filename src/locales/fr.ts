@@ -573,6 +573,7 @@ export default {
       'Connecté, mais Bastyon ne répond pas. Sur le Wi-Fi d’un café ou d’un hôtel, connectez-vous d’abord sur sa page. Le chargement reprendra tout seul dès le retour de la connexion.',
     cancel: 'Annuler',
     close: 'Fermer',
+    noData: 'Aucune donnée',
     deletedAccount: 'Compte supprimé',
   },
   a11y: {

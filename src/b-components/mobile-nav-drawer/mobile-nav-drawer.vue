@@ -108,9 +108,9 @@ function close() {
   emit('close')
 }
 
-/** Esc в раскрытом списке поля (язык ленты) закрывает только список. */
+/** Esc в раскрытом списке поля (язык ленты) закрывает только список: поле его гасит. */
 function onEsc(e: KeyboardEvent) {
-  if ((e.target as HTMLElement | null)?.closest('.ant-select-open')) return
+  if (e.defaultPrevented) return
   close()
 }
 

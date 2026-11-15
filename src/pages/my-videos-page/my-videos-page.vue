@@ -52,12 +52,14 @@
           </SC_Search>
           <Select
             v-model:value="filter"
+            size="middle"
             :options="filterOptions"
             :aria-label="t('mediaStudio.filterLabel')"
             :dropdown-match-select-width="false"
           />
           <Select
             v-model:value="sort"
+            size="middle"
             :options="sortOptions"
             :aria-label="t('mediaStudio.sortLabel')"
             :dropdown-match-select-width="false"
@@ -151,8 +153,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Select } from 'ant-design-vue'
 import Modal from '@/components/modal'
+import Select from '@/components/select'
 import Input from '@/components/input'
 import Spin from '@/components/spin'
 import Button from '@/components/button'

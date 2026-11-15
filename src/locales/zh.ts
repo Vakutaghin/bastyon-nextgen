@@ -532,6 +532,7 @@ export default {
       '已联网，但 Bastyon 没有响应。如果是咖啡馆或酒店的 Wi-Fi，请先在其页面登录。连接恢复后会自动加载。',
     cancel: '取消',
     close: '关闭',
+    noData: '暂无数据',
     deletedAccount: '账户已删除',
   },
   a11y: {

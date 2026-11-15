@@ -2,11 +2,8 @@
   "src/components/date-time-picker/date-time-picker.test.ts",
   "src/components/date-time-picker/date-time-picker.vue",
   "src/components/date-time-picker/picker-locale.ts",
-  "src/components/select/select.ts",
   "src/i18n/antd-locale.ts",
   "src/pages/block-explorer-page/components/stats-period-bar/stats-period-bar.vue",
-  "src/pages/my-files-page/permanent-link-dialog.vue",
-  "src/pages/my-videos-page/my-videos-page.vue",
   "src/src.vue",
   "src/styles/antd-theme.ts"
 ]

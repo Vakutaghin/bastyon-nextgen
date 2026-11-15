@@ -569,6 +569,7 @@ export default {
       'Hay red, pero Bastyon no responde. En el wifi de un café u hotel, inicia sesión primero en su página. Se cargará solo cuando vuelva la conexión.',
     cancel: 'Cancelar',
     close: 'Cerrar',
+    noData: 'No hay datos',
     deletedAccount: 'Cuenta eliminada',
   },
   a11y: {
