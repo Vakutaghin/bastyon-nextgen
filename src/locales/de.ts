@@ -3993,6 +3993,11 @@ export default {
     videoErrNetwork:
       'Die Verbindung wurde unterbrochen. Versuche es erneut: Der Upload geht dort weiter, wo er aufgehört hat.',
     videoErrGeneric: 'Das Video konnte nicht hochgeladen werden.',
+    videoErrUnreadable:
+      'Der Videoserver konnte die Datei nicht lesen: Sie ist beschädigt oder in einem nicht unterstützten Format.',
+    videoErrServerDown:
+      'Der Videoserver hat nicht geantwortet (Code {code}). Versuche es später erneut.',
+    videoErrGenericDetail: 'Das Video konnte nicht hochgeladen werden ({detail}).',
     modeLabel: 'Was veröffentlichen',
     modePost: 'Beitrag',
     modeArticle: 'Artikel',

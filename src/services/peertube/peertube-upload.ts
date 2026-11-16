@@ -48,16 +48,54 @@ const CHUNK_TIMEOUT_ERROR = 'peertube_chunk_timeout'
 /** Сколько раз готовы переинициализировать upload при 404. */
 const MAX_REINITS = 2
 
-/** Ошибка транспорта. `cancelled` — пользователь прервал; `status` — HTTP-код инстанса. */
+/**
+ * Ошибка транспорта. `cancelled` — пользователь прервал; `status` — HTTP-код
+ * инстанса; `reason` — его объяснение отказа, если оно пришло.
+ */
 export class PeertubeUploadError extends Error {
   status?: number
   cancelled: boolean
-  constructor(message: string, opts: { status?: number; cancelled?: boolean } = {}) {
+  reason?: string
+  constructor(
+    message: string,
+    opts: { status?: number; cancelled?: boolean; reason?: string } = {}
+  ) {
     super(message)
     this.name = 'PeertubeUploadError'
     this.status = opts.status
     this.cancelled = !!opts.cancelled
+    this.reason = opts.reason
   }
+}
+
+/** Сколько знаков объяснения сервера храним. */
+const REASON_MAX = 300
+
+/**
+ * Объяснение отказа из тела ответа PeerTube: `detail` (у старых версий
+ * `error`) и первое сообщение `invalid-params` — например «Should have a
+ * video name between 3 and 120 characters long». Тело не JSON (страница
+ * прокси при 502/504) — undefined.
+ */
+export async function serverReason(res: Response): Promise<string | undefined> {
+  let body: unknown
+  try {
+    body = await res.json()
+  } catch {
+    return undefined
+  }
+  if (!body || typeof body !== 'object') return undefined
+  const { detail, error } = body as { detail?: unknown; error?: unknown }
+  const main = typeof detail === 'string' ? detail : typeof error === 'string' ? error : ''
+  const params = (body as Record<string, unknown>)['invalid-params']
+  const first =
+    params && typeof params === 'object' ? Object.values(params as object)[0] : undefined
+  const msg = (first as { msg?: unknown } | undefined)?.msg
+  const text = [main, typeof msg === 'string' ? msg : '']
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(' — ')
+  return text ? text.slice(0, REASON_MAX) : undefined
 }
 
 /** Метаданные создаваемого видео (init-форма). Обогащается в Фазе E. */
@@ -272,7 +310,10 @@ export async function initResumableUpload(params: InitResumableParams): Promise<
     throw new PeertubeUploadError('peertube_upload_unsupported_type', { status: 415 })
   }
   if (res.status !== 200 && res.status !== 201) {
-    throw new PeertubeUploadError(`peertube_init_${res.status}`, { status: res.status })
+    throw new PeertubeUploadError(`peertube_init_${res.status}`, {
+      status: res.status,
+      reason: await serverReason(res),
+    })
   }
 
   const location = res.headers.get('Location') ?? res.headers.get('location')
@@ -370,15 +411,12 @@ async function putChunkOnce(p: PutChunkParams): Promise<ChunkOutcome> {
       throw new PeertubeUploadError(`peertube_chunk_retryable_${res.status}`, {
         status: res.status,
       })
-    // жёсткие — повтор бессмыслен
-    case 403:
-    case 409:
-    case 413:
-    case 415:
-    case 422:
-      throw new PeertubeUploadError(`peertube_chunk_${res.status}`, { status: res.status })
+    // жёсткие (403, 409, 413, 415, 422 и прочие) — повтор бессмыслен
     default:
-      throw new PeertubeUploadError(`peertube_chunk_${res.status}`, { status: res.status })
+      throw new PeertubeUploadError(`peertube_chunk_${res.status}`, {
+        status: res.status,
+        reason: await serverReason(res),
+      })
   }
 }
 

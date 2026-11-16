@@ -12,7 +12,7 @@ The section is in the account menu: **“Media studio”**. It works like YouTub
 
 1. Click **“Upload”**. Drag a file into the window or click **“Select file”**: a video in any common format — MP4, MOV, MKV, WebM, AVI — or sound, such as MP3, M4A, FLAC, OGG.
 2. The upload starts right away. While it runs, fill in the post right in this window:
-   - the **“Title”** becomes the post title, and the video server gets it too when the upload finishes;
+   - the **“Title”** becomes the post title, and the video server gets it too when the upload finishes. The video server accepts titles of 3 to 120 characters: a long file name is cut right away, and a title shorter than three characters is not sent, so the server keeps the file name;
    - below it is the [cover](#cover);
    - **“Description”** is the post text under the video;
    - tags — at least one, up to five, as in the [post editor](post-composer.md#tags);
@@ -80,6 +80,8 @@ On an error you see the reason:
 
 - **“Retry”** — the upload continues from where it stopped, not from the start;
 - in the “Media studio” **“Remove”** takes the upload off the list; in the post window **“Cancel”** gives up on the file so you can choose another one.
+
+If the video server did not respond, the error shows the code of its answer, for example “The video server did not respond (code 504)”: try again later. If the app does not know the reason, it shows “The video could not be uploaded (…)” with the server’s answer in brackets. This text also goes into the details for support, so [“Report a bug”](report-bug.md) passes it to the developers.
 
 **“Cancel upload”** in the “Media studio” and **“Cancel”** in the post window stop the upload, and the partly uploaded file is deleted from the server. **“Remove”** on an already uploaded clip in the post window only detaches it from the post — it stays on the server.
 

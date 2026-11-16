@@ -3994,6 +3994,10 @@ export default {
     videoErrNetwork:
       'La connexion a été interrompue. Réessayez : l’envoi reprendra là où il s’est arrêté.',
     videoErrGeneric: 'Impossible de téléverser la vidéo.',
+    videoErrUnreadable:
+      'Le serveur vidéo n’a pas pu lire le fichier : il est endommagé ou dans un format non pris en charge.',
+    videoErrServerDown: 'Le serveur vidéo n’a pas répondu (code {code}). Réessayez plus tard.',
+    videoErrGenericDetail: 'Impossible de téléverser la vidéo ({detail}).',
     modeLabel: 'Quoi publier',
     modePost: 'Publication',
     modeArticle: 'Article',

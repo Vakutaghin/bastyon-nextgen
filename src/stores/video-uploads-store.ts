@@ -31,14 +31,19 @@ import { haptic } from '@/helpers/common/haptics'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import {
   describeVideoUploadError,
-  titleFromFileName,
+  uploadErrorDetail,
 } from '@/b-components/content/post-composer/use-composer-video'
 import { sendPost } from '@/b-components/content/post-composer/post-sender'
 import { prefetchFeeUnspents } from '@/blockchain/core/transactions/unspents-manager'
 import { trackPendingPost } from '@/b-components/content/post-composer/pending-post'
 import { withTypedTag } from '@/b-components/content/post-composer/use-post-tags'
 import { UPLOADING_VIDEO_POINTER } from '@/b-components/content/post-composer/consts'
-import { uploadVideoToPeertube } from '@/services/peertube/peertube-video-service'
+import {
+  fitVideoName,
+  titleFromFileName,
+  uploadVideoName,
+  uploadVideoToPeertube,
+} from '@/services/peertube/peertube-video-service'
 import { PeertubeUploadError } from '@/services/peertube/peertube-upload'
 import {
   getInstanceVideoCover,
@@ -228,7 +233,10 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       return null
     }
     const id = `upload_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
-    const title = titleFromFileName(file.name)
+    // Длинное имя файла сразу обрезано, как его примет сервер: поле названия
+    // длиннее 120 знаков не даёт, а вписанное значение само не укорачивает.
+    const fromFile = titleFromFileName(file.name)
+    const title = fitVideoName(fromFile) ?? fromFile
     const cover = createCover(author, file.type.startsWith('audio/'))
     jobs.value.unshift({
       id,
@@ -295,7 +303,9 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       const { author } = rt
       job.status = 'uploading'
       job.progress = 0
-      const name = job.title.trim() || titleFromFileName(rt.file.name)
+      // Название могут править прямо сейчас: недописанное («Н») сервер не
+      // примет — тогда уходит имя файла, а название допишет commitTitle.
+      const name = uploadVideoName(job.title, rt.file)
       rt.serverName = name
       const result = await deps.upload({
         file,
@@ -322,7 +332,8 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
     } catch (error) {
       if (rt.controller !== controller) return
       if (error instanceof PeertubeUploadError && error.cancelled) return
-      log.warn('upload failed', error)
+      // error, а не warn: так причина попадёт в сведения для поддержки.
+      log.error('upload failed:', uploadErrorDetail(error))
       job.error = describeVideoUploadError(error)
       job.status = 'error'
       job.waiting = false
@@ -405,7 +416,8 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
   async function commitTitle(id: string): Promise<void> {
     const job = find(id)
     const rt = runtime.get(id)
-    const title = job?.title.trim()
+    // Слишком короткое название сервер не примет — остаётся прежнее.
+    const title = fitVideoName(job?.title)
     if (!job || !rt || job.status !== 'done' || !job.result || !title || title === rt.serverName)
       return
     const { author } = rt

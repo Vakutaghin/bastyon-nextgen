@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
-import { uploadVideoToPeertube, type VideoServiceDeps } from './peertube-video-service'
+import {
+  fitVideoName,
+  titleFromFileName,
+  uploadVideoName,
+  uploadVideoToPeertube,
+  type VideoServiceDeps,
+} from './peertube-video-service'
 import { PeertubeUploadError } from './peertube-upload'
 import { QuotaExceededError } from './peertube-quota'
 import { VideoValidationError } from './peertube-validation'
@@ -123,11 +129,85 @@ describe('uploadVideoToPeertube — метаданные (имя)', () => {
     expect(metadata.name).toBe('PocketVideo:2026-01-01T00:00:00.000Z')
   })
 
-  it('нет имени, но есть имя файла → имя файла', async () => {
+  it('нет имени, но есть имя файла → имя файла без расширения', async () => {
     const deps = buildDeps()
     await run(deps)
     const metadata = uploadedMetadata(deps)
-    expect(metadata.name).toBe('clip.mp4')
+    expect(metadata.name).toBe('clip')
+  })
+
+  it('название, которое сервер не примет, не уходит: короткое → имя файла, длинное → 120 знаков', async () => {
+    const short = buildDeps()
+    await run(short, { name: ' Н ' })
+    expect(uploadedMetadata(short).name).toBe('clip')
+
+    const long = buildDeps()
+    await run(long, { name: 'а'.repeat(300) })
+    expect(uploadedMetadata(long).name).toBe('а'.repeat(119) + '…')
+  })
+})
+
+describe('titleFromFileName', () => {
+  it('убирает расширение', () => {
+    expect(titleFromFileName('Отпуск 2026.mp4')).toBe('Отпуск 2026')
+    expect(titleFromFileName('clip.final.webm')).toBe('clip.final')
+    expect(titleFromFileName('без расширения')).toBe('без расширения')
+  })
+})
+
+describe('fitVideoName — пределы PeerTube 4.2: 3–120 знаков', () => {
+  it('в пределах — как есть, без пробелов по краям', () => {
+    expect(fitVideoName('  Отпуск  ')).toBe('Отпуск')
+    expect(fitVideoName('abc')).toBe('abc')
+    expect(fitVideoName('я'.repeat(120))).toBe('я'.repeat(120))
+  })
+
+  it('короче 3 знаков или пусто → null', () => {
+    expect(fitVideoName('ab')).toBeNull()
+    expect(fitVideoName('   ')).toBeNull()
+    expect(fitVideoName(undefined)).toBeNull()
+  })
+
+  it('длиннее 120 → 119 знаков и «…», пробел перед «…» убран', () => {
+    expect(fitVideoName('я'.repeat(121))).toBe('я'.repeat(119) + '…')
+    const cut = fitVideoName('я'.repeat(118) + ' ' + 'б'.repeat(10))
+    expect(cut).toBe('я'.repeat(118) + '…')
+  })
+
+  it('эмодзи — один знак, как считает сервер, и пара не разрезается', () => {
+    const smile = String.fromCodePoint(0x1f600)
+    // 120 эмодзи — 240 единиц UTF-16, но сервер насчитает 120.
+    expect(fitVideoName(smile.repeat(120))).toBe(smile.repeat(120))
+    expect(fitVideoName(smile.repeat(121))).toBe(smile.repeat(119) + '…')
+    // Два эмодзи — 4 единицы UTF-16, но для сервера это 2 знака.
+    expect(fitVideoName(smile.repeat(2))).toBeNull()
+  })
+
+  it('знак оформления эмодзи (VS16) сервер не считает', () => {
+    const heart = '\u2764\uFE0F'
+    expect(fitVideoName(heart + heart)).toBeNull()
+    expect(fitVideoName(heart.repeat(3))).toBe(heart.repeat(3))
+  })
+})
+
+describe('uploadVideoName', () => {
+  const now = () => '2026-01-01T00:00:00.000Z'
+  const named = (name: string) => file(name)
+
+  it('подходящее название — оно', () => {
+    expect(uploadVideoName('Мой ролик', named('IMG_1.mp4'), now)).toBe('Мой ролик')
+  })
+
+  it('недописанное название («Н») → имя файла без расширения', () => {
+    expect(uploadVideoName('Н', named('Отпуск.mp4'), now)).toBe('Отпуск')
+  })
+
+  it('имя файла без расширения короткое → с расширением', () => {
+    expect(uploadVideoName('', named('1.mp4'), now)).toBe('1.mp4')
+  })
+
+  it('ничего не подошло → PocketVideo:<ISO>', () => {
+    expect(uploadVideoName('', named('a'), now)).toBe('PocketVideo:2026-01-01T00:00:00.000Z')
   })
 })
 

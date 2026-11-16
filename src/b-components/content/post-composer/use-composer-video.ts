@@ -14,7 +14,10 @@ import { computed, ref, shallowRef } from 'vue'
 import { t } from '@/i18n'
 import type { KeyPair } from '@/blockchain/types/keys'
 import { formatFileSize } from '@/b-components/video-uploader/utils/video-formatter'
-import { uploadVideoToPeertube } from '@/services/peertube/peertube-video-service'
+import {
+  titleFromFileName,
+  uploadVideoToPeertube,
+} from '@/services/peertube/peertube-video-service'
 import { QuotaExceededError } from '@/services/peertube/peertube-quota'
 import { PeertubeUploadError } from '@/services/peertube/peertube-upload'
 import { MAX_VIDEO_SIZE_BYTES, VideoValidationError } from '@/services/peertube/peertube-validation'
@@ -49,9 +52,23 @@ export interface UseComposerVideoOptions {
   serverCover?: typeof getInstanceVideoCover
 }
 
-/** Имя файла без расширения: «Отпуск 2026.mp4» → «Отпуск 2026». */
-export function titleFromFileName(name: string): string {
-  return name.replace(/\.[^./\\]{1,8}$/, '').trim()
+/** Сколько знаков причины показываем в общем тексте ошибки. */
+const DETAIL_MAX = 200
+
+/**
+ * Что именно сломалось — для общего текста ошибки и сведений для поддержки:
+ * код шага и ответ видеосервера, например
+ * «peertube_init_400: Incorrect request parameters: name».
+ */
+export function uploadErrorDetail(error: unknown): string {
+  const text =
+    error instanceof PeertubeUploadError && error.reason
+      ? `${error.message}: ${error.reason}`
+      : error instanceof Error
+        ? error.message
+        : String(error ?? '')
+  const flat = text.replace(/\s+/g, ' ').trim()
+  return flat.length > DETAIL_MAX ? `${flat.slice(0, DETAIL_MAX - 1)}…` : flat
 }
 
 /** Ошибка загрузки → текст для человека. */
@@ -71,6 +88,8 @@ export function describeVideoUploadError(error: unknown): string {
   if (error instanceof PeertubeUploadError) {
     if (error.status === 413) return t('postComposer.videoErrServerSize')
     if (error.status === 415) return t('postComposer.videoErrFormat')
+    // Файл дошёл целиком, но ffprobe на сервере не нашёл в нём длительности.
+    if (error.status === 422) return t('postComposer.videoErrUnreadable')
   }
   if (message === 'peertube_no_host') return t('postComposer.videoErrNoServer')
   if (
@@ -86,7 +105,14 @@ export function describeVideoUploadError(error: unknown): string {
   ) {
     return t('postComposer.videoErrNetwork')
   }
-  return t('postComposer.videoErrGeneric')
+  // 500, 502, 504: сам сервер или прокси перед ним; 429 и 503 повторялись выше.
+  if (error instanceof PeertubeUploadError && (error.status ?? 0) >= 500) {
+    return t('postComposer.videoErrServerDown', { code: error.status })
+  }
+  const detail = uploadErrorDetail(error)
+  return detail
+    ? t('postComposer.videoErrGenericDetail', { detail })
+    : t('postComposer.videoErrGeneric')
 }
 
 export function useComposerVideo(options: UseComposerVideoOptions) {
@@ -175,7 +201,8 @@ export function useComposerVideo(options: UseComposerVideoOptions) {
         state.value = 'idle'
         return
       }
-      console.error('[composer-video] upload failed:', error)
+      // console.error попадает в сведения для поддержки — с ответом сервера.
+      console.error('[composer-video] upload failed:', uploadErrorDetail(error))
       errorText.value = describeVideoUploadError(error)
       state.value = 'error'
     } finally {

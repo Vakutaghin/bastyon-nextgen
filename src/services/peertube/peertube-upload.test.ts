@@ -5,6 +5,7 @@ import {
   parseUploadId,
   resumableStorageKey,
   serverFileName,
+  serverReason,
   type UploadMetadata,
 } from './peertube-upload'
 import type { InstanceFetch } from './peertube-instance'
@@ -66,6 +67,32 @@ describe('serverFileName', () => {
   })
 })
 
+describe('serverReason', () => {
+  it('detail, у старых версий error; первое сообщение invalid-params — через тире', async () => {
+    expect(await serverReason(res(422, { detail: 'Video file unreadable.' }))).toBe(
+      'Video file unreadable.'
+    )
+    expect(await serverReason(res(403, { error: 'Refused local video' }))).toBe(
+      'Refused local video'
+    )
+    expect(
+      await serverReason(res(400, { 'invalid-params': { name: { msg: 'Should have a name' } } }))
+    ).toBe('Should have a name')
+  })
+
+  it('страница прокси (502/504), пустое тело, JSON без объяснения → undefined', async () => {
+    const html = new Response('<html><body>504 Gateway Time-out</body></html>', { status: 504 })
+    expect(await serverReason(html)).toBeUndefined()
+    expect(await serverReason(res(500))).toBeUndefined()
+    expect(await serverReason(res(500, { status: 500 }))).toBeUndefined()
+    expect(await serverReason(res(500, 'строка'))).toBeUndefined()
+  })
+
+  it('длинное объяснение обрезано до 300 знаков', async () => {
+    expect(await serverReason(res(400, { detail: 'x'.repeat(1000) }))).toHaveLength(300)
+  })
+})
+
 describe('initResumableUpload', () => {
   it('201 → upload_id из Location; уходят Bearer и X-Upload-Content-Length', async () => {
     const fetchInstance = vi.fn(async () =>
@@ -111,6 +138,36 @@ describe('initResumableUpload', () => {
         metadata: META,
       })
     ).rejects.toMatchObject({ message: 'peertube_upload_unsupported_type', status: 415 })
+  })
+
+  it('отказ с объяснением сервера → оно в reason (так ответил PeerTube 4.2 на короткое название)', async () => {
+    const body = {
+      type: 'https://docs.joinpeertube.org/api-rest-reference.html#section/Errors/bad_request',
+      detail: 'Incorrect request parameters: name',
+      status: 400,
+      'invalid-params': {
+        name: {
+          value: 'Н',
+          msg: 'Should have a video name between 3 and 120 characters long',
+          param: 'name',
+          location: 'body',
+        },
+      },
+    }
+    await expect(
+      initResumableUpload({
+        fetchInstance: (async () => res(400, body)) as InstanceFetch,
+        accessToken: 'AT',
+        size: 1,
+        contentType: 'video/mp4',
+        metadata: META,
+      })
+    ).rejects.toMatchObject({
+      message: 'peertube_init_400',
+      status: 400,
+      reason:
+        'Incorrect request parameters: name — Should have a video name between 3 and 120 characters long',
+    })
   })
 
   it('нет Location (вероятно CORS) → peertube_no_location', async () => {
@@ -438,10 +495,36 @@ describe('uploadVideoResumable — retry / ошибки', () => {
         fetchInstance,
         sleep: noSleep,
       })
-    ).rejects.toMatchObject({ status: 422, cancelled: false })
+    ).rejects.toMatchObject({ status: 422, cancelled: false, reason: undefined })
     expect(putCount).toBe(1) // без повторов
     // Эту загрузку сервер уже не доведёт: продолжать её нечего.
     expect(localStorage.getItem(resumableStorageKey('h', 'ADDR', 'VK'))).toBeNull()
+  })
+
+  it('отказ на последнем куске — с объяснением сервера', async () => {
+    const fetchInstance = (async (_p: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return res(201, {}, { Location: 'h/x?upload_id=UP' })
+      if (init?.method === 'PUT') return res(403, { detail: 'Refused local video' })
+      return res(404)
+    }) as InstanceFetch
+
+    await expect(
+      uploadVideoResumable({
+        host: 'h',
+        address: 'ADDR',
+        accessToken: 'AT',
+        file: makeFile(256),
+        metadata: META,
+        videoKey: 'VK2',
+        chunkSize: 256,
+        fetchInstance,
+        sleep: noSleep,
+      })
+    ).rejects.toMatchObject({
+      message: 'peertube_chunk_403',
+      status: 403,
+      reason: 'Refused local video',
+    })
   })
 
   it('сервер просит подождать (503) и после повторов — resume-state ждёт следующей попытки', async () => {

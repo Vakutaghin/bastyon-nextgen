@@ -3878,6 +3878,10 @@ export default {
     videoErrAuth: '동영상 서버에 로그인하지 못했습니다. 나중에 다시 시도하세요.',
     videoErrNetwork: '연결이 끊겼습니다. 다시 시도하면 중단된 곳부터 이어서 업로드합니다.',
     videoErrGeneric: '동영상을 업로드하지 못했습니다.',
+    videoErrUnreadable:
+      '동영상 서버가 파일을 읽지 못했습니다. 파일이 손상되었거나 지원되지 않는 형식입니다.',
+    videoErrServerDown: '동영상 서버가 응답하지 않았습니다(코드 {code}). 나중에 다시 시도하세요.',
+    videoErrGenericDetail: '동영상을 업로드하지 못했습니다({detail}).',
     modeLabel: '게시 유형',
     modePost: '게시물',
     modeArticle: '아티클',

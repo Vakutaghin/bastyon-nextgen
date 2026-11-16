@@ -6,7 +6,7 @@
  *   validate → resolveHost('upload') → ensureToken(blockChainAuth) → getChannel →
  *   checkDailyQuota → uploadVideoResumable(metadata) → composePeerTubeUrl.
  *
- * Метаданные upload: privacy:1 + channelId + name (фолбэк `PocketVideo:<ISO>`) +
+ * Метаданные upload: privacy:1 + channelId + name (`uploadVideoName`) +
  * scheduleUpdate[updateAt] задаются в initResumableUpload (Фаза C).
  *
  * invalid_token mid-request (отложено из Фаз B/C): при 401 на аплоуде делаем разовую
@@ -34,6 +34,53 @@ import {
   type UploadVideoResult,
 } from './peertube-upload'
 import { peertubeInstanceFetch, type InstanceFetch } from './peertube-instance'
+import { VIDEO_NAME_MAX, VIDEO_NAME_MIN } from './peertube-video-studio'
+
+/** Имя файла без расширения: «Отпуск 2026.mp4» → «Отпуск 2026». */
+export function titleFromFileName(name: string): string {
+  return name.replace(/\.[^./\\]{1,8}$/, '').trim()
+}
+
+/** Знаки оформления эмодзи: проверка длины на видеосервере их не считает. */
+const VARIATION_SELECTORS = new Set(['\uFE0E', '\uFE0F'])
+
+/**
+ * Название, которое видеосервер примет: от 3 до 120 знаков (считает он, как
+ * validator.js, — символы, а не половинки суррогатных пар). Длинное
+ * обрезается с «…», слишком короткое — null.
+ */
+export function fitVideoName(raw: string | undefined): string | null {
+  const counted = (chars: string[]): number =>
+    chars.filter((c) => !VARIATION_SELECTORS.has(c)).length
+  let chars = Array.from((raw ?? '').trim())
+  if (counted(chars) > VIDEO_NAME_MAX) {
+    chars = Array.from(
+      `${chars
+        .slice(0, VIDEO_NAME_MAX - 1)
+        .join('')
+        .trimEnd()}…`
+    )
+  }
+  return counted(chars) >= VIDEO_NAME_MIN ? chars.join('') : null
+}
+
+/**
+ * Название ролика для начала загрузки. С неподходящим (меньше 3 или больше
+ * 120 знаков) сервер отказывает сразу, и «Повторить» падало бы так же:
+ * короткое заменяем именем файла, длинное обрезаем. Название из окна
+ * загрузки потом всё равно дописывается на сервер.
+ */
+export function uploadVideoName(
+  wanted: string | undefined,
+  file: File,
+  nowIso: () => string = () => new Date().toISOString()
+): string {
+  for (const candidate of [wanted, titleFromFileName(file.name), file.name]) {
+    const name = fitVideoName(candidate)
+    if (name) return name
+  }
+  return `PocketVideo:${nowIso()}`
+}
 
 /** Итог загрузки: указатель для post.url + разобранные части. */
 export interface UploadedVideo {
@@ -73,7 +120,7 @@ const DEFAULT_DEPS: VideoServiceDeps = {
 
 export interface UploadVideoParams {
   file: File
-  /** Имя видео; фолбэк — имя файла, затем `PocketVideo:<ISO>`. */
+  /** Имя видео; не подходит видеосерверу — имя файла, затем `PocketVideo:<ISO>`. */
   name?: string
   keyPair: KeyPair
   address: string
@@ -126,8 +173,8 @@ export async function uploadVideoToPeertube(params: UploadVideoParams): Promise<
     accessToken: token.access_token,
   })
 
-  // E. Метаданные: имя с фолбэками.
-  const name = params.name?.trim() || file.name || `PocketVideo:${nowIso()}`
+  // E. Метаданные: имя, которое сервер примет.
+  const name = uploadVideoName(params.name, file, nowIso)
   const metadata = {
     channelId: channel.channelId,
     name,

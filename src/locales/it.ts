@@ -3953,6 +3953,10 @@ export default {
     videoErrNetwork:
       'La connessione si è interrotta. Riprova: il caricamento riprenderà da dove si è fermato.',
     videoErrGeneric: 'Impossibile caricare il video.',
+    videoErrUnreadable:
+      'Il server video non è riuscito a leggere il file: è danneggiato o in un formato non supportato.',
+    videoErrServerDown: 'Il server video non ha risposto (codice {code}). Riprova più tardi.',
+    videoErrGenericDetail: 'Impossibile caricare il video ({detail}).',
     modeLabel: 'Cosa pubblicare',
     modePost: 'Post',
     modeArticle: 'Articolo',

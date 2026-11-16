@@ -3923,6 +3923,10 @@ export default {
     videoErrAuth: 'The video server did not let you in. Try again later.',
     videoErrNetwork: 'The connection dropped. Try again: the upload continues where it stopped.',
     videoErrGeneric: 'The video could not be uploaded.',
+    videoErrUnreadable:
+      'The video server could not read the file: it is damaged or in an unsupported format.',
+    videoErrServerDown: 'The video server did not respond (code {code}). Try again later.',
+    videoErrGenericDetail: 'The video could not be uploaded ({detail}).',
     modeLabel: 'What to publish',
     modePost: 'Post',
     modeArticle: 'Article',

@@ -3907,6 +3907,10 @@ export default {
     videoErrAuth: 'Видеосервер не пустил вас. Попробуйте позже.',
     videoErrNetwork: 'Связь прервалась. Повторите: загрузка продолжится с места обрыва.',
     videoErrGeneric: 'Не удалось загрузить видео.',
+    videoErrUnreadable:
+      'Видеосервер не смог прочитать файл: он повреждён или в неподдерживаемом формате.',
+    videoErrServerDown: 'Видеосервер не ответил (код {code}). Попробуйте позже.',
+    videoErrGenericDetail: 'Не удалось загрузить видео ({detail}).',
     modeLabel: 'Что публикуем',
     modePost: 'Пост',
     modeArticle: 'Статья',

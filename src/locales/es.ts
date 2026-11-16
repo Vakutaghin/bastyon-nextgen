@@ -3963,6 +3963,10 @@ export default {
     videoErrAuth: 'El servidor de vídeo no te dejó entrar. Inténtalo más tarde.',
     videoErrNetwork: 'Se cortó la conexión. Reintenta: la subida continuará donde se quedó.',
     videoErrGeneric: 'No se pudo subir el vídeo.',
+    videoErrUnreadable:
+      'El servidor de vídeo no pudo leer el archivo: está dañado o en un formato no compatible.',
+    videoErrServerDown: 'El servidor de vídeo no respondió (código {code}). Inténtalo más tarde.',
+    videoErrGenericDetail: 'No se pudo subir el vídeo ({detail}).',
     modeLabel: 'Qué publicar',
     modePost: 'Publicación',
     modeArticle: 'Artículo',

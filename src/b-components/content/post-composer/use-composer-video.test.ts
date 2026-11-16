@@ -8,7 +8,7 @@ import { VideoValidationError } from '@/services/peertube/peertube-validation'
 import type { UploadVideoParams } from '@/services/peertube/peertube-video-service'
 import {
   describeVideoUploadError,
-  titleFromFileName,
+  uploadErrorDetail,
   useComposerVideo,
   type UseComposerVideoOptions,
 } from './use-composer-video'
@@ -30,14 +30,6 @@ function setup(overrides: Partial<UseComposerVideoOptions> = {}) {
   }
   return { options, video: useComposerVideo(options) }
 }
-
-describe('titleFromFileName', () => {
-  it('убирает расширение', () => {
-    expect(titleFromFileName('Отпуск 2026.mp4')).toBe('Отпуск 2026')
-    expect(titleFromFileName('clip.final.webm')).toBe('clip.final')
-    expect(titleFromFileName('без расширения')).toBe('без расширения')
-  })
-})
 
 describe('useComposerVideo', () => {
   it('загрузка: прогресс, затем указатель и заголовок из имени файла', async () => {
@@ -196,14 +188,55 @@ describe('describeVideoUploadError', () => {
     [new Error('Request timeout'), 'postComposer.videoErrNetwork'],
     [new PeertubeUploadError('peertube_chunk_timeout'), 'postComposer.videoErrNetwork'],
     [new TypeError('Failed to fetch'), 'postComposer.videoErrNetwork'],
-    [new Error('something else'), 'postComposer.videoErrGeneric'],
-    [new PeertubeUploadError('peertube_no_location'), 'postComposer.videoErrGeneric'],
     [
-      new PeertubeUploadError('peertube_chunk_500', { status: 500 }),
-      'postComposer.videoErrGeneric',
+      new PeertubeUploadError('peertube_chunk_422', { status: 422 }),
+      'postComposer.videoErrUnreadable',
     ],
   ])('%s', (error, key) => {
     expect(describeVideoUploadError(error)).toBe(t(key))
+  })
+
+  it.each([
+    [new PeertubeUploadError('peertube_chunk_500', { status: 500 }), 500],
+    [new PeertubeUploadError('peertube_init_502', { status: 502 }), 502],
+    [new PeertubeUploadError('peertube_chunk_504', { status: 504 }), 504],
+    // 503 при начале загрузки не повторялся — это сервер, а не связь.
+    [new PeertubeUploadError('peertube_init_503', { status: 503 }), 503],
+  ])('сервер не ответил: %s → код в тексте', (error, code) => {
+    expect(describeVideoUploadError(error)).toBe(t('postComposer.videoErrServerDown', { code }))
+  })
+
+  it('остальное — общий текст с причиной: код шага и ответ сервера', () => {
+    const refused = new PeertubeUploadError('peertube_init_400', {
+      status: 400,
+      reason: 'Incorrect request parameters: name',
+    })
+    expect(describeVideoUploadError(refused)).toBe(
+      t('postComposer.videoErrGenericDetail', {
+        detail: 'peertube_init_400: Incorrect request parameters: name',
+      })
+    )
+    expect(describeVideoUploadError(new PeertubeUploadError('peertube_no_location'))).toBe(
+      t('postComposer.videoErrGenericDetail', { detail: 'peertube_no_location' })
+    )
+    expect(describeVideoUploadError(new Error('something else'))).toBe(
+      t('postComposer.videoErrGenericDetail', { detail: 'something else' })
+    )
+  })
+
+  it('причины нет вовсе — общий текст без скобок', () => {
+    expect(describeVideoUploadError(new Error(''))).toBe(t('postComposer.videoErrGeneric'))
+  })
+
+  it('причина в одну строку и не длиннее 200 знаков', () => {
+    const long = new PeertubeUploadError('peertube_chunk_403', {
+      status: 403,
+      reason: 'строка\nвторая ' + 'x'.repeat(400),
+    })
+    const detail = uploadErrorDetail(long)
+    expect(detail).toHaveLength(200)
+    expect(detail.startsWith('peertube_chunk_403: строка вторая x')).toBe(true)
+    expect(detail.endsWith('…')).toBe(true)
   })
 
   it('размер и квота называют числа', () => {

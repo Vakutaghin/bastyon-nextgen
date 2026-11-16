@@ -234,6 +234,66 @@ describe('video-uploads-store', () => {
     expect(rename).toHaveBeenCalledTimes(1)
   })
 
+  it('название правят, когда загрузка начинается: недописанное не уходит — сервер отказал бы', async () => {
+    const store = useVideoUploadsStore()
+    let finish: () => void = () => {}
+    const compress = vi.fn(
+      () =>
+        new Promise<CompressOutcome>((resolve) => {
+          finish = () => resolve({ file: file('Отпуск 2026.mp4', 10), skipped: null })
+        })
+    )
+    const up = controllableUpload()
+    const rename = vi.fn(async () => {})
+    store.setDepsForTests({ upload: up.upload as never, compress, rename })
+    const id = store.start(file(), { compress: true })!
+    // Пока сжимается, человек стёр название и начал своё.
+    store.setTitle(id, 'Н')
+    finish()
+    await vi.waitFor(() => expect(up.upload).toHaveBeenCalled())
+    expect(up.upload).toHaveBeenCalledWith(expect.objectContaining({ name: 'Отпуск 2026' }))
+    // Так и не дописал — переименовывать нечем.
+    up.finish()
+    await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('done'))
+    await store.commitTitle(id)
+    expect(rename).not.toHaveBeenCalled()
+    // Дописал — уходит.
+    store.setTitle(id, 'Новое')
+    await store.commitTitle(id)
+    expect(rename).toHaveBeenCalledWith(expect.objectContaining({ name: 'Новое' }))
+  })
+
+  it('длинное имя файла сразу обрезано до 120 знаков — и в поле, и на сервер', () => {
+    const store = useVideoUploadsStore()
+    const up = controllableUpload()
+    store.setDepsForTests({ upload: up.upload as never, rename: vi.fn() })
+    store.start(file(`${'я'.repeat(200)}.mp4`))
+    const expected = `${'я'.repeat(119)}…`
+    expect(store.jobs[0]!.title).toBe(expected)
+    expect(up.upload).toHaveBeenCalledWith(expect.objectContaining({ name: expected }))
+  })
+
+  it('сбой с ответом сервера — причина в console.error (оттуда — в сведения для поддержки)', async () => {
+    const store = useVideoUploadsStore()
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const upload = vi.fn().mockRejectedValueOnce(
+      new PeertubeUploadError('peertube_chunk_403', {
+        status: 403,
+        reason: 'Refused local video',
+      })
+    )
+    store.setDepsForTests({ upload, rename: vi.fn() })
+    store.start(file())
+    await vi.waitFor(() => expect(store.jobs[0]!.status).toBe('error'))
+    expect(store.jobs[0]!.error).toBe('postComposer.videoErrGenericDetail')
+    expect(spy).toHaveBeenCalledWith(
+      '[video-uploads]',
+      'upload failed:',
+      'peertube_chunk_403: Refused local video'
+    )
+    spy.mockRestore()
+  })
+
   it('плашку закрыли: законченные уходят, идущие продолжаются', async () => {
     const store = useVideoUploadsStore()
     const done = controllableUpload()
