@@ -230,7 +230,7 @@ const TYPE_COLORS: Record<string, { bg: string; fg: string }> = {
   rating: { bg: COLORS.AMBER_SOFT, fg: COLORS.ORANGE_TEXT },
   like: { bg: COLORS.AMBER_SOFT, fg: COLORS.ORANGE_TEXT },
   comment: { bg: 'rgb(var(--ui-info-rgb) / 10%)', fg: 'var(--ui-info)' },
-  subscribe: { bg: COLORS.GREEN_ANT_SOFT, fg: COLORS.GREEN_ANT_DEEP },
+  subscribe: { bg: COLORS.GREEN_SOFT, fg: COLORS.GREEN_DEEP },
   repost: { bg: COLORS.PURPLE_SOFT, fg: COLORS.PURPLE_DEEP },
   tip: { bg: COLORS.AMBER_SOFT, fg: COLORS.ORANGE_TEXT },
   mention: { bg: COLORS.PINK_SOFT, fg: COLORS.PINK },

@@ -17,7 +17,7 @@ vi.mock('@/blockchain/api/captcha-api', () => ({
   captchaAPI: { get: (...args: unknown[]) => state.captchaGet(...args) },
 }))
 
-// Окно — та же логика useCaptchaModal, что у настоящего, без разметки antd и
+// Окно — та же логика useCaptchaModal, что у настоящего, без разметки окна и
 // картинки капчи: события уходят в том же порядке.
 vi.mock('./captcha-modal.vue', async () => {
   const { defineComponent, h } = await import('vue')

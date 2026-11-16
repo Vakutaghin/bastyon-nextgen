@@ -23,7 +23,7 @@
         <Switch
           :checked="store.wifiOnly"
           data-testid="offline-wifi-only"
-          @change="(v: SwitchValue) => store.setWifiOnly(Boolean(v))"
+          @change="(v: boolean) => store.setWifiOnly(Boolean(v))"
         />
         <span>{{ t('offlineVideo.wifiOnly') }}</span>
       </SC_SwitchLine>
@@ -43,7 +43,7 @@
         :checked="store.autoSubs"
         :aria-label="t('offlineVideo.autoSubs')"
         data-testid="offline-auto-subs"
-        @change="(v: SwitchValue) => store.setAutoSubs(Boolean(v))"
+        @change="(v: boolean) => store.setAutoSubs(Boolean(v))"
       />
     </SC_CacheControls>
   </SC_CacheRow>
@@ -77,8 +77,6 @@ import {
   SC_SystemTitle,
 } from './system-tab.styled'
 import HelpLink from '@/b-components/help/help-link.vue'
-
-type SwitchValue = string | number | boolean
 
 const { t, locale } = useI18n()
 const store = useOfflineVideosStore()

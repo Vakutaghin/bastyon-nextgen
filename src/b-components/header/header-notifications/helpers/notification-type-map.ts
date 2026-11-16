@@ -4,7 +4,7 @@
 import { isLowRatingValue } from '@/stores/notification-filtering'
 import type { NotificationItem } from '@/stores/notifications-store'
 
-/** Имя ant-design-icon-компонента для каждого типа уведомления. */
+/** Имя иконки из @/components/icons для каждого типа уведомления. */
 export const ICON_BY_TYPE: Record<string, string> = {
   rating: 'StarFilled',
   like: 'StarFilled',

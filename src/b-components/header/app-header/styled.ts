@@ -149,7 +149,7 @@ export const SC_StatusBarShield = styled.div`
   right: 0;
   height: var(--safe-top);
   background: var(--ui-bg);
-  /* Слой шапки: окна antd (тоже 1000) идут позже в body и накрывают его. */
+  /* Слой шапки: панели и окна стека слоёв (от 1000) стоят позже в body и накрывают его. */
   z-index: 1000;
   pointer-events: none;
 `

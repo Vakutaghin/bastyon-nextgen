@@ -213,9 +213,6 @@ import {
 } from './system-tab.styled'
 import HelpLink from '@/b-components/help/help-link.vue'
 
-/** Тип значения, который отдаёт ant-свитч. */
-type SwitchValue = string | number | boolean
-
 const { t } = useI18n()
 const prefs = useAppPreferencesStore()
 const isDesktop = isTauri()
@@ -292,7 +289,7 @@ async function onClearKind(kind: CacheKind): Promise<void> {
 }
 
 /** Выключили — стираем уже сохранённое: настройка про то, что лежит на диске. */
-async function onStoreDecrypted(checked: SwitchValue): Promise<void> {
+async function onStoreDecrypted(checked: boolean): Promise<void> {
   const store = Boolean(checked)
   await prefs.set('storeDecryptedMessages', store)
   if (!store) {
@@ -301,8 +298,7 @@ async function onStoreDecrypted(checked: SwitchValue): Promise<void> {
   }
 }
 
-// Ant-свитч отдаёт string | number | boolean — приводим на границе.
-function onAnimations(checked: SwitchValue): void {
+function onAnimations(checked: boolean): void {
   void prefs.set('animations', Boolean(checked))
 }
 
@@ -314,7 +310,7 @@ async function onScale(scale: number): Promise<void> {
  * Автозапуск живёт в системе, а не у нас: сначала просим ОС, и только если она
  * согласилась — запоминаем. Иначе тумблер врал бы о состоянии системы.
  */
-function onAutostart(checked: SwitchValue): void {
+function onAutostart(checked: boolean): void {
   void applyAutostart(Boolean(checked))
 }
 

@@ -71,7 +71,6 @@
     "@tiptap/pm": "3.32.0",
     "@tiptap/starter-kit": "3.32.0",
     "@tiptap/vue-3": "3.32.0",
-    "ant-design-vue": "^4.2.6",
     "bech32": "^2.0.0",
     "bip174": "^3.0.0",
     "bip32": "^5.0.1",

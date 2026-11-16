@@ -27,7 +27,7 @@
           :checked="screen.prefs.reputation.on"
           :aria-label="t('settings.chats.screenReputation')"
           data-testid="screen-reputation"
-          @change="(on: SwitchValue) => screen.setReputation(on === true)"
+          @change="(on: boolean) => screen.setReputation(on === true)"
         />
       </SC_ScreenControls>
     </SC_ScreenRow>
@@ -168,9 +168,6 @@ import {
   SC_ScreenRow,
 } from './chats-screen-section.styled'
 import HelpLink from '@/b-components/help/help-link.vue'
-
-/** Тип значения, который отдаёт ant-свитч. */
-type SwitchValue = string | number | boolean
 
 const PERSON_RULES: PersonRule[] = ['hide', 'show']
 /** Порог — в пределах, какие бывают у репутации в сети. */

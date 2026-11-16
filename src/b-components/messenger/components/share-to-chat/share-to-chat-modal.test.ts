@@ -21,7 +21,7 @@ vi.mock('../../store/messenger-screen-store', () => ({
 }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: mocks.toast }))
 vi.mock('@/helpers/common/clipboard', () => ({ copyText: mocks.copy }))
-// Окно antd рисуется в body с анимацией — здесь достаточно содержимого.
+// Окно рисуется в слое в конце body с анимацией — здесь достаточно содержимого.
 vi.mock('@/components/modal', () => ({
   default: defineComponent({
     props: { open: Boolean },

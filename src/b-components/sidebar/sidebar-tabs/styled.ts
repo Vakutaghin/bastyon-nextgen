@@ -54,7 +54,7 @@ export const SC_TabsItem = styled('button', tabProps)`
   opacity: 1;
   width: 100%;
 
-  /* Target both AntD icon wrapper and potential direct SVGs */
+  /* Значок в обёртке .anticon (components/icons) или голый svg. */
   & > .anticon,
   & > svg {
     font-size: 18px;

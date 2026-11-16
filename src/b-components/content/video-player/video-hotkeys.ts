@@ -167,7 +167,7 @@ const INTERACTIVE = [
  * Модалки, боковые панели и мессенджер (`data-own-hotkeys`): клавиши в них
  * принадлежат им, а не видео за ними.
  */
-const DIALOGS = '[role="dialog"], .ui-modal-wrap, .ant-drawer, [data-own-hotkeys]'
+const DIALOGS = '[role="dialog"], .ui-modal-wrap, [data-own-hotkeys]'
 
 /**
  * `true` — клавиша принадлежит элементу в фокусе, а не плееру.

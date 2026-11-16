@@ -1,16 +1,10 @@
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import pluginVue from 'eslint-plugin-vue'
-import { readFileSync } from 'node:fs'
 
-// ant-design-vue заменяется своими компонентами из @/components: новые импорты
-// antd запрещены. Файлы, которые ещё на нём, перечислены в antd-legacy-files.json.
-// Перевёл файл — убери его из списка: antd-legacy-files.test.ts падает, если в
-// списке остался файл без antd.
-const ANTD_LEGACY_FILES = JSON.parse(
-  readFileSync(new URL('./antd-legacy-files.json', import.meta.url), 'utf8')
-)
-const ANTD_MESSAGE = 'ant-design-vue заменяется своими компонентами — бери их из @/components.'
+// ant-design-vue заменён своими компонентами из @/components целиком — ни он,
+// ни его иконки в приложение не возвращаются.
+const ANTD_MESSAGE = 'ant-design-vue убран из приложения — бери компоненты из @/components.'
 
 // Minimal set of browser globals used by <script setup> blocks in .vue files.
 // (no-undef is enabled via js.configs.recommended and doesn't know about these
@@ -176,16 +170,15 @@ export default tseslint.config(
     },
   },
 
-  // Запрет новых импортов ant-design-vue (см. ANTD_LEGACY_FILES выше).
+  // Запрет ant-design-vue и пакетов @ant-design (см. ANTD_MESSAGE выше).
   {
     files: ['src/**/*.{ts,tsx,vue,js}', 'src-mobile/**/*.{ts,tsx,vue,js}'],
-    ignores: ANTD_LEGACY_FILES,
     rules: {
       'no-restricted-imports': [
         'error',
         {
           paths: [{ name: 'ant-design-vue', message: ANTD_MESSAGE }],
-          patterns: [{ group: ['ant-design-vue/*'], message: ANTD_MESSAGE }],
+          patterns: [{ group: ['ant-design-vue/*', '@ant-design/*'], message: ANTD_MESSAGE }],
         },
       ],
     },

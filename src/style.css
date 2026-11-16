@@ -4,9 +4,8 @@
    Оформление повторяет Nuxt UI (ui.nuxt.com): палитра, семантические токены,
    радиусы, тени и анимации оверлеев сняты с их сайта и из пакета @nuxt/ui
    4.11.2. Сам пакет не ставим: он на Tailwind v4 и Reka UI, переход на него —
-   это переписать шаблоны и уйти с ant-design-vue. Поэтому их дизайн-система
-   перенесена на эти переменные, styled-компоненты src/components и тему antd
-   (src/styles/antd-theme.ts).
+   это переписать шаблоны. Поэтому их дизайн-система перенесена на эти
+   переменные и свои компоненты src/components (styled-компоненты).
 
    Отступления от Nuxt:
    - акцент светлой темы синий (blue-600): белый текст на зелёном #00c16a —
@@ -18,7 +17,7 @@
 
    Три слоя:
    1. Палитра `--ui-color-*` — hex, а не oklch, как у Tailwind v4: старые
-      Android WebView не понимают oklch, а antd принимает только обычные цвета.
+      Android WebView не понимают oklch.
    2. Семантика `--ui-*` (текст, фоны, рамки, акцент, статусы) — единственное,
       что различается между темами (блок `:root[data-theme='dark']` ниже).
    3. Старые `--color-*` (на них ссылаются COLORS.* из theme-colors.ts) —
@@ -279,9 +278,8 @@
   --color-purple-soft: rgb(var(--ui-violet-rgb) / 0.12);
   --color-pink: var(--ui-pink);
   --color-pink-soft: rgb(var(--ui-pink-rgb) / 0.12);
-  --color-green-ant: var(--ui-success);
-  --color-green-ant-deep: var(--ui-success-deep);
-  --color-green-ant-soft: rgb(var(--ui-success-rgb) / 0.14);
+  --color-green-deep: var(--ui-success-deep);
+  --color-green-soft: rgb(var(--ui-success-rgb) / 0.14);
   --color-amber-soft: rgb(var(--ui-amber-rgb) / 0.14);
 
   --color-red-ant: var(--ui-error);
@@ -752,11 +750,12 @@ body {
   min-height: 100vh;
   /*
    * Без горизонтальной прокрутки. Правило — у body, а не у html: пока у html
-   * overflow `visible`, overflow body переходит на окно браузера. Модалки antd
-   * запирают прокрутку через `body { overflow-y: hidden }` — так запирается
-   * окно, и лента остаётся на месте. С `overflow-x: hidden` у html body сам
-   * обрезался по высоте экрана (у него height: 100% из reset antd), документ
-   * схлопывался, и любая модалка отбрасывала ленту в самый верх.
+   * overflow `visible`, overflow body переходит на окно браузера. Окна
+   * запирают прокрутку через `overflow: hidden` у body (ui-core/scroll-lock.ts)
+   * — так запирается окно, и лента остаётся на месте. С `overflow-x: hidden` у
+   * html body сам обрезался по высоте экрана (у него height: 100% из
+   * styles/reset.css), документ схлопывался, и любая модалка отбрасывала ленту
+   * в самый верх.
    */
   overflow-x: hidden;
   overscroll-behavior: none;
@@ -776,7 +775,7 @@ html {
   scroll-behavior: smooth;
 }
 
-/* antd reset.css ставит свой моноширинный стек — один на всё приложение. */
+/* Моноширинный стек — один на всё приложение. */
 pre,
 code,
 kbd,
@@ -918,7 +917,7 @@ main[tabindex='-1']:focus {
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Выделение текста — как в приложении, а не на странице. Кнопки, вкладки,
-   пункты меню, навигация и элементы antd не выделяются протяжкой мыши и
+   пункты меню, навигация и панели не выделяются протяжкой мыши и
    долгим нажатием. Контейнеры оболочки на div (список чатов, боковые панели,
    шапки и действия карточек) закрывает `noSelect` из
    src/styles/chrome-styles.ts. Текст, который читают и копируют (посты,
@@ -939,16 +938,11 @@ main[tabindex='-1']:focus {
   summary,
   nav,
   svg,
-  .ant-tabs-nav,
-  .ant-menu,
   .ui-menu,
-  .ant-pagination,
-  .ant-slider,
   .ui-date-panel,
-  .ant-collapse-header,
   .ui-modal__header,
   .ui-modal__close,
-  .ant-drawer-header,
+  .ui-drawer__header,
   .vel-modal
 ) {
   -webkit-user-select: none;
@@ -974,6 +968,8 @@ html {
    font-size (svg 1em), цвет — currentColor.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Как было у значков antd (его ConfigProvider сам вставлял правило .anticon):
+   по центру, без регистра подписи вокруг, у содержимого — своя строка. */
 .ui-icon {
   display: inline-flex;
   align-items: center;
@@ -981,7 +977,14 @@ html {
   color: inherit;
   font-style: normal;
   line-height: 0;
+  text-align: center;
+  text-transform: none;
+  text-rendering: optimizeLegibility;
   vertical-align: -0.125em;
+}
+
+.ui-icon > * {
+  line-height: 1;
 }
 
 .ui-icon > svg {

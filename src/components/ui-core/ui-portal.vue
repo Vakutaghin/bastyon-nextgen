@@ -6,9 +6,7 @@
 
 <script setup lang="ts">
 // Содержимое — в `#ui-layers` в конце body: окна и панели не обрезаются
-// overflow родителей и не зависят от их слоёв. Корень каждого слоя ставит
-// `data-popup-host`, чтобы панели antd внутри него (список Select в своём
-// окне) рисовались в нём, а не в body под окном (см. popup-container.ts).
+// overflow родителей и не зависят от их слоёв.
 import { layerRoot } from './layer-root'
 
 defineProps<{

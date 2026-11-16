@@ -9,7 +9,6 @@
         class="ui-dropdown"
         :class="overlayClass"
         data-state="open"
-        data-popup-host
         @pointerenter="panelHandlers.onPointerenter"
         @pointerleave="panelHandlers.onPointerleave"
       >

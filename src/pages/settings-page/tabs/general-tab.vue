@@ -246,9 +246,6 @@ const COMMENTS_ORDER_OPTIONS: {
   { value: 'oldest', labelKey: 'comments.sortOldest' },
 ]
 
-/** Тип значения, который отдаёт ant-свитч. */
-type SwitchValue = string | number | boolean
-
 /** Настройки-тумблеры: перечислены явно, чтобы не приводить типы силой. */
 type BooleanPreferenceKey =
   | 'embeddedVideo'
@@ -258,11 +255,11 @@ type BooleanPreferenceKey =
   | 'highContrast'
   | 'usageStats'
 
-function setFlag(key: BooleanPreferenceKey, checked: SwitchValue): void {
+function setFlag(key: BooleanPreferenceKey, checked: boolean): void {
   void prefs.set(key, Boolean(checked))
 }
 
-function onWidthButton(checked: SwitchValue): void {
+function onWidthButton(checked: boolean): void {
   void headerLayout.setVisible('header', 'pageWidth', Boolean(checked))
 }
 

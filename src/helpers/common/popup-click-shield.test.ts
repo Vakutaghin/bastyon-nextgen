@@ -1,7 +1,6 @@
 // Нажатие мимо открытого меню только закрывает его: до кнопки под маской не
 // доходит ни нажатие, ни щелчок. Внутри меню и на его кнопке всё как раньше.
-// Залипший класс `-open` без меню на экране и меню, которое не закрывается,
-// приложение не глушат.
+// Меню, которое не закрывается, приложение не глушит.
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
@@ -34,12 +33,10 @@ function mounted(className = ''): HTMLElement {
   return el
 }
 
-/** Меню на экране. В happy-dom раскладки нет — видимость задаём, как её видит браузер. */
-function popup(className: string, visible = true): HTMLElement {
+/** Панель или окно на экране. */
+function popup(className: string): HTMLElement {
   const el = document.createElement('div')
   el.className = className
-  el.getClientRects = () =>
-    ({ length: visible ? 1 : 0 }) as unknown as ReturnType<Element['getClientRects']>
   document.body.append(el)
   return el
 }
@@ -62,80 +59,7 @@ function tap(target: Element, pointerType: 'mouse' | 'touch' = 'touch'): { click
   return { clicked }
 }
 
-describe('installPopupClickShield: списки antd', () => {
-  it('список открыт: нажатие мимо закрывает его и не доходит до кнопки под ним', () => {
-    mounted('ant-select ant-select-open')
-    popup('ant-select-dropdown')
-    const below = mounted()
-    const pressed = vi.fn()
-    below.addEventListener('pointerdown', pressed)
-    const closer = vi.fn()
-    document.addEventListener('mousedown', closer)
-
-    expect(tap(below).clicked).toBe(false)
-    expect(pressed).not.toHaveBeenCalled()
-    // Список закрывает свой mousedown на document — им antd и закрывает его.
-    expect(closer).toHaveBeenCalledTimes(1)
-    expect(closer.mock.calls[0]![0].target).toBe(document)
-    document.removeEventListener('mousedown', closer)
-  })
-
-  it('внутри списка и на его поле нажатия работают', () => {
-    const trigger = mounted('ant-select ant-select-open')
-    const overlay = popup('ant-select-dropdown')
-    const item = document.createElement('li')
-    overlay.append(item)
-
-    expect(tap(item).clicked).toBe(true)
-    expect(tap(trigger).clicked).toBe(true)
-  })
-
-  it('ничего не открыто — маски нет', () => {
-    mounted('ant-select')
-    expect(tap(mounted()).clicked).toBe(true)
-  })
-
-  it('календарь тоже маскирует', () => {
-    mounted('ant-select ant-select-open')
-    popup('ant-picker-dropdown')
-    expect(tap(mounted()).clicked).toBe(false)
-  })
-
-  it('касание ушло в прокрутку — следующее нажатие без меню проходит', () => {
-    const trigger = mounted('ant-select ant-select-open')
-    popup('ant-select-dropdown')
-    const below = mounted()
-    below.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }))
-    below.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerType: 'touch' }))
-    trigger.classList.remove('ant-select-open')
-    expect(tap(below).clicked).toBe(true)
-  })
-
-  it('класс «открыто» залип, а меню на экране нет — нажатия проходят', () => {
-    // Список поля без пунктов: antd держит класс `-open`, но список не рисует
-    // и закрывать его не станет. Раньше маска гасила все нажатия навсегда.
-    mounted('ant-select ant-select-open')
-    popup('ant-select-dropdown', false)
-    const below = mounted()
-    expect(tap(below).clicked).toBe(true)
-    expect(tap(below).clicked).toBe(true)
-  })
-
-  it('список не закрывается от нажатий мимо — гасятся только два, дальше проходят', () => {
-    mounted('ant-select ant-select-open')
-    popup('ant-select-dropdown')
-    const below = mounted()
-    noted.length = 0
-    expect(tap(below).clicked).toBe(false)
-    expect(tap(below).clicked).toBe(false)
-    expect(tap(below).clicked).toBe(true)
-    expect(tap(below).clicked).toBe(true)
-    // Случай — в сведения для поддержки, один раз: чья кнопка залипла.
-    expect(noted).toEqual([{ ms: 0, kind: 'tap-shield', detail: 'ant-select ant-select-open' }])
-  })
-})
-
-describe('installPopupClickShield: свои панели из стека слоёв', () => {
+describe('installPopupClickShield', () => {
   /** Своя открытая панель: слой в стеке, закрывается по просьбе. */
   function ownPopup(
     kind: LayerKind = 'dropdown',
@@ -166,6 +90,21 @@ describe('installPopupClickShield: свои панели из стека сло�
     expect(tap(below).clicked).toBe(true)
   })
 
+  it('ничего не открыто — маски нет', () => {
+    expect(tap(mounted()).clicked).toBe(true)
+  })
+
+  it('касание ушло в прокрутку — маска снята: щелчок с клавиатуры проходит', () => {
+    ownPopup('dropdown', { closes: false })
+    const below = mounted()
+    below.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }))
+    below.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerType: 'touch' }))
+    const clicked = vi.fn()
+    below.addEventListener('click', clicked)
+    below.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    expect(clicked).toHaveBeenCalledTimes(1)
+  })
+
   it('в панели и по её кнопке нажатия работают', () => {
     const { panel, trigger, dismissed } = ownPopup('popover')
     const item = document.createElement('button')
@@ -187,16 +126,6 @@ describe('installPopupClickShield: свои панели из стека сло�
     pushLayer({ kind: 'modal', el: () => confirm })
     expect(tap(confirm).clicked).toBe(true)
     expect(again).toEqual([])
-  })
-
-  it('открыт только список antd в своём окне — нажатие в окне мимо списка маскируется', () => {
-    const own = popup('own-modal')
-    pushLayer({ kind: 'modal', el: () => own })
-    mounted('ant-select ant-select-open')
-    popup('ant-select-dropdown')
-    const field = document.createElement('button')
-    own.append(field)
-    expect(tap(field).clicked).toBe(false)
   })
 
   it('нажатие во внешней панели закрывает вложенную, но само проходит', () => {

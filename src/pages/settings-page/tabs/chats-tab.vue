@@ -22,7 +22,7 @@
           :checked="privacy.prefs[key]"
           :data-testid="`privacy-${key}`"
           :aria-label="t(`settings.chats.privacy_${key}`)"
-          @change="(on: SwitchValue) => void privacy.set(key, on === true)"
+          @change="(on: boolean) => void privacy.set(key, on === true)"
         />
       </SC_SystemRow>
       <!-- Приглашение в чат: окно «Принять / Отклонить» или сразу в чат. -->
@@ -37,7 +37,7 @@
           :checked="privacy.prefs.acceptInvites"
           data-testid="privacy-acceptInvites"
           :aria-label="t('settings.chats.acceptInvites')"
-          @change="(on: SwitchValue) => void privacy.set('acceptInvites', on === true)"
+          @change="(on: boolean) => void privacy.set('acceptInvites', on === true)"
         />
       </SC_SystemRow>
     </SC_SystemSection>
@@ -130,7 +130,7 @@
           :checked="row.saving"
           :aria-label="t('settings.chats.saveChat', { name: row.name })"
           data-testid="archive-chat-switch"
-          @change="(on: SwitchValue) => archive.setChat(row.id, Boolean(on))"
+          @change="(on: boolean) => archive.setChat(row.id, Boolean(on))"
         />
         <SC_ArchiveDelete
           v-if="row.count"
@@ -196,9 +196,6 @@ import {
   SC_ArchiveSearch,
 } from './chats-tab.styled'
 import HelpLink from '@/b-components/help/help-link.vue'
-
-/** Тип значения, который отдаёт ant-свитч. */
-type SwitchValue = string | number | boolean
 
 interface ChatRow {
   id: string
@@ -289,7 +286,7 @@ function rowMeta(row: ChatRow): string {
   return row.saving ? t('settings.chats.nothingYet') : t('settings.chats.notSaving')
 }
 
-function onEnabled(on: SwitchValue): void {
+function onEnabled(on: boolean): void {
   void archive.setEnabled(Boolean(on))
 }
 

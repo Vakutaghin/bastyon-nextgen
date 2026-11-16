@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-// Витрина своих компонентов, которые заменяют ant-design-vue: место для
+// Витрина своих компонентов (src/components): место для
 // визуальной сверки в обеих темах и для проверок с клавиатуры. Каждый новый
 // компонент добавляет сюда свой раздел (sections/<имя>-section.vue).
 import ButtonSection from './sections/button-section.vue'

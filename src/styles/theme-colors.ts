@@ -14,7 +14,7 @@
 //
 // С редизайна под Nuxt UI (см. шапку src/style.css) старые `--color-*`
 // перенаправлены на семантические `--ui-*`. Акцент (PRIMARY*, LINK) в светлой
-// теме синий, в тёмной зелёный; «успех» (SUCCESS*, GREEN_ANT*) зелёный в обеих.
+// теме синий, в тёмной зелёный; «успех» (SUCCESS*, GREEN*) зелёный в обеих.
 // В новом коде пиши `var(--ui-…)` прямо в шаблоне styled-компонента:
 // интерполяция `${COLORS.X}` стоит ошибок vue-tsc. Синие ANT_BLUE* и BRAND_CYAN*
 // и шкала GRAY_* удалены: их заменили семантические токены с теми же значениями.
@@ -89,9 +89,8 @@ export const COLORS = {
   PURPLE_SOFT: 'var(--color-purple-soft, rgb(142 81 255 / 0.12))',
   PINK: 'var(--color-pink, #f6339a)',
   PINK_SOFT: 'var(--color-pink-soft, rgb(246 51 154 / 0.12))',
-  GREEN_ANT: 'var(--color-green-ant, #00c16a)',
-  GREEN_ANT_DEEP: 'var(--color-green-ant-deep, #007f45)',
-  GREEN_ANT_SOFT: 'var(--color-green-ant-soft, rgb(0 193 106 / 0.14))',
+  GREEN_DEEP: 'var(--color-green-deep, #007f45)',
+  GREEN_SOFT: 'var(--color-green-soft, rgb(0 193 106 / 0.14))',
   AMBER_SOFT: 'var(--color-amber-soft, rgb(254 154 0 / 0.14))',
 
   // Красные оттенки (ошибки, удаление)

@@ -160,8 +160,7 @@ async function openSettings(w: VueWrapper): Promise<void> {
   await settle()
 }
 
-/** Всё, чем меняют пост; у antd-списков и календаря это их внутренние поля. */
-/** Поля и кнопки окна; «?» справки пост не меняет — его не считаем. */
+/** Всё, чем меняют пост: поля и кнопки окна; «?» справки пост не меняет — его не считаем. */
 function controls(w: VueWrapper): HTMLInputElement[] {
   return w
     .findAll('input, textarea, button, select')

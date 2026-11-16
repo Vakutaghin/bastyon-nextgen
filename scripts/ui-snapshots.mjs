@@ -293,7 +293,7 @@ async function openOwnProfile(page) {
 
 /** Открыть выпадающий список Select, внутри которого поле с этим id. */
 async function openSelect(page, id) {
-  await page.locator(`.ant-select:has(#${id})`).first().click()
+  await page.locator(`.ui-select:has(#${id})`).first().click()
   await page.waitForTimeout(500)
 }
 
@@ -548,7 +548,7 @@ async function signIn(page) {
   await dismissPopups(page)
   await page.getByRole('button', { name: 'Войти', exact: true }).first().click()
   await page.getByPlaceholder(/12-словную/).fill(bip39.generateMnemonic())
-  await page.locator('.ant-modal').getByRole('button', { name: 'Войти', exact: true }).click()
+  await page.locator('.ui-modal').getByRole('button', { name: 'Войти', exact: true }).click()
   await page.waitForTimeout(6000)
   await dismissPopups(page)
 }

@@ -35,8 +35,8 @@ await initI18n()
 import { createApp, watch } from 'vue'
 import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
-// eslint-disable-next-line no-restricted-imports -- сброс стилей antd уходит вместе с последними его компонентами
-import 'ant-design-vue/dist/reset.css'
+// Сброс стилей браузера — раньше style.css и компонентов: они его переопределяют.
+import './styles/reset.css'
 import { setDialogAppContext } from '@/components/modal/dialogs'
 // Шрифты интерфейса лежат в бандле, а не на Google Fonts: CSP, Tor и офлайн в
 // десктопе. Браузер качает только нужные подмножества (unicode-range).

@@ -1,26 +1,23 @@
 /**
  * Невидимая маска под открытым выпадающим меню, как у модалки: нажатие мимо
- * меню только закрывает его. antd закрывает меню по mousedown, а сам щелчок
- * долетал до того, что под ним: на телефоне нажатие мимо меню аккаунта
+ * меню только закрывает его. Без маски меню закрывалось по mousedown, а сам
+ * щелчок долетал до того, что под ним: на телефоне нажатие мимо меню аккаунта
  * открывало пост в ленте.
  *
- * Маска — не слой в DOM, а перехват на window в фазе захвата: открытый список
- * antd (Select, календарь) виден по классу `-open` на его поле. Нажатие мимо
- * списка и поля гасится целиком, до щелчка включительно, а список закрываем
- * сами: antd ждёт mousedown на document, а погашенное нажатие до него уже не
- * дойдёт.
- *
- * Маска — единая точка отказа: залипни класс `-open` без меню на экране, и
- * приложение глохнет целиком (листается, но ни одно нажатие не доходит).
- * Поэтому маскируем, только пока меню правда видно, и не больше двух нажатий
- * подряд, если меню от них не закрывается.
- *
- * Свои панели (src/components/ui-core) маска берёт из стека слоёв: открытая
+ * Маска — не слой в DOM, а перехват на window в фазе захвата. Открытые панели
+ * (меню, Popover, список Select) она берёт из стека слоёв src/components/ui-core:
  * панель там есть, пока она на экране, а закрывается она просьбой
- * `dismiss('outside')`. Панель `hover` для мыши не маскирует: она закрывается
- * сама, когда курсор ушёл, а нажатие рядом должно сработать. Нажатие в слое,
- * открытом позже панели (подтверждение из меню), — не мимо. Нажатие в панели
- * закрывает вложенные в неё, открытые позже (меню пункта в списке уведомлений).
+ * `dismiss('outside')`. Нажатие мимо панели гасится целиком, до щелчка
+ * включительно.
+ *
+ * Панель `hover` для мыши не маскирует: она закрывается сама, когда курсор
+ * ушёл, а нажатие рядом должно сработать. Нажатие в слое, открытом позже
+ * панели (подтверждение из меню), — не мимо. Нажатие в панели закрывает
+ * вложенные в неё, открытые позже (меню пункта в списке уведомлений).
+ *
+ * Маска — единая точка отказа: не закройся панель по просьбе, и приложение
+ * глохнет целиком (листается, но ни одно нажатие не доходит). Поэтому подряд
+ * гасим не больше двух нажатий, если панель от них не закрывается.
  */
 
 import { noteStall } from '@/helpers/diagnostics/main-thread-stalls'
@@ -31,12 +28,6 @@ import {
   popupLayers,
   type Layer,
 } from '@/components/ui-core/layer-stack'
-
-/** Поля antd с открытым списком. */
-const OPEN_TRIGGER = '.ant-select-open'
-
-/** Сами списки antd: внутри нажатия работают как обычно. */
-const POPUP = '.ant-select-dropdown, .ant-picker-dropdown'
 
 /** События одного нажатия: от касания до щелчка. */
 const GESTURE_EVENTS = [
@@ -59,8 +50,6 @@ const MAX_UNANSWERED = 2
 
 let shielding = false
 let releaseTimer: ReturnType<typeof setTimeout> | null = null
-/** Свой mousedown для antd — его не гасим. */
-let closing = false
 /** Погашено подряд, а меню всё ещё на экране. */
 let unanswered = 0
 
@@ -70,11 +59,6 @@ function stop(): void {
   releaseTimer = null
 }
 
-/** Меню на экране: antd прячет закрытое `display: none`, но оставляет в DOM. */
-function popupVisible(doc: Document): boolean {
-  return Array.from(doc.querySelectorAll(POPUP)).some((el) => el.getClientRects().length > 0)
-}
-
 /** Свои открытые панели; для мыши — без панелей «по наведению». */
 function ownPopups(pointerType: string): Layer[] {
   return popupLayers().filter((layer) => pointerType !== 'mouse' || !layer.hover)
@@ -82,7 +66,6 @@ function ownPopups(pointerType: string): Layer[] {
 
 function insidePopup(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false
-  if (target.closest(`${POPUP}, ${OPEN_TRIGGER}`)) return true
   const layer = layerContaining(target)
   if (!layer) return false
   if (isPopupLayer(layer)) return true
@@ -101,23 +84,10 @@ function closeNested(target: EventTarget | null): void {
   }
 }
 
-function closePopups(doc: Document): void {
-  closing = true
-  try {
-    doc.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-  } finally {
-    closing = false
-  }
-  dismissPopupLayers('outside')
-}
-
 function start(event: PointerEvent): void {
   stop()
-  const doc = event.target instanceof Node ? (event.target.ownerDocument ?? document) : document
-  const open = doc.querySelector(OPEN_TRIGGER)
-  const antdOpen = !!open && popupVisible(doc)
   const own = ownPopups(event.pointerType)
-  if (!antdOpen && own.length === 0) {
+  if (own.length === 0) {
     unanswered = 0
     return
   }
@@ -125,23 +95,21 @@ function start(event: PointerEvent): void {
     closeNested(event.target)
     return
   }
-  // Меню не закрывается от наших mousedown (ручное управление, сбой antd):
-  // лучше лишний щелчок под меню, чем приложение, глухое к нажатиям.
+  // Панель не закрывается по просьбе (ручное управление, сбой): лучше лишний
+  // щелчок под ней, чем приложение, глухое к нажатиям.
   if (unanswered >= MAX_UNANSWERED) {
-    // В сведения для поддержки — раз за случай: чья кнопка залипла.
+    // В сведения для поддержки — раз за случай: чья панель залипла.
     if (unanswered++ === MAX_UNANSWERED) {
-      const detail = antdOpen && open ? open.className.toString() : `layer:${own[0]!.kind}`
-      noteStall({ ms: 0, kind: 'tap-shield', detail: detail.slice(0, 200) })
+      noteStall({ ms: 0, kind: 'tap-shield', detail: `layer:${own[0]!.kind}` })
     }
     return
   }
   unanswered++
   shielding = true
-  closePopups(doc)
+  dismissPopupLayers('outside')
 }
 
 function onGestureEvent(event: Event): void {
-  if (closing) return
   if (event.type === 'pointerdown') start(event as PointerEvent)
   if (!shielding) return
   // Касание ушло в прокрутку — щелчка не будет.

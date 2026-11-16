@@ -52,7 +52,7 @@ export const ICON_WARNING_24 = { fontSize: '24px', color: COLORS.WARNING }
 
 export const ICON_STAR_18 = { color: COLORS.WARNING, fontSize: '18px', marginRight: '4px' }
 
-// Danger (ant-red) с фиксированным размером для шапок модалок подтверждения
+// Danger (красный) с фиксированным размером для шапок модалок подтверждения
 export const ICON_DANGER_24 = { fontSize: '24px', color: COLORS.RED_ANT }
 
 // Предупреждение нестандартного размера

@@ -67,7 +67,7 @@ function mountIt<T>(component: T, props: Record<string, unknown> = {}): VueWrapp
   return w
 }
 
-/** Модалка antd рендерится в body, а не внутри обёртки. */
+/** Окно рисуется в слое в конце body, а не внутри обёртки. */
 const body = () => document.body
 const buttons = () => [...body().querySelectorAll('button')]
 const button = (text: string) => buttons().find((b) => b.textContent?.includes(text))

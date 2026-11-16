@@ -100,7 +100,6 @@ describe('Popover', () => {
     const el = panel()!
     expect(el.getAttribute('role')).toBe('dialog')
     expect(el.closest('#ui-layers')).not.toBeNull()
-    expect(el.hasAttribute('data-popup-host')).toBe(true)
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
     expect(trigger.getAttribute('aria-controls')).toBe(el.id)
     expect(el.getAttribute('aria-labelledby')).toBe(`${el.id}-title`)

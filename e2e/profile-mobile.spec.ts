@@ -68,7 +68,7 @@ async function go(page: Page, path: string): Promise<void> {
   )
 }
 
-/** Escape — когда фокус уже в окне: antd переводит его туда после анимации. */
+/** Escape — когда фокус уже в окне: окно переводит его туда после открытия. */
 async function closeSheet(page: Page, sheet: Locator): Promise<void> {
   await expect
     .poll(() =>

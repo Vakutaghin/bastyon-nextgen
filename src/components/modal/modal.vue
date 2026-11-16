@@ -1,6 +1,6 @@
 <template>
   <UiPortal v-if="rendered">
-    <SC_ModalRoot :ref="root.setRef" class="ui-modal-root" data-popup-host>
+    <SC_ModalRoot :ref="root.setRef" class="ui-modal-root">
       <Transition name="ui-fade" appear>
         <div v-show="isOpen" class="ui-modal-mask" />
       </Transition>

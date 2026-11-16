@@ -1,6 +1,6 @@
 // Стек слоёв: слой (z-index) считается, а не пишется руками — открытое из окна
 // всегда выше окна; Esc и «Назад» закрывают только верхний слой и дальше не
-// идут; окна antd на переходный период тоже учитываются.
+// идут.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Z_INDEX } from '@/styles/design-tokens'
@@ -149,7 +149,7 @@ describe('Esc', () => {
     expect(pressEscape().reachedWindow).toBe(true)
   })
 
-  it('погашенный раньше Esc (окно antd) и набор иероглифов не трогает', () => {
+  it('погашенный раньше Esc (список Select в окне) и набор иероглифов не трогает', () => {
     const top = open({ kind: 'modal' })
     const inner = box()
     inner.addEventListener('keydown', (e) => e.preventDefault())

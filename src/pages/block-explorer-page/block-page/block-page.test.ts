@@ -12,8 +12,8 @@ import BlockPage from './block-page.vue'
 const mockState = vi.hoisted(() => ({ data: null as unknown as Record<string, unknown> }))
 vi.mock('./use-block-data', () => ({ useBlockData: () => mockState.data }))
 
-// ant-design Tooltip тянет ResizeObserver, которого нет в happy-dom — полифилл +
-// стаб самого InfoTooltip, чтобы не разворачивать ant-internals.
+// Подсказка следит за размером через ResizeObserver, которого нет в happy-dom, —
+// полифилл + стаб самого InfoTooltip: тест не о подсказках.
 globalThis.ResizeObserver =
   globalThis.ResizeObserver ||
   class {

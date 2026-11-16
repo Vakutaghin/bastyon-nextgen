@@ -1,8 +1,7 @@
 <template>
   <Teleport to="body">
     <SC_Backdrop :isOpen="isOpen" @click="close" />
-    <!-- data-popup-host: списки полей (язык ленты) открываются внутри меню, а не под ним.
-         Закрытое меню только сдвинуто за край: inert убирает его из обхода Tab
+    <!-- Закрытое меню только сдвинуто за край: inert убирает его из обхода Tab
          и от диктора, открытое — окно с названием, Esc закрывает. -->
     <SC_Drawer
       :isOpen="isOpen"
@@ -11,7 +10,6 @@
       role="dialog"
       :aria-modal="isOpen ? 'true' : undefined"
       :aria-label="t('header.menu')"
-      data-popup-host
       data-testid="mobile-nav-drawer"
       @click.stop
       @keydown.esc="onEsc"

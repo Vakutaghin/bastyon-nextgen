@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, shallowRef, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ConfigProvider } from 'ant-design-vue'
-import type { Locale as AntdLocale } from 'ant-design-vue/es/locale'
-import type { Locale } from '@/i18n'
-import { loadAntdLocale } from '@/i18n/antd-locale'
 import AppLayout from '@/b-components/app-layout/app-layout.vue'
 import MiniAppPaymentModal from '@/mini-apps/ui/mini-app-payment-modal.vue'
 import { isVideoDialogOpen } from '@/mini-apps/ui/video-dialog-controller'
@@ -35,10 +31,8 @@ import { useIpnsRenewal } from '@/composables/use-ipns-renewal'
 import { useTrayLabels } from '@/composables/use-tray-labels'
 import { useAppBadge } from '@/composables/use-app-badge'
 import { publicShareOrigin } from '@/helpers/common/share-origin'
-import { useTheme } from '@/composables/use-theme'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import { useUserRelationsStore } from '@/stores/user-relations-store'
-import { buildAntdTheme, setStaticApiTheme } from '@/styles/antd-theme'
 import { SC_FramedNotice, SC_FramedLink } from './src.styled'
 
 const isTauriBuild = import.meta.env.VITE_TAURI === 'true'
@@ -76,7 +70,7 @@ const ipfsNodeViewer = useIpfsNodeViewerStore()
 
 // Embed-роуты (`/embed/...`, meta.embed) рендерятся БЕЗ chrome (хедер/футер/
 // сайдбар/глобальные модалки) — это самостоятельная вьюха для встраивания в iframe.
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const route = useRoute()
 const isEmbed = computed<boolean>(() => route.meta?.embed === true)
 
@@ -137,87 +131,61 @@ watch(
   },
   { immediate: true }
 )
-
-// Тема antd — палитра Nuxt UI из styles/antd-theme.ts, своя для светлой и
-// тёмной темы. Раньше antd всегда был светлым, а тёмным его делали
-// !important-правила в style.css.
-const { isDark } = useTheme()
-const themeConfig = computed(() => buildAntdTheme(isDark.value))
-
-// Modal.confirm рендерится вне дерева приложения и берёт тему из глобального
-// конфига, а не из <ConfigProvider>.
-watch(themeConfig, setStaticApiTheme, { immediate: true })
-
-// Подписи самого antd (кнопка Modal.info, пустой список) — на языке интерфейса.
-const antdLocale = shallowRef<AntdLocale>()
-watch(
-  () => locale.value as Locale,
-  (next) => {
-    loadAntdLocale(next)
-      .then((loaded) => {
-        if (locale.value === next) antdLocale.value = loaded
-      })
-      .catch(() => {})
-  },
-  { immediate: true }
-)
 </script>
 
 <template>
-  <ConfigProvider prefixCls="ant" :theme="themeConfig" :locale="antdLocale">
-    <!-- Приложение во фрейме чужого сайта не показываем (S67). -->
-    <SC_FramedNotice v-if="isFramedApp">
-      <p>{{ t('appMsg.framedNotice') }}</p>
-      <SC_FramedLink :href="publicAppUrl" target="_top" rel="noopener">
-        {{ t('appMsg.framedOpen') }}
-      </SC_FramedLink>
-    </SC_FramedNotice>
+  <!-- Приложение во фрейме чужого сайта не показываем (S67). -->
+  <SC_FramedNotice v-if="isFramedApp">
+    <p>{{ t('appMsg.framedNotice') }}</p>
+    <SC_FramedLink :href="publicAppUrl" target="_top" rel="noopener">
+      {{ t('appMsg.framedOpen') }}
+    </SC_FramedLink>
+  </SC_FramedNotice>
 
-    <!-- Embed: только маршрут, без chrome и глобальных синглтонов. -->
-    <router-view v-else-if="isEmbed" />
-    <template v-else>
-      <AppLayout />
-      <!-- Загрузка видео: окно из «Моих видео» и плашка с идущими загрузками. -->
-      <VideoUploadDialog />
-      <VideoUploadsPanel />
-      <!-- Скачанное: лист качества и окно ролика без сети — singleton, useOfflineVideosStore -->
-      <OfflineQualitySheet v-if="offlineVideos.sheet || offlineVideos.batchSheet" />
-      <OfflineVideoModal v-if="offlineVideos.opened" />
-      <!-- Mini-apps payment modal — singleton, управляется через payment-modal-controller -->
-      <MiniAppPaymentModal />
-      <!-- Ролик и жалоба по просьбе мини-приложения — video/complain-dialog-controller -->
-      <MiniAppVideoDialog v-if="isVideoDialogOpen" />
-      <MiniAppComplainDialog v-if="isComplainDialogOpen" />
-      <!-- Донат автору — singleton, открывается через useDonateStore -->
-      <DonateModal />
-      <!-- Платная подписка на автора — singleton, открывается через usePaidSubscriptionsStore -->
-      <PaidSubscriptionModal />
-      <!-- Продвижение поста за PKOIN — singleton, открывается через useBoostStore -->
-      <BoostModal />
-      <!-- «Поделиться → Отправить в чат» — singleton, открывается через useShareToChatStore -->
-      <ShareToChatModal />
-      <!-- «Добавить в…» и редактор коллекции — singleton, открываются useAddToListStore и useCollectionEditorStore -->
-      <AddToListModal />
-      <CollectionEditorModal />
-      <!-- Жалоба на контент — singleton, открывается через useReportStore -->
-      <ReportModal />
-      <!-- «В блокчейне»: пост, комментарий, аккаунт, транзакция — singleton, открывается useChainInfoStore -->
-      <ChainInfoModal />
-      <!-- P0-1: разблокировка сейфа (passphrase-режим) — singleton, открывается мостом vault-unlock -->
-      <VaultUnlockModal />
-      <!-- IPFS-модуль: consent/прогресс/desktop-only — singleton, открывается ipfs-store -->
-      <IpfsInstallModal />
-      <!-- IPFS без своей ноды: просмотр и скачивание узлом в приложении — singleton, открывается useIpfsNodeViewerStore -->
-      <IpfsNodeViewer v-if="ipfsNodeViewer.seq > 0" />
-      <!-- Контекстная справка (кнопки «?» и F1) — singleton, открывается useHelpStore().openTopic -->
-      <HelpPanel />
-      <!-- Просмотр картинок постов и комментариев — singleton, открывается modalStore.openImageGallery -->
-      <ImageGalleryHost />
-      <!-- Замок приложения (пин-код, графический ключ) и подтверждение кодом — singleton, useAppLockStore -->
-      <AppLockConfirmModal />
-      <AppLockScreen />
-    </template>
-    <!-- Тосты appToast — и во встраиваемом виде: их зовут и там. -->
-    <ToastHost />
-  </ConfigProvider>
+  <!-- Embed: только маршрут, без chrome и глобальных синглтонов. -->
+  <router-view v-else-if="isEmbed" />
+  <template v-else>
+    <AppLayout />
+    <!-- Загрузка видео: окно из «Моих видео» и плашка с идущими загрузками. -->
+    <VideoUploadDialog />
+    <VideoUploadsPanel />
+    <!-- Скачанное: лист качества и окно ролика без сети — singleton, useOfflineVideosStore -->
+    <OfflineQualitySheet v-if="offlineVideos.sheet || offlineVideos.batchSheet" />
+    <OfflineVideoModal v-if="offlineVideos.opened" />
+    <!-- Mini-apps payment modal — singleton, управляется через payment-modal-controller -->
+    <MiniAppPaymentModal />
+    <!-- Ролик и жалоба по просьбе мини-приложения — video/complain-dialog-controller -->
+    <MiniAppVideoDialog v-if="isVideoDialogOpen" />
+    <MiniAppComplainDialog v-if="isComplainDialogOpen" />
+    <!-- Донат автору — singleton, открывается через useDonateStore -->
+    <DonateModal />
+    <!-- Платная подписка на автора — singleton, открывается через usePaidSubscriptionsStore -->
+    <PaidSubscriptionModal />
+    <!-- Продвижение поста за PKOIN — singleton, открывается через useBoostStore -->
+    <BoostModal />
+    <!-- «Поделиться → Отправить в чат» — singleton, открывается через useShareToChatStore -->
+    <ShareToChatModal />
+    <!-- «Добавить в…» и редактор коллекции — singleton, открываются useAddToListStore и useCollectionEditorStore -->
+    <AddToListModal />
+    <CollectionEditorModal />
+    <!-- Жалоба на контент — singleton, открывается через useReportStore -->
+    <ReportModal />
+    <!-- «В блокчейне»: пост, комментарий, аккаунт, транзакция — singleton, открывается useChainInfoStore -->
+    <ChainInfoModal />
+    <!-- P0-1: разблокировка сейфа (passphrase-режим) — singleton, открывается мостом vault-unlock -->
+    <VaultUnlockModal />
+    <!-- IPFS-модуль: consent/прогресс/desktop-only — singleton, открывается ipfs-store -->
+    <IpfsInstallModal />
+    <!-- IPFS без своей ноды: просмотр и скачивание узлом в приложении — singleton, открывается useIpfsNodeViewerStore -->
+    <IpfsNodeViewer v-if="ipfsNodeViewer.seq > 0" />
+    <!-- Контекстная справка (кнопки «?» и F1) — singleton, открывается useHelpStore().openTopic -->
+    <HelpPanel />
+    <!-- Просмотр картинок постов и комментариев — singleton, открывается modalStore.openImageGallery -->
+    <ImageGalleryHost />
+    <!-- Замок приложения (пин-код, графический ключ) и подтверждение кодом — singleton, useAppLockStore -->
+    <AppLockConfirmModal />
+    <AppLockScreen />
+  </template>
+  <!-- Тосты appToast — и во встраиваемом виде: их зовут и там. -->
+  <ToastHost />
 </template>

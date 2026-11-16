@@ -80,8 +80,7 @@ const mode: Ref<ThemeMode> = ref<ThemeMode>('auto')
 
 /**
  * Тема, которая сейчас на `<html>`. Реактивна и к смене системной темы в режиме
- * `auto`: раньше `isDark` читал matchMedia напрямую и её не замечал, а по нему
- * строится тема antd.
+ * `auto`: раньше `isDark` читал matchMedia напрямую и её не замечал.
  */
 const resolvedTheme: Ref<'light' | 'dark'> = ref<'light' | 'dark'>('light')
 

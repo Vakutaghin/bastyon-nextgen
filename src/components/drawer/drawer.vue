@@ -5,7 +5,6 @@
       class="ui-drawer-root"
       :data-placement="side"
       :data-state="isOpen ? 'open' : 'closed'"
-      data-popup-host
     >
       <Transition name="ui-fade" appear>
         <div v-show="isOpen" class="ui-drawer-mask" @click="onMaskClick" />

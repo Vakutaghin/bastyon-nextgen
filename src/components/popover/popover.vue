@@ -12,7 +12,6 @@
         :aria-labelledby="hasTitle ? `${id}-title` : undefined"
         :aria-label="hasTitle ? undefined : panelLabel"
         data-state="open"
-        data-popup-host
         @pointerenter="panelHandlers.onPointerenter"
         @pointerleave="panelHandlers.onPointerleave"
       >

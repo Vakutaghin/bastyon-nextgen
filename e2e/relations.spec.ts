@@ -74,7 +74,7 @@ async function signIn(page: Page, data: MockNodeData): Promise<void> {
   await expect(dialog).toBeHidden({ timeout: 30_000 })
 }
 
-/** Подтверждение antd с этим заголовком — и что оно не под другим окном. */
+/** Окно подтверждения с этим заголовком — и что оно не под другим окном. */
 async function expectConfirmOnTop(page: Page, title: string): Promise<Locator> {
   const confirm = page.locator(UI.confirm).filter({ hasText: title })
   await expect(confirm).toBeVisible()
