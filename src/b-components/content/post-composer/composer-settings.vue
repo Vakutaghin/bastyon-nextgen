@@ -41,21 +41,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Select, { type SelectOption } from '@/components/select'
-import { SC_Placeholder as SC_PickerLoading } from '@/components/date-time-picker/styled'
+import DateTimePicker from '@/components/date-time-picker'
 import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@/i18n'
 import { SC_Label, SC_SettingItem, SC_Settings, SC_TrialHint } from './composer-settings.styled'
 import HelpLink from '@/b-components/help/help-link.vue'
-
-// Календарь antd с dayjs тяжёлый — отдельным чанком, когда открывают окно поста.
-const DateTimePicker = defineAsyncComponent({
-  loader: () => import('@/components/date-time-picker'),
-  loadingComponent: SC_PickerLoading,
-  delay: 0,
-})
 
 const props = defineProps<{
   visibility: string

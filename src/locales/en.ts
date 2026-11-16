@@ -555,6 +555,16 @@ export default {
     ipfsPinSaveBtn: 'Save',
     ipfsPinClearBtn: 'Remove service',
   },
+  datePicker: {
+    prevMonth: 'Previous month',
+    nextMonth: 'Next month',
+    prevYear: 'Previous year',
+    nextYear: 'Next year',
+    today: 'Today',
+    ok: 'OK',
+    hours: 'Hours',
+    minutes: 'Minutes',
+  },
   common: {
     offline: 'No network connection. It will load once the connection is back.',
     networkUnavailable:

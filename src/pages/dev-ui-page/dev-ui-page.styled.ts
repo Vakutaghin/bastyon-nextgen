@@ -62,6 +62,11 @@ export const SC_DevUiNarrow = styled.div`
   width: 132px;
 `
 
+/** Поле дня, как в выборе периода обозревателя (150px). */
+export const SC_DevUiDay = styled.div`
+  width: 150px;
+`
+
 /** Значок со счётчиком — с запасом под счётчик, как в шапке. */
 export const SC_DevUiBadgeBox = styled.span`
   --ui-badge-offset-y: 5px;

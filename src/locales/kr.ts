@@ -554,6 +554,16 @@ export default {
     ipfsPinSaveBtn: '저장',
     ipfsPinClearBtn: '서비스 제거',
   },
+  datePicker: {
+    prevMonth: '이전 달',
+    nextMonth: '다음 달',
+    prevYear: '이전 해',
+    nextYear: '다음 해',
+    today: '오늘',
+    ok: '확인',
+    hours: '시',
+    minutes: '분',
+  },
   common: {
     offline: '네트워크에 연결되어 있지 않습니다. 연결이 돌아오면 불러옵니다.',
     networkUnavailable:

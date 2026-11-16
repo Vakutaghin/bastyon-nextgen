@@ -556,6 +556,16 @@ export default {
     ipfsPinSaveBtn: 'Сохранить',
     ipfsPinClearBtn: 'Удалить сервис',
   },
+  datePicker: {
+    prevMonth: 'Предыдущий месяц',
+    nextMonth: 'Следующий месяц',
+    prevYear: 'Предыдущий год',
+    nextYear: 'Следующий год',
+    today: 'Сегодня',
+    ok: 'ОК',
+    hours: 'Часы',
+    minutes: 'Минуты',
+  },
   common: {
     offline: 'Нет сети. Загрузится, когда соединение вернётся.',
     networkUnavailable: 'Сеть Bastyon не отвечает. Проверьте подключение или попробуйте позже.',

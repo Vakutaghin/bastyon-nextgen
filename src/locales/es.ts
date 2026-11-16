@@ -561,6 +561,16 @@ export default {
     ipfsPinSaveBtn: 'Guardar',
     ipfsPinClearBtn: 'Quitar el servicio',
   },
+  datePicker: {
+    prevMonth: 'Mes anterior',
+    nextMonth: 'Mes siguiente',
+    prevYear: 'Año anterior',
+    nextYear: 'Año siguiente',
+    today: 'Hoy',
+    ok: 'Aceptar',
+    hours: 'Horas',
+    minutes: 'Minutos',
+  },
   common: {
     offline: 'Sin conexión de red. Se cargará cuando vuelva la conexión.',
     networkUnavailable:

@@ -525,6 +525,16 @@ export default {
     ipfsPinSaveBtn: '保存',
     ipfsPinClearBtn: '移除服务',
   },
+  datePicker: {
+    prevMonth: '上个月',
+    nextMonth: '下个月',
+    prevYear: '上一年',
+    nextYear: '下一年',
+    today: '今天',
+    ok: '确定',
+    hours: '时',
+    minutes: '分',
+  },
   common: {
     offline: '没有网络连接。连接恢复后将自动加载。',
     networkUnavailable: 'Bastyon 网络没有响应。请检查连接或稍后再试。',

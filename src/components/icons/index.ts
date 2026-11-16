@@ -36,6 +36,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  ChevronsLeft,
+  ChevronsRight,
   CircleAlert,
   CircleCheck,
   CirclePause,
@@ -238,6 +240,8 @@ export const CopyOutlined = lucideIcon('CopyOutlined', Copy)
 export const CrownFilled = lucideIcon('CrownFilled', Crown, 'solid')
 export const CrownOutlined = lucideIcon('CrownOutlined', Crown)
 export const DeleteOutlined = lucideIcon('DeleteOutlined', Trash2)
+export const DoubleLeftOutlined = lucideIcon('DoubleLeftOutlined', ChevronsLeft)
+export const DoubleRightOutlined = lucideIcon('DoubleRightOutlined', ChevronsRight)
 export const DollarOutlined = lucideIcon('DollarOutlined', Coins)
 export const DownloadOutlined = lucideIcon('DownloadOutlined', Download)
 export const SaveOutlined = lucideIcon('SaveOutlined', FileDown)

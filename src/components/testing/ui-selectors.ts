@@ -46,8 +46,8 @@ export const UI = {
   selectOption: '.ui-select__option',
 
   /** Поле даты и времени. */
-  datePicker: '.ant-picker',
-  datePickerDisabled: '.ant-picker-disabled',
+  datePicker: '.ui-date-picker',
+  datePickerDisabled: '.ui-date-picker[data-disabled]',
 
   /** Сам input флажка (Checkbox). */
   checkboxInput: '.ui-checkbox__input',

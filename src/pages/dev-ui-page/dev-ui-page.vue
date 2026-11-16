@@ -10,6 +10,7 @@
     <ChoiceSection />
     <FieldsSection />
     <SelectSection />
+    <DateSection />
     <DisplaySection />
     <ToastSection />
     <FloatingSection />
@@ -25,6 +26,7 @@ import FeedbackSection from './sections/feedback-section.vue'
 import ChoiceSection from './sections/choice-section.vue'
 import FieldsSection from './sections/fields-section.vue'
 import SelectSection from './sections/select-section.vue'
+import DateSection from './sections/date-section.vue'
 import DisplaySection from './sections/display-section.vue'
 import ToastSection from './sections/toast-section.vue'
 import FloatingSection from './sections/floating-section.vue'

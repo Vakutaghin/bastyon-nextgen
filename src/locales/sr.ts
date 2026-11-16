@@ -552,6 +552,16 @@ export default {
     ipfsPinSaveBtn: 'Сачувај',
     ipfsPinClearBtn: 'Уклони сервис',
   },
+  datePicker: {
+    prevMonth: 'Претходни месец',
+    nextMonth: 'Следећи месец',
+    prevYear: 'Претходна година',
+    nextYear: 'Следећа година',
+    today: 'Данас',
+    ok: 'У реду',
+    hours: 'Сати',
+    minutes: 'Минути',
+  },
   common: {
     offline: 'Нема мреже. Учитаће се када се веза врати.',
     networkUnavailable: 'Мрежа Bastyon не одговара. Проверите везу или покушајте касније.',

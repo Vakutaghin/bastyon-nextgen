@@ -65,21 +65,14 @@ export const SC_CustomRange = styled.div`
   font-size: 13px;
   color: var(--ui-text-muted);
 
-  .ant-picker {
+  .ui-date-picker {
     width: 150px;
-    background: var(--ui-bg);
-    border-color: var(--ui-border-accented);
-  }
-
-  .ant-picker .ant-picker-input > input {
-    color: var(--ui-text-highlighted);
-    cursor: pointer;
   }
 
   @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
     width: 100%;
 
-    .ant-picker {
+    .ui-date-picker {
       flex: 1;
       width: auto;
       min-width: 0;

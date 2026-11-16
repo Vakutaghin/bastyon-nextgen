@@ -939,13 +939,12 @@ main[tabindex='-1']:focus {
   summary,
   nav,
   svg,
-  .ant-btn,
   .ant-tabs-nav,
   .ant-menu,
   .ui-menu,
   .ant-pagination,
   .ant-slider,
-  .ant-picker-panel,
+  .ui-date-panel,
   .ant-collapse-header,
   .ui-modal__header,
   .ui-modal__close,
@@ -1043,38 +1042,8 @@ html {
   filter: blur(10px);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Ant Design
-
-   Цвета, фоны, рамки, тени и маску antd задаёт тема (src/styles/antd-theme.ts)
-   для обеих тем — раньше здесь жили !important-правила, которые перекрашивали
-   светлый antd в тёмный. Остались только слои и то, чего токены antd 4.2.6 не
-   умеют. antd вставляет свои стили в рантайме ПОСЛЕ style.css с той же
-   специфичностью, поэтому у селекторов лишний уровень `body`.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Кнопки у Nuxt — 500. «Обычная» кнопка на hover не красится акцентом, а
-   получает подложку, как нейтральная outline-кнопка Nuxt. */
-body .ant-btn {
-  font-weight: 500;
-}
-
-body .ant-btn-default:not(:disabled):hover {
-  color: var(--ui-text);
-  border-color: var(--ui-border-accented);
-  background: var(--ui-bg-elevated);
-}
-
-body .ant-btn-default:not(:disabled):active {
-  background: var(--ui-bg-accented);
-}
-
-/* Появление оверлеев antd — как у Nuxt UI: из 95% размера вместе с
-   прозрачностью, кривая ease-out; выпадашки, списки Select, календарь, поповеры
-   и тултипы — за 100 мс, модалки — за 200 мс. У antd выпадашки растягивались
-   по вертикали, а модалки вырастали из 20% размера от точки клика за 300 мс.
-   Селекторы на класс сильнее, чем у antd: у выпадашки там четыре класса
-   (с классом размещения). */
+/* Появление панелей и окон — как у Nuxt UI: из 95% размера вместе с
+   прозрачностью, кривая ease-out; панели — за 100 мс, окна — за 200 мс. */
 @keyframes ui-scale-in {
   from {
     opacity: 0;
@@ -1122,57 +1091,7 @@ body .ant-btn-default:not(:disabled):active {
   }
 }
 
-body
-  .ant-picker-dropdown:is(
-    .ant-slide-up-enter,
-    .ant-slide-up-appear,
-    .ant-slide-up-leave,
-    .ant-slide-down-enter,
-    .ant-slide-down-appear,
-    .ant-slide-down-leave
-  ) {
-  animation-duration: 100ms;
-  animation-timing-function: var(--ui-ease-out);
-}
-
-body
-  .ant-picker-dropdown:is(
-    .ant-slide-up-enter.ant-slide-up-enter-active,
-    .ant-slide-up-appear.ant-slide-up-appear-active,
-    .ant-slide-down-enter.ant-slide-down-enter-active,
-    .ant-slide-down-appear.ant-slide-down-appear-active
-  )[class*='-placement-'] {
-  animation-name: ui-scale-in;
-}
-
-body
-  .ant-picker-dropdown:is(
-    .ant-slide-up-leave.ant-slide-up-leave-active,
-    .ant-slide-down-leave.ant-slide-down-leave-active
-  )[class*='-placement-'] {
-  animation-name: ui-scale-out;
-}
-
-/* Выпадашка растёт от края, у которого кнопка. */
-body .ant-picker-dropdown[class*='-placement-bottom'] {
-  transform-origin: top;
-}
-
-body .ant-picker-dropdown[class*='-placement-top'] {
-  transform-origin: bottom;
-}
-
-/* Пока выпадашка готовится к появлению (-enter-prepare, кадр-два), antd сжимает
-   её в точку, а выравнивание меряет её getBoundingClientRect. С точкой в середине
-   края (см. выше) замер врал на полширины, а у открытых вверх — и на всю высоту:
-   список всю анимацию стоял в стороне и потом прыгал на место. Без transform
-   замер точный, а видно выпадашку в этой фазе и так нет. */
-body .ant-picker-dropdown:is(.ant-slide-up-enter-prepare, .ant-slide-down-enter-prepare) {
-  transform: none;
-}
-
-/* Свои окна и панели (src/components/ui-core) — те же движения, что у antd
-   выше: панели появляются из 95% за 100 мс от края, у которого кнопка
+/* Свои окна и панели (src/components/ui-core) — движения выше: панели появляются из 95% за 100 мс от края, у которого кнопка
    (`data-placement` ставит floating.ts), окна — за 200 мс из центра, маска
    проявляется. Классы — для <Transition name="ui-pop | ui-zoom | ui-fade">.
    С «уменьшить движение» ui-scale-* — только проявление (см. выше). */
@@ -1234,17 +1153,6 @@ body .ant-picker-dropdown:is(.ant-slide-up-enter-prepare, .ant-slide-down-enter-
 html.ui-scroll-locked body {
   overflow: hidden;
   width: calc(100% - var(--ui-scroll-lock-gap, 0px));
-}
-
-/* Панель календаря (components/date-time-picker): в окне она тоже рисуется
-   в корне слоя. Недоступные дни — просто бледнее,
-   как у UCalendar, а не серыми плашками рядами. */
-body .ui-picker-dropdown {
-  text-align: start;
-}
-
-body .ui-picker-dropdown .ant-picker-cell-disabled::before {
-  background: transparent;
 }
 
 /* Captcha-модалка — компактная ширина и паддинг (wrap-class="captcha-modal-wrap"). */
