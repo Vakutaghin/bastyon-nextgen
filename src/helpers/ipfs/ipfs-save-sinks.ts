@@ -1,7 +1,9 @@
 // Куда сохранить скачанный и проверенный IPFS-файл, когда своей ноды нет:
 //  - компьютер без модуля (Tauri): системный диалог «Сохранить», куски пишет
 //    Rust (src-tauri/src/ipfs/sink.rs) — у WKWebView и WebKitGTK своего диалога нет;
-//  - телефон (Capacitor): по кускам во временную папку приложения, потом
+//  - Android: свой плагин DeviceSave (helpers/common/device-save) — сразу в
+//    «Загрузки» (Android 10+) или окно «Сохранить как» (7–9), куски через мост;
+//  - iOS (Capacitor): по кускам во временную папку приложения, потом
 //    системное «Поделиться» — оттуда «Сохранить в Файлы» или любое приложение;
 //  - браузер с File System Access (Chrome, Edge): диалог сохранения и запись
 //    на диск по мере скачивания, без потолка памяти;
@@ -9,16 +11,22 @@
 //    поэтому у этого способа потолок размера.
 import { isMobile, isTauri } from '@mobile/utils/platform'
 import { triggerAnchorDownload } from '@/helpers/common/anchor-download'
+import { announceSaved, DeviceSave, deviceSaved, hasDeviceSave } from '@/helpers/common/device-save'
 import { isAbortError } from './ipfs-errors'
 
-export type SinkKind = 'share' | 'disk' | 'blob'
+export type SinkKind = 'share' | 'device' | 'disk' | 'blob'
 
 export interface SaveSink {
   readonly kind: SinkKind
   /** Сколько байт этот способ выдержит. */
   readonly maxBytes: number
+  /**
+   * Сам скажет человеку, чем кончилось («Поделиться» или тост «Сохранено…»):
+   * вызывающему свой тост об успехе не нужен.
+   */
+  readonly announces: boolean
   write(chunk: Uint8Array): Promise<void>
-  /** Файл готов: сохранить (или отдать в «Поделиться»). */
+  /** Файл готов: сохранить (на iOS — отдать в «Поделиться»). */
   close(): Promise<void>
   /** Отмена или ошибка: недокачанный файл не остаётся. */
   abort(): Promise<void>
@@ -46,6 +54,7 @@ type SaveFilePicker = (options: { suggestedName?: string }) => Promise<FileSyste
  */
 export async function openSaveSink(name: string): Promise<SaveSink | null> {
   if (isTauri()) return openDesktopSink(name)
+  if (hasDeviceSave()) return openDeviceSink(name)
   if (isMobile()) return openShareSink(name)
   const picker = (window as Window & { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker
   if (picker) {
@@ -63,6 +72,7 @@ export async function openSaveSink(name: string): Promise<SaveSink | null> {
 class DiskSink implements SaveSink {
   readonly kind = 'disk'
   readonly maxBytes = MAX_FILE_BYTES
+  readonly announces = false
 
   constructor(private readonly writable: FileSystemWritableFileStream) {}
 
@@ -83,6 +93,7 @@ class DiskSink implements SaveSink {
 export class BlobSink implements SaveSink {
   readonly kind = 'blob'
   readonly maxBytes = MAX_BLOB_BYTES
+  readonly announces = false
   private parts: Blob[] = []
   private batch: Uint8Array<ArrayBuffer>[] = []
   private batchBytes = 0
@@ -127,6 +138,7 @@ async function openDesktopSink(name: string): Promise<SaveSink | null> {
 export class DesktopSink implements SaveSink {
   readonly kind = 'disk'
   readonly maxBytes = MAX_FILE_BYTES
+  readonly announces = false
   private batch: Uint8Array<ArrayBuffer>[] = []
   private batchBytes = 0
 
@@ -205,6 +217,7 @@ function toBase64(parts: Uint8Array<ArrayBuffer>[]): Promise<string> {
 export class ShareSink implements SaveSink {
   readonly kind = 'share'
   readonly maxBytes = MAX_FILE_BYTES
+  readonly announces = true
   private batch: Uint8Array<ArrayBuffer>[] = []
   private batchBytes = 0
   private created = false
@@ -250,5 +263,55 @@ export class ShareSink implements SaveSink {
     this.batch = []
     this.batchBytes = 0
     await this.fs.deleteFile({ path: this.path, directory: this.directory }).catch(() => {})
+  }
+}
+
+/** Android: окно «Сохранить как» (7–9) закрыли — null. */
+async function openDeviceSink(name: string): Promise<SaveSink | null> {
+  const { token, cancelled } = await DeviceSave.begin({ name })
+  if (cancelled || !token) return null
+  return new DeviceSink(DeviceSave, token, name)
+}
+
+/**
+ * Android: куски по 2 МБ через мост Capacitor (base64) прямо в файл в
+ * «Загрузках» — без копии во временной папке, как было у «Поделиться».
+ */
+export class DeviceSink implements SaveSink {
+  readonly kind = 'device'
+  readonly maxBytes = MAX_FILE_BYTES
+  readonly announces = true
+  private batch: Uint8Array<ArrayBuffer>[] = []
+  private batchBytes = 0
+
+  constructor(
+    private readonly plugin: typeof DeviceSave,
+    private readonly token: string,
+    private readonly name: string
+  ) {}
+
+  async write(chunk: Uint8Array): Promise<void> {
+    this.batch.push(chunk as Uint8Array<ArrayBuffer>)
+    this.batchBytes += chunk.length
+    if (this.batchBytes >= SHARE_FLUSH_BYTES) await this.flush()
+  }
+
+  private async flush(): Promise<void> {
+    if (!this.batchBytes) return
+    const data = await toBase64(this.batch)
+    this.batch = []
+    this.batchBytes = 0
+    await this.plugin.append({ token: this.token, data })
+  }
+
+  async close(): Promise<void> {
+    await this.flush()
+    announceSaved(deviceSaved(await this.plugin.finish({ token: this.token }), this.name))
+  }
+
+  async abort(): Promise<void> {
+    this.batch = []
+    this.batchBytes = 0
+    await this.plugin.abort({ token: this.token }).catch(() => {})
   }
 }

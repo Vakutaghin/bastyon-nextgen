@@ -66,9 +66,10 @@ import type { IpfsTarget } from '@/helpers/ipfs/ipfs-link'
 const ROOT = 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
 const at = (path: string): IpfsTarget => ({ namespace: 'ipfs', root: ROOT, path })
 
-function makeSink(kind = 'disk') {
+function makeSink(kind = 'disk', announces = false) {
   return {
     kind,
+    announces,
     maxBytes: 4 * 1024 ** 3,
     written: [] as number[],
     write: vi.fn(async function (this: { written: number[] }, c: Uint8Array) {
@@ -219,6 +220,28 @@ describe('приватная ссылка', () => {
     expect(new TextDecoder().decode(blob)).toBe('ciphertext')
     expect(new TextDecoder().decode(Uint8Array.from(sink.written))).toBe('plain')
     expect(sink.close).toHaveBeenCalled()
+  })
+
+  it('сохранили на компьютере или в браузере — тост «Файл сохранён»', async () => {
+    const sink = makeSink('disk')
+    h.openSaveSink.mockResolvedValue(sink)
+    h.openIpfs.mockResolvedValue(fileEntity('x'))
+    h.decryptSecretFile.mockResolvedValue(new TextEncoder().encode('plain'))
+    openIpfsInBrowser(at(''), { key: 'a2V5', name: 'a.txt' })
+    await (await nextConfirm()).onOk()
+    expect(sink.close).toHaveBeenCalled()
+    expect(h.success).toHaveBeenCalledWith({ message: 'header.ipfsSaveDoneTitle' })
+  })
+
+  it('способ сообщает сам (Android — «Сохранено…», iOS — «Поделиться») — второго тоста нет', async () => {
+    const sink = makeSink('device', true)
+    h.openSaveSink.mockResolvedValue(sink)
+    h.openIpfs.mockResolvedValue(fileEntity('x'))
+    h.decryptSecretFile.mockResolvedValue(new TextEncoder().encode('plain'))
+    openIpfsInBrowser(at(''), { key: 'a2V5', name: 'a.txt' })
+    await (await nextConfirm()).onOk()
+    expect(sink.close).toHaveBeenCalled()
+    expect(h.success).not.toHaveBeenCalled()
   })
 
   it('неверный ключ — сообщение про ключ', async () => {

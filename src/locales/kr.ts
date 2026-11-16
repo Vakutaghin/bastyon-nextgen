@@ -574,6 +574,8 @@ export default {
     close: '닫기',
     noData: '데이터 없음',
     deletedAccount: '삭제된 계정',
+    savedToDownloads: '다운로드에 저장했습니다. 폴더 {folder}: {name}',
+    savedFile: '저장했습니다: {name}',
   },
   a11y: {
     skipToContent: '본문으로 건너뛰기',

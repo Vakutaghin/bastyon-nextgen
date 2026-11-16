@@ -544,6 +544,8 @@ export default {
     close: '关闭',
     noData: '暂无数据',
     deletedAccount: '账户已删除',
+    savedToDownloads: '已保存到“下载”，文件夹 {folder}：{name}',
+    savedFile: '已保存：{name}',
   },
   a11y: {
     skipToContent: '跳到内容',

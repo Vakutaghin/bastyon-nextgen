@@ -76,7 +76,7 @@ const canDownload = computed(() => !isLocal.value || !!props.message.url)
 const isDownloading = ref(false)
 const downloadError = ref(false)
 
-// На компьютере — системный диалог «Сохранить», на телефоне — «Поделиться»:
+// На компьютере — системный диалог «Сохранить», на Android — «Загрузки»:
 // `<a download>` WKWebView и WebKitGTK без обработчика загрузок отменяют.
 const onDownload = async () => {
   if (!canDownload.value || isDownloading.value) return

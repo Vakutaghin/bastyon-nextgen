@@ -33,7 +33,7 @@ In the header, next to the hourglass, a **“Downloads”** icon appears — an 
 
 Downloads are kept inside the app, in its data, not in your Downloads folder: the app's player opens them, and they play without a network. Where exactly — see below: [on the computer](#on-the-computer), [on the phone](#on-the-phone), [in the browser](#in-the-browser).
 
-To get a regular file — say, to play a track in another player or send it — click **“Save as file”**: in Downloads in the header, in the menu of the **“Downloaded”** button under a post, or on a card in Downloads. On the computer a “Save as” window opens, on the phone — “Share” (from there “Save to Files” or any app), in the browser — a regular file save. A track is saved as `.m4a`, a video as `.mp4`. The download stays in the app.
+To get a regular file — say, to play a track in another player or send it — click **“Save as file”**: in Downloads in the header, in the menu of the **“Downloaded”** button under a post, or on a card in Downloads. On the computer a “Save as” window opens, on the phone the file goes straight to Downloads, into the Download/Bastyon folder (on Android 7–9 — a “Save as” window), in the browser — a regular file save. A track is saved as `.m4a`, a video as `.mp4`. The download stays in the app.
 
 ## A whole collection or playlist
 

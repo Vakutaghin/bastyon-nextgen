@@ -113,7 +113,7 @@ function download(target: IpfsTarget, req: DownloadRequest): Promise<void> {
             secret: req.secret,
             show: (content) => modal.update({ content }),
           })
-          if (sink.kind !== 'share') appToast.success({ message: t('header.ipfsSaveDoneTitle') })
+          if (!sink.announces) appToast.success({ message: t('header.ipfsSaveDoneTitle') })
         } catch (e) {
           await sink.abort()
           if (!isAbortError(e)) showError(e, sink.kind, true)

@@ -582,6 +582,8 @@ export default {
     close: 'Schließen',
     noData: 'Keine Daten',
     deletedAccount: 'Konto gelöscht',
+    savedToDownloads: 'In Downloads gespeichert, Ordner {folder}: {name}',
+    savedFile: 'Gespeichert: {name}',
   },
   a11y: {
     skipToContent: 'Zum Inhalt springen',

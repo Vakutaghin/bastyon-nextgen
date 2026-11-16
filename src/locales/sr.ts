@@ -571,6 +571,8 @@ export default {
     close: 'Затвори',
     noData: 'Нема података',
     deletedAccount: 'Налог је обрисан',
+    savedToDownloads: 'Сачувано у „Преузимања“, фасцикла {folder}: {name}',
+    savedFile: 'Сачувано: {name}',
   },
   a11y: {
     skipToContent: 'Пређи на садржај',

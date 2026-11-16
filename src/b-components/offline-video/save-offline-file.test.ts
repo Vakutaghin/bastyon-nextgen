@@ -1,5 +1,6 @@
 // «Сохранить файлом»: имя файла из названия поста, звук — .m4a, ролик — .mp4;
-// файл идёт в выбранное место кусками, закрытый диалог — не ошибка.
+// файл идёт в выбранное место кусками, закрытый диалог — не ошибка. На
+// Android ролик копирует плагин сам и говорит, куда положил.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { OfflineItem } from '@/services/offline-video/types'
@@ -7,9 +8,28 @@ import type { OfflineItem } from '@/services/offline-video/types'
 const mocks = vi.hoisted(() => ({
   openSaveSink: vi.fn(),
   fileUrl: vi.fn(async () => 'blob:offline/video.mp4'),
+  android: false,
+  saveOffline: vi.fn(
+    async (_o: { id: string; name: string }) =>
+      ({ name: 'Ролик (1).mp4', folder: 'Download/Bastyon' }) as {
+        name?: string
+        folder?: string | null
+        cancelled?: boolean
+      }
+  ),
+  announce: vi.fn(),
 }))
 
 vi.mock('@/helpers/ipfs/ipfs-save-sinks', () => ({ openSaveSink: mocks.openSaveSink }))
+vi.mock('@/helpers/common/device-save', () => ({
+  DeviceSave: { saveOffline: mocks.saveOffline },
+  hasDeviceSave: () => mocks.android,
+  announceSaved: mocks.announce,
+  deviceSaved: (a: { name?: string; folder?: string | null }, asked: string) => ({
+    name: a.name || asked,
+    folder: a.folder || null,
+  }),
+}))
 vi.mock('@/services/offline-video/backend', () => ({
   offlineBackend: async () => ({ fileUrl: mocks.fileUrl }),
 }))
@@ -47,6 +67,7 @@ function sink() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.android = false
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => new Response(new Uint8Array([1, 2, 3, 4, 5, 6])))
@@ -89,5 +110,34 @@ describe('saveOfflineFile', () => {
     expect(await saveOfflineFile(item('video', 'Ролик'))).toBe('failed')
     expect(s.abort).toHaveBeenCalled()
     expect(s.close).not.toHaveBeenCalled()
+  })
+})
+
+describe('saveOfflineFile на Android', () => {
+  beforeEach(() => {
+    mocks.android = true
+  })
+
+  it('плагин копирует ролик сам — мимо моста и без «Поделиться»; тост с папкой и итоговым именем', async () => {
+    expect(await saveOfflineFile(item('video', 'Ролик'))).toBe('saved')
+    expect(mocks.saveOffline).toHaveBeenCalledWith({ id: 'uuid-0', name: 'Ролик.mp4' })
+    expect(mocks.announce).toHaveBeenCalledWith({
+      name: 'Ролик (1).mp4',
+      folder: 'Download/Bastyon',
+    })
+    expect(mocks.openSaveSink).not.toHaveBeenCalled()
+    expect(mocks.fileUrl).not.toHaveBeenCalled()
+  })
+
+  it('окно «Сохранить как» (Android 7–9) закрыли — отмена, без тоста', async () => {
+    mocks.saveOffline.mockResolvedValueOnce({ cancelled: true })
+    expect(await saveOfflineFile(item('video', 'Ролик'))).toBe('cancelled')
+    expect(mocks.announce).not.toHaveBeenCalled()
+  })
+
+  it('не сохранилось (нет места, ролик удалили) — сбой, без тоста', async () => {
+    mocks.saveOffline.mockRejectedValueOnce(new Error('io'))
+    expect(await saveOfflineFile(item('audio', 'Трек'))).toBe('failed')
+    expect(mocks.announce).not.toHaveBeenCalled()
   })
 })

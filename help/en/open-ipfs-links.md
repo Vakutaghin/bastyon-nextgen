@@ -32,7 +32,7 @@ Where the file is saved:
 - in the desktop app, where you choose in the Save dialog;
 - in Chrome and Edge, the browser asks where to save it and writes the file straight to disk;
 - in Firefox, Safari and other browsers, as an ordinary download;
-- on a phone, the system share menu opens: from there you can save the file to Files or send it to another app.
+- on a phone, the file goes straight to Downloads, into the Download/Bastyon folder; on Android 7–9 the app asks where to save it.
 
 The node starts with the first link and stops after a few idle minutes.
 

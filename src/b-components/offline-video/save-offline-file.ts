@@ -1,13 +1,15 @@
 // «Сохранить файлом»: скачанное лежит в данных приложения (так его видит
 // плеер без сети), а этим действием — копия обычным файлом, куда человек
-// выберет: системный диалог «Сохранить» на компьютере, «Поделиться» на
-// телефоне, диалог сохранения или загрузка в браузере. Файл идёт кусками —
-// большой ролик в памяти целиком не держим.
+// выберет: системный диалог «Сохранить» на компьютере, «Загрузки» на Android
+// (7–9 — окно «Сохранить как»), «Поделиться» на iOS, диалог сохранения или
+// загрузка в браузере. Файл идёт кусками — большой ролик в памяти целиком не
+// держим; на Android его копирует сам плагин, мимо моста.
 
 import { offlineBackend } from '@/services/offline-video/backend'
 import type { OfflineItem } from '@/services/offline-video/types'
 import { openSaveSink } from '@/helpers/ipfs/ipfs-save-sinks'
 import { safeFileName, type SaveResult } from '@/helpers/common/save-to-device'
+import { announceSaved, DeviceSave, deviceSaved, hasDeviceSave } from '@/helpers/common/device-save'
 
 /** Имя файла: название поста; звук — .m4a, ролик — .mp4. */
 export function offlineFileName(item: OfflineItem): string {
@@ -15,8 +17,22 @@ export function offlineFileName(item: OfflineItem): string {
   return safeFileName(item.meta.title || item.meta.uuid, mime, item.meta.uuid || 'bastyon')
 }
 
+/** Android: плагин копирует video.mp4 с диска сам и говорит, куда положил. */
+async function saveOnAndroid(item: OfflineItem): Promise<SaveResult> {
+  const name = offlineFileName(item)
+  try {
+    const answer = await DeviceSave.saveOffline({ id: item.id, name })
+    if (answer.cancelled) return 'cancelled'
+    announceSaved(deviceSaved(answer, name))
+    return 'saved'
+  } catch {
+    return 'failed'
+  }
+}
+
 /** Вызывать прямо по нажатию: браузеру диалог сохранения нужен в жесте пользователя. */
 export async function saveOfflineFile(item: OfflineItem): Promise<SaveResult> {
+  if (hasDeviceSave()) return saveOnAndroid(item)
   let sink: Awaited<ReturnType<typeof openSaveSink>>
   try {
     sink = await openSaveSink(offlineFileName(item))

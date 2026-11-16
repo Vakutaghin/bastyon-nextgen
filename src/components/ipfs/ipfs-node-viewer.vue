@@ -416,7 +416,7 @@ async function save(): Promise<void> {
       })
     }
     saveText.value = ''
-    if (sink.kind !== 'share') appToast.success({ message: t('header.ipfsSaveDoneTitle') })
+    if (!sink.announces) appToast.success({ message: t('header.ipfsSaveDoneTitle') })
   } catch (e) {
     await sink.abort()
     saveText.value = isAbortError(e) ? '' : webErrorText(e, sink.kind)

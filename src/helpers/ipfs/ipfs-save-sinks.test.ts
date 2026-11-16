@@ -16,6 +16,19 @@ const h = vi.hoisted(() => ({
     getUri: vi.fn(async () => ({ uri: 'file:///cache/ipfs-downloads/x/a.zip' })),
   },
   share: { share: vi.fn(async () => ({})) },
+  android: false,
+  device: {
+    begin: vi.fn(
+      async (_o: { name: string }) => ({ token: 'T1' }) as { token?: string; cancelled?: boolean }
+    ),
+    append: vi.fn(async (_o: { token: string; data: string }) => undefined),
+    finish: vi.fn(async (_o: { token: string }) => ({
+      name: 'a (1).zip',
+      folder: 'Download/Bastyon',
+    })),
+    abort: vi.fn(async (_o: { token: string }) => undefined),
+  },
+  announce: vi.fn(),
 }))
 
 vi.mock('@mobile/utils/platform', () => ({ isMobile: () => h.mobile, isTauri: () => h.tauri }))
@@ -23,8 +36,17 @@ vi.mock('@tauri-apps/api/core', () => ({ invoke: h.invoke }))
 vi.mock('@/helpers/common/anchor-download', () => ({ triggerAnchorDownload: h.anchor }))
 vi.mock('@capacitor/filesystem', () => ({ Filesystem: h.fs, Directory: { Cache: 'CACHE' } }))
 vi.mock('@capacitor/share', () => ({ Share: h.share }))
+vi.mock('@/helpers/common/device-save', () => ({
+  DeviceSave: h.device,
+  hasDeviceSave: () => h.android,
+  announceSaved: h.announce,
+  deviceSaved: (a: { name?: string; folder?: string | null }, asked: string) => ({
+    name: a.name || asked,
+    folder: a.folder || null,
+  }),
+}))
 
-import { BlobSink, DesktopSink, ShareSink, openSaveSink } from './ipfs-save-sinks'
+import { BlobSink, DesktopSink, DeviceSink, ShareSink, openSaveSink } from './ipfs-save-sinks'
 
 type PickerWindow = Window & { showSaveFilePicker?: unknown }
 
@@ -35,6 +57,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   h.mobile = false
   h.tauri = false
+  h.android = false
 })
 
 afterEach(() => {
@@ -42,7 +65,31 @@ afterEach(() => {
 })
 
 describe('openSaveSink: способ по устройству', () => {
-  it('телефон — «Поделиться», прошлые загрузки из кэша удаляются', async () => {
+  it('Android — свой плагин: запись открывается под этим именем, «Поделиться» не трогаем', async () => {
+    h.mobile = true
+    h.android = true
+    const sink = await openSaveSink('a.zip')
+    expect(sink?.kind).toBe('device')
+    expect(sink?.announces).toBe(true)
+    expect(h.device.begin).toHaveBeenCalledWith({ name: 'a.zip' })
+    expect(h.fs.rmdir).not.toHaveBeenCalled()
+  })
+
+  it('Android 7–9: окно «Сохранить как» закрыли — ничего не скачиваем', async () => {
+    h.mobile = true
+    h.android = true
+    h.device.begin.mockResolvedValueOnce({ cancelled: true })
+    expect(await openSaveSink('a.zip')).toBeNull()
+  })
+
+  it('свой тост об успехе нужен только компьютеру и браузеру', async () => {
+    h.mobile = true
+    expect((await openSaveSink('a.zip'))?.announces).toBe(true)
+    h.mobile = false
+    expect((await openSaveSink('a.zip'))?.announces).toBe(false)
+  })
+
+  it('iOS — «Поделиться», прошлые загрузки из кэша удаляются', async () => {
     h.mobile = true
     const sink = await openSaveSink('a.zip')
     expect(sink?.kind).toBe('share')
@@ -150,6 +197,63 @@ describe('ShareSink (телефон)', () => {
       directory: 'CACHE',
     })
     expect(h.share.share).not.toHaveBeenCalled()
+  })
+})
+
+describe('DeviceSink (Android)', () => {
+  const MB = 1024 * 1024
+
+  it('куски копятся до 2 МБ и уходят в base64; конец — «Сохранено…» с итоговым именем', async () => {
+    const sink = new DeviceSink(h.device as never, 'T1', 'a.zip')
+    await sink.write(new Uint8Array(MB))
+    expect(h.device.append).not.toHaveBeenCalled()
+    await sink.write(new Uint8Array(MB))
+    expect(h.device.append).toHaveBeenCalledTimes(1)
+    const first = h.device.append.mock.calls[0]![0]
+    expect(first.token).toBe('T1')
+    expect(decodeBase64(first.data)).toHaveLength(2 * MB)
+    await sink.write(chunk('хвост'))
+    await sink.close()
+    expect(h.device.append).toHaveBeenCalledTimes(2)
+    expect(
+      new TextDecoder().decode(
+        Uint8Array.from(decodeBase64(h.device.append.mock.calls[1]![0].data), (c) =>
+          c.charCodeAt(0)
+        )
+      )
+    ).toBe('хвост')
+    expect(h.device.finish).toHaveBeenCalledWith({ token: 'T1' })
+    expect(h.announce).toHaveBeenCalledWith({ name: 'a (1).zip', folder: 'Download/Bastyon' })
+  })
+
+  it('пустой файл: без кусков, сразу конец', async () => {
+    const sink = new DeviceSink(h.device as never, 'T1', 'empty.txt')
+    await sink.close()
+    expect(h.device.append).not.toHaveBeenCalled()
+    expect(h.device.finish).toHaveBeenCalledWith({ token: 'T1' })
+  })
+
+  it('после окна «Сохранить как» папки нет; имени нет — то, что просили', async () => {
+    h.device.finish.mockResolvedValueOnce({} as never)
+    await new DeviceSink(h.device as never, 'T1', 'a.zip').close()
+    expect(h.announce).toHaveBeenCalledWith({ name: 'a.zip', folder: null })
+  })
+
+  it('не дописалось — ошибка наверх, тоста нет', async () => {
+    h.device.finish.mockRejectedValueOnce(new Error('io'))
+    await expect(new DeviceSink(h.device as never, 'T1', 'a.zip').close()).rejects.toThrow('io')
+    expect(h.announce).not.toHaveBeenCalled()
+  })
+
+  it('отмена убирает недописанное; сбой самой отмены не ошибка', async () => {
+    const sink = new DeviceSink(h.device as never, 'T1', 'a.zip')
+    await sink.write(chunk('часть'))
+    h.device.abort.mockRejectedValueOnce(new Error('gone'))
+    await sink.abort()
+    expect(h.device.abort).toHaveBeenCalledWith({ token: 'T1' })
+    // Начатое до отмены не дописывается.
+    await sink.close().catch(() => {})
+    expect(h.device.append).not.toHaveBeenCalled()
   })
 })
 

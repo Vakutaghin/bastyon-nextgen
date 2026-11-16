@@ -581,6 +581,8 @@ export default {
     close: 'Cerrar',
     noData: 'No hay datos',
     deletedAccount: 'Cuenta eliminada',
+    savedToDownloads: 'Guardado en Descargas, carpeta {folder}: {name}',
+    savedFile: 'Guardado: {name}',
   },
   a11y: {
     skipToContent: 'Saltar al contenido',

@@ -575,6 +575,8 @@ export default {
     close: 'Закрыть',
     noData: 'Нет данных',
     deletedAccount: 'Аккаунт удалён',
+    savedToDownloads: 'Сохранено в «Загрузки», папка {folder}: {name}',
+    savedFile: 'Сохранено: {name}',
   },
   /** Для экранного диктора (helpers/a11y): названия кнопок, областей, объявления. */
   a11y: {
