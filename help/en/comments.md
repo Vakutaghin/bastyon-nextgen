@@ -10,6 +10,8 @@ How to comment and reply, mention people, edit and delete comments, and rate oth
 
 The discussion is under every post. In the feed you see the latest comment, and the buttons under it expand the rest: “Show 15 more” shows the next fifteen, **“Show all”** shows them all at once. **“Collapse”** hides the list again. On the [post page](post-card.md#the-post-page) the whole discussion is open.
 
+A long comment — more than 10 lines — is folded to its first six so it does not stretch the discussion. **“Show full”** under it unfolds the text, **“Collapse”** folds it back. A comment you opened by a link is shown in full.
+
 ## Writing a comment
 
 1. Click the field at the bottom of the discussion and write your text. The smiley button is **“Emoji”**.
