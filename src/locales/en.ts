@@ -2753,6 +2753,7 @@ export default {
     deleted: 'Comment was deleted',
     hiddenLowReputation: 'Hidden due to low author reputation',
     showAnyway: 'Show anyway',
+    showFull: 'Show full',
     loadMore: 'Load more',
     showAll: 'Show all',
     expand: 'Expand comments ({count})',

@@ -31,8 +31,7 @@
             {{ t('comments.showAnyway') }}
           </SC_RevealBtn>
         </SC_HiddenBanner>
-        <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
-        <SC_CommentText v-else v-html="lastCommentMessageHtml"></SC_CommentText>
+        <CommentText v-else :html="lastCommentMessageHtml" />
 
         <SC_CommentImages v-if="!lastCommentHidden && lastCommentImages.length > 0">
           <PostCardImages :images="lastCommentImages" />
@@ -121,8 +120,7 @@
                 </SC_TxStatusBadge>
               </SC_CommentMetaRight>
             </SC_CommentMeta>
-            <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
-            <SC_CommentText v-html="formatCommentMessageHtml(reply)"></SC_CommentText>
+            <CommentText :html="formatCommentMessageHtml(reply)" />
           </SC_CommentContent>
         </SC_CommentItem>
       </SC_ReplyItemWrapper>
@@ -145,6 +143,7 @@ import type { PostForComments } from './types'
 import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
 import CommentAvatar from './comment-avatar.vue'
 import BoundReplyPanel from './bound-reply-panel.vue'
+import CommentText from './comment-text.vue'
 import {
   getCommentAvatarUrl,
   formatCommentMessageHtml as formatCommentMessageHtmlRaw,
@@ -157,7 +156,6 @@ import {
   SC_CommentMeta,
   SC_CommentMetaRight,
   SC_CommentAuthor,
-  SC_CommentText,
   SC_CommentImages,
   SC_CommentDate,
   SC_CommentActions,

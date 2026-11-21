@@ -79,8 +79,11 @@
           {{ t('comments.showAnyway') }}
         </SC_RevealBtn>
       </SC_HiddenBanner>
-      <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
-      <SC_CommentText v-else v-html="formatCommentMessageHtml(comment)"></SC_CommentText>
+      <CommentText
+        v-else
+        :html="formatCommentMessageHtml(comment)"
+        :force-expanded="comment.id === highlightedCommentId"
+      />
 
       <SC_CommentImages
         v-if="
@@ -161,13 +164,13 @@ import PostCardImages from '@/b-components/content/post-card/components/post-car
 import CommentAvatar from './comment-avatar.vue'
 import CommentMenu from './comment-menu.vue'
 import CommentEditForm from './comment-edit-form.vue'
+import CommentText from './comment-text.vue'
 import { getCommentAvatarUrl, getCommentProfileLink } from './helpers'
 import { userAvatar, userName } from '@/services/user-names'
 import {
   SC_CommentItem,
   SC_CommentRow,
   SC_CommentAuthor,
-  SC_CommentText,
   SC_CommentContent,
   SC_CommentMeta,
   SC_CommentMetaRight,

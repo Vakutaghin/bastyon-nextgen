@@ -2770,6 +2770,7 @@ export default {
     deleted: 'Il commento è stato eliminato',
     hiddenLowReputation: 'Nascosto per la bassa reputazione dell’autore',
     showAnyway: 'Mostra comunque',
+    showFull: 'Mostra tutto',
     loadMore: 'Carica altro',
     showAll: 'Mostra tutti',
     expand: 'Espandi i commenti ({count})',

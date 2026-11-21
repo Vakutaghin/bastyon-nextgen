@@ -2747,6 +2747,7 @@ export default {
     deleted: 'Комментарий был удалён',
     hiddenLowReputation: 'Скрыто из-за низкой репутации автора',
     showAnyway: 'Показать всё равно',
+    showFull: 'Показать полностью',
     loadMore: 'Загрузить ещё',
     showAll: 'Показать все',
     expand: 'Развернуть комментарии ({count})',

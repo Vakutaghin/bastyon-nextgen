@@ -1,6 +1,7 @@
 import styled, { css } from 'vue3-styled-components'
 import { BREAKPOINTS } from '@/styles/design-tokens'
 import { noSelect } from '@/styles/chrome-styles'
+import { COLLAPSED_LINES } from '../composables/use-text-overflow'
 
 /**
  * Общее у корневого комментария и ответа: аватар слева, содержимое справа.
@@ -130,6 +131,33 @@ export const SC_CommentText = styled.div`
 
   a {
     border-bottom: 1px solid var(--color-primary);
+  }
+
+  /* Длинный свёрнут до COLLAPSED_LINES строк; низ растворяется — видно,
+     что текст продолжается. */
+  &.is-clamped {
+    max-height: calc(${() => COLLAPSED_LINES} * 1.5em * var(--leading-scale));
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent);
+    mask-image: linear-gradient(to bottom, #000 65%, transparent);
+  }
+`
+
+/** «Показать полностью» / «Свернуть» под длинным комментарием. */
+export const SC_CommentTextToggle = styled.button`
+  appearance: none;
+  align-self: flex-start;
+  border: none;
+  padding: 0;
+  margin: -2px 0 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ui-primary-text);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
   }
 `
 

@@ -2794,6 +2794,7 @@ export default {
     deleted: 'Le commentaire a été supprimé',
     hiddenLowReputation: 'Masqué en raison de la faible réputation de l’auteur',
     showAnyway: 'Afficher quand même',
+    showFull: 'Tout afficher',
     loadMore: 'Charger plus',
     showAll: 'Tout afficher',
     expand: 'Déplier les commentaires ({count})',

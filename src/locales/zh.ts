@@ -2639,6 +2639,7 @@ export default {
     deleted: '评论已被删除',
     hiddenLowReputation: '因作者声誉较低而隐藏',
     showAnyway: '仍然显示',
+    showFull: '显示全部',
     loadMore: '加载更多',
     showAll: '显示全部',
     expand: '展开评论（{count}）',

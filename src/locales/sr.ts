@@ -2749,6 +2749,7 @@ export default {
     deleted: 'Коментар је обрисан',
     hiddenLowReputation: 'Сакривено због ниске репутације аутора',
     showAnyway: 'Ипак прикажи',
+    showFull: 'Прикажи цело',
     loadMore: 'Учитај још',
     showAll: 'Прикажи све',
     expand: 'Прошири коментаре ({count})',

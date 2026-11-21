@@ -2777,6 +2777,7 @@ export default {
     deleted: 'El comentario se eliminó',
     hiddenLowReputation: 'Oculto por la baja reputación del autor',
     showAnyway: 'Mostrar de todos modos',
+    showFull: 'Mostrar todo',
     loadMore: 'Cargar más',
     showAll: 'Mostrar todo',
     expand: 'Desplegar comentarios ({count})',

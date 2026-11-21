@@ -2790,6 +2790,7 @@ export default {
     deleted: 'Kommentar wurde gelöscht',
     hiddenLowReputation: 'Wegen niedriger Reputation des Autors ausgeblendet',
     showAnyway: 'Trotzdem anzeigen',
+    showFull: 'Vollständig anzeigen',
     loadMore: 'Mehr laden',
     showAll: 'Alle anzeigen',
     expand: 'Kommentare ausklappen ({count})',
