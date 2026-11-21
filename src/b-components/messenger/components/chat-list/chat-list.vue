@@ -62,7 +62,7 @@
         </SC_ChipCount>
       </SC_FilterChip>
     </SC_ChatFilter>
-    <SC_ChatList v-if="isSearching" data-testid="chat-search-results">
+    <SC_ChatList v-if="isSearching" ref="searchListRef" data-testid="chat-search-results">
       <SC_SearchSection>{{ t('messenger.listSearch.chats') }}</SC_SearchSection>
       <template v-for="row in foundChats" :key="row.id">
         <ChannelListItem v-if="row.channel" :address="row.channel" @click="pickChat(row.id)" />
@@ -146,7 +146,7 @@
         <SC_SearchHint>{{ t('messenger.listSearch.messagesScope') }}</SC_SearchHint>
       </template>
     </SC_ChatList>
-    <SC_ChatList v-else>
+    <SC_ChatList v-else ref="listRef" data-testid="chat-list-scroll">
       <SC_ChatsLoading v-if="chatsLoading" data-testid="chats-loading">
         <SC_ChatsLoadingSpinner aria-hidden="true" />
         {{ t('messenger.loadingDialogs') }}
@@ -236,6 +236,7 @@ import { useChatSearch, type SearchCandidate } from './use-chat-search'
 import { useMessageSearch, type MessageHit } from './use-message-search'
 import { chatSearchOpen } from './chat-search-state'
 import MessageHitRow from './message-hit-row.vue'
+import { useListScrollMemory } from './use-list-scroll-memory'
 import {
   SC_ChatFilter,
   SC_ChatList,
@@ -422,6 +423,12 @@ const {
 })
 
 const searchInputRef = ref<{ $el?: HTMLInputElement } | HTMLInputElement | null>(null)
+
+// Зашли в чат и вернулись — список и выдача поиска на том же месте.
+const listRef = ref<{ $el?: unknown } | HTMLElement | null>(null)
+const searchListRef = ref<{ $el?: unknown } | HTMLElement | null>(null)
+useListScrollMemory(listRef, 'chats', () => auth.address ?? '')
+useListScrollMemory(searchListRef, 'search', () => `${auth.address ?? ''} ${searchQuery.value}`)
 
 // Лупа в шапке открыла поле — сразу в него ввод.
 watch(
