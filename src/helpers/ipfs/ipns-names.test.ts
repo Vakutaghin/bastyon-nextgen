@@ -33,6 +33,7 @@ function respond(status: number, type: string, body: string | Uint8Array | null 
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.useRealTimers()
 })
 
 describe('nameKey', () => {
@@ -57,6 +58,9 @@ describe('nameKey', () => {
 
 describe('запись имени', () => {
   it('подписанная запись читается обратно', async () => {
+    // Срок записи валидатор @helia/ipns сверяет с часами: без них тест
+    // перестал проходить через 30 дней после NOW.
+    vi.useFakeTimers({ toFake: ['Date'], now: NOW })
     const signed = await signRecord(nameKey(ACCOUNT, 0), VALUE, 5n, NOW)
     const parsed = await parseRecord(NAME_0, signed.bytes)
     expect(parsed).toMatchObject({ name: NAME_0, value: VALUE, sequence: 5n })
