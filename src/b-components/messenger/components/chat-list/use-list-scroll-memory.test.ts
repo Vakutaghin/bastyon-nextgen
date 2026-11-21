@@ -24,8 +24,8 @@ class FakeResizeObserver {
 
 const tag = ref('PAlice')
 
-function mountList(key = 'chats'): VueWrapper {
-  return mount(
+async function mountList(key = 'chats'): Promise<VueWrapper> {
+  const w = mount(
     defineComponent({
       setup() {
         const el = ref<HTMLElement | null>(null)
@@ -35,6 +35,9 @@ function mountList(key = 'chats'): VueWrapper {
     }),
     { attachTo: document.body }
   )
+  // Список встаёт на учёт после отрисовки (watch с flush: 'post').
+  await nextTick()
+  return w
 }
 
 function listOf(w: VueWrapper): HTMLElement {
@@ -67,23 +70,23 @@ describe('useListScrollMemory', () => {
   })
 
   it('список снова на странице — на том же месте', async () => {
-    const first = mountList()
+    const first = await mountList()
     scrollTo(listOf(first), 720)
     first.unmount()
 
-    const again = mountList()
+    const again = await mountList()
     await nextTick()
     expect(listOf(again).scrollTop).toBe(720)
   })
 
   it('без прокрутки до того — список с начала', async () => {
-    const w = mountList()
+    const w = await mountList()
     await nextTick()
     expect(listOf(w).scrollTop).toBe(0)
   })
 
   it('спрятанный через display: none и показанный снова — место возвращается', async () => {
-    const w = mountList()
+    const w = await mountList()
     const el = listOf(w)
     scrollTo(el, 500)
 
@@ -98,39 +101,39 @@ describe('useListScrollMemory', () => {
   })
 
   it('другой аккаунт — чужое место не применяется', async () => {
-    const first = mountList()
+    const first = await mountList()
     scrollTo(listOf(first), 300)
     first.unmount()
 
     tag.value = 'PBob'
-    const again = mountList()
+    const again = await mountList()
     await nextTick()
     expect(listOf(again).scrollTop).toBe(0)
   })
 
   it('список и выдача поиска помнят каждый своё', async () => {
-    const chats = mountList('chats')
+    const chats = await mountList('chats')
     scrollTo(listOf(chats), 640)
     chats.unmount()
-    const search = mountList('search')
+    const search = await mountList('search')
     scrollTo(listOf(search), 80)
     search.unmount()
 
-    const chatsAgain = mountList('chats')
-    const searchAgain = mountList('search')
+    const chatsAgain = await mountList('chats')
+    const searchAgain = await mountList('search')
     await nextTick()
     expect(listOf(chatsAgain).scrollTop).toBe(640)
     expect(listOf(searchAgain).scrollTop).toBe(80)
   })
 
-  it('после снятия со страницы прокрутку не слушает', () => {
-    const w = mountList()
+  it('после снятия со страницы прокрутку не слушает', async () => {
+    const w = await mountList()
     const el = listOf(w)
     scrollTo(el, 200)
     w.unmount()
     scrollTo(el, 999)
 
-    const again = mountList()
+    const again = await mountList()
     expect(listOf(again).scrollTop).toBe(200)
   })
 })
