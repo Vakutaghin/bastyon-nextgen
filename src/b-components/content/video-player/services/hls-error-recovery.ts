@@ -22,17 +22,31 @@ import Hls, { type HlsConfig } from 'hls.js'
 import { t } from '@/i18n'
 
 /**
- * Повторы запросов кусков внутри hls.js: две попытки с паузой 1 и 2 с и
- * одна — после 10 с молчания сервера. Фатальная ошибка приходит через
- * несколько секунд, а не через полминуты.
+ * Повторы запросов внутри hls.js.
+ *
+ * Куски: две попытки с паузой 1 и 2 с и одна — после 10 с молчания сервера.
+ * Фатальная ошибка приходит через несколько секунд, а не через полминуты.
+ *
+ * Плейлист качества: 10 с молчания сервера, как у hls.js, но на само
+ * скачивание — две минуты вместо 20 с. У пятичасового ролика он весит полмегабайта
+ * (строка на каждые 4 секунды) и на 180 кбит/с обрывался на полпути снова и
+ * снова, хотя дорожке 144p хватает и 120 кбит/с.
  */
-export const HLS_LOAD_POLICY: Pick<HlsConfig, 'fragLoadPolicy'> = {
+export const HLS_LOAD_POLICY: Pick<HlsConfig, 'fragLoadPolicy' | 'playlistLoadPolicy'> = {
   fragLoadPolicy: {
     default: {
       maxTimeToFirstByteMs: 10_000,
       maxLoadTimeMs: 120_000,
       timeoutRetry: { maxNumRetry: 1, retryDelayMs: 0, maxRetryDelayMs: 0 },
       errorRetry: { maxNumRetry: 2, retryDelayMs: 1000, maxRetryDelayMs: 2000 },
+    },
+  },
+  playlistLoadPolicy: {
+    default: {
+      maxTimeToFirstByteMs: 10_000,
+      maxLoadTimeMs: 120_000,
+      timeoutRetry: { maxNumRetry: 2, retryDelayMs: 0, maxRetryDelayMs: 0 },
+      errorRetry: { maxNumRetry: 2, retryDelayMs: 1000, maxRetryDelayMs: 8000 },
     },
   },
 }

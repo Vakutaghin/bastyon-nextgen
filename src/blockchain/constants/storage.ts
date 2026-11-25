@@ -106,6 +106,8 @@ export const COMMENT_DRAFT_PREFIX = 'bastyon_comment_draft:'
 export const VIDEO_PLAYER_VOLUME_KEY = 'BST_VIDEO_PLAYER_VOLUME'
 /** Скорость воспроизведения — одна на все плееры приложения. */
 export const PLAYBACK_RATE_KEY = 'BST_PLAYBACK_RATE'
+/** Качество видео — одно на все плееры; нет ключа — «Авто». */
+export const VIDEO_QUALITY_KEY = 'BST_VIDEO_QUALITY'
 /** Скорость голосовых сообщений — своя, не общая с видео. */
 export const VOICE_PLAYBACK_RATE_KEY = 'BST_VOICE_PLAYBACK_RATE'
 

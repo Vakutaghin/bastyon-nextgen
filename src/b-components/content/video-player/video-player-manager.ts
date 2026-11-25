@@ -71,14 +71,14 @@ export class VideoPlayerManager {
       return
     }
 
-    // Останавливаем все остальные плееры
+    // Останавливаем все остальные плееры — и тех, кто на паузе: они ещё качают.
     this.instances.forEach((instance, id) => {
-      if (id !== playingId && instance.isPlaying()) {
-        try {
-          instance.pause()
-        } catch (error) {
-          console.warn(`Failed to pause video player ${id}:`, error)
-        }
+      if (id === playingId) return
+      try {
+        if (instance.isPlaying()) instance.pause()
+        instance.suspendLoad?.()
+      } catch (error) {
+        console.warn(`Failed to pause video player ${id}:`, error)
       }
     })
 

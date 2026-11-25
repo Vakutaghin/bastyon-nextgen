@@ -3,7 +3,7 @@
 // загрузке, окно закрыли, а через время он заиграл вне страницы, параллельно
 // с другим плеером, и остановить его было нечем.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 
 import type { VideoSources } from '@/helpers/api/peertube-url'
@@ -15,15 +15,40 @@ vi.mock('@/helpers/api/peertube-url', () => ({
 }))
 
 const hlsMock = vi.hoisted(() => {
-  const created: Array<{ destroy: ReturnType<typeof vi.fn> }> = []
+  type Level = { width: number; height: number }
+  const created: FakeHls[] = []
   class FakeHls {
     static isSupported = (): boolean => true
-    static Events = { MANIFEST_PARSED: 'manifestParsed', LEVEL_SWITCHED: 'levelSwitched' }
-    levels = []
+    static Events = {
+      MANIFEST_PARSED: 'manifestParsed',
+      LEVEL_SWITCHED: 'levelSwitched',
+      FRAG_BUFFERED: 'fragBuffered',
+    }
+    levels: Level[] = []
+    firstLevel = 0
+    startLevel = -1
+    manualLevel = -1
+    get loadLevel(): number {
+      return this.manualLevel
+    }
+    set loadLevel(index: number) {
+      this.manualLevel = index
+    }
+    get currentLevel(): number {
+      return Math.max(0, this.manualLevel)
+    }
+    set currentLevel(index: number) {
+      this.manualLevel = index
+    }
     loadSource = vi.fn()
     attachMedia = vi.fn()
+    startLoad = vi.fn()
+    stopLoad = vi.fn()
     on = vi.fn()
     destroy = vi.fn()
+    emit(event: string): void {
+      this.on.mock.calls.filter(([name]) => name === event).forEach(([, cb]) => cb())
+    }
     constructor() {
       created.push(this)
     }
@@ -35,12 +60,18 @@ vi.mock('../services/hls-error-recovery', () => ({
   attachHlsErrorRecovery: vi.fn(),
   HLS_LOAD_POLICY: {},
 }))
-vi.mock('../services/network-quality', () => ({ applyNetworkQualityCap: vi.fn() }))
+vi.mock('../services/network-quality', () => ({
+  applyNetworkQualityCap: vi.fn(),
+  knownBandwidth: () => null,
+  rememberBandwidth: vi.fn(),
+}))
 vi.mock('../services/codec-support', () => ({
   canDecodeH264: () => true,
   isLinuxDesktopApp: () => false,
 }))
 
+import { VIDEO_QUALITY_KEY } from '@/blockchain/constants/storage'
+import { reloadPreferredQualityForTests, setPreferredQuality } from '@/services/media/video-quality'
 import { useVideoHls } from './use-video-hls'
 
 const VIDEO_URL = 'peertube://video.example.org/clip'
@@ -153,5 +184,91 @@ describe('useVideoHls — закрыли, пока грузилось', () => {
     expect(play).not.toHaveBeenCalled()
     // Спиннер оборванной загрузки не остаётся висеть — видна кнопка пуска.
     expect(api.isLoading.value).toBe(false)
+  })
+})
+
+describe('useVideoHls — качество помнится', () => {
+  const LEVELS = [
+    { width: 640, height: 360 },
+    { width: 256, height: 144 },
+  ]
+
+  beforeEach(() => {
+    localStorage.clear()
+    reloadPreferredQualityForTests()
+    hlsMock.created.length = 0
+    net.getVideoSourcesFromUrl.mockReset()
+    net.getVideoSourcesFromUrl.mockResolvedValue({
+      hlsPlaylistUrl: 'https://video.example.org/master.m3u8',
+      progressiveUrl: null,
+    })
+  })
+
+  async function started(levels = LEVELS) {
+    const player = setup()
+    await player.api.initPlayer(true)
+    const hls = hlsMock.created[hlsMock.created.length - 1]!
+    hls.levels = levels
+    hls.emit('manifestParsed')
+    return { ...player, hls }
+  }
+
+  it('выбрали 144p — следующий ролик начинает с него, ничего выше не качая', async () => {
+    const first = await started()
+    expect(first.hls.manualLevel).toBe(-1)
+    expect(first.api.isAutoQuality.value).toBe(true)
+    first.api.setQualityLevel(1)
+    expect(localStorage.getItem(VIDEO_QUALITY_KEY)).toBe('144')
+
+    const second = await started()
+    expect(second.hls.startLevel).toBe(1)
+    expect(second.hls.manualLevel).toBe(1)
+    expect(second.api.isAutoQuality.value).toBe(false)
+    expect(second.api.getCurrentQualityLabel.value).toBe('144p')
+  })
+
+  it('такого качества у ролика нет — ближайшее ниже, а выбор не меняется', async () => {
+    setPreferredQuality(720)
+    const { hls } = await started()
+    expect(hls.manualLevel).toBe(0)
+    expect(localStorage.getItem(VIDEO_QUALITY_KEY)).toBe('720')
+  })
+
+  it('«Авто» — снова подбирает плеер, в этом ролике и в следующих', async () => {
+    setPreferredQuality(144)
+    const { api, hls } = await started()
+    api.setQualityLevel(-1)
+    expect(hls.manualLevel).toBe(-1)
+    expect(localStorage.getItem(VIDEO_QUALITY_KEY)).toBeNull()
+    const next = await started()
+    expect(next.hls.startLevel).toBe(-1)
+    expect(next.hls.manualLevel).toBe(-1)
+  })
+
+  it('качество сменили в одном плеере — остальные переходят на него', async () => {
+    const a = await started()
+    const b = await started()
+    b.api.setQualityLevel(1)
+    await nextTick()
+    expect(a.hls.manualLevel).toBe(1)
+    expect(a.api.isAutoQuality.value).toBe(false)
+  })
+
+  it('смотрят другой ролик — этот не качает, пока его не запустят снова', async () => {
+    const { api, hls, video } = await started()
+    api.suspendLoad()
+    expect(hls.stopLoad).toHaveBeenCalledTimes(1)
+    expect(hls.startLoad).not.toHaveBeenCalled()
+    video.dispatchEvent(new Event('play'))
+    video.dispatchEvent(new Event('seeking'))
+    expect(hls.startLoad).toHaveBeenCalledTimes(1)
+  })
+
+  it('после suspendLoad открыли другой поток — старый не запускается', async () => {
+    const { api, hls, video } = await started()
+    api.suspendLoad()
+    await api.initPlayer(true)
+    video.dispatchEvent(new Event('play'))
+    expect(hls.startLoad).not.toHaveBeenCalled()
   })
 })

@@ -219,6 +219,15 @@ test.describe('Плеер мышью', () => {
       'true'
     )
     expect((await state(page)).paused).toBe(false)
+
+    // Выбор помнится: после перезапуска ролик начинает с него, а не с «Авто».
+    await page.reload()
+    await page.waitForSelector('#app > *', { timeout: 30_000 })
+    await start(page)
+    await container(page).hover()
+    await container(page).getByRole('button', { name: 'Настройки' }).click()
+    await expect(page.getByRole('menuitem', { name: /Качество/ })).toContainText('240p')
+    await expect(page.getByRole('menuitem', { name: /Качество/ })).not.toContainText('Авто')
   })
 
   test('звук из ленты играет с волной вместо картинки', async ({ page, browserName }) => {

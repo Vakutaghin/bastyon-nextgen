@@ -561,6 +561,7 @@ const {
   initPlayer: hlsInitPlayer,
   retry,
   abortLoading,
+  suspendLoad,
   setQualityLevel,
   openQualityMenu,
   openSpeedMenu,
@@ -1078,6 +1079,7 @@ onMounted(() => {
       const video = getVideoElement()
       if (video && !video.paused) video.pause()
     },
+    suspendLoad,
     isPlaying: () => isPlaying.value,
     element: () => resolveDomElement(videoContainer),
     isStarted: () => isInitialized.value,

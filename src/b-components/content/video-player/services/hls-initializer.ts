@@ -16,6 +16,7 @@ import { t } from '@/i18n'
 import { videoPlayerManager } from '../video-player-manager'
 import { tryAutoplay } from '../composables/utils'
 import { attachHlsErrorRecovery, HLS_LOAD_POLICY } from './hls-error-recovery'
+import { knownBandwidth, rememberBandwidth } from './network-quality'
 
 export interface VideoInitContext {
   volume: Ref<number>
@@ -155,9 +156,11 @@ export function initHlsJsVideo(
   onLevelsLoaded: (hls: Hls) => void,
   onExhausted?: () => void
 ): Hls {
+  const bandwidth = knownBandwidth()
   const hls = new Hls({
     enableWorker: true,
     lowLatencyMode: false,
+    ...(bandwidth ? { abrEwmaDefaultEstimate: bandwidth } : {}),
     maxBufferLength: 60,
     maxMaxBufferLength: 300,
     // Жёсткий потолок в байтах: на 4K стриме без него буфер съедает >1GB RAM и убивает мобильный браузер
@@ -177,6 +180,8 @@ export function initHlsJsVideo(
     onLevelsLoaded(hls)
     finalizeVideoInit(video, ctx)
   })
+
+  hls.on(Hls.Events.FRAG_BUFFERED, () => rememberBandwidth(hls.bandwidthEstimate))
 
   attachHlsErrorRecovery(hls, ctx.error, ctx.isLoading, onExhausted)
 

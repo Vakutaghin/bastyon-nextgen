@@ -6,6 +6,7 @@ import {
   getVideoThumbnailUrl,
 } from './peertube-url'
 import type { PeerTubeVideoInfo } from './peertube-url'
+import { setPreferredQuality } from '@/services/media/video-quality'
 
 describe('parsePeerTubeUrl', () => {
   it('returns null for empty/null input', () => {
@@ -110,6 +111,25 @@ describe('getProgressiveVideoUrl', () => {
       ],
     }
     expect(getProgressiveVideoUrl(info)).toBe('https://h/720.mp4')
+  })
+
+  it('в плеере выбрано 144p — и целый файл не тяжелее', () => {
+    const info: PeerTubeVideoInfo = {
+      id: 1,
+      uuid: 'u',
+      name: 'n',
+      files: [
+        { resolution: { id: 360, label: '360p' }, fileUrl: 'https://h/360.mp4' },
+        { resolution: { id: 144, label: '144p' }, fileUrl: 'https://h/144.mp4' },
+      ],
+    }
+    setPreferredQuality(144)
+    expect(getProgressiveVideoUrl(info)).toBe('https://h/144.mp4')
+    // 1080p выбрано — аварийный файл всё равно не выше 720p.
+    setPreferredQuality(1080)
+    expect(getProgressiveVideoUrl(info)).toBe('https://h/360.mp4')
+    setPreferredQuality(null)
+    expect(getProgressiveVideoUrl(info)).toBe('https://h/360.mp4')
   })
 
   it('falls back to the lowest resolution when all are above 720p', () => {

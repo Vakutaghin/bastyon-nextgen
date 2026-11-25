@@ -73,8 +73,9 @@ export function useBackgroundPlayback(opts: Options) {
   const downgradeQuality = () => {
     const h = hls.value
     if (!h || isAudio.value) return
+    // manualLevel, а не currentLevel: «Авто» (-1) после возврата остаётся «Авто».
     if (savedQualityLevel === null) {
-      savedQualityLevel = h.currentLevel
+      savedQualityLevel = h.manualLevel
     }
     const lowest = findLowestLevelIndex(h)
     if (lowest >= 0 && lowest !== h.currentLevel) {

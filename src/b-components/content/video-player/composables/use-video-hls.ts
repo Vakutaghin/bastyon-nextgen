@@ -2,6 +2,13 @@ import { ref, computed, watch, type Ref, onBeforeUnmount } from 'vue'
 import Hls from 'hls.js'
 import { t } from '@/i18n'
 import { getVideoSourcesFromUrl } from '@/helpers/api/peertube-url'
+import {
+  levelForQuality,
+  levelQuality,
+  preferredQuality,
+  qualityLabel,
+  setPreferredQuality,
+} from '@/services/media/video-quality'
 import { VIDEO_LOAD_WATCHDOG_MS } from '../consts'
 import { resolveVideoElement, resolvePlayerErrorMessage, type ElementRefValue } from './utils'
 import { applyNetworkQualityCap } from '../services/network-quality'
@@ -67,25 +74,11 @@ export function useVideoHls(
    * Качество подбирает сам плеер — пункт «Авто», как у YouTube. Раньше в меню
    * были только конкретные качества: выбрав одно, вернуть автоподбор было нельзя.
    */
-  const isAutoQuality = ref(true)
+  const isAutoQuality = ref(preferredQuality.value === null)
 
   // Состояние для текущего экрана меню (main, quality, speed)
   type MenuScreen = 'main' | 'quality' | 'speed'
   const currentMenuScreen = ref<MenuScreen>('main')
-
-  /**
-   * Форматирует высоту видео в строку качества (144p, 240p, 360p, 480p, 720p, 1080p)
-   */
-  const formatQualityLabel = (height: number): string => {
-    // Округляем до ближайшего стандартного значения
-    if (height <= 144) return '144p'
-    if (height <= 240) return '240p'
-    if (height <= 360) return '360p'
-    if (height <= 480) return '480p'
-    if (height <= 720) return '720p'
-    if (height <= 1080) return '1080p'
-    return `${height}p`
-  }
 
   /**
    * Обновляет список доступных уровней качества
@@ -98,8 +91,8 @@ export function useVideoHls(
 
     const levels = hls.value.levels.map((level, index) => ({
       index,
-      height: level.height || 0,
-      label: formatQualityLabel(level.height || 0),
+      height: levelQuality(level),
+      label: qualityLabel(level),
     }))
 
     // Сортируем по высоте (от большего к меньшему)
@@ -115,15 +108,61 @@ export function useVideoHls(
     }
   }
 
-  /** Переключает качество видео; `-1` — «Авто». */
+  /**
+   * Качество, выбранное в этом или другом плеере. До первого куска (`start`) —
+   * ещё и стартовым: иначе плеер сперва качал бы плейлист и кусок того уровня,
+   * который выбрал сам, а у многочасового ролика один плейлист — полмегабайта.
+   */
+  const applyPreferredQuality = (instance: Hls, start = false): void => {
+    const quality = preferredQuality.value
+    isAutoQuality.value = quality === null
+    if (quality === null) {
+      if (instance.manualLevel !== -1) instance.loadLevel = -1
+      return
+    }
+    const index = levelForQuality(instance.levels ?? [], quality)
+    if (index === -1) return
+    currentQualityLevel.value = index
+    if (instance.manualLevel === index) return
+    if (start) instance.startLevel = index
+    instance.loadLevel = index
+  }
+
+  /** Переключает качество видео; `-1` — «Авто». Помнится и для других роликов. */
   const setQualityLevel = (levelIndex: number) => {
     if (!hls.value) return
 
     hls.value.currentLevel = levelIndex
     isAutoQuality.value = levelIndex === -1
     if (levelIndex !== -1) currentQualityLevel.value = levelIndex
+    const level = hls.value.levels?.[levelIndex]
+    setPreferredQuality(level ? levelQuality(level) : null)
     currentMenuScreen.value = 'main'
     isQualityMenuOpen.value = false
+  }
+
+  // Качество сменили в другом плеере — следующие куски этого будут такими же.
+  watch(preferredQuality, () => {
+    if (hls.value) applyPreferredQuality(hls.value as Hls)
+  })
+
+  /**
+   * Запустили другой ролик: этот на паузе и дальше не качает, пока его снова
+   * не запустят или не перемотают. Иначе на медленной сети недосмотренный
+   * ролик набирал свой буфер наперегонки с тем, который смотрят.
+   */
+  const suspendLoad = (): void => {
+    const instance = hls.value
+    const video = resolveVideoElement(videoElement)
+    if (!instance || !video) return
+    instance.stopLoad()
+    const resume = (): void => {
+      video.removeEventListener('play', resume)
+      video.removeEventListener('seeking', resume)
+      if (hls.value === instance) instance.startLoad(-1)
+    }
+    video.addEventListener('play', resume)
+    video.addEventListener('seeking', resume)
   }
 
   /**
@@ -170,7 +209,7 @@ export function useVideoHls(
       currentQualityLevel.value !== null && hls.value?.levels
         ? hls.value.levels[currentQualityLevel.value]
         : undefined
-    const label = level ? formatQualityLabel(level.height || 0) : null
+    const label = level ? qualityLabel(level) : null
     // «Авто (720p)» — что плеер выбрал сам, как у YouTube.
     if (isAutoQuality.value) return label ? `${auto} (${label})` : auto
     return label ?? auto
@@ -336,6 +375,7 @@ export function useVideoHls(
             updateQualityLevels()
             // На медленной сети ограничиваем ABR сверху (быстрее первый кадр).
             applyNetworkQualityCap(instance)
+            applyPreferredQuality(instance, true)
             // Отслеживаем изменения уровня качества из HLS auto-switch
             instance.on(Hls.Events.LEVEL_SWITCHED, () => {
               currentQualityLevel.value = instance.currentLevel
@@ -429,6 +469,7 @@ export function useVideoHls(
     initPlayer,
     retry,
     abortLoading,
+    suspendLoad,
     updateQualityLevels,
     setQualityLevel,
     openQualityMenu,

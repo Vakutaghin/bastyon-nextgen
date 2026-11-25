@@ -101,6 +101,18 @@ describe('VideoPlayerManager: горячие клавиши', () => {
     manager.pauseAllExcept(player.id)
   }
 
+  it('запустили другой ролик — остальные не качают, и те, что на паузе', () => {
+    const [a, b, c] = [add('a'), add('b'), add('c')]
+    const suspended: string[] = []
+    for (const p of [a, b, c]) p.suspendLoad = () => suspended.push(p.id)
+    play(a)
+    expect(suspended).toEqual(['b', 'c'])
+    suspended.length = 0
+    play(c)
+    expect(a.state.playing).toBe(false)
+    expect(suspended).toEqual(['a', 'b'])
+  })
+
   it('пробел достаётся ровно одному плееру и ровно один раз', () => {
     const a = add('a')
     const b = add('b')

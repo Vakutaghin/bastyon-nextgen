@@ -5,6 +5,7 @@
 import { parsePeerTubeUrl } from './peertube-parser'
 import { getPeerTubeVideoInfo, type PeerTubeVideoInfo } from './peertube-api'
 import { offlineFileUrl, offlineSources } from '@/services/offline-video/offline-lookup'
+import { preferredQuality } from '@/services/media/video-quality'
 
 // Re-exports для обратной совместимости с импортёрами.
 export { parsePeerTubeUrl } from './peertube-parser'
@@ -38,6 +39,9 @@ export function getHlsPlaylistUrl(videoInfo: PeerTubeVideoInfo): string | null {
 
   return null
 }
+
+/** Тяжелее целый файл не берём, какое бы качество ни выбрали. */
+const PROGRESSIVE_MAX = 720
 
 /** Кандидат для прогрессивного воспроизведения: прямой файл + его высота (для выбора). */
 interface ProgressiveCandidate {
@@ -85,17 +89,20 @@ function collectProgressiveFiles(videoInfo: PeerTubeVideoInfo): ProgressiveCandi
  * Прямой URL прогрессивного видеофайла (mp4) — для fallback, когда HLS фатально не
  * воспроизводится. Берётся из той же ноды (данные уже в ответе API, отдельная инфра не нужна).
  *
- * Выбор: наибольшее разрешение ≤ 720p (баланс качество/вес для аварийного пути);
- * если все выше 720p — наименьшее известное; иначе первый доступный файл.
+ * Выбор: наибольшее разрешение ≤ 720p (баланс качество/вес для аварийного пути),
+ * а если в плеере выбрано качество ниже — не выше него: целый файл качается
+ * одной дорожкой и сам на медленной сети не понизится. Все выше предела —
+ * наименьшее известное; иначе первый доступный файл.
  */
 export function getProgressiveVideoUrl(videoInfo: PeerTubeVideoInfo): string | null {
+  const limit = Math.min(preferredQuality.value ?? PROGRESSIVE_MAX, PROGRESSIVE_MAX)
   if (!videoInfo) return null
   const files = collectProgressiveFiles(videoInfo)
   if (files.length === 0) return null
 
-  const atMost720 = files.filter((f) => f.height > 0 && f.height <= 720)
-  if (atMost720.length > 0) {
-    return atMost720.reduce((best, f) => (f.height > best.height ? f : best)).url
+  const withinLimit = files.filter((f) => f.height > 0 && f.height <= limit)
+  if (withinLimit.length > 0) {
+    return withinLimit.reduce((best, f) => (f.height > best.height ? f : best)).url
   }
 
   const known = files.filter((f) => f.height > 0)

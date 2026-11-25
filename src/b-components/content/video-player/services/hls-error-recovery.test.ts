@@ -102,4 +102,11 @@ describe('HLS_LOAD_POLICY', () => {
     expect(policy.errorRetry).toMatchObject({ maxNumRetry: 2, maxRetryDelayMs: 2000 })
     expect(policy.timeoutRetry?.maxNumRetry).toBe(1)
   })
+
+  it('плейлист в полмегабайта успевает скачаться и на 40 кбит/с', () => {
+    const policy = HLS_LOAD_POLICY.playlistLoadPolicy.default
+    expect(policy.maxLoadTimeMs).toBeGreaterThanOrEqual((517_190 * 8) / 40)
+    // Молчащий сервер виден сразу, как и раньше.
+    expect(policy.maxTimeToFirstByteMs).toBe(10_000)
+  })
 })

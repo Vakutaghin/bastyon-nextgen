@@ -40,6 +40,8 @@ export interface HotkeyItem {
 export interface VideoPlayerInstance {
   id: string
   pause: () => void
+  /** Больше не качать, пока ролик снова не запустят: смотрят другой. */
+  suspendLoad?: () => void
   isPlaying: () => boolean
   /** Корень плеера: по нему видно, в каком плеере фокус и виден ли он. */
   element: () => HTMLElement | null

@@ -51,6 +51,28 @@ function readConnection(): NetworkInformationLike | undefined {
 }
 
 /**
+ * Скорость сети по последнему ролику (бит/с). С неё начинает следующий: без
+ * неё hls.js для каждого ролика заново предполагал 500 кбит/с, и на медленной
+ * сети каждый начинался с 360p, которых она не тянет. Живёт до перезапуска —
+ * сеть за это время могла смениться.
+ */
+let lastBandwidth: number | null = null
+
+export function rememberBandwidth(bitsPerSecond: number): void {
+  if (Number.isFinite(bitsPerSecond) && bitsPerSecond > 0) lastBandwidth = bitsPerSecond
+}
+
+/** С какой скорости начинать; `null` — ещё не мерили. */
+export function knownBandwidth(): number | null {
+  return lastBandwidth
+}
+
+/** Для тестов. */
+export function forgetBandwidthForTests(): void {
+  lastBandwidth = null
+}
+
+/**
  * Ограничивает ABR hls.js потолком качества под текущую сеть. Зовётся после
  * MANIFEST_PARSED (когда `hls.levels` уже заполнены). Не трогает ручной выбор
  * качества пользователем — только верхнюю границу авто-режима (`autoLevelCapping`).

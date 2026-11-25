@@ -22,7 +22,7 @@ The player works like YouTube’s.
 
 - play and pause and sound — the volume slider slides out when you hover over the sound icon;
 - the time and the name of the current chapter;
-- the gear: **“Quality”** and **“Speed”**. Quality is **“Auto”** by default — the player picks it for your connection speed, and the menu shows which one it chose. Speed goes from 0.25 to 2, and **“Normal”** is 1. The chosen speed is remembered: every clip and track in the app plays at it until you change it;
+- the gear: **“Quality”** and **“Speed”**. Quality is **“Auto”** by default — the player picks it for your connection speed, and the menu shows which one it chose. The chosen quality is remembered: every clip starts with it until you change it. If a clip does not have it, the nearest lower one is used. Speed goes from 0.25 to 2, and **“Normal”** is 1. The chosen speed is remembered: every clip and track in the app plays at it until you change it;
 - picture-in-picture, if the system supports it, and fullscreen.
 
 Above the bar is the progress bar. Hover over it: the time of that spot appears above the cursor, and a click takes you there.
@@ -94,7 +94,7 @@ The player works around some failures by itself, without a message:
 If that does not help either, the player says what happened, with a **“Retry”** button under the message:
 
 - **“Video not found on this node”** — the clip was removed from the server or is unavailable;
-- **“Video is taking too long to load”** or **“Network error while loading video”** — a poor connection or a busy server: try again later;
+- **“Video is taking too long to load”** or **“Network error while loading video”** — a poor connection or a busy server: try again later. If your connection is always slow, pick a lower quality in the player, 144p for example — it will be remembered;
 - the clip was uploaded just now — the server is still preparing it for playback. Wait a few minutes and click **“Retry”**.
 
 More in [Images or videos do not show](media-problems.md).
