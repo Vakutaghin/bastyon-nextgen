@@ -22,6 +22,7 @@
  * Скорость — общая для всех голосовых (`voice-rate`): сменили во время
  * прослушивания — меняется сразу, и у этого голосового, и у следующих.
  */
+import { userErrorText } from '@/helpers/common/user-error'
 import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { matrixFetch } from '@/helpers/api/request'
 import { localMediaBlob } from '../../services/local-media'
@@ -249,7 +250,7 @@ export function useAudioPlayback(opts: AudioPlaybackOptions): AudioPlayback {
         return true
       } catch (e) {
         if (!ctrl.signal.aborted && !isAbort(e)) {
-          hasError.value = e instanceof Error ? e.message : t('messenger.audioLoadFailed')
+          hasError.value = userErrorText(e, t('messenger.audioLoadFailed'))
         }
         return false
       } finally {

@@ -39,6 +39,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import { CrownOutlined, LoadingOutlined, LockOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
 import { requireAuth } from '@/composables/use-auth-gate'
@@ -107,7 +108,7 @@ async function follow(): Promise<void> {
   try {
     await relations.subscribe(props.author)
   } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('paidSubscriptions.errFailed') })
+    appToast.error({ message: userErrorText(e, t('paidSubscriptions.errFailed')) })
   }
 }
 

@@ -14,6 +14,7 @@
  * первая загрузка и сворачивала раскрытое «Загрузить ещё» обратно до 16.
  */
 
+import { UserError } from '@/helpers/common/user-error'
 import { ref, type Ref } from 'vue'
 import { useCommentsStore } from '@/stores'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
@@ -44,7 +45,10 @@ export function useCommentsLoader(opts: UseCommentsLoaderOptions) {
     allCommentsError.value = null
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(t('commentsMsg.loadTimeout'))), COMMENT_LOAD_TIMEOUT_MS)
+        setTimeout(
+          () => reject(new UserError(t('commentsMsg.loadTimeout'))),
+          COMMENT_LOAD_TIMEOUT_MS
+        )
       })
       const list = await Promise.race([
         fetchComments(

@@ -23,7 +23,8 @@ vi.mock('@/helpers/common/clipboard', () => ({ copyText: h.copyText }))
 vi.mock('@/components/modal', () => ({ default: h.modal }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: h.toast }))
 vi.mock('@/i18n', () => ({
-  t: (key: string, named?: Record<string, unknown>) => (named ? `${key} ${named.link}` : key),
+  t: (key: string, named?: Record<string, unknown>) =>
+    named ? `${key} ${named.link ?? named.message}` : key,
 }))
 
 import { useIpfsShare } from './use-ipfs-share'
@@ -87,7 +88,7 @@ describe('useIpfsShare', () => {
     await useIpfsShare().share('public')
     expect(h.modal.error).toHaveBeenCalledWith({
       title: 'header.ipfsShareFailedTitle',
-      content: 'no space left on device',
+      content: 'common.technicalDetails no space left on device',
     })
 
     h.modal.error.mockClear()

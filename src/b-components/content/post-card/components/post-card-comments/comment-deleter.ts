@@ -5,6 +5,7 @@
 //   - serialized:    postid + (parentid || '') + (answerid || '')   (msg отсутствует)
 //   - payload:       { postid, answerid, parentid, id: txidЕдалённогоКомментария }
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import {
@@ -43,8 +44,8 @@ export async function deleteComment(params: DeleteCommentParams): Promise<string
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('commentsMsg.errAuthRequiredDelete'))
-  if (!postId || !commentId) throw new Error(t('commentsMsg.errPostAndCommentRequired'))
+  if (!keyPair || !address) throw new UserError(t('commentsMsg.errAuthRequiredDelete'))
+  if (!postId || !commentId) throw new UserError(t('commentsMsg.errPostAndCommentRequired'))
 
   const messagePayload: CommentMessagePayload = {
     postid: postId,
@@ -58,10 +59,10 @@ export async function deleteComment(params: DeleteCommentParams): Promise<string
 
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) throw new Error(t('commentsMsg.errNoUnspents'))
+  if (!unspents?.length) throw new UserError(t('commentsMsg.errNoUnspents'))
 
   const selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
-  if (selectedUnspents.length === 0) throw new Error(t('commentsMsg.errSelectUnspents'))
+  if (selectedUnspents.length === 0) throw new UserError(t('commentsMsg.errSelectUnspents'))
 
   lockUTXOs(selectedUnspents)
 

@@ -11,7 +11,10 @@ const h = vi.hoisted(() => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async (original) => ({
+  ...(await original<typeof import('vue-i18n')>()),
+  useI18n: () => ({ t: (key: string) => key }),
+}))
 vi.mock('@/blockchain', () => ({ useAuthStore: () => ({ address: 'PAlice' }) }))
 vi.mock('@/composables/use-ipfs-links', () => ({ openIpfsViewer: h.openViewer }))
 vi.mock('@/b-components/app-toast', () => ({ appToast: h.toast }))

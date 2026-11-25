@@ -24,7 +24,11 @@
     </SC_Categories>
 
     <SC_Error v-if="error">
-      {{ t('miniapps.catalogLoadFailed', { message: error.message }) }}
+      {{
+        t('miniapps.catalogLoadFailed', {
+          message: userErrorText(error, t('common.networkUnavailable')),
+        })
+      }}
     </SC_Error>
 
     <!-- Каталог из RPC getapps, сначала популярные -->
@@ -104,6 +108,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import Modal from '@/components/modal'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import { useFavoriteMiniAppsStore } from '@/mini-apps/store/favorites-store'

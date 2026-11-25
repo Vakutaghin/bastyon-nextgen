@@ -6,6 +6,7 @@
 // bump'ается при добавлении кошелька и успешном rename, иначе доп-список/ярлыки
 // не пересчитываются. Rename живёт здесь же (делит walletListVersion + currentAddress).
 // Аудит крупных файлов 2026-08.
+import { userErrorText } from '@/helpers/common/user-error'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -214,7 +215,7 @@ export function useWalletBalances() {
       // Ни один адрес не ответил — это недоступная сеть, а не нулевые балансы.
       if (result.every((r) => r.balance == null)) error.value = t('wallet.errorLoadBalances')
     } catch (e) {
-      error.value = e instanceof Error ? e.message : t('wallet.errorLoadBalances')
+      error.value = userErrorText(e, t('wallet.errorLoadBalances'))
       accountsWithBalances.value = addresses.map((addr) => ({
         address: addr,
         balance: null,

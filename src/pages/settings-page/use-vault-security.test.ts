@@ -91,12 +91,12 @@ describe('useVaultSecurity', () => {
       expect(toast.success).not.toHaveBeenCalled()
     })
 
-    it('прочая ошибка сейфа — показывается её текст', async () => {
+    it('прочая ошибка сейфа — словами, а не «vault is locked»', async () => {
       vault.enablePassphrase.mockRejectedValue(new Error('vault is locked'))
       const s = useVaultSecurity()
 
       expect(await s.enable(PASS)).toBe(false)
-      expect(toast.error).toHaveBeenCalledWith({ message: 'vault is locked' })
+      expect(toast.error).toHaveBeenCalledWith({ message: 'appMsg.error.genericTitle' })
       expect(s.level.value).toBe('device')
     })
 
@@ -105,7 +105,7 @@ describe('useVaultSecurity', () => {
       const s = useVaultSecurity()
 
       expect(await s.enable(PASS)).toBe(false)
-      expect(toast.error).toHaveBeenCalledWith({ message: 'vault.wrongPassphrase' })
+      expect(toast.error).toHaveBeenCalledWith({ message: 'appMsg.error.genericTitle' })
       expect(s.busy.value).toBe(false)
     })
   })

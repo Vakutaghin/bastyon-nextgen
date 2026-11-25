@@ -146,6 +146,7 @@
 
 import { computed, ref, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import Modal from '@/components/modal'
 import Input from '@/components/input'
 import Button from '@/components/button'
@@ -382,7 +383,7 @@ function confirmDeletePublic(row: ShelfRow): void {
         await collections.remove(c.txid, draftOf(c))
         appToast.success({ message: t('collections.deleteSent') })
       } catch (e) {
-        appToast.error({ message: e instanceof Error ? e.message : t('collections.sendFailed') })
+        appToast.error({ message: userErrorText(e, t('collections.sendFailed')) })
       }
     },
   })

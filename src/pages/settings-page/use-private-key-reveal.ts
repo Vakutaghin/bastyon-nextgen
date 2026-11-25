@@ -13,6 +13,7 @@
  *
  * CODE_AUDIT.md §1.
  */
+import { UserError, userErrorText } from '@/helpers/common/user-error'
 import { ref, type Ref } from 'vue'
 import { useAuthStore } from '@/stores'
 import { useAppLockStore } from '@/stores/app-lock-store'
@@ -62,15 +63,15 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
 
     try {
       const address = authStore.getUserAddress
-      if (!address) throw new Error(t('accountMsg.noActiveAccount'))
+      if (!address) throw new UserError(t('accountMsg.noActiveAccount'))
 
       let secret
       try {
         secret = await loadAccountSecret(address)
       } catch {
-        throw new Error(t('accountMsg.unknownDataFormat'))
+        throw new UserError(t('accountMsg.unknownDataFormat'))
       }
-      if (!secret) throw new Error(t('accountMsg.noSavedSeedOrKey'))
+      if (!secret) throw new UserError(t('accountMsg.noSavedSeedOrKey'))
 
       const { format, raw: trimmed } = secret
       if (format === 'mnemonic') {
@@ -99,7 +100,7 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
               : String(keyPair.privateKey)
             : ''
         } catch {
-          throw new Error(t('accountMsg.keyReadFailed'))
+          throw new UserError(t('accountMsg.keyReadFailed'))
         }
       }
 
@@ -107,7 +108,7 @@ export function usePrivateKeyReveal(): PrivateKeyReveal {
     } catch (error) {
       console.error('Failed to load private key:', error)
       appToast.error({
-        message: error instanceof Error ? error.message : t('accountMsg.keyLoadFailed'),
+        message: userErrorText(error, t('accountMsg.keyLoadFailed')),
       })
     } finally {
       pkLoading.value = false

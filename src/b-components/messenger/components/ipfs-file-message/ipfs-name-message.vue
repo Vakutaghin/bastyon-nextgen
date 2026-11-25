@@ -27,6 +27,7 @@
 // (ipns-follow-store.ts).
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import { appToast } from '@/b-components/app-toast'
 import { LinkIcon } from '@/components/icons'
@@ -79,7 +80,10 @@ async function toggle(): Promise<void> {
     appToast.success({ message: t('messenger.ipnsFollowing') })
   } catch (e) {
     if (!(e instanceof BlockedByTorError)) {
-      appToast.error({ message: t('messenger.ipnsFollowFailed'), description: String(e) })
+      appToast.error({
+        message: t('messenger.ipnsFollowFailed'),
+        description: userErrorText(e, '') || undefined,
+      })
     }
   } finally {
     busy.value = false

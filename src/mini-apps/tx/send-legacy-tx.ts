@@ -4,6 +4,7 @@
  * блока видно в «песочных часах» с именем приложения.
  */
 
+import { UserError } from '@/helpers/common/user-error'
 import { Buffer } from 'buffer'
 
 import { useAuthStore } from '@/blockchain/store/auth-store'
@@ -28,12 +29,12 @@ export async function sendLegacyTx(obj: LegacyTxObject, pending: PendingMeta): P
   const authStore = useAuthStore()
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
-  if (!keyPair || !address) throw new Error(t('miniapps.txNotSignedIn'))
+  if (!keyPair || !address) throw new UserError(t('miniapps.txNotSignedIn'))
 
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
   const selected = selectBestUnspents(unspents ?? [], DEFAULT_TX_FEE)
-  if (!selected.length) throw new Error(t('miniapps.txNoCoins'))
+  if (!selected.length) throw new UserError(t('miniapps.txNoCoins'))
   lockUTXOs(selected)
 
   try {

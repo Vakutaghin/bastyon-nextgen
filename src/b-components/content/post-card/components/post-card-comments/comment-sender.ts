@@ -1,5 +1,6 @@
 // Отправка комментария через блокчейн-транзакцию
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import {
@@ -73,7 +74,7 @@ export async function sendComment(
   originalMsg?: string
 ): Promise<string> {
   if (!editId) return sendNewComment(postId, parentId, answerId, messageText)
-  if (!postId || !messageText.trim()) throw new Error(t('commentsMsg.errPostAndTextRequired'))
+  if (!postId || !messageText.trim()) throw new UserError(t('commentsMsg.errPostAndTextRequired'))
   // Правка — в общих «песочных часах».
   const pending: PendingMeta = { postId, title: pendingSnippet(messageText) }
   return sendCommentBody(
@@ -100,7 +101,7 @@ export function sendNewComment(
   images: readonly string[] = []
 ): Promise<string> {
   if (!postId || (!messageText.trim() && images.length === 0)) {
-    return Promise.reject(new Error(t('commentsMsg.errPostAndTextRequired')))
+    return Promise.reject(new UserError(t('commentsMsg.errPostAndTextRequired')))
   }
   return sendCommentBody(postId, parentId, answerId, newBody(messageText, images), {
     kind: 'comment',
@@ -133,10 +134,12 @@ async function sendCommentBody(
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('commentsMsg.errAuthRequiredSend'))
+  if (!keyPair || !address) throw new UserError(t('commentsMsg.errAuthRequiredSend'))
   // Сеть такую транзакцию отклонит — не тратим на неё монеты и время.
   if (!commentBodyFits(body)) {
-    throw new Error(t(body.images.length ? 'commentsMsg.tooLongWithImages' : 'commentsMsg.tooLong'))
+    throw new UserError(
+      t(body.images.length ? 'commentsMsg.tooLongWithImages' : 'commentsMsg.tooLong')
+    )
   }
 
   const msg = JSON.stringify(body)
@@ -153,10 +156,10 @@ async function sendCommentBody(
 
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) throw new Error(t('commentsMsg.errNoUnspents'))
+  if (!unspents?.length) throw new UserError(t('commentsMsg.errNoUnspents'))
 
   const selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
-  if (selectedUnspents.length === 0) throw new Error(t('commentsMsg.errSelectUnspents'))
+  if (selectedUnspents.length === 0) throw new UserError(t('commentsMsg.errSelectUnspents'))
 
   lockUTXOs(selectedUnspents)
 

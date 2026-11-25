@@ -5,6 +5,7 @@
 // с кешем и повтором после сетевой ошибки. Повторное нажатие до блока прошлой
 // транзакции по адресу ждёт блока и уходит после него (нода отклонила бы).
 
+import { UserError } from '@/helpers/common/user-error'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
@@ -358,7 +359,7 @@ describe('userRelations store', () => {
 
     it('отложенная транзакция не ушла — кнопка как в цепочке, человеку сказано почему', async () => {
       mocks.subscribeUser.mockResolvedValueOnce('txSub')
-      mocks.unsubscribeUser.mockRejectedValueOnce(new Error('нет монет'))
+      mocks.unsubscribeUser.mockRejectedValueOnce(new UserError('нет монет'))
       const store = useUserRelationsStore()
       await store.subscribe('PFriend')
       await store.unsubscribe('PFriend')

@@ -37,6 +37,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import { PlusOutlined, LoadingOutlined } from '@/components/icons'
 import { useUserRelationsStore } from '@/stores'
 import { appToast } from '@/b-components/app-toast'
@@ -72,7 +73,7 @@ async function follow(address: string): Promise<void> {
     await relations.subscribe(address)
     appToast.success({ message: t('subscriptions.subscribedToast') })
   } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
+    appToast.error({ message: userErrorText(e, t('subscriptions.errFailed')) })
   }
 }
 </script>

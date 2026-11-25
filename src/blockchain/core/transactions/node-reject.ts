@@ -12,6 +12,7 @@
  * а часть говорила «Unknown Error (12)».
  */
 
+import { UserError } from '@/helpers/common/user-error'
 import { t } from '@/i18n'
 
 /** Код консенсуса → ключ текста в `nodeReject.*`. */
@@ -94,7 +95,7 @@ const WAIT_REASONS = [
  * Нода отклонила транзакцию. `message` — готовый текст для человека, `code` —
  * исходный код ноды: по нему вызывающие различают DoubleScore и т. п.
  */
-export class NodeRejectError extends Error {
+export class NodeRejectError extends UserError {
   constructor(
     public readonly code: number,
     message: string,

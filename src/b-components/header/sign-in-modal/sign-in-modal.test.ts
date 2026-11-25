@@ -111,7 +111,7 @@ describe('useSignInModal', () => {
 
     mocks.signIn.mockRejectedValueOnce(new Error('network down'))
     await modal.handleSignIn()
-    expect(modal.error.value).toBe('network down')
+    expect(modal.error.value).toBe('accountMsg.signInUnexpectedError')
 
     mocks.signIn.mockRejectedValueOnce('boom')
     await modal.handleSignIn()

@@ -94,6 +94,7 @@ import {
   SC_Footer,
   SC_Button,
 } from './styled'
+import { userErrorText } from '@/helpers/common/user-error'
 import HelpLink from '@/b-components/help/help-link.vue'
 
 const props = defineProps<{
@@ -194,7 +195,7 @@ const onSubmit = async () => {
       undelivered.value = { txid: e.txid, payload: e.payload }
       submitError.value = t('messenger.pkoinSentMessageFailed', { txid: e.txid.slice(0, 12) })
     } else {
-      submitError.value = e instanceof Error ? e.message : t('messenger.sendError')
+      submitError.value = userErrorText(e, t('messenger.sendError'))
     }
   } finally {
     sending.value = false

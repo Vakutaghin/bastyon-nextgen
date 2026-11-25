@@ -8,6 +8,7 @@
 // Тот же механизм, что и проверенное удаление комментария (commentDelete) —
 // см. post-card-comments/comment-deleter.ts.
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import {
@@ -28,8 +29,8 @@ export async function deletePost(postId: string): Promise<string> {
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('postCard.deleteAuthRequired'))
-  if (!postId) throw new Error(t('postCard.deleteFailed'))
+  if (!keyPair || !address) throw new UserError(t('postCard.deleteAuthRequired'))
+  if (!postId) throw new UserError(t('postCard.deleteFailed'))
 
   // serialize() у Remove = txidEdit (только txid поста); payload = { txidEdit }.
   const serializedData = postId
@@ -37,10 +38,10 @@ export async function deletePost(postId: string): Promise<string> {
 
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) throw new Error(t('postCard.deleteFailed'))
+  if (!unspents?.length) throw new UserError(t('postCard.deleteFailed'))
 
   const selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
-  if (selectedUnspents.length === 0) throw new Error(t('postCard.deleteFailed'))
+  if (selectedUnspents.length === 0) throw new UserError(t('postCard.deleteFailed'))
 
   lockUTXOs(selectedUnspents)
 

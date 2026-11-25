@@ -13,6 +13,7 @@
  * что-то есть.
  */
 
+import { UserError } from '@/helpers/common/user-error'
 import { Buffer } from './utils/buffer-polyfill'
 import type { Address } from './types/addresses'
 import { mnemonicToSeed, seedToKeyPair } from './core/keys/key-generator'
@@ -55,7 +56,7 @@ function walletAddresses(accountKey: Buffer, from: number, to: number): string[]
   const out: string[] = []
   for (let i = from; i < to; i++) {
     const address = generateWalletAddress(i, accountKey, true)?.addressInfo?.address
-    if (!address) throw new Error(t('appMsg.wallet.deriveFailed'))
+    if (!address) throw new UserError(t('appMsg.wallet.deriveFailed'))
     out.push(address)
   }
   return out

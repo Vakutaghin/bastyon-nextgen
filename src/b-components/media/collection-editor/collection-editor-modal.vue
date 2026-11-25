@@ -222,6 +222,7 @@
 import { computed, ref, shallowRef, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { userErrorText } from '@/helpers/common/user-error'
 import Button from '@/components/button'
 import {
   AudioPlaylistIcon,
@@ -626,7 +627,7 @@ async function save(): Promise<void> {
     }
     store.close()
   } catch (e) {
-    errorText.value = e instanceof Error ? e.message : t('collections.sendFailed')
+    errorText.value = userErrorText(e, t('collections.sendFailed'))
   } finally {
     saving.value = false
   }

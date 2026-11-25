@@ -42,6 +42,7 @@
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import { useAppsStore } from '@/mini-apps/store/apps-store'
 import {
   SC_Overlay,
@@ -91,7 +92,7 @@ async function load(): Promise<void> {
     emit('close')
     void router.push(`/app/${encodeURIComponent(app.manifest.id)}`)
   } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e)
+    error.value = userErrorText(e, t('miniapps.sideloadFailed'))
   } finally {
     loading.value = false
   }

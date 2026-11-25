@@ -7,6 +7,7 @@
 //
 // feemode 'include' (комиссию платит получатель) — тоже как в legacy donate.
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import {
   getUnspents,
@@ -34,21 +35,21 @@ export async function donateToAuthor(authorAddress: string, amount: number): Pro
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('donate.errAuthRequired'))
-  if (!authorAddress) throw new Error(t('donate.errNoRecipient'))
-  if (authorAddress === address) throw new Error(t('donate.errSelf'))
+  if (!keyPair || !address) throw new UserError(t('donate.errAuthRequired'))
+  if (!authorAddress) throw new UserError(t('donate.errNoRecipient'))
+  if (authorAddress === address) throw new UserError(t('donate.errSelf'))
   // Комиссия считается от размера транзакции: денежный перевод с одним
   // сатоши сеть отклоняет (-26). Для проверки «сумма не меньше комиссии»
   // берём оценку по одному входу, точную — после выбора входов.
   const messageBytes = utf8Length(DONATE_MESSAGE)
   if (!Number.isFinite(amount) || amount <= transferFee({ inputs: 1, outputs: 1, messageBytes })) {
-    throw new Error(t('donate.errAmountTooSmall'))
+    throw new UserError(t('donate.errAmountTooSmall'))
   }
 
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
   const selected = selectAndLockUnspents(unspents, amount) // лок входов (S6)
-  if (!selected.length) throw new Error(t('donate.errInsufficient'))
+  if (!selected.length) throw new UserError(t('donate.errInsufficient'))
 
   const fee = transferFee({ inputs: selected.length, outputs: 1, messageBytes })
   // include: комиссия вычитается из суммы перевода (получатель получает amount - fee).
@@ -57,7 +58,7 @@ export async function donateToAuthor(authorAddress: string, amount: number): Pro
   // входах комиссия съедала всю сумму: уходил выход в 0 сатоши, сдача сгорала.
   if (toSatoshis(receiverAmount) < toSatoshis(DUST_VALUE)) {
     unlockUTXOs(selected)
-    throw new Error(t('donate.errAmountTooSmall'))
+    throw new UserError(t('donate.errAmountTooSmall'))
   }
 
   const built = await buildTransferTransaction({

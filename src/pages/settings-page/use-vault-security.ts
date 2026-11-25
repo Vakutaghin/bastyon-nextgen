@@ -1,6 +1,7 @@
 // Логика секции «Безопасность кошелька» в настройках (P0-1): показ текущего
 // уровня защиты сида at-rest и включение/выключение passphrase-режима.
 
+import { userErrorText } from '@/helpers/common/user-error'
 import { ref } from 'vue'
 import {
   getVaultLevel,
@@ -44,9 +45,7 @@ export function useVaultSecurity() {
       const message =
         e instanceof VaultMigrationIncompleteError
           ? t('vault.migrationIncomplete')
-          : e instanceof Error
-            ? e.message
-            : t('vault.wrongPassphrase')
+          : userErrorText(e, t('appMsg.error.genericTitle'))
       appToast.error({ message })
       return false
     } finally {

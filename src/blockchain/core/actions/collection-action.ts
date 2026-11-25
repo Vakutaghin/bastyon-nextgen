@@ -6,6 +6,7 @@
 // же коллекции, пока первая не в блоке (DoubleContentEdit), нет регистрации,
 // payload больше 2000 байт.
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import { buildTransaction } from '../transactions/transaction-builder'
 import {
@@ -27,7 +28,7 @@ import {
 } from '@/services/collections/collection-model'
 import { t } from '@/i18n'
 
-export class CollectionDraftInvalid extends Error {
+export class CollectionDraftInvalid extends UserError {
   constructor(public readonly reason: string) {
     super(t(`collections.invalid.${reason}`))
     this.name = 'CollectionDraftInvalid'
@@ -43,12 +44,12 @@ async function send(
   const authStore = useAuthStore()
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
-  if (!keyPair || !address) throw new Error(t('collections.errAuth'))
+  if (!keyPair || !address) throw new UserError(t('collections.errAuth'))
 
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
   const selected = selectBestUnspents(unspents ?? [], DEFAULT_TX_FEE)
-  if (!selected.length) throw new Error(t('collections.errNoCoins'))
+  if (!selected.length) throw new UserError(t('collections.errNoCoins'))
   lockUTXOs(selected)
 
   try {

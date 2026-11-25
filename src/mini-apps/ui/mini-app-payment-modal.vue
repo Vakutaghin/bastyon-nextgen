@@ -86,6 +86,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { UserError, userErrorText } from '@/helpers/common/user-error'
 import Modal from '@/components/modal'
 import Input from '@/components/input'
 import { bcp47 } from '@/i18n'
@@ -228,7 +229,7 @@ async function onConfirm() {
     // подберёт те же UTXO, пока нода не увидела первую транзакцию.
     const selected = selectAndLockUnspents(available, requiredAmount)
     if (!selected.length) {
-      throw new Error(t('miniapps.errorInsufficientFunds'))
+      throw new UserError(t('miniapps.errorInsufficientFunds'))
     }
 
     // Комиссия считается от размера, а размер зависит от числа входов —
@@ -271,7 +272,7 @@ async function onConfirm() {
         : undefined
     resolvePaymentModal({ transaction: txid, completed: true, ...(contacts ? { contacts } : {}) })
   } catch (e) {
-    error.value = e instanceof Error ? e.message : t('miniapps.errorPaymentFailed')
+    error.value = userErrorText(e, t('miniapps.errorPaymentFailed'))
   } finally {
     sending.value = false
   }

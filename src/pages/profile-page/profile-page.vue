@@ -77,6 +77,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { UserError, userErrorText } from '@/helpers/common/user-error'
 import { LoadingOutlined, ClockCircleOutlined, PlusOutlined } from '@/components/icons'
 import { useDocumentTitle } from '@/composables/use-document-title'
 import { fetchAccountSettings } from '@/helpers/api/account-settings'
@@ -108,7 +109,6 @@ import {
   SC_ProfileCreatePost,
 } from './profile-page.styled'
 import { loadPendingRegistration } from '@/blockchain/storage/pending-registration'
-import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import { useOnline } from '@/composables/use-online'
 import { isMobile } from '@mobile/utils/platform'
 
@@ -192,7 +192,7 @@ async function fetchUserProfile(identifier: string): Promise<void> {
         ) {
           address = addressResponse.data[0].address
         } else {
-          throw new Error(t('profile.userNotFound'))
+          throw new UserError(t('profile.userNotFound'))
         }
       }
     }
@@ -246,7 +246,7 @@ async function fetchUserProfile(identifier: string): Promise<void> {
   } catch (e) {
     console.error('Failed to load profile:', e)
     // Без сети и при сетевом сбое — словами, а не «All RPC servers failed».
-    error.value = extractErrorMessage(e) || t('profile.loadFailed')
+    error.value = userErrorText(e, t('profile.loadFailed'))
   } finally {
     loading.value = false
   }

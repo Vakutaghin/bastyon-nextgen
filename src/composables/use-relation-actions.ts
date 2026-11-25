@@ -8,6 +8,7 @@
  * отпиской и (раз)блокировкой: случайное нажатие стоит записи в цепочку.
  */
 
+import { userErrorText } from '@/helpers/common/user-error'
 import { h } from 'vue'
 import Modal from '@/components/modal'
 import { ExclamationCircleOutlined } from '@/components/icons'
@@ -42,7 +43,7 @@ async function run(action: () => Promise<void>, success: string, failure: string
     await action()
     appToast.success({ message: success })
   } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : failure })
+    appToast.error({ message: userErrorText(e, failure) })
   }
 }
 

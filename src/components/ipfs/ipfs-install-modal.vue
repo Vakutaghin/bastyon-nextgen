@@ -98,6 +98,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { installProgressText } from '@/helpers/common/install-progress'
 import Input from '@/components/input'
 import Button from '@/components/button'
 import { useIpfsStore } from '@/stores/ipfs-store'
@@ -151,9 +152,9 @@ function onClearPin(): void {
 
 const progressLine = computed<string>(() => {
   if (ipfs.status === 'installing' && ipfs.install) {
-    return t('header.ipfsInstallingProgress', {
-      pct: Math.round(ipfs.install.fraction * 100),
-      message: ipfs.install.message,
+    return installProgressText(ipfs.install, {
+      downloading: 'header.ipfsInstallingProgress',
+      preparing: 'header.ipfsPreparing',
     })
   }
   if (ipfs.status === 'starting') return t('header.ipfsStarting')

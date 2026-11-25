@@ -1,5 +1,6 @@
 // Голоса опроса под постом: итоги по корневым комментариям, свой голос (в том
 // числе ещё не подтверждённый сетью) и отправка голоса. Формат — helpers/content/poll.ts.
+import { userErrorText } from '@/helpers/common/user-error'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue'
 
 import { useAuthStore } from '@/blockchain'
@@ -87,7 +88,7 @@ export function usePostPollVotes(postId: Ref<string>, poll: Ref<PostPoll>) {
     } catch (error) {
       appToast.error({
         message: t('poll.failed'),
-        description: error instanceof Error ? error.message : undefined,
+        description: userErrorText(error, '') || undefined,
       })
     } finally {
       voting.value = false

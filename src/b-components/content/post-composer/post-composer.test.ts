@@ -5,6 +5,7 @@
 // доступна и ничего не потеряла. Композер и его части настоящие; нода,
 // отправка, загрузка картинок и сторы подменены, черновик — в памяти.
 
+import { UserError } from '@/helpers/common/user-error'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -66,6 +67,7 @@ vi.mock('@/helpers/api/account-settings', () => ({
 }))
 vi.mock('@/helpers/common/haptics', () => ({ haptic: vi.fn() }))
 vi.mock('@/services/image-upload-service', () => ({
+  ImageUploadError: class extends Error {},
   uploadImages: mocks.uploadImages,
   uploadImage: vi.fn(),
 }))
@@ -240,7 +242,7 @@ describe('окно поста во время публикации', () => {
     expect(w.findComponent(LinkPreviewCard).props('disabled')).toBe(true)
     expect(mocks.closeMentions).toHaveBeenCalled()
 
-    sending.fail(new Error(FAILURE))
+    sending.fail(new UserError(FAILURE))
     await settle()
     expect(mocks.toastError).toHaveBeenCalledWith({ message: FAILURE })
     expectUnlocked(w)
@@ -275,7 +277,7 @@ describe('окно поста во время публикации', () => {
     expectLocked(w)
     expect(removeVideo!.attributes('disabled')).toBeDefined()
 
-    sending.fail(new Error(FAILURE))
+    sending.fail(new UserError(FAILURE))
     await settle()
     expectUnlocked(w)
     w.unmount()
@@ -307,7 +309,7 @@ describe('окно поста во время публикации', () => {
 
     await publish(w)
     expectLocked(w)
-    sending.fail(new Error(FAILURE))
+    sending.fail(new UserError(FAILURE))
     await settle()
     expectUnlocked(w)
 
@@ -356,7 +358,7 @@ describe('окно поста во время публикации', () => {
     expect(editable()).toBe('false')
     expect(w.findComponent(ComposerArticleEditor).classes()).toContain('disabled')
 
-    sending.fail(new Error(FAILURE))
+    sending.fail(new UserError(FAILURE))
     await settle()
     expectUnlocked(w)
     expect(editable()).toBe('true')

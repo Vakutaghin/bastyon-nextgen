@@ -416,7 +416,9 @@ export default {
     torDesktopOnly: 'In der Desktop- und Android-App verfügbar.',
     torStatusStopping: 'Tor wird beendet…',
     torStatusOff: 'Tor ist aus',
-    torStatusInstalling: 'Download: {pct}% — {message}',
+    torStatusInstalling: 'Download: {pct}%',
+    moduleVerifying: 'Download wird geprüft…',
+    moduleExtracting: 'Wird entpackt…',
     torStatusInstallingShort: 'Tor wird installiert…',
     torStatusStarting: 'Prozess wird gestartet…',
     torStatusBootstrapping: 'Verbindung zum Tor-Netzwerk: {pct}%',
@@ -446,7 +448,7 @@ export default {
     ipfsConsentPublic: 'Ohne Modul öffnen',
     ipfsInstallTitle: 'IPFS wird eingerichtet',
     ipfsPreparing: 'IPFS wird vorbereitet…',
-    ipfsInstallingProgress: 'Download: {pct}% — {message}',
+    ipfsInstallingProgress: 'Download: {pct}%',
     ipfsStarting: 'IPFS-Daemon wird gestartet…',
     ipfsCancel: 'Ohne Modul öffnen',
     ipfsAbortInstall: 'Installation abbrechen',
@@ -581,6 +583,8 @@ export default {
       'Das Bastyon-Netzwerk antwortet nicht. Prüfen Sie die Verbindung oder versuchen Sie es später.',
     noConnection:
       'Verbunden, aber Bastyon antwortet nicht. Melden Sie sich im WLAN eines Cafés oder Hotels zuerst auf dessen Seite an. Es lädt von selbst, sobald die Verbindung da ist.',
+    technicalDetails: 'Technische Details: {message}',
+    torNotReady: 'Tor verbindet sich noch. Versuchen Sie es in einer Minute erneut.',
     cancel: 'Abbrechen',
     close: 'Schließen',
     noData: 'Keine Daten',
@@ -2736,6 +2740,8 @@ export default {
     sideloadCancel: 'Abbrechen',
     sideloadLoad: 'Laden',
     sideloadLoading: 'Wird geladen…',
+    sideloadFailed:
+      'Die App konnte nicht geöffnet werden. Prüfen Sie die Adresse und die Datei b_manifest.json.',
     catalogLoadFailed: 'Der Katalog konnte nicht geladen werden: {message}',
     sectionLocal: 'Ihre Apps',
     sectionPopular: 'Beliebt',
@@ -4098,6 +4104,8 @@ export default {
     privateKeyCopied: 'Privater Schlüssel kopiert. Die Zwischenablage wird in einer Minute geleert',
     enterMnemonicOrKey: 'Gib eine mnemonische Phrase oder einen privaten Schlüssel ein',
     signInError: 'Anmeldefehler',
+    invalidSecret:
+      'Das sieht nicht nach einer Seed-Phrase oder einem privaten Schlüssel aus. Prüfen Sie die Wörter und ihre Reihenfolge.',
     signInUnexpectedError: 'Bei der Anmeldung ist ein Fehler aufgetreten',
     enterNickname: 'Gib einen Nickname ein',
     nicknameInvalidChars:

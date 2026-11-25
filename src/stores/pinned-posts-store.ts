@@ -12,6 +12,7 @@
  * (paid-subscriptions-store), иначе одно стирало бы другое.
  */
 
+import { UserError } from '@/helpers/common/user-error'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 import { useAuthStore } from '@/blockchain'
@@ -140,7 +141,7 @@ export const usePinnedPostsStore = defineStore('pinned-posts', () => {
    */
   async function setPin(txid: string, postId: string = txid): Promise<string> {
     const address = me.value
-    if (!address) throw new Error(t('paidSubscriptions.errAuthRequired'))
+    if (!address) throw new UserError(t('paidSubscriptions.errAuthRequired'))
     adopt(address)
     const { saveAccountSettings } =
       await import('@/blockchain/core/actions/account-settings-action')

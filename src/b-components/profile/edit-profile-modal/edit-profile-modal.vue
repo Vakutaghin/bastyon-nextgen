@@ -144,6 +144,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import Button from '@/components/button'
 import { DeleteOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
@@ -427,7 +428,7 @@ async function onSave(): Promise<void> {
     appToast.success({ message: t('editProfile.savedToast') })
     emit('close')
   } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('editProfile.errFailed') })
+    appToast.error({ message: userErrorText(e, t('editProfile.errFailed')) })
   } finally {
     saving.value = false
   }

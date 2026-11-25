@@ -37,12 +37,12 @@ describe('usePostDelete', () => {
     expect(usePostsStore().isPostDeleted('tx1')).toBe(true)
   })
 
-  it('ошибка транзакции: тост с текстом ошибки, deleted не выставляется, колбэк не зовётся', async () => {
+  it('ошибка транзакции: тост словами, а не «no unspents», deleted не выставляется, колбэк не зовётся', async () => {
     deletePost.mockRejectedValueOnce(new Error('no unspents'))
     const onDeleted = vi.fn()
     const { doDelete, deleted, deleting } = usePostDelete(() => 'tx1', onDeleted)
     await doDelete()
-    expect(toast.error).toHaveBeenCalledWith({ message: 'no unspents' })
+    expect(toast.error).toHaveBeenCalledWith({ message: 'postCard.deleteFailed' })
     expect(deleted.value).toBe(false)
     expect(deleting.value).toBe(false)
     expect(onDeleted).not.toHaveBeenCalled()

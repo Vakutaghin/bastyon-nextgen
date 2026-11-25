@@ -66,6 +66,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import Modal from '@/components/modal'
 import Button from '@/components/button'
 import { ClockCircleOutlined, LoadingOutlined } from '@/components/icons'
@@ -145,7 +146,7 @@ async function save(value: number): Promise<void> {
         value > 0 ? t('paidSubscriptions.price.saved') : t('paidSubscriptions.price.disabled'),
     })
   } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('paidSubscriptions.errFailed') })
+    appToast.error({ message: userErrorText(e, t('paidSubscriptions.errFailed')) })
   } finally {
     saving.value = false
   }

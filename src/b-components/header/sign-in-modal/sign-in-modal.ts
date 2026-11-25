@@ -1,3 +1,4 @@
+import { userErrorText } from '@/helpers/common/user-error'
 import { ref, watch, computed } from 'vue'
 import Modal from '@/components/modal/modal.vue'
 import Button from '@/components/button/button.vue'
@@ -114,7 +115,7 @@ export function useSignInModal(p: SignInModalProps, emit: SignInModalEmits) {
         emit('update:open', false)
         return
       }
-      error.value = err instanceof Error ? err.message : t('accountMsg.signInUnexpectedError')
+      error.value = userErrorText(err, t('accountMsg.signInUnexpectedError'))
     } finally {
       loading.value = false
       abortController = null

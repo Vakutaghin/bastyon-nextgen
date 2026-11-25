@@ -1,3 +1,4 @@
+import { userErrorText } from '@/helpers/common/user-error'
 import { type Ref } from 'vue'
 import { t } from '@/i18n'
 import { PeerTubeFetchError } from '@/helpers/api/peertube-url'
@@ -108,8 +109,8 @@ export function resolvePlayerErrorMessage(err: unknown): string {
       case 'not-found':
         return t('videoMsg.videoNotFound')
       default:
-        return err.message
+        return t('videoMsg.videoLoadUnknownError')
     }
   }
-  return err instanceof Error ? err.message : t('videoMsg.videoLoadUnknownError')
+  return userErrorText(err, t('videoMsg.videoLoadUnknownError'))
 }

@@ -4,6 +4,7 @@
 // из общего секрета выводится именно этот адрес: раньше «Показать сид» для A
 // отдавал сид B, если у A не было своего ключа (S10).
 
+import { UserError } from '@/helpers/common/user-error'
 import { ACCOUNT_STORAGE_PREFIX } from '@/blockchain/constants/storage'
 import { generateAddressFromKeyPair } from '@/blockchain/core/addresses'
 import { recoverKeyPair } from '@/blockchain/core/keys'
@@ -41,10 +42,10 @@ export async function loadAccountMnemonic(address: Address): Promise<ParsedMnemo
   }
 
   if (!rawData || !rawData.trim()) {
-    throw new Error(t('accountMsg.noSavedSeedOrKey'))
+    throw new UserError(t('accountMsg.noSavedSeedOrKey'))
   }
 
   const parsed = parseMnemonicOrKey(rawData)
-  if (!parsed) throw new Error(t('accountMsg.unknownDataFormat'))
+  if (!parsed) throw new UserError(t('accountMsg.unknownDataFormat'))
   return parsed
 }

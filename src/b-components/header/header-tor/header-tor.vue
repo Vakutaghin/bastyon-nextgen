@@ -115,6 +115,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
+import { installProgressText } from '@/helpers/common/install-progress'
 import Modal from '@/components/modal'
 import Dropdown from '@/components/dropdown'
 import Radio, { RadioGroup, type RadioValue } from '@/components/radio'
@@ -277,12 +279,10 @@ const statusLine = computed<string>(() => {
     case 'off':
       return enabled.value ? t('header.torStatusStopping') : t('header.torStatusOff')
     case 'installing':
-      return install.value
-        ? t('header.torStatusInstalling', {
-            pct: Math.round(install.value.fraction * 100),
-            message: install.value.message,
-          })
-        : t('header.torStatusInstallingShort')
+      return installProgressText(install.value, {
+        downloading: 'header.torStatusInstalling',
+        preparing: 'header.torStatusInstallingShort',
+      })
     case 'starting':
       return fetchingBridges.value
         ? t('header.torStatusFetchingBridges')
@@ -386,7 +386,9 @@ async function onRequestBridges(): Promise<void> {
     }
     requestNote.value = t('header.torRequestBridgesDone', { n: result.bridges.length })
   } catch (e) {
-    requestNote.value = t('header.torRequestBridgesFailed', { message: String(e) })
+    requestNote.value = t('header.torRequestBridgesFailed', {
+      message: userErrorText(e, t('common.networkUnavailable')),
+    })
   } finally {
     requesting.value = false
   }

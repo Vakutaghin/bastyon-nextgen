@@ -1,6 +1,7 @@
 // Действия отношений на сайдбаре профиля: подписка/уведомления (bell)/блокировка
 // с тостами, плюс gating (canShowSubscribe/isOwnProfile). Гидрирует relations при
 // авторизации. Вынесено из profile-sidebar.vue (аудит крупных файлов 2026-08).
+import { userErrorText } from '@/helpers/common/user-error'
 import { computed, watch, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/blockchain/store/auth-store'
@@ -68,7 +69,7 @@ export function useProfileRelationsActions(userAddress: Ref<string>) {
         appToast.success({ message: t('subscriptions.notificationsEnabledToast') })
       }
     } catch (e) {
-      appToast.error({ message: e instanceof Error ? e.message : t('subscriptions.errFailed') })
+      appToast.error({ message: userErrorText(e, t('subscriptions.errFailed')) })
     }
   }
 

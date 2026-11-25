@@ -62,6 +62,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { installProgressText } from '@/helpers/common/install-progress'
 import Modal from '@/components/modal'
 import Dropdown from '@/components/dropdown'
 import Button from '@/components/button'
@@ -111,12 +112,10 @@ const variant = computed<'off' | 'busy' | 'ready' | 'failed'>(() => {
 const statusLine = computed<string>(() => {
   switch (status.value) {
     case 'installing':
-      return install.value
-        ? t('header.ipfsInstallingProgress', {
-            pct: Math.round(install.value.fraction * 100),
-            message: install.value.message,
-          })
-        : t('header.ipfsPreparing')
+      return installProgressText(install.value, {
+        downloading: 'header.ipfsInstallingProgress',
+        preparing: 'header.ipfsPreparing',
+      })
     case 'starting':
       return t('header.ipfsStarting')
     case 'running':

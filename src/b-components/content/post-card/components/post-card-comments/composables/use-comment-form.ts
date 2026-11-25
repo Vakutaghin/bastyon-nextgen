@@ -12,6 +12,7 @@
  * выбора mention).
  */
 
+import { userErrorText } from '@/helpers/common/user-error'
 import { ref, computed, nextTick, type Ref, type ComputedRef } from 'vue'
 import { appToast } from '@/b-components/app-toast'
 import { t } from '@/i18n'
@@ -467,7 +468,7 @@ export function useCommentForm(opts: UseCommentFormOptions) {
       // Картинки возвращаются адресами: второй раз их грузить не придётся.
       images.restore(imageUrls)
       appToast.error({
-        message: e instanceof Error ? e.message : t('commentsMsg.sendError'),
+        message: userErrorText(e, t('commentsMsg.sendError')),
       })
     } finally {
       replySubmitting.value = false

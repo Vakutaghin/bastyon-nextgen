@@ -1,5 +1,6 @@
 // Отправка лайка/дизлайка комментария (cScore) через блокчейн-транзакцию
 
+import { UserError } from '@/helpers/common/user-error'
 import { Buffer } from 'buffer'
 
 import { useAuthStore } from '@/blockchain'
@@ -21,10 +22,10 @@ import { broadcastTransaction } from '@/blockchain/core/transactions/transaction
 async function prepareUnspents(address: string) {
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) throw new Error(t('commentsMsg.errNoUnspents'))
+  if (!unspents?.length) throw new UserError(t('commentsMsg.errNoUnspents'))
 
   const selected = selectBestUnspents(unspents, DEFAULT_TX_FEE)
-  if (selected.length === 0) throw new Error(t('commentsMsg.errSelectUnspents'))
+  if (selected.length === 0) throw new UserError(t('commentsMsg.errSelectUnspents'))
 
   lockUTXOs(selected)
   return selected
@@ -49,8 +50,8 @@ export async function sendCommentScore(
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('commentsMsg.errAuthRequiredScore'))
-  if (!commentAuthorAddress) throw new Error(t('commentsMsg.errAuthorAddressRequired'))
+  if (!keyPair || !address) throw new UserError(t('commentsMsg.errAuthRequiredScore'))
+  if (!commentAuthorAddress) throw new UserError(t('commentsMsg.errAuthorAddressRequired'))
 
   const selectedUnspents = await prepareUnspents(address)
 

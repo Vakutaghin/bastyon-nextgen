@@ -1,5 +1,6 @@
 // «Мои файлы»: что аккаунт опубликовал в IPFS с этого компьютера, раздаются ли
 // эти файлы сейчас, где их копии на удалённом сервисе и постоянные ссылки на них.
+import { userErrorText } from '@/helpers/common/user-error'
 import { computed, onBeforeUnmount, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue'
 import Modal from '@/components/modal'
 import { t } from '@/i18n'
@@ -52,6 +53,10 @@ export interface MyFiles {
   pointPermanent: (entry: OwnName, file: IpfsShare) => Promise<void>
 }
 
+function failed(key: string, e: unknown): void {
+  appToast.error({ message: t(key), description: userErrorText(e, '') || undefined })
+}
+
 export function useMyFiles(): MyFiles {
   const ipfs = useIpfsStore()
   const names = useIpnsNamesStore()
@@ -82,7 +87,7 @@ export function useMyFiles(): MyFiles {
     try {
       await Promise.all([ipfs.hydrate(), ipfs.refreshPinService(), ipfs.loadShares(account.value)])
     } catch (e) {
-      appToast.error({ message: t('myFiles.loadFailed'), description: String(e) })
+      failed('myFiles.loadFailed', e)
     } finally {
       loading.value = false
     }
@@ -134,7 +139,7 @@ export function useMyFiles(): MyFiles {
         try {
           await ipfs.unshare(account.value, file.cid)
         } catch (e) {
-          appToast.error({ message: t('myFiles.unshareFailed'), description: String(e) })
+          failed('myFiles.unshareFailed', e)
         }
       },
     })
@@ -177,7 +182,7 @@ export function useMyFiles(): MyFiles {
       dialog.value = await names.create(buildNameValue(file))
     } catch (e) {
       if (!(e instanceof BlockedByTorError)) {
-        appToast.error({ message: t('myFiles.permanent.createFailed'), description: String(e) })
+        failed('myFiles.permanent.createFailed', e)
       }
     } finally {
       naming.value = false
@@ -197,7 +202,7 @@ export function useMyFiles(): MyFiles {
       appToast.success({ message: t('myFiles.permanent.updated', { name: file.name }) })
     } catch (e) {
       if (!(e instanceof BlockedByTorError)) {
-        appToast.error({ message: t('myFiles.permanent.updateFailed'), description: String(e) })
+        failed('myFiles.permanent.updateFailed', e)
       }
     } finally {
       naming.value = false

@@ -22,7 +22,11 @@ export function useIpfsSend(send: (text: string) => void): {
   const sending = ref(false)
 
   function showError(): void {
-    if (ipfs.message) Modal.error({ title: t('messenger.ipfsSendFailed'), content: ipfs.message })
+    if (ipfs.message)
+      Modal.error({
+        title: t('messenger.ipfsSendFailed'),
+        content: t('common.technicalDetails', { message: ipfs.message }),
+      })
   }
 
   async function sendViaIpfs(): Promise<void> {

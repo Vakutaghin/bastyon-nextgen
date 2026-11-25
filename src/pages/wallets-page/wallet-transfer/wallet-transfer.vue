@@ -148,6 +148,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import Select, { type SelectOption } from '@/components/select'
 import { FIELD_LIST, vAnchored } from '@/components/ui-core/anchored'
@@ -304,7 +305,7 @@ async function doSend(): Promise<void> {
     message.value = ''
   } catch (e) {
     if (e instanceof InsufficientFundsError) error.value = t('wallet.errorInsufficientFunds')
-    else error.value = e instanceof Error ? e.message : t('wallet.errorTransferFailed')
+    else error.value = userErrorText(e, t('wallet.errorTransferFailed'))
   } finally {
     sending.value = false
   }

@@ -86,7 +86,7 @@ export function saveErrorText(message: string | null): string {
   if (m.startsWith('verify-unsupported')) return t('header.ipfsVerifyUnsupported')
   if (m.startsWith('verify-too-large')) return t('header.ipfsVerifyTooLarge')
   if (m.startsWith('verify-missing')) return t('header.ipfsVerifyIncomplete')
-  return m
+  return m ? t('common.technicalDetails', { message: m }) : ''
 }
 
 /**
@@ -173,7 +173,10 @@ async function openEncrypted(
   if (result === 'saved') {
     Modal.success({ title: t('header.ipfsSaveDoneTitle') })
   } else if (result === 'failed') {
-    Modal.error({ title: t('header.ipfsSaveFailedTitle'), content: store.message ?? '' })
+    Modal.error({
+      title: t('header.ipfsSaveFailedTitle'),
+      content: store.message ? t('common.technicalDetails', { message: store.message }) : '',
+    })
   }
 }
 

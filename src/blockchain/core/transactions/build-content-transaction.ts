@@ -5,6 +5,7 @@
  */
 
 // Buffer polyfill для браузера (side-effect: устанавливает globalThis.Buffer)
+import { UserError } from '@/helpers/common/user-error'
 import { Buffer } from '../../utils/buffer-polyfill'
 import type { KeyPair } from '../../types/keys'
 import type { UTXO } from '@/composables/use-wallet-queries'
@@ -100,7 +101,7 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
   const changeAmountSatoshis = totalInputAmountSatoshis - feeSatoshis
 
   if (changeAmountSatoshis < 0) {
-    throw new Error(t('appMsg.insufficientFundsForFee'))
+    throw new UserError(t('appMsg.insufficientFundsForFee'))
   }
 
   // Если change меньше dust value, отправляем все на комиссию

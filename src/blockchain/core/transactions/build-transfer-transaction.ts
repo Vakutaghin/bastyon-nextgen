@@ -5,6 +5,7 @@
  */
 
 // Buffer polyfill для браузера (side-effect: устанавливает globalThis.Buffer)
+import { UserError } from '@/helpers/common/user-error'
 import { Buffer } from '../../utils/buffer-polyfill'
 import type { KeyPair } from '../../types/keys'
 import type { UTXO } from '@/composables/use-wallet-queries'
@@ -102,7 +103,7 @@ export async function buildTransferTransaction(
   const changeAmountSatoshis = totalInputSatoshis - outputsSatoshis - feeSatoshis
 
   if (changeAmountSatoshis < 0) {
-    throw new Error(t('appMsg.insufficientFundsForTransfer'))
+    throw new UserError(t('appMsg.insufficientFundsForTransfer'))
   }
 
   // Сдача меньше dust не может стать выходом — она достаётся сети как часть

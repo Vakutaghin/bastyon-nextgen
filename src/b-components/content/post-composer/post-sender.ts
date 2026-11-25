@@ -1,6 +1,7 @@
 // Публикация поста (Share) через блокчейн-транзакцию.
 // Построено по образцу comment-sender.ts: serialize + export + buildTransaction + RPC.
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import {
   exportPost,
@@ -39,10 +40,10 @@ export async function sendPost(post: SharePostData): Promise<string> {
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('postMsg.errAuthRequired'))
+  if (!keyPair || !address) throw new UserError(t('postMsg.errAuthRequired'))
 
   const validationError = validatePost(post)
-  if (validationError) throw new Error(t(`postMsg.validation.${validationError}`))
+  if (validationError) throw new UserError(t(`postMsg.validation.${validationError}`))
 
   const payload = exportPost(post)
   const serializedData = serializePost(post)
@@ -55,8 +56,8 @@ export async function sendPost(post: SharePostData): Promise<string> {
     unspents = filterAvailableUnspents(await feeUnspents(address, { fresh: true }), false)
     selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
   }
-  if (!unspents.length) throw new Error(t('postMsg.errNoUnspents'))
-  if (selectedUnspents.length === 0) throw new Error(t('postMsg.errSelectUnspents'))
+  if (!unspents.length) throw new UserError(t('postMsg.errNoUnspents'))
+  if (selectedUnspents.length === 0) throw new UserError(t('postMsg.errSelectUnspents'))
 
   lockUTXOs(selectedUnspents)
 

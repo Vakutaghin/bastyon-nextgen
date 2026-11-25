@@ -14,6 +14,7 @@
 // поэтому отправлял его только «акулам»; окно жалобы проверяет право заранее
 // (`accountCanFlag`), чтобы не собирать транзакцию, которую сеть отвергнет.
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
 import {
@@ -49,8 +50,8 @@ export async function sendComplaint(params: ComplaintParams): Promise<string> {
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('report.authRequired'))
-  if (!contentHash || !authorAddress || !reason) throw new Error(t('report.failed'))
+  if (!keyPair || !address) throw new UserError(t('report.authRequired'))
+  if (!contentHash || !authorAddress || !reason) throw new UserError(t('report.failed'))
 
   // ModFlag.serialize() = s2 + s3 + i1; export() = { s2, s3, i1 }.
   const serializedData = `${contentHash}${authorAddress}${reason}`
@@ -58,10 +59,10 @@ export async function sendComplaint(params: ComplaintParams): Promise<string> {
 
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) throw new Error(t('report.failed'))
+  if (!unspents?.length) throw new UserError(t('report.failed'))
 
   const selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
-  if (selectedUnspents.length === 0) throw new Error(t('report.failed'))
+  if (selectedUnspents.length === 0) throw new UserError(t('report.failed'))
 
   lockUTXOs(selectedUnspents)
 

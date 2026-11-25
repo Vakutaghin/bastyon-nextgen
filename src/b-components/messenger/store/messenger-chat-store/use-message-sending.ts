@@ -1,6 +1,7 @@
 // Отправка текстовых сообщений (личных и групповых по протоколу общего ключа),
 // реакций и PKOIN-донатов. Медиа-вложения — в use-media-sending.
 
+import { UserError } from '@/helpers/common/user-error'
 import { t } from '@/i18n'
 import { appToast } from '@/b-components/app-toast'
 import { playSound } from '@/services/app-sounds'
@@ -594,7 +595,7 @@ export function useMessageSending(
       const estimatedFee = transferFee({ inputs: 1, outputs: 1 })
       const requiredAmount = amount + estimatedFee
       const selected = selectAndLockUnspents(unspents, requiredAmount) // лок входов (S6)
-      if (!selected.length) throw new Error(t('appMsg.messenger.insufficientFunds'))
+      if (!selected.length) throw new UserError(t('appMsg.messenger.insufficientFunds'))
 
       const built = await buildTransferTransaction({
         unspents: selected,

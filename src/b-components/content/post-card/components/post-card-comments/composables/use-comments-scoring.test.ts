@@ -4,6 +4,7 @@
 // одна оценка на комментарий и одна транзакция за раз. Отметка общая для всех
 // мест, где виден комментарий, и держится, пока нода не отдаст её сама.
 
+import { UserError } from '@/helpers/common/user-error'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
@@ -154,7 +155,7 @@ describe('useCommentsScoring', () => {
   })
 
   it('отказ сети снимает оценку и показывает причину', async () => {
-    mocks.sendCommentScore.mockRejectedValue(new Error('Лимит оценок исчерпан'))
+    mocks.sendCommentScore.mockRejectedValue(new UserError('Лимит оценок исчерпан'))
     const { scoring } = setup()
     const c = comment()
     await scoring.onCommentScoreDown(c)
@@ -232,7 +233,7 @@ describe('useCommentsScoring', () => {
     })
 
     it('отказ сети возвращает прежнее состояние', async () => {
-      mocks.sendCommentScore.mockRejectedValue(new Error('offline'))
+      mocks.sendCommentScore.mockRejectedValue(new UserError('offline'))
       const { scoring } = setup()
       await scoring.onLastCommentScoreDown()
       expect(scoring.lastCommentUserDisliked.value).toBe(false)

@@ -7,6 +7,7 @@
 // приватного ключа и ВСЕГДА ре-деривятся, чтобы апдейт их не потерял.
 // Адреса для пожертвований (`b`) приходят из формы профиля.
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import { serializeUserInfo, exportUserInfo, type UserInfoData } from './user-info-action'
 import { buildTransaction } from '../transactions/transaction-builder'
@@ -42,10 +43,10 @@ export async function updateUserProfileInfo(input: ProfileUpdateInput): Promise<
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('editProfile.errAuthRequired'))
+  if (!keyPair || !address) throw new UserError(t('editProfile.errAuthRequired'))
 
   const name = (input.name || '').trim()
-  if (!name) throw new Error(t('editProfile.errNameRequired'))
+  if (!name) throw new UserError(t('editProfile.errNameRequired'))
 
   // Ключи мессенджера детерминированы из приватного ключа — ре-деривим (как legacy
   // на save), иначе апдейт профиля стёр бы их и сломал расшифровку сообщений.
@@ -67,10 +68,10 @@ export async function updateUserProfileInfo(input: ProfileUpdateInput): Promise<
 
   let unspents = await getUnspents(address, 0, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) throw new Error(t('editProfile.errNoUnspents'))
+  if (!unspents?.length) throw new UserError(t('editProfile.errNoUnspents'))
 
   const selectedUnspents = selectAndLockUnspents(unspents, DEFAULT_TX_FEE) // лок входов (S6)
-  if (selectedUnspents.length === 0) throw new Error(t('editProfile.errNoUnspents'))
+  if (selectedUnspents.length === 0) throw new UserError(t('editProfile.errNoUnspents'))
 
   const builtTx = await buildTransaction({
     unspents: selectedUnspents,

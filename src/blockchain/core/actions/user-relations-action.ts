@@ -13,6 +13,7 @@
 // Это самостоятельные on-chain операции (не привязаны к комментариям) — отсюда
 // расположение в core/actions.
 
+import { UserError } from '@/helpers/common/user-error'
 import { DEFAULT_TX_FEE } from '@/blockchain/constants/transactions'
 import { useAuthStore } from '@/blockchain'
 import { buildTransaction } from '@/blockchain/core/transactions/transaction-builder'
@@ -64,9 +65,9 @@ async function sendRelationTx(
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t(errorKeys.authRequired))
-  if (!targetAddress) throw new Error(t('commentsMsg.errAuthorAddressRequired'))
-  if (targetAddress === address) throw new Error(t(errorKeys.self))
+  if (!keyPair || !address) throw new UserError(t(errorKeys.authRequired))
+  if (!targetAddress) throw new UserError(t('commentsMsg.errAuthorAddressRequired'))
+  if (targetAddress === address) throw new UserError(t(errorKeys.self))
 
   const messagePayload = buildMessagePayload(operationType, targetAddress)
 
@@ -75,10 +76,10 @@ async function sendRelationTx(
 
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
-  if (!unspents?.length) throw new Error(t('commentsMsg.errNoUnspents'))
+  if (!unspents?.length) throw new UserError(t('commentsMsg.errNoUnspents'))
 
   const selectedUnspents = selectBestUnspents(unspents, DEFAULT_TX_FEE)
-  if (selectedUnspents.length === 0) throw new Error(t('commentsMsg.errSelectUnspents'))
+  if (selectedUnspents.length === 0) throw new UserError(t('commentsMsg.errSelectUnspents'))
 
   lockUTXOs(selectedUnspents)
 

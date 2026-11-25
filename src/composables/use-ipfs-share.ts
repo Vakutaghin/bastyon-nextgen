@@ -51,7 +51,10 @@ export function useIpfsShare(): {
         shared.push(one)
       }
       if (ipfs.message) {
-        Modal.error({ title: t('header.ipfsShareFailedTitle'), content: ipfs.message })
+        Modal.error({
+          title: t('header.ipfsShareFailedTitle'),
+          content: t('common.technicalDetails', { message: ipfs.message }),
+        })
       }
       if (shared.length > 1) {
         appToast.success({ message: t('myFiles.publishedMany', { count: shared.length }) })

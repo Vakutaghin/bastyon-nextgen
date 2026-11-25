@@ -330,6 +330,7 @@ import {
   EyeOutlined,
   PushpinOutlined,
 } from '@/components/icons'
+import { userErrorText } from '@/helpers/common/user-error'
 import Dropdown from '@/components/dropdown'
 import PostShareMenu from '@/b-components/content/post-share-menu/post-share-menu.vue'
 import { useAuthStore } from '@/blockchain'
@@ -677,7 +678,7 @@ async function togglePin(): Promise<void> {
   } catch (e) {
     appToast.error({
       message: unpin ? t('postCard.unpinFailed') : t('postCard.pinFailed'),
-      ...(e instanceof Error && e.message ? { description: e.message } : {}),
+      description: userErrorText(e, '') || undefined,
     })
   } finally {
     pinning.value = false

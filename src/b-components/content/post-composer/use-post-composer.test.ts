@@ -6,6 +6,8 @@
 // сброс → обновление ленты. Валидация, теги, опрос и разбор ссылок —
 // настоящие модули; сеть, сторы и загрузка картинок подменены.
 
+import { UserError } from '@/helpers/common/user-error'
+import { ImageUploadError } from '@/services/image-upload-service'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, reactive } from 'vue'
@@ -72,7 +74,11 @@ vi.mock('@/helpers/api/account-settings', async (original) => ({
   fetchAccountSettings: mocks.fetchAccountSettings,
 }))
 vi.mock('@/helpers/common/haptics', () => ({ haptic: mocks.haptic }))
-vi.mock('@/services/image-upload-service', () => ({ uploadImages: mocks.uploadImages }))
+vi.mock('@/services/image-upload-service', async (original) => ({
+  ImageUploadError: (await original<typeof import('@/services/image-upload-service')>())
+    .ImageUploadError,
+  uploadImages: mocks.uploadImages,
+}))
 vi.mock('@/stores', () => ({
   useModalStore: () => ({ openAuthModal: mocks.openAuthModal }),
   usePendingPostsStore: () => ({ addPending: mocks.addPending }),
@@ -431,7 +437,7 @@ describe('usePostComposer', () => {
     })
 
     it('отказ сети: тост с причиной, форма не сбрасывается', async () => {
-      mocks.sendPost.mockRejectedValue(new Error('Дневной лимит постов исчерпан'))
+      mocks.sendPost.mockRejectedValue(new UserError('Дневной лимит постов исчерпан'))
       const c = compose()
       fillValidPost(c)
       await c.publish()
@@ -455,7 +461,7 @@ describe('usePostComposer', () => {
 
     it('картинка не загрузилась: понятный тост, коды причин строкой ниже, пост не отправлен', async () => {
       mocks.uploadImages.mockRejectedValue(
-        new Error('peertube: peertube_image_token_400; up1: up1_timeout')
+        new ImageUploadError(['peertube: peertube_image_token_400', 'up1: up1_timeout'])
       )
       const c = compose()
       fillValidPost(c)

@@ -91,7 +91,7 @@ describe('useIpfsSend', () => {
     await useIpfsSend(send).sendViaIpfs()
     expect(h.error).toHaveBeenCalledWith({
       title: 'messenger.ipfsSendFailed',
-      content: 'no space left on device',
+      content: 'common.technicalDetails',
     })
     expect(send).not.toHaveBeenCalled()
   })

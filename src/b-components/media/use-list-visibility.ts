@@ -8,6 +8,7 @@
 // потом публичная коллекция удаляется из сети (транзакция). Не удалось удалить
 // — личный уже есть, ничего не теряется. Описание и обложку личный не хранит.
 
+import { userErrorText } from '@/helpers/common/user-error'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal'
 import { appToast } from '@/b-components/app-toast'
@@ -57,7 +58,7 @@ export function useListVisibility() {
           await collections.remove(collection.txid, draftOf(collection))
           appToast.success({ message: t('lists.madePrivate', { name }) })
         } catch (e) {
-          const reason = e instanceof Error ? e.message : t('collections.sendFailed')
+          const reason = userErrorText(e, t('collections.sendFailed'))
           appToast.warning({ message: t('lists.madePrivateKept', { reason }) })
         }
         onDone?.(listId)

@@ -2,6 +2,7 @@
 // localStorage, переключение цели ответа с префиксом @ника, @-меню с клавиатуры,
 // эмодзи в позицию курсора, проверки перед отправкой и откат при ошибке,
 // картинки: загрузка перед отправкой, предел размера, возврат при ошибке.
+import { UserError } from '@/helpers/common/user-error'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { computed, nextTick, ref, type Ref } from 'vue'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
@@ -211,7 +212,7 @@ describe('картинки', () => {
   })
 
   it('ошибка отправки: картинки возвращаются в форму адресами', async () => {
-    sendNewComment.mockRejectedValueOnce(new Error('node'))
+    sendNewComment.mockRejectedValueOnce(new UserError('node'))
     const { api } = form()
     api.onReplyToFirstLevel(root)
     await api.addReplyImages([png('aaa')])
@@ -318,7 +319,7 @@ describe('sendReply — parentid/answerid как в legacy (K4)', () => {
   })
 
   it('ошибка отправки: pending снимается, черновик и цель возвращаются', async () => {
-    sendNewComment.mockRejectedValueOnce(new Error('node'))
+    sendNewComment.mockRejectedValueOnce(new UserError('node'))
     const { api } = form()
     api.onReplyToSecondLevel(reply)
     api.replyDraft.value = 'hi'
@@ -496,7 +497,7 @@ describe('черновик корневой формы', () => {
   it('успешная отправка стирает черновик, неудачная — оставляет', async () => {
     const { api } = form()
     api.handleRootReplyInput(inputEvent('первый'))
-    sendNewComment.mockRejectedValueOnce(new Error('node'))
+    sendNewComment.mockRejectedValueOnce(new UserError('node'))
     await api.sendReply()
     expect(savedDraft()).toBe('первый')
     await api.sendReply()

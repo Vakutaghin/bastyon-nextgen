@@ -12,6 +12,7 @@
 // продвигающим блокировка и если аккаунт не зарегистрирован
 // (pocketnet.core, consensus/social/BoostContent.hpp).
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import { buildTransaction } from '../transactions/transaction-builder'
 import {
@@ -43,17 +44,17 @@ export async function boostPost(
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('boost.errAuthRequired'))
-  if (!TXID_RE.test(contentTxid)) throw new Error(t('boost.errNoPost'))
+  if (!keyPair || !address) throw new UserError(t('boost.errAuthRequired'))
+  if (!TXID_RE.test(contentTxid)) throw new UserError(t('boost.errNoPost'))
   if (!Number.isFinite(amount) || amount < BOOST_MIN_PKOIN) {
-    throw new Error(t('boost.errMin', { min: formatPkoinAmount(BOOST_MIN_PKOIN) }))
+    throw new UserError(t('boost.errMin', { min: formatPkoinAmount(BOOST_MIN_PKOIN) }))
   }
 
   const total = amount + DEFAULT_TX_FEE
   let unspents = await getUnspents(address, 1, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
   const selected = selectAndLockUnspents(unspents, total)
-  if (!selected.length) throw new Error(t('boost.errInsufficient'))
+  if (!selected.length) throw new UserError(t('boost.errInsufficient'))
 
   try {
     const built = await buildTransaction({

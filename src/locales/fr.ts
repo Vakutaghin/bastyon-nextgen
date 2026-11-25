@@ -418,7 +418,9 @@ export default {
     torDesktopOnly: 'Disponible dans les applications de bureau et Android.',
     torStatusStopping: 'Arrêt de Tor…',
     torStatusOff: 'Tor est désactivé',
-    torStatusInstalling: 'Téléchargement : {pct} % — {message}',
+    torStatusInstalling: 'Téléchargement : {pct} %',
+    moduleVerifying: 'Vérification du téléchargement…',
+    moduleExtracting: 'Décompression…',
     torStatusInstallingShort: 'Installation de Tor…',
     torStatusStarting: 'Démarrage du processus…',
     torStatusBootstrapping: 'Connexion au réseau Tor : {pct} %',
@@ -449,7 +451,7 @@ export default {
     ipfsConsentPublic: 'Ouvrir sans le module',
     ipfsInstallTitle: 'Configuration d’IPFS',
     ipfsPreparing: 'Préparation d’IPFS…',
-    ipfsInstallingProgress: 'Téléchargement : {pct} % — {message}',
+    ipfsInstallingProgress: 'Téléchargement : {pct} %',
     ipfsStarting: 'Démarrage du démon IPFS…',
     ipfsCancel: 'Ouvrir sans le module',
     ipfsAbortInstall: 'Annuler l’installation',
@@ -584,6 +586,8 @@ export default {
       'Le réseau Bastyon ne répond pas. Vérifiez la connexion ou réessayez plus tard.',
     noConnection:
       'Connecté, mais Bastyon ne répond pas. Sur le Wi-Fi d’un café ou d’un hôtel, connectez-vous d’abord sur sa page. Le chargement reprendra tout seul dès le retour de la connexion.',
+    technicalDetails: 'Détails techniques : {message}',
+    torNotReady: 'Tor est encore en cours de connexion. Réessayez dans une minute.',
     cancel: 'Annuler',
     close: 'Fermer',
     noData: 'Aucune donnée',
@@ -2738,6 +2742,8 @@ export default {
     sideloadCancel: 'Annuler',
     sideloadLoad: 'Charger',
     sideloadLoading: 'Chargement…',
+    sideloadFailed:
+      'Impossible d’ouvrir l’application. Vérifiez l’adresse et son fichier b_manifest.json.',
     catalogLoadFailed: 'Impossible de charger le catalogue : {message}',
     sectionLocal: 'Vos applications',
     sectionPopular: 'Populaires',
@@ -4097,6 +4103,8 @@ export default {
     privateKeyCopied: 'Clé privée copiée. Le presse-papiers sera vidé dans une minute',
     enterMnemonicOrKey: 'Saisissez une phrase mnémonique ou une clé privée',
     signInError: 'Erreur de connexion',
+    invalidSecret:
+      'Cela ne ressemble pas à une phrase seed ni à une clé privée. Vérifiez les mots et leur ordre.',
     signInUnexpectedError: 'Une erreur s’est produite lors de la connexion',
     enterNickname: 'Saisissez un pseudo',
     nicknameInvalidChars:

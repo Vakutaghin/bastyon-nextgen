@@ -133,6 +133,7 @@
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import { userErrorText } from '@/helpers/common/user-error'
 import Modal from '@/components/modal'
 import Button from '@/components/button'
 import {
@@ -339,7 +340,7 @@ function confirmDelete(): void {
         appToast.success({ message: t('collections.deleteSent') })
         void router.push(`/${c.address}`)
       } catch (e) {
-        appToast.error({ message: e instanceof Error ? e.message : t('collections.sendFailed') })
+        appToast.error({ message: userErrorText(e, t('collections.sendFailed')) })
       }
     },
   })
@@ -353,7 +354,7 @@ async function dropRemoved(): Promise<void> {
     await collections.edit(c.txid, draftOf(c, keep))
     appToast.success({ message: t('collections.saved') })
   } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('collections.sendFailed') })
+    appToast.error({ message: userErrorText(e, t('collections.sendFailed')) })
   }
 }
 

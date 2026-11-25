@@ -28,7 +28,7 @@ import { i18n, t } from '@/i18n'
 import { queryClient } from '@/query-client'
 import { appToast } from '@/b-components/app-toast'
 import { haptic } from '@/helpers/common/haptics'
-import { extractErrorMessage } from '@/helpers/common/extract-error-message'
+import { userErrorText } from '@/helpers/common/user-error'
 import {
   describeVideoUploadError,
   uploadErrorDetail,
@@ -573,8 +573,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       job.postStatus = 'error'
       // Сетевой сбой — словами («Сеть Bastyon не отвечает…»), а не строкой
       // «All RPC servers failed. Last error: …»: она остаётся в журнале.
-      job.postError =
-        error instanceof Error ? extractErrorMessage(error) : t('postMsg.errSendFailed')
+      job.postError = userErrorText(error, t('postMsg.errSendFailed'))
       appToast.error({ message: t('videoStudio.postFailed'), description: job.postError })
     }
   }

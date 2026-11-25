@@ -11,6 +11,7 @@
  *   IndexedDB (post-draft). «Очистить» (reset) стирает всё.
  */
 
+import { UserError, userErrorText } from '@/helpers/common/user-error'
 import { computed, getCurrentScope, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQueryClient } from '@tanstack/vue-query'
@@ -28,8 +29,7 @@ import {
   type PostAudio,
 } from '@/helpers/content/post-audios'
 import { haptic } from '@/helpers/common/haptics'
-import { extractErrorMessage } from '@/helpers/common/extract-error-message'
-import { uploadImages } from '@/services/image-upload-service'
+import { ImageUploadError, uploadImages } from '@/services/image-upload-service'
 import { useModalStore } from '@/stores'
 import { t } from '@/i18n'
 
@@ -627,7 +627,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       // идут мелкой строкой ниже: по ним видно, где именно не вышло.
       const imageUrls = await uploadImages(base64List.value).catch((e: unknown) => {
         console.warn('[post-composer] image upload failed', e)
-        throw new Error(t('postMsg.errImageUpload'), { cause: e })
+        throw new UserError(t('postMsg.errImageUpload'), { cause: e })
       })
       const finalPost: SharePostData = { ...post.value, images: imageUrls }
       const txid = await sendPost(finalPost)
@@ -642,9 +642,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     } catch (e) {
       const cause = e instanceof Error ? e.cause : undefined
       appToast.error({
-        // Сетевой сбой — словами, а не «All RPC servers failed…».
-        message: e instanceof Error ? extractErrorMessage(e) : t('postMsg.errSendFailed'),
-        ...(cause instanceof Error ? { description: cause.message } : {}),
+        message: userErrorText(e, t('postMsg.errSendFailed')),
+        ...(cause instanceof ImageUploadError ? { description: cause.message } : {}),
       })
     } finally {
       submitting.value = false

@@ -112,6 +112,7 @@ import { Placeholder } from '@tiptap/extensions'
 import { NodeSelection } from '@tiptap/pm/state'
 import type { ChainedCommands, Editor } from '@tiptap/core'
 
+import { userErrorText } from '@/helpers/common/user-error'
 import type { ArticleContent } from '@/blockchain/core/actions/post-action'
 import { appToast } from '@/b-components/app-toast'
 import {
@@ -130,7 +131,7 @@ import {
 } from '@/components/icons'
 import { vAnchored } from '@/components/ui-core/anchored'
 import { fileToBase64, resizeImageBase64 } from '@/helpers/common/resize-image'
-import { uploadImage } from '@/services/image-upload-service'
+import { ImageUploadError, uploadImage } from '@/services/image-upload-service'
 
 import { articleToDoc, docToArticle } from './article-doc'
 import { ArticleImage, ArticleRawBlock, QuoteAttributes } from './article-extensions'
@@ -505,7 +506,7 @@ async function insertImages(files: File[], at?: number): Promise<void> {
     } catch (e) {
       appToast.error({
         message: t('articleEditor.imageFailed'),
-        description: e instanceof Error ? e.message : undefined,
+        description: e instanceof ImageUploadError ? e.message : userErrorText(e, '') || undefined,
       })
     } finally {
       uploading.value--

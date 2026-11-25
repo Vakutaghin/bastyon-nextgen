@@ -58,6 +58,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { userErrorText } from '@/helpers/common/user-error'
 import { FIELD_LIST, vAnchored } from '@/components/ui-core/anchored'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
@@ -238,7 +239,7 @@ async function fallbackServerSearch(value: string) {
     if (type === 'address') return go('explorer-address', value)
     errorMessage.value = t('explorerPage.searchErrorUnknown')
   } catch (e) {
-    errorMessage.value = e instanceof Error ? e.message : t('explorerPage.searchErrorNetwork')
+    errorMessage.value = userErrorText(e, t('explorerPage.searchErrorNetwork'))
   } finally {
     resolving.value = false
   }

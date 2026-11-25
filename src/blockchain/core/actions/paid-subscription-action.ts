@@ -6,6 +6,7 @@
 // платежи (getfromtotransactions), а клиенты по ним решают, оплачена ли подписка.
 // OP_RETURN — первый выход, получатель — второй: нода берёт сумму именно оттуда.
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import { SUBSCRIPTION_MARKER } from '@/helpers/common/op-return'
 import {
@@ -26,9 +27,11 @@ export async function payForSubscription(authorAddress: string, amount: number):
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
 
-  if (!keyPair || !address) throw new Error(t('paidSubscriptions.errAuthRequired'))
-  if (!authorAddress || authorAddress === address) throw new Error(t('paidSubscriptions.errSelf'))
-  if (!Number.isInteger(amount) || amount <= 0) throw new Error(t('paidSubscriptions.errAmount'))
+  if (!keyPair || !address) throw new UserError(t('paidSubscriptions.errAuthRequired'))
+  if (!authorAddress || authorAddress === address)
+    throw new UserError(t('paidSubscriptions.errSelf'))
+  if (!Number.isInteger(amount) || amount <= 0)
+    throw new UserError(t('paidSubscriptions.errAmount'))
 
   const pkoin = amount / AMOUNT_MULTIPLIER
   let unspents = await getUnspents(address, 1, 9999999)
@@ -40,7 +43,7 @@ export async function payForSubscription(authorAddress: string, amount: number):
     unspents,
     pkoin + transferFee({ inputs: 1, outputs: 1, messageBytes })
   ) // лок входов (S6)
-  if (!selected.length) throw new Error(t('paidSubscriptions.errInsufficient'))
+  if (!selected.length) throw new UserError(t('paidSubscriptions.errInsufficient'))
 
   const built = await buildTransferTransaction({
     unspents: selected,

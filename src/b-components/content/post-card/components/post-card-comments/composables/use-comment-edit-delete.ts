@@ -8,6 +8,7 @@
  * isCommentDeleted / canInteractWithComment).
  */
 
+import { userErrorText } from '@/helpers/common/user-error'
 import { ref, h, type Ref } from 'vue'
 import Modal from '@/components/modal'
 import { ExclamationCircleOutlined } from '@/components/icons'
@@ -96,7 +97,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       haptic('medium')
       appToast.success({ message: t('commentsMsg.blockSuccess') })
     } catch (e) {
-      appToast.error({ message: e instanceof Error ? e.message : t('commentsMsg.blockError') })
+      appToast.error({ message: userErrorText(e, t('commentsMsg.blockError')) })
     }
   }
 
@@ -121,7 +122,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       haptic('medium')
       appToast.success({ message: t('commentsMsg.unblockSuccess') })
     } catch (e) {
-      appToast.error({ message: e instanceof Error ? e.message : t('commentsMsg.unblockError') })
+      appToast.error({ message: userErrorText(e, t('commentsMsg.unblockError')) })
     }
   }
 
@@ -187,7 +188,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
     } catch (e) {
       commentsStore.unmarkDeleted(comment.id)
       appToast.error({
-        message: e instanceof Error ? e.message : t('commentsMsg.deleteError'),
+        message: userErrorText(e, t('commentsMsg.deleteError')),
       })
     } finally {
       commentDeleteSubmitting.value = null
@@ -292,7 +293,7 @@ export function useCommentEditDelete(opts: UseCommentEditDeleteOptions) {
       closeEdit()
     } catch (e) {
       appToast.error({
-        message: e instanceof Error ? e.message : t('commentsMsg.editError'),
+        message: userErrorText(e, t('commentsMsg.editError')),
       })
     } finally {
       editSubmitting.value = false

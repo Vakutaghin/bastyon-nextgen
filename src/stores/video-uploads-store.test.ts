@@ -2,6 +2,7 @@
 // приложению; сжатие на компьютере — шагом перед загрузкой; отмена, повтор с
 // места обрыва; название, дописанное во время загрузки, уходит на сервер.
 
+import { UserError } from '@/helpers/common/user-error'
 import type { CompressOutcome } from '@/b-components/video-studio/compress-for-upload'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -611,7 +612,7 @@ describe('video-uploads-store', () => {
       const store = useVideoUploadsStore()
       const send = vi
         .fn()
-        .mockRejectedValueOnce(new Error('Суточный лимит постов исчерпан'))
+        .mockRejectedValueOnce(new UserError('Суточный лимит постов исчерпан'))
         .mockResolvedValueOnce('tx2')
       store.setDepsForTests({ upload: vi.fn(async () => RESULT) as never, rename: vi.fn(), send })
       const id = store.start(file())!

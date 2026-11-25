@@ -94,6 +94,7 @@
 
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import Modal from '@/components/modal'
 import { CheckOutlined, GlobalOutlined, LockOutlined, PlusOutlined } from '@/components/icons'
 import { appToast } from '@/b-components/app-toast'
@@ -209,7 +210,7 @@ async function togglePublic(c: CollectionView): Promise<void> {
     })
     void refreshEdits()
   } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('collections.sendFailed') })
+    appToast.error({ message: userErrorText(e, t('collections.sendFailed')) })
   }
 }
 

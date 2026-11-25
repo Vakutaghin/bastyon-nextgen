@@ -149,6 +149,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { userErrorText } from '@/helpers/common/user-error'
 import Checkbox from '@/components/checkbox'
 import Spin from '@/components/spin'
 import Button from '@/components/button'
@@ -299,7 +300,7 @@ async function onPay(): Promise<void> {
       effects.triggerCoins(window.innerWidth / 2, window.innerHeight / 3)
     }
   } catch (e) {
-    appToast.error({ message: e instanceof Error ? e.message : t('paidSubscriptions.errFailed') })
+    appToast.error({ message: userErrorText(e, t('paidSubscriptions.errFailed')) })
   } finally {
     paying.value = false
   }

@@ -6,7 +6,7 @@
       <SC_LimitsLoading v-if="showLoading"> {{ t('limits.loading') }} </SC_LimitsLoading>
 
       <SC_LimitsError v-else-if="isError && !hasAnyData">
-        {{ error?.message || t('limits.loadError') }}
+        {{ userErrorText(error, t('limits.loadError')) }}
       </SC_LimitsError>
 
       <template v-else-if="hasAnyData">
@@ -50,6 +50,7 @@
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { userErrorText } from '@/helpers/common/user-error'
 import { useUserState } from '@/composables/use-user-profile'
 import { computeAbilityGating, type AbilityUserState } from '@/composables/use-ability-increase'
 import { useAuthStore } from '@/blockchain'

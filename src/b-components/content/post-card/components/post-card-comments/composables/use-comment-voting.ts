@@ -12,6 +12,7 @@
  * блокировки UI.
  */
 
+import { userErrorText } from '@/helpers/common/user-error'
 import { ref, computed, h, type ComputedRef } from 'vue'
 import Modal from '@/components/modal'
 import { ExclamationCircleOutlined } from '@/components/icons'
@@ -85,7 +86,7 @@ export function useCommentVoting(opts: UseCommentVotingOptions) {
       if (address) commentsStore.setMyVote(address, target.id, value, txid)
     } catch (e) {
       if (address) commentsStore.clearMyVote(address, target.id)
-      appToast.error({ message: e instanceof Error ? e.message : t(errorKey) })
+      appToast.error({ message: userErrorText(e, t(errorKey)) })
     }
   }
 

@@ -1,6 +1,7 @@
 // Подписка, отписка, (раз)блокировка: что делается сразу, а что — только после
 // подтверждения (транзакция в цепочке), какие тосты по итогу и когда действие
 // не запускается вовсе (идёт транзакция, подписки ещё не пришли с ноды).
+import { UserError } from '@/helpers/common/user-error'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 interface ConfirmArgs {
@@ -94,7 +95,7 @@ describe('блокировка', () => {
   })
 
   it('ошибка транзакции — тост с её текстом, без «успеха»', async () => {
-    mocks.relations.block.mockRejectedValueOnce(new Error('Недостаточно средств'))
+    mocks.relations.block.mockRejectedValueOnce(new UserError('Недостаточно средств'))
     useRelationActions().confirmBlock('PBad')
     await lastDialog().onOk()
     expect(mocks.toastError).toHaveBeenCalledWith({ message: 'Недостаточно средств' })
@@ -155,7 +156,7 @@ describe('подписка', () => {
   })
 
   it('ошибка подписки — тост с текстом ошибки', async () => {
-    mocks.relations.subscribe.mockRejectedValueOnce(new Error('Нет сети'))
+    mocks.relations.subscribe.mockRejectedValueOnce(new UserError('Нет сети'))
     await useRelationActions().toggleFollow('PStar')
     expect(mocks.toastError).toHaveBeenCalledWith({ message: 'Нет сети' })
   })

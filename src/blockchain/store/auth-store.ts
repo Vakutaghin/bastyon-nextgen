@@ -7,6 +7,8 @@
  */
 
 import { defineStore } from 'pinia'
+import { t } from '@/i18n'
+import { UserError, userErrorText } from '@/helpers/common/user-error'
 import type {
   UserState,
   SignInResult,
@@ -105,6 +107,17 @@ async function purgePostDraftsIdb(): Promise<void> {
 // header-user onMounted, и из router beforeEach; без дедупа они параллельно
 // дешифруют мнемонику и деривируют ключи (дорогая CPU-работа, ~секунды).
 let restoreInFlight: Promise<boolean> | null = null
+
+/** Ключ из сид-фразы или приватного ключа; не разобрался — словами, а не «Failed to recover…». */
+function recoverSecret(secret: string) {
+  try {
+    const result = recoverKeyPair(secret)
+    if (result?.keyPair) return result
+  } catch (e) {
+    throw new UserError(t('accountMsg.invalidSecret'), { cause: e })
+  }
+  throw new UserError(t('accountMsg.invalidSecret'))
+}
 
 export const useAuthStore = defineStore('auth', {
   state: (): UserState & {
@@ -412,8 +425,7 @@ export const useAuthStore = defineStore('auth', {
         const trimmedKey = privateKey.trim()
         if (!trimmedKey) throw new Error('Private key cannot be empty')
 
-        const recoveryResult = recoverKeyPair(trimmedKey)
-        if (!recoveryResult?.keyPair) throw new Error('Failed to recover key pair from private key')
+        const recoveryResult = recoverSecret(trimmedKey)
 
         this.setKeyPair(recoveryResult.keyPair)
 
@@ -460,7 +472,7 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         // Прерывание пользователем (AbortError и т.п.) — не ошибка входа.
         if (signal?.aborted) return this._cancelSignIn(prev)
-        const errorMessage = error instanceof Error ? error.message : 'Sign in failed'
+        const errorMessage = userErrorText(error, t('accountMsg.signInError'))
         if (prev) {
           // Неудачная попытка добавить аккаунт не должна ронять текущую сессию.
           this._restorePreviousSession(prev)

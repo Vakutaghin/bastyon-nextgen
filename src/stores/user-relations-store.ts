@@ -17,6 +17,7 @@
  * её отклонит), а встаёт в очередь и уходит после блока — см. deferred-relation.
  */
 
+import { userErrorText } from '@/helpers/common/user-error'
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
@@ -103,7 +104,7 @@ function findUnconfirmed(address: string, kinds: readonly string[]) {
 
 /** Отложенная транзакция не ушла: человек нажал минуту назад, скажем, о чём речь. */
 function deferredError(e: unknown): void {
-  const reason = e instanceof Error && e.message ? e.message : t('subscriptions.errFailed')
+  const reason = userErrorText(e, t('subscriptions.errFailed'))
   appToast.error({ message: t('subscriptions.errDeferred', { reason }) })
 }
 

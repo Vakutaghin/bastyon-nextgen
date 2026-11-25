@@ -4,6 +4,7 @@
 // сетью — без действий. Удаление оптимистичное с откатом при ошибке, правка
 // уходит commentEdit с исходным msg (картинки не теряются).
 
+import { UserError } from '@/helpers/common/user-error'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { GetComment } from '@/types/rpc-responses/get-comments'
@@ -193,7 +194,7 @@ describe('useCommentEditDelete', () => {
     })
 
     it('отказ сети возвращает комментарий на место', async () => {
-      mocks.deleteComment.mockRejectedValue(new Error('Лимит исчерпан'))
+      mocks.deleteComment.mockRejectedValue(new UserError('Лимит исчерпан'))
       const c = setup()
       c.confirmDeleteComment(comment())
       await confirmLast()
@@ -299,7 +300,7 @@ describe('useCommentEditDelete', () => {
     })
 
     it('отказ сети: тост, форма остаётся открытой с текстом', async () => {
-      mocks.sendComment.mockRejectedValue(new Error('нет связи'))
+      mocks.sendComment.mockRejectedValue(new UserError('нет связи'))
       const c = setup()
       c.openEditComment(comment())
       c.editDraft.value = 'новый текст'
@@ -327,7 +328,7 @@ describe('useCommentEditDelete', () => {
     })
 
     it('ошибка разблокировки — тост с причиной', async () => {
-      mocks.relations.unblock.mockRejectedValue(new Error('offline'))
+      mocks.relations.unblock.mockRejectedValue(new UserError('offline'))
       mocks.relations.blocked.add(OTHER)
       const c = setup()
       const foreign = comment({ address: OTHER })

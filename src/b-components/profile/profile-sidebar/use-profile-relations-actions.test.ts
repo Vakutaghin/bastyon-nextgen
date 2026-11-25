@@ -1,6 +1,7 @@
 // Кнопки отношений на сайдбаре профиля: когда видна «Подписаться» (не свой
 // профиль, вошли), колокольчик уведомлений (приватная ↔ публичная подписка),
 // блокировка с подтверждением и загрузка подписок/блок-листа после входа.
+import { UserError } from '@/helpers/common/user-error'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, reactive, ref, type EffectScope } from 'vue'
 
@@ -185,9 +186,9 @@ describe('кнопки', () => {
     })
   })
 
-  it('ошибка колокольчика — тост с текстом, без текста — общий', async () => {
+  it('ошибка колокольчика — тост с причиной для человека, без неё — общий', async () => {
     const { api, relations } = setup('PStar')
-    relations.subscribePrivate.mockRejectedValueOnce(new Error('Лимит'))
+    relations.subscribePrivate.mockRejectedValueOnce(new UserError('Лимит'))
     await api.onBellClick()
     expect(mocks.toastError).toHaveBeenLastCalledWith({ message: 'Лимит' })
     relations.subscribePrivate.mockRejectedValueOnce('?')

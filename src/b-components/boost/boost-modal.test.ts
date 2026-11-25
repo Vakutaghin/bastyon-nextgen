@@ -2,6 +2,7 @@
 // бустам ленты языка поста, подстановка суммы до 100 %, отправка и ошибки
 // сети. Окно настоящее; баланс, лента бустов и отправка подменены.
 
+import { UserError } from '@/helpers/common/user-error'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -137,7 +138,7 @@ describe('BoostModal', () => {
 
   it('отказ сети — причина в сообщении, окно остаётся', async () => {
     mocks.boostPost.mockRejectedValue(
-      new Error('Нельзя: вы заблокировали этого человека или он вас.')
+      new UserError('Нельзя: вы заблокировали этого человека или он вас.')
     )
     await open()
     await typeAmount('5')

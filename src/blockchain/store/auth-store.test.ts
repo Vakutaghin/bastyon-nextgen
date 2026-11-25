@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { createPinia, setActivePinia, defineStore } from 'pinia'
 import { useAuthStore } from './auth-store'
@@ -901,7 +902,8 @@ describe('auth-store', () => {
       const result = await store.signIn({ privateKey: 'some-invalid-key' })
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('Failed to recover key pair')
+      // На языке интерфейса, а не «Failed to recover key pair».
+      expect(result.error).toBe(t('accountMsg.invalidSecret'))
     })
 
     it('should authenticate successfully with valid key', async () => {
@@ -1165,7 +1167,7 @@ describe('auth-store', () => {
       expect(result.previousAddress).toBe('PPrev')
       expect(store.isUserAuthenticated).toBe(true)
       expect(store.keyPair?.privateKey).toEqual(kp.privateKey)
-      expect(store.error).toContain('Failed to recover key pair')
+      expect(store.error).toBe(t('accountMsg.invalidSecret'))
     })
 
     it('отмена во время входа возвращает прежнюю сессию, а не «не авторизован»', async () => {

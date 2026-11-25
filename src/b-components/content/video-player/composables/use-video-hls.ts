@@ -1,3 +1,4 @@
+import { UserError } from '@/helpers/common/user-error'
 import { ref, computed, watch, type Ref, onBeforeUnmount } from 'vue'
 import Hls from 'hls.js'
 import { t } from '@/i18n'
@@ -361,7 +362,7 @@ export function useVideoHls(
           initProgressiveVideo(video, progressiveUrl, ctx)
           return
         }
-        throw new Error(t('videoMsg.hlsPlaylistNotFound'))
+        throw new UserError(t('videoMsg.hlsPlaylistNotFound'))
       }
 
       if (Hls.isSupported()) {
@@ -390,7 +391,7 @@ export function useVideoHls(
         // Ни hls.js, ни нативного HLS — но есть прямой mp4.
         initProgressiveVideo(video, progressiveUrl, ctx)
       } else {
-        throw new Error(t('videoMsg.hlsNotSupported'))
+        throw new UserError(t('videoMsg.hlsNotSupported'))
       }
     } catch (err) {
       if (generation !== initGeneration) return

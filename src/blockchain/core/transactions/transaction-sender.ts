@@ -13,6 +13,7 @@
  *     автоматического повторного бродкаста.
  */
 
+import { UserError } from '@/helpers/common/user-error'
 import { debugLog } from '@/helpers/common/debug-log'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { rpcCallWithAuth, getByPRC } from '@/helpers/api/request'
@@ -47,7 +48,7 @@ export interface SendTransactionParams {
  * Нода не ответила, и по txid транзакцию пока не видно: слать повторно нельзя
  * вслепую. Сообщение — для человека (его показывают как есть), txid — в поле.
  */
-export class BroadcastStatusUnknownError extends Error {
+export class BroadcastStatusUnknownError extends UserError {
   constructor(
     public readonly txid: string | null,
     cause: unknown

@@ -2,6 +2,7 @@
 // (post-deleter) → тост и колбэк владельцу. Вынесено из post-card.vue, чтобы
 // tx-побочный эффект был тестируем отдельно от шаблона.
 
+import { userErrorText } from '@/helpers/common/user-error'
 import { ref } from 'vue'
 import Modal from '@/components/modal'
 
@@ -29,7 +30,7 @@ export function usePostDelete(getPostId: () => string, onDeleted: (postId: strin
       appToast.success({ message: t('postCard.deleted') })
       onDeleted(postId)
     } catch (e) {
-      appToast.error({ message: e instanceof Error ? e.message : t('postCard.deleteFailed') })
+      appToast.error({ message: userErrorText(e, t('postCard.deleteFailed')) })
     } finally {
       deleting.value = false
     }

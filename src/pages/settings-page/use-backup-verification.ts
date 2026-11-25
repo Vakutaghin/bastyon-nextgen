@@ -3,6 +3,7 @@
 // аккаунтов без мнемоники). Успех отмечается per-адрес (VP-8) и гейтит
 // включение passphrase.
 
+import { UserError, userErrorText } from '@/helpers/common/user-error'
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores'
 import { t } from '@/i18n'
@@ -52,15 +53,15 @@ export function useBackupVerification() {
     error.value = ''
     try {
       const addr = address()
-      if (!addr) throw new Error(t('accountMsg.noActiveAccount'))
+      if (!addr) throw new UserError(t('accountMsg.noActiveAccount'))
       let secret
       try {
         secret = await loadAccountSecret(addr)
       } catch {
         // Сообщение 'unknown-format' — внутреннее, пользователю нужен текст.
-        throw new Error(t('accountMsg.unknownDataFormat'))
+        throw new UserError(t('accountMsg.unknownDataFormat'))
       }
-      if (!secret) throw new Error(t('accountMsg.noSavedSeedOrKey'))
+      if (!secret) throw new UserError(t('accountMsg.noSavedSeedOrKey'))
       if (secret.format === 'mnemonic') {
         kind.value = 'words'
         secretWords = secret.raw.split(/\s+/).filter(Boolean)
@@ -76,7 +77,7 @@ export function useBackupVerification() {
       }
       return true
     } catch (e) {
-      error.value = e instanceof Error ? e.message : t('accountMsg.keyReadFailed')
+      error.value = userErrorText(e, t('accountMsg.keyReadFailed'))
       return false
     } finally {
       loading.value = false

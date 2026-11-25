@@ -85,6 +85,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { UserError, userErrorText } from '@/helpers/common/user-error'
 import { debugLog } from '@/helpers/common/debug-log'
 import Modal from '@/components/modal/modal.vue'
 import Button from '@/components/button/button.vue'
@@ -361,7 +362,7 @@ async function handleRegister(): Promise<void> {
       return
     }
     console.error('[REG] ERROR:', err)
-    error.value = err instanceof Error ? err.message : t('auth.errorRegistration')
+    error.value = userErrorText(err, t('auth.errorRegistration'))
     // Аккаунт уже персистнут (step ≥ 1) — оставляем: повтор переиспользует его.
     const pending = loadPendingRegistration()
     if (!pending || pending.step < 1) {
@@ -377,7 +378,7 @@ async function handleRegister(): Promise<void> {
 async function freshRegistration(): Promise<{ address: string }> {
   debugLog('[REG] Step 2: generating keys...')
   const result = await authStore.register({ generateNew: true, saveAfterRegistration: true })
-  if (!result?.address) throw new Error(t('auth.errorCreateAccount'))
+  if (!result?.address) throw new UserError(t('auth.errorCreateAccount'))
   debugLog('[REG] Step 2: keys generated, address:', result.address)
   // Сид надо показать после завершения регистрации — даже если приложение
   // перезагрузят посередине (S12): флаг переживает сессию, память — нет.

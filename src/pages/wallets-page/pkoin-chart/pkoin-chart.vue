@@ -85,6 +85,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as d3 from 'd3'
+import { UserError, userErrorText } from '@/helpers/common/user-error'
 import { appFetch } from '@/helpers/api/request'
 import {
   SC_PkoinChartWrap,
@@ -160,10 +161,10 @@ async function fetchFromCoinGecko(days: number): Promise<[number, number][]> {
   // appFetch уважает Tor (в Tauri) — прямой fetch раскрывал бы реальный IP и факт
   // «этот IP держит PKOIN-кошелёк» третьей стороне мимо Tor (P1-7).
   const res = await appFetch(url)
-  if (!res.ok) throw new Error(t('wallet.errorCoinGeckoLoad'))
+  if (!res.ok) throw new UserError(t('wallet.errorCoinGeckoLoad'))
   const data = (await res.json()) as MarketChartResponse
   if (!Array.isArray(data.prices) || data.prices.length === 0) {
-    throw new Error(t('wallet.errorNoRateData'))
+    throw new UserError(t('wallet.errorNoRateData'))
   }
   return data.prices
 }
@@ -364,7 +365,7 @@ async function loadAndRender(): Promise<void> {
     }
     renderChart(data)
   } catch (e) {
-    error.value = e instanceof Error ? e.message : t('wallet.errorChartLoad')
+    error.value = userErrorText(e, t('wallet.errorChartLoad'))
   } finally {
     loading.value = false
   }

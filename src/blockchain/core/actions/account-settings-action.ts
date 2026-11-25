@@ -11,6 +11,7 @@
 // Транзакция пишет настройки целиком, поэтому меняем одно поле поверх текущих:
 // не прочитали текущие — не отправляем, иначе стёрли бы обложку и закреплённый пост.
 
+import { UserError } from '@/helpers/common/user-error'
 import { useAuthStore } from '@/blockchain'
 import { fetchAccountSettings, type AccountSettings } from '@/helpers/api/account-settings'
 import { buildTransaction } from '../transactions/transaction-builder'
@@ -67,13 +68,13 @@ export async function saveAccountSettings(
   const authStore = useAuthStore()
   const keyPair = authStore.getKeyPair
   const address = authStore.getUserAddress
-  if (!keyPair || !address) throw new Error(t('paidSubscriptions.errAuthRequired'))
+  if (!keyPair || !address) throw new UserError(t('paidSubscriptions.errAuthRequired'))
 
   let current: AccountSettings
   try {
     current = await fetchAccountSettings(address)
   } catch (e) {
-    throw new Error(t('paidSubscriptions.errReadSettings'), { cause: e })
+    throw new UserError(t('paidSubscriptions.errReadSettings'), { cause: e })
   }
   const settings: AccountSettingsPayload = { ...normalizeAccountSettings(current), ...patch }
   const serialized = serializeAccountSettings(settings)
@@ -81,7 +82,7 @@ export async function saveAccountSettings(
   let unspents = await getUnspents(address, 0, 9999999)
   unspents = filterAvailableUnspents(unspents, false)
   const selected = selectAndLockUnspents(unspents, DEFAULT_TX_FEE) // лок входов (S6)
-  if (!selected.length) throw new Error(t('paidSubscriptions.errNoFunds'))
+  if (!selected.length) throw new UserError(t('paidSubscriptions.errNoFunds'))
 
   const built = await buildTransaction({
     unspents: selected,

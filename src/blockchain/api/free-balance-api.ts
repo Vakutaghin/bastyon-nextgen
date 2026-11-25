@@ -4,6 +4,7 @@
  * (js/lib/client/actions.js:1884-1948)
  */
 
+import { UserError } from '@/helpers/common/user-error'
 import { fetchHttp } from '@/helpers/api/request'
 import { captchaAPI } from './captcha-api'
 import type { CaptchaData } from './captcha-api'
@@ -46,7 +47,7 @@ export async function requestUnspents(
 
   if (!proxyServer) {
     log.error('No proxy with wallet found!')
-    throw new Error(t('appMsg.registration.proxyNotFound'))
+    throw new UserError(t('appMsg.registration.proxyNotFound'))
   }
 
   log.debug('Found proxy:', proxyServer.host, proxyServer.port)
@@ -60,7 +61,7 @@ export async function requestUnspents(
   const userAddress = authStore.getUserAddress
 
   if (!keyPair || !userAddress) {
-    throw new Error(t('appMsg.registration.keysNotFound'))
+    throw new UserError(t('appMsg.registration.keysNotFound'))
   }
 
   log.debug('Step 2: keys OK, address:', userAddress)
@@ -110,7 +111,7 @@ export async function requestUnspents(
     }
 
     log.error('Captcha error:', msg)
-    throw new Error(t('appMsg.registration.captchaFailed'), { cause: error })
+    throw new UserError(t('appMsg.registration.captchaFailed'), { cause: error })
   }
 
   // Шаг 4: Отправляем free/balance через тот же прокси
@@ -154,11 +155,11 @@ export async function requestUnspents(
     // Раздача ограничена по IP: больше пяти запросов, последний — меньше 10 дней
     // назад (proxy16/wallet/wallet.js). Код ничего не говорит человеку.
     if (errorMessage === API_ERROR.IP_LIMIT) {
-      throw new Error(t('accountMsg.registrationIpLimit'), { cause: error })
+      throw new UserError(t('accountMsg.registrationIpLimit'), { cause: error })
     }
 
     if (isRegistrationBlockingError(errorMessage)) {
-      throw new Error(t('accountMsg.registrationBlocked', { reason: errorMessage }), {
+      throw new UserError(t('accountMsg.registrationBlocked', { reason: errorMessage }), {
         cause: error,
       })
     }

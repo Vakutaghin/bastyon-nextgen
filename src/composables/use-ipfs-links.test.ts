@@ -209,7 +209,7 @@ describe('openIpfsViewer: браузер и телефон', () => {
 })
 
 describe('saveErrorText', () => {
-  it('коды проверки по CID — по-человечески, остальное как есть', () => {
+  it('коды проверки по CID — по-человечески, остальное — с подписью «Технические подробности»', () => {
     expect(saveErrorText('verify-unsupported: hash function 0x1e')).toBe(
       'header.ipfsVerifyUnsupported'
     )
@@ -217,9 +217,7 @@ describe('saveErrorText', () => {
     expect(saveErrorText('verify-missing: the gateway did not send block ab')).toBe(
       'header.ipfsVerifyIncomplete'
     )
-    expect(saveErrorText('gateway responded 504 Gateway Timeout')).toBe(
-      'gateway responded 504 Gateway Timeout'
-    )
+    expect(saveErrorText('gateway responded 504 Gateway Timeout')).toBe('common.technicalDetails')
     expect(saveErrorText(null)).toBe('')
   })
 })
