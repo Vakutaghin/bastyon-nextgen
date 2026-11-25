@@ -3639,7 +3639,7 @@ export default {
       urlSpam: '링크에 텍스트를 더 추가하세요',
       scheduledInvalid: '예약 게시 시간이 올바르지 않습니다',
       tags: '태그를 하나 이상 추가하세요',
-      tooManyTags: '태그가 너무 많습니다(최대 5개)',
+      tooManyTags: '태그가 너무 많습니다(최대 15개)',
       tooManyImages: '이미지가 너무 많습니다(최대 10개)',
       exchangeTag: 'pkoin_commerce 태그는 이 콘텐츠와 함께 사용할 수 없습니다',
       pollTitle: '투표 질문을 추가하세요',

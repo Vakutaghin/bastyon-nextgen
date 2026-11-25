@@ -1,5 +1,5 @@
 ---
-keywords: [post editor, post text, emoji, mention, tags, draft, link, link preview]
+keywords: [post editor, post text, emoji, mention, tags, hashtag, draft, link, link preview]
 ---
 
 # The post editor
@@ -30,7 +30,9 @@ Pick with the arrow keys and Enter or with the mouse, and `@name` goes into the 
 
 ## Tags
 
-A post cannot be published without tags: you need at least one, and you can add up to five. Start typing a tag under the text — popular tags appear; pick with the arrow keys or the mouse. The list stays open after a pick, so you can choose the next one right away. Enter, a comma or a space adds the tag, on a phone too; you do not need to type the hash sign. A typed but unconfirmed word already counts as a tag and goes out with the post. Only letters and digits stay in a tag, and capitals become lowercase. Backspace in the empty field removes the last tag, the cross removes any. The right end of the line shows how many of the five tags are set.
+A post cannot be published without tags: you need at least one, and you can add up to fifteen. Start typing a tag under the text — popular tags appear; pick with the arrow keys or the mouse. The list stays open after a pick, so you can choose the next one right away. Enter, a comma or a space adds the tag, on a phone too; you do not need to type the hash sign. A typed but unconfirmed word already counts as a tag and goes out with the post. A tag keeps letters of any language, digits and the underscore — `crypto_pkoin` — and capitals become lowercase. Backspace in the empty field removes the last tag, the cross removes any. The right end of the line shows how many of the fifteen tags are set.
+
+You can paste a ready list of tags at once — into the tag field (separated by spaces, commas or line breaks) or right into the post text, with hash signs: `#crypto_pkoin #news`. Hashtags from the text go into the tag field by themselves: pasted ones right away, the one you are typing once you put a space after it or leave the text. A tag removed with the cross does not come back, and if you erase the hashtags from the text, the tags in the field stay. In articles, tags are added in the field only.
 
 Tags help people find the post: categories and feed filters work by them — see [Categories, tags and sorting](feed-filters.md).
 
@@ -47,7 +49,7 @@ To start over, use the **“Clear”** button next to **“Publish”**. The app
 Click **“Publish”**. If something is missing, the button is greyed out, and the line to the left of it tells you what — as soon as the post has anything in it: text, a title, a video, an image or a tag:
 
 - **“A post cannot be empty”**;
-- **“Add at least one tag”** or **“Too many tags (maximum 5)”**;
+- **“Add at least one tag”** or **“Too many tags (maximum 15)”**;
 - **“Add more text to the link”**;
 - **“Add a title for the video”** — video and audio need a title;
 - **“Add a poll question”** or **“A poll needs at least 2 options”**.

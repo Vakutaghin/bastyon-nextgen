@@ -3714,7 +3714,7 @@ export default {
       urlSpam: 'Añade más texto al enlace',
       scheduledInvalid: 'Hora de publicación programada no válida',
       tags: 'Añade al menos una etiqueta',
-      tooManyTags: 'Demasiadas etiquetas (máximo 5)',
+      tooManyTags: 'Demasiadas etiquetas (máximo 15)',
       tooManyImages: 'Demasiadas imágenes (máximo 10)',
       exchangeTag: 'La etiqueta pkoin_commerce no es compatible con este contenido',
       pollTitle: 'Añade la pregunta de la encuesta',

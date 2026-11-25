@@ -3506,7 +3506,7 @@ export default {
       urlSpam: '请为链接添加更多文字',
       scheduledInvalid: '定时发布时间无效',
       tags: '请至少添加一个标签',
-      tooManyTags: '标签过多（最多 5 个）',
+      tooManyTags: '标签过多（最多 15 个）',
       tooManyImages: '图片过多（最多 10 张）',
       exchangeTag: 'pkoin_commerce 标签与此内容不兼容',
       pollTitle: '请添加投票问题',

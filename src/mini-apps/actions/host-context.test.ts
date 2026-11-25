@@ -255,7 +255,7 @@ describe('createDefaultHostContext: навигация и окна', () => {
     await phone.host.share(data, { onBastyon: true, appName: 'Shop' })
     const share = mocks.modalStore.postComposerModal.share as { message: string; tags: string[] }
     expect(share.message).toBe('Распродажа\n\nhttps://shop.example/item/1')
-    expect(share.tags).toEqual(['Shop'])
+    expect(share.tags).toEqual(['shop'])
     expect(phone.router.push).toHaveBeenCalledWith({ name: 'compose' })
     expect(mocks.modalStore.openPostComposerModal).not.toHaveBeenCalled()
 

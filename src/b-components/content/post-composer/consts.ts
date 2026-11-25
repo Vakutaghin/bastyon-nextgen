@@ -3,8 +3,8 @@
 /** Максимум картинок на пост (kit.js: imagesHelper, лимит 10). */
 export const MAX_IMAGES = 10
 
-/** Максимум тегов на пост (kit.js Share). */
-export const MAX_TAGS = 5
+/** Максимум тегов на пост (kit.js:1301, Share.tags.set). Нода числа тегов не ограничивает. */
+export const MAX_TAGS = 15
 
 /** Максимум вариантов ответа в опросе (kit.js poll). */
 export const MAX_POLL_OPTIONS = 5

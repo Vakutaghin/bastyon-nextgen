@@ -3738,7 +3738,7 @@ export default {
       urlSpam: 'Ajoutez plus de texte au lien',
       scheduledInvalid: 'Heure de publication programmée invalide',
       tags: 'Ajoutez au moins un tag',
-      tooManyTags: 'Trop de tags (5 maximum)',
+      tooManyTags: 'Trop de tags (15 maximum)',
       tooManyImages: 'Trop d’images (10 maximum)',
       exchangeTag: 'Le tag pkoin_commerce est incompatible avec ce contenu',
       pollTitle: 'Ajoutez la question du sondage',

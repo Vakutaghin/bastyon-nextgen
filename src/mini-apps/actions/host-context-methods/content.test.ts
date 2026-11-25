@@ -192,7 +192,7 @@ describe('createContentMethods.share — заготовка поста из пр
       message:
         'Велосипед\n\nhttps://b.io/application?id=barteron.pocketnet.app&p=6261727465722f616263',
       images: ['https://img.test/1.jpg'],
-      tags: ['sale', 'Barteron'],
+      tags: ['sale', 'barteron'],
     })
   })
 })

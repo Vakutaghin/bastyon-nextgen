@@ -36,7 +36,7 @@ import {
 import { sendPost } from '@/b-components/content/post-composer/post-sender'
 import { prefetchFeeUnspents } from '@/blockchain/core/transactions/unspents-manager'
 import { trackPendingPost } from '@/b-components/content/post-composer/pending-post'
-import { withTypedTag } from '@/b-components/content/post-composer/use-post-tags'
+import { tagsFromText, withTypedTag } from '@/b-components/content/post-composer/post-tags'
 import { UPLOADING_VIDEO_POINTER } from '@/b-components/content/post-composer/consts'
 import {
   fitVideoName,
@@ -83,6 +83,8 @@ export interface VideoPostDraft {
   tags: string[]
   /** Набранный, но не добавленный тег: с ним пост тоже уйдёт. */
   tagInput: string
+  /** Хэштеги текста, которые уже разобраны в теги (post-tags). */
+  seenTags: string[]
   language: string
   /** Видимость: '0' все, '1' подписчики, '2' зарегистрированные, '3' платные подписчики. */
   visibility: string
@@ -257,6 +259,7 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
         message: '',
         tags: [],
         tagInput: '',
+        seenTags: [],
         language: i18n.global.locale.value,
         visibility: '0',
         scheduledTime: 0,
@@ -517,7 +520,12 @@ export const useVideoUploadsStore = defineStore('video-uploads', () => {
       message: post.message.trim(),
       caption: job.title.trim(),
       url: job.result?.pointer ?? (audio ? UPLOADING_AUDIO_POINTER : UPLOADING_VIDEO_POINTER),
-      tags: withTypedTag(post.tags, post.tagInput),
+      // С хэштегом, на котором в тексте стоит курсор, и со словом в поле тегов.
+      tags: withTypedTag(
+        tagsFromText({ tags: post.tags, seen: post.seenTags }, post.message, post.message, null)
+          .tags,
+        post.tagInput
+      ),
       images: [],
       language: post.language,
       settings,

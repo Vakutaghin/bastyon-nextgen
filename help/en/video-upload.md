@@ -15,7 +15,7 @@ The section is in the account menu: **“Media studio”**. It works like YouTub
    - the **“Title”** becomes the post title, and the video server gets it too when the upload finishes. The video server accepts titles of 3 to 120 characters: a long file name is cut right away, and a title shorter than three characters is not sent, so the server keeps the file name;
    - below it is the [cover](#cover);
    - **“Description”** is the post text under the video;
-   - tags — at least one, up to five, as in the [post editor](post-composer.md#tags);
+   - tags — at least one, up to fifteen; hashtags from the text go in by themselves, as in the [post editor](post-composer.md#tags);
    - the “Everyone · English · Right away” line sets who sees the post, its language and publishing time, see [Visibility, language and publishing time](post-settings.md).
 3. Click **“Publish”**. You do not have to wait for the upload to finish: the window minimizes, and the post goes out by itself when the video is uploaded — nothing needs a second click. While the post waits, the **“Uploads”** panel shows “Post after upload”. Changed your mind — open the upload in the panel and click **“Don't publish”**: the video finishes uploading, and the post does not go out.
 4. If the button is greyed out, the line above it says what is missing, for example **“Add at least one tag”**. A typed tag does not need confirming: the word in the tag field already counts as a tag.

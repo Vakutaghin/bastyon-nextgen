@@ -208,7 +208,7 @@ describe('openExternalPayment', () => {
     expect(deps.openComposer).toHaveBeenCalledWith({
       message: 'Смотрите\n\nhttps://x.test/p',
       images: [],
-      tags: ['news', 'Demo app'],
+      tags: ['news', 'demo_app'],
     })
   })
 })

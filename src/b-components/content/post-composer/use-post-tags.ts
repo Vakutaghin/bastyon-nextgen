@@ -1,41 +1,57 @@
-// Теги поста: ввод, нормализация (legacy kit.js regex), добавление/удаление,
-// backspace-удаление последнего. Вынесено из use-post-composer.
+// Теги поста: ввод, добавление/удаление, backspace-удаление последнего, теги из
+// хэштегов текста. Вынесено из use-post-composer; запись тега — post-tags.
 import { computed, ref } from 'vue'
 import { MAX_TAGS } from './consts'
-
-/** Нормализует тег: lowercase + только буквы/цифры (legacy regex kit.js). */
-export function normalizeTag(raw: string): string {
-  return raw.toLowerCase().replace(/[^0-9a-zа-яё]/gi, '')
-}
+import { seenHashtags, tagsFromText, withTypedTag } from './post-tags'
 
 /**
- * Теги поста вместе с недописанным в поле: слово, после которого не нажали
- * Enter, — тоже тег. Без этого «Опубликовать» оставалась серой, хотя тег на
- * экране набран.
+ * @param initial теги при открытии.
+ * @param text текст, хэштеги которого тоже теги; null — текст тегов не даёт
+ *   (статья, репост). Хэштеги, с которыми форма открылась, уже разобраны: в
+ *   черновике и в опубликованном посте теги стоят такие, какие выбрал автор.
  */
-export function withTypedTag(tags: readonly string[], typed: string): string[] {
-  const norm = normalizeTag(typed)
-  return norm && !tags.includes(norm) && tags.length < MAX_TAGS ? [...tags, norm] : [...tags]
-}
-
-export function usePostTags(initial: string[]) {
+export function usePostTags(initial: string[], text: () => string | null = () => null) {
   const tags = ref<string[]>(initial)
   const tagInput = ref('')
+  const seen = ref<string[]>(seenHashtags(text() ?? ''))
   const tagsFull = computed(() => tags.value.length >= MAX_TAGS)
-  /** Теги, с которыми пост уйдёт: с набранным в поле. */
-  const postTags = computed(() => withTypedTag(tags.value, tagInput.value))
+
+  /**
+   * Теги, с которыми пост уйдёт: с хэштегом, который ещё набирают в тексте, и
+   * со словом в поле, после которого не нажали Enter. Без этого «Опубликовать»
+   * оставалась серой, хотя тег на экране набран.
+   */
+  const postTags = computed(() => {
+    const body = text()
+    const list =
+      body === null
+        ? tags.value
+        : tagsFromText({ tags: tags.value, seen: seen.value }, body, body, null).tags
+    return withTypedTag(list, tagInput.value)
+  })
 
   const addTag = (raw: string): void => {
-    const norm = normalizeTag(raw)
-    if (!norm) return
-    if (tags.value.includes(norm)) return
-    if (tags.value.length >= MAX_TAGS) return
-    tags.value.push(norm)
+    const list = withTypedTag(tags.value, raw)
+    if (list.length === tags.value.length) return
+    tags.value = list
     tagInput.value = ''
   }
 
   const commitTagInput = (): void => {
     if (tagInput.value.trim()) addTag(tagInput.value)
+  }
+
+  /**
+   * Текст поменялся: новые хэштеги — в теги. `before` — текст до правки,
+   * `caret` — где курсор; без них (ушли из поля, публикуют) слово под курсором
+   * тоже считается законченным.
+   */
+  const addTextTags = (before?: string, caret: number | null = null): void => {
+    const body = text()
+    if (body === null) return
+    const next = tagsFromText({ tags: tags.value, seen: seen.value }, body, before ?? body, caret)
+    tags.value = next.tags
+    seen.value = next.seen
   }
 
   const removeTag = (tag: string): void => {
@@ -52,6 +68,7 @@ export function usePostTags(initial: string[]) {
   const resetTags = (): void => {
     tags.value = []
     tagInput.value = ''
+    seen.value = []
   }
 
   return {
@@ -60,6 +77,7 @@ export function usePostTags(initial: string[]) {
     tagsFull,
     postTags,
     addTag,
+    addTextTags,
     commitTagInput,
     removeTag,
     onTagBackspace,

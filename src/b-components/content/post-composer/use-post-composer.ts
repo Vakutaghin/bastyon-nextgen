@@ -125,17 +125,22 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   )
   const prefillVideo = mode === 'create' && options.video?.pointer ? options.video : null
   const caption = ref(isEdit && prefill ? prefill.caption : (prefillVideo?.title ?? ''))
+  /** Режим статьи. Включается переключателем в create или при редактировании статьи. */
+  const articleMode = ref(editingArticle)
   const {
     tags,
     tagInput,
     tagsFull,
     postTags,
     addTag,
+    addTextTags,
     commitTagInput,
     removeTag,
     onTagBackspace,
     resetTags,
-  } = usePostTags(isEdit && prefill ? prefill.tags : (prefillShare?.tags ?? []))
+  } = usePostTags(isEdit && prefill ? prefill.tags : (prefillShare?.tags ?? []), () =>
+    isRepost || articleMode.value ? null : message.value
+  )
   const submitting = ref(false)
   // При правке сохраняем видимость и язык оригинала: раньше они сбрасывались
   // на дефолт, и пост «только подписчикам» после исправления опечатки
@@ -161,8 +166,6 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   /** Отложенная публикация: unix-секунды (0 — сразу). */
   const scheduledTime = ref(0)
 
-  /** Режим статьи (Editor.js). Включается тоглом в create или при редактировании статьи. */
-  const articleMode = ref(editingArticle)
   // Текст статьи источника уже раскодирован адаптером поста (decodePostBody).
   const articleContent = ref<ArticleContent | null>(
     editingArticle && options.source ? parseArticleContent(options.source) : null
@@ -351,8 +354,11 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     return t('postComposer.publish')
   })
 
-  const onMessageInput = (value: string): void => {
+  /** `caret` — где курсор: слово под ним ещё набирают. Без него текст вставлен целиком. */
+  const onMessageInput = (value: string, caret: number | null = null): void => {
+    const before = message.value
     message.value = value
+    addTextTags(before, caret)
     // Черновик персистим только в режиме создания (edit/repost не засоряют его).
     if (keepsDraft) writeDraft(draftAddress, value)
   }
@@ -538,7 +544,9 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
 
     if (articleUploading.value) return
 
-    // Закоммитить недобитый ввод тега (пользователь не нажал Enter).
+    // Закоммитить недобитый ввод тега (пользователь не нажал Enter) и хэштег,
+    // на котором в тексте остановился курсор.
+    addTextTags()
     commitTagInput()
 
     const error = validatePost(post.value)
@@ -645,6 +653,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     removePollOption,
     setScheduledTime,
     addTag,
+    addTextTags,
     commitTagInput,
     removeTag,
     onTagBackspace,

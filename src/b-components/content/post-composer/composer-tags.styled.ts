@@ -39,7 +39,8 @@ export const SC_TagChip = styled.span`
   color: var(--color-primary);
   background: var(--color-primary-light);
   border-radius: var(--ui-radius-sm);
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 `
 
 export const SC_TagRemove = styled.button`

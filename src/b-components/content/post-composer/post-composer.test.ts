@@ -326,3 +326,97 @@ describe('окно поста во время публикации', () => {
     w.unmount()
   })
 })
+
+describe('теги в окне поста', () => {
+  const chips = (w: VueWrapper): string[] =>
+    w
+      .findAll('button[aria-label^="Удалить тег "]')
+      .map((b) => b.attributes('aria-label')!.replace('Удалить тег ', ''))
+
+  const tagField = (w: VueWrapper) => w.find('input[aria-label="Добавьте теги…"]')
+
+  /** Ввод в поле: значение и курсор в конце, как после клавиатуры или вставки. */
+  async function setText(w: VueWrapper, value: string): Promise<void> {
+    await w.find('textarea').setValue(value)
+  }
+
+  it('список тегов вставлен в текст — все встали в поле, подчёркивание на месте', async () => {
+    const w = await render()
+    await setText(w, 'О крипте\n\n#крипта_пкоин #Blockchain #новости_дня')
+    expect(chips(w)).toEqual(['крипта_пкоин', 'blockchain', 'новости_дня'])
+    expect(w.text()).toContain('3/15')
+    w.unmount()
+  })
+
+  it('хэштег набирают по букве — тег один и целиком; ушли из поля — последний тоже', async () => {
+    const w = await render()
+    let text = ''
+    for (const char of 'Я на #море и #горы') {
+      text += char
+      await setText(w, text)
+    }
+    expect(chips(w)).toEqual(['море'])
+    await w.find('textarea').trigger('blur')
+    expect(chips(w)).toEqual(['море', 'горы'])
+    w.unmount()
+  })
+
+  it('хэштег под курсором — уже тег для «Опубликовать» и уходит с постом', async () => {
+    mocks.sendPost.mockResolvedValue('tx1')
+    const w = await render()
+    let text = ''
+    for (const char of 'Я на #море') {
+      text += char
+      await setText(w, text)
+    }
+    const button = w.findAll('button').find((b) => b.text() === 'Опубликовать')!
+    expect(button.attributes('disabled')).toBeUndefined()
+    await publish(w)
+    expect(mocks.sendPost.mock.calls[0]![0].tags).toEqual(['море'])
+    w.unmount()
+  })
+
+  it('убранный крестиком тег из текста не возвращается', async () => {
+    const w = await render()
+    await setText(w, 'Отпуск #море #горы ')
+    await w.find('button[aria-label="Удалить тег море"]').trigger('click')
+    await setText(w, 'Отпуск #море #горы и ещё')
+    await w.find('textarea').trigger('blur')
+    expect(chips(w)).toEqual(['горы'])
+    w.unmount()
+  })
+
+  it('список вставлен в поле тегов: строки, запятые, решётки — всё сразу тегами', async () => {
+    const w = await render()
+    await tagField(w).setValue('моя_')
+    const input = tagField(w).element as HTMLInputElement
+    input.setSelectionRange(4, 4)
+    await tagField(w).trigger('paste', {
+      clipboardData: { getData: () => 'крипта\n#крипта_пкоин, новости\r\nлес' },
+    })
+    expect(chips(w)).toEqual(['моя_крипта', 'крипта_пкоин', 'новости', 'лес'])
+    expect(input.value).toBe('')
+    w.unmount()
+  })
+
+  it('одно слово вставляется в поле как обычно', async () => {
+    const w = await render()
+    const event = new Event('paste', { cancelable: true })
+    Object.assign(event, { clipboardData: { getData: () => ' #крипта_пкоин ' } })
+    tagField(w).element.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    await tagField(w).setValue('#крипта_пкоин')
+    await tagField(w).trigger('keydown', { key: 'Enter' })
+    expect(chips(w)).toEqual(['крипта_пкоин'])
+    w.unmount()
+  })
+
+  it('пятнадцать тегов, шестнадцатый не встаёт', async () => {
+    const w = await render()
+    await setText(w, Array.from({ length: 16 }, (_, i) => `#t${i}`).join(' ') + ' ')
+    expect(chips(w)).toHaveLength(15)
+    expect(w.text()).toContain('15/15')
+    expect(tagField(w).attributes('disabled')).toBeDefined()
+    w.unmount()
+  })
+})

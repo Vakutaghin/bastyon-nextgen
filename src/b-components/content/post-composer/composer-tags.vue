@@ -19,6 +19,7 @@
         :placeholder="full ? '' : t('postComposer.tagsPlaceholder')"
         :aria-label="t('postComposer.tagsPlaceholder')"
         @input="onInput"
+        @paste="onPaste"
         @keydown="onKeydown"
         @focus="open = true"
         @click="open = true"
@@ -57,6 +58,7 @@ import {
   SC_TagsField,
   SC_TagsRow,
 } from './composer-tags.styled'
+import { TAG_SEPARATORS } from './post-tags'
 import { filterTagSuggestions, NO_ACTIVE_SUGGESTION, resolveTagOnEnter } from './tag-suggestions'
 
 const props = defineProps<{
@@ -140,7 +142,7 @@ const onInput = (e: Event): void => {
   const input = e.target as HTMLInputElement
   // Клавиатура Android не сообщает, какую клавишу нажали (keydown без key),
   // и пробел с запятой оставались в поле: слова до них — уже теги.
-  const parts = input.value.split(/[\s,]+/)
+  const parts = input.value.split(TAG_SEPARATORS)
   const rest = parts.pop() ?? ''
   for (const part of parts) if (part) emit('add', part)
   // Поле могло не перерисоваться: значение в модели то же («» до пробела и после).
@@ -148,6 +150,21 @@ const onInput = (e: Event): void => {
   emit('update:inputValue', rest)
   open.value = true
   activeIndex.value = NO_ACTIVE_SUGGESTION
+}
+
+// Вставлен список тегов: все — сразу, и последний тоже. Переводы строк
+// однострочное поле само выбросило бы, и слова слиплись бы в одно.
+const onPaste = (e: Event): void => {
+  const pasted = (e as ClipboardEvent).clipboardData?.getData('text/plain') ?? ''
+  if (!TAG_SEPARATORS.test(pasted.trim().replace(/^#+/, ''))) return
+  e.preventDefault()
+  const input = e.target as HTMLInputElement
+  const start = input.selectionStart ?? input.value.length
+  const end = input.selectionEnd ?? start
+  const list = input.value.slice(0, start) + pasted + input.value.slice(end)
+  for (const part of list.split(TAG_SEPARATORS)) if (part) emit('add', part)
+  input.value = ''
+  emit('update:inputValue', '')
 }
 
 // Список после выбора не закрывается: теги выбирают подряд. Раньше он

@@ -10,7 +10,7 @@ describe('sharePostPrefill', () => {
     ).toEqual({
       message: `Велосипед\nПочти новый\n\n${URL}`,
       images: [],
-      tags: ['Barteron'],
+      tags: ['barteron'],
     })
   })
 
@@ -29,14 +29,17 @@ describe('sharePostPrefill', () => {
     expect(out.images[0]).toBe('https://i.test/0.jpg')
   })
 
-  it('теги: без повторов и #, имя приложения всегда помещается в 5', () => {
-    const tags = sharePostPrefill(
-      { tags: ['#sale', 'Sale', 'bike', 'city', 'sport', 'extra'] },
-      '',
-      'Barteron'
-    ).tags
-    expect(tags).toEqual(['sale', 'bike', 'city', 'sport', 'Barteron'])
+  it('теги: без повторов и #, как их пишет окно поста', () => {
+    expect(sharePostPrefill({ tags: ['#Sale', 'sale', 'used bike'] }, '', 'Барт Экс').tags).toEqual(
+      ['sale', 'used_bike', 'барт_экс']
+    )
+  })
+
+  it('имя приложения всегда помещается в предел', () => {
+    const many = Array.from({ length: 20 }, (_, i) => `t${i}`)
+    const tags = sharePostPrefill({ tags: many }, '', 'Barteron').tags
+    expect(tags).toEqual([...many.slice(0, 14), 'barteron'])
     // Имя приложения уже есть в тегах — второй раз не добавляется.
-    expect(sharePostPrefill({ tags: ['barteron'] }, '', 'Barteron').tags).toEqual(['barteron'])
+    expect(sharePostPrefill({ tags: ['Barteron'] }, '', 'Barteron').tags).toEqual(['barteron'])
   })
 })

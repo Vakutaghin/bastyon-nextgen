@@ -105,7 +105,8 @@
           :placeholder="t('videoStudio.textPlaceholder')"
           :auto-size="{ minRows: 3, maxRows: 10 }"
           :disabled="sending"
-          @update:value="(value: string) => store.updatePost(job!.id, { message: value })"
+          @update:value="onText"
+          @blur="addTextTags"
         />
       </SC_Field>
       <ComposerTags
@@ -211,7 +212,7 @@ import ComposerSettings from '@/b-components/content/post-composer/composer-sett
 import ComposerTags from '@/b-components/content/post-composer/composer-tags.vue'
 import { MAX_TAGS } from '@/b-components/content/post-composer/consts'
 import { postSettingsSummary } from '@/b-components/content/post-composer/post-settings-summary'
-import { withTypedTag } from '@/b-components/content/post-composer/use-post-tags'
+import { tagsFromText, withTypedTag } from '@/b-components/content/post-composer/post-tags'
 import { validatePost } from '@/b-components/content/post-composer/validate-post'
 import { MAX_VIDEO_SIZE_BYTES } from '@/services/peertube/peertube-validation'
 import { useVideoUploadsStore, type VideoUploadJob } from '@/stores/video-uploads-store'
@@ -357,6 +358,26 @@ function addTag(raw: string): void {
   if (tags.length > current.post.tags.length) store.updatePost(current.id, { tags, tagInput: '' })
 }
 
+/** Новые хэштеги текста — в теги, как в окне поста. */
+function setText(text: string, caret: number | null): void {
+  const current = job.value
+  if (!current) return
+  const { message, tags, seenTags } = current.post
+  const next = tagsFromText({ tags, seen: seenTags }, text, message, caret)
+  store.updatePost(current.id, { message: text, tags: next.tags, seenTags: next.seen })
+}
+
+function onText(text: string): void {
+  // Поле отдаёт только текст: где курсор — знает само поле.
+  const el = document.activeElement
+  setText(text, el instanceof HTMLTextAreaElement ? el.selectionStart : null)
+}
+
+/** Ушли из текста или публикуют — хэштег под курсором тоже тег. */
+function addTextTags(): void {
+  if (job.value) setText(job.value.post.message, null)
+}
+
 function removeTag(tag: string): void {
   const current = job.value
   if (current) store.updatePost(current.id, { tags: current.post.tags.filter((x) => x !== tag) })
@@ -378,6 +399,7 @@ function removeLastTag(): void {
 function publish(): void {
   const current = job.value
   if (!current || !canPublish.value) return
+  addTextTags()
   addTag(current.post.tagInput)
   const uploading = current.status !== 'done'
   store.publish(current.id)

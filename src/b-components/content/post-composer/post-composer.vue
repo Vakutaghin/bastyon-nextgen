@@ -424,6 +424,7 @@ const {
   removePollOption,
   setScheduledTime,
   addTag,
+  addTextTags,
   removeTag,
   onTagBackspace,
   addImageFiles,
@@ -604,7 +605,8 @@ const {
 })
 
 function onComposerInput(e: Event): void {
-  onMessageInput((e.target as HTMLTextAreaElement).value)
+  const el = e.target as HTMLTextAreaElement
+  onMessageInput(el.value, el.selectionStart)
   updateMentions()
 }
 
@@ -618,8 +620,10 @@ watch(submitting, (busy) => {
   closeMentions()
 })
 
-// Клик по строке (mousedown.prevent) успевает отработать до закрытия по blur.
+// Ушли из текста — хэштег, который набирали последним, тоже тег. Подсказки
+// закрываются чуть позже: клик по строке (mousedown.prevent) успевает отработать.
 function onComposerBlur(): void {
+  addTextTags()
   window.setTimeout(closeMentions, 120)
 }
 

@@ -55,9 +55,10 @@ describe('parseDraftFields', () => {
   })
 
   it('битые поля становятся значениями по умолчанию, лимиты соблюдены', () => {
+    const manyTags = Array.from({ length: 20 }, (_, i) => `t${i}`)
     const parsed = parseDraftFields({
       caption: 5,
-      tags: ['a', '', 7, 'b', 'c', 'd', 'e', 'f'],
+      tags: ['', 7, ...manyTags],
       visibility: null,
       poll: { active: 'yes', options: ['1', 2, '3', '4', '5', '6', '7'] },
       scheduledTime: Number.NaN,
@@ -65,7 +66,7 @@ describe('parseDraftFields', () => {
       articleContent: { blocks: 'нет' },
     })!
     expect(parsed.caption).toBe('')
-    expect(parsed.tags).toEqual(['a', 'b', 'c', 'd', 'e'])
+    expect(parsed.tags).toEqual(manyTags.slice(0, 15))
     expect(parsed.visibility).toBe('0')
     expect(parsed.poll).toEqual({ active: false, title: '', options: ['1', '3', '4', '5', '6'] })
     expect(parsed.scheduledTime).toBe(0)

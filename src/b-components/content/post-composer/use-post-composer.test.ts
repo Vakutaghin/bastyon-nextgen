@@ -303,6 +303,55 @@ describe('usePostComposer', () => {
       expect(mocks.sendPost.mock.calls[0]![0].tags).toEqual(['путешествия'])
     })
 
+    it('правка: хэштеги опубликованного текста теги не добавляют, новый — добавляет', async () => {
+      const c = compose({
+        mode: 'edit',
+        source: {
+          txid: 'tx-old',
+          message: 'Были на #море и в горах',
+          tags: ['отпуск', 'крипта_пкоин'],
+          settings: { f: '0' },
+        },
+      })
+      expect(c.tags.value).toEqual(['отпуск', 'крипта_пкоин'])
+      c.onMessageInput('Были на #море, и в горах, и в #лес')
+      expect(c.tags.value).toEqual(['отпуск', 'крипта_пкоин', 'лес'])
+    })
+
+    it('правка поста прежнего Bastyon: тегов больше пяти — можно сохранить', async () => {
+      const c = compose({
+        mode: 'edit',
+        source: {
+          txid: 'tx-old',
+          message: TEXT,
+          tags: Array.from({ length: 12 }, (_, i) => `t${i}`),
+          settings: { f: '0' },
+        },
+      })
+      expect(c.validationError.value).toBeNull()
+    })
+
+    it('репост и статья: решётка в тексте тегов не добавляет', async () => {
+      const repost = compose({ mode: 'repost', source: { txid: 'tx-old', message: TEXT } })
+      repost.onMessageInput('Смотрите #море')
+      await repost.publish()
+      expect(mocks.sendPost.mock.calls[0]![0]).toMatchObject({
+        message: 'Смотрите #море',
+        tags: [],
+      })
+
+      const c = compose()
+      c.onMessageInput('Черновик с #море')
+      expect(c.tags.value).toEqual(['море'])
+      c.removeTag('море')
+      c.articleMode.value = true
+      c.onMessageInput('Черновик с #море и #горы')
+      expect(c.tags.value).toEqual([])
+      expect(c.validationError.value).toBe('empty')
+      c.onCaptionInput('Заголовок')
+      expect(c.validationError.value).toBe('tags')
+    })
+
     it('успех: картинки загружены до транзакции, pending-пост, тост, сброс, лента обновлена', async () => {
       const onPublished = vi.fn()
       const c = compose({ onPublished })

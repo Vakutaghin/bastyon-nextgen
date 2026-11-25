@@ -10,29 +10,25 @@
 
 import type { ComposerSharePrefill } from '@/b-components/content/post-composer/composer-source'
 import { MAX_IMAGES, MAX_TAGS } from '@/b-components/content/post-composer/consts'
+import { normalizeTag } from '@/b-components/content/post-composer/post-tags'
 
 /** Длинный текст приложения режем: пост — не место для целой страницы. */
 const MAX_TEXT = 2000
-const MAX_TAG_LENGTH = 40
 
 const str = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
 
+/** Теги — как их пишет окно поста: нода сравнивает теги буква в букву. */
 function tagList(raw: unknown, appName: string): string[] {
   const out: string[] = []
-  const seen = new Set<string>()
-  const add = (value: unknown) => {
-    const tag = str(value).replace(/^#+/, '').slice(0, MAX_TAG_LENGTH)
-    const key = tag.toLowerCase()
-    if (!tag || seen.has(key)) return
-    seen.add(key)
-    out.push(tag)
+  for (const value of Array.isArray(raw) ? raw : []) {
+    const tag = normalizeTag(str(value))
+    if (tag && !out.includes(tag)) out.push(tag)
   }
-  for (const tag of Array.isArray(raw) ? raw : []) add(tag)
   // Имя приложения — всегда: место для него освобождаем за счёт последних тегов.
-  const app = str(appName)
-  if (app && !seen.has(app.toLowerCase())) {
+  const app = normalizeTag(str(appName))
+  if (app && !out.includes(app)) {
     out.splice(MAX_TAGS - 1)
-    add(app)
+    out.push(app)
   }
   return out.slice(0, MAX_TAGS)
 }

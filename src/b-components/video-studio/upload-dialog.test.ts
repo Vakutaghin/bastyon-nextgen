@@ -227,6 +227,7 @@ describe('UploadDialog', () => {
         message: '',
         tags: [],
         tagInput: '',
+        seenTags: [],
         language: 'ru',
         visibility: '0',
         scheduledTime: 0,
@@ -313,6 +314,37 @@ describe('UploadDialog', () => {
     expect(store.jobs[0]!.post.tags).toEqual(['море', 'горы'])
     expect(store.jobs[0]!.post.tagInput).toBe('')
     expect(text()).toContain('#море')
+  })
+
+  it('хэштеги текста — теги: вставленные сразу, набираемый — когда из текста ушли', async () => {
+    const store = await open()
+    store.setDepsForTests({ upload: () => new Promise(() => {}) })
+    const id = store.start(new File(['x'], 'Отпуск.mp4', { type: 'video/mp4' }))!
+    store.openDialog(id)
+    await flushPromises()
+    const field = document.querySelector('#video-studio-text') as HTMLTextAreaElement
+    field.focus()
+    type('#video-studio-text', 'Отпуск #на_море #горы')
+    await flushPromises()
+    expect(store.jobs[0]!.post.tags).toEqual(['на_море', 'горы'])
+
+    // По букве: слово под курсором ещё не тег, но с постом оно уйдёт.
+    for (const tail of [' #', ' #л', ' #лес']) {
+      type('#video-studio-text', `Отпуск #на_море #горы${tail}`)
+      await flushPromises()
+    }
+    expect(store.jobs[0]!.post.tags).toEqual(['на_море', 'горы'])
+    expect(store.postFor(id)!.tags).toEqual(['на_море', 'горы', 'лес'])
+    field.dispatchEvent(new Event('blur'))
+    expect(store.jobs[0]!.post.tags).toEqual(['на_море', 'горы', 'лес'])
+
+    // Убранный крестиком тег не возвращается.
+    await flushPromises()
+    const remove = document.querySelector('[aria-label="Удалить тег горы"]') as HTMLElement
+    remove.click()
+    type('#video-studio-text', 'Отпуск #на_море #горы #лес ещё')
+    field.dispatchEvent(new Event('blur'))
+    expect(store.jobs[0]!.post.tags).toEqual(['на_море', 'лес'])
   })
 
   it('«Опубликовать» во время загрузки — окно сворачивается, пост уходит сам, второй раз жать не нужно', async () => {

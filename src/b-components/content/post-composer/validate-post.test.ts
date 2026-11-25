@@ -67,8 +67,10 @@ describe('validatePost', () => {
     expect(validatePost({ language: 'en', txidRepost: 'ABC123' })).toBeNull()
   })
 
-  it('больше 5 тегов → tooManyTags', () => {
-    expect(validatePost({ ...valid, tags: ['1', '2', '3', '4', '5', '6'] })).toBe('tooManyTags')
+  it('больше 15 тегов → tooManyTags; 15, как в прежнем Bastyon, — можно', () => {
+    const tags = Array.from({ length: 16 }, (_, i) => `t${i}`)
+    expect(validatePost({ ...valid, tags })).toBe('tooManyTags')
+    expect(validatePost({ ...valid, tags: tags.slice(1) })).toBeNull()
   })
 
   it('больше 10 картинок → tooManyImages', () => {

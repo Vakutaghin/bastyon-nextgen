@@ -3732,7 +3732,7 @@ export default {
       urlSpam: 'Füge dem Link mehr Text hinzu',
       scheduledInvalid: 'Ungültiger Zeitpunkt für die geplante Veröffentlichung',
       tags: 'Füge mindestens einen Tag hinzu',
-      tooManyTags: 'Zu viele Tags (höchstens 5)',
+      tooManyTags: 'Zu viele Tags (höchstens 15)',
       tooManyImages: 'Zu viele Bilder (höchstens 10)',
       exchangeTag: 'Der Tag pkoin_commerce ist mit diesem Inhalt nicht vereinbar',
       pollTitle: 'Füge eine Frage für die Umfrage hinzu',
