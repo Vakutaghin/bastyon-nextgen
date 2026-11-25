@@ -58,6 +58,7 @@ import type { MessengerStoreContext } from './messenger-store/types'
 import { loadDialogsSnapshot, saveDialogsSnapshot } from './messenger-store/dialogs-snapshot'
 import { useDialogMapping } from './messenger-store/use-dialog-mapping'
 import { registerMatrixListeners } from './messenger-store/use-matrix-listeners'
+import { useReadMarkers } from './messenger-store/use-read-markers'
 import { useMeshRoutes } from './messenger-store/use-mesh-routes'
 import { appToast } from '@/b-components/app-toast'
 import { requireAuth } from '@/composables/use-auth-gate'
@@ -218,7 +219,17 @@ export const useMessengerStore = defineStore('messenger', () => {
    */
   const removedChats = new Map<string, { done: boolean }>()
 
+  /**
+   * Список собирается секунды (профили, расшифровка последних сообщений), и
+   * загрузки идут внахлёст: начатая раньше могла закончиться позже и вернуть
+   * прежние строки — уже прочитанное снова становилось непрочитанным, принятое
+   * приглашение — приглашением.
+   */
+  let loadSeq = 0
+  let shownSeq = 0
+
   const loadDialogs = async (silent = false) => {
+    const seq = ++loadSeq
     // До первого синка getRooms() отдаёт пустоту или часть комнат: такой список
     // не затирает список с прошлого запуска и не сохраняется вместо него.
     const complete = isSyncReady()
@@ -251,7 +262,8 @@ export const useMessengerStore = defineStore('messenger', () => {
       }
 
       let dialogsList = await Promise.all(rooms.map(mapRoomToDialog))
-      if (run !== session) return
+      if (run !== session || seq < shownSeq) return
+      shownSeq = seq
       // После ожиданий: удалить могли, пока список собирался.
       dialogsList = dialogsList.filter((d) => !removedChats.has(d.id))
 
@@ -295,6 +307,8 @@ export const useMessengerStore = defineStore('messenger', () => {
           return tsB - tsA
         })
       )
+      // Числа сняты в начале сборки: за это время чат могли прочитать.
+      refreshUnreadCounts()
       if (complete) {
         showingSnapshot = false
         // Открытый чат, которого нет среди комнат, остаётся только на экране: в
@@ -334,35 +348,8 @@ export const useMessengerStore = defineStore('messenger', () => {
 
   // --- Отметка «прочитано» ---
 
-  /** До какого события чат уже отмечен прочитанным на сервере, по комнатам. */
-  const readMarkerSent = new Map<string, string>()
-
-  /**
-   * Сказать серверу, что чат прочитан до последнего события: у собеседника
-   * появится «✓✓». Только если чат на экране (V30) и раз на событие.
-   */
-  const markRoomRead = async (roomId: string): Promise<void> => {
-    if (isMeshDialogId(roomId) || isChannelChatId(roomId) || !uiStore.isChatOnScreen(roomId)) {
-      return
-    }
-    const room = matrixService.getRoom(roomId)
-    if (!room) return
-    const lastEvent = [...room.getLiveTimeline().getEvents()]
-      .reverse()
-      .find((e: MatrixEvent) => e.getId()?.startsWith('$'))
-    const eventId = lastEvent?.getId()
-    if (!lastEvent || !eventId || readMarkerSent.get(roomId) === eventId) return
-    readMarkerSent.set(roomId, eventId)
-    try {
-      const client = matrixService.getClient()
-      if (client?.setRoomReadMarkers) await client.setRoomReadMarkers(roomId, eventId, lastEvent)
-      else await client?.sendReadReceipt(lastEvent)
-    } catch (e) {
-      log.debug('read marker not sent', e)
-      // Не ушло — следующая попытка отправит снова.
-      if (readMarkerSent.get(roomId) === eventId) readMarkerSent.delete(roomId)
-    }
-  }
+  const readMarkers = useReadMarkers(ctx)
+  const { markRoomRead } = readMarkers
 
   // Чат снова на экране: открыли или развернули мессенджер, вернули вкладку
   // или окно приложения. Собеседник увидит «✓✓» на том, что пришло, пока
@@ -516,6 +503,7 @@ export const useMessengerStore = defineStore('messenger', () => {
               scheduleLoadDialogs,
               markRoomRead,
               refreshUnreadCounts,
+              flushReadMarkers: readMarkers.flush,
               onTokenRejected: recoverFromRejectedToken,
               silences: screen.silences,
               archive: {
@@ -939,7 +927,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     matrixService.stop({ revoke: true })
     // stop() чистит очередь подписок — при следующем входе регистрируем заново.
     listenersRegistered = false
-    readMarkerSent.clear()
+    readMarkers.reset()
     cancelLoginRetry()
     showingSnapshot = false
     removedChats.clear()
@@ -1003,6 +991,21 @@ export const useMessengerStore = defineStore('messenger', () => {
    */
   const allDialogs = computed(() =>
     meshRoutes.dialogsOf(uiStore.dialogs, meshChat.messengerDialogs)
+  )
+
+  /**
+   * Сколько чатов с непрочитанным: число на кнопке мессенджера, в шапке и на
+   * значке приложения. Считаем чаты, а не сообщения в них: два человека
+   * написали по 2 и 3 сообщения — 2, как в Telegram; число сообщений — у
+   * самого чата. Считаем ровно строки списка, иначе число расходится с тем,
+   * что в нём видно: диалог Bastyon с mesh-маршрутом — одна строка, а в число
+   * входил дважды. Спрятанное фильтром входящих — на кнопке «Скрытые», чаты
+   * без звука в число не входят. Приглашение — как новое сообщение.
+   */
+  const unreadChats = computed<number>(
+    () =>
+      allDialogs.value.filter((d) => d.unreadCount > 0 && !d.muted && !screen.hiddenIds.has(d.id))
+        .length
   )
 
   /** Отказ mesh-отправки — тостом: в чате Bastyon ошибки рисуются иначе. */
@@ -1165,14 +1168,9 @@ export const useMessengerStore = defineStore('messenger', () => {
     // упадёт на `null.effect`. Обёртка `computed` делает поле reactive-ссылкой, безопасной
     // для storeToRefs.
     pcryptoService: computed(() => chatStore.pcryptoService),
-    // Та же ловушка, что с pcryptoService/activeDialog: `uiStore.totalUnreadCount`
-    // авто-разворачивается Pinia в голое число, и storeToRefs(messengerStore) не
-    // может сделать из него ref → в хедере totalUnreadCount === undefined и computed
-    // unreadBadge падает при появлении иконки мессенджера после входа.
-    // Спрятанное фильтром входящих — на кнопке «Скрытые», не здесь.
-    totalUnreadCount: computed(
-      () => uiStore.totalUnreadCount - screen.hiddenUnread + meshChat.totalUnread
-    ),
+    // Обязательно computed: голое число storeToRefs(messengerStore) не превратит в
+    // ref, и шапка падала бы при появлении иконки мессенджера после входа.
+    totalUnreadCount: unreadChats,
 
     // Методы
     loadDialogs,

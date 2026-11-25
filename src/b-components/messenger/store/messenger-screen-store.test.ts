@@ -73,7 +73,7 @@ describe('messenger-screen-store', () => {
     expect(screen.prefs.reputation).toEqual({ on: true, below: 25 })
   })
 
-  it('спрятанные не в счётчике, новое в них — отдельно; «Показать» сбрасывает смена аккаунта', async () => {
+  it('новое в спрятанных — отдельно; «Показать» сбрасывает смена аккаунта', async () => {
     const ui = useMessengerUiStore()
     const screen = useMessengerScreenStore()
     cache.state!.userProfiles = { Pspam: { reputation: 0 }, Panna: { reputation: 300 } }
@@ -84,8 +84,6 @@ describe('messenger-screen-store', () => {
     screen.setReputation(true, 10)
 
     expect([...screen.hiddenIds]).toEqual(['!spam'])
-    // Чат со спамом (4 сообщения) — один чат в общем счётчике.
-    expect(screen.hiddenUnread).toBe(1)
     expect(screen.hiddenWithNew).toBe(1)
 
     screen.toggleShowHidden()

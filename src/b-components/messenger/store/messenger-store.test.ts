@@ -52,8 +52,9 @@ const h = vi.hoisted(() => {
     reset: vi.fn(),
   }
   /** Колбэк маппинга комнаты — тест может вклиниться в середину загрузки. */
-  const onMapRoom = { fn: null as null | (() => void) }
-  return { matrix, service, toast, auth, chat, profiles, onMapRoom }
+  const onMapRoom = { fn: null as null | (() => void | Promise<void>) }
+  const refreshUnreadCounts = vi.fn()
+  return { matrix, service, toast, auth, chat, profiles, onMapRoom, refreshUnreadCounts }
 })
 
 vi.mock('@/i18n', () => ({ t: (k: string) => k }))
@@ -74,9 +75,10 @@ vi.mock('../lib/channel-feed', () => ({
 vi.mock('./messenger-store/use-dialog-mapping', () => ({
   useDialogMapping: () => ({
     mapRoomToDialog: async (room: { dialog: Dialog }) => {
-      h.onMapRoom.fn?.()
+      await h.onMapRoom.fn?.()
       return room.dialog
     },
+    refreshUnreadCounts: h.refreshUnreadCounts,
   }),
 }))
 
@@ -85,6 +87,7 @@ import { noteReachable, noteUnreachable } from '@/helpers/api/reachability'
 import { useMessengerStore } from './messenger-store'
 import { SYNC_ERROR_GRACE_MS, useMessengerUiStore } from './messenger-ui-store'
 import { useMessengerChannelsStore } from './messenger-channels-store'
+import { useMessengerScreenStore } from './messenger-screen-store'
 
 type ChatFake = ReturnType<typeof makeChat>
 
@@ -136,6 +139,8 @@ function dialog(id: string, text = 'hi'): Dialog {
     },
   }
 }
+
+const matrixId = (address: string) => `@${Buffer.from(address).toString('hex')}:host`
 
 const snapshotOf = (address: string): Dialog[] =>
   (
@@ -225,6 +230,41 @@ describe('messenger-store: список диалогов до первого о�
 
     expect(store.dialogs.map((d) => d.id).sort()).toEqual(['!a:host', '!gone:host'])
     expect(snapshotOf('PAlice').map((d) => d.id)).toEqual(['!a:host'])
+  })
+
+  // Счётчик не убывал, пока читали: список, начатый раньше, кончался позже и
+  // возвращал прежние числа.
+  it('начатая раньше загрузка кончилась позже — свежий список не затирает', async () => {
+    const store = useMessengerStore()
+    await store.initMatrix()
+    useMessengerUiStore().syncState = 'PREPARED'
+    let release!: () => void
+    h.onMapRoom.fn = () => new Promise<void>((r) => (release = r))
+    h.matrix.rooms = [{ dialog: { ...dialog('!a:host'), unreadCount: 1 } }]
+    const slow = store.loadDialogs(true)
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'))
+
+    h.onMapRoom.fn = null
+    h.matrix.rooms = [{ dialog: { ...dialog('!a:host'), unreadCount: 0 } }]
+    await store.loadDialogs(true)
+    release()
+    await slow
+
+    expect(store.dialogs.map((d) => d.unreadCount)).toEqual([0])
+  })
+
+  it('числа пересчитываются, когда список собран: пока собирался, чат могли прочитать', async () => {
+    const store = useMessengerStore()
+    await store.initMatrix()
+    useMessengerUiStore().syncState = 'PREPARED'
+    h.matrix.rooms = [{ dialog: dialog('!a:host') }]
+    h.refreshUnreadCounts.mockImplementationOnce(() => {
+      // К этому моменту в списке уже новые строки.
+      for (const d of useMessengerUiStore().dialogs) d.unreadCount = 0
+    })
+    await store.loadDialogs(true)
+    expect(store.dialogs.map((d) => [d.id, d.unreadCount])).toEqual([['!a:host', 0]])
+    expect(snapshotOf('PAlice').map((d) => d.unreadCount)).toEqual([0])
   })
 
   it('аккаунт сменили посреди загрузки — список не пишется ни одному из них', async () => {
@@ -660,6 +700,30 @@ describe('messenger-ui-store: фильтр списка', () => {
     setActivePinia(createPinia())
     localStorage.setItem('BST_MSG_CHAT_FILTER', 'junk')
     expect(useMessengerUiStore().chatFilter).toEqual([])
+  })
+})
+
+describe('messenger-store: сколько чатов с непрочитанным', () => {
+  it('чаты, а не сообщения; без звука, прочитанные и спрятанные фильтром не считаются', () => {
+    const store = useMessengerStore()
+    const ui = useMessengerUiStore()
+    ui.setDialogs([
+      { ...dialog('!a:host'), unreadCount: 5 },
+      { ...dialog('!b:host'), unreadCount: 1, invite: { by: '@x:host' } },
+      { ...dialog('!muted:host'), unreadCount: 3, muted: true },
+      { ...dialog('!read:host'), unreadCount: 0 },
+      {
+        ...dialog('!hidden:host'),
+        unreadCount: 2,
+        partner: { id: matrixId('PSpamSpamSpam'), name: 's' },
+      },
+    ])
+    expect(store.totalUnreadCount).toBe(3)
+    useMessengerScreenStore().setPerson('PSpamSpamSpam', 'hide')
+    expect(store.totalUnreadCount).toBe(2)
+    // Прочитали — число меняется сразу.
+    ui.markDialogRead('!a:host')
+    expect(store.totalUnreadCount).toBe(1)
   })
 })
 

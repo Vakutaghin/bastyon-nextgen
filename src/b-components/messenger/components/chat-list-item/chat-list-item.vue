@@ -101,7 +101,11 @@
       </SC_Time>
 
       <SC_MenuWrap>
-        <SC_Badge v-if="dialog.unreadCount > 0 && !menuOpen" :class="{ muted: dialog.muted }">
+        <SC_Badge
+          v-if="dialog.unreadCount > 0 && !menuOpen"
+          data-testid="chat-unread"
+          :class="{ muted: dialog.muted }"
+        >
           {{ dialog.unreadCount > 99 ? '99+' : dialog.unreadCount }}
         </SC_Badge>
         <SC_UnreadDot

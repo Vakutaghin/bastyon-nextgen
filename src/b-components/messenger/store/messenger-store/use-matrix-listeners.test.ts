@@ -74,6 +74,7 @@ function setup(
     mapEventToMessage: vi.fn(async (e: { event_id: string }) => ({ id: e.event_id, text: 'hi' })),
     enrichMessagesWithReactions: vi.fn(),
     adoptLocalEcho: vi.fn(async () => {}),
+    applyEdit: vi.fn(async () => {}),
     noteReceipt: vi.fn(),
     loadMessages: vi.fn(async () => {}),
     watchUndecrypted: vi.fn(),
@@ -94,13 +95,24 @@ function setup(
   const scheduleLoadDialogs = vi.fn()
   const onTokenRejected = vi.fn()
   const refreshUnreadCounts = vi.fn()
+  const flushReadMarkers = vi.fn()
+  const noteRoom = vi.fn()
   registerMatrixListeners({ uiStore, chatStore, profileCache: {} } as never, {
     loadDialogs,
     scheduleLoadDialogs,
     markRoomRead,
     onTokenRejected,
     refreshUnreadCounts,
+    flushReadMarkers,
     silences: options.silences,
+    archive: {
+      noteRoom,
+      remove: vi.fn(),
+      removeAuthored: vi.fn(),
+      scheduleWalk: vi.fn(),
+      scheduleAll: vi.fn(),
+      kick: vi.fn(),
+    },
   })
   return {
     chatStore,
@@ -109,6 +121,8 @@ function setup(
     scheduleLoadDialogs,
     onTokenRejected,
     refreshUnreadCounts,
+    flushReadMarkers,
+    noteRoom,
   }
 }
 
@@ -200,21 +214,42 @@ describe('registerMatrixListeners — Room.timeline', () => {
     expect(scheduleLoadDialogs).toHaveBeenCalledTimes(1)
   })
 
+  const edit = () =>
+    mxEvent('m.room.message', {
+      content: {
+        body: '* hi',
+        'm.new_content': { msgtype: 'm.text', body: 'hi' },
+        'm.relates_to': { rel_type: 'm.replace', event_id: '$orig' },
+      },
+    })
+
   it('правка сообщения — не новое сообщение: без звука и уведомления', async () => {
-    setup('!other:host')
-    await handlers['Room.timeline']!(
-      mxEvent('m.room.message', {
-        content: {
-          body: '* hi',
-          'm.new_content': { msgtype: 'm.text', body: 'hi' },
-          'm.relates_to': { rel_type: 'm.replace', event_id: '$orig' },
-        },
-      }),
-      room,
-      false
-    )
+    const { noteRoom, scheduleLoadDialogs } = setup('!other:host')
+    await handlers['Room.timeline']!(edit(), room, false)
     expect(audioPlay).not.toHaveBeenCalled()
     expect(notifyMessage).not.toHaveBeenCalled()
+    expect(scheduleLoadDialogs).toHaveBeenCalledTimes(1)
+    // В копии на устройстве исходное перепишется с новым текстом.
+    expect(noteRoom).toHaveBeenCalledWith(ROOM, '$orig')
+  })
+
+  it('правка в открытом чате — новой строки нет, отметка прочтения уходит', async () => {
+    markRoomRead.mockClear()
+    const { chatStore } = setup(ROOM)
+    chatStore.messages[ROOM] = [{ id: '$orig' }]
+    await handlers['Room.timeline']!(edit(), room, false)
+    expect(chatStore.messages[ROOM]).toEqual([{ id: '$orig' }])
+    expect(chatStore.mapEventToMessage).not.toHaveBeenCalled()
+    expect(markRoomRead).toHaveBeenCalledWith(ROOM)
+  })
+
+  it('Event.replaced: сообщение меняется в ленте, в списке и в копии', () => {
+    const { chatStore, noteRoom, scheduleLoadDialogs } = setup(ROOM)
+    const original = mxEvent('m.room.message', { id: '$orig' })
+    handlers['Event.replaced']!(original)
+    expect(chatStore.applyEdit).toHaveBeenCalledWith(original)
+    expect(noteRoom).toHaveBeenCalledWith(ROOM, '$orig')
+    expect(scheduleLoadDialogs).toHaveBeenCalledTimes(1)
   })
 
   it('пачка сообщений подряд — один звук, уведомление на каждое', async () => {
@@ -289,14 +324,18 @@ describe('registerMatrixListeners — sync', () => {
   })
 
   it('каждый ответ синка пересчитывает непрочитанные: прочитали на другом устройстве', () => {
-    const { refreshUnreadCounts } = setup(null)
+    const { refreshUnreadCounts, flushReadMarkers } = setup(null)
     handlers['sync']!('PREPARED', null)
     expect(refreshUnreadCounts).not.toHaveBeenCalled()
+    expect(flushReadMarkers).not.toHaveBeenCalled()
     handlers['sync']!('SYNCING', 'PREPARED')
     handlers['sync']!('SYNCING', 'SYNCING')
     expect(refreshUnreadCounts).toHaveBeenCalledTimes(2)
+    // Связь есть — уходят и недошедшие отметки «прочитано».
+    expect(flushReadMarkers).toHaveBeenCalledTimes(2)
     handlers['sync']!('ERROR', 'SYNCING')
     expect(refreshUnreadCounts).toHaveBeenCalledTimes(2)
+    expect(flushReadMarkers).toHaveBeenCalledTimes(2)
   })
 
   it('обрыв сразу после возврата в приложение — переподключение без паузы SDK', () => {
@@ -392,10 +431,17 @@ describe('Room.receipt', () => {
     expect(audioPlay).not.toHaveBeenCalled()
   })
 
-  it('квитанция о прочтении пересчитывает галочки своей комнаты', () => {
-    const { chatStore } = setup(ROOM)
+  it('квитанция о прочтении пересчитывает галочки своей комнаты и непрочитанные', () => {
+    const { chatStore, refreshUnreadCounts } = setup(ROOM)
     handlers['Room.receipt']!({}, room)
     expect(chatStore.noteReceipt).toHaveBeenCalledWith(ROOM)
+    expect(refreshUnreadCounts).toHaveBeenCalledTimes(1)
+  })
+
+  it('приняли приглашение — непрочитанные пересчитываются сразу, не дожидаясь списка', () => {
+    const { refreshUnreadCounts } = setup(null)
+    handlers['Room.myMembership']!({ roomId: ROOM }, 'join', 'invite')
+    expect(refreshUnreadCounts).toHaveBeenCalledTimes(1)
   })
 })
 

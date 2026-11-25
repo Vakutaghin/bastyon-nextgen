@@ -15,6 +15,7 @@ import {
   chatUserName,
   editTargetOf,
   getAddressFromMatrixId,
+  getEventId,
   getEventTs,
   getRoomTimelineEvents,
   isMessageEvent,
@@ -55,24 +56,42 @@ type LooseRoom = any
 export function useDialogMapping(ctx: MessengerStoreContext) {
   const { uiStore, chatStore, profileCache } = ctx
 
-  /** Непрочитанные по счётчику сервера; у открытого чата — ноль. */
   /**
-   * Непрочитанные по числам сервера. Приглашение — новое сообщение, как в
-   * переписке: в счётчике на кнопке чата и на значке приложения, в списке —
-   * «1». Сколько в нём сообщений, до вступления не узнать, а сервер его не
-   * считает вовсе — была лишь точка, и приглашение легко было не заметить.
+   * Прочитано до конца: моя отметка стоит на последнем событии ленты или оно
+   * моё. Число сервера отстаёт от отметки, пока она в пути, а после своего
+   * сообщения с другого устройства может и не обнулиться
+   * (matrix-org/synapse#14837): прочитанный чат так и висел в счётчике.
+   */
+  const isReadToEnd = (room: LooseRoom): boolean => {
+    const me = matrixService.getClient()?.getUserId?.()
+    if (!me || typeof room.hasUserReadEvent !== 'function') return false
+    const events = getRoomTimelineEvents(room)
+    for (let i = events.length - 1; i >= 0; i--) {
+      const id = getEventId(events[i])
+      if (id.startsWith('$')) return !!room.hasUserReadEvent(me, id)
+    }
+    return false
+  }
+
+  /**
+   * Непрочитанные по числам сервера; у открытого и дочитанного чата — ноль.
+   * Приглашение — новое сообщение, как в переписке: в счётчике на кнопке чата
+   * и на значке приложения, в списке — «1». Сколько в нём сообщений, до
+   * вступления не узнать, а сервер его не считает вовсе — была лишь точка, и
+   * приглашение легко было не заметить.
    */
   const unreadCountOf = (room: LooseRoom): number => {
     if (uiStore.activeChatId === room.roomId) return 0
     const count =
       room.getUnreadNotificationCount('total') || room.getUnreadNotificationCount('ns.total') || 0
-    return room.getMyMembership?.() === 'invite' ? Math.max(count, 1) : count
+    if (room.getMyMembership?.() === 'invite') return Math.max(count, 1)
+    return count > 0 && isReadToEnd(room) ? 0 : count
   }
 
   /**
-   * Счётчики списка — по свежим числам сервера, без пересборки списка. Число
-   * меняется и без новых сообщений: переписку прочитали на другом устройстве,
-   * а после смены аккаунта список сначала встаёт из кэша прошлого раза. Список
+   * Счётчики списка — по свежим числам, без пересборки списка. Число меняется
+   * и без новых сообщений: переписку прочитали на другом устройстве, а после
+   * смены аккаунта список сначала встаёт из кэша прошлого раза. Список
    * пересобирался только по новому сообщению, и значки на кнопке чата и в
    * шапке оставались прежними.
    */
@@ -80,6 +99,8 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
     for (const dialog of uiStore.dialogs) {
       const room = matrixService.getRoom(dialog.id)
       if (!room) continue
+      // Приглашение приняли — строка больше не приглашение, и «1» от него уходит.
+      if (dialog.invite && room.getMyMembership?.() === 'join') delete dialog.invite
       const count = unreadCountOf(room)
       if (dialog.unreadCount !== count) dialog.unreadCount = count
     }

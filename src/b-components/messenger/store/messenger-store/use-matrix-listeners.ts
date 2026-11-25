@@ -53,6 +53,8 @@ export interface MatrixListenerCallbacks {
   markRoomRead: (roomId: string) => Promise<void>
   /** Счётчики непрочитанных — по свежим числам сервера, после каждого синка. */
   refreshUnreadCounts?: () => void
+  /** Связь есть — повторить недошедшие отметки «прочитано» (use-read-markers). */
+  flushReadMarkers?: () => void
   /**
    * Сервер отверг токен (M_UNKNOWN_TOKEN): SDK остановил синк и сам больше не
    * пробует — нужен новый вход.
@@ -104,6 +106,7 @@ export function registerMatrixListeners(
     markRoomRead,
     onTokenRejected,
     refreshUnreadCounts,
+    flushReadMarkers,
     archive,
     silences,
   } = callbacks
@@ -329,6 +332,8 @@ export function registerMatrixListeners(
   matrixService.on(
     'Room.myMembership',
     (room?: InvitedRoom, membership?: string, prevMembership?: string) => {
+      // Приглашение приняли — число сразу, список соберётся позже.
+      refreshUnreadCounts?.()
       reloadDialogs()
       if (membership === 'invite' && prevMembership !== 'invite') noticeInvite(room)
       // Приглашение приняли — в окне чата или на другом устройстве. У открытого
@@ -349,6 +354,8 @@ export function registerMatrixListeners(
   // Квитанции о прочтении: по ним пересчитываются галочки «✓✓» (use-read-receipts).
   matrixService.on('Room.receipt', (_event: unknown, room?: { roomId?: string }) => {
     if (room?.roomId) chatStore.noteReceipt(room.roomId)
+    // Своя квитанция (в том числе с другого устройства): чат дочитан.
+    refreshUnreadCounts?.()
   })
 
   matrixService.on(
@@ -401,6 +408,7 @@ export function registerMatrixListeners(
       // или список встал из кэша — событий ленты при этом нет.
       if (state === 'SYNCING') {
         refreshUnreadCounts?.()
+        flushReadMarkers?.()
         archive?.kick()
       }
       if (state === 'PREPARED') {

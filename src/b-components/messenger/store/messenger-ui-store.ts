@@ -139,15 +139,6 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     return dialogs.value.find((d) => d.id === activeChatId.value) || null
   })
 
-  // Сколько чатов с непрочитанным, а не сколько в них сообщений: два человека
-  // написали по 2 и 3 сообщения — на кнопке мессенджера и значке приложения
-  // 2, как в Telegram. Число сообщений — у самого чата в списке. Без звука
-  // сервер не считает — таких здесь нет, у них в списке точка. Приглашение
-  // считается как новое сообщение (use-dialog-mapping).
-  const totalUnreadCount = computed(
-    () => dialogs.value.filter((dialog) => (dialog.unreadCount || 0) > 0).length
-  )
-
   /** Обновить список диалогов (единственная точка мутации) */
   const setDialogs = (newDialogs: Dialog[]): void => {
     dialogs.value = newDialogs
@@ -331,7 +322,6 @@ export const useMessengerUiStore = defineStore('messenger-ui', () => {
     groupInfoChatId,
     searchJump,
     activeDialog,
-    totalUnreadCount,
     setDialogs,
     setActiveChatId,
     closeWidget,

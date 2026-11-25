@@ -788,8 +788,14 @@ export class MatrixService {
   public stop(opts: { revoke?: boolean } = {}) {
     this.session++
     const client = this.client
-    if (this.client) {
-      this.client.stopClient()
+    if (client) {
+      client.stopClient()
+      // Синк, который клиент ещё дочитывает, доигрывается и после остановки: его
+      // события попадали бы уже в следующий аккаунт — «синк идёт», пока входа
+      // нет, чужие сообщения и счётчики.
+      for (const { event, listener } of this.eventQueue) {
+        client.removeListener?.(event as Parameters<SdkMatrixClient['on']>[0], listener)
+      }
       this.client = null
     }
     if (opts.revoke && client) {

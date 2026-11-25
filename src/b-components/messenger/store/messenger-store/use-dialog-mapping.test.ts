@@ -75,6 +75,15 @@ function ctx(
     ensurePcryptoInitialized: vi.fn(),
     waitForPcrypto: vi.fn(),
     getMatrixAvatarUrl: (u: string) => `mx:${u}`,
+    mapEditPreview: vi.fn(async () => ({
+      id: '$orig',
+      chatId: '!room:host',
+      senderId: PEER_ID,
+      text: 'исправленное',
+      timestamp: 400,
+      read: true,
+      status: 'sent' as const,
+    })),
     mapEventToMessage: vi.fn(async (e: { event_id: string; origin_server_ts: number }) => ({
       id: e.event_id,
       chatId: '!room:host',
@@ -456,5 +465,69 @@ describe('useDialogMapping — refreshUnreadCounts', () => {
     refreshUnreadCounts()
 
     expect(dialogs.map((d) => d.unreadCount)).toEqual([0, 5, 0, 7, 1])
+  })
+
+  /** Комната с числом сервера 4 и отметкой прочтения на `readTo`. */
+  const unreadRoom = (readTo: string, over: Record<string, unknown> = {}) => ({
+    roomId: '!a:host',
+    getUnreadNotificationCount: () => 4,
+    getMyMembership: () => 'join',
+    getLiveTimeline: () => ({
+      getEvents: () => [{ getId: () => '$1' }, { getId: () => '$2' }, { getId: () => '~local' }],
+    }),
+    hasUserReadEvent: (_me: string, id: string) => id === readTo,
+    ...over,
+  })
+  const refresh = (dialog: Record<string, unknown>, room: unknown) => {
+    rooms.clear()
+    rooms.set('!a:host', room)
+    useDialogMapping({
+      uiStore: { activeChatId: null, dialogs: [dialog] },
+      chatStore: {},
+      profileCache: {},
+    } as never).refreshUnreadCounts()
+    return dialog
+  }
+
+  it('чат дочитан, а число сервера ещё прежнее — ноль; новое после отметки — число сервера', () => {
+    const row = () => ({ id: '!a:host', unreadCount: 4 })
+    expect(refresh(row(), unreadRoom('$2')).unreadCount).toBe(0)
+    expect(refresh(row(), unreadRoom('$1')).unreadCount).toBe(4)
+  })
+
+  it('приглашение приняли — строка больше не приглашение, «1» ушла', () => {
+    const row = { id: '!a:host', unreadCount: 1, invite: { by: PEER_ID } }
+    const joined = unreadRoom('', { getUnreadNotificationCount: () => 0 })
+    expect(refresh(row, joined)).toEqual({ id: '!a:host', unreadCount: 0 })
+  })
+
+  it('приглашение, которое открыли и не приняли, — по-прежнему одно новое', () => {
+    const row = { id: '!a:host', unreadCount: 0, invite: { by: PEER_ID } }
+    const invited = unreadRoom('$2', { getMyMembership: () => 'invite' })
+    expect(refresh({ ...row }, invited)).toMatchObject({ unreadCount: 4, invite: { by: PEER_ID } })
+  })
+})
+
+describe('useDialogMapping — правки', () => {
+  const edit = {
+    ...mxEvent('m.room.message', 400, '$edit'),
+    content: { body: 'x', 'm.relates_to': { rel_type: 'm.replace', event_id: '$orig' } },
+  }
+  const withEvents = (events: unknown[]) =>
+    fakeRoom({ getLiveTimeline: () => ({ getEvents: () => events }) })
+
+  it('правка после сообщения — в строке само сообщение, а не правка', async () => {
+    const { ctx: c, chatStore } = ctx()
+    const d = await useDialogMapping(c).mapRoomToDialog(
+      withEvents([mxEvent('m.room.message', 200), edit])
+    )
+    expect(d.lastMessage?.id).toBe('$200')
+    expect(chatStore.mapEditPreview).not.toHaveBeenCalled()
+  })
+
+  it('исходного в ленте ещё нет — в строке текст правки', async () => {
+    const { ctx: c } = ctx()
+    const d = await useDialogMapping(c).mapRoomToDialog(withEvents([edit]))
+    expect(d.lastMessage).toMatchObject({ id: '$orig', text: 'исправленное' })
   })
 })

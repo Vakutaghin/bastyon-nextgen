@@ -79,7 +79,7 @@ vi.mock('./messenger-chat-store', () => ({ useMessengerChatStore: () => h.chat }
 vi.mock('./messenger-profile-cache', () => ({ useMessengerProfileCache: () => h.profiles }))
 vi.mock('./messenger-store/use-matrix-listeners', () => ({ registerMatrixListeners: vi.fn() }))
 vi.mock('./messenger-store/use-dialog-mapping', () => ({
-  useDialogMapping: () => ({ mapRoomToDialog: async () => null }),
+  useDialogMapping: () => ({ mapRoomToDialog: async () => null, refreshUnreadCounts: vi.fn() }),
 }))
 vi.mock('@/mesh/store/mesh-chat-store', () => ({ useMeshChatStore: () => h.mesh }))
 vi.mock('@/mesh/store/mesh-connection-store', () => ({
@@ -115,7 +115,6 @@ function makeMesh() {
   return reactive({
     dialogs: [{ id: MESH_ID }] as Array<{ id: string }>,
     messengerDialogs: [dialog(MESH_ID, 3000, 2, 'meshcore')],
-    totalUnread: 1,
     ensureLoaded: vi.fn(async () => {}),
     openDialog: vi.fn(async () => {}),
     messengerMessages: vi.fn(() => [meshMessage]),
@@ -309,6 +308,8 @@ describe('one dialog, several routes', () => {
     expect(store.dialogs.map((d) => d.id)).toEqual([ROOM, MESH_ID])
     const bob = store.dialogs[0]!
     expect(bob.unreadCount).toBe(1 + 2)
+    // Непрочитанное и в Matrix, и в радио — одна строка и одна в счётчике.
+    expect(store.totalUnreadCount).toBe(2)
     expect(bob.lastMessage).toMatchObject({ timestamp: 6000, chatId: ROOM })
 
     await store.openChat(ROOM)

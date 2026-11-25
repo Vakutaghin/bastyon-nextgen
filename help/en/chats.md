@@ -9,6 +9,10 @@ keywords:
   - mute notifications
   - pin a chat
   - pinned chats
+  - unread counter
+  - unread chats
+  - edited message
+  - edited
   - search in chat
   - search all chats
   - messages from a member
@@ -58,11 +62,15 @@ In an empty chat and at the start of a conversation the app says what it knows:
 
 Messages people deleted stay in the conversation as a mark: **“You deleted a message”** or “… deleted a message” with the time of deletion. A message that could not be decrypted reads **“Could not decrypt the message”**.
 
+If the other person edits their message in the previous Bastyon or in forta.chat, it changes in place and **“edited”** appears next to the time. Hover over it to see when it was edited. An edit does not count as a new message: it makes no sound and is not added to unread. You cannot edit your own messages in this app yet.
+
 ## The chat list
 
 The gear above the list, next to the magnifier, opens **“Settings”** → **“Chats”**.
 
 Each chat shows the other person’s name and avatar, the start of the last message (**“You:”** if you wrote it), the time and the number of unread messages.
+
+The number on the chats icon in the header, on the round button at the bottom and on the app icon is how many chats have unread messages, not how many messages they hold. An invitation counts as a chat with a new message. Muted chats and chats hidden by the incoming filter are not counted. If only some sections of the list are selected, unread chats in the others show as a number on their buttons.
 
 A group stands out at once: a people icon before its name, the group picture or a mosaic of members’ avatars with a badge in the corner instead of an avatar, and the sender’s name before the last message.
 

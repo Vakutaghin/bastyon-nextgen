@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   tempClient: { logout: vi.fn(async () => ({})) },
   client: {
     on: vi.fn(),
+    removeListener: vi.fn(),
     startClient: vi.fn(async () => {}),
     stopClient: vi.fn(),
     retryImmediately: vi.fn(() => true),
@@ -66,6 +67,23 @@ describe('MatrixService: вход и смена аккаунта', () => {
     expect(svc.getClient()).toBe(h.client)
     expect(h.client.startClient).toHaveBeenCalled()
     svc.stop()
+  })
+
+  it('выход: события, которые прежний клиент ещё дочитывает, до приложения не доходят', async () => {
+    const svc = new MatrixService()
+    const onTimeline = vi.fn()
+    svc.on('Room.timeline', onTimeline)
+    const login = svc.login('PAlice', 'pw')
+    await vi.waitFor(() => expect(h.answer).not.toBeNull())
+    h.answer!(RESPONSE)
+    await login
+    expect(h.client.on).toHaveBeenCalledWith('Room.timeline', onTimeline)
+    svc.stop()
+    expect(h.client.removeListener).toHaveBeenCalledWith('Room.timeline', onTimeline)
+    // «Остановлен» приложение ещё узнаёт — подписка снимается после.
+    expect(h.client.stopClient.mock.invocationCallOrder[0]).toBeLessThan(
+      h.client.removeListener.mock.invocationCallOrder[0]!
+    )
   })
 
   it('вышли, пока шёл вход, — клиента нет, сессия на сервере отозвана', async () => {
