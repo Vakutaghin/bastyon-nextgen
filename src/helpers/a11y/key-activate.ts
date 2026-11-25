@@ -152,16 +152,6 @@ export function focusIntoPopup(trigger: HTMLElement, waitMs = POPUP_WAIT_MS): vo
   setTimeout(tick, POPUP_POLL_MS)
 }
 
-/**
- * Меню вне стека слоёв открыли с клавиатуры: фокус на первый пункт и те же
- * клавиши. Вызывать после того, как меню появилось в DOM (nextTick).
- */
-export function focusMenu(menu: HTMLElement, trigger: HTMLElement, close: () => void): void {
-  attachPopupKeys(menu, trigger, close)
-  const first = popupItems(menu)[0]
-  if (first) first.focus()
-}
-
 /** Щелчок пришёл с клавиатуры (Enter или пробел на кнопке): у такого detail = 0. */
 export function isKeyboardClick(e: MouseEvent): boolean {
   return e.detail === 0

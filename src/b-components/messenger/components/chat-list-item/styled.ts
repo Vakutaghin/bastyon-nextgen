@@ -34,6 +34,11 @@ export const SC_ListItem = styled.div`
     opacity: 1;
   }
 
+  /* Меню открыто — «…» видно и тогда, когда курсор ушёл на меню. */
+  .dots-btn.ui-dropdown-open {
+    opacity: 1;
+  }
+
   /* Фокус с клавиатуры на строке или на «…» — «…» видно, как при наведении. */
   &:focus-within .dots-btn {
     opacity: 1;
@@ -208,41 +213,6 @@ export const SC_DotsBtn = styled.button`
   &:hover {
     color: var(--color-text-primary);
   }
-`
-
-export const SC_Dropdown = styled.div`
-  background: var(--color-bg-primary);
-  border-radius: var(--ui-radius-lg);
-  box-shadow: var(--shadow-md);
-  min-width: 180px;
-  padding: 4px 0;
-`
-
-export const SC_DropdownItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: 14px;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: background-color var(--transition-quick);
-  white-space: nowrap;
-
-  &:hover,
-  &:focus-visible {
-    background-color: var(--color-bg-tertiary);
-  }
-
-  &.danger .anticon {
-    color: var(--color-red-ant);
-  }
-`
-
-export const SC_Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
 `
 
 export const SC_ConfirmOverlay = styled.div`

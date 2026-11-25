@@ -51,76 +51,34 @@
           {{ newCount >= CHANNEL_RECENT ? `${CHANNEL_RECENT}+` : newCount }}
         </SC_NewBadge>
 
-        <SC_DotsBtn
-          class="dots-btn"
-          :aria-label="t('messenger.channel.menu')"
-          aria-haspopup="menu"
-          :aria-expanded="menuOpen ? 'true' : 'false'"
-          @click.stop="toggleMenu"
-        >
-          <EllipsisOutlined />
-        </SC_DotsBtn>
-
-        <Teleport to="body">
-          <div v-if="menuOpen">
-            <SC_Overlay @click.stop="menuOpen = false" />
-            <SC_MenuAnchor :top="menuPos.top" :right="menuPos.right">
-              <SC_Dropdown ref="menuRef" role="menu" :aria-label="t('messenger.channel.menu')">
-                <SC_DropdownItem role="menuitem" tabindex="-1" @click.stop="onOpenProfile">
-                  <UserOutlined />
-                  {{ t('messenger.channel.openProfile') }}
-                </SC_DropdownItem>
-                <SC_DropdownItem
-                  role="menuitem"
-                  tabindex="-1"
-                  v-if="newCount > 0"
-                  @click.stop="onMarkRead"
-                >
-                  <CheckOutlined />
-                  {{ t('messenger.channel.markRead') }}
-                </SC_DropdownItem>
-                <SC_DropdownItem
-                  role="menuitem"
-                  tabindex="-1"
-                  class="danger"
-                  @click.stop="onRemove"
-                >
-                  <MegaphoneOffIcon />
-                  {{ t('messenger.channel.stop') }}
-                </SC_DropdownItem>
-              </SC_Dropdown>
-            </SC_MenuAnchor>
-          </div>
-        </Teleport>
+        <RowMenu
+          v-model:open="menuOpen"
+          :items="menuItems"
+          :label="t('messenger.channel.menu')"
+          @select="onMenu"
+        />
       </SC_MenuWrap>
     </SC_Meta>
   </SC_ListItem>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
-import { focusMenu, isKeyboardClick, vKeyActivate } from '@/helpers/a11y/key-activate'
+import { computed, h, ref, type Component } from 'vue'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import {
-  CheckOutlined,
-  EllipsisOutlined,
-  MegaphoneIcon,
-  MegaphoneOffIcon,
-  UserOutlined,
-} from '@/components/icons'
+import { CheckOutlined, MegaphoneIcon, MegaphoneOffIcon, UserOutlined } from '@/components/icons'
 import { formatClock, formatTimeCompact } from '@/helpers/common/date-formatter'
 import { useMessengerStore } from '../../store'
 import { CHANNEL_RECENT, useMessengerChannelsStore } from '../../store/messenger-channels-store'
 import { channelChatId } from '../../lib/channels'
 import { channelAuthor } from '../../lib/channel-author'
 import { useStopChannel } from '../channel-room/use-stop-channel'
+import type { MenuActionItem } from '@/components/menu'
+import RowMenu from '../chat-list-item/row-menu.vue'
 import ChannelAvatar from '../channel-avatar/channel-avatar.vue'
 import {
   SC_AvatarSlot,
-  SC_DotsBtn,
-  SC_Dropdown,
-  SC_DropdownItem,
   SC_Info,
   SC_LastMessage,
   SC_ListItem,
@@ -128,10 +86,9 @@ import {
   SC_Meta,
   SC_Name,
   SC_NameText,
-  SC_Overlay,
   SC_Time,
 } from '../chat-list-item/styled'
-import { SC_ChannelMark, SC_KindLabel, SC_MenuAnchor, SC_NewBadge } from './styled'
+import { SC_ChannelMark, SC_KindLabel, SC_NewBadge } from './styled'
 
 const props = defineProps<{ address: string }>()
 const { t } = useI18n()
@@ -165,44 +122,34 @@ const time = computed<string>(() => {
 })
 
 const menuOpen = ref(false)
-const menuRef = ref<unknown>(null)
-const menuPos = ref({ top: 0, right: 0 })
 
-function toggleMenu(e: MouseEvent): void {
-  if (menuOpen.value) {
-    menuOpen.value = false
-    return
+const icon = (c: Component) => () => h(c)
+
+const menuItems = computed<MenuActionItem[]>(() => {
+  const out: MenuActionItem[] = [
+    { key: 'profile', label: t('messenger.channel.openProfile'), icon: icon(UserOutlined) },
+  ]
+  if (newCount.value > 0) {
+    out.push({ key: 'read', label: t('messenger.channel.markRead'), icon: icon(CheckOutlined) })
   }
-  const btn = e.currentTarget as HTMLElement | null
-  if (btn) {
-    const rect = btn.getBoundingClientRect()
-    menuPos.value = { top: rect.bottom + 4, right: window.innerWidth - rect.right }
-  }
-  menuOpen.value = true
-  // С клавиатуры — фокус на первый пункт, стрелки и Esc (helpers/a11y/key-activate).
-  // nextTick — после menuOpen: иначе он сработает раньше отрисовки меню.
-  if (btn && isKeyboardClick(e)) {
-    void nextTick(() => {
-      const menu = (menuRef.value as { $el?: HTMLElement } | null)?.$el
-      if (menu) focusMenu(menu, btn, () => (menuOpen.value = false))
-    })
-  }
+  out.push({
+    key: 'stop',
+    label: t('messenger.channel.stop'),
+    icon: icon(MegaphoneOffIcon),
+    danger: true,
+  })
+  return out
+})
+
+function onMenu(key: string): void {
+  if (key === 'profile') openProfile()
+  else if (key === 'read') channels.markAllSeen(props.address)
+  else if (key === 'stop') stopChannel(props.address, author.value.name)
 }
 
-function onOpenProfile(): void {
-  menuOpen.value = false
+function openProfile(): void {
   // Полноэкранный мессенджер закрывает страницу — профиль за ним не видно.
   if (store.isFullScreen) store.closeFullScreen()
   void router.push({ name: 'profile', params: { userName: props.address } })
-}
-
-function onMarkRead(): void {
-  menuOpen.value = false
-  channels.markAllSeen(props.address)
-}
-
-function onRemove(): void {
-  menuOpen.value = false
-  stopChannel(props.address, author.value.name)
 }
 </script>

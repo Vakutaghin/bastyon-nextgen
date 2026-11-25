@@ -119,84 +119,12 @@
           <PushpinOutlined />
         </SC_PinMark>
 
-        <SC_DotsBtn
-          class="dots-btn"
-          :aria-label="t('a11y.chatActions')"
-          aria-haspopup="menu"
-          :aria-expanded="menuOpen ? 'true' : 'false'"
-          @click.stop="toggleMenu"
-        >
-          <EllipsisOutlined />
-        </SC_DotsBtn>
-
-        <Teleport to="body">
-          <div v-if="menuOpen">
-            <SC_Overlay @click.stop="menuOpen = false" />
-            <SC_Dropdown
-              ref="menuRef"
-              role="menu"
-              :aria-label="t('a11y.chatActions')"
-              :style="dropdownStyle"
-            >
-              <SC_DropdownItem
-                role="menuitem"
-                tabindex="-1"
-                v-if="canPin"
-                data-testid="pin-toggle"
-                @click.stop="onTogglePinned"
-              >
-                <UnpinOutlined v-if="pinned" />
-                <PushpinOutlined v-else />
-                {{ pinned ? t('messenger.unpinChat') : t('messenger.pinChat') }}
-              </SC_DropdownItem>
-              <SC_DropdownItem
-                role="menuitem"
-                tabindex="-1"
-                v-if="dialog.group"
-                @click.stop="onShowMembers"
-              >
-                <TeamOutlined />
-                {{ t('messenger.group.showMembers') }}
-              </SC_DropdownItem>
-              <SC_DropdownItem
-                role="menuitem"
-                tabindex="-1"
-                v-if="canMute"
-                @click.stop="onToggleMuted"
-              >
-                <BellOutlined v-if="dialog.muted" />
-                <BellOffOutlined v-else />
-                {{ dialog.muted ? t('messenger.notifyOn') : t('messenger.notifyOff') }}
-              </SC_DropdownItem>
-              <SC_DropdownItem
-                role="menuitem"
-                tabindex="-1"
-                v-if="canScreen"
-                data-testid="screen-toggle"
-                @click.stop="onToggleScreen"
-              >
-                <EyeOutlined v-if="screenReasonOf" />
-                <EyeOffIcon v-else />
-                {{ screenReasonOf ? t('messenger.screen.unhide') : t('messenger.screen.hide') }}
-              </SC_DropdownItem>
-              <SC_DropdownItem
-                role="menuitem"
-                tabindex="-1"
-                v-if="canArchive"
-                data-testid="archive-toggle"
-                @click.stop="onToggleArchive"
-              >
-                <DeviceCopyIcon />
-                {{ archived ? t('messenger.archive.menuStop') : t('messenger.archive.menuStart') }}
-              </SC_DropdownItem>
-              <SC_DropdownItem role="menuitem" tabindex="-1" class="danger" @click.stop="onDelete">
-                <LogoutOutlined v-if="dialog.group" />
-                <DeleteOutlined v-else />
-                {{ dialog.group ? t('messenger.group.leave') : t('chat.deleteDialog') }}
-              </SC_DropdownItem>
-            </SC_Dropdown>
-          </div>
-        </Teleport>
+        <RowMenu
+          v-model:open="menuOpen"
+          :items="menuItems"
+          :label="t('a11y.chatActions')"
+          @select="onMenu"
+        />
       </SC_MenuWrap>
     </SC_Meta>
 
@@ -235,10 +163,11 @@ import { formatClock } from '@/helpers/common/date-formatter'
 import { parseIpfsFileLink, parseIpfsNameLink } from '@/helpers/ipfs/ipfs-link'
 import { supportReportPreview } from '../../lib/support-report-preview'
 import { plainMentions } from '../../lib/mentions'
-import { computed, nextTick, ref } from 'vue'
-import { focusMenu, isKeyboardClick, vKeyActivate } from '@/helpers/a11y/key-activate'
+import { computed, h, ref, type Component } from 'vue'
+import { vKeyActivate } from '@/helpers/a11y/key-activate'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal'
+import type { MenuActionItem } from '@/components/menu'
 import { appToast } from '@/b-components/app-toast'
 import Avatar from '@/components/avatar/avatar.vue'
 import {
@@ -246,7 +175,6 @@ import {
   BellOutlined,
   DeleteOutlined,
   DeviceCopyIcon,
-  EllipsisOutlined,
   EyeOffIcon,
   EyeOutlined,
   LogoutOutlined,
@@ -269,6 +197,7 @@ import { ENCRYPTED_MESSAGE_PLACEHOLDER } from '../../store/consts'
 import { lastMessageMark } from './last-message-mark'
 import GroupAvatar from '../group-avatar/group-avatar.vue'
 import DeliveryTicks from '../message-item/delivery-ticks.vue'
+import RowMenu from './row-menu.vue'
 import {
   SC_AvatarSlot,
   SC_GroupMark,
@@ -286,10 +215,6 @@ import {
   SC_Time,
   SC_Badge,
   SC_MenuWrap,
-  SC_DotsBtn,
-  SC_Dropdown,
-  SC_DropdownItem,
-  SC_Overlay,
   SC_ConfirmOverlay,
   SC_ConfirmDialog,
   SC_ConfirmTitle,
@@ -306,9 +231,7 @@ const { t } = useI18n()
 const store = useMessengerStore()
 
 const menuOpen = ref(false)
-const menuRef = ref<unknown>(null)
 const showConfirm = ref(false)
-const menuPos = ref({ top: 0, right: 0 })
 
 /** Диалог через радио: значок сети и подсказка, открытый ли это канал. */
 const networkTitle = computed<string>(() => {
@@ -343,7 +266,6 @@ const archived = computed<boolean>(() => archive.isArchived(props.dialog.id))
 
 /** Сохранять ли этот чат — с подтверждением: это про то, что останется на устройстве. */
 function onToggleArchive(): void {
-  menuOpen.value = false
   const on = !archived.value
   const name = props.dialog.partner.name
   const count = archive.stats[props.dialog.id]?.count ?? 0
@@ -384,7 +306,6 @@ const screenedTitle = computed<string>(() => {
 })
 
 function onToggleScreen(): void {
-  menuOpen.value = false
   if (screenReasonOf.value) {
     screen.unhideChat(props.dialog)
     return
@@ -465,13 +386,6 @@ const invitePreview = computed<string>(() => {
   })
 })
 
-const dropdownStyle = computed(() => ({
-  position: 'fixed' as const,
-  top: `${menuPos.value.top}px`,
-  right: `${menuPos.value.right}px`,
-  zIndex: 10001,
-}))
-
 function formatTime(timestamp?: number): string {
   return timestamp ? formatClock(timestamp) : ''
 }
@@ -507,35 +421,6 @@ const lastFailed = computed<boolean>(() => {
   return !!m && isMine(m) && m.status === 'failed'
 })
 
-function toggleMenu(e: MouseEvent): void {
-  if (menuOpen.value) {
-    menuOpen.value = false
-    return
-  }
-  const btn = e.currentTarget as HTMLElement | null
-  if (btn) {
-    const rect = btn.getBoundingClientRect()
-    menuPos.value = {
-      top: rect.bottom + 4,
-      right: window.innerWidth - rect.right,
-    }
-  }
-  menuOpen.value = true
-  // С клавиатуры — фокус на первый пункт, стрелки и Esc (helpers/a11y/key-activate).
-  // nextTick — после menuOpen: иначе он сработает раньше отрисовки меню.
-  if (btn && isKeyboardClick(e)) {
-    void nextTick(() => {
-      const menu = (menuRef.value as { $el?: HTMLElement } | null)?.$el
-      if (menu) focusMenu(menu, btn, () => (menuOpen.value = false))
-    })
-  }
-}
-
-function onShowMembers(): void {
-  menuOpen.value = false
-  store.openGroupInfo(props.dialog.id)
-}
-
 /**
  * Закрепить сверху списка — комнаты Matrix, куда вступили: метка комнаты на
  * сервере (lib/chat-pins). У mesh-диалогов и приглашений её нет.
@@ -544,18 +429,73 @@ const canPin = computed<boolean>(() => !isMeshDialogId(props.dialog.id) && !prop
 const pinned = computed<boolean>(() => props.dialog.pinned !== undefined)
 
 function onTogglePinned(): void {
-  menuOpen.value = false
   void store.setDialogPinned(props.dialog.id, !pinned.value)
 }
 
 function onToggleMuted(): void {
-  menuOpen.value = false
   void store.setDialogMuted(props.dialog.id, !props.dialog.muted)
 }
 
-function onDelete(): void {
-  menuOpen.value = false
-  showConfirm.value = true
+const icon = (c: Component) => () => h(c)
+
+const menuItems = computed<MenuActionItem[]>(() => {
+  const d = props.dialog
+  const out: MenuActionItem[] = []
+  if (canPin.value) {
+    out.push({
+      key: 'pin',
+      label: pinned.value ? t('messenger.unpinChat') : t('messenger.pinChat'),
+      icon: icon(pinned.value ? UnpinOutlined : PushpinOutlined),
+    })
+  }
+  if (d.group) {
+    out.push({
+      key: 'members',
+      label: t('messenger.group.showMembers'),
+      icon: icon(TeamOutlined),
+    })
+  }
+  if (canMute.value) {
+    out.push({
+      key: 'mute',
+      label: d.muted ? t('messenger.notifyOn') : t('messenger.notifyOff'),
+      icon: icon(d.muted ? BellOutlined : BellOffOutlined),
+    })
+  }
+  if (canScreen.value) {
+    out.push({
+      key: 'screen',
+      label: screenReasonOf.value ? t('messenger.screen.unhide') : t('messenger.screen.hide'),
+      icon: icon(screenReasonOf.value ? EyeOutlined : EyeOffIcon),
+    })
+  }
+  if (canArchive.value) {
+    out.push({
+      key: 'archive',
+      label: archived.value ? t('messenger.archive.menuStop') : t('messenger.archive.menuStart'),
+      icon: icon(DeviceCopyIcon),
+    })
+  }
+  out.push({
+    key: 'delete',
+    label: d.group ? t('messenger.group.leave') : t('chat.deleteDialog'),
+    icon: icon(d.group ? LogoutOutlined : DeleteOutlined),
+    danger: true,
+  })
+  return out
+})
+
+const MENU_ACTIONS: Record<string, () => void> = {
+  pin: onTogglePinned,
+  members: () => store.openGroupInfo(props.dialog.id),
+  mute: onToggleMuted,
+  screen: onToggleScreen,
+  archive: onToggleArchive,
+  delete: () => (showConfirm.value = true),
+}
+
+function onMenu(key: string): void {
+  MENU_ACTIONS[key]?.()
 }
 
 function confirmDelete(): void {

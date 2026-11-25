@@ -6,13 +6,7 @@ import { createApp, defineComponent, h, withDirectives } from 'vue'
 
 import { setI18nLocale } from '@/i18n'
 import { announce, installLiveRegions } from './announce'
-import {
-  attachPopupKeys,
-  focusMenu,
-  isKeyboardClick,
-  popupItems,
-  vKeyActivate,
-} from './key-activate'
+import { attachPopupKeys, isKeyboardClick, popupItems, vKeyActivate } from './key-activate'
 import { focusMainContent } from './skip-to-content'
 import { unreadLabel } from './unread-label'
 import { allowPinchZoom, isIosBrowser, ZOOMABLE_VIEWPORT } from './viewport-zoom'
@@ -188,10 +182,10 @@ describe('клавиши в меню', () => {
     expect(items.map((el) => el.textContent)).toEqual(['Первый', 'Второй', 'Третий'])
   })
 
-  it('фокус на первый пункт; стрелки по кругу, Home и End', () => {
+  it('стрелки по кругу, Home и End', () => {
     const { trigger, popup, items } = menu()
-    focusMenu(popup, trigger, vi.fn())
-    expect(document.activeElement).toBe(items[0])
+    attachPopupKeys(popup, trigger)
+    items[0]!.focus()
     press(items[0]!, 'ArrowDown')
     expect(document.activeElement).toBe(items[1])
     press(items[1]!, 'ArrowDown')

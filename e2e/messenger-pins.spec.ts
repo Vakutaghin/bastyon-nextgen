@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { UI } from '../src/components/testing/ui-selectors'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 
 /**
@@ -70,7 +71,7 @@ const stores = (page: Page, fn: (s: Stores, arg: unknown) => unknown, arg?: unkn
     [fn.toString(), arg] as const
   )
 
-async function signedInWithDialogs(page: Page): Promise<void> {
+async function signedInWithDialogs(page: Page, dialogs: unknown[] = DIALOGS): Promise<void> {
   await page.route('**/_matrix/**', (route) => route.abort())
   await useMockNode(page, DATA)
   await page.goto('/')
@@ -100,13 +101,15 @@ async function signedInWithDialogs(page: Page): Promise<void> {
   await page.waitForTimeout(PROFILE_RELOAD_SETTLE)
   await stores(
     page,
-    (s, dialogs) => (s.get('messenger-ui')!.setDialogs as (d: unknown) => void)(dialogs),
-    DIALOGS
+    (s, list) => (s.get('messenger-ui')!.setDialogs as (d: unknown) => void)(list),
+    dialogs
   )
 }
 
 const rows = (page: Page) => page.getByTestId('chat-row')
 const row = (page: Page, name: string) => rows(page).filter({ hasText: name })
+
+const pinItem = (page: Page) => page.locator(`${UI.menuItem}[data-key="pin"]`)
 
 async function openRowMenu(page: Page, name: string): Promise<void> {
   const r = row(page, name)
@@ -127,15 +130,15 @@ test('закреплённый чат — сверху с булавкой; ме
   await row(page, 'vera_ng').screenshot({ path: 'test-results/pinned-row.png' })
 
   await openRowMenu(page, 'vera_ng')
-  await expect(page.getByTestId('pin-toggle')).toHaveText(/Открепить/)
-  // Закрыть меню — щелчком по подложке под ним.
-  await page.locator('[data-styled-name="SC_Overlay"]').click({ position: { x: 5, y: 5 } })
-  await expect(page.getByTestId('pin-toggle')).toHaveCount(0)
+  await expect(pinItem(page)).toHaveText(/Открепить/)
+  // Нажатие мимо закрывает меню.
+  await page.mouse.click(5, 5)
+  await expect(pinItem(page)).toHaveCount(0)
 
   // Сервер чатов закрыт — закрепить не выходит: сказано, порядок прежний.
   await openRowMenu(page, 'boris_ng')
-  await expect(page.getByTestId('pin-toggle')).toHaveText(/Закрепить/)
-  await page.getByTestId('pin-toggle').click()
+  await expect(pinItem(page)).toHaveText(/Закрепить/)
+  await pinItem(page).click()
   await expect(page.getByText('Не удалось закрепить чат')).toBeVisible({ timeout: 10_000 })
   await expect(rows(page).nth(0)).toContainText('vera_ng')
   await expect(rows(page).nth(2)).toContainText('boris_ng')
@@ -163,3 +166,47 @@ test('новое сообщение в другом чате не сдвигае
   await expect(rows(page).nth(1)).toContainText('boris_ng')
   await expect(rows(page).nth(2)).toContainText('anna_ng')
 })
+
+// Жалоба с POCO F1 (25.11.2026): меню всегда раскрывалось вниз, и у нижнего
+// чата половина пунктов была за краем экрана — стоя и боком.
+for (const [label, viewport] of [
+  ['телефон стоя', { width: 423, height: 880 }],
+  ['телефон боком', { width: 845, height: 423 }],
+] as const) {
+  test(`меню нижней строки целиком на экране: ${label}`, async ({ page }) => {
+    test.setTimeout(120_000)
+    await page.setViewportSize(viewport)
+    const many = Array.from({ length: 20 }, (_, i) =>
+      dialog(`!room${i}:matrix.pocketnet.app`, VERA, 'vera_ng', i * 60_000)
+    )
+    await signedInWithDialogs(page, many)
+    await expect(rows(page)).toHaveCount(20, { timeout: 30_000 })
+
+    // Строка, которая сейчас у самого низа экрана.
+    const index = await rows(page).evaluateAll((list) => {
+      const bottoms = list.map((el) => el.getBoundingClientRect().bottom)
+      return bottoms.filter((b) => b <= window.innerHeight).length - 1
+    })
+    const last = rows(page).nth(index)
+    const dots = last.locator('.dots-btn')
+    await last.hover()
+    await dots.click()
+
+    const items = page.locator(UI.menuItem)
+    await expect(items.first()).toBeVisible()
+    const boxes = await items.evaluateAll((list) =>
+      list.map((el) => {
+        const r = el.getBoundingClientRect()
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+        return { top: r.top, right: r.right, bottom: r.bottom, onTop: el.contains(hit) }
+      })
+    )
+    expect(boxes.length).toBeGreaterThanOrEqual(3)
+    for (const box of boxes) {
+      expect(box.top).toBeGreaterThanOrEqual(0)
+      expect(box.bottom).toBeLessThanOrEqual(viewport.height)
+      expect(box.right).toBeLessThanOrEqual(viewport.width)
+      expect(box.onTop).toBe(true)
+    }
+  })
+}

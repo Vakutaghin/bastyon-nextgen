@@ -204,7 +204,7 @@ test('меню чата: «Сохранять на устройстве» — с
   const row = page.getByTestId('chat-row').filter({ hasText: 'bob_ng' })
   await row.hover()
   await row.locator('.dots-btn').click()
-  await page.getByTestId('archive-toggle').click()
+  await page.locator(`${UI.menuItem}[data-key="archive"]`).click()
   const confirm = page.locator(UI.confirm)
   await expect(confirm).toContainText('Сохранять «bob_ng» на этом устройстве?')
   await expect(confirm).toContainText('Остальные чаты сохраняться не начнут.')
@@ -216,7 +216,9 @@ test('меню чата: «Сохранять на устройстве» — с
 
   await row.hover()
   await row.locator('.dots-btn').click()
-  await expect(page.getByTestId('archive-toggle')).toHaveText(/Не сохранять на устройстве/)
+  await expect(page.locator(`${UI.menuItem}[data-key="archive"]`)).toHaveText(
+    /Не сохранять на устройстве/
+  )
 })
 
 test('настройки «Чаты»: включить, выбрать режим, стереть копию с двумя вопросами', async ({

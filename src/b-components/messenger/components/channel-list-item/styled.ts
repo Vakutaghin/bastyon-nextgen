@@ -27,11 +27,3 @@ export const SC_NewBadge = styled.span`
   font-weight: 600;
   text-align: center;
 `
-
-/** Меню «…» у строки — у кнопки, поверх списка (координаты кнопки на экране). */
-export const SC_MenuAnchor = styled('div', { top: Number, right: Number })`
-  position: fixed;
-  top: ${(p) => `${p.top ?? 0}px`};
-  right: ${(p) => `${p.right ?? 0}px`};
-  z-index: 10001;
-`
