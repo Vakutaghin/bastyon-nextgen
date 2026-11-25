@@ -234,3 +234,13 @@ describe('цитата ответа', () => {
     expect(flashed.find('.flash').exists()).toBe(true)
   })
 })
+
+describe('правка', () => {
+  it('исправленное подписано «изменено», время правки — в подсказке', () => {
+    const edited = render('новое', '@alice:host', { editedAt: Date.UTC(2026, 10, 25, 7, 5) })
+    const mark = edited.get('[data-testid="edited-mark"]')
+    expect(mark.text()).toBe('изменено')
+    expect(mark.attributes('title')).toMatch(/^Изменено 25 ноября/)
+    expect(render('как было').find('[data-testid="edited-mark"]').exists()).toBe(false)
+  })
+})

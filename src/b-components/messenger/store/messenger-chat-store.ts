@@ -28,6 +28,7 @@ import { useMediaSending } from './messenger-chat-store/use-media-sending'
 import { useMediaTransfer } from './messenger-chat-store/use-media-transfer'
 import { clearVoiceCache } from '../services/voice-cache'
 import { useLocalEcho } from './messenger-chat-store/use-local-echo'
+import { useMessageEdits } from './messenger-chat-store/use-message-edits'
 import { useRedecrypt } from './messenger-chat-store/use-redecrypt'
 import { createOutbox } from './messenger-chat-store/outbox'
 
@@ -72,6 +73,7 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
   const mediaTransfer = useMediaTransfer(chatCrypto)
   const localEcho = useLocalEcho(ctx, chatCrypto, mapping)
   const redecrypt = useRedecrypt(ctx, mapping)
+  const edits = useMessageEdits(ctx, mapping)
 
   // Копию чата стёрли (настройки, удаление чата) — из ленты уходит то, что было только в ней.
   ctx.archive.onChatRemoved((chatId) => {
@@ -191,6 +193,10 @@ export const useMessengerChatStore = defineStore('messenger-chat', () => {
     decryptAudioData: mediaTransfer.decryptAudioData,
     decryptVoiceWaveform: mediaTransfer.decryptVoiceWaveform,
     mapEventToMessage: mapping.mapEventToMessage,
+    /** Правка сообщения, которого в ленте комнаты нет, — для строки списка чатов. */
+    mapEditPreview: mapping.mapEditPreview,
+    /** Сообщение исправили (Event.replaced) — обновить его в ленте. */
+    applyEdit: edits.applyEdit,
     /** Копия своего события получила настоящий id (Room.localEchoUpdated). */
     adoptLocalEcho: localEcho.adoptLocalEcho,
     // будет заполнен из главного стора (mapRoomToDialog там типизирован как (room) => Promise<Dialog>)

@@ -13,6 +13,7 @@ import type { Dialog, DialogGroup, Message } from '../../types'
 import {
   chatUserAvatar,
   chatUserName,
+  editTargetOf,
   getAddressFromMatrixId,
   getEventTs,
   getRoomTimelineEvents,
@@ -261,13 +262,19 @@ export function useDialogMapping(ctx: MessengerStoreContext) {
       await chatStore.waitForPcrypto(PCRYPTO_DIALOG_TIMEOUT)
 
     let lastMessage: Message | undefined = undefined
+    // Правка последнего сообщения, которого в ленте комнаты ещё нет.
+    let lastEdit: LooseRoom = null
     for (let i = timelineEvents.length - 1; i >= 0; i--) {
+      if (!lastEdit && editTargetOf(timelineEvents[i])) lastEdit = timelineEvents[i]
       if (!isMessageEvent(timelineEvents[i])) continue
       const mapped = await chatStore.mapEventToMessage(timelineEvents[i], false)
       if (mapped) {
         lastMessage = mapped
         break
       }
+    }
+    if (!lastMessage && lastEdit) {
+      lastMessage = (await chatStore.mapEditPreview(lastEdit)) ?? undefined
     }
 
     // Чат создал собеседник, а нас только пригласили: до вступления (кнопкой

@@ -134,6 +134,9 @@
 
       <SC_MessageTime>
         <span v-if="viaMesh" :title="viaMesh">📡</span>
+        <SC_EditedMark v-if="message.editedAt" data-testid="edited-mark" :title="editedTitle">{{
+          t('messenger.edited')
+        }}</SC_EditedMark>
         <!-- Коротко: сегодня — «14:30», раньше — с датой; полная дата — в подсказке. -->
         <time :datetime="timeIso" :title="formatTime(message.timestamp)">{{ timeShort }}</time>
         <!-- Сервер это сообщение уже стёр: оно есть только в копии на устройстве. -->
@@ -339,6 +342,7 @@ import {
   SC_MeshRouteButton,
   SC_MeshBindingNote,
   SC_UndecryptableNote,
+  SC_EditedMark,
   SC_LocalOnlyMark,
   SC_SelectCheck,
 } from './styled'
@@ -388,6 +392,11 @@ const router = useRouter()
 const { t } = useI18n()
 
 const timeShort = computed(() => formatMessageTime(props.message.timestamp))
+const editedTitle = computed<string>(() =>
+  props.message.editedAt
+    ? t('messenger.editedAt', { time: formatTime(props.message.editedAt) })
+    : ''
+)
 const timeIso = computed(() => {
   const date = new Date(props.message.timestamp)
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString()

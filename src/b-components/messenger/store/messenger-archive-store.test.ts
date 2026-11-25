@@ -84,6 +84,51 @@ describe('messenger-archive-store', () => {
     expect(raw).not.toContain('секрет')
   })
 
+  it('исправленное переписывается — и на диске, и в уже прочитанном', async () => {
+    const archive = await opened()
+    await archive.setEnabled(true)
+    await archive.save(CHAT, [msg('$1', 10), msg('$2', 20)])
+    expect((await archive.readChat(CHAT))[0]!.text).toBe('секрет $1')
+
+    const put = vi.spyOn(chatArchiveAPI, 'put')
+    const edited = msg('$1', 10, { text: 'исправлено', editedAt: 30 })
+    expect(await archive.save(CHAT, [edited, msg('$2', 20)])).toBe(0)
+    expect(put.mock.calls.map(([rows]) => rows.map((r) => r.id))).toEqual([['$1']])
+    // Та же правка второй раз не пишется, следующая — пишется.
+    await archive.save(CHAT, [edited])
+    expect(put).toHaveBeenCalledTimes(1)
+    await archive.save(CHAT, [{ ...edited, text: 'ещё раз', editedAt: 40 }])
+    expect(put).toHaveBeenCalledTimes(2)
+    put.mockRestore()
+
+    expect(await archive.readChat(CHAT)).toMatchObject([
+      { id: '$1', text: 'ещё раз', editedAt: 40 },
+      { id: '$2', text: 'секрет $2' },
+    ])
+    expect(archive.stats[CHAT]!.count).toBe(2)
+  })
+
+  it('правки, сохранённые прежними версиями отдельными сообщениями, — одно сообщение', async () => {
+    const archive = await opened()
+    await archive.setEnabled(true)
+    const rawContent = {
+      msgtype: 'm.encrypted',
+      'm.relates_to': { rel_type: 'm.replace', event_id: '$1' },
+    }
+    await archive.save(CHAT, [
+      msg('$1', 10, { text: 'тек кто' }),
+      msg('$2', 20, { text: 'тем кто', rawContent }),
+      msg('$3', 30),
+    ])
+    const expected = [
+      { id: '$1', text: 'тем кто', editedAt: 20 },
+      { id: '$3', text: 'секрет $3' },
+    ]
+    expect(await archive.readChat(CHAT)).toMatchObject(expected)
+    const { messages } = await archive.mergeInto(CHAT, [], { exhausted: true, reachedStart: false })
+    expect(messages).toMatchObject(expected)
+  })
+
   it('чужой ключ копию не открывает', async () => {
     const archive = await opened()
     await archive.setEnabled(true)

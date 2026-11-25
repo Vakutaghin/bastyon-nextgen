@@ -1157,6 +1157,8 @@ export default {
     notifyVideo: '视频',
     notifyAudio: '语音消息',
     notifyFile: '文件',
+    edited: '已编辑',
+    editedAt: '编辑于 {time}',
     notSent: '未发送',
     retrySend: '重试',
     saveMedia: '下载',

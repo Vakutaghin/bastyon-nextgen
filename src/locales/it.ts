@@ -1223,6 +1223,8 @@ export default {
     notifyVideo: 'Video',
     notifyAudio: 'Messaggio vocale',
     notifyFile: 'File',
+    edited: 'modificato',
+    editedAt: 'Modificato {time}',
     notSent: 'Non inviato',
     retrySend: 'Riprova',
     saveMedia: 'Scarica',

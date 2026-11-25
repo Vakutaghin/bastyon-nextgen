@@ -385,6 +385,13 @@ export const SC_LocalOnlyMark = styled.span`
   cursor: help;
 `
 
+/** «изменено» перед временем: сообщение правили. */
+export const SC_EditedMark = styled.span`
+  margin-right: 4px;
+  font-size: 11px;
+  cursor: help;
+`
+
 /** Цитата сообщения, на которое отвечают (показывается над текстом). */
 export const SC_ReplyQuote = styled.div`
   ${noSelect}

@@ -1206,6 +1206,8 @@ export default {
     notifyVideo: '동영상',
     notifyAudio: '음성 메시지',
     notifyFile: '파일',
+    edited: '수정됨',
+    editedAt: '{time}에 수정됨',
     notSent: '전송되지 않음',
     retrySend: '다시 시도',
     saveMedia: '다운로드',

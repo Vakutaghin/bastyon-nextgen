@@ -1233,6 +1233,8 @@ export default {
     notifyVideo: 'Video',
     notifyAudio: 'Sprachnachricht',
     notifyFile: 'Datei',
+    edited: 'bearbeitet',
+    editedAt: 'Bearbeitet {time}',
     notSent: 'Nicht gesendet',
     retrySend: 'Erneut senden',
     saveMedia: 'Herunterladen',

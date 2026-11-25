@@ -5,6 +5,7 @@
 import { t } from '@/i18n'
 
 import {
+  editTargetOf,
   getEventId,
   getEventContent,
   getEventType,
@@ -15,6 +16,7 @@ import {
   isRenderableMessageEvent,
   getAddressFromMatrixId,
 } from '../../helpers'
+import { asEditEvent, editOf } from '../../lib/chat-edits'
 import { redactionOf } from '../../lib/chat-history'
 import { matrixService } from '../../services/matrix-service'
 import { useMeshRoutesStore } from '@/mesh/store/mesh-routes-store'
@@ -67,6 +69,59 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
         deleted,
       }
     }
+    // Правка — не отдельное сообщение: её текст показывает исходное.
+    if (editTargetOf(event)) return null
+    return (await mapEdited(event, skipDecryption)) ?? mapContent(event, skipDecryption)
+  }
+
+  /** Ответ: id оригинала. У зашифрованных ссылка лежит на внешнем (открытом) content. */
+  const replyIdOf = (content: unknown): string | null => {
+    const relatesTo = (content as Record<string, unknown> | null)?.['m.relates_to'] as
+      | Record<string, unknown>
+      | undefined
+    const inReplyTo = relatesTo?.['m.in_reply_to'] as Record<string, unknown> | undefined
+    return typeof inReplyTo?.event_id === 'string' ? inReplyTo.event_id : null
+  }
+
+  /** Вложение или перевод: у них правка текста ничего не меняет. */
+  const isPlainText = (content: Record<string, unknown>): boolean =>
+    !mediaTypeOf(content.msgtype) && !content.pocketnet_transaction
+
+  /**
+   * Исправленное сообщение: место и время — исходного, текст — последней
+   * правки. null — не правили, или правка не расшифровалась: тогда как было.
+   */
+  const mapEdited = async (event: MxEvent, skipDecryption: boolean): Promise<Message | null> => {
+    const edit = editOf(event, getEventRoomId(event))
+    const content = getEventContent(event)
+    if (!edit || !isPlainText(content)) return null
+    const next = await mapContent(edit as unknown as MxEvent, skipDecryption)
+    if (!next || next.type !== 'text') return null
+    if (next.text === ENCRYPTED_MESSAGE_PLACEHOLDER && !skipDecryption) return null
+    const replyToId = replyIdOf(content)
+    return {
+      ...next,
+      id: getEventId(event),
+      chatId: getEventRoomId(event),
+      timestamp: getEventTs(event),
+      editedAt: edit.origin_server_ts,
+      replyTo: replyToId ? { id: replyToId } : undefined,
+    }
+  }
+
+  /**
+   * Правка сообщения, которого в ленте комнаты ещё нет, — для строки списка
+   * чатов: там нужен последний текст, а не пустота.
+   */
+  const mapEditPreview = async (event: MxEvent): Promise<Message | null> => {
+    const target = editTargetOf(event)
+    if (!target) return null
+    const edit = asEditEvent(event, getEventRoomId(event))
+    const message = await mapContent(edit as unknown as MxEvent, false)
+    return message ? { ...message, id: target, editedAt: edit.origin_server_ts } : null
+  }
+
+  const mapContent = async (event: MxEvent, skipDecryption: boolean): Promise<Message | null> => {
     if (!isRenderableMessageEvent(event)) return null
 
     const eventId = getEventId(event)
@@ -229,13 +284,7 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
       }
     }
 
-    // Ответ (reply): event_id оригинала из m.relates_to.m.in_reply_to. Для
-    // зашифрованных сообщений relation лежит на внешнем (открытом) content.
-    const relatesTo = (finalContent as Record<string, unknown> | null)?.['m.relates_to'] as
-      | Record<string, unknown>
-      | undefined
-    const inReplyTo = relatesTo?.['m.in_reply_to'] as Record<string, unknown> | undefined
-    const replyToId = typeof inReplyTo?.event_id === 'string' ? inReplyTo.event_id : null
+    const replyToId = replyIdOf(finalContent)
 
     return {
       id: eventId,
@@ -285,7 +334,12 @@ export function useMessageMapping(ctx: ChatContext, decryption: MessageDecryptio
     })
   }
 
-  return { mapEventToMessage, getReactionsForEventId, enrichMessagesWithReactions }
+  return {
+    mapEventToMessage,
+    mapEditPreview,
+    getReactionsForEventId,
+    enrichMessagesWithReactions,
+  }
 }
 
 export type MessageMapping = ReturnType<typeof useMessageMapping>

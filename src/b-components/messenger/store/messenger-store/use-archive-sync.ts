@@ -80,7 +80,7 @@ const redactedIdOf = (e: RawEvent): string | null => {
 export function useArchiveSync(deps: ArchiveSyncDeps) {
   const { archive } = deps
   const liveTimers = new Map<string, ReturnType<typeof setTimeout>>()
-  const reactionTargets = new Map<string, Set<string>>()
+  const changedIds = new Map<string, Set<string>>()
   const walkQueue: string[] = []
   const queued = new Set<string>()
   let walking = false
@@ -103,12 +103,12 @@ export function useArchiveSync(deps: ArchiveSyncDeps) {
   }
 
   /** В комнате что-то произошло: сохранить новое из её ленты (с задержкой, пачкой). */
-  function noteRoom(roomId: string, reactionTarget?: string): void {
+  function noteRoom(roomId: string, changed?: string): void {
     if (!archive.isArchived(roomId)) return
-    if (reactionTarget) {
-      const set = reactionTargets.get(roomId) ?? new Set<string>()
-      set.add(reactionTarget)
-      reactionTargets.set(roomId, set)
+    if (changed) {
+      const set = changedIds.get(roomId) ?? new Set<string>()
+      set.add(changed)
+      changedIds.set(roomId, set)
     }
     if (liveTimers.has(roomId)) return
     liveTimers.set(
@@ -130,8 +130,8 @@ export function useArchiveSync(deps: ArchiveSyncDeps) {
     )
     const redacted = events.filter((e) => redactionOf(e)).map((e) => getEventId(e))
     if (redacted.length) await archive.remove(roomId, redacted)
-    const targets = reactionTargets.get(roomId)
-    reactionTargets.delete(roomId)
+    const targets = changedIds.get(roomId)
+    changedIds.delete(roomId)
     const saved = await archive.savedAmong(
       roomId,
       events.map((e) => getEventId(e))
@@ -294,7 +294,7 @@ export function useArchiveSync(deps: ArchiveSyncDeps) {
     session++
     liveTimers.forEach((timer) => clearTimeout(timer))
     liveTimers.clear()
-    reactionTargets.clear()
+    changedIds.clear()
     walkQueue.length = 0
     queued.clear()
   }

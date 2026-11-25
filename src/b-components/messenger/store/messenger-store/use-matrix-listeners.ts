@@ -11,6 +11,7 @@ import { playSound } from '@/services/app-sounds'
 
 import { matrixService } from '../../services/matrix-service'
 import {
+  editTargetOf,
   getEventContent,
   getEventId,
   getEventType,
@@ -64,8 +65,8 @@ export interface MatrixListenerCallbacks {
 }
 
 export interface ArchiveListenerHooks {
-  /** В комнате новое: сохранить; `reactionTarget` — у него поменялись реакции. */
-  noteRoom: (roomId: string, reactionTarget?: string) => void
+  /** В комнате новое: сохранить; `changed` — у этого сообщения сменились реакции или текст. */
+  noteRoom: (roomId: string, changed?: string) => void
   /** Сообщения удалены у всех — и из копии. */
   remove: (roomId: string, ids: string[]) => void
   /** Участник удалил то, что сервер уже стёр (lib/archive-redact): проверить права и стереть. */
@@ -217,6 +218,17 @@ export function registerMatrixListeners(
         return
       }
 
+      // Правка — то же сообщение, а не новое: ни строки, ни звука, ни
+      // уведомления. Текст меняет Event.replaced ниже.
+      const editTarget = editTargetOf(event)
+      if (editTarget) {
+        const roomId = getEventRoomId(event)
+        archive?.noteRoom(roomId, editTarget)
+        scheduleLoadDialogs()
+        if (uiStore.isChatOnScreen(roomId)) await markRoomRead(roomId)
+        return
+      }
+
       try {
         if (isRenderableMessageEvent(event)) {
           const roomId = getEventRoomId(event)
@@ -231,11 +243,9 @@ export function registerMatrixListeners(
           // выбранным чатом раньше считалось открытым: ни звука, ни бейджа, но
           // серверу уходило «прочитано» (V30).
           const onScreen = uiStore.isChatOnScreen(roomId)
-          // Правка — то же сообщение, а не новое: без звука и уведомления.
-          const isEdit = getEventContent(event)['m.relates_to']?.rel_type === 'm.replace'
           // «Без звука» (правило уведомлений комнаты) — ни звука, ни уведомления.
           const muted = matrixService.isRoomMuted(roomId)
-          if (senderId !== chatStore.currentUser.id && !onScreen && isRecent && !isEdit && !muted) {
+          if (senderId !== chatStore.currentUser.id && !onScreen && isRecent && !muted) {
             // Фильтр входящих может ждать профиль отправителя — лента не ждёт.
             void (async () => {
               if (await silences?.(roomId, senderId).catch(() => false)) return
@@ -279,6 +289,18 @@ export function registerMatrixListeners(
       } catch (e) {
         log.error('Ошибка в Room.timeline:', e)
       }
+    }
+  )
+
+  // Сообщение исправили (или правку отменили): меняем его в ленте, в строке
+  // списка и в копии на устройстве.
+  matrixService.on(
+    'Event.replaced',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MatrixEvent передаётся в приватный MxEvent-тип chat-store, как в Room.timeline выше
+    (event: any) => {
+      void chatStore.applyEdit(event)
+      archive?.noteRoom(getEventRoomId(event), getEventId(event))
+      scheduleLoadDialogs()
     }
   )
 

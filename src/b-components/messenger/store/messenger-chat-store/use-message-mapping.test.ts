@@ -1,3 +1,4 @@
+import { MatrixEvent } from 'matrix-js-sdk'
 import { describe, it, expect, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -35,6 +36,10 @@ function mxEvent(type: string, content: Record<string, unknown>) {
     getContent: () => content,
   } as never
 }
+
+/** Тело зашифрованного личного сообщения: base64 JSON с секретами. */
+const secretsBody = (text: string) =>
+  btoa(JSON.stringify({ peer: { encrypted: text, nonce: 'n' } }))
 
 function mapping(tryDecrypt: (e: unknown) => Promise<string | null>) {
   const ctx = {
@@ -279,5 +284,91 @@ describe('mapEventToMessage — удалённое сообщение', () => {
       getUnsigned: () => ({ redacted_because: { sender: '@me:pocketnet' } }),
     }
     expect(await mapping(vi.fn()).mapEventToMessage(event as never)).toBeNull()
+  })
+})
+
+describe('mapEventToMessage — правка сообщения', () => {
+  const rel = { 'm.relates_to': { rel_type: 'm.replace', event_id: '$orig' } }
+  const raw = (id: string, content: Record<string, unknown>, ts: number) => ({
+    event_id: id,
+    room_id: '!room:pocketnet',
+    type: 'm.room.message',
+    sender: '@pabc:pocketnet',
+    origin_server_ts: ts,
+    content,
+  })
+  const original = (content: Record<string, unknown>, edit?: Record<string, unknown>) => {
+    const event = new MatrixEvent(raw('$orig', content, 1000))
+    if (edit) event.makeReplaced(new MatrixEvent(raw('$edit', { ...edit, ...rel }, 2000)))
+    return event as never
+  }
+
+  it('сама правка — не сообщение', async () => {
+    const { mapEventToMessage } = mapping(async () => null)
+    const edit = raw('$edit', { msgtype: 'm.text', body: 'новое', ...rel }, 2000)
+    expect(await mapEventToMessage(new MatrixEvent(edit) as never)).toBeNull()
+    expect(await mapEventToMessage(edit as never)).toBeNull()
+  })
+
+  it('прежний клиент: исходное на своём месте и времени, с новым текстом', async () => {
+    const tryDecrypt = vi.fn(async (e: unknown) =>
+      (e as { event_id?: string }).event_id === '$edit' ? 'новое' : 'старое'
+    )
+    const { mapEventToMessage } = mapping(tryDecrypt)
+    const encrypted = (body: string) => ({ msgtype: 'm.encrypted', body: secretsBody(body) })
+    const msg = await mapEventToMessage(original(encrypted('a'), encrypted('b')))
+    expect(msg).toMatchObject({ id: '$orig', text: 'новое', timestamp: 1000, editedAt: 2000 })
+    // Расшифровывается и кэшируется под id правки, а не исходного.
+    expect(tryDecrypt).toHaveBeenCalledTimes(1)
+  })
+
+  it('не правили — без отметки', async () => {
+    const { mapEventToMessage } = mapping(async () => null)
+    const msg = await mapEventToMessage(original({ msgtype: 'm.text', body: 'текст' }))
+    expect(msg?.text).toBe('текст')
+    expect(msg?.editedAt).toBeUndefined()
+  })
+
+  it('правка не расшифровалась — остаётся прежний текст', async () => {
+    const { mapEventToMessage } = mapping(async (e) =>
+      (e as { event_id?: string }).event_id === '$edit' ? null : 'старое'
+    )
+    const encrypted = { msgtype: 'm.encrypted', body: secretsBody('a') }
+    const msg = await mapEventToMessage(original(encrypted, encrypted))
+    expect(msg?.text).toBe('старое')
+    expect(msg?.editedAt).toBeUndefined()
+  })
+
+  it('ответ остаётся ответом', async () => {
+    const { mapEventToMessage } = mapping(async () => null)
+    const msg = await mapEventToMessage(
+      original(
+        {
+          msgtype: 'm.text',
+          body: 'старое',
+          'm.relates_to': { 'm.in_reply_to': { event_id: '$q' } },
+        },
+        { msgtype: 'm.text', body: 'новое' }
+      )
+    )
+    expect(msg).toMatchObject({ text: 'новое', replyTo: { id: '$q' } })
+  })
+
+  it('картинку правка текста не подменяет', async () => {
+    const { mapEventToMessage } = mapping(async () => null)
+    const image = { msgtype: 'm.image', body: 'a.png', url: 'mxc://hs/1' }
+    const msg = await mapEventToMessage(original(image, { msgtype: 'm.text', body: 'подпись' }))
+    expect(msg?.type).toBe('image')
+  })
+
+  it('правка без исходного — текст для строки списка под id исходного', async () => {
+    const { mapEditPreview } = mapping(async () => null)
+    const edit = raw('$edit', { msgtype: 'm.text', body: 'новое', ...rel }, 2000)
+    expect(await mapEditPreview(new MatrixEvent(edit) as never)).toMatchObject({
+      id: '$orig',
+      text: 'новое',
+      editedAt: 2000,
+    })
+    expect(await mapEditPreview(original({ msgtype: 'm.text', body: 'x' }))).toBeNull()
   })
 })

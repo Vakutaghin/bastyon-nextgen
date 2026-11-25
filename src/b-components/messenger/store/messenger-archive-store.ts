@@ -15,6 +15,7 @@ import { settingsAPI } from '@/db/apis/settings-api'
 import type { ChatArchiveChat, ChatArchiveRecord } from '@/db/types'
 
 import { deriveArchiveKey, openJson, sealJson } from '../lib/archive-crypto'
+import { foldEdits } from '../lib/chat-edits'
 import { earliestServerTs, findGoneBoundary, mergeWithArchive } from '../lib/archive-merge'
 import {
   DEFAULT_ARCHIVE_PREFS,
@@ -44,7 +45,7 @@ const ARCHIVE_PAGE = 50
 type ArchivedMessage = Pick<
   Message,
   'senderId' | 'senderName' | 'text' | 'type' | 'url' | 'info' | 'rawContent' | 'encrypted'
-> & { replyTo?: string; reactions?: Message['reactions'] }
+> & { replyTo?: string; reactions?: Message['reactions']; editedAt?: number }
 
 /** Подпись чата: комнаты может уже не быть, а в настройках его видно. */
 export interface ArchiveChatInfo {
@@ -88,6 +89,7 @@ function toArchived(m: Message): ArchivedMessage {
     encrypted: m.encrypted,
     replyTo: m.replyTo?.id,
     reactions: m.reactions?.length ? m.reactions : undefined,
+    editedAt: m.editedAt,
   }
 }
 
@@ -108,6 +110,7 @@ function fromArchived(chatId: string, id: string, ts: number, a: ArchivedMessage
     encrypted: a.encrypted,
     ...(a.replyTo ? { replyTo: { id: a.replyTo } } : {}),
     ...(a.reactions ? { reactions: a.reactions } : {}),
+    ...(a.editedAt ? { editedAt: a.editedAt } : {}),
   }
   // Ссылка на файл — через нынешний адрес сервера: он мог смениться.
   const client = matrixService.getClient()
@@ -150,6 +153,8 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
    */
   const readCache = new Map<string, { count: number; messages: Message[] }>()
   const known = new Map<string, Set<string>>()
+  /** Какую правку сообщения уже записали: исправленное переписывается раз на правку. */
+  const savedEdits = new Map<string, number>()
   const metas = new Map<string, ChatArchiveChat>()
   const removedListeners = new Set<(chatId: string) => void>()
 
@@ -203,6 +208,7 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
     views.clear()
     readCache.clear()
     known.clear()
+    savedEdits.clear()
     metas.clear()
   }
 
@@ -238,7 +244,7 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
 
   /**
    * Записать сообщения. Уже сохранённые не переписываются, кроме `refresh`
-   * (у них поменялись реакции). Удалённые на сервере — стираются.
+   * (у них поменялись реакции) и исправленных. Удалённые на сервере — стираются.
    */
   async function save(
     chatId: string,
@@ -251,7 +257,9 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
     const deleted = list.filter((m) => m.deleted && m.id.startsWith('$')).map((m) => m.id)
     if (deleted.length) await remove(chatId, deleted)
     const ids = await knownIds(chatId)
-    const fresh = list.filter((m) => isSavable(m) && (!ids.has(m.id) || opts.refresh?.has(m.id)))
+    const changed = (m: Message): boolean =>
+      !!opts.refresh?.has(m.id) || (!!m.editedAt && savedEdits.get(m.id) !== m.editedAt)
+    const fresh = list.filter((m) => isSavable(m) && (!ids.has(m.id) || changed(m)))
     if (!fresh.length || run !== generation) return 0
     const records: ChatArchiveRecord[] = []
     for (const m of fresh) {
@@ -260,6 +268,19 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
     }
     if (run !== generation) return 0
     await chatArchiveAPI.put(records)
+    for (const m of fresh) if (m.editedAt) savedEdits.set(m.id, m.editedAt)
+    // Прочитанное поиском и подмешанное в ленту — с прежним текстом.
+    if (fresh.some((m) => ids.has(m.id))) {
+      readCache.delete(chatId)
+      const view = views.get(chatId)
+      if (view) {
+        const byId = new Map(fresh.map((m) => [m.id, m]))
+        view.messages = view.messages.map((m) => {
+          const next = byId.get(m.id)
+          return next ? { ...m, text: next.text, editedAt: next.editedAt } : m
+        })
+      }
+    }
     let added = 0
     for (const r of records) {
       if (ids.has(r.id)) continue
@@ -376,7 +397,7 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
     const rows = await chatArchiveAPI.before(address, chatId, before, ARCHIVE_PAGE)
     const page = await readRecords(rows)
     const have = new Set(view.messages.map((m) => m.id))
-    view.messages = [...page.filter((m) => !have.has(m.id)), ...view.messages]
+    view.messages = foldEdits([...page.filter((m) => !have.has(m.id)), ...view.messages])
     view.floor = rows.length ? Math.min(before, rows[0]!.ts) : before
     if (rows.length < ARCHIVE_PAGE) view.exhausted = true
   }
@@ -433,8 +454,9 @@ export const useMessengerArchiveStore = defineStore('messenger-archive', () => {
       out.push(...(await readRecords(rows.slice(i, i + ARCHIVE_PAGE))))
     }
     if (mine !== generation) return []
-    readCache.set(chatId, { count, messages: out })
-    return out
+    const messages = foldEdits(out)
+    readCache.set(chatId, { count, messages })
+    return messages
   }
 
   async function noteGone(chatId: string, ts: number): Promise<void> {

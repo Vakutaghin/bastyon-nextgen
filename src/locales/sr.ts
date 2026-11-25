@@ -1211,6 +1211,8 @@ export default {
     notifyVideo: 'Видео',
     notifyAudio: 'Гласовна порука',
     notifyFile: 'Датотека',
+    edited: 'измењено',
+    editedAt: 'Измењено {time}',
     notSent: 'Није послато',
     retrySend: 'Покушај поново',
     saveMedia: 'Преузми',

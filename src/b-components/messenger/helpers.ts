@@ -16,6 +16,10 @@ import { peekUserName, shortAddress, userAvatar } from '@/services/user-names'
 export interface EventLike {
   getId?: () => string
   getContent?: () => Record<string, unknown>
+  /** SDK: тело самого события, даже если его потом правили (`getContent` отдаёт тело правки). */
+  getOriginalContent?: () => Record<string, unknown>
+  /** SDK: тело, как оно пришло с сервера, — со ссылкой на другое событие. */
+  getWireContent?: () => Record<string, unknown>
   getType?: () => string
   getRoomId?: () => string
   getSender?: () => string
@@ -63,7 +67,11 @@ export const getEventId = (event: EventLike | null | undefined): string => {
 }
 
 /**
- * Извлечение содержимого события.
+ * Извлечение содержимого события — своего, без правок: у исправленного SDK в
+ * `getContent` отдаёт `m.new_content` правки, а у прежнего клиента его нет, и
+ * исправленное сообщение выглядело пустым и пропадало из ленты. Правки
+ * разбирает lib/chat-edits.
+ *
  * Возвращает `any`, т.к. вызывающий код (messenger-chat-store) выполняет глубокий
  * динамический доступ/мутации полей расшифрованного Matrix-контента
  * (`content.info.secrets = ...`, `content.msgtype`, `content.file?.url` и т.д.),
@@ -72,6 +80,7 @@ export const getEventId = (event: EventLike | null | undefined): string => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- расшифрованный Matrix-контент: динамический доступ/мутации полей у вызывающих
 export const getEventContent = (event: EventLike | null | undefined): any => {
   if (!event) return {}
+  if (typeof event.getOriginalContent === 'function') return event.getOriginalContent()
   if (typeof event.getContent === 'function') return event.getContent()
   return event.content || {}
 }
@@ -133,10 +142,28 @@ export const isRenderableMessageEvent = (event: EventLike | null | undefined): b
   return typeof content.body === 'string' && content.body.trim().length > 0
 }
 
-/** Событие — именно сообщение (не реакция). Нужно для lastMessage/сортировки диалогов */
+/** Тело правки: в нём ссылка на сообщение, которое она меняет. */
+export const isEditContent = (content: unknown): boolean => {
+  const relation = (content as Record<string, unknown> | null | undefined)?.['m.relates_to'] as
+    | { rel_type?: unknown; event_id?: unknown }
+    | null
+    | undefined
+  return relation?.rel_type === 'm.replace' && typeof relation.event_id === 'string'
+}
+
+/** Какое сообщение меняет эта правка; null — событие не правка (lib/chat-edits). */
+export const editTargetOf = (event: EventLike | null | undefined): string | null => {
+  const type = getEventType(event)
+  if (type !== 'm.room.message' && type !== 'm.room.encrypted') return null
+  const content = event?.getWireContent?.() ?? event?.content ?? event?.getContent?.()
+  if (!isEditContent(content)) return null
+  return (content!['m.relates_to'] as { event_id: string }).event_id
+}
+
+/** Событие — именно сообщение (не реакция и не правка). Нужно для lastMessage/сортировки диалогов */
 export const isMessageEvent = (event: EventLike | null | undefined): boolean => {
   const type = getEventType(event)
-  return type === 'm.room.message' || type === 'm.room.encrypted'
+  return (type === 'm.room.message' || type === 'm.room.encrypted') && !editTargetOf(event)
 }
 
 // --- Конвертация идентификаторов ---

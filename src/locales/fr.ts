@@ -1240,6 +1240,8 @@ export default {
     notifyVideo: 'Vidéo',
     notifyAudio: 'Message vocal',
     notifyFile: 'Fichier',
+    edited: 'modifié',
+    editedAt: 'Modifié {time}',
     notSent: 'Non envoyé',
     retrySend: 'Réessayer',
     saveMedia: 'Télécharger',

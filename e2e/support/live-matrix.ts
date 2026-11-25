@@ -44,7 +44,9 @@ export async function signedIn(
 ): Promise<Page> {
   const context = await browser.newContext({ baseURL: BASE, locale: 'ru-RU' })
   const page = await context.newPage()
-  await useMockNode(page, data)
+  // Подменный узел закрывает `/_matrix` целиком, чтобы тесты не входили на
+  // боевой сервер чатов: сюда пускаем только свой Synapse за E2E_SYNAPSE_URL.
+  await useMockNode(page, data, (url) => url.startsWith(`${BASE}/_matrix/`))
   await page.goto('/')
   await page.waitForSelector('#app > *', { timeout: 30_000 })
   await page
