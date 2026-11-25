@@ -70,7 +70,7 @@
         @blur="onComposerBlur"
       />
 
-      <SC_MentionDropdown v-if="mentionShow">
+      <SC_MentionDropdown v-if="mentionShow" v-anchored="FIELD_LIST">
         <SC_MentionRow
           v-for="(user, idx) in mentionResults"
           :key="user.address"
@@ -328,6 +328,7 @@ import {
 } from '@/components/icons'
 
 import Button from '@/components/button'
+import { FIELD_LIST, vAnchored } from '@/components/ui-core/anchored'
 import { appToast } from '@/b-components/app-toast'
 // Переиспользуем компактный пикер из формы комментария (общий список COMMON_EMOJIS).
 import CommentEmojiPicker from '@/b-components/content/post-card/components/post-card-comments/comment-emoji-picker.vue'

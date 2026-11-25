@@ -176,13 +176,11 @@ export const SC_TransferSearchWrap = styled.div`
   position: relative;
 `
 
+/** Найденные получатели; место у поля ставит v-anchored. */
 export const SC_TransferSearchDropdown = styled.div`
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  margin-top: 4px;
-  max-height: 220px;
+  box-sizing: border-box;
+  max-height: min(220px, var(--ui-floating-available-height, 220px));
   overflow-y: auto;
   background: var(--ui-bg);
   border: 1px solid var(--ui-border);

@@ -146,7 +146,7 @@ export const SC_PlayerButton = styled.button`
     opacity: 1;
   }
 
-  /* Крайние кнопки: подсказка не вылезает за край ролика. */
+  /* Кнопки слева и справа: подсказка растёт внутрь ролика, а не за его край. */
   &.tip-start::after {
     left: 0;
     transform: none;

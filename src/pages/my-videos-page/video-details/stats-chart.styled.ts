@@ -91,7 +91,7 @@ export const SC_Tooltip = styled('div', { atX: Number, atY: Number })`
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-md);
   box-shadow: var(--ui-shadow-md);
-  transform: translate(-50%, -100%);
+  transform: translateX(-50%);
 
   strong {
     color: var(--ui-text-highlighted);

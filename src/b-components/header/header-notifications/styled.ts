@@ -29,7 +29,7 @@ export const SC_NotificationsMenu = styled.div`
   padding: 8px;
   min-width: 360px;
   max-width: 440px;
-  max-height: 80vh;
+  max-height: min(80vh, var(--ui-floating-available-height, 80vh));
   overflow: hidden;
   display: flex;
   flex-direction: column;

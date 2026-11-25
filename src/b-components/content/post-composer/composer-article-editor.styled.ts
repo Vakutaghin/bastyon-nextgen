@@ -186,10 +186,8 @@ export const SC_LinkInput = styled.input`
 
 /** «+» на пустой строке и список блоков под ним. */
 export const SC_BlockMenu = styled.div`
+  position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
 `
 
 export const SC_BlockToggle = styled.button`
@@ -224,10 +222,15 @@ export const SC_BlockToggle = styled.button`
   }
 `
 
+/** Виды блоков; место у плюса ставит v-anchored. */
 export const SC_BlockList = styled.div`
+  position: absolute;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   min-width: 220px;
+  max-height: var(--ui-floating-available-height, none);
+  overflow-y: auto;
   padding: 4px;
   background: var(--ui-bg-elevated);
   border: 1px solid var(--ui-border);

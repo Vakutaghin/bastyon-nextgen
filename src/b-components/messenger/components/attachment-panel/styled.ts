@@ -37,10 +37,12 @@ export const SC_AttachButton = styled.button`
   }
 `
 
+/** Что приложить; место у скрепки ставит v-anchored. */
 export const SC_Menu = styled.div`
   position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
+  box-sizing: border-box;
+  max-height: var(--ui-floating-available-height, none);
+  overflow-y: auto;
   background: var(--ui-bg);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-md);

@@ -854,15 +854,14 @@ export const SC_KeyChangedAccept = styled.button`
   }
 `
 
-/** Кого упомянуть: над полосой ввода, по её ширине (mention-picker). */
+/** Кого упомянуть: над полосой ввода, по её ширине (mention-picker, v-anchored). */
 export const SC_MentionList = styled.div`
   position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: calc(100% + 4px);
+  box-sizing: border-box;
+  width: calc(100% - 16px);
   display: flex;
   flex-direction: column;
-  max-height: min(240px, 40vh);
+  max-height: min(240px, 40vh, var(--ui-floating-available-height, 240px));
   overflow-y: auto;
   padding: 4px 0;
   background: var(--color-bg-primary);

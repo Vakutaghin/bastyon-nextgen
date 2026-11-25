@@ -79,17 +79,17 @@ export const SC_ExplorerSearchError = styled.div`
   color: var(--color-danger);
 `
 
+/** Недавние запросы; место у поля ставит v-anchored. */
 export const SC_SuggestionsDropdown = styled.div`
   position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  box-sizing: border-box;
+  max-height: var(--ui-floating-available-height, none);
   z-index: ${Z_INDEX.LOCAL_DROPDOWN_HIGH};
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-lighter);
   border-radius: var(--ui-radius-lg);
   box-shadow: 0 8px 24px var(--color-overlay-8);
-  overflow: hidden;
+  overflow: hidden auto;
 `
 
 export const SC_SuggestionsHeader = styled.div`

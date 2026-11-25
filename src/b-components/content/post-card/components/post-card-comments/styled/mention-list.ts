@@ -1,12 +1,9 @@
 import styled from 'vue3-styled-components'
 
+/** Кого упомянуть; место у поля ставит v-anchored. */
 export const SC_MentionList = styled.div`
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  margin-top: 4px;
-  max-height: 180px;
+  max-height: min(180px, var(--ui-floating-available-height, 180px));
   overflow-y: auto;
   background: var(--color-bg-primary);
   border: 1px solid var(--ui-border);

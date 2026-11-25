@@ -1,5 +1,5 @@
 <template>
-  <SC_Header ref="headerRef">
+  <SC_Header ref="headerRef" data-screen-edge="top">
     <SC_Sections>
       <!-- Телефон: логотип, за ним меню и «Назад» — одной группой слева; на
            компьютере обе стрелки у поиска, как у адресной строки. Группа — один

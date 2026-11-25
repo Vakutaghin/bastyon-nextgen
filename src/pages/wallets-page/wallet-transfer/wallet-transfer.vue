@@ -26,7 +26,10 @@
               @input="onSearchInput"
               @blur="onReceiverBlur"
             />
-            <SC_TransferSearchDropdown v-if="showSearchDropdown && searchResults.length">
+            <SC_TransferSearchDropdown
+              v-if="showSearchDropdown && searchResults.length"
+              v-anchored="FIELD_LIST"
+            >
               <SC_TransferSearchItem
                 v-for="user in searchResults"
                 :key="user.address"
@@ -147,6 +150,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/blockchain'
 import Select, { type SelectOption } from '@/components/select'
+import { FIELD_LIST, vAnchored } from '@/components/ui-core/anchored'
 import { transferFee } from '@/blockchain/core/transactions/transfer-fee'
 import { utf8Length } from '@/helpers/common/op-return'
 import { formatPkoin } from '@/helpers/common/pkoin-formatter'

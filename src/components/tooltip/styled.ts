@@ -10,7 +10,7 @@ export const SC_Tooltip = styled.div`
   z-index: ${() => Z_INDEX.TOOLTIP};
   box-sizing: border-box;
   min-width: 24px;
-  max-width: var(--ui-tooltip-max-width, 250px);
+  max-width: min(var(--ui-tooltip-max-width, 250px), calc(100vw - 16px));
   min-height: 24px;
   padding: 6px 8px;
   overflow-wrap: break-word;

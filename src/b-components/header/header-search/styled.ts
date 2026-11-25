@@ -23,18 +23,17 @@ export const SC_HeaderSearchWrapper = styled.div`
   }
 `
 
+/** Найденное и недавнее; место у поля ставит v-anchored. */
 export const SC_Dropdown = styled.div`
   position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  box-sizing: border-box;
   background: var(--ui-bg);
   border-radius: var(--ui-radius-md);
   box-shadow:
     0 0 0 1px var(--ui-border),
     var(--ui-shadow-lg);
   z-index: 2000;
-  max-height: 70vh;
+  max-height: min(70vh, var(--ui-floating-available-height, 70vh));
   overflow-y: auto;
   padding: 4px;
 `

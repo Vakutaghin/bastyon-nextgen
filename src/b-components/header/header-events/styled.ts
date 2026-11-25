@@ -28,7 +28,7 @@ export const SC_PendingEventsMenu = styled.div`
   padding: 8px;
   min-width: 300px;
   max-width: 380px;
-  max-height: 80vh;
+  max-height: min(80vh, var(--ui-floating-available-height, 80vh));
   overflow-y: auto;
 
   @media (max-width: ${() => BREAKPOINTS.MOBILE}) {

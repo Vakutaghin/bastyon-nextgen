@@ -1,16 +1,22 @@
 <template>
-  <!-- Лист на телефоне — поверх страницы, а во весь экран — внутри плеера:
-       вне полноэкранного элемента его не видно. -->
-  <Teleport to="body" :disabled="!touch || fullscreen">
+  <!-- И меню, и лист — поверх страницы: в низком ролике (канал в виджете чата,
+       плеер, уехавший под шапку) меню целиком не помещалось, а теперь встаёт
+       там, где есть место. Во весь экран — внутри плеера: вне полноэкранного
+       элемента их не видно. -->
+  <UiPortal :disabled="fullscreen">
     <template v-if="open">
       <SC_SettingsBackdrop v-if="touch" data-player-control @click="emit('close')" />
       <component
         :is="touch ? SC_SettingsSheet : SC_SettingsMenu"
-        ref="panelRef"
+        :key="fullscreen ? 'inside' : 'over'"
+        :ref="setPanel"
         :class="{ 'settings-sheet': touch }"
         role="menu"
         data-player-control
+        data-testid="player-settings"
+        @mousedown.prevent
         @click.stop
+        @keydown="onMenuKeydown"
       >
         <template v-if="screen === 'main'">
           <SC_MenuItem
@@ -78,13 +84,18 @@
         </template>
       </component>
     </template>
-  </Teleport>
+  </UiPortal>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { bcp47 } from '@/i18n'
+import { useFloating } from '@/components/ui-core/floating'
+import { lastInputWasKeyboard, trackInputModality } from '@/components/ui-core/input-modality'
+import { useElementRef } from '@/components/ui-core/trigger'
+import { useLayer } from '@/components/ui-core/use-layer'
+import UiPortal from '@/components/ui-core/ui-portal.vue'
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, SpeedIcon, TuneIcon } from './player-icons'
 import {
   SC_SettingsMenu,
@@ -111,7 +122,7 @@ const props = defineProps<{
   qualityLabel: string
   rates: number[]
   currentRate: number
-  /** Корень плеера: нажатие по самому ролику меню закрывает плеер, без паузы. */
+  /** Корень плеера: в нём шестерёнка, от которой открыто меню. */
   playerRoot?: () => HTMLElement | null
 }>()
 
@@ -124,7 +135,10 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 
-const panelRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
+/** Поля меню, как у YouTube: 12px от края ролика и 13px над рядом кнопок. */
+const MENU_INSET = 12
+const MENU_GAP = 13
+const FOCUS_FRAMES = 10
 
 /** «Обычная» для 1×, остальное — числом, как в меню YouTube. */
 function rateLabel(rate: number): string {
@@ -132,31 +146,80 @@ function rateLabel(rate: number): string {
   return rate.toLocaleString(bcp47(locale.value))
 }
 
-function panelEl(): HTMLElement | null {
-  const r = panelRef.value
-  if (r instanceof HTMLElement) return r
-  return r?.$el instanceof HTMLElement ? r.$el : null
-}
+const { el: panel, setRef: setPanel } = useElementRef()
+trackInputModality()
 
-/** Компьютер: нажатие мимо меню и мимо шестерёнки закрывает меню. */
-function onOutsidePointer(event: PointerEvent): void {
-  const target = event.target as Element | null
-  if (!target) return
-  if (panelEl()?.contains(target)) return
-  if (target.closest('[data-settings-toggle]')) return
-  const root = props.playerRoot?.()
-  if (root?.contains(target) && !target.closest('[data-player-control]')) return
-  emit('close')
-}
+const gear = (): HTMLElement | null =>
+  props.playerRoot?.()?.querySelector<HTMLElement>('[data-settings-toggle]') ?? null
 
-watch(
-  () => props.open && !props.touch,
-  (listen) => {
-    if (listen) window.addEventListener('pointerdown', onOutsidePointer, true)
-    else window.removeEventListener('pointerdown', onOutsidePointer, true)
+/** Лист на телефоне закрывает своя подложка, меню — стек слоёв. */
+const asMenu = computed(() => props.open && !props.touch)
+
+// Esc, «Назад» и нажатие мимо: по ролику — без паузы, нажатие гасит маска.
+const { zIndex } = useLayer(asMenu, {
+  kind: 'popover',
+  el: () => panel.value,
+  anchor: gear,
+  onDismiss: (reason) => {
+    emit('close')
+    if (reason === 'escape') gear()?.focus({ preventScroll: true })
   },
-  { immediate: true }
+})
+
+useFloating(
+  () => asMenu.value && !props.fullscreen,
+  () => gear()?.closest<HTMLElement>('[data-player-control]') ?? null,
+  () => panel.value,
+  { placement: 'topRight', offset: MENU_GAP, alignOffset: MENU_INSET }
 )
 
-onBeforeUnmount(() => window.removeEventListener('pointerdown', onOutsidePointer, true))
+watch(
+  [panel, zIndex],
+  ([el, z]) => {
+    if (el && z && asMenu.value && !props.fullscreen) el.style.zIndex = String(z)
+  },
+  { flush: 'post' }
+)
+
+const menuButtons = (): HTMLElement[] => [...(panel.value?.querySelectorAll('button') ?? [])]
+
+// С клавиатуры: меню в конце страницы, Tab до него не дойдёт — фокус ставим
+// сами, и при смене экрана (Качество, Скорость) тоже.
+watch(
+  () => [asMenu.value, props.screen] as const,
+  ([isOpen], [wasOpen]) => {
+    if (!isOpen || !lastInputWasKeyboard()) return
+    const inMenu = panel.value?.contains(document.activeElement)
+    if (wasOpen && !inMenu) return
+    void nextTick(() => focusFirst())
+  }
+)
+
+/**
+ * Меню скрыто, пока не посчитано его место, и ещё кадр после: фокус не встаёт.
+ * Пробуем, пока не встанет.
+ */
+function focusFirst(frames = FOCUS_FRAMES): void {
+  const first = menuButtons()[0]
+  first?.focus({ preventScroll: true })
+  if (first && document.activeElement !== first && frames > 0) {
+    requestAnimationFrame(() => focusFirst(frames - 1))
+  }
+}
+
+function onMenuKeydown(event: KeyboardEvent): void {
+  if (props.touch) return
+  if (event.key === 'Tab') {
+    event.preventDefault()
+    emit('close')
+    gear()?.focus({ preventScroll: true })
+    return
+  }
+  const step = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
+  if (!step) return
+  const buttons = menuButtons()
+  const at = buttons.indexOf(document.activeElement as HTMLElement)
+  event.preventDefault()
+  buttons[(at + step + buttons.length) % buttons.length]?.focus({ preventScroll: true })
+}
 </script>

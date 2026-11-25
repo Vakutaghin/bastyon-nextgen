@@ -1,11 +1,17 @@
 /**
  * Положение всплывающей панели рядом с кнопкой — на floating-ui (он уже в
- * зависимостях ради tiptap). Панель уходит на другую сторону, если места
- * нет, и сдвигается, чтобы не вылезать за экран.
+ * зависимостях ради tiptap). Единственное место, где решается, с какой стороны
+ * встать: нет места внизу — панель над кнопкой, нет справа — слева от неё. Не
+ * помещается ни сверху, ни снизу, а сбоку помещается — встаёт сбоку. Не
+ * помещается у кнопки нигде, а на экран — да, ложится поверх кнопки. Выше
+ * экрана — там, где места больше, а высоту стили ограничивают переменной ниже.
+ * Вырез, строка состояния и полоса жестов местом не считаются (screen-insets).
  *
  * По умолчанию `position: fixed`: панели лежат в `#ui-layers` в конце body,
- * и у закреплённой шапки панель не уезжает вместе с лентой. При прокрутке и
- * смене размеров положение пересчитывается само (`autoUpdate`).
+ * и у закреплённой шапки панель не уезжает вместе с лентой. Панель, которая
+ * рисуется на месте (`strategy: 'absolute'`, директива `v-anchored`), сверх
+ * того обходит шапку и нижнюю панель и не вылезает из того, что её обрезает.
+ * При прокрутке и смене размеров положение пересчитывается само (`autoUpdate`).
  *
  * Панели ставятся `data-ui-floating` и `data-placement` (сторона после
  * переворота) — по нему стили
@@ -24,6 +30,7 @@ import {
   type Strategy,
 } from '@floating-ui/dom'
 import { onScopeDispose, watch, type WatchSource } from 'vue'
+import { coveredInsets, safeInsets, type Insets } from './screen-insets'
 
 /** Стороны в именах antd — как их уже пишут шаблоны. */
 export type UiPlacement =
@@ -59,10 +66,15 @@ export function toFloatingPlacement(placement: UiPlacement): Placement {
   return PLACEMENTS[placement]
 }
 
+/** Ниже этого панель выше экрана стала бы щелью: тоже ложится поверх кнопки. */
+const MIN_ROOM = 240
+
 export interface FloatingOptions {
   placement?: UiPlacement
   /** Зазор между кнопкой и панелью, px. */
   offset?: number
+  /** Сдвиг вдоль кнопки от выровненного края внутрь, px. */
+  alignOffset?: number
   strategy?: Strategy
   /**
    * Ширина панели по кнопке: `true` — не меньше кнопки, `'exact'` — ровно
@@ -73,6 +85,15 @@ export interface FloatingOptions {
   padding?: number
 }
 
+function paddedInsets(insets: Insets, padding: number): Insets {
+  return {
+    top: insets.top + padding,
+    right: insets.right + padding,
+    bottom: insets.bottom + padding,
+    left: insets.left + padding,
+  }
+}
+
 /** Держать `floating` у `reference`; вернёт функцию, которая перестаёт. */
 export function anchorFloating(
   reference: HTMLElement,
@@ -80,7 +101,6 @@ export function anchorFloating(
   options: FloatingOptions = {}
 ): () => void {
   const strategy = options.strategy ?? 'fixed'
-  const padding = options.padding ?? 8
   floating.dataset.uiFloating = ''
   floating.style.position = strategy
   floating.style.left = '0'
@@ -89,20 +109,40 @@ export function anchorFloating(
   floating.style.visibility = 'hidden'
 
   let stopped = false
-  const update = async (): Promise<void> => {
-    const { x, y, placement } = await computePosition(reference, floating, {
+  // Список под полем ввода и панель на месте поле не закрывают: в него печатают.
+  const mayCover = strategy === 'fixed' && !options.matchWidth
+
+  const compute = async (cover: boolean) => {
+    let cramped = false
+    const insets = strategy === 'fixed' ? safeInsets() : coveredInsets(reference)
+    const padding = paddedInsets(insets, options.padding ?? 8)
+    const viewport = window.visualViewport?.height ?? window.innerHeight
+    const screenRoom = viewport - padding.top - padding.bottom
+    const result = await computePosition(reference, floating, {
       placement: toFloatingPlacement(options.placement ?? 'bottom'),
       strategy,
       middleware: [
-        offset(options.offset ?? 4),
-        flip({ padding }),
-        shift({ padding }),
+        offset({ mainAxis: options.offset ?? 4, alignmentAxis: options.alignOffset ?? null }),
+        // Вбок — только когда не помещается ни сверху, ни снизу: сдвиг вдоль
+        // кнопки в счёт не идёт, его сделает shift. Список шириной с поле
+        // сбоку от поля ни к чему.
+        flip({
+          padding,
+          crossAxis: 'alignment',
+          fallbackAxisSideDirection: options.matchWidth ? 'none' : 'start',
+        }),
+        shift({ padding, crossAxis: cover }),
         size({
           padding,
           apply({ availableHeight, availableWidth, rects, elements }) {
+            const height = rects.floating.height
+            if (height > availableHeight && (height <= screenRoom || availableHeight < MIN_ROOM)) {
+              cramped = true
+            }
             const style = elements.floating.style
-            style.setProperty('--ui-floating-available-height', `${Math.floor(availableHeight)}px`)
-            style.setProperty('--ui-floating-available-width', `${Math.floor(availableWidth)}px`)
+            const room = (value: number): string => `${Math.max(0, Math.floor(value))}px`
+            style.setProperty('--ui-floating-available-height', room(availableHeight))
+            style.setProperty('--ui-floating-available-width', room(availableWidth))
             const width = `${Math.round(rects.reference.width)}px`
             if (options.matchWidth) style.minWidth = width
             if (options.matchWidth === 'exact') style.width = width
@@ -110,7 +150,14 @@ export function anchorFloating(
         }),
       ],
     })
+    return { ...result, cramped }
+  }
+
+  const update = async (): Promise<void> => {
+    let result = await compute(false)
+    if (result.cramped && mayCover) result = await compute(true)
     if (stopped) return
+    const { x, y, placement } = result
     floating.style.left = `${Math.round(x)}px`
     floating.style.top = `${Math.round(y)}px`
     floating.style.visibility = ''

@@ -3,10 +3,15 @@ import styled from 'vue3-styled-components'
 // Панель как была у antd Popover в нашей теме: фон страницы, кольцо-рамка и
 // тень оверлеев, радиус 8, отступ 12, текст 14px. Слой (z-index) ставит стек.
 //
+// Не помещается ни с одной стороны кнопки — прокручивается: сколько места до
+// края экрана, ставит floating.ts.
+//
 // Части для styled родителя: .ui-popover, __title; отступ — --ui-popover-padding.
 export const SC_Popover = styled.div`
   box-sizing: border-box;
-  max-width: calc(100vw - 16px);
+  max-width: var(--ui-floating-available-width, calc(100vw - 16px));
+  max-height: var(--ui-floating-available-height, none);
+  overflow-y: auto;
   padding: var(--ui-popover-padding, 12px);
   border-radius: var(--ui-radius-lg);
   background: var(--ui-bg);

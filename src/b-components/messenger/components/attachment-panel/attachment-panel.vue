@@ -10,7 +10,7 @@
       <PaperClipOutlined />
     </SC_AttachButton>
 
-    <SC_Menu v-if="menuOpen">
+    <SC_Menu v-if="menuOpen" v-anchored="{ placement: 'topLeft', offset: 6 }">
       <SC_MenuItem type="button" @click="pickImage">
         <span aria-hidden="true">🖼️</span> {{ t('messenger.photo') }}
       </SC_MenuItem>
@@ -44,6 +44,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PaperClipOutlined } from '@/components/icons'
+import { vAnchored } from '@/components/ui-core/anchored'
 import { useCloseOnBack } from '@/composables/use-back-button'
 import { SC_AttachmentRoot, SC_AttachButton, SC_Menu, SC_MenuItem, SC_HiddenInput } from './styled'
 

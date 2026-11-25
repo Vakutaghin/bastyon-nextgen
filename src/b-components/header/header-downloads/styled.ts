@@ -49,7 +49,7 @@ export const SC_DownloadsMenu = styled.div`
   gap: 8px;
   min-width: 320px;
   max-width: 400px;
-  max-height: 80vh;
+  max-height: min(80vh, var(--ui-floating-available-height, 80vh));
   padding: 8px;
   overflow-y: auto;
   border-radius: var(--ui-radius-md);

@@ -206,6 +206,7 @@
             <SC_VolumeArea class="volume-area" :class="{ dragging: isDraggingVolume }">
               <SC_PlayerButton
                 type="button"
+                class="tip-start"
                 :data-tip="muteTip"
                 :aria-label="muteTip"
                 @click.stop="toggleMute"
@@ -246,6 +247,7 @@
             <SC_PlayerButton
               type="button"
               data-settings-toggle
+              class="tip-end"
               :class="{ open: isQualityMenuOpen }"
               :data-tip="t('videoPlayer.settings')"
               :aria-label="t('videoPlayer.settings')"
@@ -258,6 +260,7 @@
             <SC_PlayerButton
               v-if="!isAudio && isPipSupported"
               type="button"
+              class="tip-end"
               :data-tip="`${t('videoPlayer.pip')} (i)`"
               :aria-label="t('videoPlayer.pip')"
               :aria-pressed="isPip"

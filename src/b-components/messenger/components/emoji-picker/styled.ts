@@ -1,13 +1,12 @@
 import styled from 'vue3-styled-components'
 import { COLORS } from '@/styles/theme-colors'
 
-/** Над полосой ввода, какой бы высоты ни стало поле; в узком окне — по его ширине. */
+/** Над полосой ввода, какой бы высоты ни стало поле (v-anchored); в узком окне — по его ширине. */
 export const SC_EmojiPickerContainer = styled.div`
   position: absolute;
-  bottom: calc(100% + 8px);
-  right: 12px;
+  box-sizing: border-box;
   width: min(300px, calc(100% - 24px));
-  height: min(320px, 50vh);
+  height: min(320px, 50vh, var(--ui-floating-available-height, 320px));
   background: var(--color-bg-primary);
   border-radius: var(--ui-radius-lg);
   box-shadow: ${COLORS.SHADOW_LG};

@@ -19,7 +19,7 @@
         </SC_ExplorerSearchButton>
       </SC_ExplorerSearch>
 
-      <SC_SuggestionsDropdown v-if="dropdownVisible">
+      <SC_SuggestionsDropdown v-if="dropdownVisible" v-anchored="{ ...FIELD_LIST, offset: 6 }">
         <SC_SuggestionsHeader>
           <span>{{ t('explorerPage.searchSuggestionsTitle') }}</span>
           <SC_ClearAllBtn type="button" @click="onClearAll">
@@ -58,6 +58,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { FIELD_LIST, vAnchored } from '@/components/ui-core/anchored'
 import { getByPRC } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import { getExplorerRpcConfig } from '@/composables/use-explorer-preferred-node'

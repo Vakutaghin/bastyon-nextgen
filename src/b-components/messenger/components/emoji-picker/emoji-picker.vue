@@ -1,5 +1,5 @@
 <template>
-  <SC_EmojiPickerContainer>
+  <SC_EmojiPickerContainer v-anchored="{ placement: 'topRight', offset: 8, alignOffset: 12 }">
     <SC_EmojiHeader>{{ t('chat.emoji') }}</SC_EmojiHeader>
     <SC_EmojiGrid>
       <SC_EmojiButton v-for="emoji in commonEmojis" :key="emoji" @click="handleSelect(emoji)">
@@ -11,6 +11,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { vAnchored } from '@/components/ui-core/anchored'
 import { SC_EmojiPickerContainer, SC_EmojiHeader, SC_EmojiGrid, SC_EmojiButton } from './styled'
 import { COMMON_EMOJIS } from '@/helpers/common/emoji-list'
 

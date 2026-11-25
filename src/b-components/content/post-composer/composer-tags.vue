@@ -28,7 +28,7 @@
       <SC_TagCount v-if="tags.length">{{ tags.length }}/{{ max }}</SC_TagCount>
     </SC_TagsRow>
 
-    <SC_Dropdown v-if="open && !full && suggestions.length">
+    <SC_Dropdown v-if="open && !full && suggestions.length" v-anchored="FIELD_LIST">
       <SC_Suggestion
         v-for="(s, i) in suggestions"
         :key="s"
@@ -45,6 +45,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { FIELD_LIST, vAnchored } from '@/components/ui-core/anchored'
 import { useRpcQuery } from '@/composables/use-rpc-query'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 

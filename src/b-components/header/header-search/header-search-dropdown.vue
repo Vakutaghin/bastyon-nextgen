@@ -1,5 +1,5 @@
 <template>
-  <SC_Dropdown @mousedown.prevent>
+  <SC_Dropdown v-anchored="{ ...FIELD_LIST, offset: 6 }" @mousedown.prevent>
     <!-- Эксплорер: если запрос похож на высоту/хеш/адрес — сразу предлагаем
          открыть его в блок-эксплорере, не дожидаясь поисковых RPC. Для 64-hex
          (block-hash ИЛИ txid различить локально нельзя) показываем оба пункта. -->
@@ -153,6 +153,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter, type RouteLocationRaw } from 'vue-router'
 import { MIN_QUERY_LENGTH } from '@/composables/use-search-query'
 import { safeDecode } from '@/composables/use-feed'
+import { FIELD_LIST, vAnchored } from '@/components/ui-core/anchored'
 import UserMark from '@/components/user-mark'
 import { userMarkOf } from '@/services/user-marks'
 import {

@@ -47,6 +47,7 @@
       <SC_MentionList
         ref="mentionListRef"
         v-if="showMentionList && filteredMentionUsers.length > 0"
+        v-anchored="FIELD_LIST"
       >
         <SC_MentionItem
           v-for="(u, idx) in filteredMentionUsers"
@@ -104,6 +105,7 @@ import { computed, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Popover from '@/components/popover'
 import { LoadingOutlined, CloseOutlined, SendOutlined, SmileOutlined } from '@/components/icons'
+import { FIELD_LIST, vAnchored } from '@/components/ui-core/anchored'
 import { ICON_SIZE_SM } from '@/styles/icon-styles'
 import { useAutoGrow } from '@/composables/use-auto-grow'
 import {

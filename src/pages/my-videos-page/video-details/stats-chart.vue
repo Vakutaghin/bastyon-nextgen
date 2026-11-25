@@ -68,7 +68,7 @@
         </g>
       </svg>
 
-      <SC_Tooltip v-if="active !== null" :at-x="tooltipAt.x" :at-y="tooltipAt.y">
+      <SC_Tooltip v-if="active !== null" ref="tipRef" :at-x="tooltipAt.x" :at-y="tooltipAt.y">
         <strong>{{ formatValue(points[active]!.value) }}</strong>
         <span>{{ points[active]!.label }}</span>
       </SC_Tooltip>
@@ -100,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { columnPath, labelIndexes, niceTicks, sampleEvenly } from './stats-chart-scale'
@@ -141,6 +141,8 @@ const RIGHT = 8
 /** Столбик не толще 24 px, между соседними — 2 px фона. */
 const BAR_MAX = 24
 const BAR_GAP = 2
+/** Зазор между точкой и подсказкой. */
+const TIP_GAP = 8
 /** Строк в таблице под линией удержания. */
 const TABLE_ROWS = 12
 
@@ -211,14 +213,30 @@ const tableRows = computed(() =>
   props.kind === 'line' ? sampleEvenly(props.points, TABLE_ROWS) : props.points
 )
 
-/** Подсказка над точкой, не вылезая за края графика. */
+const tipRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
+const tipSize = ref({ width: 80, height: 48 })
+
+/** Подсказка над точкой; нет места — под ней. За края графика не вылезает. */
 const tooltipAt = computed(() => {
   if (active.value === null) return { x: 0, y: 0 }
-  const x = Math.min(Math.max(xOf(active.value), LEFT + 40), width.value - 40)
+  const half = tipSize.value.width / 2
+  const x = Math.max(half, Math.min(xOf(active.value), width.value - half))
   const point = props.points[active.value]
   const y = point ? yOf(point.value) : baseline
-  return { x: Math.round(x), y: Math.round(Math.max(0, y - 8)) }
+  const above = y - TIP_GAP - tipSize.value.height
+  return { x: Math.round(x), y: Math.round(above >= 0 ? above : y + TIP_GAP) }
 })
+
+watch(
+  active,
+  (index) => {
+    if (index === null) return
+    const tip = tipRef.value
+    const el = tip instanceof HTMLElement ? tip : tip?.$el
+    if (el?.offsetWidth) tipSize.value = { width: el.offsetWidth, height: el.offsetHeight }
+  },
+  { flush: 'post' }
+)
 
 function nearest(clientX: number): number | null {
   const element = plotElement()

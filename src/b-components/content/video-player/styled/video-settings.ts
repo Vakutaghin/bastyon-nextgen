@@ -7,11 +7,10 @@ import styled from 'vue3-styled-components'
 
 export const SC_SettingsMenu = styled.div`
   position: absolute;
-  right: 12px;
-  bottom: 61px;
   z-index: 12;
+  box-sizing: border-box;
   min-width: 251px;
-  max-height: calc(100% - 72px);
+  max-height: var(--ui-floating-available-height, none);
   padding: 8px 0;
   overflow-y: auto;
   border-radius: var(--ui-radius-xl);
@@ -26,6 +25,7 @@ export const SC_SettingsMenu = styled.div`
   .is-fullscreen & {
     right: 20px;
     bottom: 70px;
+    max-height: calc(100% - 81px);
     font-size: 16px;
   }
 `

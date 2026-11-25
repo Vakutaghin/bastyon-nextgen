@@ -4,6 +4,7 @@
   <SC_MentionList
     :id="listId"
     ref="listRef"
+    v-anchored="{ placement: 'topLeft', offset: 4, alignOffset: 8 }"
     role="listbox"
     :aria-label="t('messenger.mention.title')"
     data-testid="mention-picker"
@@ -38,6 +39,7 @@
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Avatar from '@/components/avatar/avatar.vue'
+import { vAnchored } from '@/components/ui-core/anchored'
 import { SC_MentionList, SC_MentionOption } from './styled'
 
 interface Member {

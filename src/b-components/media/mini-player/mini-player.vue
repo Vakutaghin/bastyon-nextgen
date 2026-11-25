@@ -2,6 +2,7 @@
   <SC_MiniPlayer
     v-if="visible && current"
     :class="{ compact: isMobileOrTablet }"
+    data-screen-edge="bottom"
     role="region"
     :aria-label="t('media.player')"
     data-testid="mini-player"

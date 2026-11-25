@@ -324,7 +324,7 @@ function renderChart(data: [number, number][]): void {
 
     let tx = xInner + 8
     let ty = yInner - tooltipHeight - 6
-    if (tx + tooltipWidth > innerWidth) tx = xInner - tooltipWidth - 8
+    if (tx + tooltipWidth > innerWidth) tx = Math.max(0, xInner - tooltipWidth - 8)
     if (ty < 0) ty = yInner + 8
     crosshairTooltip.attr('transform', `translate(${tx},${ty})`)
   })

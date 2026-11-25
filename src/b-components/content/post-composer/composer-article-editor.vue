@@ -62,7 +62,13 @@
         >
           <PlusOutlined />
         </SC_BlockToggle>
-        <SC_BlockList v-if="blockListOpen" role="menu" :aria-label="t('articleEditor.addBlock')">
+        <SC_BlockList
+          v-if="blockListOpen"
+          ref="blockListRef"
+          v-anchored="{ placement: 'bottomLeft', offset: 6 }"
+          role="menu"
+          :aria-label="t('articleEditor.addBlock')"
+        >
           <SC_BlockItem
             v-for="(item, index) in blockItems"
             :key="item.key"
@@ -122,6 +128,7 @@ import {
   PlusOutlined,
   QuoteIcon,
 } from '@/components/icons'
+import { vAnchored } from '@/components/ui-core/anchored'
 import { fileToBase64, resizeImageBase64 } from '@/helpers/common/resize-image'
 import { uploadImage } from '@/services/image-upload-service'
 
@@ -165,6 +172,13 @@ const slashActive = ref(false)
 /** «/» закрыли Escape — не открывать снова, пока абзац тот же. */
 const slashDismissed = ref(false)
 const blockIndex = ref(0)
+const blockListRef = ref<{ $el?: HTMLElement } | null>(null)
+// Список, которому не хватило высоты, прокручивается — выбранный стрелками виден.
+watch(blockIndex, (index) => {
+  void nextTick(() =>
+    blockListRef.value?.$el?.children[index]?.scrollIntoView?.({ block: 'nearest' })
+  )
+})
 
 const editor = useEditor({
   editable: !props.disabled,

@@ -1131,14 +1131,17 @@ function drawMap(ctx: Canvas2D, colors: Palette): void {
   const spec = focus ? nodes.get(focus)?.spec : undefined
   if (label && spec) {
     ctx.font = `600 11px ${colors.font}`
-    ctx.textAlign = 'left'
+    // У правого края карты — слева от точки.
+    const toLeft = label.x + 9 + ctx.measureText(spec.label).width > width
+    const x = label.x + (toLeft ? -9 : 9)
+    ctx.textAlign = toLeft ? 'right' : 'left'
     ctx.textBaseline = 'middle'
     ctx.lineJoin = 'round'
     ctx.lineWidth = 3
     ctx.strokeStyle = colors.bg
-    ctx.strokeText(spec.label, label.x + 9, label.y)
+    ctx.strokeText(spec.label, x, label.y)
     ctx.fillStyle = colors.text
-    ctx.fillText(spec.label, label.x + 9, label.y)
+    ctx.fillText(spec.label, x, label.y)
   }
 
   for (const [id, at] of flashing) if (now - at >= 700) flashing.delete(id)

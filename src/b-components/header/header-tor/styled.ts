@@ -38,10 +38,10 @@ export const SC_TorMenu = styled.div`
     0 0 0 1px var(--ui-border),
     var(--ui-shadow-lg);
   padding: 12px;
-  min-width: 320px;
+  min-width: min(320px, calc(100vw - 16px));
   max-width: 380px;
   /* Подключение, Tor и мосты не помещаются на телефоне — меню прокручивается. */
-  max-height: calc(100dvh - 72px);
+  max-height: var(--ui-floating-available-height, calc(100dvh - 72px));
   overflow-y: auto;
   display: flex;
   flex-direction: column;

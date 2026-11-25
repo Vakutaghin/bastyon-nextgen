@@ -122,8 +122,9 @@ export const SC_DatePicker = styled.div`
 // Части: .ui-date-panel и её __* (см. date-time-picker.vue).
 export const SC_DatePanel = styled.div`
   box-sizing: border-box;
-  max-width: calc(100vw - 16px);
-  overflow: hidden;
+  max-width: var(--ui-floating-available-width, calc(100vw - 16px));
+  max-height: var(--ui-floating-available-height, none);
+  overflow: hidden auto;
   font-size: 14px;
   line-height: 22px;
   color: var(--ui-text);
@@ -377,10 +378,19 @@ export const SC_DatePanel = styled.div`
     cursor: not-allowed;
   }
 
-  /* Телефон: календарь с временем (424px) не влез бы в 390 — клетки уже, поля меньше. */
+  /* Телефон: календарь с временем (424px) не влез бы в 390 — клетки уже, поля
+     меньше. На экране ещё уже (360) сжимаются и клетки, и колонки времени:
+     раньше колонка минут обрезалась краем панели. */
   @media (max-width: ${() => BREAKPOINTS.MOBILE}) {
     &[data-time] .ui-date-panel__calendar {
-      width: 268px;
+      flex: 0 1 268px;
+      width: auto;
+      min-width: 212px;
+    }
+
+    &[data-time] .ui-date-panel__time {
+      flex: 0 1 102px;
+      min-width: 76px;
     }
 
     &[data-time] .ui-date-panel__body {

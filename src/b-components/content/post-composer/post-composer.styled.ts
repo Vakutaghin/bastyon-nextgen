@@ -8,16 +8,15 @@ export const SC_MentionAnchor = styled.div`
   width: 100%;
 `
 
+/** Кого упомянуть; место у поля ставит v-anchored. */
 export const SC_MentionDropdown = styled.ul`
   position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
+  box-sizing: border-box;
   z-index: ${Z_INDEX.DROPDOWN};
-  margin: 4px 0 0;
+  margin: 0;
   padding: 4px;
   list-style: none;
-  max-height: min(320px, 50vh);
+  max-height: min(320px, 50vh, var(--ui-floating-available-height, 320px));
   overflow-y: auto;
   /* Тот же случай, что и у подсказок тегов: скролл списка не должен листать модалку. */
   overscroll-behavior: contain;

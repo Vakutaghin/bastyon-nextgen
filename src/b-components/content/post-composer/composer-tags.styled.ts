@@ -82,11 +82,10 @@ export const SC_TagInput = styled.input`
   }
 `
 
+/** Подсказки тегов; место у поля ставит v-anchored. */
 export const SC_Dropdown = styled.ul`
   position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 4px);
+  box-sizing: border-box;
   z-index: ${Z_INDEX.LOCAL_DROPDOWN_HIGH};
   margin: 0;
   padding: ${SPACING.XS};
@@ -95,7 +94,7 @@ export const SC_Dropdown = styled.ul`
   border: 1px solid var(--color-border);
   border-radius: var(--ui-radius-lg);
   box-shadow: 0 6px 20px var(--color-overlay-12);
-  max-height: min(320px, 50vh);
+  max-height: min(320px, 50vh, var(--ui-floating-available-height, 320px));
   overflow-y: auto;
   /* Скролл выпадашки не уезжает в модалку: без этого колесо докручивало список
      до конца и продолжало листать саму модалку, унося подсказки с экрана. */

@@ -21,7 +21,7 @@
       <SC_ChapterGap v-for="(pos, i) in chapterMarkers" :key="i" :style="{ left: `${pos}%` }" />
     </SC_ProgressTrack>
     <SC_Scrubber />
-    <SC_ProgressTooltip v-if="tooltip">
+    <SC_ProgressTooltip v-if="tooltip" ref="tipRef">
       <span v-if="tooltip.chapter">{{ tooltip.chapter }}</span>
       {{ tooltip.time }}
     </SC_ProgressTooltip>
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { findActiveChapterIndex, type Chapter } from '@/helpers/content/timecode-parser'
 import {
@@ -112,16 +112,21 @@ function onPointerDown(event: PointerEvent): void {
   emit('seek-start', event)
 }
 
+const tipRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null)
+/** Половина ширины подсказки; одно время — около 80px. */
+const tipHalf = ref(40)
+
 /** Время (и глава) над курсором или пальцем — как у YouTube. */
 const tooltip = computed(() => {
   const x = dragX.value ?? (props.touch ? null : hoverX.value)
   if (x === null || !props.duration) return null
   const time = x * props.duration
   const index = props.chapters.length ? findActiveChapterIndex(props.chapters, time) : -1
-  // У краёв подсказка прижимается, чтобы не вылезать за ролик.
-  const left = `clamp(40px, ${x * 100}%, calc(100% - 40px))`
+  // У краёв подсказка прижимается, чтобы не вылезать за ролик: с названием
+  // главы она втрое шире, чем одно время.
+  const half = `${tipHalf.value}px`
   return {
-    left,
+    left: `clamp(${half}, ${x * 100}%, calc(100% - ${half}))`,
     time: props.formatTime(time),
     chapter: index >= 0 ? (props.chapters[index]?.label ?? '') : '',
   }
@@ -134,6 +139,16 @@ const positions = computed(() => ({
   '--progress-hover': `${(hoverX.value ?? 0) * 100}%`,
   '--progress-tip': tooltip.value?.left ?? '0px',
 }))
+
+watch(
+  () => tooltip.value && `${tooltip.value.chapter}|${tooltip.value.time.length}`,
+  () => {
+    const tip = tipRef.value
+    const el = tip instanceof HTMLElement ? tip : tip?.$el
+    if (el?.offsetWidth) tipHalf.value = Math.ceil(el.offsetWidth / 2)
+  },
+  { flush: 'post' }
+)
 
 onBeforeUnmount(stopDrag)
 </script>

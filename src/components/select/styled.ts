@@ -98,6 +98,7 @@ export const SC_Select = styled.div`
 // aria-disabled, data-active), __label, __check, __empty.
 export const SC_SelectPanel = styled.div`
   box-sizing: border-box;
+  max-width: var(--ui-floating-available-width, calc(100vw - 16px));
   padding: 4px;
   font-size: 14px;
   line-height: 22px;

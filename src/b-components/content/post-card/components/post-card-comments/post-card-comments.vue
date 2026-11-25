@@ -167,6 +167,7 @@
         <SC_MentionList
           ref="rootMentionListRef"
           v-if="showMentionList && filteredMentionUsers.length > 0 && isRootReplyActive"
+          v-anchored="FIELD_LIST"
         >
           <SC_MentionItem
             v-for="(u, idx) in filteredMentionUsers"
@@ -226,6 +227,7 @@ import Popover from '@/components/popover'
 import { ICON_SIZE_SM, ICON_PRIMARY_16, ICON_PRIMARY_18 } from '@/styles/icon-styles'
 import { LoadingOutlined, SendOutlined, SyncOutlined, SmileOutlined } from '@/components/icons'
 import Select, { type SelectOption } from '@/components/select'
+import { FIELD_LIST, vAnchored } from '@/components/ui-core/anchored'
 import { useAuthStore } from '@/blockchain'
 import { useCommentsStore, useUserRelationsStore } from '@/stores'
 import { resolveImageUrl } from '@/helpers/common/url-transformer'
