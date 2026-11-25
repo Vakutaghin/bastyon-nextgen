@@ -31,6 +31,19 @@ export interface NotificationCommentSnapshot {
   deleted?: boolean
 }
 
+/** Оценки комментария на сейчас — для кнопок лайка в списке уведомлений. */
+export interface NotificationCommentScore {
+  id: string
+  /** Автор комментария: ему адресована транзакция оценки. */
+  address: string
+  scoreUp: number
+  scoreDown: number
+  /** Ваша оценка, которую нода уже посчитала; 0 — не ставили. */
+  myScore: number
+  /** Удалён автором: оценить нельзя. */
+  deleted: boolean
+}
+
 export interface NotificationUserSnapshot {
   address: string
   name?: string

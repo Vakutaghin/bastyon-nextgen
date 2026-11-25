@@ -16,6 +16,7 @@ import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type {
   NotificationItem,
   NotificationPostSnapshot,
+  NotificationCommentScore,
   NotificationCommentSnapshot,
   NotificationUserSnapshot,
 } from './notifications-types'
@@ -141,6 +142,39 @@ export async function fetchCommentsById(
     const snap = extractCommentSnapshot(raw)
     if (snap) caches.commentCache[snap.id] = snap
   }
+}
+
+/**
+ * Оценки комментариев на сейчас: счётчики и ваша оценка. Тот же `getcomments`
+ * по списку id, но с читателем — без него нода не отдаёт `myScore` (сверено
+ * 25.11.2026) — и без кэша прокси.
+ */
+export async function fetchCommentScores(
+  reader: string,
+  ids: string[]
+): Promise<NotificationCommentScore[]> {
+  const arr = await rpcCall<unknown[]>({
+    method: rpcEndpoints.getComments,
+    parameters: ['', '', reader, ids],
+    options: { auth: false },
+  })
+  const out: NotificationCommentScore[] = []
+  for (const raw of Array.isArray(arr) ? arr : []) {
+    if (!raw || typeof raw !== 'object') continue
+    const o = raw as Record<string, unknown>
+    const id = pickStr(o, 'id')
+    const address = pickStr(o, 'address')
+    if (!id || !address) continue
+    out.push({
+      id,
+      address,
+      scoreUp: Number(o.scoreUp) || 0,
+      scoreDown: Number(o.scoreDown) || 0,
+      myScore: Number(o.myScore) || 0,
+      deleted: o.deleted === true || o.deleted === 'true',
+    })
+  }
+  return out
 }
 
 /**

@@ -12,7 +12,11 @@ vi.mock('@/helpers/api/request', () => ({
   rpcCallWithAuth: mocks.rpcCallWithAuth,
 }))
 
-import { enrichNotifications, type EnrichmentCaches } from './notifications-enricher'
+import {
+  enrichNotifications,
+  fetchCommentScores,
+  type EnrichmentCaches,
+} from './notifications-enricher'
 import { __resetUserNamesForTests, knownUsers } from '@/services/user-names'
 import type { NotificationItem } from './notifications-types'
 
@@ -269,5 +273,25 @@ describe('enrichNotifications', () => {
     const setEnriching = vi.fn()
     await enrichNotifications(caches(), [], setEnriching)
     expect(setEnriching).not.toHaveBeenCalled()
+  })
+})
+
+describe('fetchCommentScores', () => {
+  it('с читателем, иначе нода не отдаёт myScore; пустое и без автора — мимо', async () => {
+    mocks.rpcCall.mockReset()
+    mocks.rpcCall.mockResolvedValueOnce([
+      { id: 'c1', address: 'PX', scoreUp: 3, scoreDown: '1', myScore: -1, deleted: false },
+      { id: 'c2', address: 'PY', deleted: true },
+      { id: 'c3' },
+      null,
+    ])
+    await expect(fetchCommentScores('PA', ['c1', 'c2', 'c3'])).resolves.toEqual([
+      { id: 'c1', address: 'PX', scoreUp: 3, scoreDown: 1, myScore: -1, deleted: false },
+      { id: 'c2', address: 'PY', scoreUp: 0, scoreDown: 0, myScore: 0, deleted: true },
+    ])
+    expect(mocks.rpcCall.mock.calls[0]![0]).toMatchObject({
+      method: 'getcomments',
+      parameters: ['', '', 'PA', ['c1', 'c2', 'c3']],
+    })
   })
 })

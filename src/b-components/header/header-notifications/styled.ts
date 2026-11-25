@@ -500,6 +500,40 @@ export const SC_AnsweredMark = styled.span`
   }
 `
 
+/** Лайк и дизлайк комментария — рядом с «Ответить». */
+export const SC_Votes = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+`
+
+export const SC_VoteButton = styled.button`
+  min-height: 28px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--ui-radius-full);
+  background: none;
+  color: var(--ui-text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  filter: grayscale(1);
+  transition: background-color var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    background: var(--ui-bg-elevated);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &.voted {
+    filter: none;
+    color: var(--ui-text-highlighted);
+  }
+`
+
 export const SC_ShowMoreButton = styled.button`
   align-self: center;
   margin: 4px 0;

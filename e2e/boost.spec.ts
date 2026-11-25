@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { test, expect, type Page, type Route } from '@playwright/test'
 import { useMockNode, type MockNodeData } from './support/mock-node'
+import { p2pkhScript } from './support/p2pkh'
 import { onScreen } from './support/on-screen'
 
 /**
@@ -34,16 +35,6 @@ const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-}
-
-const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-
-/** p2pkh-скрипт адреса: 76a914 <hash160> 88ac (hash160 — из base58check). */
-function p2pkhScript(address: string): string {
-  let n = 0n
-  for (const c of address) n = n * 58n + BigInt(BASE58.indexOf(c))
-  const hex = n.toString(16).padStart(50, '0')
-  return `76a914${hex.slice(2, 42)}88ac`
 }
 
 const hash256 = (text: string): string =>

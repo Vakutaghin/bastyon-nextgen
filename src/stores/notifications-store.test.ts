@@ -2,7 +2,7 @@
 // игнорируется, исключение не оставляет loading=true, reset сохраняет колбэк тостов.
 
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   auth: { getUserAddress: 'PA' as string | null, isUserAuthenticated: true },
@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   rpcCall: vi.fn(),
   fetchCommentsById: vi.fn(),
   fetchPosts: vi.fn(),
+  fetchCommentScores: vi.fn(),
 }))
 vi.mock('@/stores', () => ({ useAuthStore: () => mocks.auth }))
 vi.mock('@/db/apis/notifications-api', () => ({
@@ -44,6 +45,7 @@ vi.mock('./notifications-enricher', () => ({
   enrichNotifications: vi.fn(),
   fetchCommentsById: mocks.fetchCommentsById,
   fetchPosts: mocks.fetchPosts,
+  fetchCommentScores: mocks.fetchCommentScores,
 }))
 vi.mock('@/helpers/api/request', () => ({ rpcCall: mocks.rpcCall }))
 
@@ -370,5 +372,88 @@ describe('notifications-store: комментарии — переход и «В
     await store.init()
     await store.hideAllNotifications(['n1'])
     expect(store.list.map((n) => n.id)).toEqual(['n2'])
+  })
+})
+
+describe('оценки комментариев в списке', () => {
+  const score = (id: string, up: number) => ({
+    id,
+    address: 'PX',
+    scoreUp: up,
+    scoreDown: 0,
+    myScore: 0,
+    deleted: false,
+  })
+
+  async function withComment() {
+    mocks.fetchMissedInfo.mockResolvedValueOnce([
+      { block: 101, contentsLang: {} },
+      event('n1'),
+      { mesType: 'subscribe', txid: 'n2', time: 1, nblock: 101, addrFrom: 'PX' },
+    ])
+    const store = useNotificationsStore()
+    await store.init()
+    return store
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.useFakeTimers({ toFake: ['Date'] })
+    mocks.auth.getUserAddress = 'PA'
+    mocks.getAllByAddress.mockReset().mockResolvedValue([])
+    mocks.fetchMissedInfo.mockReset()
+    mocks.fetchCommentScores.mockReset()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('спрашиваются только комментарии, от имени читателя', async () => {
+    const store = await withComment()
+    mocks.fetchCommentScores.mockResolvedValueOnce([score('n1', 3)])
+    await store.loadCommentScores(store.list)
+    expect(mocks.fetchCommentScores).toHaveBeenCalledExactlyOnceWith('PA', ['n1'])
+    expect(store.commentScores.n1?.scoreUp).toBe(3)
+  })
+
+  it('подряд не спрашивает, при открытии списка и через 15 с — заново', async () => {
+    const store = await withComment()
+    mocks.fetchCommentScores.mockResolvedValue([score('n1', 3)])
+    await store.loadCommentScores(store.list)
+    await store.loadCommentScores(store.list)
+    expect(mocks.fetchCommentScores).toHaveBeenCalledTimes(1)
+
+    mocks.fetchCommentScores.mockResolvedValue([score('n1', 4)])
+    await store.loadCommentScores(store.list, true)
+    expect(store.commentScores.n1?.scoreUp).toBe(4)
+
+    vi.setSystemTime(Date.now() + 15_000)
+    await store.loadCommentScores(store.list)
+    expect(mocks.fetchCommentScores).toHaveBeenCalledTimes(3)
+  })
+
+  it('нода не ответила — прежние значения на месте, следующий раз спрашивает сразу', async () => {
+    const store = await withComment()
+    mocks.fetchCommentScores.mockResolvedValueOnce([score('n1', 3)])
+    await store.loadCommentScores(store.list)
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mocks.fetchCommentScores.mockRejectedValueOnce(new Error('offline'))
+    await store.loadCommentScores(store.list, true)
+    expect(store.commentScores.n1?.scoreUp).toBe(3)
+    mocks.fetchCommentScores.mockResolvedValueOnce([score('n1', 5)])
+    await store.loadCommentScores(store.list)
+    expect(store.commentScores.n1?.scoreUp).toBe(5)
+  })
+
+  it('сменили аккаунт, пока ждали, — чужие оценки не пишутся', async () => {
+    const store = await withComment()
+    let answer!: (v: unknown) => void
+    mocks.fetchCommentScores.mockReturnValueOnce(new Promise((r) => (answer = r)))
+    const loading = store.loadCommentScores(store.list)
+    store.reset()
+    mocks.auth.getUserAddress = 'PB'
+    answer([score('n1', 3)])
+    await loading
+    expect(store.commentScores).toEqual({})
   })
 })

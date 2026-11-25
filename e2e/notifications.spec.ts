@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { p2pkhScript } from './support/p2pkh'
 import { useMockNode, type MockNodeData } from './support/mock-node'
 
 /**
@@ -111,7 +112,7 @@ const THREADS: MockNodeData = {
   ],
   comments: [
     // Алиса — к моему посту; я ей уже ответил.
-    { id: COMMENT, postid: POST, address: ALICE, message: 'Отлично!' },
+    { id: COMMENT, postid: POST, address: ALICE, message: 'Отлично!', scoreUp: 3 },
     {
       id: MY_REPLY,
       postid: POST,
@@ -260,6 +261,99 @@ test('фильтр «Комментарии», «Вы ответили» и пр
 
   await menu.getByRole('button', { name: 'Профиль: alice_ng' }).click()
   await expect(page).toHaveURL(new RegExp(`/${ALICE}$`))
+})
+
+test('лайк и дизлайк комментария прямо в списке — с числами с ноды', async ({ page }) => {
+  test.setTimeout(120_000)
+  await signInWithThreads(page)
+  const menu = await openBell(page)
+  const alice = menu
+    .getByTestId('notification-item')
+    .filter({ hasText: 'прокомментировал ваш пост' })
+  const like = alice.getByTestId('notification-like')
+  const dislike = alice.getByTestId('notification-dislike')
+  await expect(like).toHaveText('👍 3', { timeout: 30_000 })
+  await expect(dislike).toHaveText('👎 0')
+  await expect(like).toHaveAttribute('aria-pressed', 'false')
+
+  // Под оценкой моего комментария кнопок нет: свой комментарий не оценить.
+  const score = menu.getByTestId('notification-item').filter({ hasText: 'оценил ваш комментарий' })
+  await expect(score.getByTestId('notification-votes')).toHaveCount(0)
+
+  // Сеть транзакцию не приняла (подменная нода их не шлёт): сказано, оценка
+  // снята, список открыт.
+  await like.click()
+  await expect(page.locator('[role="alert"], .ui-toast').first()).toBeVisible({ timeout: 30_000 })
+  await expect(like).toHaveText('👍 3')
+  await expect(like).toHaveAttribute('aria-pressed', 'false')
+  await expect(alice).toBeVisible()
+})
+
+test('лайк ушёл в сеть: отметка и +1 сразу, второй раз не оценить', async ({ page }) => {
+  test.setTimeout(120_000)
+  await signInWithThreads(page)
+  // У кошелька есть монета, а отправку перехватывает тест: в сеть ничего не идёт.
+  const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }
+  const sent: unknown[][] = []
+  await page.route(/\.pocketnet\.app:8899\/rpc(-ex)?\/txunspent/, (route) =>
+    route.request().method() === 'OPTIONS'
+      ? route.fulfill({ status: 204, headers: cors })
+      : route.fulfill({
+          headers: cors,
+          json: {
+            result: 'success',
+            data: [
+              {
+                txid: '7'.repeat(64),
+                vout: 0,
+                address: ME,
+                amount: 1,
+                amountSat: 100_000_000,
+                confirmations: 120,
+                scriptPubKey: p2pkhScript(ME),
+              },
+            ],
+          },
+        })
+  )
+  await page.route(/\.pocketnet\.app:8899\/rpc(-ex)?\/sendrawtransactionwithmessage/, (route) => {
+    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors })
+    sent.push(route.request().postDataJSON().parameters as unknown[])
+    return route.fulfill({ headers: cors, json: { result: 'success', data: '9'.repeat(64) } })
+  })
+
+  const menu = await openBell(page)
+  const alice = menu
+    .getByTestId('notification-item')
+    .filter({ hasText: 'прокомментировал ваш пост' })
+  const like = alice.getByTestId('notification-like')
+  await expect(like).toHaveText('👍 3', { timeout: 30_000 })
+  await like.click()
+  await expect(like).toHaveText('👍 4')
+  await expect(like).toHaveAttribute('aria-pressed', 'true')
+  await expect(alice.getByTestId('notification-dislike')).toBeDisabled()
+  await expect(like).toBeDisabled()
+  await expect.poll(() => sent.length).toBe(1)
+  expect(sent[0]![1]).toMatchObject({ commentid: COMMENT, value: '1' })
+  // Список не закрылся, никуда не перешли.
+  await expect(alice).toBeVisible()
+})
+
+test('«Убрать все» при выбранном разделе — «Убрать», и убирает только раздел', async ({ page }) => {
+  test.setTimeout(120_000)
+  await signInWithThreads(page)
+  const menu = await openBell(page)
+  await expect(menu.getByText('Мой комментарий').first()).toBeVisible({ timeout: 30_000 })
+  await expect(menu.getByRole('button', { name: 'Убрать все', exact: true })).toBeVisible()
+
+  await menu.getByRole('button', { name: /Оценки/ }).click()
+  await expect(menu.getByRole('button', { name: 'Убрать все', exact: true })).toHaveCount(0)
+  await menu.getByRole('button', { name: 'Убрать', exact: true }).click()
+  await expect(menu.getByTestId('notification-item')).toHaveCount(0)
+
+  await menu.getByRole('button', { name: 'Все', exact: true }).click()
+  await expect(menu.getByText('прокомментировал ваш пост')).toBeVisible()
+  await expect(menu.getByRole('button', { name: 'Убрать все', exact: true })).toBeVisible()
 })
 
 test('разделы: видны только те, где что-то есть; «Оценки» — без комментариев', async ({ page }) => {

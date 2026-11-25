@@ -9,6 +9,7 @@ import type { UserProfile } from '@/types/rpc-responses/user-get'
 import type {
   NotificationItem,
   NotificationPostSnapshot,
+  NotificationCommentScore,
   NotificationCommentSnapshot,
   NotificationUserSnapshot,
 } from './notifications-types'
@@ -18,7 +19,12 @@ import {
   notificationTypeFor,
   preferEventsOverTransfers,
 } from './notifications-mappers'
-import { enrichNotifications, fetchCommentsById, fetchPosts } from './notifications-enricher'
+import {
+  enrichNotifications,
+  fetchCommentScores,
+  fetchCommentsById,
+  fetchPosts,
+} from './notifications-enricher'
 import {
   isAnsweredInThread,
   isReplyableNotification,
@@ -45,6 +51,7 @@ export type {
   NotificationItem,
   NotificationType,
   NotificationPostSnapshot,
+  NotificationCommentScore,
   NotificationCommentSnapshot,
   NotificationUserSnapshot,
 } from './notifications-types'
@@ -77,6 +84,12 @@ function mergeUser<T extends NotificationUserSnapshot>(
  */
 const ANSWER_CHECK_TTL_MS = 5 * 60 * 1000
 
+/**
+ * Сколько оценки комментариев считаются свежими: список перерисовывается от
+ * каждого события, а спрашивать ноду об одном и том же подряд незачем.
+ */
+const SCORES_TTL_MS = 15_000
+
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     items: [] as NotificationItem[],
@@ -105,6 +118,10 @@ export const useNotificationsStore = defineStore('notifications', {
     postCache: {} as Record<string, NotificationPostSnapshot & Record<string, unknown>>,
     /** Кэш комментариев по id (txid) — для превью и развёртывания текста */
     commentCache: {} as Record<string, NotificationCommentSnapshot & Record<string, unknown>>,
+    /** Оценки комментариев (id → сейчас на ноде) — для лайков в списке. */
+    commentScores: {} as Record<string, NotificationCommentScore>,
+    /** Когда оценки комментария спрашивали (id → мс). */
+    scoreChecks: new Map<string, number>(),
     /** Кэш профилей по адресу */
     profileCache: {} as Record<string, NotificationUserSnapshot & { profile?: UserProfile }>,
     /** Идёт фоновое обогащение — для скелетонов */
@@ -414,6 +431,8 @@ export const useNotificationsStore = defineStore('notifications', {
       this.readBlock = 0
       this.postCache = {}
       this.commentCache = {}
+      this.commentScores = {}
+      this.scoreChecks = new Map()
       this.profileCache = {}
       this.enrichedIds = new Set()
       this.pendingProfiles = new Set()
@@ -512,6 +531,35 @@ export const useNotificationsStore = defineStore('notifications', {
         }
       }
       return !!this.postCache[id]?.address
+    },
+
+    /**
+     * Оценки комментариев из списка — какие они сейчас. `force` — спросить и
+     * недавно спрошенные: список только что открыли.
+     */
+    async loadCommentScores(items: NotificationItem[], force = false): Promise<void> {
+      const me = useAuthStore().getUserAddress
+      if (!me) return
+      const now = Date.now()
+      const ids = items
+        .filter(isReplyableNotification)
+        .map((item) => item.id)
+        .filter((id) => force || now - (this.scoreChecks.get(id) ?? 0) >= SCORES_TTL_MS)
+      if (ids.length === 0) return
+      for (const id of ids) this.scoreChecks.set(id, now)
+      const run = this.initSeq
+      try {
+        const scores = await fetchCommentScores(me, ids)
+        // Пока ждали, сменили аккаунт: чужое «вы оценили» сюда не пишем.
+        if (run !== this.initSeq || me !== useAuthStore().getUserAddress) return
+        const next = { ...this.commentScores }
+        for (const score of scores) next[score.id] = score
+        this.commentScores = next
+      } catch (e) {
+        // Не вышло — следующий показ списка спросит снова, не выжидая.
+        for (const id of ids) this.scoreChecks.delete(id)
+        console.warn('[notifications] comment scores failed', e)
+      }
     },
 
     /** Вы ответили на комментарий из этого приложения — отметка сразу, без ноды. */

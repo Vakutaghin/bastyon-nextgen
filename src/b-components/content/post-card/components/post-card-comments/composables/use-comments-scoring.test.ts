@@ -26,7 +26,8 @@ vi.mock('../comment-scoring', () => ({ sendCommentScore: mocks.sendCommentScore 
 import { useCommentsStore } from '@/stores/comments-store'
 import { usePendingTransactionsStore } from '@/stores/pending-transactions-store'
 import type { PostForComments } from '../types'
-import { scoresWithMyVote, useCommentsScoring } from './use-comments-scoring'
+import { scoresWithMyVote } from './use-comment-voting'
+import { useCommentsScoring } from './use-comments-scoring'
 
 const comment = (overrides: Partial<GetComment> = {}) =>
   ({

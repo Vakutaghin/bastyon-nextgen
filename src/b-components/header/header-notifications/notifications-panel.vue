@@ -4,7 +4,7 @@
       <SC_NotificationsTitle>{{ t('header.notifications') }}</SC_NotificationsTitle>
       <SC_NotificationsHeaderActions>
         <SC_ClearAllButton v-if="source.length > 0" type="button" @click.stop="onClearAll">
-          {{ t('header.clearAll') }}
+          {{ filter === 'all' ? t('header.clearAll') : t('header.clearFiltered') }}
         </SC_ClearAllButton>
         <SC_CloseButton
           v-if="sheet"
@@ -163,7 +163,8 @@
             </SC_PostRef>
           </SC_NotificationPreview>
 
-          <!-- Комментарий к посту или ответ вам: ответить сразу, у самого комментария. -->
+          <!-- Комментарий к посту или ответ вам: ответить сразу, у самого комментария,
+               или оценить, не выходя из списка. -->
           <SC_ReplyRow v-if="isReplyableNotification(item)">
             <SC_ReplyButton
               type="button"
@@ -173,6 +174,12 @@
               <MessageOutlined />
               {{ t('header.reply') }}
             </SC_ReplyButton>
+            <NotificationVotes
+              :comment="votableComment(item)"
+              :voting="voting"
+              @like="vote(item, 1)"
+              @dislike="vote(item, -1)"
+            />
             <SC_AnsweredMark v-if="notificationsStore.answeredIds.has(item.id)">
               <CheckOutlined />
               {{ t('header.answered') }}
@@ -200,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch, type Component } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch, type Component } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Dropdown from '@/components/dropdown'
@@ -244,6 +251,13 @@ import {
 import { formatTimeCompact } from '@/helpers/common/date-formatter'
 import { ICON_BY_TYPE, notificationTypeLabelKey } from './helpers/notification-type-map'
 import { openNotification } from './open-notification'
+import NotificationVotes from './notification-votes.vue'
+import { useAuthStore } from '@/blockchain'
+import type { UserState } from '@/types/rpc-responses/user-state'
+import {
+  useCommentVoting,
+  type VotableComment,
+} from '@/b-components/content/post-card/components/post-card-comments/composables/use-comment-voting'
 import {
   SC_NotificationsMenu,
   SC_NotificationsHeader,
@@ -381,6 +395,59 @@ watch(
   },
   { immediate: true }
 )
+// Оценки комментариев: при открытии списка — заново, дальше — раз в минуту и
+// для показанных позже. Счётчики меняют другие люди, и вчерашние обманывали бы.
+const SCORES_REFRESH_MS = 60_000
+let scoresTimer: ReturnType<typeof setInterval> | null = null
+
+function stopScores(): void {
+  if (scoresTimer) clearInterval(scoresTimer)
+  scoresTimer = null
+}
+
+watch(
+  () => props.visible,
+  (open) => {
+    stopScores()
+    if (!open) return
+    void notificationsStore.loadCommentScores(list.value, true)
+    scoresTimer = setInterval(
+      () => void notificationsStore.loadCommentScores(list.value, true),
+      SCORES_REFRESH_MS
+    )
+  },
+  { immediate: true }
+)
+watch(
+  () => (props.visible ? list.value.map((i) => i.id).join(',') : ''),
+  (ids) => {
+    if (ids) void notificationsStore.loadCommentScores(list.value)
+  }
+)
+onBeforeUnmount(stopScores)
+
+const authStore = useAuthStore()
+const voting = useCommentVoting({
+  isUserAuthenticated: computed<boolean>(() => authStore.isUserAuthenticated),
+  currentUserStateData: computed<UserState | null>(
+    () => (authStore.getUserProfile as UserState | null) ?? null
+  ),
+  currentUserAddress: computed<string>(() => authStore.getUserAddress ?? ''),
+})
+
+/** Комментарий, который можно оценить: нода его отдала, он не удалён и не ваш. */
+function votableComment(item: NotificationItem): VotableComment | undefined {
+  const score = notificationsStore.commentScores[item.id]
+  if (!score || score.deleted || score.address === authStore.getUserAddress) return undefined
+  return score
+}
+
+function vote(item: NotificationItem, value: 1 | -1): void {
+  const comment = votableComment(item)
+  if (!comment) return
+  void (value > 0 ? voting.onCommentScoreUp(comment) : voting.onCommentScoreDown(comment))
+}
+
 // Read-pointer (P2-8): «прочитано до» двигается только по явному открытию
 // выпадашки, а не на head сети при каждом фоновом опросе.
 const readBlock = computed(() => notificationsStore.readBlock)
@@ -620,7 +687,7 @@ function onItemMenuClick({ key }: { key: string | number }): void {
   notificationsStore.hideNotification(id)
 }
 
-/** «Убрать все» — то, что сейчас в списке: при фильтре — только комментарии. */
+/** «Убрать все» — весь список; с выбранным разделом кнопка «Убрать» — только его. */
 function onClearAll(): void {
   notificationsStore.hideAllNotifications(source.value.map((n) => n.id))
 }

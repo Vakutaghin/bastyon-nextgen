@@ -39,7 +39,7 @@ The avatar and the name in a notification lead to the profile of whoever did it.
 
 The list starts with the last 20 notifications; **“Show more”** at the bottom adds the next ones.
 
-The three-dot button on a notification has **“Open”**, the same as clicking the notification itself, **“On blockchain”**, the event’s transaction in a window over the page (see [Blockchain explorer](explorer.md#on-blockchain-without-leaving-the-feed)), and **“Hide notification”**. **“Clear all”** at the top hides the whole list, and with a section selected — only that section. Hidden notifications do not come back.
+The three-dot button on a notification has **“Open”**, the same as clicking the notification itself, **“On blockchain”**, the event’s transaction in a window over the page (see [Blockchain explorer](explorer.md#on-blockchain-without-leaving-the-feed)), and **“Hide notification”**. **“Clear all”** at the top hides the whole list; with a section selected the button reads **“Clear”** and hides only that section. Hidden notifications do not come back.
 
 ## Sections
 
@@ -56,6 +56,8 @@ The number on a button is how many new ones the section has. Mentions and profil
 ## Comments
 
 A comment or a reply has a **“Reply”** button. The post opens at that comment with the reply field already open, ready for typing. A reply to a reply already starts with the author’s name, for example “@alice,”, so that everyone in the thread sees whom you are answering. More in [Comments](comments.md).
+
+Next to it are 👍 and 👎 with their counts, as under a post: you can rate the comment without leaving the list. The app takes the counts from the network when you open the list and refreshes them once a minute. A comment can be rated once, and the rating cannot be undone.
 
 If you have already replied to a comment, **“You replied”** shows under it — whether you replied from this device or another one: the app looks at the comment’s thread on the network. That way you see which comments are still waiting for an answer. A reply sent from another device may take a few minutes to show up here.
 
