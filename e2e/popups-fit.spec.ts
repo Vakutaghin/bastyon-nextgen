@@ -240,8 +240,9 @@ for (const screen of [DESKTOP, PHONE]) {
     }).toPass({ timeout: 40_000 })
 
     await check(page.getByPlaceholder(/Введите комментарий/))
-    await page.getByRole('button', { name: 'Ответить', exact: true }).last().click()
-    await check(page.getByPlaceholder(/Введите ответ/))
+    const comment = page.locator(`[data-comment-id="${'c5'.padEnd(64, '0')}"]`).first()
+    await comment.getByRole('button', { name: 'Ответить', exact: true }).first().click()
+    await check(page.getByPlaceholder(/Введите ответ/).first())
   })
 
   test(`подсказки тегов: ${screen.name}`, async ({ page }) => {
