@@ -2525,6 +2525,11 @@ export default {
     ratingBlockedByAuthor: 'Impossible de noter : vous avez bloqué l’auteur, ou il vous a bloqué.',
     ratingNetworkFailed:
       'Impossible d’enregistrer votre note à cause d’une panne temporaire. Réessayez plus tard.',
+    ratingUndo: 'Annuler',
+    ratingHoldHint:
+      'La note part sur le réseau dans quelques secondes. D’ici là, vous pouvez choisir une autre étoile ou annuler ; ensuite, elle ne peut plus être modifiée.',
+    ratingHoldStatus:
+      'Note {n}. Elle part sur le réseau dans quelques secondes ; d’ici là, vous pouvez la modifier ou l’annuler.',
     ratingNewAccount: 'Le vote est possible 24 heures après l’inscription.',
     ratingLowReputation: 'Votre réputation est trop faible pour voter.',
     ratingLowStarsNeedReputation:

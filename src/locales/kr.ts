@@ -2462,6 +2462,11 @@ export default {
     ratingBlockedByAuthor:
       '이 게시물을 평가할 수 없습니다. 회원님이 작성자를 차단했거나 작성자가 회원님을 차단했습니다.',
     ratingNetworkFailed: '일시적인 오류로 평가를 기록하지 못했습니다. 나중에 다시 시도하세요.',
+    ratingUndo: '취소',
+    ratingHoldHint:
+      '평가는 몇 초 뒤 네트워크로 전송됩니다. 그 전에는 다른 별을 고르거나 취소할 수 있지만, 이후에는 바꿀 수 없습니다.',
+    ratingHoldStatus:
+      '평가 {n}. 몇 초 뒤 네트워크로 전송되며, 그 전에는 바꾸거나 취소할 수 있습니다.',
     ratingNewAccount: '가입 후 24시간이 지나야 평가할 수 있습니다.',
     ratingLowReputation: '평판이 너무 낮아 평가할 수 없습니다.',
     ratingLowStarsNeedReputation: '별 1~3개 평가는 평판이 100 이상이어야 합니다.',

@@ -53,9 +53,56 @@ export const SC_RatingRow = styled.div`
     }
   }
 
+  /* Только для экранного диктора. */
+  .sr-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   /* У кнопки поля внутри — на столько же ближе, чтобы число стояло на месте. */
   button.voters-count {
     margin-left: 7px;
+  }
+`
+
+/** «Отменить 4»: оценка уйдёт через столько секунд. */
+export const SC_HoldButton = styled.button`
+  ${noSelect}
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  margin-left: 8px;
+  padding: 0 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-full);
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--transition-quick);
+
+  &:hover {
+    border-color: var(--ui-border-accented);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 1px;
+  }
+
+  /* Ширина одна и та же при любой цифре. */
+  .seconds {
+    min-width: 1ch;
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
   }
 `
 

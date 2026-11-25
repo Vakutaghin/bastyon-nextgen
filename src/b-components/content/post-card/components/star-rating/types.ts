@@ -19,7 +19,7 @@ export interface SendRawTransactionRequest {
   parameters: [
     string, // hex транзакции
     UpvoteTransactionParams | string,
-    string // operationType: "upvoteShare"
+    string, // operationType: "upvoteShare"
   ]
   method: 'sendrawtransactionwithmessage'
   cachehash?: string
@@ -130,6 +130,5 @@ export interface StarRatingProps {
  * События компонента
  */
 export interface StarRatingEmits {
-  (e: 'rating-change', rating: number): void
   (e: 'error', error: Error): void
 }

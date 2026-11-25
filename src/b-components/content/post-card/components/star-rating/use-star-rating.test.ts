@@ -1,8 +1,8 @@
-// Звёзды под постом: оценка ставится один раз, сразу пересчитывает среднее
-// и число оценивших, висит в pending-слое до подтверждения; свой пост,
-// новичок, низкая репутация и 1–3 звезды без репутации 100 — отказ с
-// понятным тостом (S18); гостю открывается окно входа; отказ сети
-// откатывает оценку.
+// Звёзды под постом: выбранная оценка сразу пересчитывает среднее и число
+// оценивших и ждёт отправки — её можно поменять или отменить; отправленная
+// одна и навсегда, до подтверждения висит в pending-слое; свой пост, новичок,
+// низкая репутация и 1–3 звезды без репутации 100 — отказ с понятным тостом
+// (S18); гостю открывается окно входа. Сама отправка — held-ratings-store.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
@@ -15,15 +15,13 @@ const mocks = vi.hoisted(() => ({
   },
   posts: {} as Record<string, { myVal?: number; scoreSum?: number; scoreCnt?: number }>,
   pending: {} as Record<string, number>,
-  pendingAdd: vi.fn(),
-  markSubmitted: vi.fn(),
-  markFailed: vi.fn(),
+  held: {} as Record<string, number>,
+  sent: {} as Record<string, number>,
+  hold: vi.fn(),
+  cancel: vi.fn(),
   openAuthModal: vi.fn(),
   triggerExplosion: vi.fn(),
   toastError: vi.fn(),
-  sendUpvote: vi.fn(),
-  classify: vi.fn(),
-  handleVoteError: vi.fn(),
 }))
 vi.mock('@/blockchain/store/auth-store', () => ({ useAuthStore: () => mocks.auth }))
 vi.mock('@/stores/modal-store', () => ({
@@ -36,14 +34,21 @@ vi.mock('@/stores/pending-ratings-store', () => ({
   usePendingRatingsStore: () => ({
     init: vi.fn(),
     getPendingValue: (id: string) => mocks.pending[id] ?? null,
-    add: (...args: unknown[]) => {
-      mocks.pendingAdd(...args)
-      mocks.pending[args[0] as string] = args[1] as number
+  }),
+}))
+vi.mock('@/stores/held-ratings-store', () => ({
+  useHeldRatingsStore: () => ({
+    init: vi.fn(),
+    heldValue: (id: string) => mocks.held[id] ?? null,
+    sentValue: (id: string) => mocks.sent[id] ?? null,
+    secondsLeft: (id: string) => (mocks.held[id] ? 4 : 0),
+    hold: (item: { shareId: string; value: number }) => {
+      mocks.hold(item)
+      mocks.held[item.shareId] = item.value
     },
-    markSubmitted: mocks.markSubmitted,
-    markFailed: (id: string, message?: string) => {
-      mocks.markFailed(id, message)
-      delete mocks.pending[id]
+    cancel: (id: string) => {
+      mocks.cancel(id)
+      delete mocks.held[id]
     },
   }),
 }))
@@ -55,11 +60,6 @@ vi.mock('@/helpers/common/post-title-resolver', () => ({
   resolvePostTitleFromPost: () => ({ title: 'Поездка на море', usedContent: false }),
 }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
-vi.mock('./helpers/star-rating-transaction', () => ({ sendUpvoteTransaction: mocks.sendUpvote }))
-vi.mock('./helpers/star-rating-errors', () => ({
-  classifyVoteError: mocks.classify,
-  handleVoteError: mocks.handleVoteError,
-}))
 
 import type { StarRatingProps } from './types'
 import { useStarRating } from './use-star-rating'
@@ -93,19 +93,16 @@ describe('useStarRating', () => {
     })
     mocks.posts = {}
     mocks.pending = reactive({})
+    mocks.held = reactive({})
+    mocks.sent = reactive({})
     for (const fn of [
-      mocks.pendingAdd,
-      mocks.markSubmitted,
-      mocks.markFailed,
+      mocks.hold,
+      mocks.cancel,
       mocks.openAuthModal,
       mocks.triggerExplosion,
       mocks.toastError,
-      mocks.handleVoteError,
     ])
       fn.mockReset()
-    mocks.sendUpvote.mockReset().mockResolvedValue('tx-vote')
-    mocks.classify.mockReset().mockReturnValue({ kind: 'network' })
-    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   it('до оценки — средняя из пропсов; наведение подсвечивает звёзды', () => {
@@ -118,34 +115,73 @@ describe('useStarRating', () => {
     expect(rating.displayRating.value).toBe(0)
   })
 
-  it('оценка: pending-слой, транзакция автору, пересчёт среднего и числа оценивших', async () => {
-    const { rating, emit } = setup()
-    await rating.handleStarClick(5, click())
+  it('оценка ждёт отправки: автор, заголовок, пересчёт среднего и числа оценивших', () => {
+    const { rating } = setup()
+    rating.handleStarHover(5)
+    rating.handleStarClick(5, click())
 
-    expect(mocks.pendingAdd).toHaveBeenCalledWith('post1', 5, 10 * 60 * 1000, 'Поездка на море')
-    expect(mocks.sendUpvote).toHaveBeenCalledWith('post1', 5, 'PAuthor')
-    expect(mocks.markSubmitted).toHaveBeenCalledWith('post1', 'tx-vote')
-    expect(emit).toHaveBeenCalledWith('rating-change', 5)
+    expect(mocks.hold).toHaveBeenCalledWith({
+      shareId: 'post1',
+      value: 5,
+      author: 'PAuthor',
+      title: 'Поездка на море',
+    })
     expect(mocks.triggerExplosion).toHaveBeenCalledWith(10, 20)
 
-    expect(rating.hasVoted.value).toBe(true)
+    expect(rating.heldValue.value).toBe(5)
+    expect(rating.holdSeconds.value).toBe(4)
+    expect(rating.hasVoted.value).toBe(false)
     expect(rating.optimisticVotersCount.value).toBe(3)
     expect(rating.optimisticAverageRating.value).toBe(4.3)
     expect(rating.displayRating.value).toBe(5)
   })
 
-  it('повторно оценить нельзя: клик и наведение после оценки ничего не делают', async () => {
+  it('пока ждёт — другая звезда меняет оценку, та же ничего не делает', () => {
+    const { rating } = setup()
+    rating.handleStarClick(4, click())
+    rating.handleStarClick(4, click())
+    expect(mocks.hold).toHaveBeenCalledTimes(1)
+    expect(mocks.triggerExplosion).toHaveBeenCalledTimes(1)
+    rating.handleStarClick(5, click())
+    expect(mocks.hold).toHaveBeenLastCalledWith(expect.objectContaining({ value: 5 }))
+    expect(rating.displayRating.value).toBe(5)
+  })
+
+  it('отмена: звёзды пустые, хотя палец остался на звезде, числа прежние', () => {
+    const { rating } = setup()
+    rating.handleStarClick(4, click())
+    rating.handleStarHover(4)
+    rating.cancelHold()
+    expect(mocks.cancel).toHaveBeenCalledWith('post1')
+    expect(rating.displayRating.value).toBe(0)
+    expect(rating.optimisticAverageRating.value).toBe(4)
+    expect(rating.optimisticVotersCount.value).toBe(2)
+    expect(rating.hasVoted.value).toBe(false)
+  })
+
+  it('отправленная в этом запуске видна, пока пост не обновился, и вторая не ставится', () => {
+    mocks.sent.post1 = 4
+    const { rating } = setup()
+    expect(rating.hasVoted.value).toBe(true)
+    expect(rating.submittedValue.value).toBe(4)
+    expect(rating.displayRating.value).toBe(4)
+    expect(rating.optimisticVotersCount.value).toBe(3)
+    rating.handleStarClick(5, click())
+    expect(mocks.hold).not.toHaveBeenCalled()
+  })
+
+  it('повторно оценить нельзя: клик и наведение после оценки ничего не делают', () => {
     const { rating } = setup({ userVote: 4 })
     expect(rating.hasVoted.value).toBe(true)
     expect(rating.displayRating.value).toBe(4)
 
     const event = click()
     const stop = vi.spyOn(event, 'stopPropagation')
-    await rating.handleStarClick(2, event)
+    rating.handleStarClick(2, event)
     rating.handleStarHover(1)
     expect(stop).toHaveBeenCalled()
     expect(rating.displayRating.value).toBe(4)
-    expect(mocks.sendUpvote).not.toHaveBeenCalled()
+    expect(mocks.hold).not.toHaveBeenCalled()
   })
 
   it('неподтверждённая оценка из pending-слоя тоже считается', () => {
@@ -163,24 +199,24 @@ describe('useStarRating', () => {
     expect(rating.optimisticVotersCount.value).toBe(5)
   })
 
-  it('свой пост: тост, звёзды не отправляются (S18)', async () => {
+  it('свой пост: тост, звёзды не отправляются (S18)', () => {
     const { rating } = setup({ contentAuthorAddress: 'PMe' })
     expect(rating.isOwnPost.value).toBe(true)
-    await rating.handleStarClick(5, click())
+    rating.handleStarClick(5, click())
     expect(mocks.toastError).toHaveBeenCalledWith({ message: 'postCard.ratingOwnPost' })
-    expect(mocks.sendUpvote).not.toHaveBeenCalled()
+    expect(mocks.hold).not.toHaveBeenCalled()
   })
 
-  it('гость: звёзды не закрашиваются, клик не гасится (откроется окно входа), транзакции нет', async () => {
+  it('гость: звёзды не закрашиваются, клик не гасится (откроется окно входа), транзакции нет', () => {
     mocks.auth.isUserAuthenticated = false
     const { rating } = setup()
     rating.handleStarHover(4)
     expect(rating.displayRating.value).toBe(0)
     const event = click()
     const stop = vi.spyOn(event, 'stopPropagation')
-    await rating.handleStarClick(5, event)
+    rating.handleStarClick(5, event)
     expect(stop).not.toHaveBeenCalled()
-    expect(mocks.sendUpvote).not.toHaveBeenCalled()
+    expect(mocks.hold).not.toHaveBeenCalled()
 
     rating.authPopoverVisible.value = true
     rating.openAuthModal()
@@ -207,41 +243,27 @@ describe('useStarRating', () => {
       3,
       'postCard.ratingLowStarsNeedReputation',
     ],
-  ])('%s: понятный тост и событие error, транзакции нет', async (_name, profile, stars, key) => {
+  ])('%s: понятный тост и событие error, транзакции нет', (_name, profile, stars, key) => {
     mocks.auth.userProfile = profile
     const { rating, emit } = setup()
-    await rating.handleStarClick(stars, click())
+    rating.handleStarClick(stars, click())
     expect(mocks.toastError).toHaveBeenCalledWith({ message: key })
     expect(emit).toHaveBeenCalledWith('error', expect.any(Error))
-    expect(mocks.sendUpvote).not.toHaveBeenCalled()
+    expect(mocks.hold).not.toHaveBeenCalled()
   })
 
-  it('4 звезды без репутации 100 — можно', async () => {
+  it('4 звезды без репутации 100 — можно', () => {
     mocks.auth.userProfile = { regdate: Math.floor(Date.now() / 1000) - 30 * DAY, reputation: 0 }
     const { rating } = setup()
-    await rating.handleStarClick(4, click())
-    expect(mocks.sendUpvote).toHaveBeenCalledWith('post1', 4, 'PAuthor')
+    rating.handleStarClick(4, click())
+    expect(mocks.hold).toHaveBeenCalledWith(expect.objectContaining({ value: 4 }))
   })
 
-  it('отказ сети: оценка снята, pending помечен ошибкой, причина — через handleVoteError', async () => {
-    const error = new Error('SelfScore')
-    mocks.sendUpvote.mockRejectedValue(error)
-    const { rating, emit } = setup()
-    await rating.handleStarClick(5, click())
-
-    expect(rating.optimisticRating.value).toBeNull()
-    expect(mocks.markFailed).toHaveBeenCalledWith('post1', 'SelfScore')
-    expect(mocks.classify).toHaveBeenCalledWith(error)
-    expect(mocks.handleVoteError).toHaveBeenCalledWith({ kind: 'network' }, emit)
-    expect(rating.hasVoted.value).toBe(false)
-    expect(rating.isSubmitting.value).toBe(false)
-  })
-
-  it('отключённые звёзды не реагируют', async () => {
+  it('отключённые звёзды не реагируют', () => {
     const { rating } = setup({ disabled: true })
     rating.handleStarHover(5)
-    await rating.handleStarClick(5, click())
+    rating.handleStarClick(5, click())
     expect(rating.displayRating.value).toBe(0)
-    expect(mocks.sendUpvote).not.toHaveBeenCalled()
+    expect(mocks.hold).not.toHaveBeenCalled()
   })
 })

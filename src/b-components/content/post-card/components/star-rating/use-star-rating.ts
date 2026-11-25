@@ -5,6 +5,7 @@ import { useModalStore } from '@/stores/modal-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { appToast } from '@/b-components/app-toast'
 import { usePendingRatingsStore } from '@/stores/pending-ratings-store'
+import { useHeldRatingsStore } from '@/stores/held-ratings-store'
 import { useEffectsStore } from '@/stores/effects-store'
 import { resolvePostTitleFromPost } from '@/helpers/common/post-title-resolver'
 import type { StarRatingProps, StarRatingEmits } from './types'
@@ -15,15 +16,11 @@ import {
   isOwnContent,
 } from './helpers/star-rating-validation'
 import { t } from '@/i18n'
-import { sendUpvoteTransaction } from './helpers/star-rating-transaction'
-import { classifyVoteError, handleVoteError } from './helpers/star-rating-errors'
 
 // ── Composable ─────────────────────────────────────────────────────────
 
 export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
   // ── Reactive state ───────────────────────────────────────────────────
-  const optimisticRating = ref<number | null>(null)
-  const isSubmitting = ref(false)
   const hoveredStar = ref<number | null>(null)
   const authPopoverVisible = ref(false)
 
@@ -33,6 +30,8 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
   const effectsStore = useEffectsStore()
   const pendingStore = usePendingRatingsStore()
   pendingStore.init()
+  const heldStore = useHeldRatingsStore()
+  heldStore.init()
 
   // ── Auth helpers ─────────────────────────────────────────────────────
   const openAuthModal = () => {
@@ -56,15 +55,21 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
     isOwnContent(props.contentAuthorAddress, useAuthStore().getUserAddress)
   )
 
-  // ── Pending / voted state ────────────────────────────────────────────
-  const pendingValue = computed(() => pendingStore.getPendingValue(props.shareId))
+  // ── Своя оценка: ждёт отправки, отправлена, в сети ───────────────────
+  /** Ещё не ушла: можно выбрать другую звезду или отменить. */
+  const heldValue = computed(() => heldStore.heldValue(props.shareId))
+  const holdSeconds = computed(() => heldStore.secondsLeft(props.shareId))
+  /** Ушла, но пост её ещё не показывает: ждёт блока или отправлена в этом запуске. */
+  const submittedValue = computed(
+    () => pendingStore.getPendingValue(props.shareId) ?? heldStore.sentValue(props.shareId)
+  )
   const hasVoted = computed(() => {
-    if (pendingValue.value !== null) return true
+    if (submittedValue.value !== null) return true
     return effectiveUserVote.value !== undefined && effectiveUserVote.value !== null
   })
 
   // ── Optimistic UI calculations ───────────────────────────────────────
-  const activeOptimisticRating = computed(() => optimisticRating.value ?? pendingValue.value)
+  const activeOptimisticRating = computed(() => heldValue.value ?? submittedValue.value)
 
   const optimisticScoreSum = computed(() => {
     if (activeOptimisticRating.value !== null) {
@@ -111,11 +116,8 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
     if (hoveredStar.value !== null) {
       return hoveredStar.value
     }
-    if (optimisticRating.value !== null) {
-      return optimisticRating.value
-    }
-    if (pendingValue.value !== null) {
-      return pendingValue.value as number
+    if (activeOptimisticRating.value !== null) {
+      return activeOptimisticRating.value
     }
     if (hasVoted.value) {
       return effectiveUserVote.value!
@@ -126,7 +128,7 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
   // ── Interaction handlers ─────────────────────────────────────────────
 
   const handleStarHover = (starNumber: number) => {
-    if (props.disabled || isSubmitting.value || hasVoted.value) return
+    if (props.disabled || hasVoted.value) return
     // Гость оценить не может: закрашенные звёзды выглядели поставленной
     // оценкой, а на телефоне тап оставлял их закрашенными рядом с «Войдите».
     if (!useAuthStore().isUserAuthenticated) return
@@ -149,14 +151,14 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
     return resolvePostTitleFromPost(postsStore.getPostByShareId(shareId))
   }
 
-  const handleStarClick = async (starNumber: number, event?: Event) => {
+  const handleStarClick = (starNumber: number, event?: Event): void => {
     // Already voted - block everything and prevent popover from opening
     if (hasVoted.value) {
       if (event) event.stopPropagation()
       return
     }
 
-    if (props.disabled || isSubmitting.value) return
+    if (props.disabled) return
 
     const authStore = useAuthStore()
 
@@ -197,6 +199,9 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
       return
     }
 
+    // Та же звезда, пока оценка ждёт, — отсчёт не начинается заново.
+    if (heldValue.value === starNumber) return
+
     // Visual explosion effect
     if (event && event instanceof MouseEvent) {
       effectsStore.triggerExplosion(event.clientX, event.clientY)
@@ -207,39 +212,25 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
       }
     }
 
-    try {
-      isSubmitting.value = true
-      optimisticRating.value = starNumber
+    // Наведение больше не перекрывает выбранное: палец остался на звезде.
+    hoveredStar.value = null
+    heldStore.hold({
+      shareId: props.shareId,
+      value: starNumber,
+      author: props.contentAuthorAddress,
+      title: resolvePostTitle(props.shareId).title,
+    })
+  }
 
-      const { title } = resolvePostTitle(props.shareId)
-      pendingStore.add(props.shareId, starNumber, 10 * 60 * 1000, title)
-
-      const txid = await sendUpvoteTransaction(
-        props.shareId,
-        starNumber,
-        props.contentAuthorAddress
-      )
-
-      pendingStore.markSubmitted(props.shareId, txid)
-      emit('rating-change', starNumber)
-    } catch (error: unknown) {
-      console.error('[StarRating] Vote failed:', error)
-      optimisticRating.value = null
-      const errorMessage = error instanceof Error ? error.message : undefined
-      pendingStore.markFailed(props.shareId, errorMessage)
-
-      const classified = classifyVoteError(error)
-      handleVoteError(classified, emit)
-    } finally {
-      isSubmitting.value = false
-    }
+  /** Передумали, пока оценка не ушла. */
+  const cancelHold = (): void => {
+    hoveredStar.value = null
+    heldStore.cancel(props.shareId)
   }
 
   // ── Public API ───────────────────────────────────────────────────────
   return {
     // Reactive state
-    optimisticRating,
-    isSubmitting,
     hoveredStar,
     authPopoverVisible,
 
@@ -248,9 +239,13 @@ export function useStarRating(props: StarRatingProps, emit: StarRatingEmits) {
     optimisticAverageRating,
     optimisticVotersCount,
     hasVoted,
+    heldValue,
+    holdSeconds,
+    submittedValue,
     isOwnPost,
 
     // Methods
+    cancelHold,
     openAuthModal,
     handleStarHover,
     handleStarLeave,

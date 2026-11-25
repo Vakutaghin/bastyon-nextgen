@@ -13,6 +13,7 @@
 export async function resetAccountScopedStores(address?: string | null): Promise<void> {
   const [
     { usePendingRatingsStore },
+    { useHeldRatingsStore },
     { useNotificationsStore },
     { useUserRelationsStore },
     { usePendingPostsStore },
@@ -27,6 +28,7 @@ export async function resetAccountScopedStores(address?: string | null): Promise
     { useVideoUploadsStore },
   ] = await Promise.all([
     import('@/stores/pending-ratings-store'),
+    import('@/stores/held-ratings-store'),
     import('@/stores/notifications-store'),
     import('@/stores/user-relations-store'),
     import('@/stores/pending-posts-store'),
@@ -41,6 +43,8 @@ export async function resetAccountScopedStores(address?: string | null): Promise
     import('@/stores/video-uploads-store'),
   ])
   usePendingRatingsStore().reset()
+  // Оценки, которые ещё можно отменить: записаны на устройстве за своим аккаунтом.
+  useHeldRatingsStore().reset()
   // Уведомления нового аккаунта наблюдатель адреса в main.ts начинает грузить
   // раньше этого сброса, а импорты выше в сборке для разработки идут по сети.
   // Сброс стирал готовый список: значок колокольчика пропадал до следующего

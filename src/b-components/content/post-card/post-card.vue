@@ -189,7 +189,6 @@
             :score-sum="post.scoreSum || 0"
             :share-id="postId"
             :content-author-address="post.author?.address || ''"
-            @rating-change="handleRatingChange"
             @error="handleRatingError"
           />
 
@@ -741,15 +740,6 @@ const originalAuthorFormattedTime = computed<string>(() => {
   if (ts == null) return ''
   return formatDateTimeFull(ts)
 })
-
-function handleRatingChange(_rating: number): void {
-  // Оптимистичное состояние держится в composable (`optimisticRating` +
-  // `pendingValue`). Мутировать `post.myVal` здесь нельзя: это делает
-  // `effectiveUserVote` правдивым до подтверждения транзакции — из-за чего
-  // `optimisticVotersCount` / `scoreSum` откатывают +1 обратно. `myVal`,
-  // `scoreCnt`, `scoreSum` обновятся атомарно в store после поллинга
-  // подтверждения в `pending-ratings-store`.
-}
 
 function handleRatingError(error: unknown): void {
   console.error('Failed to submit rating:', error)

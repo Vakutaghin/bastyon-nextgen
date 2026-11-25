@@ -23,7 +23,7 @@ How to use Bastyon NextGen with a keyboard, a screen reader, larger text and hig
 - **Tab** and **Shift+Tab** move between buttons, links and fields. The first Tab shows **“Skip to content”** in the top left corner: Enter takes you straight to the page content, past the header and the left panel.
 - **Enter** or **Space** press what is selected: the header icons (notifications, downloads, Tor, IPFS, theme, account menu), a chat row, an image in a post, a category in the left panel.
 - **Menus** open with the same keys, and the first item is selected at once. The up and down arrows, Home and End move between items, Enter picks an item, Esc closes the menu and returns to its button.
-- **Star rating**: Tab selects the row of stars, the left and right arrows pick a star (it fills in), Enter or Space rates. A rating cannot be changed later, so the arrows do not rate.
+- **Star rating**: Tab selects the row of stars, the left and right arrows pick a star (it fills in), Enter or Space rates. The arrows do not rate; **“Undo”** is the next Tab stop while the rating waits to be sent.
 - **The phone menu** (the three-line button) closes with Esc.
 - Gestures have alternatives: swipe to reply — **“Reply”** in the message menu; long press to select — **“Select”**.
 

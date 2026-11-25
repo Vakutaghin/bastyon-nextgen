@@ -35,6 +35,7 @@ import {
   PEERTUBE_RESUME_PREFIX,
   POST_DRAFT_KEY,
   COMMENT_DRAFT_PREFIX,
+  HELD_RATINGS_PREFIX,
   PENDING_REGISTRATION_KEY,
   PENDING_NICKNAME_KEY,
 } from '../constants/storage'
@@ -130,6 +131,7 @@ export function clearAllUserData(): void {
         PEERTUBE_TOKEN_PREFIX,
         PEERTUBE_RESUME_PREFIX,
         COMMENT_DRAFT_PREFIX,
+        HELD_RATINGS_PREFIX,
       ]
       const prefixed: string[] = []
       for (let i = 0; i < localStorage.length; i++) {
@@ -184,6 +186,7 @@ export function clearAccountScopedLocalData(address: Address): void {
     if (typeof localStorage === 'undefined') return
     localStorage.removeItem(`${POST_DRAFT_KEY}:${address}`)
     removeLocalKeysWithPrefix(`${COMMENT_DRAFT_PREFIX}${address}:`)
+    localStorage.removeItem(`${HELD_RATINGS_PREFIX}${address}`)
     localStorage.removeItem(`${MESSENGER_DIALOGS_PREFIX}${address}`)
     localStorage.removeItem(`${MESSENGER_CHANNELS_PREFIX}${address}`)
     localStorage.removeItem(`${MESSENGER_SCREEN_PREFIX}${address}`)

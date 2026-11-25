@@ -2502,6 +2502,11 @@ export default {
       'Non puoi valutare questo post: hai bloccato l’autore o lui ha bloccato te.',
     ratingNetworkFailed:
       'Impossibile registrare la tua valutazione per un errore temporaneo. Riprova più tardi.',
+    ratingUndo: 'Annulla',
+    ratingHoldHint:
+      'Il voto va in rete tra pochi secondi. Fino ad allora può scegliere un’altra stella o annullare: dopo non si può più cambiare.',
+    ratingHoldStatus:
+      'Voto {n}. Va in rete tra pochi secondi; fino ad allora può cambiarlo o annullarlo.',
     ratingNewAccount: 'Si può votare 24 ore dopo la registrazione.',
     ratingLowReputation: 'La tua reputazione è troppo bassa per votare.',
     ratingLowStarsNeedReputation:

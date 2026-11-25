@@ -8,6 +8,7 @@ import {
   isAppInBackground,
   isMobileAppInBackground,
   msSinceForeground,
+  onAppBackground,
   onAppForeground,
   resetAppForegroundForTests,
   setAppActiveForTests,
@@ -23,6 +24,23 @@ describe('app-foreground', () => {
     vi.useRealTimers()
     vi.restoreAllMocks()
     resetAppForegroundForTests()
+  })
+
+  it('страница скрылась — подписчик узнаёт сразу и один раз, отписанный — нет', () => {
+    const hidden = vi.fn()
+    const other = vi.fn(() => {
+      throw new Error('сломался')
+    })
+    onAppBackground(other)
+    const stop = onAppBackground(hidden)
+    setVisibility('hidden')
+    setVisibility('hidden')
+    expect(other).toHaveBeenCalledTimes(1)
+    expect(hidden).toHaveBeenCalledTimes(1)
+    setVisibility('visible')
+    stop()
+    setVisibility('hidden')
+    expect(hidden).toHaveBeenCalledTimes(1)
   })
 
   it('страница скрылась и вернулась — подписчик узнаёт, сколько её не было', () => {

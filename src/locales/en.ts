@@ -2489,6 +2489,11 @@ export default {
       'You cannot rate this post: you have blocked the author or they have blocked you.',
     ratingNetworkFailed:
       'Could not record your rating because of a temporary failure. Try again later.',
+    ratingUndo: 'Undo',
+    ratingHoldHint:
+      'The rating goes to the network in a few seconds. Until then you can pick another star or undo: later it cannot be changed.',
+    ratingHoldStatus:
+      'Rating {n}. It goes to the network in a few seconds; until then you can change or undo it.',
     ratingNewAccount: 'Voting is allowed 24 hours after registration.',
     ratingLowReputation: 'Your reputation is too low to vote.',
     ratingLowStarsNeedReputation: 'Ratings of 1-3 stars require reputation of 100 or more.',

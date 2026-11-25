@@ -2511,6 +2511,11 @@ export default {
       'No puedes valorar esta publicación: has bloqueado al autor o él te ha bloqueado.',
     ratingNetworkFailed:
       'No se pudo registrar tu valoración por un fallo temporal. Vuelve a intentarlo más tarde.',
+    ratingUndo: 'Deshacer',
+    ratingHoldHint:
+      'La valoración se envía a la red en unos segundos. Hasta entonces puede elegir otra estrella o deshacerla; después no se puede cambiar.',
+    ratingHoldStatus:
+      'Valoración {n}. Se envía a la red en unos segundos; hasta entonces puede cambiarla o deshacerla.',
     ratingNewAccount: 'Se puede votar 24 horas después del registro.',
     ratingLowReputation: 'Tu reputación es demasiado baja para votar.',
     ratingLowStarsNeedReputation:

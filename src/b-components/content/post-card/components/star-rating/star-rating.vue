@@ -19,16 +19,14 @@
           <template v-for="n in 5" :key="`star-${n}`">
             <SC_StarWrapper
               v-key-activate
-              :class="{ disabled: disabled || isSubmitting || isOwnPost, readonly: hasVoted }"
+              :class="{ disabled: disabled || isOwnPost, readonly: hasVoted }"
               :title="isOwnPost ? t('postCard.ratingOwnPost') : undefined"
               role="button"
               :data-star="n"
               :tabindex="focusStar === n ? 0 : -1"
               :aria-label="t('a11y.rateStars', { n })"
-              :aria-pressed="hasVoted ? (displayRating === n ? 'true' : 'false') : undefined"
-              :aria-disabled="
-                disabled || isSubmitting || isOwnPost || hasVoted ? 'true' : undefined
-              "
+              :aria-pressed="pressed(n)"
+              :aria-disabled="disabled || isOwnPost || hasVoted ? 'true' : undefined"
               @mouseenter="handleStarHover(n)"
               @mouseleave="handleStarLeave"
               @focus="handleStarHover(n)"
@@ -46,15 +44,34 @@
             </SC_StarWrapper>
           </template>
 
-          <span class="star-count">({{ optimisticAverageRating.toFixed(1) }})</span>
+          <span v-if="heldValue === null" class="star-count">
+            ({{ optimisticAverageRating.toFixed(1) }})
+          </span>
         </SC_StarRating>
       </SC_InlineBlock>
     </Popover>
 
+    <!-- Оценка ещё не ушла: вместо чисел — «Отменить» с отсчётом. Место то же,
+         и кнопки поста рядом не прыгают. -->
+    <template v-if="heldValue !== null">
+      <SC_HoldButton
+        type="button"
+        :title="t('postCard.ratingHoldHint')"
+        data-testid="rating-undo"
+        @click.stop="cancelHold"
+      >
+        {{ t('postCard.ratingUndo') }}
+        <span class="seconds" aria-hidden="true">{{ holdSeconds }}</span>
+      </SC_HoldButton>
+      <span class="sr-status" role="status">{{
+        t('postCard.ratingHoldStatus', { n: heldValue })
+      }}</span>
+    </template>
+
     <!-- Число оценок — кто и как оценил, как в прежнем Bastyon. Вне окна входа:
          смотреть можно и гостю. -->
     <SC_VotersButton
-      v-if="optimisticVotersCount > 0"
+      v-else-if="optimisticVotersCount > 0"
       type="button"
       class="voters-count"
       :title="t('postScores.open')"
@@ -74,7 +91,7 @@
       v-if="scoresMounted"
       v-model:open="scoresOpen"
       :txid="shareId"
-      :user-vote="userVote || optimisticRating || undefined"
+      :user-vote="userVote || submittedValue || undefined"
     />
   </SC_RatingRow>
 </template>
@@ -89,6 +106,7 @@ import { StarOutlined, StarFilled, UserOutlined } from '@/components/icons'
 import { useStarRating } from './use-star-rating'
 import {
   SC_AuthPopoverContent,
+  SC_HoldButton,
   SC_StarRating,
   SC_StarWrapper,
   SC_StarFilled,
@@ -112,17 +130,17 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  'rating-change': [rating: number]
   error: [error: unknown]
 }>()
 
 const { t } = useI18n()
 
 const {
-  optimisticRating,
   authPopoverVisible,
-  isSubmitting,
   hasVoted,
+  heldValue,
+  holdSeconds,
+  submittedValue,
   displayRating,
   optimisticAverageRating,
   optimisticVotersCount,
@@ -131,8 +149,15 @@ const {
   handleStarLeave,
   handleStarClick,
   handleRatingClick,
+  cancelHold,
   openAuthModal,
 } = useStarRating(props, emit)
+
+/** Нажатая звезда — для экранного диктора. */
+function pressed(n: number): 'true' | 'false' | undefined {
+  if (!hasVoted.value && heldValue.value === null) return undefined
+  return displayRating.value === n ? 'true' : 'false'
+}
 
 /** Звезда, на которую встаёт Tab (остальные — стрелками). */
 const focusStar = ref(1)

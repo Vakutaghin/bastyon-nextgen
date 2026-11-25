@@ -2523,6 +2523,11 @@ export default {
     ratingBlockedByAuthor: 'Bewerten nicht möglich: Du hast den Autor blockiert oder er dich.',
     ratingNetworkFailed:
       'Deine Bewertung konnte wegen eines vorübergehenden Fehlers nicht gespeichert werden. Versuche es später erneut.',
+    ratingUndo: 'Rückgängig',
+    ratingHoldHint:
+      'Die Bewertung geht in wenigen Sekunden ins Netz. Bis dahin können Sie einen anderen Stern wählen oder sie zurücknehmen, danach nicht mehr.',
+    ratingHoldStatus:
+      'Bewertung {n}. Sie geht in wenigen Sekunden ins Netz, bis dahin können Sie sie ändern oder zurücknehmen.',
     ratingNewAccount: 'Abstimmen ist 24 Stunden nach der Registrierung möglich.',
     ratingLowReputation: 'Deine Reputation ist zu niedrig zum Abstimmen.',
     ratingLowStarsNeedReputation:

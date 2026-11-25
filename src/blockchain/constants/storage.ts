@@ -58,6 +58,8 @@ export const MEDIA_LIBRARY_PREFIX = 'BST_MEDIA_LIBRARY_'
 export const PENDING_COLLECTIONS_PREFIX = 'BST_PENDING_COLLECTIONS_'
 /** Где остановились в аудио (аудиокниги): `BST_AUDIO_POSITIONS_<ownAddress>`. */
 export const AUDIO_POSITIONS_PREFIX = 'BST_AUDIO_POSITIONS_'
+/** Оценки постов, ждущие отправки (несколько секунд на «передумать»): `BST_HELD_RATINGS_<ownAddress>`. */
+export const HELD_RATINGS_PREFIX = 'BST_HELD_RATINGS_'
 /** Последнее подключённое mesh-радио (порт, адрес, BLE-id): `BST_MESH_DEVICE_<ownAddress>`. */
 export const MESH_LAST_DEVICE_PREFIX = 'BST_MESH_DEVICE_'
 /** Настройки Reticulum аккаунта (хабы, LAN, RNode, узел доставки): `BST_RNS_<ownAddress>`. */

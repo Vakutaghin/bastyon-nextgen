@@ -22,6 +22,7 @@ import { Capacitor } from '@capacitor/core'
 type ForegroundListener = (awayMs: number) => void
 
 const listeners = new Set<ForegroundListener>()
+const backgroundListeners = new Set<() => void>()
 let started = false
 let background = false
 let hiddenAt = 0
@@ -29,8 +30,16 @@ let shownAt = 0
 
 function setActive(active: boolean, now = Date.now()): void {
   if (!active) {
-    if (!background) hiddenAt = now
+    if (background) return
+    hiddenAt = now
     background = true
+    for (const listener of [...backgroundListeners]) {
+      try {
+        listener()
+      } catch {
+        // подписчик не должен ломать остальных
+      }
+    }
     return
   }
   if (!background) return
@@ -68,6 +77,13 @@ export function onAppForeground(listener: ForegroundListener): () => void {
   start()
   listeners.add(listener)
   return () => listeners.delete(listener)
+}
+
+/** Приложение ушло в фон: свёрнули или скрыли страницу. */
+export function onAppBackground(listener: () => void): () => void {
+  start()
+  backgroundListeners.add(listener)
+  return () => backgroundListeners.delete(listener)
 }
 
 /** Свёрнуто ли приложение сейчас. */
@@ -108,6 +124,7 @@ export function setAppActiveForTests(active: boolean, now?: number): void {
 /** Сброс для тестов. */
 export function resetAppForegroundForTests(): void {
   listeners.clear()
+  backgroundListeners.clear()
   background = false
   hiddenAt = 0
   shownAt = 0

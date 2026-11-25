@@ -1,5 +1,5 @@
 ---
-keywords: [rating, stars, like, post score, average rating, low rating]
+keywords: [rating, stars, undo rating, change rating, like, post score, average rating, low rating]
 ---
 
 # Rating posts
@@ -12,7 +12,9 @@ There are five stars under a post. Click the one you want: one star is bad, five
 
 You see your rating right away: the stars fill in and the average is recalculated. Others see it once the network confirms it, usually within a minute. Until then the rating sits in the **“Awaiting confirmation”** list under the hourglass in the header — see [Confirming actions](transactions.md).
 
-You rate a post once: the rating cannot be changed or taken back.
+**Hit the wrong star?** The rating goes to the network in five seconds: the **“Undo”** button next to the stars counts them down. Until then, click another star — the rating changes and the countdown starts over — or click **“Undo”**. Close the app sooner and the rating goes out the next time you start it; minimize the app on a phone and it goes out right away.
+
+A rating that has been sent cannot be changed or taken back: the network accepts one rating of a post from each person.
 
 ## Who rated
 

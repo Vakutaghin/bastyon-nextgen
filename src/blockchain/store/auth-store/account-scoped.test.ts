@@ -19,6 +19,7 @@ import { useUserRelationsStore } from '@/stores/user-relations-store'
 import { usePendingPostsStore } from '@/stores/pending-posts-store'
 import { useCommentsStore } from '@/stores/comments-store'
 import { usePendingRatingsStore } from '@/stores/pending-ratings-store'
+import { useHeldRatingsStore } from '@/stores/held-ratings-store'
 import { useNotificationsStore } from '@/stores/notifications-store'
 import { usePostsStore } from '@/stores/posts-store'
 import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
@@ -39,6 +40,15 @@ describe('resetAccountScopedStores', () => {
     const ratings = usePendingRatingsStore()
     ratings.isInitialized = true
     ratings.initedForAddress = 'PA'
+    const held = useHeldRatingsStore()
+    held.items.set('p1', {
+      shareId: 'p1',
+      value: 5,
+      author: 'PX',
+      title: '',
+      address: 'PA',
+      until: 0,
+    })
     const notifications = useNotificationsStore()
     notifications.inited = true
     notifications.initedForAddress = 'PA'
@@ -56,6 +66,7 @@ describe('resetAccountScopedStores', () => {
     expect(comments.deletedCommentIds).toEqual({})
     expect(ratings.isInitialized).toBe(false)
     expect(ratings.initedForAddress).toBeNull()
+    expect(held.items.size).toBe(0)
     expect(notifications.inited).toBe(false)
     expect(notifications.initedForAddress).toBeNull()
     expect(posts.posts.size).toBe(0)
