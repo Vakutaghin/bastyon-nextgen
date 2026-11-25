@@ -56,6 +56,8 @@ export interface SupportReportData {
   screen: {
     size: string
     window: string
+    /** Android: размеры WebView, видимой его части и окна на самом деле. */
+    nativeView?: string
     pixelRatio: number
     touch: boolean
     cores?: number
@@ -265,6 +267,8 @@ export async function collectSupportReport(now: Date = new Date()): Promise<Supp
     screen: {
       size: safe(() => `${screen.width}x${screen.height}`, ''),
       window: safe(() => `${window.innerWidth}x${window.innerHeight}`, ''),
+      // Android: размеры WebView и окна на самом деле (MainActivity).
+      nativeView: safe(() => document.documentElement.dataset.nativeView, undefined),
       pixelRatio: safe(() => window.devicePixelRatio, 1),
       touch: safe(() => navigator.maxTouchPoints > 0, false),
       cores: safe(() => navigator.hardwareConcurrency, undefined) || undefined,

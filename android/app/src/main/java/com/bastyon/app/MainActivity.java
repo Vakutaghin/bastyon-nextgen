@@ -1,5 +1,7 @@
 package com.bastyon.app;
 
+import android.content.res.Configuration;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -108,6 +110,7 @@ public class MainActivity extends BridgeActivity {
                     topPx, bottomPx, leftPx, rightPx
                 );
                 wv.evaluateJavascript(js, null);
+                reportViewSize(wv);
             }
             return insets;
         });
@@ -123,6 +126,46 @@ public class MainActivity extends BridgeActivity {
                 );
             }
         }
+    }
+
+    /** Через сколько после поворота смотреть на окно: к этому времени оно уже встало. */
+    private static final long AFTER_ROTATION_MS = 400;
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        WebView wv = getBridge() != null ? getBridge().getWebView() : null;
+        if (wv == null) return;
+        wv.postDelayed(() -> {
+            // POCO F1, Android 8.1, MIUI (25.11.2026): боком страница разложена
+            // на всю ширину, а нарисована только в ширину «стоя» — справа фон
+            // окна. На эмуляторе с теми же Android, WebView и экраном не
+            // воспроизвелось; перерисовка — подстраховка для старых систем.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                wv.requestLayout();
+                wv.invalidate();
+                getWindow().getDecorView().invalidate();
+            }
+            reportViewSize(wv);
+        }, AFTER_ROTATION_MS);
+    }
+
+    /**
+     * Размеры WebView, видимой его части и окна — в `data-native-view`, откуда
+     * их берут «Сведения о приложении»: страница сама не знает, нарисована ли
+     * она целиком.
+     */
+    private void reportViewSize(WebView wv) {
+        Rect visible = new Rect();
+        wv.getGlobalVisibleRect(visible);
+        View decor = getWindow().getDecorView();
+        String size = String.format(
+            java.util.Locale.ROOT,
+            "web %dx%d, visible %dx%d, window %dx%d",
+            wv.getWidth(), wv.getHeight(), visible.width(), visible.height(),
+            decor.getWidth(), decor.getHeight()
+        );
+        wv.evaluateJavascript("document.documentElement.dataset.nativeView='" + size + "'", null);
     }
 
     @Override
