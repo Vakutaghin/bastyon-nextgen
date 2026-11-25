@@ -210,6 +210,14 @@ export const useMessengerStore = defineStore('messenger', () => {
     }, delayMs)
   }
 
+  /**
+   * Чаты, которые удалили: пока сервер не ответил, они ещё среди комнат, а
+   * список мог начать собираться до удаления. Без этого перезагрузка списка
+   * возвращала удалённый чат, и открыть его было нельзя. `done` — сервер
+   * ответил: снова попасть в список чат может, только если вас вернули.
+   */
+  const removedChats = new Map<string, { done: boolean }>()
+
   const loadDialogs = async (silent = false) => {
     // До первого синка getRooms() отдаёт пустоту или часть комнат: такой список
     // не затирает список с прошлого запуска и не сохраняется вместо него.
@@ -221,6 +229,9 @@ export const useMessengerStore = defineStore('messenger', () => {
     if (!silent) uiStore.isLoading = true
     try {
       const rooms = matrixService.getRooms()
+      for (const room of rooms) {
+        if (removedChats.get(room.roomId)?.done) removedChats.delete(room.roomId)
+      }
       const partnerAddresses = rooms
         .map((room) => getPartnerMatrixId(room))
         .map((id: string | null) => (id ? getAddressFromMatrixId(id) : null))
@@ -241,6 +252,8 @@ export const useMessengerStore = defineStore('messenger', () => {
 
       let dialogsList = await Promise.all(rooms.map(mapRoomToDialog))
       if (run !== session) return
+      // После ожиданий: удалить могли, пока список собирался.
+      dialogsList = dialogsList.filter((d) => !removedChats.has(d.id))
 
       // Сохраняем имя/аватар если из Matrix пришло «Empty Room»
       const prevDialogs = uiStore.dialogs
@@ -810,6 +823,8 @@ export const useMessengerStore = defineStore('messenger', () => {
       void meshChat.deleteDialog(chatId)
       return
     }
+    const removal = { done: false }
+    removedChats.set(chatId, removal)
     const removedMessages = chatStore.messages[chatId] ? [...chatStore.messages[chatId]] : null
     const wasActive = uiStore.activeChatId === chatId
 
@@ -819,12 +834,16 @@ export const useMessengerStore = defineStore('messenger', () => {
 
     matrixService
       .leaveAndForgetRoom(chatId)
+      .then(() => {
+        removal.done = true
+      })
       // Иначе удалённый чат мелькнёт в списке при следующем запуске.
       .then(() => persistDialogs())
       // Удалили чат — и его копию на устройстве.
       .then(() => archive.removeChat(chatId))
       .catch((e) => {
         log.error('Ошибка удаления, восстанавливаем:', e)
+        removedChats.delete(chatId)
         if (removedDialog) uiStore.restoreDialog(removedDialog, removedIndex)
         if (removedMessages) chatStore.messages[chatId] = removedMessages
         if (wasActive) uiStore.setActiveChatId(chatId)
@@ -923,6 +942,7 @@ export const useMessengerStore = defineStore('messenger', () => {
     readMarkerSent.clear()
     cancelLoginRetry()
     showingSnapshot = false
+    removedChats.clear()
     uiStore.reset()
     chatStore.reset()
     profileCache.reset()

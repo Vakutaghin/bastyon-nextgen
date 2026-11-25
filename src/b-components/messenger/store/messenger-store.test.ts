@@ -12,7 +12,7 @@ const h = vi.hoisted(() => {
   const client = { getUserId: () => '@50416c696365:matrix.pocketnet.app' }
   const matrix = {
     client: null as typeof client | null,
-    rooms: [] as { dialog: Dialog }[],
+    rooms: [] as { dialog: Dialog; roomId?: string }[],
     getClient: vi.fn((): typeof client | null => matrix.client),
     login: vi.fn(async (): Promise<boolean> => {
       matrix.client = client
@@ -252,6 +252,65 @@ describe('messenger-store: список диалогов до первого о�
 
     store.deleteDialog('!a:host')
     await vi.waitFor(() => expect(snapshotOf('PAlice').map((d) => d.id)).toEqual(['!b:host']))
+  })
+
+  // 25.11.2026: удалил чат, он остался в списке, по нажатию — «Сервер чатов не
+  // нашёл эту переписку».
+  const room = (id: string) => ({ roomId: id, dialog: dialog(id) })
+
+  async function withTwoChats() {
+    const store = useMessengerStore()
+    await store.initMatrix()
+    useMessengerUiStore().syncState = 'PREPARED'
+    h.matrix.rooms = [room('!a:host'), room('!b:host')]
+    await store.loadDialogs(true)
+    return store
+  }
+
+  it('список перезагрузился, пока сервер удаляет чат, — чат не возвращается', async () => {
+    const store = await withTwoChats()
+    let left!: () => void
+    h.matrix.leaveAndForgetRoom.mockImplementationOnce(() => new Promise((r) => (left = r)))
+
+    store.deleteDialog('!a:host')
+    await store.loadDialogs(true)
+    expect(store.dialogs.map((d) => d.id)).toEqual(['!b:host'])
+
+    left()
+    h.matrix.rooms = [room('!b:host')]
+    await store.loadDialogs(true)
+    expect(store.dialogs.map((d) => d.id)).toEqual(['!b:host'])
+  })
+
+  it('список начал собираться до удаления, кончил после ответа сервера — чата в нём нет', async () => {
+    const store = await withTwoChats()
+    let mapped = 0
+    h.onMapRoom.fn = () => {
+      // Обе комнаты уже взяты у клиента: удаляем посреди сборки.
+      if (++mapped === 2) store.deleteDialog('!a:host')
+    }
+    await store.loadDialogs(true)
+    h.onMapRoom.fn = null
+    expect(store.dialogs.map((d) => d.id)).toEqual(['!b:host'])
+  })
+
+  it('сервер не дал удалить — чат на месте и снова в списке после перезагрузки', async () => {
+    const store = await withTwoChats()
+    h.matrix.leaveAndForgetRoom.mockRejectedValueOnce(new Error('offline'))
+    store.deleteDialog('!a:host')
+    await vi.waitFor(() => expect(h.toast.error).toHaveBeenCalled())
+    expect(store.dialogs.map((d) => d.id).sort()).toEqual(['!a:host', '!b:host'])
+    await store.loadDialogs(true)
+    expect(store.dialogs.map((d) => d.id).sort()).toEqual(['!a:host', '!b:host'])
+  })
+
+  it('вернули в удалённый чат (новое приглашение) — он снова в списке', async () => {
+    const store = await withTwoChats()
+    store.deleteDialog('!a:host')
+    await vi.waitFor(() => expect(snapshotOf('PAlice').map((d) => d.id)).toEqual(['!b:host']))
+    h.matrix.rooms = [room('!b:host'), room('!a:host')]
+    await store.loadDialogs(true)
+    expect(store.dialogs.map((d) => d.id).sort()).toEqual(['!a:host', '!b:host'])
   })
 })
 

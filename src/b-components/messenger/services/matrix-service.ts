@@ -42,6 +42,8 @@ import type { MatrixClient, MatrixEventContent } from './matrix-service/types'
 import type { MatrixClient as SdkMatrixClient, ICreateClientOpts } from 'matrix-js-sdk'
 import { Preset, PushRuleActionName, Visibility } from 'matrix-js-sdk'
 import { PIN_TAG } from '../lib/chat-pins'
+import { isNotInRoomError } from '../lib/invite-error'
+import { isNotFoundError } from '../lib/archive-merge'
 
 const log = logger.scope('[matrix]')
 
@@ -333,10 +335,13 @@ export class MatrixService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- результат Room потребляется duck-typing'ом в десятке мест сторов (room.timeline/currentState/...); строгий matrix `Room` потянул бы рефактор всех потребителей и здесь вне границ задачи
   public getRooms(): any[] {
     if (!this.client) return []
-    const allRooms = this.client.getRooms()
-
-    // Return all rooms for debugging if visible is 0, or just return all to ensure we see something
-    return allRooms.length > 0 ? allRooms : []
+    // Комнату, из которой вышли, SDK держит до перезапуска: синк приносит её в
+    // разделе `leave` и заводит заново даже после forget. Не фильтровать —
+    // удалённый чат возвращается в список, а открыть его нельзя.
+    return this.client.getRooms().filter((room) => {
+      const membership = room.getMyMembership?.()
+      return membership !== 'leave' && membership !== 'ban'
+    })
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- см. getRooms: Room потребляется duck-typing'ом, строгий тип вне границ задачи
@@ -668,12 +673,29 @@ export class MatrixService {
   /**
    * Покинуть комнату (leave) и забыть её (forget).
    * После forget комната удаляется из локального хранилища SDK.
+   *
+   * Из комнаты уже вышли (на другом устройстве, исключили, удалили раньше) —
+   * сервер на leave отвечает отказом, и удалить такой чат было нечем: он
+   * возвращался в список. Тогда достаточно забыть. Вышли, а забыть не вышло, —
+   * чат всё равно удалён: forget только убирает его из истории на сервере.
    */
   public async leaveAndForgetRoom(roomId: string): Promise<void> {
-    if (!this.client) throw new Error('Client not initialized')
+    const client = this.client
+    if (!client) throw new Error('Client not initialized')
 
-    await this.client.leave(roomId)
-    await this.client.forget(roomId, true)
+    let left = true
+    try {
+      await client.leave(roomId)
+    } catch (e) {
+      if (!isNotInRoomError(e)) throw e
+      left = false
+    }
+    try {
+      await client.forget(roomId, true)
+    } catch (e) {
+      if (!left && !isNotFoundError(e)) throw e
+      client.store.removeRoom(roomId)
+    }
   }
 
   /**
