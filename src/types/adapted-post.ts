@@ -1,3 +1,5 @@
+import type { PostAudio } from '@/helpers/content/post-audios'
+
 /**
  * Канонический контракт адаптированного поста (формат UI-компонентов ленты,
  * карточки, поиска, встраивания в мессенджер).
@@ -35,6 +37,8 @@ export interface AdaptedPost {
   scoreSum?: number
   myVal?: number
   videoUrl?: string
+  /** Записи аудио-поста, когда их больше одной (helpers/content/post-audios). */
+  audios?: PostAudio[]
   preview?: string
   /**
    * Язык поста (поле `l`). Нужен при редактировании: без него правка

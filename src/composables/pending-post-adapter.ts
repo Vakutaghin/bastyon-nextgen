@@ -32,6 +32,7 @@ export function pendingPostToAdapted(
     ratingStars: 0,
     scoreCnt: 0,
     videoUrl: pending.url,
+    ...(pending.audios?.length ? { audios: pending.audios } : {}),
     // В блоке — обычный пост: ждёт только, когда лента профиля отдаст его сама.
     // Не попавший в блок остаётся неопубликованным: без оценок и комментариев.
     pending: !pending.confirmedAt,

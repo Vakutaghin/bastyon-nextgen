@@ -37,4 +37,13 @@ describe('pendingPostToAdapted', () => {
     expect(a.comments).toBe(0)
     expect(a.scoreCnt).toBe(0)
   })
+
+  it('записи аудиокниги видны сразу; у обычного поста списка нет', () => {
+    const audios = [
+      { url: 'peertube://h/u1/audio', title: 'Глава 1', duration: 60 },
+      { url: 'peertube://h/u2/audio', title: 'Глава 2', duration: null },
+    ]
+    expect(pendingPostToAdapted({ ...pending, type: 'audio', audios }, author).audios).toBe(audios)
+    expect('audios' in pendingPostToAdapted(pending, author)).toBe(false)
+  })
 })

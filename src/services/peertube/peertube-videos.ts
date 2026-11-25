@@ -15,6 +15,7 @@ import { fetchHttp, rpcCallArray, rpcCallWithAuth } from '@/helpers/api/request'
 import { rpcEndpoints } from '@/helpers/api/rpc-endpoints'
 import type { KeyPair } from '@/blockchain/types/keys'
 import { parsePeerTubeUrl } from '@/helpers/api/peertube-parser'
+import { parsePostAudios } from '@/helpers/content/post-audios'
 import { peertubeInstanceFetch, type InstanceFetch } from './peertube-instance'
 import { buildPeertubeSignature, ensurePeertubeToken } from './peertube-auth'
 
@@ -245,6 +246,8 @@ export interface ChainPost {
   c?: string
   /** Ссылка на видео. */
   u?: string
+  /** Настройки поста: у аудиокниги в них остальные записи (`audios`). */
+  s?: { audios?: unknown } | null
   /** Время в блокчейне, секунды. */
   time?: number | string
   deleted?: boolean
@@ -329,16 +332,21 @@ export type ProfileFeedFn = (
   count: number
 ) => Promise<ChainPost[]>
 
-const defaultProfileFeed: ProfileFeedFn = async (address, afterTxid, count) => {
-  const data = await rpcCallWithAuth<{ contents?: ChainPost[] }>({
-    method: rpcEndpoints.getProfileFeed,
-    // Тот же порядок, что у ленты профиля; тип — только видео. Неизвестный
-    // ноде тип (например, audio) снимает фильтр целиком.
-    parameters: [0, afterTxid, count, '', [], ['video'], [], [], [], '', address, '', '', 'desc'],
-    options: { ex: true },
-  })
-  return Array.isArray(data?.contents) ? data.contents : []
-}
+const profileFeedOf =
+  (type: 'video' | 'audio'): ProfileFeedFn =>
+  async (address, afterTxid, count) => {
+    const data = await rpcCallWithAuth<{ contents?: ChainPost[] }>({
+      method: rpcEndpoints.getProfileFeed,
+      // Тот же порядок, что у ленты профиля; тип — один. Неизвестный ноде тип
+      // снимает фильтр целиком, поэтому тип поста сверяем и сами.
+      parameters: [0, afterTxid, count, '', [], [type], [], [], [], '', address, '', '', 'desc'],
+      options: { ex: true },
+    })
+    return Array.isArray(data?.contents) ? data.contents : []
+  }
+
+const defaultProfileFeed = profileFeedOf('video')
+const defaultAudioFeed = profileFeedOf('audio')
 
 /** Видео из поста автора. */
 export interface PostedVideo {
@@ -376,6 +384,39 @@ export async function getPostedVideosPage(params: {
   }
   const last = posts[posts.length - 1]?.txid
   return { videos, next: posts.length >= params.count && last ? last : null }
+}
+
+/** Постов с аудио за запрос и сколько страниц брать: до 500 постов. */
+const AUDIO_POSTS_PAGE = 50
+const AUDIO_POSTS_MAX_PAGES = 10
+
+/**
+ * Какие записи уже в аудио-постах автора: указатель → посты. По ссылке их не
+ * найти: searchlinks смотрит только `u`, а вторая и следующие записи
+ * аудиокниги лежат в настройках поста.
+ */
+export async function findPostedAudios(params: {
+  address: string
+  audioFeed?: ProfileFeedFn
+}): Promise<Map<string, VideoPost[]>> {
+  const feed = params.audioFeed ?? defaultAudioFeed
+  const posted = new Map<string, VideoPost[]>()
+  let after = ''
+  for (let page = 0; page < AUDIO_POSTS_MAX_PAGES; page++) {
+    const posts = await feed(params.address, after, AUDIO_POSTS_PAGE)
+    for (const post of posts) {
+      const ref = toVideoPost(post)
+      if (post.deleted || post.type !== 'audio' || !ref) continue
+      const url = decodeField(post.u)
+      const parts = parsePostAudios(post.s?.audios, url).map((audio) => audio.url)
+      for (const pointer of parts.length ? parts : [url])
+        if (parsePeerTubeUrl(pointer)) posted.set(pointer, [...(posted.get(pointer) ?? []), ref])
+    }
+    const last = posts[posts.length - 1]?.txid
+    if (posts.length < AUDIO_POSTS_PAGE || !last) break
+    after = last
+  }
+  return posted
 }
 
 /** Сведения о видео, которые нода кэширует с видеосерверов. */

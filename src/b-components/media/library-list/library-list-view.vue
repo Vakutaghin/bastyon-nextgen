@@ -79,8 +79,7 @@ import {
   isPlaylistId,
   type LibraryKind,
 } from '@/services/media-library/media-library-doc'
-import { toQueueItem } from '@/services/media/media-post'
-import type { QueueItem } from '@/stores/playback-queue-store'
+import { toQueueItems } from '@/services/media/media-post'
 import VideoGrid from '../video-grid/video-grid.vue'
 import TrackList from '../track-list/track-list.vue'
 import MediaFeedStatus from '../media-feed-status/media-feed-status.vue'
@@ -120,9 +119,7 @@ const emptyText = computed(() => {
 })
 
 const queueItems = computed(() =>
-  posts.value
-    .map((p) => toQueueItem(p, info.value.get(p.videoUrl ?? '')))
-    .filter((x): x is QueueItem => !!x)
+  posts.value.flatMap((p) => toQueueItems(p, info.value.get(p.videoUrl ?? '')))
 )
 
 function playAllFrom(shuffled: boolean): void {

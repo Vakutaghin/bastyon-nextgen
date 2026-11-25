@@ -1,6 +1,7 @@
 // Где остановились в длинных записях: аудиокниги, лекции, подкасты. Трек
 // длиннее MIN_DURATION продолжает с того же места — и после перезапуска.
-// Хранится на устройстве (`BST_AUDIO_POSITIONS_<адрес>`), без синхронизации:
+// У поста с несколькими записями (аудиокнига по главам) помнится ещё и сама
+// запись — какой бы длины она ни была. Хранится на устройстве (`BST_AUDIO_POSITIONS_<адрес>`), без синхронизации:
 // место меняется каждую секунду.
 
 import { AUDIO_POSITIONS_PREFIX } from '@/blockchain/constants/storage'
@@ -16,6 +17,8 @@ const MAX_ENTRIES = 300
 interface Entry {
   p: number
   t: number
+  /** Запись поста, на которой остановились (у ключа `part:<txid>`). */
+  id?: string
 }
 
 function key(owner: string | null): string {
@@ -62,6 +65,11 @@ export function rememberPosition(
   } else {
     entries[id] = { p: Math.floor(position), t: now }
   }
+  write(owner, trimmed(entries))
+}
+
+/** Самые давние — прочь, когда записей слишком много. */
+function trimmed(entries: Record<string, Entry>): Record<string, Entry> {
   const ids = Object.keys(entries)
   if (ids.length > MAX_ENTRIES) {
     ids
@@ -69,5 +77,31 @@ export function rememberPosition(
       .slice(0, ids.length - MAX_ENTRIES)
       .forEach((x) => delete entries[x])
   }
-  write(owner, entries)
+  return entries
+}
+
+const partKey = (postId: string): string => `part:${postId}`
+
+/** Запись поста, на которой остановились; null — слушать с первой. */
+export function savedPart(owner: string | null, postId: string): string | null {
+  const id = read(owner)[partKey(postId)]?.id
+  return typeof id === 'string' ? id : null
+}
+
+/** Запомнить запись поста; null — дослушали до конца, забыть. */
+export function rememberPart(
+  owner: string | null,
+  postId: string,
+  partId: string | null,
+  now = Date.now()
+): void {
+  const entries = read(owner)
+  const known = entries[partKey(postId)]
+  if (partId === null) {
+    if (!known) return
+    delete entries[partKey(postId)]
+  } else {
+    entries[partKey(postId)] = { p: 0, t: now, id: partId }
+  }
+  write(owner, trimmed(entries))
 }

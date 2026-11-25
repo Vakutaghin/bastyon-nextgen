@@ -1,6 +1,8 @@
 // Канонические типы карточки поста (source of truth). Вынесено из post-card.vue
 // (аудит крупных файлов 2026-08).
 
+import type { PostAudio } from '@/helpers/content/post-audios'
+
 export interface PostAuthor {
   name: string
   address: string
@@ -42,6 +44,8 @@ export interface Post {
   myVal?: number
   /** URL видео в формате peertube://host/videoid. */
   videoUrl?: string
+  /** Записи аудио-поста, когда их больше одной. */
+  audios?: PostAudio[]
   /** Текст превью для статей. */
   preview?: string
   /** Язык поста (`l`): по нему нода собирает ленты, в том числе ленту бустов. */

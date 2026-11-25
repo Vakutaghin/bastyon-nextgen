@@ -28,6 +28,15 @@ Tap a track — it plays in the mini player, followed by the rest of the list in
 - You can control the player from the keyboard, headphones and the lock screen.
 - Recordings longer than ten minutes — audiobooks, talks — continue where you stopped, even after a restart. The position is kept on this device.
 
+## Audiobooks and albums in one post
+
+A post can hold several recordings — chapters of a book, songs of an album. Instead of a player it has a list: a cover with a button, and the recordings with their length under it. A long list is collapsed in the feed; **“Show all”** expands it.
+
+- Tap a recording — it plays in the mini player, followed by the rest in order, also while the app is minimized.
+- A book continues with the recording you stopped at: the card says so — “Continue: Chapter 3”. Once you finish the last one, it starts from the first next time.
+- In a track list such a post is one row with the number of recordings and their total length; it goes into the queue and into a playlist as a whole.
+- **“Download”** under the post downloads all the recordings.
+
 The mini player and the player in a post never play at the same time: start one and the other pauses.
 
 ## The track menu

@@ -2504,9 +2504,9 @@ export default {
       'Impossibile registrare la tua valutazione per un errore temporaneo. Riprova più tardi.',
     ratingUndo: 'Annulla',
     ratingHoldHint:
-      'Il voto va in rete tra pochi secondi. Fino ad allora può scegliere un’altra stella o annullare: dopo non si può più cambiare.',
+      'La valutazione va in rete tra pochi secondi. Fino ad allora puoi scegliere un’altra stella o annullare: dopo non si può più cambiare.',
     ratingHoldStatus:
-      'Voto {n}. Va in rete tra pochi secondi; fino ad allora può cambiarlo o annullarlo.',
+      'Valutazione {n}. Va in rete tra pochi secondi; fino ad allora puoi cambiarla o annullarla.',
     ratingNewAccount: 'Si può votare 24 ore dopo la registrazione.',
     ratingLowReputation: 'La tua reputazione è troppo bassa per votare.',
     ratingLowStarsNeedReputation:
@@ -3951,6 +3951,17 @@ export default {
     audioAttached: 'Audio PeerTube allegato',
     videoTitlePlaceholder: 'Titolo del video',
     videoUpload: 'Carica video o audio',
+    audioAdd: 'Aggiungi una registrazione',
+    audioQueued: 'In coda',
+    audioRemove: 'Rimuovi «{title}»',
+    audioPartTitle: 'Titolo della registrazione {n}',
+    audiosLegacyHint: 'Nel Bastyon precedente si sente solo la prima registrazione.',
+    audioOnly: 'Nell’elenco va solo l’audio.',
+    audioTitlePlaceholder: 'Titolo',
+    waitingForAudio:
+      'Il post uscirà appena le registrazioni saranno caricate. Non chiudere la finestra.',
+    audioFailedHint: 'Una registrazione non è stata caricata: riprova o rimuovila.',
+    audioCaptionHint: 'Aggiungi un titolo',
     videoUploading: 'Caricamento: {percent}%',
     videoKeepOpen: 'tieni aperta questa finestra fino alla fine',
     videoCancel: 'Annulla',
@@ -4692,6 +4703,10 @@ export default {
     viewGrid: 'Griglia',
     viewTracks: 'Elenco brani',
     viewPosts: 'Post',
+    parts: '{n} registrazione | {n} registrazioni',
+    partN: 'Registrazione {n}',
+    continuePart: 'Continua: {title}',
+    showAllParts: 'Mostra tutte: {n}',
   },
   library: {
     watchLater: 'Guarda più tardi',

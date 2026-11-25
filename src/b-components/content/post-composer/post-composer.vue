@@ -91,7 +91,7 @@
 
     <!-- Превью видео по ссылке (youtube/vimeo/peertube), найденной в тексте -->
     <ComposerUrlPreview
-      v-if="!articleMode && parsedVideo.kind && !hasUploadedVideo"
+      v-if="!articleMode && parsedVideo.kind && !hasUploadedVideo && !isAudioPost"
       :parsed="parsedVideo"
     />
     <LinkPreviewCard
@@ -117,6 +117,24 @@
       @removed="clearUploadedVideoUrl"
       @uploading="setVideoUploading"
       @auth-required="requireLogin"
+    />
+
+    <!-- Записи аудио-поста: одна или несколько (аудиокнига, альбом). -->
+    <ComposerAudios
+      v-if="canAttachAudio && isAudioPost"
+      :items="audioItems"
+      :cover="audioCover"
+      :full="audioFull"
+      :uploading="audioUploading"
+      :keep-last="isEdit"
+      :disabled="submitting"
+      @add="addAudioFiles"
+      @remove="audios.remove"
+      @retry="audios.retry"
+      @rename="audios.rename"
+      @move="audios.move"
+      @set-cover="audios.setCover"
+      @retry-cover="audios.retryCover"
     />
 
     <!-- Картинки и своё видео в одном посте не живут: в ленте картинки заслонили бы плеер. -->
@@ -200,6 +218,7 @@
             ref="videoInputRef"
             type="file"
             :accept="VIDEO_ACCEPT"
+            multiple
             hidden
             :aria-label="t('postComposer.videoUpload')"
             :disabled="submitting"
@@ -269,7 +288,7 @@
     </SC_SettingsPanel>
 
     <SC_Footer>
-      <SC_Hint v-if="hintText" :danger="showError">
+      <SC_Hint v-if="hintText" :danger="showError || audioFailed">
         {{ hintText }}
       </SC_Hint>
       <SC_FooterActions>
@@ -309,11 +328,14 @@ import {
 } from '@/components/icons'
 
 import Button from '@/components/button'
+import { appToast } from '@/b-components/app-toast'
 // Переиспользуем компактный пикер из формы комментария (общий список COMMON_EMOJIS).
 import CommentEmojiPicker from '@/b-components/content/post-card/components/post-card-comments/comment-emoji-picker.vue'
 
 // Редактор статьи (TipTap) — отдельным чанком: нужен, только когда пишут статью.
 const ComposerArticleEditor = defineAsyncComponent(() => import('./composer-article-editor.vue'))
+import { asAudioFile } from './audio-file'
+import ComposerAudios from './composer-audios.vue'
 import ComposerImages from './composer-images.vue'
 import ComposerPoll from './composer-poll.vue'
 import ComposerRepost from './composer-repost.vue'
@@ -403,6 +425,9 @@ const {
   setVideoUploading,
   setArticleUploading,
   hasUploadedVideo,
+  audios,
+  audioFailed,
+  isAudioPost,
   onVideoUploaded,
   videoAuth,
   requireLogin,
@@ -467,14 +492,26 @@ function confirmReset(): void {
 // правке опубликованного поста — тоже нет. Картинки и видео вместе не живут.
 const canAttachImages = computed(() => !isRepost && !articleMode.value)
 const canAttachVideo = computed(() => !isRepost && !isEdit && !articleMode.value)
+/** Записи можно менять и при правке опубликованного поста — если он и был звуком. */
+const canAttachAudio = computed(() => !isRepost && !articleMode.value)
+const { items: audioItems, cover: audioCover, full: audioFull, uploading: audioUploading } = audios
+
 const canPoll = computed(() => !isRepost && !isEdit && !articleMode.value)
 const canAddImages = computed(
   () =>
-    canAttachImages.value && !imagesFull.value && !videoUploading.value && !hasUploadedVideo.value
+    canAttachImages.value &&
+    !imagesFull.value &&
+    !videoUploading.value &&
+    !hasUploadedVideo.value &&
+    !isAudioPost.value
 )
 const canAddVideo = computed(
   () =>
-    canAttachVideo.value && !images.value.length && !videoUploading.value && !hasUploadedVideo.value
+    canAttachVideo.value &&
+    !images.value.length &&
+    !videoUploading.value &&
+    !hasUploadedVideo.value &&
+    !isAudioPost.value
 )
 
 const imagesInputRef = ref<HTMLInputElement | null>(null)
@@ -535,9 +572,19 @@ function onDrop(event: DragEvent): void {
 
 function onVideoPicked(event: Event): void {
   const input = event.target as HTMLInputElement
-  const picked = input.files?.[0]
+  const picked = Array.from(input.files ?? [])
   input.value = ''
-  if (picked) void videoRef.value?.start(picked)
+  if (!picked.length) return
+  // Звук — списком: файлов бывает несколько. Видео в посте одно.
+  if (picked.some(asAudioFile)) addAudioFiles(picked)
+  else void videoRef.value?.start(picked[0]!)
+}
+
+/** Выбранные записи; не звук пропускаем и говорим об этом. */
+function addAudioFiles(picked: File[]): void {
+  const list = picked.map(asAudioFile).filter((file): file is File => !!file)
+  if (list.length < picked.length) appToast.info({ message: t('postComposer.audioOnly') })
+  if (list.length) audios.add(list)
 }
 
 // ── Настройки публикации: сводка и сами поля ───────────────────────────
@@ -627,11 +674,12 @@ function onComposerBlur(): void {
   window.setTimeout(closeMentions, 120)
 }
 
-const titlePlaceholder = computed(() =>
-  articleMode.value
-    ? t('postComposer.articleTitlePlaceholder')
+const titlePlaceholder = computed(() => {
+  if (articleMode.value) return t('postComposer.articleTitlePlaceholder')
+  return isAudioPost.value
+    ? t('postComposer.audioTitlePlaceholder')
     : t('postComposer.videoTitlePlaceholder')
-)
+})
 
 // Подсказка — почему «Опубликовать» серая, как только в посте что-то есть:
 // раньше её видел только тот, кто написал текст, а ролик с заголовком и без
@@ -645,12 +693,18 @@ const hasContent = computed(
     images.value.length > 0 ||
     pollActive.value ||
     !!uploadedVideoUrl.value ||
+    isAudioPost.value ||
     videoUploading.value ||
     (articleMode.value && !!articleContent.value)
 )
 const showError = computed(() => validationError.value !== null && hasContent.value)
 const hintText = computed(() => {
-  if (waitingForVideo.value) return t('postComposer.waitingForVideo')
+  if (waitingForVideo.value) {
+    return isAudioPost.value ? t('postComposer.waitingForAudio') : t('postComposer.waitingForVideo')
+  }
+  if (audioFailed.value) return t('postComposer.audioFailedHint')
+  if (showError.value && isAudioPost.value && validationError.value === 'videoCaption')
+    return t('postComposer.audioCaptionHint')
   return showError.value ? t(`postMsg.validation.${validationError.value}`) : ''
 })
 

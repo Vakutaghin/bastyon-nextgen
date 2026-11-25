@@ -37,7 +37,10 @@ import { sendPost } from '@/b-components/content/post-composer/post-sender'
 import { prefetchFeeUnspents } from '@/blockchain/core/transactions/unspents-manager'
 import { trackPendingPost } from '@/b-components/content/post-composer/pending-post'
 import { tagsFromText, withTypedTag } from '@/b-components/content/post-composer/post-tags'
-import { UPLOADING_VIDEO_POINTER } from '@/b-components/content/post-composer/consts'
+import {
+  UPLOADING_AUDIO_POINTER,
+  UPLOADING_VIDEO_POINTER,
+} from '@/b-components/content/post-composer/consts'
 import {
   fitVideoName,
   titleFromFileName,
@@ -175,9 +178,6 @@ export const COVER_WAIT_MS = 30_000
 
 const isActive = (job: VideoUploadJob): boolean =>
   job.status === 'compressing' || job.status === 'uploading'
-
-/** Указатель-заглушка звука на время загрузки: только для проверки поста. */
-const UPLOADING_AUDIO_POINTER = `${UPLOADING_VIDEO_POINTER}/audio`
 
 export const useVideoUploadsStore = defineStore('video-uploads', () => {
   /** Загрузки текущего аккаунта. */

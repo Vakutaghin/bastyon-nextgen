@@ -41,7 +41,7 @@ import { usePlaybackQueueStore } from '@/stores/playback-queue-store'
 import { useAddToListStore } from '@/stores/add-to-list-store'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import {
-  offlineSourceFromPost,
+  offlineSourcesFromPost,
   useOfflineDownload,
 } from '@/b-components/offline-video/use-offline-download'
 import { FAVORITES, WATCH_LATER } from '@/services/media-library/media-library-doc'
@@ -49,7 +49,7 @@ import { appToast } from '@/b-components/app-toast'
 import { useShareToChat } from '@/composables/use-share-to-chat'
 import { copyText } from '@/helpers/common/clipboard'
 import { chatLinks, publicPostUrl } from '@/helpers/common/share-origin'
-import { mediaTitle, mediaTypeOf, postId, toQueueItem } from '@/services/media/media-post'
+import { mediaTitle, mediaTypeOf, postId, toQueueItems } from '@/services/media/media-post'
 import { cachedMediaInfo } from '@/services/media/media-info'
 import type { AdaptedPost } from '@/types/adapted-post'
 import { SC_MenuButton } from './media-item-menu.styled'
@@ -61,12 +61,18 @@ const { library } = useMediaLibrary()
 const queue = usePlaybackQueueStore()
 const addToList = useAddToListStore()
 const offline = useOfflineVideosStore()
-const { download } = useOfflineDownload()
+const { download, downloadAll } = useOfflineDownload()
 const open = ref(false)
 const { canShareToChat, shareToChat } = useShareToChat()
 
 const type = computed(() => mediaTypeOf(props.post))
 const id = computed(() => postId(props.post))
+/** Что из поста уже скачано: у аудиокниги записей несколько. */
+const downloaded = computed(() =>
+  offlineSourcesFromPost(props.post)
+    .map((source) => offline.mineFor(source.peertubeUrl))
+    .filter((item) => !!item)
+)
 const icon = (c: Component) => () => h(c)
 
 function favoriteItem() {
@@ -95,7 +101,7 @@ const items = computed(() => {
   out.push({ key: 'add', label: t('collections.addToEllipsis'), icon: icon(AddToListIcon) })
   if (offline.available && type.value) {
     out.push(
-      offline.mineFor(props.post.videoUrl)
+      downloaded.value.length
         ? { key: 'offline-remove', label: t('offlineVideo.remove'), icon: icon(DeleteOutlined) }
         : { key: 'offline', label: t('offlineVideo.download'), icon: icon(DownloadOutlined) }
     )
@@ -119,17 +125,17 @@ function onClick({ key }: { key: string | number }): void {
     return
   }
   if (k === 'offline') {
-    download(offlineSourceFromPost(props.post))
+    const sources = offlineSourcesFromPost(props.post)
+    if (sources.length > 1) downloadAll(() => Promise.resolve([props.post]))
+    else download(sources[0] ?? null)
     return
   }
   if (k === 'offline-remove') {
-    const item = offline.mineFor(props.post.videoUrl)
-    if (item) void offline.remove(item.id)
+    for (const item of downloaded.value) void offline.remove(item.id)
     return
   }
   if (k === 'next' || k === 'end') {
-    const item = toQueueItem(props.post, cachedMediaInfo(props.post.videoUrl ?? ''))
-    if (item) queue.enqueue(item, k)
+    queue.enqueueAll(toQueueItems(props.post, cachedMediaInfo(props.post.videoUrl ?? '')), k)
     return
   }
   requireAuth(() => {

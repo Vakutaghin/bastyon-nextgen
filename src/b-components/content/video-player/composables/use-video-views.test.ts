@@ -87,6 +87,15 @@ describe('useVideoViews', () => {
     })
   })
 
+  it('прослушивание в мини-плеере — тоже отметка: элемент — <audio>', async () => {
+    const audio = document.createElement('audio')
+    Object.defineProperty(audio, 'paused', { get: () => false })
+    Object.defineProperty(audio, 'currentTime', { get: () => 5 })
+    const { report } = mountViews(audio as unknown as HTMLVideoElement, `${POINTER}/audio`)
+    await vi.advanceTimersByTimeAsync(FIRST_VIEW_REPORT_MS)
+    expect(sent(report)).toEqual([{ currentTime: 5 }])
+  })
+
   it('ролик, мелькнувший при прокрутке, не отмечается; на паузе — тишина', async () => {
     const player = fakeVideo()
     const { report } = mountViews(player.video)

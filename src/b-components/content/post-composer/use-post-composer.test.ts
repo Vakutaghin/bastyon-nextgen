@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
   haptic: vi.fn(),
+  uploadAudio: vi.fn(),
 }))
 
 // IndexedDB черновика — в памяти; счётчик записей по ключам.
@@ -80,6 +81,20 @@ vi.mock('@/stores', () => ({
 }))
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 vi.mock('./post-sender', () => ({ sendPost: mocks.sendPost }))
+// Записи аудио-поста: список настоящий, видеосервер — нет.
+vi.mock('@/services/peertube/peertube-video-service', async (original) => ({
+  ...(await original<typeof import('@/services/peertube/peertube-video-service')>()),
+  uploadVideoToPeertube: mocks.uploadAudio,
+}))
+vi.mock('@/services/peertube/peertube-videos', async (original) => ({
+  ...(await original<typeof import('@/services/peertube/peertube-videos')>()),
+  saveVideoCover: vi.fn(async () => {}),
+  getInstanceVideoCover: vi.fn(async () => null),
+}))
+vi.mock('./audio-file', async (original) => ({
+  ...(await original<typeof import('./audio-file')>()),
+  audioDuration: async () => 60,
+}))
 // Картинки: сжатие и canvas здесь ни при чём — только base64-список.
 vi.mock('./use-post-images', async () => {
   const { ref: vueRef, computed: vueComputed } = await import('vue')
@@ -582,6 +597,211 @@ describe('usePostComposer', () => {
       c.setVideoUploading(false)
       await flush()
       expect(mocks.sendPost).not.toHaveBeenCalled()
+    })
+
+    describe('аудио-пост', () => {
+      const part = (n: number) => `peertube://pt.example/u${n}/audio`
+      const mp3 = (name: string) => new File(['x'], name, { type: 'audio/mpeg' })
+      let finish: Array<(uuid: string) => Promise<void>> = []
+      let fail: Array<() => Promise<void>> = []
+
+      beforeEach(() => {
+        finish = []
+        fail = []
+        mocks.uploadAudio.mockReset().mockImplementation(
+          () =>
+            new Promise((resolve, reject) => {
+              finish.push(async (uuid) => {
+                resolve({ pointer: '', host: 'pt.example', uuid, isAudio: true })
+                await flush()
+              })
+              fail.push(async () => {
+                reject(new Error('network'))
+                await flush()
+              })
+            })
+        )
+      })
+
+      it('несколько записей: первая — ссылка поста, все — в настройках, по порядку', async () => {
+        const c = compose()
+        fillValidPost(c)
+        c.audios.add([mp3('Глава 2.mp3'), mp3('Глава 1.mp3')])
+        // Название книги пишет человек: глава — не книга.
+        expect(c.needsCaption.value).toBe(true)
+        expect(c.validationError.value).toBe('videoCaption')
+        c.onCaptionInput('Книга')
+        expect(c.canPublish.value).toBe(true)
+        await c.publish()
+        expect(c.waitingForVideo.value).toBe(true)
+        await finish[0]!('u1')
+        expect(mocks.sendPost).not.toHaveBeenCalled()
+        await finish[1]!('u2')
+        await flush()
+        expect(mocks.sendPost).toHaveBeenCalledTimes(1)
+        expect(mocks.sendPost.mock.calls[0]![0]).toMatchObject({
+          caption: 'Книга',
+          url: part(1),
+          settings: {
+            f: '0',
+            audios: [
+              { u: part(1), c: 'Глава 1', d: 60 },
+              { u: part(2), c: 'Глава 2', d: 60 },
+            ],
+          },
+        })
+        expect(mocks.addPending).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: 'audio',
+            url: part(1),
+            audios: [
+              { url: part(1), title: 'Глава 1', duration: 60 },
+              { url: part(2), title: 'Глава 2', duration: 60 },
+            ],
+          })
+        )
+        expect(c.audios.items.value).toEqual([])
+      })
+
+      it('название главы в название книги не идёт; загруженное — в черновик', async () => {
+        vi.useFakeTimers()
+        try {
+          const c = compose()
+          await vi.advanceTimersByTimeAsync(0)
+          c.audios.add([mp3('Глава 1.mp3'), mp3('Глава 2.mp3')])
+          void finish[0]!('u1')
+          await vi.advanceTimersByTimeAsync(1000)
+          expect(c.caption.value).toBe('')
+          // Вторая ещё грузится: в черновике то, что уже на сервере.
+          expect(idb.store.get(`bastyon_post_draft_fields:${ME}`)).toMatchObject({
+            audios: [{ url: part(1), title: 'Глава 1', duration: 60 }],
+          })
+        } finally {
+          vi.useRealTimers()
+        }
+      })
+
+      it('одна запись — обычный аудио-пост: имя файла — заголовок, списка в настройках нет', async () => {
+        const c = compose()
+        fillValidPost(c)
+        c.audios.add([mp3('Песня.mp3')])
+        await finish[0]!('u1')
+        expect(c.caption.value).toBe('Песня')
+        await c.publish()
+        const sent = mocks.sendPost.mock.calls[0]![0]
+        expect(sent.url).toBe(part(1))
+        expect(sent.settings.audios).toBeUndefined()
+        expect(mocks.addPending.mock.calls[0]![0].audios).toBeUndefined()
+      })
+
+      it('запись не загрузилась — пост без неё не уходит, хоть он уже и ждал', async () => {
+        const c = compose()
+        fillValidPost(c)
+        c.onCaptionInput('Книга')
+        c.audios.add([mp3('1.mp3'), mp3('2.mp3')])
+        await c.publish()
+        await finish[0]!('u1')
+        await fail[1]!()
+        expect(mocks.sendPost).not.toHaveBeenCalled()
+        expect(c.waitingForVideo.value).toBe(false)
+        expect(c.audioFailed.value).toBe(true)
+        expect(c.canPublish.value).toBe(false)
+        await c.publish()
+        expect(mocks.sendPost).not.toHaveBeenCalled()
+
+        c.audios.remove(c.audios.items.value[1]!.id)
+        expect(c.canPublish.value).toBe(true)
+        await c.publish()
+        expect(mocks.sendPost).toHaveBeenCalledTimes(1)
+      })
+
+      it('черновик: загруженные записи возвращаются, прежний черновик со ссылкой — тоже', async () => {
+        idb.store.set(`bastyon_post_draft_fields:${ME}`, {
+          caption: 'Книга',
+          tags: ['книга'],
+          audios: [
+            { url: part(1), title: 'Глава 1', duration: 60 },
+            { url: 'https://evil.example/1.mp3', title: 'чужое' },
+            { url: part(2), title: 'Глава 2', duration: null },
+          ],
+        })
+        const c = compose()
+        await flush()
+        expect(c.audios.uploaded.value.map((x) => x.url)).toEqual([part(1), part(2)])
+        expect(c.uploadedVideoUrl.value).toBe('')
+        expect(c.isAudioPost.value).toBe(true)
+        expect(c.canReset.value).toBe(true)
+
+        idb.store.set(`bastyon_post_draft_fields:${ME}`, { caption: 'Песня', videoUrl: part(3) })
+        const old = compose()
+        await flush()
+        expect(old.audios.uploaded.value).toEqual([{ url: part(3), title: '', duration: null }])
+        expect(old.uploadedVideoUrl.value).toBe('')
+      })
+
+      it('правка: список книги не теряется, его можно дополнить и переставить', async () => {
+        const c = compose({
+          mode: 'edit',
+          source: {
+            txid: 'tx-old',
+            type: 'audio',
+            title: 'Книга',
+            message: TEXT,
+            tags: ['книга'],
+            videoUrl: part(1),
+            settings: {
+              f: '1',
+              audios: [
+                { u: part(1), c: 'Глава 1', d: 60 },
+                { u: part(2), c: 'Глава 2' },
+              ],
+            },
+          },
+        })
+        expect(c.audios.uploaded.value.map((x) => x.title)).toEqual(['Глава 1', 'Глава 2'])
+        c.audios.add([mp3('Глава 3.mp3')])
+        await finish[0]!('u3')
+        c.audios.move(2, 0)
+        await c.publish()
+        expect(mocks.sendPost.mock.calls[0]![0]).toMatchObject({
+          txidEdit: 'tx-old',
+          url: part(3),
+          settings: {
+            f: '1',
+            audios: [
+              { u: part(3), c: 'Глава 3' },
+              { u: part(1), c: 'Глава 1', d: 60 },
+              { u: part(2), c: 'Глава 2' },
+            ],
+          },
+        })
+      })
+
+      it('правка обычной записи: ссылка на месте, списка нет', async () => {
+        const c = compose({
+          mode: 'edit',
+          source: {
+            txid: 'tx-old',
+            type: 'audio',
+            title: 'Песня',
+            message: TEXT,
+            tags: ['музыка'],
+            videoUrl: part(1),
+            settings: { f: '0' },
+          },
+        })
+        await c.publish()
+        const sent = mocks.sendPost.mock.calls[0]![0]
+        expect(sent.url).toBe(part(1))
+        expect(sent.settings.audios).toBeUndefined()
+      })
+
+      it('из «Медиастудии» со звуком — запись в списке, можно добавить ещё', async () => {
+        const c = compose({ video: { pointer: part(1), title: 'Глава 1' } })
+        expect(c.audios.uploaded.value.map((x) => x.url)).toEqual([part(1)])
+        expect(c.caption.value).toBe('Глава 1')
+        expect(c.hasUploadedVideo.value).toBe(false)
+      })
     })
 
     it('своё видео: указатель в u, имя файла — заголовок, если его не написали', async () => {

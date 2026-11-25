@@ -22,6 +22,7 @@ import {
 } from '@/blockchain/storage/account-scoped-key'
 import { settingsAPI } from '@/db/apis/settings-api'
 
+import { isAudioPointer, type PostAudio } from '@/helpers/content/post-audios'
 import { MAX_IMAGES, MAX_POLL_OPTIONS, MAX_TAGS } from './consts'
 
 export function postDraftKey(address: string | null | undefined): string {
@@ -61,6 +62,8 @@ export interface PostDraftFields {
   articleContent: ArticleContent | null
   /** Указатель своего загруженного видео (`peertube://…`): файл уже на сервере. */
   videoUrl: string
+  /** Загруженные записи аудио-поста, по порядку. */
+  audios: PostAudio[]
   /** Ссылка, чью карточку убрали крестиком. */
   dismissedLinkUrl: string
 }
@@ -73,6 +76,17 @@ export interface StoredPostDraft {
 const str = (value: unknown): string => (typeof value === 'string' ? value : '')
 const strings = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : []
+
+/** Записи из черновика; битые и чужие по виду — мимо. */
+function draftAudios(raw: unknown): PostAudio[] {
+  if (!Array.isArray(raw)) return []
+  return raw.flatMap((item: unknown) => {
+    const { url, title, duration } = (item ?? {}) as Partial<PostAudio>
+    return typeof url === 'string' && isAudioPointer(url)
+      ? [{ url, title: str(title), duration: typeof duration === 'number' ? duration : null }]
+      : []
+  })
+}
 
 /** Записанное когда-то и кем-то: берём только то, что похоже на поля черновика. */
 export function parseDraftFields(raw: unknown): PostDraftFields | null {
@@ -98,6 +112,7 @@ export function parseDraftFields(raw: unknown): PostDraftFields | null {
         ? (content as ArticleContent)
         : null,
     videoUrl: str(r.videoUrl),
+    audios: draftAudios(r.audios),
     dismissedLinkUrl: str(r.dismissedLinkUrl),
   }
 }

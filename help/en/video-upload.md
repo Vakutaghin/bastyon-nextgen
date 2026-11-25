@@ -1,5 +1,5 @@
 ---
-keywords: [media studio, my videos, upload video, upload audio, quota, PeerTube, file size, podcast, uploads, minimize upload, cover, video thumbnail, preview image, frame]
+keywords: [audiobook, several audio files, album, chapters, media studio, my videos, upload video, upload audio, quota, PeerTube, file size, podcast, uploads, minimize upload, cover, video thumbnail, preview image, frame]
 ---
 
 # Uploading video and audio
@@ -30,10 +30,23 @@ You can also make the post later: **“Save without a post”** closes the windo
 
 ## Right in a post
 
-1. In the new post window, click **“Upload video or audio”** on the toolbar under the text and choose a file.
+1. In the new post window, click **“Upload video or audio”** on the toolbar under the text and choose a file; you can choose several audio files at once.
 2. While the file uploads, you see what percentage is already on the server. Do not close the post window until the upload finishes — or upload it in the “Media studio”, where you can minimize the upload.
-3. Fill in **“Video title”** right away, without waiting for the upload — without it the post will not be published: **“Add a title for the video”**. Add text and tags.
-4. Click **“Publish”** — this also works before the upload finishes. A spinner turns on the button, “The post goes out as soon as the video is uploaded. Keep this window open.” appears next to it, and the post goes out by itself when **“PeerTube video attached”** or **“PeerTube audio attached”** appears. Changed your mind — **“Don't publish”**.
+3. Fill in **“Video title”** (for audio, **“Title”**) right away, without waiting for the upload — without it the post will not be published. Add text and tags.
+4. Click **“Publish”** — this also works before the upload finishes. A spinner turns on the button, “The post goes out as soon as the video is uploaded. Keep this window open.” appears next to it, and the post goes out by itself when everything is uploaded. Changed your mind — **“Don't publish”**.
+
+## An audiobook or album: several recordings
+
+One post can hold up to 100 recordings — chapters of a book, songs of an album. Choose several files at once or add them one by one with **“Add a recording”**. Files chosen together are ordered by name: “Chapter 2” comes before “Chapter 10”.
+
+- The files upload one after another; each recording shows how much is uploaded, and then its length.
+- A recording is named after its file; change the name right in the row. Reorder with the handle on the left — with the mouse, a finger or the arrow keys.
+- A recording was not uploaded — **“Retry”** or the cross: while it has an error, the post cannot be published.
+- The post has one cover — the cover of the first recording.
+
+The previous Bastyon plays only the first recording — a line under the list says so. How such a post is listened to is in [The Audio section](audio-section.md#audiobooks-and-albums-in-one-post).
+
+You can change the list after publishing: **“Edit”** under the post — add a chapter, reorder, rename, remove an extra one. A post can be edited no more than five times, see [Editing or deleting a post](edit-delete-post.md).
 
 ## Cover
 
@@ -60,7 +73,7 @@ The file goes to a [PeerTube](glossary.md#peertube) video server chosen by the n
 
 Right after the upload, the server spends a few more minutes processing the clip — preparing different qualities. You can publish the post at once, but until the server finishes, the player may report an error: wait and click **“Retry”**.
 
-Your own video cannot share a post with images, and video cannot be added to an article or when editing a published post. A new account can publish 5 video posts a day, a full one 30, and with a balance of 250 PKOIN or more up to 100 — see [Account status and limits](limits.md).
+Your own video and audio cannot share a post with images, and they cannot be added to an article or to a published post without them. A new account can publish 5 video posts a day, a full one 30, and with a balance of 250 PKOIN or more up to 100 — see [Account status and limits](limits.md).
 
 ## Limits
 

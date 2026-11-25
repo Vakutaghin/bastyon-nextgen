@@ -1,6 +1,7 @@
 // Пост → что скачивать и что показать без сети: ссылка на ролик, название,
 // автор, описание. Карточка ленты и AdaptedPost подходят оба.
 
+import { postAudios, type PostAudio } from '@/helpers/content/post-audios'
 import { mediaTitle } from '@/services/media/media-post'
 import { cachedMediaInfo } from '@/services/media/media-info'
 import { userAvatar, userName } from '@/services/user-names'
@@ -10,6 +11,8 @@ import type { OfflineSource } from './offline-job'
 export interface OfflinePostLike {
   type?: string
   videoUrl?: string
+  audios?: PostAudio[]
+  settings?: { audios?: unknown; [key: string]: unknown }
   txid?: string
   hash?: string
   id?: string | number
@@ -34,4 +37,18 @@ export function offlineSourceFromPost(post: OfflinePostLike): OfflineSource | nu
     author: { address, name: userName(address, post.author?.name), avatarUrl: avatar },
     duration: cachedMediaInfo(url)?.duration ?? undefined,
   }
+}
+
+/** Всё, что скачивать у поста: ролик или трек, а у аудиокниги — каждая запись. */
+export function offlineSourcesFromPost(post: OfflinePostLike): OfflineSource[] {
+  const source = offlineSourceFromPost(post)
+  if (!source) return []
+  const audios = postAudios(post)
+  if (!audios.length) return [source]
+  return audios.map((audio, index) => ({
+    ...source,
+    peertubeUrl: audio.url,
+    title: audio.title || `${source.title} · ${index + 1}`,
+    duration: audio.duration ?? cachedMediaInfo(audio.url)?.duration ?? undefined,
+  }))
 }

@@ -11,8 +11,10 @@ import { computed, ref } from 'vue'
 export type QueueMediaType = 'video' | 'audio'
 
 export interface QueueItem {
-  /** txid поста. */
+  /** txid поста; у записи поста с несколькими записями — `txid#uuid`. */
   id: string
+  /** txid поста, если `id` — не он сам (запись из нескольких). */
+  postId?: string
   type: QueueMediaType
   /** Указатель `peertube://…`. */
   url: string
@@ -23,6 +25,11 @@ export interface QueueItem {
   cover: string | null
   /** Секунды, если известно. */
   duration: number | null
+}
+
+/** txid поста, чей это элемент. */
+export function queuePostId(item: Pick<QueueItem, 'id' | 'postId'>): string {
+  return item.postId ?? item.id
 }
 
 /** Откуда очередь — для подписи «Сейчас играет» и ссылки назад. */
@@ -183,6 +190,17 @@ export const usePlaybackQueueStore = defineStore('playback-queue', () => {
     position.value = at
   }
 
+  /** Поставить в очередь несколько подряд (записи одного поста) — в том же порядке. */
+  function enqueueAll(list: readonly QueueItem[], placement: 'next' | 'end'): void {
+    const playable = list.filter((x) => !!x.url)
+    if (!current.value) {
+      play(playable, 0, null)
+      return
+    }
+    for (const item of placement === 'next' ? [...playable].reverse() : playable)
+      enqueue(item, placement)
+  }
+
   /** Сведения пришли позже (длительность, обложка) — без перезапуска трека. */
   function patch(id: string, update: Partial<Pick<QueueItem, 'duration' | 'cover'>>): void {
     items.value = items.value.map((x) => (x.id === id ? { ...x, ...update } : x))
@@ -211,6 +229,7 @@ export const usePlaybackQueueStore = defineStore('playback-queue', () => {
     cycleRepeat,
     clear,
     enqueue,
+    enqueueAll,
     patch,
   }
 })

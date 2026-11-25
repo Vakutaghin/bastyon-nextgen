@@ -2513,9 +2513,9 @@ export default {
       'No se pudo registrar tu valoración por un fallo temporal. Vuelve a intentarlo más tarde.',
     ratingUndo: 'Deshacer',
     ratingHoldHint:
-      'La valoración se envía a la red en unos segundos. Hasta entonces puede elegir otra estrella o deshacerla; después no se puede cambiar.',
+      'La valoración se envía a la red en unos segundos. Hasta entonces puedes elegir otra estrella o deshacerla; después no se puede cambiar.',
     ratingHoldStatus:
-      'Valoración {n}. Se envía a la red en unos segundos; hasta entonces puede cambiarla o deshacerla.',
+      'Valoración {n}. Se envía a la red en unos segundos; hasta entonces puedes cambiarla o deshacerla.',
     ratingNewAccount: 'Se puede votar 24 horas después del registro.',
     ratingLowReputation: 'Tu reputación es demasiado baja para votar.',
     ratingLowStarsNeedReputation:
@@ -3961,6 +3961,17 @@ export default {
     audioAttached: 'Audio de PeerTube adjunto',
     videoTitlePlaceholder: 'Título del vídeo',
     videoUpload: 'Subir vídeo o audio',
+    audioAdd: 'Añadir una grabación',
+    audioQueued: 'En cola',
+    audioRemove: 'Quitar «{title}»',
+    audioPartTitle: 'Título de la grabación {n}',
+    audiosLegacyHint: 'En el Bastyon anterior solo se oye la primera grabación.',
+    audioOnly: 'En la lista solo se añade audio.',
+    audioTitlePlaceholder: 'Título',
+    waitingForAudio:
+      'La publicación saldrá en cuanto se suban las grabaciones. No cierres esta ventana.',
+    audioFailedHint: 'Una de las grabaciones no se subió: vuelve a intentarlo o quítala.',
+    audioCaptionHint: 'Añade un título',
     videoUploading: 'Subiendo: {percent} %',
     videoKeepOpen: 'no cierres esta ventana hasta que termine',
     videoCancel: 'Cancelar',
@@ -4709,6 +4720,10 @@ export default {
     viewGrid: 'Cuadrícula',
     viewTracks: 'Lista de pistas',
     viewPosts: 'Publicaciones',
+    parts: '{n} grabación | {n} grabaciones',
+    partN: 'Grabación {n}',
+    continuePart: 'Continuar: {title}',
+    showAllParts: 'Mostrar todas: {n}',
   },
   library: {
     watchLater: 'Ver más tarde',

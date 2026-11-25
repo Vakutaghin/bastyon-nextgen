@@ -9,6 +9,7 @@ import {
   parseVideoUrl,
   type VideoEmbed,
 } from '@/helpers/common/video-embed-url'
+import { postAudios } from '@/helpers/content/post-audios'
 import { safeDecode } from '@/helpers/content/safe-decode'
 import { parseTimecodes, type Chapter } from '@/helpers/content/timecode-parser'
 import type { Post } from './post-card.types'
@@ -26,7 +27,8 @@ export function usePostMedia(getPost: () => Post) {
   const chapters = computed<Chapter[]>(() => {
     const post = getPost()
     const isMedia = (post.type === 'video' || post.type === 'audio') && !!post.videoUrl
-    if (!isMedia) return []
+    // Записей несколько — чей это тайм-код, неизвестно.
+    if (!isMedia || postAudios(post).length) return []
     return parseTimecodes(post.content)
   })
 

@@ -1,6 +1,7 @@
 // Пост с роликом или треком — в том виде, который нужен разделам «Видео» и
 // «Аудио», карточкам плейлистов и очереди проигрывания.
 
+import { audioUuid, postAudios } from '@/helpers/content/post-audios'
 import { safeDecode } from '@/helpers/content/safe-decode'
 import { extractPlainTextFromContent } from '@/helpers/content/timecode-parser'
 import { userName } from '@/services/user-names'
@@ -59,6 +60,26 @@ export function toQueueItem(post: AdaptedPost, info?: MediaInfo | null): QueueIt
     cover: mediaCover(post, info),
     duration: info?.duration ?? null,
   }
+}
+
+/**
+ * Элементы очереди поста: у аудио с несколькими записями — каждая запись, по
+ * порядку; иначе один. `id` записи — по её uuid: место, где остановились,
+ * переживает перестановку записей автором.
+ */
+export function toQueueItems(post: AdaptedPost, info?: MediaInfo | null): QueueItem[] {
+  const item = toQueueItem(post, info)
+  if (!item) return []
+  const audios = postAudios(post)
+  if (!audios.length) return [item]
+  return audios.map((audio, index) => ({
+    ...item,
+    id: `${item.id}#${audioUuid(audio.url)}`,
+    postId: item.id,
+    url: audio.url,
+    title: audio.title || `${item.title} · ${index + 1}`,
+    duration: audio.duration ?? (audio.url === item.url ? item.duration : null),
+  }))
 }
 
 /** «1:05», «12:40», «1:02:03». */

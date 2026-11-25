@@ -26,6 +26,7 @@ import { resolvePeertubeHosts } from '@/services/peertube/peertube-host'
 import { thumbnailOf } from '@/services/media/media-info'
 import {
   deleteInstanceVideo,
+  findPostedAudios,
   findPostedVideos,
   getMyAccountVideos,
   getPostedVideosPage,
@@ -146,6 +147,22 @@ export function useServerVideos() {
   /** Поколение загрузки: ответы прошлой после «Обновить» не в счёт. */
   let generation = 0
 
+  /** Записи, которые уже в своих аудио-постах, — и вторая глава, и пятая. */
+  let postedAudios = new Map<string, VideoPost[]>()
+
+  async function loadPostedAudios(gen: number): Promise<void> {
+    const address = authStore.getUserAddress
+    if (!address) return
+    try {
+      const found = await findPostedAudios({ address })
+      if (gen !== generation) return
+      postedAudios = found
+      publish()
+    } catch (e) {
+      log.debug('posted audios failed', e)
+    }
+  }
+
   /** Ролики из всех источников: без повторов, свежие первыми, посты — вместе. */
   const publish = (): void => {
     const merged = new Map<string, ServerVideo>()
@@ -157,6 +174,7 @@ export function useServerVideos() {
         else merged.set(key, video)
       }
     }
+    applyPosted([...merged.values()], postedAudios)
     // Без даты — в порядке источников: сортировка устойчивая.
     videos.value = [...merged.values()].sort((a, b) => b.time - a.time)
   }
@@ -285,6 +303,7 @@ export function useServerVideos() {
     if (owner !== authStore.getUserAddress) {
       owner = authStore.getUserAddress
       bySource = new Map()
+      postedAudios = new Map()
     }
     // Пока источники отвечают, видно прежний список: обновление не мигает.
     const sources = [...hosts, POSTS_SOURCE]
@@ -293,7 +312,11 @@ export function useServerVideos() {
     publish()
 
     const slow = setTimeout(done, HOST_WAIT_MS)
-    await Promise.all([...hosts.map((host) => loadHost(host, gen)), loadPosts(gen)])
+    await Promise.all([
+      ...hosts.map((host) => loadHost(host, gen)),
+      loadPosts(gen),
+      loadPostedAudios(gen),
+    ])
     clearTimeout(slow)
     done()
   }
@@ -325,7 +348,14 @@ export function useServerVideos() {
 
   /** Ролики в постах, которые ушли в сеть, но ещё не попали в блок. */
   const publishingKeys = computed(
-    () => new Set(pendingPosts.allPending.flatMap((p) => (p.url ? [videoKey(p.url)] : [])))
+    () =>
+      new Set(
+        pendingPosts.allPending.flatMap((p) =>
+          [p.url, ...(p.audios ?? []).map((audio) => audio.url)].flatMap((url) =>
+            url ? [videoKey(url)] : []
+          )
+        )
+      )
   )
   const isPublishing = (video: ServerVideo): boolean =>
     !video.posted && publishingKeys.value.has(videoKey(video.pointer))
@@ -360,6 +390,9 @@ export function useServerVideos() {
       } catch (e) {
         log.debug('posted recheck failed', e)
       }
+      // Записи аудиокниги по ссылке не находятся — их видно в самих постах.
+      if (candidates.some((v) => v.isAudio && !v.posted)) await loadPostedAudios(generation)
+      if (disposed) return
       waiting = new Set(candidates.filter((v) => !v.posted).map((v) => videoKey(v.pointer)))
     }
   }

@@ -12,6 +12,8 @@
  * любое расхождение приведёт к отклонению транзакции нодой.
  */
 
+import type { PostAudioSetting } from '@/helpers/content/post-audios'
+
 /** Тип операции поста (3-й параметр sendrawtransactionwithmessage и тип в OP_RETURN). */
 export type SharePostOperationType = 'share' | 'video' | 'audio' | 'article'
 
@@ -38,6 +40,11 @@ export interface SharePostSettings {
    * живёт здесь (формат и голоса — helpers/content/poll.ts).
    */
   poll?: SharePostPoll
+  /**
+   * Записи аудио-поста, когда их больше одной (helpers/content/post-audios).
+   * Первая из них — `u` поста: прежний Bastyon играет её одну.
+   */
+  audios?: PostAudioSetting[]
 }
 
 /** Опрос (поле `p` в payload). */
@@ -164,6 +171,7 @@ function buildSettings(settings?: SharePostSettings): Record<string, unknown> {
   if (settings?.version !== undefined) result.version = settings.version
   if (settings?.t !== undefined) result.t = settings.t
   if (settings?.poll) result.poll = settings.poll
+  if (settings?.audios) result.audios = settings.audios
   return result
 }
 

@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   token: vi.fn(async ({ host }: { host: string }) => ({ access_token: `T-${host}` })),
   list: vi.fn(),
   posted: vi.fn(),
+  postedAudios: vi.fn(),
   del: vi.fn(),
   postsPage: vi.fn(),
   info: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock('@/services/peertube/peertube-auth', () => ({
 vi.mock('@/services/peertube/peertube-videos', () => ({
   getMyAccountVideos: mocks.list,
   findPostedVideos: mocks.posted,
+  findPostedAudios: mocks.postedAudios,
   deleteInstanceVideo: mocks.del,
   getPostedVideosPage: mocks.postsPage,
   getVideosInfo: mocks.info,
@@ -79,6 +81,33 @@ describe('useServerVideos', () => {
     mocks.posted.mockResolvedValue(posts({ 'peertube://a.host/u1': ['p1'] }))
     mocks.postsPage.mockResolvedValue({ videos: [], next: null })
     mocks.info.mockResolvedValue(new Map())
+    mocks.postedAudios.mockResolvedValue(new Map())
+  })
+
+  it('запись аудиокниги — «В посте», хотя ссылкой поста стоит первая глава', async () => {
+    mocks.list.mockImplementation(async ({ host }: { host: string }) => ({
+      total: 2,
+      data:
+        host === 'a.host'
+          ? [
+              { id: 1, uuid: 'c1', name: 'Глава 1', isAudio: true },
+              { id: 2, uuid: 'c2', name: 'Глава 2', isAudio: true },
+              { id: 3, uuid: 'c3', name: 'Не опубликована', isAudio: true },
+            ]
+          : [],
+    }))
+    mocks.posted.mockResolvedValue(new Map())
+    mocks.postedAudios.mockResolvedValue(
+      posts({ 'peertube://a.host/c1/audio': ['book'], 'peertube://a.host/c2/audio': ['book'] })
+    )
+    const api = useServerVideos()
+    await api.load()
+    expect(mocks.postedAudios).toHaveBeenCalledWith({ address: 'PMe' })
+    expect(api.videos.value.map((v) => [v.name, v.posted, v.posts.map((p) => p.txid)])).toEqual([
+      ['Глава 1', true, ['book']],
+      ['Глава 2', true, ['book']],
+      ['Не опубликована', false, []],
+    ])
   })
 
   it('ролики со всех серверов роёв: обложка, длительность, обработка, «в посте»', async () => {

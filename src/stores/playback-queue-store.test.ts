@@ -2,7 +2,12 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { shuffledOrder, usePlaybackQueueStore, type QueueItem } from './playback-queue-store'
+import {
+  queuePostId,
+  shuffledOrder,
+  usePlaybackQueueStore,
+  type QueueItem,
+} from './playback-queue-store'
 
 const item = (id: string, type: QueueItem['type'] = 'audio'): QueueItem => ({
   id,
@@ -89,5 +94,22 @@ describe('playback-queue-store', () => {
     expect(q.current?.id).toBe('x')
     q.clear()
     expect(q.active).toBe(false)
+  })
+
+  it('несколько записей одного поста встают подряд, в своём порядке', () => {
+    const q = usePlaybackQueueStore()
+    q.enqueueAll([item('x'), item('y')], 'next')
+    expect(ids(q.items)).toEqual(['x', 'y'])
+    expect(q.current?.id).toBe('x')
+    q.enqueueAll([item('b1'), item('b2'), item('b3')], 'next')
+    expect(ids(q.items)).toEqual(['x', 'b1', 'b2', 'b3', 'y'])
+    q.enqueueAll([item('c1'), item('c2')], 'end')
+    expect(ids(q.items)).toEqual(['x', 'b1', 'b2', 'b3', 'y', 'c1', 'c2'])
+    expect(q.current?.id).toBe('x')
+  })
+
+  it('чей это пост: у записи из нескольких — свой postId', () => {
+    expect(queuePostId(item('tx1'))).toBe('tx1')
+    expect(queuePostId({ ...item('tx1#u2'), postId: 'tx1' })).toBe('tx1')
   })
 })

@@ -1,6 +1,6 @@
 ---
 keywords: [аудио, музыка, аудиокниги, подкасты, плеер, мини-плеер, избранное, моя музыка, очередь, поиск треков, постами, вид ленты]
-code: [src/pages/audio-page, src/b-components/media/mini-player, src/b-components/media/track-list, src/b-components/media/media-view-switch, src/b-components/media/media-post-list, src/services/media/audio-engine.ts, src/services/media/audio-search.ts, src/services/media/audio-rubrics.ts]
+code: [src/pages/audio-page, src/b-components/content/post-card/components/post-audios, src/helpers/content/post-audios.ts, src/b-components/media/mini-player, src/b-components/media/track-list, src/b-components/media/media-view-switch, src/b-components/media/media-post-list, src/services/media/audio-engine.ts, src/services/media/audio-search.ts, src/services/media/audio-rubrics.ts]
 ---
 
 # Раздел «Аудио»
@@ -28,6 +28,15 @@ code: [src/pages/audio-page, src/b-components/media/mini-player, src/b-component
 - В очереди — весь список: нажмите на трек, чтобы перейти к нему; там же **«Перемешать»** и повтор — выключен, всего списка или одного трека. Название очереди ведёт на сам плейлист.
 - Плеером можно управлять с клавиатуры, наушников и экрана блокировки.
 - Записи длиннее десяти минут — аудиокниги, лекции — продолжают с того места, где вы остановились, даже после перезапуска. Место хранится на этом устройстве.
+
+## Аудиокниги и альбомы одним постом
+
+В посте может быть несколько записей — главы книги, песни альбома. Вместо плеера у него список: обложка с кнопкой, под ней записи с длительностью. Длинный список в ленте свёрнут, **«Показать все»** раскрывает его.
+
+- Нажмите на запись — она заиграет в мини-плеере, а за ней остальные по порядку, в том числе когда приложение свёрнуто.
+- Книга продолжается с той записи, на которой вы остановились: карточка так и скажет — «Продолжить: Глава 3». Дослушали последнюю — в следующий раз начнётся с первой.
+- В списке треков такой пост — одна строка с числом записей и общей длительностью; в очередь и в плейлист он встаёт целиком.
+- **«Скачать»** под постом скачивает все записи.
 
 Мини-плеер и плеер в посте не играют одновременно: запустили одно — другое встаёт на паузу.
 

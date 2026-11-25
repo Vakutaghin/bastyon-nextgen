@@ -16,6 +16,7 @@ import { resolveImageUrl } from '@/helpers/common/url-transformer'
 import { normalizeImages } from '@/composables/use-feed-helpers'
 import { safeDecode } from '@/helpers/content/safe-decode'
 import { parseVote } from '@/helpers/content/poll'
+import { parsePostAudios, type PostAudio } from '@/helpers/content/post-audios'
 import { decodePostBody } from '@/helpers/content/article-codec'
 import { isUserVerified } from '@/helpers/profile/is-user-verified'
 import { t } from '@/i18n'
@@ -225,6 +226,7 @@ export function adaptPostData(
     scoreSum: post.scoreSum,
     myVal: myVal,
     videoUrl: videoUrl,
+    ...audiosOf(post.s, videoUrl),
     preview: preview,
     language: post.l || undefined,
     settings: (post.s as AdaptedPost['settings']) || undefined,
@@ -244,6 +246,12 @@ export function adaptPostData(
   }
 }
 
+/** Записи аудио-поста (`s.audios`) — только когда их больше одной. */
+function audiosOf(settings: unknown, url: string | undefined): { audios?: PostAudio[] } {
+  const audios = parsePostAudios((settings as { audios?: unknown } | null)?.audios, url)
+  return audios.length ? { audios } : {}
+}
+
 /**
  * Подмешивает контент оригинальной записи в адаптированный пост-репост.
  * Вызывать после получения оригинала через getrawtransactionwithmessagebyid.
@@ -260,6 +268,7 @@ export function mergeRepostContent(
       ? normalizeImages(originalRaw.i)
       : normalizeImages(originalRaw.images)
   adapted.videoUrl = originalRaw.u || originalRaw.s?.v || undefined
+  adapted.audios = audiosOf(originalRaw.s, adapted.videoUrl).audios
   adapted.tags = Array.isArray(originalRaw.t) ? originalRaw.t : []
   adapted.type = originalRaw.type || adapted.type
   adapted.category = originalRaw.type || adapted.category

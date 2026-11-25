@@ -114,6 +114,7 @@ const FIELDS: PostDraftFields = {
   articleMode: false,
   articleContent: null,
   videoUrl: '',
+  audios: [],
   dismissedLinkUrl: '',
 }
 
@@ -277,6 +278,42 @@ describe('окно поста во время публикации', () => {
     sending.fail(new Error(FAILURE))
     await settle()
     expectUnlocked(w)
+    w.unmount()
+  })
+
+  it('записи аудиокниги: список, названия и кнопки блокируются вместе с окном', async () => {
+    await seedDraft({
+      caption: 'Книга',
+      poll: { active: false, title: '', options: ['', ''] },
+      audios: [
+        { url: 'peertube://pt.example/u1/audio', title: 'Глава 1', duration: 65 },
+        { url: 'peertube://pt.example/u2/audio', title: 'Глава 2', duration: null },
+      ],
+    })
+    const sending = holdSending()
+    const w = await render()
+    await openSettings(w)
+    const rows = w.findAll('[data-testid="composer-audio"]')
+    expect(rows).toHaveLength(2)
+    expect((rows[0]!.find('input').element as HTMLInputElement).value).toBe('Глава 1')
+    expect(rows[0]!.text()).toContain('1:05')
+    // Предупреждение — одной строкой и только когда записей несколько.
+    expect(w.find('[data-testid="composer-audios-hint"]').text()).toBe(
+      'В прежнем Bastyon слышна только первая запись.'
+    )
+    // Ни картинок, ни видео рядом со звуком.
+    expect(w.find('button[aria-label="Загрузить видео или аудио"]').exists()).toBe(false)
+    expect(w.find('button[aria-label="Добавить изображения"]').exists()).toBe(false)
+
+    await publish(w)
+    expectLocked(w)
+    sending.fail(new Error(FAILURE))
+    await settle()
+    expectUnlocked(w)
+
+    await w.find('button[aria-label="Убрать запись «Глава 2»"]').trigger('click')
+    expect(w.findAll('[data-testid="composer-audio"]')).toHaveLength(1)
+    expect(w.find('[data-testid="composer-audios-hint"]').exists()).toBe(false)
     w.unmount()
   })
 

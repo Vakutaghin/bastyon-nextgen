@@ -25,6 +25,7 @@
 
 import { defineStore } from 'pinia'
 import type { SharePostOperationType } from '@/blockchain/core/actions/post-action'
+import type { PostAudio } from '@/helpers/content/post-audios'
 import { onTransactionSettled } from '@/blockchain/core/transactions/broadcast-events'
 import { PENDING_TX_TTL_MS } from '@/stores/pending-transactions-store'
 
@@ -44,6 +45,8 @@ export interface PendingPost {
   tags: string[]
   /** URL видео/аудио (peertube://…) — если это видео/аудио-пост */
   url?: string
+  /** Записи аудио-поста, когда их больше одной. */
+  audios?: PostAudio[]
   /** Тип операции — для рендера видео/аудио-карточки */
   type: SharePostOperationType
   /** Время локальной отправки (мс) */

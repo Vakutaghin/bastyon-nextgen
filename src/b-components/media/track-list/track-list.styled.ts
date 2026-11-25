@@ -112,6 +112,11 @@ export const SC_TrackText = styled.div`
   .artist:hover {
     color: var(--ui-text);
   }
+
+  .parts {
+    font-size: 12px;
+    color: var(--ui-text-dimmed);
+  }
 `
 
 export const SC_TrackTitle = styled.button`

@@ -6,6 +6,7 @@ import {
   setInstanceVideoCover,
   getInstanceVideoCover,
   checkTranscodingReady,
+  findPostedAudios,
   findPostedVideos,
   getPostedVideosPage,
   getVideosInfo,
@@ -300,6 +301,45 @@ describe('getPostedVideosPage', () => {
     const page = await getPostedVideosPage({ address: 'PMe', after: 'z', count: 50, profileFeed })
     expect(profileFeed).toHaveBeenCalledWith('PMe', 'z', 50)
     expect(page.next).toBeNull()
+  })
+})
+
+describe('findPostedAudios', () => {
+  const url = (n: number) => `peertube://h/u${n}/audio`
+
+  it('записи аудио-постов автора: и первая, и остальные из настроек', async () => {
+    const audioFeed = vi.fn(async () => [
+      {
+        txid: 'a',
+        type: 'audio',
+        u: encodeURIComponent(url(1)),
+        c: 'Книга',
+        time: 5,
+        s: { audios: [{ u: url(1) }, { u: url(2) }, { u: 'https://x/1.mp3' }] },
+      },
+      { txid: 'b', type: 'audio', u: url(3), c: 'Песня', time: 6 },
+      { txid: 'c', type: 'audio', u: url(1), c: 'Снова', time: 7 },
+      { txid: 'd', type: 'audio', u: url(4), deleted: true },
+      { txid: 'e', type: 'share', u: url(5) },
+    ])
+    const posted = await findPostedAudios({ address: 'PMe', audioFeed })
+    expect(audioFeed).toHaveBeenCalledTimes(1)
+    expect([...posted.keys()]).toEqual([url(1), url(2), url(3)])
+    expect(posted.get(url(2))).toEqual([{ txid: 'a', caption: 'Книга', time: 5000 }])
+    expect(posted.get(url(1))!.map((p) => p.txid)).toEqual(['a', 'c'])
+  })
+
+  it('страницами, но не без конца', async () => {
+    const audioFeed = vi.fn(async (_a: string, after: string, count: number) =>
+      Array.from({ length: count }, (_, i) => ({
+        txid: `${after}x${i}`,
+        type: 'audio',
+        u: url(i),
+      }))
+    )
+    await findPostedAudios({ address: 'PMe', audioFeed })
+    expect(audioFeed).toHaveBeenCalledTimes(10)
+    expect(audioFeed.mock.calls[1]![1]).toBe('x49')
   })
 })
 

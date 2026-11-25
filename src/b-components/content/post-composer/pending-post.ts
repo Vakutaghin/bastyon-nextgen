@@ -3,6 +3,7 @@
 
 import { useAuthStore } from '@/blockchain'
 import { resolvePostOperationType, type SharePostData } from '@/blockchain/core/actions/post-action'
+import { parsePostAudios } from '@/helpers/content/post-audios'
 import { pendingPostDeadline, usePendingPostsStore } from '@/stores'
 
 /**
@@ -14,6 +15,7 @@ export function trackPendingPost(post: SharePostData, txid: string): void {
   const address = useAuthStore().getUserAddress
   if (post.txidEdit || !address) return
   const now = Date.now()
+  const audios = parsePostAudios(post.settings?.audios, post.url)
   const scheduledAt = post.settings?.t && post.settings.t > 1 ? post.settings.t * 1000 : undefined
   usePendingPostsStore().addPending({
     id: txid,
@@ -23,6 +25,7 @@ export function trackPendingPost(post: SharePostData, txid: string): void {
     images: post.images ?? [],
     tags: post.tags ?? [],
     url: post.url,
+    ...(audios.length ? { audios } : {}),
     type: resolvePostOperationType(post),
     createdAt: now,
     ...(scheduledAt ? { scheduledAt } : {}),

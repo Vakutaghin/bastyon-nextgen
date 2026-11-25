@@ -163,12 +163,11 @@ import { useBlockedAuthors } from '@/composables/use-blocked-authors'
 import { useCollectionEditorStore } from '@/stores/collection-editor-store'
 import { draftOf, type CollectionView } from '@/stores/collections-store'
 import { fetchMediaInfo, type MediaInfo } from '@/services/media/media-info'
-import { formatDuration, mediaTypeOf, postId, toQueueItem } from '@/services/media/media-post'
+import { formatDuration, mediaTypeOf, postId, toQueueItems } from '@/services/media/media-post'
 import { userName, userAvatar } from '@/services/user-names'
 import { copyText } from '@/helpers/common/clipboard'
 import { chatLinks, publicCollectionUrl } from '@/helpers/common/share-origin'
 import { useShareToChat } from '@/composables/use-share-to-chat'
-import type { QueueItem } from '@/stores/playback-queue-store'
 import type { AdaptedPost } from '@/types/adapted-post'
 import { SC_SectionPage, SC_SectionWork } from '../media-section/media-section.styled'
 import {
@@ -257,9 +256,7 @@ function onCoverError(): void {
 const livePosts = computed(() => filterBlocked(items.value.filter((p): p is AdaptedPost => !!p)))
 const removedCount = computed(() => items.value.filter((p) => !p).length)
 const mediaItems = computed(() =>
-  livePosts.value
-    .map((p) => toQueueItem(p, info.value.get(p.videoUrl ?? '')))
-    .filter((x): x is QueueItem => !!x)
+  livePosts.value.flatMap((p) => toQueueItems(p, info.value.get(p.videoUrl ?? '')))
 )
 
 const isOwn = computed(
@@ -281,7 +278,7 @@ const stateLabel = computed(() => {
 const meta = computed(() => {
   const n = collection.value?.contentIds.length ?? 0
   const parts = [t(`collections.kindCount.${kind.value}`, { n }, n)]
-  const total = mediaItems.value.reduce((sum, x) => sum + (info.value.get(x.url)?.duration ?? 0), 0)
+  const total = mediaItems.value.reduce((sum, x) => sum + (x.duration ?? 0), 0)
   if (total > 0) parts.push(formatDuration(total))
   return parts.join(' · ')
 })

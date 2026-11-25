@@ -29,11 +29,13 @@
         <router-link :to="`/${post.author?.name || post.author?.address}`" class="artist">
           {{ mediaArtist(post) }}
         </router-link>
+        <!-- Аудиокнига, альбом: в одном посте несколько записей. -->
+        <span v-if="postAudios(post).length" class="parts">{{
+          t('media.parts', { n: postAudios(post).length }, postAudios(post).length)
+        }}</span>
       </SC_TrackText>
 
-      <SC_TrackDuration>{{
-        formatDuration(info.get(post.videoUrl ?? '')?.duration)
-      }}</SC_TrackDuration>
+      <SC_TrackDuration>{{ formatDuration(durationOf(post)) }}</SC_TrackDuration>
       <router-link :to="`/post/${postId(post)}`" class="open" :aria-label="t('media.openPost')">
         <MessageOutlined />
       </router-link>
@@ -51,6 +53,7 @@ import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PauseIcon, PlayIcon, MessageOutlined, MusicIcon } from '@/components/icons'
 import { usePlayback } from '@/composables/use-playback'
+import { postAudios, totalDuration } from '@/helpers/content/post-audios'
 import { audioState, toggle } from '@/services/media/audio-engine'
 import {
   formatDuration,
@@ -58,10 +61,10 @@ import {
   mediaCover,
   mediaTitle,
   postId,
-  toQueueItem,
+  toQueueItems,
 } from '@/services/media/media-post'
 import type { MediaInfo } from '@/services/media/media-info'
-import type { QueueItem, QueueSource } from '@/stores/playback-queue-store'
+import { queuePostId, type QueueSource } from '@/stores/playback-queue-store'
 import type { AdaptedPost } from '@/types/adapted-post'
 import MediaItemMenu from '../media-item-menu/media-item-menu.vue'
 import {
@@ -88,8 +91,18 @@ const { t } = useI18n()
 const { queue, playAll } = usePlayback()
 const failed = reactive(new Set<string>())
 
-const currentId = computed(() => (queue.current?.type === 'audio' ? queue.current.id : null))
+/** txid поста, чья запись играет. */
+const currentId = computed(() =>
+  queue.current?.type === 'audio' ? queuePostId(queue.current) : null
+)
 const playing = computed(() => audioState.playing)
+
+/** Длительность; у поста с несколькими записями — всех вместе. */
+function durationOf(post: AdaptedPost): number | null {
+  const audios = postAudios(post)
+  if (audios.length) return totalDuration(audios)
+  return props.info.get(post.videoUrl ?? '')?.duration ?? null
+}
 
 function coverOf(post: AdaptedPost): string | null {
   return mediaCover(post, props.info.get(post.videoUrl ?? ''))
@@ -107,12 +120,10 @@ function play(index: number): void {
     toggle()
     return
   }
-  const list = props.posts
-    .map((p) => toQueueItem(p, props.info.get(p.videoUrl ?? '')))
-    .filter((x): x is QueueItem => !!x)
+  const list = props.posts.flatMap((p) => toQueueItems(p, props.info.get(p.videoUrl ?? '')))
   const start = Math.max(
     0,
-    list.findIndex((x) => x.id === postId(post))
+    list.findIndex((x) => queuePostId(x) === postId(post))
   )
   playAll(list, start, props.source ?? null)
 }

@@ -175,6 +175,7 @@ import Dropdown from '@/components/dropdown'
 import Menu from '@/components/menu'
 import Button from '@/components/button'
 import { formatDuration } from '@/services/media/media-post'
+import { queuePostId } from '@/stores/playback-queue-store'
 import { acceptTorBypass } from '@/services/media/audio-engine'
 import { playlistMenuItems } from './playlist-menu'
 import { useViewport } from '@/composables/use-viewport'
@@ -258,6 +259,7 @@ function onSeek(e: Event): void {
 }
 
 function openPost(): void {
-  if (current.value) void router.push({ name: 'post', params: { txid: current.value.id } })
+  if (!current.value) return
+  void router.push({ name: 'post', params: { txid: queuePostId(current.value) } })
 }
 </script>

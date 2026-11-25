@@ -30,10 +30,20 @@
       </SC_EmbedMedia>
       <SC_EmbedMedia v-else-if="(post.type === 'video' || post.type === 'audio') && post.videoUrl">
         <VideoPlayer
-          :video-url="post.videoUrl"
+          :video-url="audios[activeAudio]?.url ?? post.videoUrl"
           :is-audio="post.type === 'audio'"
-          :title="decodedTitle || authorName || 'Bastyon'"
+          :title="audios[activeAudio]?.title || decodedTitle || authorName || 'Bastyon'"
           :artist="authorName"
+          :autoplay="audioStarted"
+          @ended="nextAudio"
+        />
+        <PostAudioRows
+          v-if="audios.length"
+          :audios="audios"
+          :current="activeAudio"
+          :playing="false"
+          expanded
+          @select="selectAudio"
         />
       </SC_EmbedMedia>
 
@@ -53,16 +63,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ImageGalleryHost } from '@/components/image-gallery'
 import { useI18n } from 'vue-i18n'
 import { bcp47 } from '@/i18n'
 import PostCardContent from '@/b-components/content/post-card/components/post-card-content/post-card-content.vue'
 import PostCardImages from '@/b-components/content/post-card/components/post-card-images/post-card-images.vue'
+import PostAudioRows from '@/b-components/content/post-card/components/post-audios/post-audio-rows.vue'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import { usePostByTxid } from '@/b-components/messenger/components/post-embed/use-post-by-txid'
 import { safeDecode } from '@/helpers/content/safe-decode'
+import { postAudios } from '@/helpers/content/post-audios'
 import { postVisibilityOf } from '@/helpers/content/post-visibility'
 import { publicShareOrigin } from '@/helpers/common/share-origin'
 import {
@@ -112,6 +124,24 @@ const postUrl = computed<string>(() => {
 // post-mapper уже декодирует заголовок; повторный safeDecode — для старых
 // дважды кодированных записей (идемпотентен на чистом тексте).
 const decodedTitle = computed<string>(() => safeDecode(post.value?.title || ''))
+
+/**
+ * Аудиокнига, альбом: записей несколько. Мини-плеера во встройке нет — их по
+ * очереди играет её собственный плеер.
+ */
+const audios = computed(() => (post.value ? postAudios(post.value) : []))
+const activeAudio = ref(0)
+/** Запись выбрали в списке или прежняя доиграла — следующая играет сама. */
+const audioStarted = ref(false)
+
+function selectAudio(index: number): void {
+  audioStarted.value = true
+  activeAudio.value = index
+}
+
+function nextAudio(): void {
+  if (activeAudio.value < audios.value.length - 1) selectAudio(activeAudio.value + 1)
+}
 
 /** «Для подписчиков» и т. п. — пост закрыт для гостя; пусто — открыт всем. */
 const restrictedLabel = computed<string>(() => {

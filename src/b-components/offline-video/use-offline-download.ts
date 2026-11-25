@@ -11,6 +11,7 @@ import { requireAuth } from '@/composables/use-auth-gate'
 import { useAuthStore } from '@/blockchain/store/auth-store'
 import {
   offlineSourceFromPost,
+  offlineSourcesFromPost,
   type OfflinePostLike,
 } from '@/services/offline-video/offline-source'
 import type { OfflineQuality, OfflineSource } from '@/services/offline-video/offline-job'
@@ -24,7 +25,7 @@ import {
 /** Сверх размера ролика должно оставаться свободным (как у бэкендов). */
 export const OFFLINE_SPARE_BYTES = 200 * 1024 * 1024
 
-export { offlineSourceFromPost, type OfflinePostLike }
+export { offlineSourceFromPost, offlineSourcesFromPost, type OfflinePostLike }
 
 export function useOfflineDownload() {
   const { t, locale } = useI18n()
@@ -135,9 +136,7 @@ export function useOfflineDownload() {
     }
     batchProgress.value = { done: 0, total: 0 }
     try {
-      const sources = (await resolve())
-        .map(offlineSourceFromPost)
-        .filter((s): s is OfflineSource => !!s)
+      const sources = (await resolve()).flatMap(offlineSourcesFromPost)
       const batch = await store.prepareMany(sources, (done, total) => {
         batchProgress.value = { done, total }
       })

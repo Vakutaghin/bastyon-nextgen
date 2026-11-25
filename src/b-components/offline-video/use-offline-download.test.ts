@@ -46,10 +46,10 @@ vi.mock('@/blockchain/store/auth-store', () => ({
 }))
 vi.mock('@/stores/offline-videos-store', () => ({ useOfflineVideosStore: () => m.store }))
 vi.mock('@/services/offline-video/offline-source', () => ({
-  offlineSourceFromPost: (p: { videoUrl?: string; type?: string; title?: string }) =>
+  offlineSourcesFromPost: (p: { videoUrl?: string; type?: string; title?: string }) =>
     p.videoUrl?.startsWith('peertube://')
-      ? { peertubeUrl: p.videoUrl, kind: p.type, title: p.title ?? '', author: { address: '' } }
-      : null,
+      ? [{ peertubeUrl: p.videoUrl, kind: p.type, title: p.title ?? '', author: { address: '' } }]
+      : [],
 }))
 
 import { OFFLINE_SPARE_BYTES, useOfflineDownload } from './use-offline-download'

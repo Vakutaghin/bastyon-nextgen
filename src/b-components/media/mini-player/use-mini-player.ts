@@ -2,11 +2,12 @@
 // выбрали трек — он загружается и играет с места, где остановились; доиграл —
 // следующий; кнопки системного плеера листают очередь.
 
-import { computed, watch } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 import { useAuthStore } from '@/blockchain'
 import { usePlayback } from '@/composables/use-playback'
 import * as engine from '@/services/media/audio-engine'
-import { rememberPosition, savedPosition } from '@/services/media/audio-positions'
+import { rememberPart, rememberPosition, savedPosition } from '@/services/media/audio-positions'
+import { useVideoViews } from '@/b-components/content/video-player/composables/use-video-views'
 import { fetchMediaInfo } from '@/services/media/media-info'
 import { prefetchStreams, useNativeHandoff } from './native-handoff'
 
@@ -36,12 +37,23 @@ export function useMiniPlayer() {
 
   engine.setAudioHooks({
     onEnded: () => {
-      if (!next(true)) engine.pause()
+      const item = queue.current
+      if (next(true)) return
+      // Последняя глава: в следующий раз книга начнётся сначала.
+      if (item?.postId) rememberPart(owner(), item.postId, null)
+      engine.pause()
     },
     onNext: () => void next(),
     onPrevious: () => back(),
     onProgress: (id, position, duration) => rememberPosition(owner(), id, position, duration),
     hasQueue: () => queue.hasNext || queue.hasPrevious,
+  })
+
+  // Прослушивания для видеосервера — как у плеера под постом.
+  const element = shallowRef<HTMLAudioElement | null>(null)
+  useVideoViews({
+    videoElement: element,
+    videoUrl: () => (current.value?.type === 'audio' ? current.value.url : ''),
   })
 
   /** Следующая загрузка — с этого места и с этим «играть» (вернулись из нативного плеера). */
@@ -59,6 +71,8 @@ export function useMiniPlayer() {
       const start = resume ?? { position: savedPosition(owner(), item.id) ?? 0, play: true }
       resume = null
       void engine.load(item, start.position, start.play)
+      element.value = engine.audioElement()
+      if (item.postId) rememberPart(owner(), item.postId, item.id)
       prefetchStreams(queue.upcoming)
       // Длительность и обложка для строки очереди — если плейлист их не знал.
       if (item.duration === null || !item.cover) {

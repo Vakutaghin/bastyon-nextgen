@@ -10,7 +10,7 @@ Text, emoji, mentions, links and tags: everything in the new post window.
 
 Write right in the **“What's on your mind?”** field — it has no frame and grows as you type. You can paste an image into the text from the clipboard or drag it into the window.
 
-Under the text there is a tags line, and below it a toolbar: **“Add images”**, **“Upload video or audio”**, **“Poll”**, **“Emoji”**, and in the desktop app the [voice input](voice-input.md) button. Images and your own video do not share a post: while one is attached, the button for the other is hidden. On the right of the toolbar there is a line like “Everyone · English · Right away”: that is the visibility, language and publishing time — click it to change them, see [Visibility, language and publishing time](post-settings.md).
+Under the text there is a tags line, and below it a toolbar: **“Add images”**, **“Upload video or audio”**, **“Poll”**, **“Emoji”**, and in the desktop app the [voice input](voice-input.md) button. Images and your own video or audio do not share a post: while one is attached, the button for the other is hidden. On the right of the toolbar there is a line like “Everyone · English · Right away”: that is the visibility, language and publishing time — click it to change them, see [Visibility, language and publishing time](post-settings.md).
 
 At the top of the window there is a **“Post”** / **“Article”** switch: a long text with headings and images between paragraphs is easier to write as an [article](articles.md).
 

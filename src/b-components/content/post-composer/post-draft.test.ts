@@ -38,6 +38,7 @@ const FIELDS: PostDraftFields = {
   articleMode: false,
   articleContent: null,
   videoUrl: 'peertube://pt101.pocketnet.app/uuid',
+  audios: [],
   dismissedLinkUrl: '',
 }
 

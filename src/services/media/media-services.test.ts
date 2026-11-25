@@ -21,8 +21,8 @@ vi.mock('@/services/user-names', () => ({
 }))
 
 import { clearMediaInfoCache, fetchMediaInfo, thumbnailOf } from './media-info'
-import { formatDuration, mediaTitle, mediaTypeOf, toQueueItem } from './media-post'
-import { rememberPosition, savedPosition } from './audio-positions'
+import { formatDuration, mediaTitle, mediaTypeOf, toQueueItem, toQueueItems } from './media-post'
+import { rememberPart, rememberPosition, savedPart, savedPosition } from './audio-positions'
 import { loadSectionView, saveSectionView, SECTION_VIEW_KEYS } from './media-section-view'
 import { searchAudio } from './audio-search'
 import type { AdaptedPost } from '@/types/adapted-post'
@@ -117,6 +117,69 @@ describe('media-section-view', () => {
     expect(loadSectionView('audio')).toBe('media')
     localStorage.setItem(SECTION_VIEW_KEYS.audio, 'table')
     expect(loadSectionView('audio')).toBe('media')
+  })
+})
+
+describe('аудиокнига: несколько записей в посте', () => {
+  const part = (n: number) => `peertube://pt.example/uuid-${n}/audio`
+  const book = {
+    txid: 'tx1',
+    type: 'audio',
+    title: 'Книга',
+    videoUrl: part(1),
+    author: { address: 'PA', name: 'Автор' },
+    audios: [
+      { url: part(1), title: 'Глава 1', duration: 60 },
+      { url: part(2), title: '', duration: null },
+    ],
+  } as unknown as AdaptedPost
+
+  it('в очередь встаёт каждая запись: свой id по uuid, пост общий', () => {
+    expect(toQueueItems(book, { thumbnail: 'https://t/1.jpg', duration: 50, views: 1 })).toEqual([
+      expect.objectContaining({
+        id: 'tx1#uuid-1',
+        postId: 'tx1',
+        url: part(1),
+        title: 'Глава 1',
+        duration: 60,
+        cover: 'https://t/1.jpg',
+        artist: 'Автор',
+      }),
+      expect.objectContaining({
+        id: 'tx1#uuid-2',
+        postId: 'tx1',
+        url: part(2),
+        title: 'Книга · 2',
+        duration: null,
+      }),
+    ])
+  })
+
+  it('обычный трек — один элемент с прежним id, не медиа — ни одного', () => {
+    const track = { ...book, audios: undefined } as unknown as AdaptedPost
+    expect(toQueueItems(track)).toEqual([toQueueItem(track)])
+    expect(toQueueItems(track)[0]!.id).toBe('tx1')
+    expect(toQueueItems({ ...track, type: 'share' } as AdaptedPost)).toEqual([])
+  })
+
+  it('где остановились в книге: своя запись у поста и человека; дослушали — забыли', () => {
+    expect(savedPart('P1', 'tx1')).toBeNull()
+    rememberPart('P1', 'tx1', 'tx1#uuid-2')
+    expect(savedPart('P1', 'tx1')).toBe('tx1#uuid-2')
+    expect(savedPart('P2', 'tx1')).toBeNull()
+    expect(savedPart('P1', 'tx2')).toBeNull()
+    // Место в самой записи — отдельно.
+    rememberPosition('P1', 'tx1#uuid-2', 700, 3600)
+    expect(savedPosition('P1', 'tx1#uuid-2')).toBe(700)
+    expect(savedPart('P1', 'tx1')).toBe('tx1#uuid-2')
+    rememberPart('P1', 'tx1', null)
+    expect(savedPart('P1', 'tx1')).toBeNull()
+  })
+
+  it('мест не копится без конца', () => {
+    for (let i = 0; i < 400; i++) rememberPart('P1', `tx${i}`, `tx${i}#u`, 1000 + i)
+    expect(savedPart('P1', 'tx0')).toBeNull()
+    expect(savedPart('P1', 'tx399')).toBe('tx399#u')
   })
 })
 

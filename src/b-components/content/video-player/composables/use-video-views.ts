@@ -27,7 +27,7 @@ export const FIRST_VIEW_REPORT_MS = 5000
 const SEEK_THRESHOLD_S = 3
 
 interface Options {
-  /** ref на `<video>` или на styled-обёртку, у которой элемент лежит в `$el`. */
+  /** ref на `<video>`, `<audio>` мини-плеера или styled-обёртку, у которой элемент лежит в `$el`. */
   videoElement: Ref<ElementRefValue>
   /** peertube://host/uuid[/audio]; другие ссылки не отмечаются. */
   videoUrl: () => string
@@ -37,7 +37,7 @@ interface Options {
 export function useVideoViews({ videoElement, videoUrl, report = reportVideoView }: Options) {
   let detach: (() => void) | null = null
 
-  function attach(video: HTMLVideoElement, host: string, id: string): void {
+  function attach(video: HTMLMediaElement, host: string, id: string): void {
     let timer: ReturnType<typeof setTimeout> | null = null
     /** Секунда последней отметки; -1 — отметок ещё не было. */
     let lastSent = -1
@@ -128,7 +128,8 @@ export function useVideoViews({ videoElement, videoUrl, report = reportVideoView
     ([, url]) => {
       detach?.()
       const parsed = url ? parsePeerTubeUrl(url) : null
-      const video = resolveVideoElement(videoElement)
+      const value = videoElement.value
+      const video = value instanceof HTMLAudioElement ? value : resolveVideoElement(videoElement)
       if (video && parsed) attach(video, parsed.host, parsed.videoId)
     },
     { immediate: true }

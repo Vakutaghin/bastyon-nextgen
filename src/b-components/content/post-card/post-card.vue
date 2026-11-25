@@ -82,7 +82,10 @@
         </SC_RepostOriginalAuthor>
 
         <!-- На телефоне картинки и ролик — во всю ширину карточки (--post-bleed). -->
-        <SC_PostMedia v-if="hasMedia" data-testid="post-media">
+        <SC_PostMedia
+          v-if="hasMedia && (!audios.length || post.images?.length)"
+          data-testid="post-media"
+        >
           <PostCardImages
             v-if="post.images && post.images.length > 0"
             :images="post.images"
@@ -113,6 +116,17 @@
         >
           {{ decodedTitle }}
         </SC_PostTitle>
+
+        <!-- Аудиокнига, альбом: записей в посте несколько. -->
+        <PostAudios
+          v-if="audios.length"
+          :key="postId"
+          :post="post as AdaptedPost"
+          :audios="audios"
+          :title="decodedTitle || post.author?.name || 'Bastyon'"
+          :expanded="showFull"
+          :autoplay="autoplayVideo"
+        />
 
         <PostCardContent
           :post="post"
@@ -334,6 +348,7 @@ import { requireAuth } from '@/composables/use-auth-gate'
 import { useAddToListStore } from '@/stores/add-to-list-store'
 import { formatDateTimeFull } from '@/helpers/common/date-formatter'
 import { chatLinks, publicEmbedCode, publicPostUrl } from '@/helpers/common/share-origin'
+import PostAudios from './components/post-audios/post-audios.vue'
 import VideoPlayer from '@/b-components/content/video-player/video-player.vue'
 import OfflineDownloadButton from '@/b-components/offline-video/offline-download-button.vue'
 import { useAppPreferencesStore } from '@/stores/app-preferences-store'
@@ -348,6 +363,8 @@ import PostCardVideoPlaceholder from '@/b-components/content/post-card/component
 import LinkPreviewCard from '@/b-components/content/link-preview-card/link-preview-card.vue'
 import PostCardPoll from '@/b-components/content/post-card/components/post-card-poll/post-card-poll.vue'
 import { parsePoll } from '@/helpers/content/poll'
+import { postAudios } from '@/helpers/content/post-audios'
+import type { AdaptedPost } from '@/types/adapted-post'
 import TorBlockedNotice from '@/components/tor-blocked-notice'
 import { useTorMedia } from '@/composables/use-tor-media'
 import {
@@ -584,6 +601,8 @@ function openEdit(): void {
 // ── Удаление своего поста (contentDelete) ───────────────────────────
 // txid || hash || id — общий с оценкой (K5), удалением и жалобой.
 const postId = computed<string>(() => getPostShareId(props.post))
+/** Записи аудио-поста, когда их больше одной. */
+const audios = computed(() => postAudios(props.post))
 /** Опрос поста — в настройках `s.poll` (helpers/content/poll.ts). */
 const poll = computed(() => parsePoll(props.post.settings?.poll))
 // Удалять можно только при наличии реального txid/hash поста — числовой

@@ -21,6 +21,12 @@ import { appToast } from '@/b-components/app-toast'
 import { usePaidSubscriptionsStore } from '@/stores/paid-subscriptions-store'
 import { encodeArticleContent } from '@/helpers/content/article-codec'
 import { parsePoll } from '@/helpers/content/poll'
+import {
+  audiosSetting,
+  isAudioPointer,
+  parsePostAudios,
+  type PostAudio,
+} from '@/helpers/content/post-audios'
 import { haptic } from '@/helpers/common/haptics'
 import { extractErrorMessage } from '@/helpers/common/extract-error-message'
 import { uploadImages } from '@/services/image-upload-service'
@@ -44,6 +50,7 @@ import { trackPendingPost } from './pending-post'
 import { usePostImages } from './use-post-images'
 import { usePostTags } from './use-post-tags'
 import { usePostPoll } from './use-post-poll'
+import { useComposerAudios } from './use-composer-audios'
 import {
   type PostDraftFields,
   readDraft,
@@ -53,7 +60,7 @@ import {
   writeDraftImages,
 } from './post-draft'
 import { validatePost } from './validate-post'
-import { UPLOADING_VIDEO_POINTER } from './consts'
+import { UPLOADING_AUDIO_POINTER, UPLOADING_VIDEO_POINTER } from './consts'
 
 /** Пауза перед записью черновика в IndexedDB: не писать на каждую букву подписи. */
 const DRAFT_SAVE_DELAY_MS = 400
@@ -210,6 +217,12 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     return poll ? { ...settings, poll } : settings
   }
 
+  /** Список записей — в настройки, когда их больше одной. */
+  const withAudios = (settings: SharePostData['settings']): SharePostData['settings'] => {
+    const list = audiosSetting(audios.uploaded.value)
+    return list ? { ...settings, audios: list } : settings
+  }
+
   /** Базовые настройки: видимость + (опц.) отложенное время. */
   const baseSettings = computed(() => {
     const s: SharePostData['settings'] = { f: effectiveVisibility.value }
@@ -224,12 +237,46 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
    */
   // При правке — ссылка оригинала: без неё видео/аудио-пост сохранялся как
   // обычный `share` с пустым `u` (V36).
-  const uploadedVideoUrl = ref(isEdit && prefill ? prefill.url : (prefillVideo?.pointer ?? ''))
+  // Звук — не здесь, а в списке записей (audios).
+  const uploadedVideoUrl = ref('')
+
+  /** Ключи для входа на видеосервер; null — не вошёл. */
+  const videoAuth = () => {
+    const keyPair = authStore.getKeyPair
+    const address = authStore.getUserAddress
+    return keyPair && address ? { keyPair, address } : null
+  }
+  const requireLogin = (): void => {
+    modalStore.openAuthModal('login')
+  }
+
+  /** Записи аудио-поста: одна или несколько (аудиокнига, альбом). */
+  const audios = useComposerAudios({
+    getAuth: videoAuth,
+    onAuthRequired: requireLogin,
+    // Запись одна — её название годится в заголовок; главе книги — нет.
+    onFirstUploaded: (title) => {
+      if (!caption.value.trim() && audios.items.value.length === 1) caption.value = title
+    },
+  })
+  /** Своё вложение, которое уже на сервере: звук — в список записей, видео — в ссылку. */
+  const attachUploaded = (pointer: string, list: PostAudio[] = []): void => {
+    if (!isAudioPointer(pointer)) {
+      uploadedVideoUrl.value = pointer
+      return
+    }
+    const known = list.length ? list : parsePostAudios(options.source?.settings?.audios, pointer)
+    audios.restore(known.length ? known : [{ url: pointer, title: '', duration: null }])
+  }
+  if (isEdit && prefill) attachUploaded(prefill.url)
+  else if (prefillVideo) attachUploaded(prefillVideo.pointer)
 
   /** Видео-ссылка, авто-найденная в тексте поста (youtube/vimeo/peertube). */
   const videoUrl = computed(() => (articleMode.value ? '' : firstVideoUrl(message.value)))
   /** Эффективный url видео: загруженный указатель приоритетнее авто-ссылки из текста. */
-  const effectiveVideoUrl = computed(() => uploadedVideoUrl.value || videoUrl.value)
+  const effectiveVideoUrl = computed(
+    () => audios.firstUrl.value || uploadedVideoUrl.value || videoUrl.value
+  )
   const parsedVideo = computed(() => parseVideoUrl(effectiveVideoUrl.value))
 
   /** Своё видео грузится прямо сейчас: указателя ещё нет; «Опубликовать» дождётся его. */
@@ -260,6 +307,12 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   }
   /** Своё видео ещё грузится: указателя нет, но пост уже с роликом. */
   const videoPending = computed(() => videoUploading.value && !uploadedVideoUrl.value)
+  /** Первая запись ещё грузится: пост уже аудио. */
+  const audioPending = computed(() => audios.items.value.length > 0 && !audios.firstUrl.value)
+  /** В посте звук — своё название и подсказки. */
+  const isAudioPost = computed(() => audios.items.value.length > 0)
+  /** Файлы грузятся или обложка ещё не на сервере. */
+  const mediaBusy = computed(() => videoUploading.value || audios.busy.value)
   /**
    * peertube-видео/аудио требуют заголовок (caption) — показываем поле title.
    * И пока своё видео грузится: заголовок пишут, не дожидаясь загрузки.
@@ -268,7 +321,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     () =>
       parsedVideo.value.kind === 'peertube' ||
       parsedVideo.value.kind === 'audio' ||
-      videoPending.value
+      videoPending.value ||
+      audioPending.value
   )
 
   /** Аплоадер вызывает после успешной загрузки: подставить указатель в пост. */
@@ -286,15 +340,11 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     setUploadedVideoUrl(video.pointer)
     if (!caption.value.trim()) caption.value = video.title
   }
-  /** Ключи для входа на видеосервер; null — не вошёл. */
-  const videoAuth = () => {
-    const keyPair = authStore.getKeyPair
-    const address = authStore.getUserAddress
-    return keyPair && address ? { keyPair, address } : null
-  }
-  const requireLogin = (): void => {
-    modalStore.openAuthModal('login')
-  }
+  /** Вместо ссылки, пока файл грузится: пост проверяется как видео или звук. */
+  const pendingPointer = computed(() => {
+    if (audioPending.value) return UPLOADING_AUDIO_POINTER
+    return videoPending.value ? UPLOADING_VIDEO_POINTER : undefined
+  })
 
   /**
    * Текущий пост в форме SharePostData.
@@ -318,12 +368,12 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       message: message.value.trim(),
       caption: caption.value.trim(),
       // Пока видео грузится, проверяем пост как видео: заголовок обязателен.
-      url: postUrl.value || (videoPending.value ? UPLOADING_VIDEO_POINTER : undefined),
+      url: postUrl.value || pendingPointer.value,
       tags: postTags.value,
       images: base64List.value,
       poll: cleanedPoll.value,
       language: language.value,
-      settings: withPoll(baseSettings.value),
+      settings: withAudios(withPoll(baseSettings.value)),
       txidEdit: editId.value || undefined,
       txidRepost: repostId.value || undefined,
     }
@@ -337,6 +387,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
   }
   /** «Опубликовать» нажали, пока видео грузилось: пост уйдёт, когда оно загрузится. */
   const waitingForVideo = ref(false)
+  /** Запись не загрузилась: без неё пост не отправляем — повторить или убрать. */
+  const audioFailed = computed(() => !articleMode.value && audios.failed.value)
   const cancelWaiting = (): void => {
     waitingForVideo.value = false
   }
@@ -345,6 +397,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
       !submitting.value &&
       !waitingForVideo.value &&
       !articleUploading.value &&
+      !audioFailed.value &&
       validationError.value === null
   )
   /** Лейбл кнопки публикации по режиму. */
@@ -391,6 +444,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     articleMode: articleMode.value,
     articleContent: articleContent.value,
     videoUrl: uploadedVideoUrl.value,
+    audios: audios.uploaded.value,
     dismissedLinkUrl: dismissedLinkUrl.value,
   }))
 
@@ -405,6 +459,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     !f.articleMode &&
     !f.articleContent?.blocks?.length &&
     !f.videoUrl &&
+    !f.audios.length &&
     !f.dismissedLinkUrl
 
   /** В черновике что-то есть — есть что очищать. */
@@ -453,7 +508,9 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     scheduledTime.value = f.scheduledTime > Date.now() / 1000 ? f.scheduledTime : 0
     articleMode.value = f.articleMode
     articleContent.value = f.articleContent
-    uploadedVideoUrl.value = f.videoUrl
+    // Черновик прежней версии хранил звук ссылкой.
+    if (f.audios.length) attachUploaded(f.audios[0]!.url, f.audios)
+    else if (f.videoUrl) attachUploaded(f.videoUrl)
     dismissedLinkUrl.value = f.dismissedLinkUrl
   }
 
@@ -525,6 +582,7 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     resetPoll()
     scheduledTime.value = 0
     uploadedVideoUrl.value = ''
+    audios.clear()
     dismissedLinkUrl.value = ''
     waitingForVideo.value = false
     clearImages()
@@ -556,7 +614,8 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     }
     // Видео ещё грузится или его обложка не на сервере — пост уйдёт сам, когда
     // всё будет готово: второй раз нажимать не нужно.
-    if (videoUploading.value) {
+    if (audioFailed.value) return
+    if (mediaBusy.value && !articleMode.value) {
       waitingForVideo.value = true
       return
     }
@@ -592,11 +651,11 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     }
   }
 
-  watch(videoUploading, (busy) => {
+  watch(mediaBusy, (busy) => {
     if (busy || !waitingForVideo.value) return
     waitingForVideo.value = false
-    // Загрузка сорвалась или видео убрали — пост без него не отправляем.
-    if (uploadedVideoUrl.value) void publish()
+    // Загрузка сорвалась или вложение убрали — пост без него не отправляем.
+    if (uploadedVideoUrl.value || audios.firstUrl.value) void publish()
   })
 
   return {
@@ -632,6 +691,9 @@ export function usePostComposer(options: UsePostComposerOptions = {}) {
     setArticleUploading,
     setVideoUploading,
     hasUploadedVideo,
+    audios,
+    audioFailed,
+    isAudioPost,
     onVideoUploaded,
     videoAuth,
     requireLogin,

@@ -27,6 +27,9 @@ export const VIDEO_ACCEPT = 'video/*,audio/*,.mkv,.mov,.avi,.webm,.m4a,.flac,.og
 /** Указатель на время загрузки своего видео: только для проверки поста, в сеть не уходит. */
 export const UPLOADING_VIDEO_POINTER = 'peertube://uploading/video'
 
+/** То же для звука: пост проверяется как аудио. */
+export const UPLOADING_AUDIO_POINTER = `${UPLOADING_VIDEO_POINTER}/audio`
+
 /**
  * Тип данных перетаскивания картинки внутри редактора (смена порядка). Без
  * своей метки Chromium и WebView2 кладут перетаскиваемую <img> в

@@ -25,7 +25,7 @@ import Button from '@/components/button'
 import { CheckCircleFilled, DownloadOutlined } from '@/components/icons'
 import { useOfflineVideosStore } from '@/stores/offline-videos-store'
 import {
-  offlineSourceFromPost,
+  offlineSourcesFromPost,
   useOfflineDownload,
   type OfflinePostLike,
 } from './use-offline-download'
@@ -48,8 +48,9 @@ const { batchProgress, downloadAll } = useOfflineDownload()
 
 onMounted(() => void store.hydrate())
 
-const media = computed(() => props.posts.filter((p) => !!offlineSourceFromPost(p)))
-const mine = computed(() => media.value.map((p) => store.mineFor(p.videoUrl)))
+// У аудиокниги — каждая запись.
+const media = computed(() => props.posts.flatMap(offlineSourcesFromPost))
+const mine = computed(() => media.value.map((source) => store.mineFor(source.peertubeUrl)))
 const allMine = computed(() => props.complete && mine.value.every((item) => !!item))
 const allDone = computed(
   () => allMine.value && mine.value.every((item) => item?.state.status === 'done')
