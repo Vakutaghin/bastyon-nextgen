@@ -20,6 +20,9 @@
   отсюда. Без него macOS закрывает модуль при первом обращении к Bluetooth.
   Права hardened runtime для Bluetooth нет: оно есть только у песочницы App Store.
 
+  Тексты этих запросов на остальных языках — macos/<язык>.lproj/InfoPlist.strings
+  (tauri.conf.json, bundle.macOS.files): раньше они были только английскими.
+
   CFBundleLocalizations — языки приложения (src/locales). Без них macOS
   считала бандл только английским, и контекстное меню WebKit, системные
   диалоги и пункты вроде «Службы» были по-английски даже на русской системе.

@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "Bastyon uses the microphone for voice input and voice messages. Speech is recognized on this computer.";
+"NSCameraUsageDescription" = "Bastyon uses the camera to scan a QR code when you sign in.";
+"NSBluetoothAlwaysUsageDescription" = "Bastyon connects over Bluetooth to your LoRa radio to chat in mesh networks.";

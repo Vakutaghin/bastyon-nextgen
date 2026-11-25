@@ -9,6 +9,7 @@ mod main_window;
 mod mesh;
 mod node_link;
 mod offline;
+mod saved_labels;
 mod storage;
 mod system_info;
 mod tor;
@@ -1160,7 +1161,7 @@ pub fn run() {
         log::warn!("desktop prefs: {e}");
       }
 
-      // Строка меню macOS — на русском до подписей от интерфейса.
+      // Строка меню macOS: до подписей от интерфейса — с прошлого запуска.
       if let Err(e) = app_menu::init(app.handle()) {
         log::warn!("app menu: {e}");
       }

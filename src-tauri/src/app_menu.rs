@@ -2,14 +2,16 @@
 //! а с языками бандла (`CFBundleLocalizations` в Info.plist) macOS дописывает в
 //! него свои пункты («Эмодзи и символы», «Начать диктовку…») на языке системы:
 //! выходила смесь. Состав — как у `Menu::default`, подписи присылает интерфейс
-//! (`app_menu_set_labels`), до этого — русские, как у меню значка.
+//! (`app_menu_set_labels`), до этого — с прошлого запуска, в первый раз русские.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
+
+const LABELS_FILE: &str = "app-menu-labels.json";
 
 /// Подписи меню. `{name}` в тексте — название приложения. Меню собирается только
 /// на macOS: на других системах подписи принимаются и не читаются.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub struct MenuLabels {
@@ -101,14 +103,17 @@ impl MenuLabels {
   }
 }
 
-/// Меню на русском до первых подписей от интерфейса.
+/// Меню до первых подписей от интерфейса.
 pub fn init(app: &AppHandle) -> tauri::Result<()> {
-  set(app, MenuLabels::default())
+  set(app, crate::saved_labels::load(app, LABELS_FILE).unwrap_or_default())
 }
 
 /// Подписи меню на языке приложения. Не macOS — ничего: строки меню там нет.
 #[tauri::command]
 pub fn app_menu_set_labels(app: AppHandle, labels: MenuLabels) -> Result<(), String> {
+  if cfg!(target_os = "macos") {
+    crate::saved_labels::save(&app, LABELS_FILE, &labels);
+  }
   set(&app, labels).map_err(|e| e.to_string())
 }
 

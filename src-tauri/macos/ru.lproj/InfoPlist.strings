@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "Bastyon использует микрофон для голосового ввода и голосовых сообщений. Речь распознаётся на этом компьютере.";
+"NSCameraUsageDescription" = "Bastyon использует камеру, чтобы считать QR-код при входе.";
+"NSBluetoothAlwaysUsageDescription" = "Bastyon подключается по Bluetooth к вашему LoRa-радио для переписки в mesh-сетях.";

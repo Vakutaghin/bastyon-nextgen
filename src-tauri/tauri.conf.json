@@ -53,7 +53,18 @@
     "macOS": {
       "minimumSystemVersion": "10.15",
       "signingIdentity": "-",
-      "entitlements": "./entitlements.plist"
+      "entitlements": "./entitlements.plist",
+      "files": {
+        "Resources/ru.lproj/InfoPlist.strings": "macos/ru.lproj/InfoPlist.strings",
+        "Resources/en.lproj/InfoPlist.strings": "macos/en.lproj/InfoPlist.strings",
+        "Resources/de.lproj/InfoPlist.strings": "macos/de.lproj/InfoPlist.strings",
+        "Resources/es.lproj/InfoPlist.strings": "macos/es.lproj/InfoPlist.strings",
+        "Resources/fr.lproj/InfoPlist.strings": "macos/fr.lproj/InfoPlist.strings",
+        "Resources/it.lproj/InfoPlist.strings": "macos/it.lproj/InfoPlist.strings",
+        "Resources/ko.lproj/InfoPlist.strings": "macos/ko.lproj/InfoPlist.strings",
+        "Resources/sr.lproj/InfoPlist.strings": "macos/sr.lproj/InfoPlist.strings",
+        "Resources/zh-Hans.lproj/InfoPlist.strings": "macos/zh-Hans.lproj/InfoPlist.strings"
+      }
     },
     "windows": {
       "nsis": {

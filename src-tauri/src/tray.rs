@@ -13,9 +13,10 @@ use tauri::{AppHandle, Manager, Wry};
 pub(crate) const TRAY_ID: &str = "main";
 const OPEN_ID: &str = "tray-open";
 const QUIT_ID: &str = "tray-quit";
+const LABELS_FILE: &str = "tray-labels.json";
 
 /// Пункты меню значка. Подписи ставит фронт на языке приложения
-/// (`tray_set_labels`), до этого — русские: язык по умолчанию.
+/// (`tray_set_labels`), до этого — с прошлого запуска, в первый раз русские.
 struct TrayMenu {
   open: MenuItem<Wry>,
   quit: MenuItem<Wry>,
@@ -33,7 +34,10 @@ struct TrayState {
 struct Tray(Mutex<TrayState>);
 
 pub fn init(app: &AppHandle) -> tauri::Result<()> {
-  app.manage(Tray::default());
+  app.manage(Tray(Mutex::new(TrayState {
+    menu: None,
+    labels: crate::saved_labels::load(app, LABELS_FILE),
+  })));
   if cfg!(target_os = "macos") {
     if !crate::desktop_prefs::menu_bar_icon() {
       return Ok(());
@@ -159,6 +163,8 @@ pub fn tray_set_labels(app: AppHandle, open: String, quit: String) -> Result<(),
     menu.open.set_text(&open).map_err(|e| e.to_string())?;
     menu.quit.set_text(&quit).map_err(|e| e.to_string())?;
   }
-  state.labels = Some((open, quit));
+  let labels = (open, quit);
+  crate::saved_labels::save(&app, LABELS_FILE, &labels);
+  state.labels = Some(labels);
   Ok(())
 }

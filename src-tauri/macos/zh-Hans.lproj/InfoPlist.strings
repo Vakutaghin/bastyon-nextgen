@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "Bastyon 使用麦克风进行语音输入和发送语音消息。语音在本机上识别。";
+"NSCameraUsageDescription" = "Bastyon 使用摄像头在登录时扫描二维码。";
+"NSBluetoothAlwaysUsageDescription" = "Bastyon 通过蓝牙连接您的 LoRa 电台，以便在 mesh 网络中聊天。";
